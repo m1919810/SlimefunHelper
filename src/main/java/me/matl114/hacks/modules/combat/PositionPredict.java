@@ -13,26 +13,24 @@ import me.matl114.accessors.hacks.PlayerInternalAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
-import me.matl114.gui.basic.ButtonAction;
-import me.matl114.gui.basic.DisplayWidget;
-import me.matl114.gui.basic.SubScreenWidget;
-import me.matl114.gui.basic.TextProvider;
+import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.NBTTypes;
+import me.matl114.hacks.utils.entity.EntityMovementStatus;
 import me.matl114.hacks.utils.entity.Predictor;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.CodecUtils;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.config.WrapperFactory;
 import me.matl114.utils.config.kv.EnumAttrKeyValue;
 import me.matl114.utils.config.kv.TypeConvertAttrKeyValue;
-import me.matl114.utils.entity.EntityMovementStatus;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VRender;
 import net.minecraft.client.util.math.MatrixStack;
@@ -48,6 +46,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
+import org.jetbrains.annotations.ApiStatus;
 
 public class PositionPredict extends BaseModule {
     public static PositionPredict INSTANCE;
@@ -55,6 +54,7 @@ public class PositionPredict extends BaseModule {
     public final ModulePath attBot = makePath(Configs.COMBAT_CONFIG, "att-bot");
 
     public PositionPredict() {
+        super("PositionPredict");
         INSTANCE = this;
     }
     //
@@ -288,7 +288,9 @@ public class PositionPredict extends BaseModule {
         NO_PREDICT,
         LINEAR,
         QUADRATIC,
-        PREDICTOR_NV;
+        PREDICTOR_NV,
+        @ApiStatus.Experimental
+        PREDICTOR_ROTATION;
 
         @Override
         public String getConfigEnumType() {
@@ -300,7 +302,7 @@ public class PositionPredict extends BaseModule {
     public static record PredictArgument(int ticksLater, int ticksHistory, Mode mode)
             implements NBTParsable<PredictArgument> {
         public static NBTType<PredictArgument> TYPE = new NBTType<>(
-                PredictArgument.class,
+                "predictargument",
                 RecordCodecBuilder.<PredictArgument>create(s -> s.group(
                                 Codec.INT.fieldOf("ticks").forGetter(PredictArgument::ticksLater),
                                 Codec.INT.fieldOf("history").forGetter(PredictArgument::ticksHistory),
@@ -319,17 +321,32 @@ public class PositionPredict extends BaseModule {
                     return subScreenWidget
                             .addDrawableChild(DisplayWidget.instance(0, 0, dy, dy)
                                     .setRenderHandler(new ButtonElement(
-                                            TextProvider.of(Text.literal("F:")), ButtonAction.empty())))
+                                                    TextProvider.of(Text.translatableWithFallback(
+                                                            "widget.nbt-parsable.predict-argument.ticks", "F:")),
+                                                    ButtonAction.empty())
+                                            .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                                    "widget.nbt-parsable.predict-argument.ticks.tooltips",
+                                                    "预测前瞻量（ticksLater）")))))
                             .addDrawableChild(new TypeConvertAttrKeyValue<>(s, firstWrapper, NBTTypes.INT_TYPE)
                                     .generateValueWidget(dy, 0, half - dy, dy))
                             .addDrawableChild(DisplayWidget.instance(half, 0, dy, dy)
                                     .setRenderHandler(new ButtonElement(
-                                            TextProvider.of(Text.literal("H:")), ButtonAction.empty())))
+                                                    TextProvider.of(Text.translatableWithFallback(
+                                                            "widget.nbt-parsable.predict-argument.history", "H:")),
+                                                    ButtonAction.empty())
+                                            .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                                    "widget.nbt-parsable.predict-argument.history.tooltips",
+                                                    "预测历史长度（ticksHistory）")))))
                             .addDrawableChild(new TypeConvertAttrKeyValue<>(s, secondWrapper, NBTTypes.INT_TYPE)
                                     .generateValueWidget(half + dy, 0, half - dy, dy))
                             .addDrawableChild(DisplayWidget.instance(2 * half, 0, dy, dy)
                                     .setRenderHandler(new ButtonElement(
-                                            TextProvider.of(Text.literal("M:")), ButtonAction.empty())))
+                                                    TextProvider.of(Text.translatableWithFallback(
+                                                            "widget.nbt-parsable.predict-argument.mode", "M:")),
+                                                    ButtonAction.empty())
+                                            .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                                    "widget.nbt-parsable.predict-argument.mode.tooltips",
+                                                    "预测模式（Mode）")))))
                             .addDrawableChild(new TypeConvertAttrKeyValue<>(
                                             s,
                                             thirdWrapper,

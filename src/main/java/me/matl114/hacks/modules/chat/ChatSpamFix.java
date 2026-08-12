@@ -19,6 +19,7 @@ public class ChatSpamFix extends BaseModule {
     public final ModulePath chatSpamFix = makePath(Configs.CHAT_CONFIG, "chat-spam-fix");
 
     public ChatSpamFix() {
+        super("ChatSpamFix");
         bindFlag(enable);
     }
 

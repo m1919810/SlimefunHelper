@@ -59,7 +59,7 @@ public class NBTBoundedListScreen<W, T> extends ConfirmingBigScreen {
             int dkey,
             int dx,
             int dy) {
-        super(Text.literal("列表编辑界面").formatted(Formatting.GREEN));
+        super(Text.translatable("widget.gui.nbt-bounded-list-screen.title").formatted(Formatting.GREEN));
         validator = listValidator;
         this.attrFactory = attrElementFactory;
         this.list = list.entrySet().stream()

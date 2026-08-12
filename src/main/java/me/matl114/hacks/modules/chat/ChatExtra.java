@@ -9,6 +9,7 @@ import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import me.matl114.accessors.access.ChatScreenAccess;
+import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
@@ -39,6 +40,7 @@ public class ChatExtra extends BaseModule {
     public static ChatExtra INSTANCE;
 
     public ChatExtra() {
+        super("ChatExtra");
         INSTANCE = this;
     }
 
@@ -112,8 +114,8 @@ public class ChatExtra extends BaseModule {
             // ignore meaningless shit, do not addToMessageHistory
             if (value.isEmpty()
                     || Objects.equals(value, "/")
-                    || Objects.equals(value, "!!")
-                    || Objects.equals(value, "/!!")) {
+                    || Objects.equals(value, MainCommand.MAIN_PREFIX)
+                    || Objects.equals(value, "/" + MainCommand.MAIN_PREFIX)) {
                 stringEvent.cancel();
             }
         }

@@ -5,9 +5,6 @@ import com.mojang.serialization.Lifecycle;
 import java.io.*;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -24,6 +21,7 @@ import me.matl114.managers.input.IHotKey;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.managers.input.SimpleHotKey;
 import me.matl114.managers.input.SimpleInputManager;
+import me.matl114.utils.FileUtils;
 import me.matl114.utils.ReflectUtils;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.SimpleRegistry;
@@ -35,8 +33,12 @@ import org.yaml.snakeyaml.Yaml;
 
 public class Config implements RefMap {
     private final File file;
-    private Logger logger;
-    private String header;
+    private static final Logger logger;
+
+    static {
+        logger = Logger.getLogger(SlimefunHelper.MOD_ID);
+    }
+
     protected Map<String, Object> fileMap;
     protected MapRef ref;
     protected LinkedHashSet<String> buildOrder = new LinkedHashSet<>();
@@ -126,7 +128,6 @@ public class Config implements RefMap {
     //    }
     public Config(String name, @Nonnull File file, @Nonnull Map<String, Object> fileConfig) {
         this.configName = name;
-        this.logger = Logger.getLogger(SlimefunHelper.MOD_ID);
         this.file = file;
         this.fileMap = new LinkedHashMap<>(fileConfig);
         this.ref = Refs.transferConfig(fileConfig);
@@ -218,7 +219,7 @@ public class Config implements RefMap {
         File absoluteFile = file.getAbsoluteFile();
         File parentDir = absoluteFile.getParentFile();
         if (parentDir != null && !parentDir.exists() && !parentDir.mkdirs() && !parentDir.exists()) {
-            this.logger.log(
+            logger.log(
                     Level.SEVERE,
                     "Exception while saving a Config file: failed to create parent directories for {0}",
                     absoluteFile);
@@ -239,7 +240,7 @@ public class Config implements RefMap {
             owrite.flush();
             fout.getFD().sync();
         } catch (IOException e) {
-            this.logger.log(Level.SEVERE, "Exception while saving a Config file", e);
+            logger.log(Level.SEVERE, "Exception while saving a Config file", e);
         }
 
         if (!tempFile.exists()) {
@@ -247,29 +248,14 @@ public class Config implements RefMap {
         }
 
         try {
-            replaceFile(tempFile, absoluteFile);
+            FileUtils.saveTempFile(tempFile, file);
             saved = true;
         } catch (IOException e) {
             this.logger.log(Level.SEVERE, "Exception while replacing a Config file", e);
         } finally {
-            if (!saved && tempFile.exists() && !tempFile.delete()) {
-                tempFile.deleteOnExit();
-            }
             if (saved) {
                 markForSave = false;
             }
-        }
-    }
-
-    private void replaceFile(File tempFile, File targetFile) throws IOException {
-        try {
-            Files.move(
-                    tempFile.toPath(),
-                    targetFile.toPath(),
-                    StandardCopyOption.ATOMIC_MOVE,
-                    StandardCopyOption.REPLACE_EXISTING);
-        } catch (AtomicMoveNotSupportedException ignored) {
-            Files.move(tempFile.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
     }
 

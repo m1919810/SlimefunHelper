@@ -5,11 +5,10 @@ import java.util.List;
 import java.util.function.Consumer;
 import lombok.Getter;
 import lombok.Setter;
-import me.matl114.accessors.events.MetadataHolder;
 import me.matl114.accessors.gui.ScreenAccess;
+import me.matl114.accessors.interfaces.MetadataHolder;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.DisplayWidget;
-import me.matl114.utils.containers.MetaData;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -107,23 +106,6 @@ public abstract class ScreenEvents extends AbstractParentElement implements Meta
                 runnable.accept((Screen) (AbstractParentElement) this);
             }
         }
-    }
-
-    @Unique
-    public MetaData metaData;
-
-    @Unique
-    public MetaData getMetadata() {
-        if (metaData == null) {
-            metaData = new MetaData();
-        }
-        return metaData;
-    }
-
-    @Unique
-    @Override
-    public boolean isMetaEmpty() {
-        return metaData == null;
     }
 
     @Shadow

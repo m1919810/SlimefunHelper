@@ -2,7 +2,7 @@ package me.matl114.managers.config;
 
 import java.util.*;
 import javax.annotation.Nonnull;
-import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.BaseAttrKeyValue;
 
 public class MapRef extends Ref<Map<String, Ref<?>>> implements RefMap {
     public static final Class<Map<String, Ref<?>>> TYPE = (Class) Map.class;
@@ -103,7 +103,7 @@ public class MapRef extends Ref<Map<String, Ref<?>>> implements RefMap {
     }
 
     @Override
-    protected AttrKeyValue<Map<String, Ref<?>>> _createKeyValue0(String key) {
+    protected BaseAttrKeyValue<Map<String, Ref<?>>> _createKeyValue0(String key) {
         throw new IllegalStateException("Not impl yet");
     }
 

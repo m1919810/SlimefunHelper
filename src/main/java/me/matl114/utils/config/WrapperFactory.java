@@ -1,6 +1,5 @@
 package me.matl114.utils.config;
 
-import com.mojang.datafixers.kinds.K2;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
@@ -38,7 +37,7 @@ public interface WrapperFactory<T, W> {
         return of(s -> other.create(this.create(s)), t -> this.get(other.get(t)));
     }
 
-    default Codec<W> wrapCodec(Codec<T> codec) {
+    default Codec<W> wrapCodecComapFlatMap(Codec<T> codec) {
         return codec.comapFlatMap(
                 s -> {
                     try {
@@ -50,7 +49,7 @@ public interface WrapperFactory<T, W> {
                 this::get);
     }
 
-    default Codec<W> wrapCodecSafe(Codec<T> codec) {
+    default Codec<W> wrapCodecXmap(Codec<T> codec) {
         return codec.xmap(this::create, this::get);
     }
 

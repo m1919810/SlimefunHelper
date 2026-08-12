@@ -12,9 +12,12 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.config.RegistryRegex;
+import me.matl114.hacks.utils.tasks.TimerExecutor;
 import me.matl114.managers.*;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
@@ -25,22 +28,21 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.registry.Registries;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.text.Text;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
-import net.minecraft.world.World;
 
 public class MineBot extends BaseModule {
     public MineBot() {
-        super();
+        super("MineBot");
         bindFlag(enable);
     }
 
@@ -87,10 +89,8 @@ public class MineBot extends BaseModule {
     public final IntRef maxInstaMine =
             intBuilder(mineBot.add("max-instant-mine")).defaultValue(30).build();
 
-    public final IntRef multiplePackets = intBuilder(mineBot.add("multiple-packets"))
-            .defaultValue(1)
-            .validator(Configs.INT_POSITIVE)
-            .build();
+    public final FlagRef doubleBreak =
+            flagBuilder(mineBot.add("use-double-break")).build();
 
     public final FlagRef considerCooldown = builder(mineBot.add("consider-cooldown"), Boolean.class)
             .defaultValue(true)
@@ -113,14 +113,6 @@ public class MineBot extends BaseModule {
         return false;
     }
 
-    private boolean noLongerCanMine(World world, BlockPos pos) {
-        if (pos == null || world == null) {
-            return true;
-        }
-
-        return !isMineable(world.getBlockState(pos));
-    }
-
     public BlockPos lastMinePos = null;
 
     public void onTick(Event<ClientPlayerEntity> player) {
@@ -140,25 +132,20 @@ public class MineBot extends BaseModule {
         if (mc.player == null || mc.world == null || mc.interactionManager == null) {
             return;
         }
-        for (int i = 0; i < multiplePackets.get(); ++i) {
-            int mineResult =
-                    switch (mineBotMode.get()) {
-                        case SPHERICAL -> onMineSpherical();
-                        case LAYERED_UP -> onMineLayered(true);
-                        case LAYERED_DOWN -> onMineLayered(false);
-                        case SQUARE -> onMineSquare();
-                        case TUNNEL -> onMineTunnel();
-                        case RANDOM -> onMineRandom();
-                        case AUTO_TOOL -> onMineCustomTool();
-                    };
-            if (mineResult >= 5) {
-                break;
-            }
+        switch (mineBotMode.get()) {
+            case SPHERICAL -> onMineSpherical();
+            case LAYERED_UP -> onMineLayered(true);
+            case LAYERED_DOWN -> onMineLayered(false);
+            case SQUARE -> onMineSquare();
+            case TUNNEL -> onMineTunnel();
+            case RANDOM -> onMineRandom();
+            case AUTO_TOOL -> onMineCustomTool();
         }
+        ;
     }
 
-    public int durMultiply = 4;
-    public int minDurLimit = 9;
+    public static final int durMultiply = 4;
+    public static final int minDurLimit = 9;
 
     public boolean isDurabilityOk(ItemStack item) {
         if (item.isEmpty()) return true;
@@ -166,13 +153,11 @@ public class MineBot extends BaseModule {
         if (item.get(DataComponentTypes.UNBREAKABLE) != null) {
             durabilityLimit = 0;
         } else if (item.get(DataComponentTypes.MAX_DAMAGE) != null) {
-            var optionalUnbreaking = ItemStackUtils.registry()
-                    .getOptional(RegistryKeys.ENCHANTMENT)
-                    .orElseThrow()
-                    .getOptional(Enchantments.UNBREAKING);
+            RegistryEntry<Enchantment> unbreaking =
+                    RegistryUtils.getRegistryEntry(ItemStackUtils.registry(), Enchantments.UNBREAKING);
             int multiply = 1;
-            if (optionalUnbreaking.isPresent()) {
-                multiply = EnchantmentHelper.getLevel(optionalUnbreaking.get(), item) + 1;
+            if (unbreaking != null) {
+                multiply = EnchantmentHelper.getLevel(unbreaking, item) + 1;
             }
             durabilityLimit = (durMultiply * (2)) / multiply;
         } else {
@@ -185,81 +170,25 @@ public class MineBot extends BaseModule {
         return true;
     }
 
-    //    public boolean checkToolDurability(boolean instaMine) {
-    //        if ((toolProtect.get() || replaceSameTool.get()) && mc.player != null) {
-    //            ItemStack item = mc.player.getMainHandStack();
-    //
-    //            int durabilityLimit; // item.get(DataComponentTypes.UNBREAKABLE) != null ? Integer.MAX_VALUE: (
-    //            if (item.get(DataComponentTypes.UNBREAKABLE) != null) {
-    //                durabilityLimit = 0;
-    //            } else if (item.get(DataComponentTypes.MAX_DAMAGE) != null) {
-    //                var optionalUnbreaking = ItemStackUtils.registry()
-    //                        .getOptional(RegistryKeys.ENCHANTMENT)
-    //                        .orElseThrow()
-    //                        .getOptional(Enchantments.UNBREAKING);
-    //                int multiply = 1;
-    //                if (optionalUnbreaking.isPresent()) {
-    //                    multiply = EnchantmentHelper.getLevel(optionalUnbreaking.get(), item) + 1;
-    //                }
-    //                durabilityLimit = (durMultiply * (instaMine ? maxInstaMine.get() : 2)) / multiply;
-    //            } else {
-    //                // it is not a tool
-    //                return true;
-    //            }
-    //            int max = Math.max(minDurLimit, durabilityLimit);
-    //            if (!item.isEmpty() && item.getDamage() > item.getMaxDamage() - max) {
-    //                //
-    //                if(replaceSameTool.get()){
-    //                    IndexEntry<ItemStack> stackReplacement = InventoryUtils.findPlayerItem(s -> {
-    //                        return s.getDamage() <= s.getMaxDamage() - max && ItemStackUtils.matchItemMiningAbility(s,
-    // item);
-    //                    }, true, false);
-    //                    if(stackReplacement != null){
-    //                        Debug.chat(ChatUtils.stringToText("&c[MineBot] &fReplacing your tool..."));
-    //                        InvExtra.INSTANCE.swapInventoryIndexToHand(stackReplacement.index());
-    //                        return true;
-    //                    }else {
-    //                        Debug.chat(ChatUtils.stringToText("&c[MineBot] &fReplacing failed because no same tool
-    // found, stop mining!"));
-    //                        enable.set(false);
-    //                        return false;
-    //                    }
-    //                }
-    //                if(toolProtect.get()){
-    //                    Debug.chat(ChatUtils.stringToText("&c[MineBot] &fYour tool runs out of durability, stop
-    // mining!"));
-    //                    enable.set(false);
-    //                    return false;
-    //                }
-    //
-    //            }
-    //        }
-    //        return true;
-    //    }
-
-    private int noBlockAroundTick;
+    private final TimerExecutor noBlocksAround = new TimerExecutor();
     private static final int NO_BLOCK_MENTION_LIMIT = 400;
 
     public int onMineCommon(Supplier<BlockPos> posFinder) {
         int tryMine = 0;
-        boolean insta = false;
         Vec2f originPy = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
         do {
-            Vec3d playerPos = mc.player.getEyePos();
-            ;
-            if (MineTasks.distanceOutOfReach(lastMinePos, playerPos) || noLongerCanMine(mc.world, lastMinePos)) {
+            if (!checkDistanceAndCondition(lastMinePos)) {
                 lastMinePos = posFinder.get();
             }
             if (lastMinePos == null) {
                 break;
             }
             if (considerCooldown.get()) {
-                if (PlayerInteractionAccess.of(mc.interactionManager).getMiningCooldown() > 0) {
+                if (MineExtra.INSTANCE.getMiningPacketCooldown() > 0) {
                     break;
                 }
-            } else {
-                PlayerInteractionAccess.of(mc.interactionManager).setMiningCooldown(0);
             }
+            PlayerInteractionAccess.of(mc.interactionManager).setMiningCooldown(0);
 
             BlockState mineState = mc.world.getBlockState(lastMinePos);
             IndexEntry<ItemStack> bestStack = autoSwap.get()
@@ -275,7 +204,7 @@ public class MineBot extends BaseModule {
                     : InventoryUtils.getSelectedItem();
             if (bestStack == null || !isDurabilityOk(bestStack.val())) {
                 if (toolProtect.get()) {
-                    Debug.chat(ChatUtils.stringToText("&c[MineBot] &fYour tool runs out of durability, stop mining!"));
+                    logI18N("message.module.mine-bot.tool-broken-stop");
                     enable.set(false);
                     break;
                 } else {
@@ -295,7 +224,7 @@ public class MineBot extends BaseModule {
                     Vec3d rotateXZ = new Vec3d(rotate2f.x, 0, rotate2f.z);
                     // out of the sight
                     if (rotateXZ.dotProduct(shouldFacing) < 0) {
-                        mc.player.setYaw(EntityUtils.getSafeYaw(mc.player, mc.player.getYaw() + 180));
+                        PlayerStateManager.setPlayerYawSafe(mc.player, mc.player.getYaw() + 180);
                         mc.getNetworkHandler()
                                 .sendPacket(VPacket.newLookAndOnGround(
                                         mc.player.getYaw(),
@@ -327,7 +256,15 @@ public class MineBot extends BaseModule {
             }
 
             if (!MineExtra.INSTANCE.shouldTreatAsInstantBreak(speed)) {
-                break;
+                //
+                var access = PlayerInteractionAccess.of(mc.interactionManager);
+                if (doubleBreak.get()
+                        && Objects.equals(access.getCurrentMiningPos(), lastMinePos)
+                        && access.isFailBreakEmpty()) {
+                    access.sendFailBreakCurrentPos(null);
+                } else {
+                    break;
+                }
             }
 
         } while (!mc.interactionManager.isBreakingBlock() && tryMine < maxInstaMine.get());
@@ -337,13 +274,9 @@ public class MineBot extends BaseModule {
             ClientPlayerAccess.of(mc.player).resyncRot();
         }
         if (tryMine == 0) {
-            noBlockAroundTick++;
-            if (noBlockAroundTick > NO_BLOCK_MENTION_LIMIT) {
-                noBlockAroundTick = 0;
-                Debug.chat(Text.literal("No more minable blocks nearby!"));
-            }
+            noBlocksAround.run(NO_BLOCK_MENTION_LIMIT, () -> logI18N("message.module.mine-bot.no-blocks"));
         } else {
-            noBlockAroundTick = 0;
+            noBlocksAround.mark();
         }
         return tryMine;
     }
@@ -403,23 +336,34 @@ public class MineBot extends BaseModule {
         }
     }
 
+    private boolean checkDistanceAndCondition(BlockPos newPos) {
+        var access = PlayerInteractionAccess.of(mc.interactionManager);
+        // do not mine on double break
+        if (Objects.equals(access.getCurrentFailBreakPos(), newPos)) {
+            return false;
+        }
+        if (MineTasks.distanceOutOfReach(newPos, mc.player.getEyePos())) {
+            return false;
+        }
+        if (!isMineable(mc.world.getBlockState(newPos))) {
+            return false;
+        }
+        return true;
+    }
+
     private BlockPos findNextMinePosSpherical() {
         BlockPos posStanding = mc.player.getSteppingPos();
         BlockPos posCenter = posStanding.add(0, 1, 0);
         int lowest = minY.get();
         int highest = maxY.get();
-        for (var vec : MineExtra.INSTANCE.getBlocksAround()) {
+        for (var vec : InteractExtra.INSTANCE.getBlocksAround()) {
             int x = vec.getX();
             int y = vec.getY();
             int z = vec.getZ();
             if (y >= lowest && y <= highest) {
                 BlockPos newPose = posCenter.add(x, y, z);
-                if (MineTasks.distanceOutOfReach(newPose, mc.player.getEyePos())) {
-                    continue;
-                } else {
-                    if (isMineable(mc.world.getBlockState(newPose))) {
-                        return newPose;
-                    }
+                if (checkDistanceAndCondition(newPose)) {
+                    return newPose;
                 }
             }
         }
@@ -436,16 +380,12 @@ public class MineBot extends BaseModule {
             Collections.reverse(yLevelList);
         }
         for (int y : yLevelList) {
-            for (var plate : MineExtra.INSTANCE.getPlatesAround()) {
+            for (var plate : InteractExtra.INSTANCE.getPlatesAround()) {
                 int x = plate.x;
                 int z = plate.y;
                 BlockPos newPose = posCenter.add(x, y, z);
-                if (MineTasks.distanceOutOfReach(newPose, mc.player.getEyePos())) {
-                    continue;
-                } else {
-                    if (isMineable(mc.world.getBlockState(newPose))) {
-                        return newPose;
-                    }
+                if (checkDistanceAndCondition(newPose)) {
+                    return newPose;
                 }
             }
         }
@@ -466,18 +406,15 @@ public class MineBot extends BaseModule {
             searchingWidth.add(i);
             searchingWidth.add(-i);
         }
-        for (var k = 0; k <= MineExtra.INSTANCE.getReachDistance(); ++k) {
+        double reach = InteractExtra.INSTANCE.getBlockReachDistance();
+        for (var k = 0; k <= reach; ++k) {
             BlockPos currentCenter = posCenter.offset(facingDirection, k);
             for (var i = lowest; i < highest; ++i) {
                 BlockPos currentHeightCenter = currentCenter.add(0, i, 0);
                 for (var j : searchingWidth) {
                     BlockPos newPos = currentHeightCenter.offset(facingDirectionCross, j);
-                    if (MineTasks.distanceOutOfReach(newPos, mc.player.getEyePos())) {
-                        continue;
-                    } else {
-                        if (isMineable(mc.world.getBlockState(newPos))) {
-                            return newPos;
-                        }
+                    if (checkDistanceAndCondition(newPos)) {
+                        return newPos;
                     }
                 }
             }
@@ -496,12 +433,8 @@ public class MineBot extends BaseModule {
             for (var j = -wid; j <= wid; ++j) {
                 for (int k = -wid; k <= wid; ++k) {
                     BlockPos newPos = posCenter.add(j, i, k);
-                    if (MineTasks.distanceOutOfReach(newPos, mc.player.getEyePos())) {
-                        continue;
-                    } else {
-                        if (isMineable(mc.world.getBlockState(newPos))) {
-                            return newPos;
-                        }
+                    if (checkDistanceAndCondition(newPos)) {
+                        return newPos;
                     }
                 }
             }
@@ -515,18 +448,14 @@ public class MineBot extends BaseModule {
         int lowest = minY.get();
         int highest = maxY.get();
         List<BlockPos> availablePos = new ArrayList<>();
-        for (var vec : MineExtra.INSTANCE.getBlocksAround()) {
+        for (var vec : InteractExtra.INSTANCE.getBlocksAround()) {
             int x = vec.getX();
             int y = vec.getY();
             int z = vec.getZ();
             if (y >= lowest && y <= highest) {
                 BlockPos newPose = posCenter.add(x, y, z);
-                if (MineTasks.distanceOutOfReach(newPose, mc.player.getEyePos())) {
-                    continue;
-                } else {
-                    if (isMineable(mc.world.getBlockState(newPose))) {
-                        availablePos.add(newPose);
-                    }
+                if (checkDistanceAndCondition(newPose)) {
+                    availablePos.add(newPose);
                 }
             }
         }

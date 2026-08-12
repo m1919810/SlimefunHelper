@@ -31,10 +31,12 @@ public class NoRender extends BaseModule {
     public final ModulePath overlay = root.add("overlay");
     public final ModulePath effectSetting = root.add("eff-setting");
     public final ModulePath worldEffect = root.add("world-effect");
+    public final ModulePath fovEffect = root.add("fov-effect");
     public final ModulePath entity = root.add("entity");
     public final ModulePath particle = root.add("particle");
 
     public NoRender() {
+        super("NoRender");
         bindFlag(enable);
         INSTANCE = this;
     }
@@ -92,6 +94,14 @@ public class NoRender extends BaseModule {
                     effectSetting.add("types"), NBTType.<RegistryRegex<StatusEffect>>parameter(RegistryRegex.class))
             .defaultValue(new RegistryRegex<>(new Regex("^(blindness|darkness|nausea)$"), Registries.STATUS_EFFECT))
             .build();
+
+    public final FlagRef noFlyFov = flagBuilder(fovEffect.add("fly")).build();
+
+    public final FlagRef noSlowDownFov = flagBuilder(fovEffect.add("slow-down")).build();
+
+    public final FlagRef noSpeedFov = flagBuilder(fovEffect.add("speed-up")).build();
+
+    public final FlagRef noUseItemFov = flagBuilder(fovEffect.add("use-bow")).build();
 
     public final FlagRef ignoreSpawn = flagBuilder(entity.add("force-no")).build();
 

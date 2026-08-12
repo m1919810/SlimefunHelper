@@ -23,6 +23,7 @@ public class EnderEyeLog extends BaseModule {
     public final ModulePath other = makePath(Configs.TEST_CONFIG, "other");
 
     public EnderEyeLog() {
+        super("EnderEyeLog");
         bindFlag(enable);
     }
 

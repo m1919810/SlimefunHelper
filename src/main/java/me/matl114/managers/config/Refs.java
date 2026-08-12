@@ -78,7 +78,7 @@ public class Refs {
                 .add(new TypedReferenceBuilder<>(Boolean.class, List.of(FlagRef::new)))
                 .add(new TypedReferenceBuilder<>(Integer.class, List.of(IntRef::new)))
                 .add(new TypedReferenceBuilder<>(Long.class, List.of(LongRef::new)))
-                .add(new TypedReferenceBuilder<>(Float.class, List.of(DoubleRef::of)))
+                .add(new TypedReferenceBuilder<>(Float.class, List.of(FloatRef::of)))
                 .add(new TypedReferenceBuilder<>(Double.class, List.of(DoubleRef::of)))
                 .add(new TypedReferenceBuilder<>(ConfigEnum.class, List.of(EnumRef::new)))
                 .add(new TypedReferenceBuilder<>(MultiKeyBind.class, List.of(KeyBindRef::new)))

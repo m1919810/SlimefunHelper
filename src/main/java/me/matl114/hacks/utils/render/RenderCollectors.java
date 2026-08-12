@@ -208,6 +208,28 @@ public class RenderCollectors {
         };
     }
 
+    public static RenderCollector<List<Vec3d>> createLinesCollector() {
+        return new RenderCollector.Impl<List<Vec3d>>() {
+
+            @Override
+            public void render3D(MatrixStack matrices) {
+                if (entries.isEmpty()) return;
+                Vec3d cameraPos = getCameraPos().negate();
+                VRender.getInstance().createLinesLayer((op, vtx) -> {
+                    for (var re : entries) {
+                        var lines = re.val().stream().map(s -> s.add(cameraPos)).toList();
+                        op.drawLines(matrices, vtx, lines, re.index());
+                    }
+                });
+            }
+
+            @Override
+            public void render2D(VDrawContext vDrawContext) {
+                // not implemented yet
+            }
+        };
+    }
+
     public static double HEIGHT = 9.0d;
 
     public static RenderCollector<RenderElements.Text> createTextCollector() {

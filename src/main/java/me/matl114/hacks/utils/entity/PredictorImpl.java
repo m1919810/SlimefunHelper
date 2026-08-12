@@ -172,17 +172,26 @@ public class PredictorImpl implements Predictor {
             return history[history.length - 1 + futureSteps];
         }
         switch (method) {
-            case 1:
+            case 1 -> {
                 return MathUtils.linearPrediction(history, futureSteps);
-            case 2:
+            }
+            case 2 -> {
                 return MathUtils.quadraticPrediction(history, futureSteps);
-            case 3:
+            }
+            case 3 -> {
                 Vec3d[] ring = Arrays.copyOf(history, history.length);
                 int currentIdx = history.length - 1;
                 return new MathUtils.NVPredictor(ring, () -> currentIdx).compute(futureSteps);
-            default:
-                // 零速度外推
+            }
+            case 4 -> {
+                Vec3d[] ring = Arrays.copyOf(history, history.length);
+                int currentIdx = history.length - 1;
+                return new MathUtils.RotationalPredictor(ring, () -> currentIdx).compute(futureSteps);
+            }
+
+            default -> {
                 return currentPos;
+            }
         }
     }
 

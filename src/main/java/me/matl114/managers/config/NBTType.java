@@ -2,7 +2,7 @@ package me.matl114.managers.config;
 
 import com.mojang.serialization.Codec;
 import java.util.Locale;
-import lombok.AllArgsConstructor;
+import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -16,24 +16,32 @@ import net.minecraft.nbt.NbtOps;
 
 @Getter
 @Accessors(fluent = true)
-@AllArgsConstructor
 public class NBTType<T> implements WrapperFactory<NbtElement, T> {
-    public NBTType(String clazz, Codec<T> codec, AttrKeyValue.CustomWidgetFactory<T> customWidgetFactory, T empty) {
-        this(clazz, codec, customWidgetFactory, null, empty);
+    public NBTType(String typeName, Codec<T> codec, AttrKeyValue.CustomWidgetFactory<T> customWidgetFactory, T empty) {
+        this(typeName, codec, null, customWidgetFactory, empty);
         this.stringifyFactory = createDefaultFactory(this);
     }
 
     public NBTType(
-            Class<T> clazz,
+            String typeName,
             Codec<T> codec,
             AttrKeyValue.CustomWidgetFactory<T> customWidgetFactory,
             WrapperFactory<String, T> stringifyFactory,
             T empty) {
-        this(clazz.getSimpleName().toLowerCase(Locale.ROOT), codec, customWidgetFactory, stringifyFactory, empty);
+        this(typeName, codec, Objects.requireNonNull(stringifyFactory), customWidgetFactory, empty);
     }
 
-    public NBTType(Class<T> clazz, Codec<T> codec, AttrKeyValue.CustomWidgetFactory<T> customWidgetFactory, T empty) {
-        this(clazz.getSimpleName().toLowerCase(Locale.ROOT), codec, customWidgetFactory, empty);
+    public NBTType(
+            String typeName,
+            Codec<T> codec,
+            WrapperFactory<String, T> stringifyFactory,
+            AttrKeyValue.CustomWidgetFactory<T> customWidgetFactory,
+            T empty) {
+        this.typeName = typeName.toLowerCase(Locale.ROOT);
+        this.typeCodec = codec;
+        this.customWidgetFactory = customWidgetFactory;
+        this.stringifyFactory = stringifyFactory;
+        this.empty = empty;
     }
 
     final String typeName;
@@ -65,7 +73,7 @@ public class NBTType<T> implements WrapperFactory<NbtElement, T> {
         return typeCodec.encodeStart(NbtOps.INSTANCE, val).getOrThrow();
     }
 
-    public AttrKeyValue<T> createAttrKeyValue(String key, T value) {
+    public BaseAttrKeyValue<T> createAttrKeyValue(String key, T value) {
         return new BaseAttrKeyValue<T>(
                 key,
                 value,

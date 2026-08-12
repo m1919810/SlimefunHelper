@@ -1,30 +1,50 @@
 package me.matl114.hacks.modules.inv;
 
 import com.google.common.util.concurrent.Runnables;
+import java.util.Locale;
 import java.util.OptionalInt;
 import me.matl114.accessors.access.ClientPlayerAccess;
+import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hooks.ViaFabricPlusHooks;
+import me.matl114.hooks.ViaProtocols;
 import me.matl114.managers.Configs;
+import me.matl114.managers.TaskManagers;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
+import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.input.KeyCode;
+import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.AttributeUtils;
+import me.matl114.utils.Debug;
 import me.matl114.utils.InventoryUtils;
+import me.matl114.utils.ScreenUtils;
+import me.matl114.utils.collections.Point;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.text.Text;
 
 public class InvExtra extends BaseModule {
     public static InvExtra INSTANCE;
     public final ModulePath inventory = makePath(Configs.INV_CONFIG, "inventory");
 
     public InvExtra() {
+        super("InvExtra");
         INSTANCE = this;
     }
 
@@ -45,11 +65,23 @@ public class InvExtra extends BaseModule {
     public final FlagRef ghostHandAttribute =
             flagBuilder(inventory.add("ghost-hand-attribute-sync")).build();
 
+    public final KeyBindRef pickItemHotkey = hotkey(inventory.add("pick-item"))
+            .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.MOUSE_BUTTON_3))
+            .registerHotkey(HotKeyUtils.asHandler(this::onPickItem))
+            .build();
+
+    public final ModulePath keepInv = inventory.add("keep-inv");
+    public final FlagRef enableKeepInv = flagBuilder(keepInv).build();
+
+    public static final String CLEAR_KEEP = "clear-keep";
+
     @Override
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreClickSlot(), this::onClickSlot);
         registerListener(Listener.getPacketPoint().getChannel(CloseHandledScreenC2SPacket.class), this::onCloseScreen);
+        TaskManagers.getToggleManager().register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + "keep-inv", enableKeepInv);
+        TaskManagers.getTaskManager().register(TaskManagers.PREFIX_BUTTON_TASKS + "." + CLEAR_KEEP, this::clearKeep);
     }
 
     public void onClickSlot(Event<SlotActionType> event) {
@@ -272,5 +304,53 @@ public class InvExtra extends BaseModule {
         // swap the rest
         mc.interactionManager.clickSlot(
                 handler.syncId, targetSlot, fuckingHotbar114514, SlotActionType.SWAP, mc.player);
+    }
+
+    public boolean onPickItem() {
+        PlayerEntity player = mc.player;
+        if (player == null) return false;
+        Screen nowScreen = InvTasks.getCurrentServerScreen(player);
+        if (!player.isCreative() && nowScreen instanceof HandledScreen<?> handled) {
+            Point mouseCoord = ScreenUtils.getMouseCoord(mc);
+            Slot slot = HandledScreenAccess.of(handled).reallyGetSlotAt(mouseCoord.x, mouseCoord.y);
+            if (slot != null) {
+                if (slot.inventory instanceof PlayerInventory) {
+                    if (slot.getIndex() >= 36) {
+                        Debug.chat("Invalid slot for player Inventory", slot.getIndex());
+                    } else {
+                        if (ViaFabricPlusHooks.getInstance().isViaEnabled()
+                                && ViaFabricPlusHooks.getInstance()
+                                        .getCurrentVersion()
+                                        .isLowerOrEqualTo(21, 3)) {
+                            // use via shit to send pickup packet
+                            var wrapper = ViaFabricPlusHooks.getInstance().createViaPacket();
+                            wrapper.writePacketType(
+                                    ViaProtocols.V1_21_2_TO_1_21_4, "pick_item".toUpperCase(Locale.ROOT));
+                            wrapper.write("VAR_INT", slot.getIndex());
+                            wrapper.scheduleSendToServer(ViaProtocols.V1_21_2_TO_1_21_4, true);
+                            Debug.chat("run pickup");
+                        } else {
+                            Debug.chat("No Longer support this feat in version "
+                                    + ViaFabricPlusHooks.getInstance().getCurrentVersion());
+                        }
+                        // mc.interactionManager.pickFromInventory(slot.getIndex());
+                    }
+                    return true;
+                } else {
+                    Debug.chat("Invalid slot outside player Inventory");
+                }
+            }
+        }
+        return false;
+    }
+
+    public void clearKeep() {
+
+        ClientPlayerEntity player = MinecraftClient.getInstance().player;
+        if (player != null) {
+            ClientPlayerAccess access = ClientPlayerAccess.of(player);
+            access.clearKeepedInventory(true);
+            Debug.chat(Text.literal("已清除界面历史记录"));
+        }
     }
 }

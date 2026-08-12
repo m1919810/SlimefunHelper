@@ -70,8 +70,7 @@ public class CombatTasks {
         final float g = 0.05f;
         if (extraVectorLen > 10 || velocity > 10) {
             // tpBow case
-            Vec2f vec2f = EntityUtils.rotationToPitchYaw(targetVec.normalize());
-            return new Vec2f(vec2f.x, EntityUtils.getSafeYaw(mc.player, vec2f.y));
+            return EntityUtils.rotationToPitchYaw(targetVec.normalize());
         }
         // ordinary case
         double hDistance0 = targetVec.horizontalLength();
@@ -87,7 +86,7 @@ public class CombatTasks {
                 (float) -Math.toDegrees(Math.atan(
                         (velocitySq - Math.sqrt(velocityPow4 - g * (g * hDistanceSq + 2 * adjustedY * velocitySq)))
                                 / (g * hDistance0))),
-                EntityUtils.getSafeYaw(mc.player, (float) Math.toDegrees(Math.atan2(-vecNorm.x, vecNorm.z))));
+                (float) Math.toDegrees(Math.atan2(-vecNorm.x, vecNorm.z)));
         if (extraVectorLen < 1e-4) {
             return safeSolution;
         }
@@ -177,7 +176,7 @@ public class CombatTasks {
         if (converged) {
             return new Vec2f(
                     (float) -Math.toDegrees(pitchRad), // 转 Minecraft 俯仰角
-                    EntityUtils.getSafeYaw(mc.player, (float) (Math.toDegrees(yawRad) - 90f)) // 转 Minecraft 偏航角
+                    (float) (Math.toDegrees(yawRad) - 90f) // 转 Minecraft 偏航角
                     );
         } else {
             return safeSolution;
@@ -194,74 +193,74 @@ public class CombatTasks {
     public static final ModuleGroup moduleManager = new ModuleGroup("Combat");
 
     @Getter
-    public static CombatExtra combatExtra;
+    private static CombatExtra combatExtra;
 
     @Getter
-    public static CombatManager combatManager;
+    private static CombatManager combatManager;
 
     @Getter
-    public static TargetSelector targetSelector;
+    private static TargetSelector targetSelector;
 
     @Getter
-    public static PositionPredict positionPredict;
+    private static PositionPredict positionPredict;
 
     @Getter
-    public static Attack attack;
+    private static Attack attack;
 
     @Getter
-    public static AttackArua attackArua;
+    private static AttackArua attackArua;
 
     @Getter
-    public static Criticals criticals;
+    private static Criticals criticals;
 
     @Getter
-    public static BowEnhance bowEnhance;
+    private static BowEnhance bowEnhance;
 
     @Getter
-    public static ProjectileEnhance projectileEnhance;
+    private static ProjectileEnhance projectileEnhance;
 
     @Getter
-    public static BowTp bowTp;
+    private static BowTp bowTp;
 
     @Getter
-    public static CombatLog combatLog;
+    private static CombatLog combatLog;
 
     @Getter
-    public static AutoTotem autoTotem;
+    private static AutoTotem autoTotem;
 
     @Getter
-    public static TotemLog totemLog;
+    private static TotemLog totemLog;
 
     @Getter
-    public static AutoLogout autoLogout;
+    private static AutoLogout autoLogout;
 
     @Getter
-    public static SpearEnhance spearEnhance;
+    private static SpearEnhance spearEnhance;
 
     @Getter
-    public static SpearAttack spearAttack;
+    private static SpearAttack spearAttack;
 
     @Getter
-    public static Blink blink;
+    private static Blink blink;
 
     @Getter
-    public static BackTrack backTrack;
+    private static BackTrack backTrack;
 
     @Getter
-    public static PearlFly pearlFly;
+    private static PearlFly pearlFly;
 
     @Getter
-    public static AutoCity autoCity;
+    private static AutoCity autoCity;
 
     @Getter
-    public static AnchorArua anchorArua;
+    private static AnchorArua anchorArua;
 
     @Getter
-    public static ElytraBot elytraBot;
+    private static ElytraBot elytraBot;
 
     @ApiStatus.Experimental
     @Getter
-    public static TransactionBlocker transactionBlocker;
+    private static TransactionBlocker transactionBlocker;
     // todo: 带矛冲锋
 
     // todo antikb

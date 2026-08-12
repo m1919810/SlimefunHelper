@@ -7,6 +7,7 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.entity.CameraEntity;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -18,7 +19,6 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.MathUtils;
 import me.matl114.utils.collections.FPoint;
-import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
@@ -33,6 +33,7 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
     private static LegalMovementManager.DelegateMovementModifier instance;
 
     public Freecam() {
+        super("Freecam");
         bindFlag(enable);
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
@@ -111,9 +112,12 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
         if (displayEntity != null) {
             displayEntity.remove(Entity.RemovalReason.DISCARDED);
         }
+        // only restore camera if camera not change
+        if (mc.getCameraEntity() == camera) {
+            mc.setCameraEntity(mc.player);
+        }
         camera = null;
         displayEntity = null;
-        mc.setCameraEntity(null);
     }
 
     public void onTick(Event<ClientPlayerEntity> event) {

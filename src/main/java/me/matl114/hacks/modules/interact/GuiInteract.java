@@ -20,6 +20,7 @@ public class GuiInteract extends BaseModule {
     public final ModulePath other = makePath(Configs.INTERACT_CONFIG, "interact-fix.gui-interact");
 
     public GuiInteract() {
+        super("GuiInteract");
         bindFlag(enable);
     }
 

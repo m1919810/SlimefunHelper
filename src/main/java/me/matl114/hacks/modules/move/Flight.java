@@ -10,6 +10,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.*;
 import me.matl114.managers.Tasks;
@@ -17,7 +18,6 @@ import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
-import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerAbilities;
@@ -66,26 +66,28 @@ public class Flight extends BaseModule implements LegalMovementManager.MovementM
 
     public final IntRef antiKickPeriod =
             intBuilder(flight.add("antikick-period")).defaultValue(60).build();
-    public final FlagRef overrideFlySpeed = builder(moveSpeed.add("fly-speed-override"), Boolean.class)
+    public final FlagRef overrideFlySpeed = builder(moveSpeed.add("fly-speed"), Boolean.class)
             .defaultValue(false)
+            .build();
+
+    public final KeyBindRef overridingSpeedKeybind = moduleEntry(
+                    moveSpeed.add("toggle-flight-speed"), new MultiKeyBind(), moveSpeed.add("fly-speed"))
             .build();
 
     public final DoubleRef overrideFlySpeedCreative = builder(moveSpeed.add("fly-speed-creative"), Double.class)
             .defaultValue(0.8)
             .build();
 
-    public final DoubleRef overrideFlySpeedSurvival =
-            builder(moveSpeed.add("fly-speed"), Double.class).defaultValue(0.4).build();
-
-    public final KeyBindRef overridingSpeedKeybind = hotkey(moveSpeed.add("toggle-flight-speed"))
-            .defaultValue(new MultiKeyBind())
-            .registerHotkey(HotKeyUtils.wrapAsHandler(this::toggleSpeed))
+    public final DoubleRef overrideFlySpeedSurvival = builder(moveSpeed.add("fly-speed-survival"), Double.class)
+            .defaultValue(0.4)
             .build();
 
-    public final FlagRef overrideWalkSpeed = builder(moveSpeed.add("walk-speed"), Boolean.class)
-            .defaultValue(false)
-            .build();
+    public final FlagRef overrideWalkSpeed =
+            flagBuilder(moveSpeed.add("walk-speed")).build();
 
+    public final KeyBindRef overridingWalkSpeedKeybind = moduleEntry(
+                    moveSpeed.add("toggle-walk-speed"), new MultiKeyBind(), moveSpeed.add("walk-speed"))
+            .build();
     public final DoubleRef overridingWalkSpeedAll = builder(moveSpeed.add("walk-speed-override"), Double.class)
             .defaultValue(0.1)
             .build();
@@ -174,17 +176,6 @@ public class Flight extends BaseModule implements LegalMovementManager.MovementM
 
     public double getOverridingWalkSpeed() {
         return overridingWalkSpeedAll.get();
-    }
-
-    public void toggleSpeed() {
-        if (mc.player == null) return;
-        if (mc.player.getAbilities().flying) {
-            overrideFlySpeed.set(!overrideFlySpeed.get());
-            Debug.chat("toggle fly speed override", overrideFlySpeed.get());
-        } else {
-            overrideWalkSpeed.set(!overrideWalkSpeed.get());
-            Debug.chat("toggle walk speed override", overrideWalkSpeed.get());
-        }
     }
 
     public void toggleMode() {

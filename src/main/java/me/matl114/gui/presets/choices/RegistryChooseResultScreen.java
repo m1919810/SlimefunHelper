@@ -2,10 +2,10 @@ package me.matl114.gui.presets.choices;
 
 import com.google.common.base.Predicates;
 import java.util.List;
-import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.ContentDelegateWidget;
 import me.matl114.gui.basic.ElementHandler;
 import me.matl114.gui.presets.lists.ListRegistrySelectWidget;
+import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.registry.Registry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -17,12 +17,18 @@ public class RegistryChooseResultScreen<T> extends ConfirmingBigScreen {
     public RegistryChooseResultScreen(Registry<T> registry, List<T> selects, String showString) {
         super(Text.empty());
         this.registry = registry;
-        setTitleLabel(Text.literal("注册表选择结果").formatted(Formatting.AQUA));
-        // reset user input, so it is more convenient for user to select a registry value,
-        FilterService.currentUserInput = showString;
-        this.selectSubScreen = (ListRegistrySelectWidget<T>)
-                ListRegistrySelectWidget.registry(selects, this.registry, 0, CONTENT_START_Y + 20, WIDTH, 240, 20)
-                        .filter(Predicates.alwaysTrue());
+        setTitleLabel(Text.translatable("widget.gui.registry-choose-result-screen.title")
+                .formatted(Formatting.AQUA));
+        this.selectSubScreen = (ListRegistrySelectWidget<T>) ListRegistrySelectWidget.registry(
+                        selects,
+                        this.registry,
+                        ValueAccessor.holder(showString),
+                        0,
+                        CONTENT_START_Y + 20,
+                        WIDTH,
+                        240,
+                        20)
+                .filter(Predicates.alwaysTrue());
     }
 
     ListRegistrySelectWidget<T> selectSubScreen;
@@ -31,13 +37,6 @@ public class RegistryChooseResultScreen<T> extends ConfirmingBigScreen {
     @Override
     protected boolean canConfirm(ElementHandler elementHandler) {
         return true;
-    }
-
-    @Override
-    public void close() {
-        super.close();
-        // reset input,
-        FilterService.currentUserInput = "";
     }
 
     @Override

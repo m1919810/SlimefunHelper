@@ -2,20 +2,21 @@ package me.matl114.gui;
 
 import com.github.houbb.pinyin.constant.enums.PinyinStyleEnum;
 import com.github.houbb.pinyin.util.PinyinHelper;
-import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.IconElement;
 import me.matl114.hacks.utils.recipes.RecipeEntry;
+import me.matl114.utils.ChatUtils;
+import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 public class FilterService {
-    public static String currentUserInput = "";
     public static BiPredicate<String, RecipeEntry> RECIPE_FILTER = (str, i) -> {
         if (str == null || str.isEmpty()) return true;
         if (str.startsWith("@")) {
@@ -47,32 +48,40 @@ public class FilterService {
         return pinyin1.contains(filter);
     }
 
-    private static final List<Text> RESET_FILTER_TOOLTIPS = List.of(Text.literal("点击重置过滤器"));
     protected static Identifier RESET_FILTER_TEXTURE = new Identifier("minecraft", "container/beacon/cancel");
 
-    public static SubScreenWidget createFilter(Runnable updateListener, int x, int y, int dx, int dy) {
+    public static SubScreenWidget createFilter(
+            ValueAccessor<String> accessor, Runnable updateListener, int x, int y, int dx, int dy) {
+        return createFilter(accessor, (v) -> updateListener.run(), x, y, dx, dy);
+    }
+
+    public static SubScreenWidget createFilter(
+            ValueAccessor<String> accessor, Consumer<String> updateListener, int x, int y, int dx, int dy) {
+
         var textField = McWidgetHelpers.createTextFieldEditBox(
                 dy,
                 0,
                 dx - dy,
                 dy,
                 (t, r) -> {
-                    if (!Objects.equals(FilterService.currentUserInput, r)) {
-                        FilterService.currentUserInput = r;
-                        updateListener.run();
+                    if (!Objects.equals(accessor.getValue(), r)) {
+                        accessor.setValue(r);
+                        updateListener.accept(r);
                     }
                 },
-                FilterService.currentUserInput);
+                accessor.getValue());
         var textFieldCleanerBackground = DisplayWidget.instance(0, 0, dy, dy)
                 .setRenderHandler(new ButtonElement(TextProvider.of(Text.empty()), ButtonAction.empty())
-                        .withTooltips(TooltipHandler.of(RESET_FILTER_TOOLTIPS)));
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.filter-service.reset-filter.tooltips", ""))));
         var textFieldCleaner = ExecutableWidget.instance(0, 0, dy, dy)
                 .setElementHandler(IconElement.fixedGui(RESET_FILTER_TEXTURE, ButtonAction.run(() -> {
                             if (textField.getDelegate() != null) {
                                 textField.getDelegate().setText("");
                             }
                         }))
-                        .withTooltips(TooltipHandler.of(RESET_FILTER_TOOLTIPS)));
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.filter-service.reset-filter.tooltips", ""))));
         return new SubScreenWidget(x, y, dx, dy)
                 .addDrawableChild(textField)
                 .addDrawableChild(textFieldCleanerBackground)

@@ -5,6 +5,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -140,18 +141,19 @@ public class EnumPrimitiveList<T extends ConfigEnum, W> implements NBTParsable<E
         Function<EnumPrimitiveList<T, W>, NBTType<List<Pair<T, Primitive<W>>>>> typeGenerator = (w) -> {
             if (w.cachedEntryType == null) {
                 w.tryResolve();
-                var finiteMap = ConfigEnum.registeredConfigs.get(w.type);
+                Map<String, T> finiteMap = (Map) ConfigEnum.registeredConfigs.get(w.type);
 
-                NBTType<Pair<T, Primitive<W>>> pairLikeNbtType = NBTTypes.createPairLike(
-                        (Class) Pair.class,
-                        NBTTypes.createEnumLike(
-                                "config_enum_lookup", finiteMap, s -> s.cast().name()),
-                        "key",
-                        Primitive.TYPE.cast(),
-                        "value",
-                        PairLikeFactory.pair(),
-                        AttrKeyValue.CustomWidgetFactory.cutSizeXLeft(0.5),
-                        AttrKeyValue.CustomWidgetFactory.cutSizeXRight(0.5));
+                NBTType<Pair<T, Primitive<W>>> pairLikeNbtType =
+                        NBTTypes.<Pair<T, Primitive<W>>, T, Primitive<W>>createPairLike(
+                                "pair",
+                                NBTTypes.<T>createEnumLike("config_enum_lookup", finiteMap, s -> s.cast()
+                                        .name()),
+                                "key",
+                                Primitive.TYPE.cast(),
+                                "value",
+                                PairLikeFactory.pair(),
+                                AttrKeyValue.CustomWidgetFactory.cutSizeXLeft(0.5),
+                                AttrKeyValue.CustomWidgetFactory.cutSizeXRight(0.5));
                 w.cachedEntryType =
                         NBTTypes.createListLke("parametered_map", pairLikeNbtType, WrapperFactory.identity(), 300, 20);
             }
@@ -168,7 +170,7 @@ public class EnumPrimitiveList<T extends ConfigEnum, W> implements NBTParsable<E
                         NBTTypes.<W>codec().fieldOf("value_type").forGetter(EnumPrimitiveList::getPrimitiveType))
                 .apply(oInstance, EnumPrimitiveList::new));
         return new NBTType<EnumPrimitiveList<T, W>>(
-                NBTType.<EnumPrimitiveList<T, W>>parameter(EnumPrimitiveList.class),
+                "enumprimitivelist",
                 codec,
                 (w, x, y, dx, dy) -> {
                     EnumPrimitiveList<T, W> map = w.getOriginValue();
@@ -180,7 +182,6 @@ public class EnumPrimitiveList<T extends ConfigEnum, W> implements NBTParsable<E
                     return new TypeConvertAttrKeyValue<>(w, wrapperFactory, typeGenerator.apply(map))
                             .generateValueWidget(x, y, dx, dy);
                 },
-                null,
                 (EnumPrimitiveList<T, W>) new EnumPrimitiveList<>(List.of(), "config_enum", NBTTypes.STRING_TYPE));
     }
 

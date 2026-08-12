@@ -3,19 +3,19 @@ package me.matl114.hacks.modules.render;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import java.util.*;
+import java.util.function.Consumer;
 import lombok.AllArgsConstructor;
 import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
-import me.matl114.hacks.utils.config.NBTTypes;
-import me.matl114.hacks.utils.config.PrimitiveList;
+import me.matl114.hacks.utils.config.IntPrimitiveList;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
-import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.WorldUtils;
 import me.matl114.utils.commands.commandGroup.CommandContext;
@@ -31,16 +31,18 @@ import net.minecraft.world.GameMode;
 public class PlayerQueue extends BaseModule {
     public final ModulePath playerIo = makePath(Configs.RENDER_CONFIG, "player-io.player-queue");
 
-    public PlayerQueue() {}
+    public PlayerQueue() {
+        super("PlayerQueue");
+    }
 
     public final FlagRef enable = flagBuilder(playerIo.addEnable()).build();
 
     public final FlagRef certainOrder =
             flagBuilder(playerIo.add("certain-order")).build();
 
-    public final NBTRef<PrimitiveList<Integer>> mentionOrderList = builder(
-                    playerIo.add("tracked-queue-orders"), PrimitiveList.type(Integer.class))
-            .defaultValue(new PrimitiveList<>(NBTTypes.INT_TYPE, List.of(1, 2, 3, 4, 5, 10, 20)))
+    public final NBTRef<IntPrimitiveList> mentionOrderList = builder(
+                    playerIo.add("tracked-queue-orders"), IntPrimitiveList.class)
+            .defaultValue(new IntPrimitiveList(List.of(1, 2, 3, 4, 5, 10, 20)))
             .show(certainOrder::get)
             .build();
 
@@ -64,6 +66,12 @@ public class PlayerQueue extends BaseModule {
         registerListener(Listener.getOtherPlayerExitPoint(), this::onPlayerListRemove);
         registerListener(Listener.getOtherPlayerEntryUpdate(), this::onPlayerListModify);
         registerCommandBootstrap(this::bootstrapQueueCommand);
+    }
+
+    @Override
+    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
+        super.addCustomWidgets(acceptor, dx, dy, dblank);
+        acceptor.accept(createTitleLabel("widget.player-queue.command", 0, dblank, dx, dy));
     }
 
     public Set<String> trackedPlayers = new LinkedHashSet<>();
@@ -122,8 +130,7 @@ public class PlayerQueue extends BaseModule {
                 }
                 String name = VRecord.getName(re.entry.getProfile());
                 if (trackedPlayers.contains(name) && (!certainOrder.get() || intSet.contains(order))) {
-                    Debug.chat(ChatUtils.stringToText(
-                            "&c[Queue] &fPlayer %s current in queue order %d".formatted(name, order)));
+                    logI18N("message.module.player-queue.current-order", name, order);
                 }
             }
         }
@@ -135,19 +142,16 @@ public class PlayerQueue extends BaseModule {
             if (trackedPlayers.contains(name)) {
                 if (enable.get()) {
                     if (leaveServer) {
-                        Debug.chat(
-                                ChatUtils.stringToText("&c[Queue] &fPlayer %s leave the queue server".formatted(name)));
+                        logI18N("message.module.player-queue.leave-server", name);
                     } else {
                         boolean maySkipQueue = mentionSkipQueue.get() && !entry.initialize && entry.order > 3;
-                        Debug.chat(ChatUtils.stringToText("&c[Queue] &fPlayer %s finish queue %s"
-                                .formatted(name, (maySkipQueue ? "(may skip queue)" : ""))));
+                        logI18N("message.module.player-queue.finish-queue", name, (maySkipQueue ? "(skip?)" : ""));
                     }
                 }
                 if (!leaveServer && removeTrackAfterJoin.get()) {
                     trackedPlayers.remove(name);
                     if (enable.get()) {
-                        Debug.chat(
-                                ChatUtils.stringToText("&c[Queue] &fAutomatically untrack player %s".formatted(name)));
+                        logI18N("message.module.player-queue.auto-untrack", name);
                     }
                 }
             }
@@ -201,7 +205,7 @@ public class PlayerQueue extends BaseModule {
         String name = VRecord.getName(entry.context.getProfile());
         if (trackedPlayers.contains(name)) {
             if (enable.get()) {
-                Debug.chat(ChatUtils.stringToText("&c[Queue] &fPlayer %s join the server".formatted(name)));
+                logI18N("message.module.player-queue.join-server", name);
             }
         }
         if (entry.context.getGameMode() == GameMode.SPECTATOR) {
@@ -229,29 +233,29 @@ public class PlayerQueue extends BaseModule {
 
     public void addTrackPlayer(String string) {
         if (trackedPlayers.contains(string)) {
-            Debug.chat(ChatUtils.stringToText("&c[Queue] &fThe player has been tracked already"));
+            logI18N("message.module.player-queue.already-tracked");
         } else {
             trackedPlayers.add(string);
-            Debug.chat(ChatUtils.stringToText("&c[Queue] &aStart tracking " + string));
+            logI18N("message.module.player-queue.start-tracking", string);
         }
     }
 
     public void removeTrackPlayer(String string) {
         if (trackedPlayers.contains(string)) {
             trackedPlayers.remove(string);
-            Debug.chat(ChatUtils.stringToText("&c[Queue] &aStop tracking " + string));
+            logI18N("message.module.player-queue.stop-tracking", string);
         } else {
-            Debug.chat(ChatUtils.stringToText("&c[Queue] &fThe player hasn't been tracked"));
+            logI18N("message.module.player-queue.not-tracked");
         }
     }
 
     public void clearTrack() {
         trackedPlayers.clear();
-        Debug.chat(ChatUtils.stringToText("&c[Queue] &aClear all tracked players"));
+        logI18N("message.module.player-queue.clear-all");
     }
 
     public void listTrackedDetails() {
-        Debug.chat(ChatUtils.stringToText("&c[Queue] &fCurrent tracked players"));
+        logI18N("message.module.player-queue.current-tracked");
         Map<String, Entry> maps = new LinkedHashMap<>();
         for (var re : playerQueue) {
             String string = VRecord.getName(re.entry.getProfile());
@@ -276,7 +280,7 @@ public class PlayerQueue extends BaseModule {
     }
 
     public void checkTrackedInfo(String name) {
-        Debug.chat(ChatUtils.stringToText("&c[Queue] &fTracked Info for player " + name));
+        logI18N("message.module.player-queue.tracked-info", name);
         for (var entry : playerQueue) {
             String string = VRecord.getName(entry.entry.getProfile());
             if (Objects.equals(string, name)) {
@@ -299,7 +303,7 @@ public class PlayerQueue extends BaseModule {
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("add")
-                    .helper("添加玩家到队列追踪器")
+                    .helper("message.command.pqueue.add.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("name")
                             .tabSupplier(WorldUtils::getPlayerListNames)
@@ -308,7 +312,7 @@ public class PlayerQueue extends BaseModule {
                     .complete()
                     .subBuilder(SubCommand.taskBuilder())
                     .name("remove")
-                    .helper("移除玩家从队列追踪器")
+                    .helper("message.command.pqueue.remove.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("name")
                             .tabSupplier(WorldUtils::getPlayerListNames)
@@ -317,17 +321,17 @@ public class PlayerQueue extends BaseModule {
                     .complete()
                     .subBuilder(SubCommand.taskBuilder())
                     .name("list")
-                    .helper("显示当前追踪玩家的情况")
+                    .helper("message.command.pqueue.list.help")
                     .post(s -> s.executor(CommandContext.run(this::listTrackedDetails)))
                     .complete()
                     .subBuilder(SubCommand.taskBuilder())
                     .name("clear")
-                    .helper("清空队列追踪器")
+                    .helper("message.command.pqueue.clear.help")
                     .post(s -> s.executor(CommandContext.run(this::clearTrack)))
                     .complete()
                     .subBuilder(SubCommand.taskBuilder())
                     .name("check")
-                    .helper("<name> 检查当前玩家的情况")
+                    .helper("message.command.pqueue.check.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("name")
                             .tabSupplier(WorldUtils::getPlayerListNames)

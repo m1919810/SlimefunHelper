@@ -1,7 +1,7 @@
 package me.matl114.managers.config;
 
 import lombok.AllArgsConstructor;
-import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.BaseAttrKeyValue;
 
 @AllArgsConstructor
 public abstract class ObjectRef<T> extends Ref<T> {
@@ -23,9 +23,6 @@ public abstract class ObjectRef<T> extends Ref<T> {
 
     @Override
     public abstract Object getAsPrimitive();
-
-    @Override
-    public abstract AttrKeyValue<T> _createKeyValue0(String key);
 
     protected abstract T validateAndCast(Object val);
 
@@ -53,7 +50,7 @@ public abstract class ObjectRef<T> extends Ref<T> {
         }
 
         @Override
-        public AttrKeyValue<Object> _createKeyValue0(String key) {
+        public BaseAttrKeyValue<Object> _createKeyValue0(String key) {
             throw new UnsupportedOperationException();
         }
 

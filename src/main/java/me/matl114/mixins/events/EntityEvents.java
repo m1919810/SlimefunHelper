@@ -8,7 +8,6 @@ import java.util.List;
 import me.matl114.accessors.events.EntityAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.utils.containers.MetaData;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.block.BlockState;
@@ -47,23 +46,6 @@ public abstract class EntityEvents<T extends Entity> implements EntityAccess<T> 
         } else {
             return vec3d.context();
         }
-    }
-
-    @Unique
-    public MetaData metaData;
-
-    @Unique
-    public MetaData getMetadata() {
-        if (metaData == null) {
-            metaData = new MetaData();
-        }
-        return metaData;
-    }
-
-    @Unique
-    @Override
-    public boolean isMetaEmpty() {
-        return metaData == null;
     }
 
     @Shadow

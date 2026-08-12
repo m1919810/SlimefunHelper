@@ -8,7 +8,7 @@ import com.viaversion.viaversion.protocol.packet.PacketWrapperImpl;
 import me.matl114.events.Event;
 import me.matl114.events.PacketManager;
 import me.matl114.events.packets.PacketStorage;
-import me.matl114.hooks.impl.PacketWrapperSendStorageImpl;
+import me.matl114.hooks.impl.viaversion.PacketWrapperSendStorageImpl;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import org.spongepowered.asm.mixin.Mixin;

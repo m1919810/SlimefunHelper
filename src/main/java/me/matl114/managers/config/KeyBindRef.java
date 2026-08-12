@@ -33,7 +33,7 @@ public class KeyBindRef extends ObjectRef<MultiKeyBind> {
     }
 
     @Override
-    public AttrKeyValue<MultiKeyBind> _createKeyValue0(String key) {
+    public BaseAttrKeyValue<MultiKeyBind> _createKeyValue0(String key) {
         return new BaseAttrKeyValue<>(key, this.get(), WIDGET_FACTORY, FACTORY);
     }
 

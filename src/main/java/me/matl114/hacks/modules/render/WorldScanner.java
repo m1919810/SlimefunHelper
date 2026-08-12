@@ -19,9 +19,7 @@ import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.NBTRef;
-import me.matl114.utils.ChatUtils;
 import me.matl114.utils.ColorUtils;
-import me.matl114.utils.Debug;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.Block;
@@ -36,7 +34,6 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.*;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.ChunkStatus;
 
 public class WorldScanner extends BaseModule {
     public final ModulePath detectBlock = makePath(Configs.RENDER_CONFIG, "detect-block");
@@ -173,7 +170,7 @@ public class WorldScanner extends BaseModule {
         while (iter.hasNext()) {
             var entry = iter.next();
             var key = entry.getKey();
-            Chunk chunk = mc.world.getChunkManager().getChunk(key.x, key.z, ChunkStatus.FULL, false);
+            Chunk chunk = mc.world.getChunkManager().getWorldChunk(key.x, key.z);
             if (chunk == null) {
                 iter.remove();
             } else {
@@ -230,7 +227,7 @@ public class WorldScanner extends BaseModule {
                             Map<BlockPos, BlockState> stateMap = currentSearchingResult.get(chunkKey);
                             for (var entry : stateMap.entrySet()) {
                                 BlockState state = entry.getValue();
-                                TextColor color = this.color.get().getOrDefault(state.getBlock());
+                                TextColor color = this.color.get().getEntryValue(state.getBlock());
                                 if (color != null) {
                                     VoxelShape shape = entry.getValue().getOutlineShape(mc.world, entry.getKey());
                                     if (!shape.isEmpty()) {
@@ -261,9 +258,7 @@ public class WorldScanner extends BaseModule {
                         // 10 s one warn
                         if (lastLogTick < Tasks.getTick() - 10 * 20) {
                             lastLogTick = Tasks.getTick();
-                            Debug.chat(ChatUtils.stringToText(
-                                    "&c[WorldScanner] &ffind too many target blocks: %d, Only render first %d blocks"
-                                            .formatted(cnt, MAX_RENDER_BLOCKS)));
+                            logI18N("message.module.world-scanner.too-many-targets", cnt, MAX_RENDER_BLOCKS);
                         }
                     }
                 }

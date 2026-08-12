@@ -43,6 +43,7 @@ public class BowTp extends BaseModule {
     public final ModulePath bowAtt = makePath(Configs.COMBAT_CONFIG, "bow-att");
 
     public BowTp() {
+        super("BowTp");
         bindFlag(enable);
     }
 

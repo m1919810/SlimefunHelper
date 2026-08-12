@@ -1,36 +1,37 @@
 package me.matl114.hacks.api;
 
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ReferenceSet;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import me.matl114.commands.MainCommand;
 import me.matl114.events.channels.ListenerPoint;
-import me.matl114.gui.basic.DrawableWidget;
-import me.matl114.gui.basic.ExecutableWidget;
-import me.matl114.gui.basic.TextProvider;
-import me.matl114.gui.basic.TooltipHandler;
-import me.matl114.gui.complex.config.RefKeyValueInputWidget;
+import me.matl114.gui.basic.*;
+import me.matl114.gui.complex.config.DefaultedKeyValueInputWidget;
+import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.ColorLabelTextElement;
 import me.matl114.hacks.modules.task.ClickGui;
 import me.matl114.hacks.utils.HotKeyUtils;
-import me.matl114.hacks.utils.Named;
-import me.matl114.hacks.utils.NamedConsumer;
-import me.matl114.hacks.utils.NamedPredicate;
+import me.matl114.hacks.utils.config.StringFormat;
 import me.matl114.managers.*;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.IHotKey;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.managers.input.SimpleHotKey;
 import me.matl114.managers.input.SimpleInputManager;
+import me.matl114.utils.ChatUtils;
+import me.matl114.utils.Debug;
 import me.matl114.utils.commands.commandGroup.AbstractMainCommand;
 import me.matl114.utils.config.AttrKeyValue;
 import net.minecraft.client.MinecraftClient;
@@ -43,11 +44,6 @@ public abstract class BaseModule implements ModuleListProvider {
 
     @Getter
     protected String name;
-
-    public BaseModule() {
-        this.name = this.getClass().getSimpleName();
-        ensureInstanceSet();
-    }
 
     public BaseModule(String name) {
         this.name = name;
@@ -88,6 +84,8 @@ public abstract class BaseModule implements ModuleListProvider {
     }
 
     private FlagRef bindedFlag = null;
+    private Consumer<Boolean> bindListener;
+    private final ReferenceSet<Object> registerReasons = new ReferenceOpenHashSet<>();
     protected static final String REASON_BIND = "module binding";
     protected static final String REASON_LISTENER = "event listener";
     protected static final String REASON_VALIDATOR = "config validator";
@@ -102,6 +100,11 @@ public abstract class BaseModule implements ModuleListProvider {
     public static String[] makePath(String c) {
         return c.split("\\.");
     }
+
+    protected <T> T registerReason(T value, String reason) {
+        registerReasons.add(value);
+        return value;
+    }
     // bind the Module's status to the Flag
     public final void bindFlag(FlagRef flagRef) {
         if (bindedFlag != null) {
@@ -109,15 +112,45 @@ public abstract class BaseModule implements ModuleListProvider {
         }
         bindedFlag = flagRef;
         if (flagRef != null) {
-            flagRef.addUpdateListenerWithUpdate(new NamedConsumer<>(this, this::updateActiveStatus, REASON_BIND));
+            bindListener = registerReason(this::updateActiveStatus, REASON_BIND);
+            flagRef.addUpdateListenerWithUpdate(bindListener);
         }
     }
 
     private void removeBindFlag() {
         if (bindedFlag != null) {
-            bindedFlag.removeUpdateListener(s -> this.isOwner(s, REASON_BIND));
+            bindedFlag.removeUpdateListener(s -> {
+                return bindListener == s;
+            });
             bindedFlag = null;
         }
+    }
+
+    protected static StringFormat logFormat =
+            new StringFormat(List.of("module_name", "message"), "&c[{module_name}] &f{message}", true);
+
+    public void logI18N(String translationKey, Object... objects) {
+        log(Text.translatable(translationKey, objects));
+    }
+
+    public void logI18NSub(String subModule, String translationKey, Object... objects) {
+        logSub(subModule, Text.translatable(translationKey, objects));
+    }
+
+    public void log(String string) {
+        Debug.chat(logFormat.formatText(getName(), string));
+    }
+
+    public void log(Text text) {
+        Debug.chat(logFormat.formatText(getName(), text));
+    }
+
+    public void logSub(String subModule, String string) {
+        Debug.chat(logFormat.formatText(subModule, string));
+    }
+
+    public void logSub(String subModule, Text text) {
+        Debug.chat(logFormat.formatText(subModule, text));
     }
 
     private void removeBindHotkey() {
@@ -136,7 +169,18 @@ public abstract class BaseModule implements ModuleListProvider {
         }
     }
 
-    public boolean checkNull() {
+    protected static Map<ModulePath, ModulePath> portPaths = new ConcurrentHashMap<>();
+
+    public static void portConfigs(ModulePath oldPath, ModulePath newPath) {
+        portPaths.put(oldPath, newPath);
+        var unknown = oldPath.getConfig().get(oldPath.toPath());
+        if (unknown != null) {
+            oldPath.getConfig().setValueNoNew(null, oldPath.toPath());
+            newPath.getConfig().setValueNoNew(unknown, newPath.toPath());
+        }
+    }
+
+    public static boolean checkNull() {
         return mc.player == null || mc.world == null;
     }
     // module enable and disable
@@ -178,7 +222,7 @@ public abstract class BaseModule implements ModuleListProvider {
         this.manager = manager;
         return (T) this;
     }
-
+    // this is invoke when sb tries to remove this BaseModule out of the specific ModuleGroup
     @MustBeInvokedByOverriders
     public final void unregister(ModuleManager manager) {
         manager.unregisterModule(this);
@@ -201,17 +245,18 @@ public abstract class BaseModule implements ModuleListProvider {
     }
 
     public <W> void registerListener(ListenerPoint<W> listener, Consumer<W> handler, int p) {
-        listener.registerHandler(new NamedConsumer<>(this, handler, REASON_LISTENER), p);
+        listener.registerHandler(registerReason(handler, REASON_LISTENER), p);
         registeredPoints.add(listener);
     }
 
     public <W> void registerListener(ListenerPoint<W> listener, Predicate<W> handler, int p) {
-        listener.registerHandler(new NamedPredicate<>(this, handler, REASON_LISTENER), p);
+        listener.registerHandler(registerReason(handler, REASON_LISTENER), p);
         registeredPoints.add(listener);
     }
 
     public void registerCommandBootstrap(Consumer<MainCommand> handler) {
-        MainCommand.registerCommandBootstrap(new NamedBootstrap<>(this, handler, REASON_COMMAND));
+        MainCommand.Bootstrap bootstrap = registerReason(handler::accept, REASON_COMMAND);
+        MainCommand.registerCommandBootstrap(bootstrap);
     }
 
     public void registerCommand(Supplier<AbstractMainCommand> factory) {
@@ -241,6 +286,7 @@ public abstract class BaseModule implements ModuleListProvider {
         registeredHotkeys.forEach(s -> s.setInputHandler(SimpleHotKey.InputHandler.EMPTY));
         registeredHotkeys.clear();
         MainCommand.unregisterCommandBootstrap(this::isOwner);
+        registerReasons.clear();
     }
 
     private final List<WrapperConfigRef<?>> registeredConfigRefs = new ArrayList<>();
@@ -252,6 +298,28 @@ public abstract class BaseModule implements ModuleListProvider {
 
     public boolean hasEditableConfig() {
         return !registeredConfigEditableRefs.isEmpty();
+    }
+
+    Boolean showInGui;
+
+    public boolean shouldShowInGui() {
+        if (showInGui == null) {
+            if (hasEditableConfig()) {
+                showInGui = true;
+                return true;
+            }
+            Class<?> clazz = this.getClass();
+            try {
+                Method method = clazz.getMethod("addCustomWidgets", Consumer.class, int.class, int.class, int.class);
+                if (method.getDeclaringClass() != BaseModule.class) {
+                    showInGui = true;
+                    return true;
+                }
+            } catch (Throwable e) {
+            }
+            showInGui = false;
+        }
+        return showInGui;
     }
 
     private final Set<SimpleHotKey> registeredHotkeys = new LinkedHashSet<>();
@@ -380,44 +448,57 @@ public abstract class BaseModule implements ModuleListProvider {
 
     // for removal convenience
     protected <W> boolean isOwner(Object c) {
-        return (c instanceof Named named && named.getOwner() == this);
-    }
-
-    protected <W> boolean isOwner(Object c, String name) {
-        return (c instanceof Named named
-                && named.getOwner() == this
-                && Objects.equals(name, named.getRegisterReason()));
+        return registerReasons.contains(c);
     }
 
     protected <W> Consumer<W> wrap(Consumer<W> consumer) {
-        return new NamedConsumer<>(this, consumer, REASON_CUSTOM);
+        return registerReason(consumer, REASON_CUSTOM);
     }
 
     protected <W> Predicate<W> wrap(Predicate<W> predicate) {
-        return new NamedPredicate<>(this, predicate, REASON_CUSTOM);
+        return registerReason(predicate, REASON_CUSTOM);
     }
 
     // todo: remake config screen
 
     public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {}
 
-    private static final int indexWidth = 140;
-    private static final int blankWidth = 10;
+    protected static final int indexWidth = 140;
+    protected static final int blankWidth = 10;
+
+    public DrawableWidget createRefKeyLabel(Supplier<Text> text, Supplier<List<Text>> tooltips, int dx, int dy) {
+        return ExecutableWidget.instance(0, 0, dx, dy)
+                .setElementHandler(new ColorLabelTextElement(
+                                el -> text.get(),
+                                () -> ClickGui.INSTANCE.textColor.get().withAlpha(255),
+                                () -> ClickGui.INSTANCE.configColor.get().withAlpha(255))
+                        .withTooltips(TooltipHandler.of(tooltips)));
+    }
+
+    public DrawableWidget createTitleLabel(String translationKey, int x, int y, int dx, int dy) {
+        return DisplayWidget.instance(x, y, dx, dy)
+                .setRenderHandler(new ColorLabelTextElement(
+                                TextProvider.of(Text.translatable(translationKey)),
+                                () -> ClickGui.INSTANCE.textColor.get().withAlpha(255),
+                                () -> ClickGui.INSTANCE.moduleListColor.get().withAlpha(255))
+                        .withTooltips(TooltipHandler.of(
+                                ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", ""))));
+    }
+
+    public DrawableWidget createExecuteButton(
+            String translationKey, ButtonAction action, int x, int y, int dx, int dy) {
+        return ExecutableWidget.instance(x, y, dx, dy)
+                .setElementHandler(new ButtonElement(TextProvider.of(Text.translatable(translationKey)), action)
+                        .withTooltips(TooltipHandler.of(
+                                ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", ""))));
+    }
 
     public DrawableWidget createRefEditor(String path, Ref<?> ref, int x, int y, int dx, int dy) {
-        return new RefKeyValueInputWidget(
+        return new DefaultedKeyValueInputWidget(
                 x, y, dx, dy, indexWidth, blankWidth, dx - indexWidth - blankWidth, ref, path) {
             @Override
             public DrawableWidget createKeyLabel() {
-                return ExecutableWidget.instance(0, 0, indexWidth, dy)
-                        .setElementHandler(new ColorLabelTextElement(
-                                        TextProvider.of(this.getTranslationName()),
-                                        () -> ClickGui.INSTANCE.textColor.get().withAlpha(255),
-                                        () -> ClickGui.INSTANCE
-                                                .configColor
-                                                .get()
-                                                .withAlpha(255))
-                                .withTooltips(TooltipHandler.of(this::getTooltips)));
+                return createRefKeyLabel(this::getTranslationName, this::getTooltips, dkey, dy);
             }
         };
     }
@@ -521,7 +602,7 @@ public abstract class BaseModule implements ModuleListProvider {
 
         public WrapperSettingBuilder<W> listValidator(Predicate<String> va) {
             if (getRef() instanceof ListRef lsR) {
-                lsR.addElementValidator(new NamedPredicate<>(this.module, va, REASON_VALIDATOR));
+                lsR.addElementValidator(this.module.registerReason(va, REASON_VALIDATOR));
             } else {
                 throw new UnsupportedOperationException("Not a list");
             }
@@ -529,12 +610,12 @@ public abstract class BaseModule implements ModuleListProvider {
         }
 
         public WrapperSettingBuilder<W> validator(Predicate<W> va) {
-            super.validator(new NamedPredicate<>(this.module, va, REASON_VALIDATOR));
+            super.validator(this.module.registerReason(va, REASON_VALIDATOR));
             return this;
         }
 
         public WrapperSettingBuilder<W> updateListener(Consumer<W> va) {
-            super.updateListener(new NamedConsumer<>(this.module, va, REASON_UPDATE_LISTENER));
+            super.updateListener(this.module.registerReason(va, REASON_UPDATE_LISTENER));
             return this;
         }
 
@@ -632,27 +713,5 @@ public abstract class BaseModule implements ModuleListProvider {
 
     public <T> T cast() {
         return (T) this;
-    }
-
-    @AllArgsConstructor
-    public static class NamedBootstrap<T> implements MainCommand.Bootstrap, Named<T> {
-        T name;
-        public Consumer<MainCommand> delegate;
-        public String registerReason;
-
-        @Override
-        public void onCommandReload(MainCommand command) {
-            delegate.accept(command);
-        }
-
-        @Override
-        public T getOwner() {
-            return name;
-        }
-
-        @Override
-        public String getRegisterReason() {
-            return registerReason;
-        }
     }
 }

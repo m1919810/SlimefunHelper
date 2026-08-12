@@ -44,7 +44,13 @@ public interface FileStorage extends AutoCloseable {
 
     public void read();
 
+    public void delete();
+
     default void close() {
         markDeprecated(true);
+    }
+
+    default FileStorage asAutoSave() {
+        return this instanceof AutoSaveFileStorage autoSave ? autoSave : new AutoSaveFileStorage(this);
     }
 }

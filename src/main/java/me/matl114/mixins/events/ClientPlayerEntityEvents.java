@@ -9,8 +9,9 @@ import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.accessors.events.ClientPlayerEntityAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
+import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Tasks;
-import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -25,6 +26,7 @@ import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.stat.StatHandler;
 import net.minecraft.util.PlayerInput;
+import net.minecraft.util.math.Vec2f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -153,6 +155,12 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         this.movementManager = new LegalMovementManager();
     }
 
+    @Unique
+    private static Vec2f compatMovementVectorWithViaFabric(Vec2f vec2f) {
+        // shit,
+        return ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 4) ? vec2f : vec2f.normalize();
+    }
+
     @Inject(
             method = "tickMovement",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/input/Input;tick()V", shift = At.Shift.AFTER))
@@ -167,8 +175,9 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         if (!Objects.equals(currentInput, this.input.playerInput)) {
             PlayerInputUtils.Input i0 = new PlayerInputUtils.Input(this.input.playerInput);
             // use forwardspeed directly
-            this.input.movementForward = i0.forwardSpeed();
-            this.input.movementSideways = i0.sidewaysSpeed();
+            Vec2f movementVector = compatMovementVectorWithViaFabric(new Vec2f(i0.sidewaysSpeed(), i0.forwardSpeed()));
+            this.input.movementForward = movementVector.y;
+            this.input.movementSideways = movementVector.x;
         }
     }
 
@@ -194,7 +203,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
                             value = "INVOKE",
                             target = "Lnet/minecraft/client/network/AbstractClientPlayerEntity;tick()V",
                             shift = At.Shift.AFTER),
-            cancellable = true)
+            order = 100)
     public void onAfterTick(CallbackInfo ci) {
         if (!checkClientPlayer()) return;
         Event<ClientPlayerEntity> event = new Event<>((ClientPlayerEntity) (AbstractClientPlayerEntity) this, true);

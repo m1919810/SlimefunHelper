@@ -56,6 +56,7 @@ public class AutoSteal extends BaseModule {
             .build();
 
     public AutoSteal() {
+        super("AutoSteal");
         bindFlag(enable);
     }
 

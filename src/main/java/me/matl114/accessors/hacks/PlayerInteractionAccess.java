@@ -33,6 +33,19 @@ public interface PlayerInteractionAccess {
      *
      * <p>调用方应把它理解成一次 stop/finish 动作入口，而不是自由组合的底层包接口。
      */
+    default void sendBreakPacket() {
+        BlockPos currentPos = getCurrentMiningPos();
+        sendBreakPacket(currentPos);
+    }
+
+    default void sendBreakPacket(BlockPos currentPos) {
+        Vec3d shouldFacing = currentPos
+                .toCenterPos()
+                .subtract(MinecraftClient.getInstance().player.getEyePos());
+        Direction dir = Direction.getFacing(shouldFacing).getOpposite();
+        sendBreakPacket(currentPos, dir);
+    }
+
     public void sendBreakPacket(BlockPos pos, Direction direction);
 
     public boolean breakIfComplete();
@@ -76,29 +89,6 @@ public interface PlayerInteractionAccess {
      */
     public boolean isFailBreakEmpty();
 
-    /**
-     * 把一个位置登记为 failBreak 槽位。
-     *
-     * <p>成功时，实现方需要同时建立该槽位的起始 tick 和进度基线；失败通常表示当前已经存在未消费的
-     * failBreak 槽位，不能被新的位置覆盖。
-     */
-    public boolean beginFailBreak(BlockPos pos);
-
-    /**
-     * 尝试把当前主挖掘位置转移到 failBreak 槽位。
-     *
-     * <p>这是 doubleBreak/切块续挖场景的主要入口。返回值明确表示这次转移是否真的建立了新的
-     * failBreak 上下文。
-     */
-    public boolean moveCurrentMiningToFailBreak();
-
-    /**
-     * 清空 failBreak 槽位及其关联起始时间。
-     *
-     * <p>调用后表示该备用挖掘会话不再可继续复用，后续逻辑应重新建立新的 failBreak 上下文。
-     */
-    public void clearFailBreak();
-
     public int getCurrentMiningTicks();
     /**
      * 假设使用给定工具，预测当前主挖掘位的理论进度。
@@ -137,15 +127,8 @@ public interface PlayerInteractionAccess {
         if (currentFailBreakPos == null) {
             return -1.0F;
         }
-        BlockState block = MinecraftClient.getInstance().world.getBlockState(currentFailBreakPos);
-        if (block.isAir()) {
-            return -1.0F;
-        }
-        float speed = block.calcBlockBreakingDelta(
-                MinecraftClient.getInstance().player,
-                MinecraftClient.getInstance().player.getEntityWorld(),
-                currentFailBreakPos);
-        return getFailBreakMiningTicks() * speed;
+        return predictFailMiningProgressWithTool(
+                MinecraftClient.getInstance().player.getMainHandStack(), 0);
     }
 
     /**
@@ -190,26 +173,6 @@ public interface PlayerInteractionAccess {
 
     default void sendAbortBreakPacket() {
         abortBreak(Direction.DOWN);
-    }
-
-    /**
-     * 兼容旧调用名：语义等价于 {@link #sendBreakPacket(BlockPos, Direction)}。
-     */
-    default void sendStopBreakPacket(BlockPos pos, Direction direction) {
-        sendBreakPacket(pos, direction);
-    }
-
-    /**
-     * 兼容旧的 failBreak 设置入口。
-     *
-     * <p>传入 {@code null} 时表示清空 failBreak；传入有效位置时表示尝试建立新的 failBreak 上下文。
-     */
-    default boolean setStartFailBreakPos(@Nullable BlockPos pos) {
-        if (pos == null) {
-            clearFailBreak();
-            return true;
-        }
-        return beginFailBreak(pos);
     }
 
     public boolean sendFailBreakCurrentPos(@Nullable Direction direction);

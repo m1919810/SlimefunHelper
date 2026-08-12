@@ -95,7 +95,7 @@ public class BeaconEffectSelectButton extends PressableWidget {
                 .copy()
                 .append(
                         this.currentEffect == null
-                                ? Text.literal("无选中")
+                                ? Text.translatable("widget.gui.beacon-effect-select-button.no-selection")
                                 : Text.translatable(this.currentEffect.value().getTranslationKey()));
     }
 }

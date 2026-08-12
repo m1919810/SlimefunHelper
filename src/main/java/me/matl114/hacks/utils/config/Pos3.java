@@ -7,6 +7,7 @@ import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.managers.config.NBTParsable;
 import me.matl114.managers.config.NBTType;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.WrapperFactory;
 import me.matl114.utils.config.kv.TypeConvertAttrKeyValue;
@@ -25,7 +26,7 @@ public record Pos3(int x, int y, int z) implements NBTParsable<Pos3> {
     }
 
     public static final NBTType<Pos3> TYPE = new NBTType<>(
-            Pos3.class,
+            "pos3",
             RecordCodecBuilder.<Pos3>create(s -> s.group(
                             Codec.INT.fieldOf("x").forGetter(Pos3::x),
                             Codec.INT.fieldOf("y").forGetter(Pos3::y),
@@ -50,17 +51,25 @@ public record Pos3(int x, int y, int z) implements NBTParsable<Pos3> {
                                 .generateValueWidget(2 * half, 0, half, dy))
                         .addDrawableChild(ExecutableWidget.instance(3 * half, 0, half / 2, dy)
                                 .setElementHandler(new ButtonElement(
-                                        TextProvider.of(Text.literal("Here")), ButtonAction.run(() -> {
-                                            var pl = MinecraftClient.getInstance().player;
-                                            if (pl != null) {
-                                                s.valueChangeInternal(null, from(pl.getBlockPos()));
-                                            }
-                                        }))))
+                                                TextProvider.of(Text.translatableWithFallback(
+                                                        "widget.nbt-parsable.pos3.here", "Here")),
+                                                ButtonAction.run(() -> {
+                                                    var pl = MinecraftClient.getInstance().player;
+                                                    if (pl != null) {
+                                                        s.valueChangeInternal(null, from(pl.getBlockPos()));
+                                                    }
+                                                }))
+                                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                                "widget.nbt-parsable.pos3.here.tooltips", "")))))
                         .addDrawableChild(ExecutableWidget.instance(4 * half - half / 2, 0, half / 2, dy)
                                 .setElementHandler(new ButtonElement(
-                                        TextProvider.of(Text.literal("Zero")), ButtonAction.run(() -> {
-                                            s.valueChangeInternal(null, new Pos3(0, 0, 0));
-                                        }))));
+                                                TextProvider.of(Text.translatableWithFallback(
+                                                        "widget.nbt-parsable.pos3.zero", "Zero")),
+                                                ButtonAction.run(() -> {
+                                                    s.valueChangeInternal(null, new Pos3(0, 0, 0));
+                                                }))
+                                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                                "widget.nbt-parsable.pos3.zero.tooltips", "")))));
             },
             new Pos3(0, 0, 0));
 
