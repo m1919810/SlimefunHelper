@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.enchantment.Enchantment;
@@ -17,9 +18,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.item.Item;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.*;
 import net.minecraft.registry.entry.RegistryEntry;
 
 public class RegistryUtils {
@@ -77,6 +76,7 @@ public class RegistryUtils {
     }
 
     public static final Map<RegistryKey<?>, Class<?>> REGISTRY_KEY_TO_ICON;
+    public static final HashMap<Class<?>, RegistryKey<?>> ICON_TO_REGISTRY_KEY;
 
     public static <T> Class<T> getRegistryType(Registry<T> registry) {
         return getRegistryType((RegistryKey<Registry<T>>) registry.getKey());
@@ -84,6 +84,28 @@ public class RegistryUtils {
 
     public static <T> Class<T> getRegistryType(RegistryKey<Registry<T>> key) {
         return (Class<T>) REGISTRY_KEY_TO_ICON.get(key);
+    }
+
+    public static <W> RegistryEntry<W> getRegistryEntry(RegistryWrapper.WrapperLookup lookup, RegistryKey<W> key) {
+        return lookup.getOptionalEntry(key).orElse(null);
+    }
+
+    public static <W> RegistryEntry<W> getRegistryEntry(
+            DynamicRegistryManager lookup, RegistryKey<? extends Registry<? extends W>> key, W value) {
+        return lookup.getOptional(key).map(s -> s.getEntry(value)).orElse(null);
+    }
+
+    public static <T> RegistryKey<? extends Registry<T>> getRegistryTypeKey(T value) {
+        Class<?> clazz = value.getClass();
+        while (clazz != Object.class) {
+            RegistryKey key = ICON_TO_REGISTRY_KEY.get(clazz);
+            if (key != null) {
+                ICON_TO_REGISTRY_KEY.put(value.getClass(), key);
+                return key;
+            }
+            clazz = clazz.getSuperclass();
+        }
+        return null;
     }
 
     static {
@@ -123,5 +145,7 @@ public class RegistryUtils {
         clazzMap.put(ENTITY_TYPE, EntityType.class);
         clazzMap.put(STATUS_EFFECT, StatusEffect.class);
         REGISTRY_KEY_TO_ICON = ImmutableMap.copyOf(clazzMap);
+        ICON_TO_REGISTRY_KEY = new HashMap<>(REGISTRY_KEY_TO_ICON.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey, (k, v) -> v)));
     }
 }

@@ -25,6 +25,7 @@ public class Configs {
             INV_CONFIG.registerGlobal();
             MOV_CONFIG.registerGlobal();
             INTERACT_CONFIG.registerGlobal();
+            SURVIVAL_CONFIG.registerGlobal();
             SLIMEFUN_CONFIG.registerGlobal();
             MODEL_CONFIG.registerGlobal();
             MISC_CONFIG.registerGlobal();
@@ -45,6 +46,7 @@ public class Configs {
     }
 
     public enum LegalTargetingMode implements ConfigEnum {
+        NONE,
         DELAY_MOVEMENT,
         // PRE_MOVEMENT,
         // USEITEM_PACKET,
@@ -54,8 +56,20 @@ public class Configs {
             return this == LegalTargetingMode.DELAY_MOVEMENT; // || this == LegalTargetingMode.PRE_MOVEMENT;
         }
 
+        public boolean isLegal() {
+            return this != NONE;
+        }
+
         public boolean isLegacy() {
             return this == LegalTargetingMode.LEGACY_SLIENT_ROT;
+        }
+
+        public static LegalTargetingMode getFromPreset(ModulePreset preset) {
+            return switch (preset) {
+                case HACKING, VANILLA -> NONE;
+                case AC_GRIM_LEGACY -> LEGACY_SLIENT_ROT;
+                default -> DELAY_MOVEMENT;
+            };
         }
 
         @Override
@@ -232,6 +246,10 @@ public class Configs {
 
     public static final Config INTERACT_CONFIG = ConfigLoader.loadExternalConfig(
                     "sfhelper-configs/interact.yml", "interact settings")
+            .markForSave();
+
+    public static final Config SURVIVAL_CONFIG = ConfigLoader.loadExternalConfig(
+                    "sfhelper-configs/survival.yml", "survival settings")
             .markForSave();
 
     public static final Config SLIMEFUN_CONFIG = ConfigLoader.loadExternalConfig(

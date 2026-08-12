@@ -120,7 +120,7 @@ public class WorldTasks {
     private static void onChunkReScann(ChunkPos chunkPos) {
         if (mc.player == null || mc.world == null) return;
         if (mc.world.getChunkManager().isChunkLoaded(chunkPos.x, chunkPos.z)) {
-            Chunk chunk = mc.world.getChunkManager().getChunk(chunkPos.x, chunkPos.z, ChunkStatus.FULL, false);
+            Chunk chunk = mc.world.getChunkManager().getWorldChunk(chunkPos.x, chunkPos.z);
             if (chunk != null) {
                 List<BiPredicate<BlockPos, BlockState>> statePredicates = new ArrayList<>();
                 Listener.getWorldScannChunkBlockFilterList().broadcast(statePredicates);

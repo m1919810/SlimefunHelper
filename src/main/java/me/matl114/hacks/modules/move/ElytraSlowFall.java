@@ -4,13 +4,13 @@ import me.matl114.events.Event;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.EntityUtils;
-import me.matl114.utils.entity.LegalMovementManager;
 
 public class ElytraSlowFall extends BaseModule implements LegalMovementManager.MovementModifier {
     static LegalMovementManager.DelegateMovementModifier instance;
@@ -19,6 +19,7 @@ public class ElytraSlowFall extends BaseModule implements LegalMovementManager.M
     public final ModulePath elytraSlowFalling = floatingUtils.add("elytra-slow-falling");
 
     public ElytraSlowFall() {
+        super("ElytraSlowFall");
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
             MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
@@ -42,7 +43,7 @@ public class ElytraSlowFall extends BaseModule implements LegalMovementManager.M
                 movementManagerEvent.context.pushImportantRotation(true, rotateYaw);
                 EntityUtils.setEntityPitchSafe(mc.player, 0);
                 if (rotateYaw) {
-                    EntityUtils.setEntityYawSafe(mc.player, mc.player.getYaw() + 180);
+                    PlayerStateManager.setPlayerYawSafe(mc.player, mc.player.getYaw() + 180);
                 }
                 movementManagerEvent.context.markForResetRot();
             }

@@ -17,6 +17,7 @@ public class PlayerLog extends BaseModule {
     public final ModulePath playerIo = makePath(Configs.RENDER_CONFIG, "player-io");
 
     public PlayerLog() {
+        super("PlayerLog");
         bindFlag(enable);
     }
 

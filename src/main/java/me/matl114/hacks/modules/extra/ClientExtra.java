@@ -12,6 +12,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.managers.Configs;
+import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.StringRef;
@@ -45,6 +46,7 @@ public class ClientExtra extends BaseModule {
     public static ClientExtra INSTANCE;
 
     public ClientExtra() {
+        super("ClientExtra");
         INSTANCE = this;
     }
 
@@ -312,10 +314,14 @@ public class ClientExtra extends BaseModule {
         return Double.isFinite(vec3d.x) && Double.isFinite(vec3d.y) && Double.isFinite(vec3d.z);
     }
 
+    int lastCrashTick = 0;
+
     protected void checkClientData(Screen screen) {
         ScreenAccess currentScreen = ScreenAccess.of(mc.currentScreen);
         Screen parentScreen = (currentScreen instanceof QuestionScreen ? currentScreen.getParent() : mc.currentScreen);
-        if (keepInServer.get()
+        // continue crash, force exit
+        boolean shouldKeep = keepInServer.get() && lastCrashTick < Tasks.getTick() - 10;
+        if (shouldKeep
                 && mc.player != null
                 && mc.world != null
                 && mc.inGameHud != null
@@ -327,6 +333,7 @@ public class ClientExtra extends BaseModule {
             MainTasks.disconnectImmediately();
             ScreenAccess.of(screen).openFrom(parentScreen);
         }
+        lastCrashTick = Tasks.getTick();
     }
 
     public void onCursorLockSwitch() {
@@ -352,7 +359,7 @@ public class ClientExtra extends BaseModule {
             Debug.info("  - Hand item: " + mc.player.getMainHandStack());
             Debug.info("  - Offhand item: " + mc.player.getOffHandStack());
             Debug.info("  - FallFlying: " + mc.player.isFallFlying());
-            int count = (int) InventoryUtils.computeInventory(
+            int count = (int) InventoryUtils.computePlayerInventory(
                     s -> s.isOf(Items.TOTEM_OF_UNDYING) ? (double) s.getCount() : null, false);
             Debug.info("  - TotemCount: " + count);
             List<AbstractClientPlayerEntity> players = mc.world.getPlayers();

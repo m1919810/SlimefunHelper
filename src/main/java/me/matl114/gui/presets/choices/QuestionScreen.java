@@ -8,12 +8,11 @@ import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.LabelElement;
 import me.matl114.gui.elements.MultiLineTextElement;
+import me.matl114.utils.ChatUtils;
 import net.minecraft.text.Text;
 
 public class QuestionScreen extends GenericBackGroundScreen {
-    private static final Text QUESTION_LABEL = Text.literal("问题界面: 为什么会这样? 点我看看");
-    private static final List<Text> QUESTION_DESCRIPTION =
-            List.of(Text.literal("你可能正在进行一些不符合预期的操作"), Text.literal("不然你不会被显示这个界面"), Text.literal("请根据下面的选项来选择你的解决方案"));
+    private static final Text QUESTION_LABEL = Text.translatable("widget.gui.question-screen.title");
     private Text q;
     private List<Solution> a;
 
@@ -25,7 +24,7 @@ public class QuestionScreen extends GenericBackGroundScreen {
 
     @Override
     protected List<Text> provideTitleTooltips(DrawableWidget widget) {
-        return QUESTION_DESCRIPTION;
+        return ChatUtils.parseTooltipsTranslation("widget.gui.question-screen.title.tooltips", "");
     }
 
     @Override

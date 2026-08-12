@@ -14,7 +14,6 @@ public abstract class ConfirmingBigScreen extends GenericBackGroundScreen {
     protected ExecutableWidget cancelButtonWidget;
     protected ExecutableWidget confirmButtonWidget;
     protected static int CONTENT_START_Y = 40;
-    protected static int CONTENT_START_X = 20;
     protected int content_end_y;
 
     protected void onCloseButton() {
@@ -25,8 +24,10 @@ public abstract class ConfirmingBigScreen extends GenericBackGroundScreen {
 
     protected abstract void onConfirmButton();
 
-    private static final Text CANCEL = Text.literal("取消").formatted(Formatting.RED);
-    private static final Text CONFIRM = Text.literal("确认").formatted(Formatting.GREEN);
+    private static final Text CANCEL =
+            Text.translatable("widget.gui.confirming-big-screen.cancel").formatted(Formatting.RED);
+    private static final Text CONFIRM =
+            Text.translatable("widget.gui.confirming-big-screen.confirm").formatted(Formatting.GREEN);
 
     @Override
     protected void init() {

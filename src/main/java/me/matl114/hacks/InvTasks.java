@@ -10,7 +10,7 @@ import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import lombok.Getter;
 import me.matl114.accessors.access.ClientPlayerAccess;
-import me.matl114.accessors.access.TileInventoryScreen;
+import me.matl114.accessors.interfaces.TileInventory;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.elements.SlotElement;
@@ -886,11 +886,6 @@ public class InvTasks {
     }
 
     @ApiMethod
-    public List<HandledScreen<?>> getCachedInventories() {
-        return InvTasks.getChestHistory().getCachedInventories();
-    }
-
-    @ApiMethod
     public static void openInventoryCacheScreen() {
         getChestHistory().openInventoryCacheScreen();
     }
@@ -899,7 +894,7 @@ public class InvTasks {
     private static final ItemStack INV_ICON_NO_ITEM = new ItemStack(Items.BEDROCK);
 
     public static ItemStack generateIconForScreen(HandledScreen<?> screen) {
-        if (screen instanceof TileInventoryScreen tile && !tile.isVirtual()) {
+        if (screen instanceof TileInventory tile && !tile.isVirtual()) {
             Block blockType = tile.getBlockType();
             if (blockType != null) {
                 Item itemType = blockType.asItem();
@@ -960,8 +955,7 @@ public class InvTasks {
             }
             // block Type not match,
         }
-        return RaycastUtils.rayTraceSpecificBlock((b) -> b == Blocks.DISPENSER || b == Blocks.DROPPER)
-                .orElse(null);
+        return RaycastUtils.rayTraceSpecificBlock(targetBlock).orElse(null);
     }
     // track screen syncId
     public static int LAST_SYNC_ID = 0;
@@ -1130,56 +1124,54 @@ public class InvTasks {
     public static final ModuleGroup moduleManager = new ModuleGroup("Inv");
 
     @Getter
-    public static InvExtra invExtra;
+    private static InvExtra invExtra;
 
     @Getter
-    public static GuiMove guiMove;
+    private static GuiMove guiMove;
 
     @Getter
-    public static FastInv fastInv;
+    private static FastInv fastInv;
 
     @Getter
-    public static KeepInv keepInv;
+    private static FastCraft fastCraft;
 
     @Getter
-    public static FastCraft fastCraft;
+    private static NoQDrop noQDrop;
 
     @Getter
-    public static NoQDrop noQDrop;
+    private static AutoStore autoStore;
 
     @Getter
-    public static FastChest fastChest;
+    private static AutoSteal autoSteal;
 
     @Getter
-    public static AutoStore autoStore;
+    private static AutoShulker autoShulker;
 
     @Getter
-    public static AutoSteal autoSteal;
+    private static ChestHistory chestHistory;
 
     @Getter
-    public static AutoShulker autoShulker;
+    private static KitManager kitManager;
 
     @Getter
-    public static ChestHistory chestHistory;
+    private static Replenish replenish;
 
     @Getter
-    public static ItemEditor itemEditor;
+    private static ItemEditor itemEditor;
+
+    // todo: remove
+    @Getter
+    private static QuickButton quickButton;
 
     @Getter
-    public static PickItem pickItem;
+    private static SaveItem saveItem;
 
     @Getter
-    public static QuickButton quickButton;
-
-    @Getter
-    public static SaveItem saveItem;
-
-    @Getter
-    public static NbtTooltips nbtTooltips;
+    private static NbtTooltips nbtTooltips;
 
     @Getter
     //
-    public static final ItemCache customItemDatabase = new ItemCache("sfhelper-configs/recipes/item-database.json");
+    private static final ItemCache customItemDatabase = new ItemCache("sfhelper-configs/recipes/item-database.json");
 
     public static final Codec<ItemStackData> CUSTOM_ITEM_DATA_CODEC = customItemDatabase.createStackDataCodec();
 
@@ -1192,17 +1184,16 @@ public class InvTasks {
     private static void initModules(ModuleManager m) {
         invExtra = new InvExtra().register(m);
         guiMove = new GuiMove().register(m);
-        keepInv = new KeepInv().register(m);
         fastInv = new FastInv().register(m);
         fastCraft = new FastCraft().register(m);
         noQDrop = new NoQDrop().register(m);
-        fastChest = new FastChest().register(m);
         autoStore = new AutoStore().register(m);
         autoSteal = new AutoSteal().register(m);
         autoShulker = new AutoShulker().register(m);
         chestHistory = new ChestHistory().register(m);
+        kitManager = new KitManager().register(m);
+        replenish = new Replenish().register(m);
         itemEditor = new ItemEditor().register(m);
-        pickItem = new PickItem().register(m);
         quickButton = new QuickButton().register(m);
         saveItem = new SaveItem().register(m);
         nbtTooltips = new NbtTooltips().register(m);

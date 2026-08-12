@@ -12,13 +12,13 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
-import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VDataFlag;
 import net.minecraft.block.BlockState;
@@ -26,6 +26,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.UseEffectsComponent;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.data.DataTracker;
@@ -33,6 +34,7 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.*;
+import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.EntityHitResult;
@@ -48,6 +50,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     public static LegalMovementManager.DelegateMovementModifier instance;
 
     public NoSlowDown() {
+        super("NoSlowDown");
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
             // register at here for the first time
@@ -70,7 +73,9 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                 Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class), this::onInteractSend);
         registerListener(Listener.getPreHandleInputEvents(), this::onInputEvent);
         registerListener(Listener.getPlayerWebSlowPoint(), this::onWeb);
-        registerListener(Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class), this::onStartUse);
+        registerListener(Listener.getEntityTrackDataUpdate().getChannel(EntityType.PLAYER), this::onEntityDataUpdate);
+        registerListener(Listener.getPacketPostHandlePoint().getChannel(EntityStatusS2CPacket.class), this::onConsume);
+        registerListener(Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class), this::onSendStartUse);
         //        registerListener(Listener.getPacketPoint().getChannel(SupportVersion.CURRENT.isHigherOrEqualTo(21,2) ?
         // ClientTickEndC2SPacket.class : PlayerMoveC2SPacket.class), this::onSendMovePreNoSlowUse);
         //
@@ -107,6 +112,10 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     public final IntRef swapDelay = builder(noSlowdown.add("use-item-swap-item-delay"), Integer.class)
             .show(() -> useItemBypass.get().isIn(UseBypassMode.BYPASS_GRIM_LAZY, UseBypassMode.BYPASS_GRIM_LAZY_V3))
             .defaultValue(1)
+            .build();
+
+    public final FlagRef forceSprint = flagBuilder(noSlowdown.add("use-item-swap-force-sprint"))
+            .show(() -> useItemBypass.get().isIn(UseBypassMode.BYPASS_GRIM_LAZY, UseBypassMode.BYPASS_GRIM_LAZY_V3))
             .build();
 
     public final EnumRef<Configs.BypassMode> blockInBypass = builder(
@@ -361,7 +370,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                                                 .subtract(args.getEyePos())
                                                 .normalize();
                                         movementManagerEvent.context.pushImportantRotation(true, true);
-                                        EntityUtils.setEntityRotationSafe(args, cacheDirection);
+                                        PlayerStateManager.setPlayerRotationSafe(args, cacheDirection);
                                         // restore velocity after collide
                                         args.setVelocity(velocity);
                                         movementManagerEvent.context.markForResetRot();
@@ -466,23 +475,6 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                 }
             }
         }
-    }
-
-    public void onStartUse(Event<PlayerInteractItemC2SPacket> event) {
-        if (useItem.get()) {
-            lastNoSlowUseTick = 0;
-        }
-        //        if(useItem.get() && useItemBypass.get().isIn(UseBypassMode.BYPASS_GRIM_TICK)) {
-        //            ItemStack stack = mc.player.getStackInHand(event.context.getHand());
-        //            if(mc.player.isUsingItem() || VItem.getInstance().isSpear(stack)){
-        //                PlayerStateManager.INSTANCE.sendSprintStatus(true);
-        //                preSwap(false);
-        //                PacketManager.schedulePostScheduleCallback(event.context, ()->{
-        //                    postSwap();
-        //                    PlayerStateManager.INSTANCE.sendSprintStatus(mc.player.isSprinting());
-        //                });
-        //            }
-        //        }
     }
 
     //
@@ -634,8 +626,6 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         }
     }
 
-    public void preSwap2() {}
-
     public void postSwap(boolean v3) {
         // restore sprint
         // may use MultiActionsC to resync inventory, wierd
@@ -655,7 +645,6 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
 
     boolean preAttackUseTick;
     int lastNoSlowUseTick = 0;
-    boolean v3Tick;
 
     public boolean noSlowUseItemGrim() {
         if (mc.player.isUsingItem() && useItem.get()) {
@@ -664,8 +653,18 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             }
             return switch (useItemBypass.get()) {
                 case NO_BYPASS -> false;
-                case BYPASS_GRIM_LAZY, BYPASS_GRIM_LAZY_V3 -> {
-                    if (!mc.player.isFallFlying()
+                case BYPASS_GRIM_LAZY -> {
+                    boolean isNotFallFlying;
+                    if (mc.player.isFallFlying()) {
+                        if (mc.player.isTouchingWater()) {
+                            isNotFallFlying = true;
+                        } else {
+                            isNotFallFlying = false;
+                        }
+                    } else {
+                        isNotFallFlying = true;
+                    }
+                    if (isNotFallFlying
                             && !mc.player.hasVehicle()
                             && PlayerInputUtils.of(mc.player).hasWASDMovement()
                             && getActiveItemSpeedMultiplier() < 0.99F) {
@@ -679,20 +678,78 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                         yield false;
                     }
                 }
+                case BYPASS_GRIM_LAZY_V3 -> {
+                    if (!mc.player.hasVehicle()
+                            && PlayerInputUtils.of(mc.player).hasWASDMovement()
+                            && getActiveItemSpeedMultiplier() < 0.99F) {
+                        if (grimSlowedByItemFlag) {
+                            grimSlowedByItemFlag = false;
+                            yield true;
+                        }
+                        yield false;
+                    } else {
+                        yield false;
+                    }
+                }
             };
         }
+        lastNoSlowUseTick = 0;
         return false;
     }
 
+    boolean grimSlowedByItemFlag = false;
+
+    public void onEntityDataUpdate(Event<DataTracker.SerializedEntry<?>> eventEntityDataUpdate) {
+        if (useItem.get() && eventEntityDataUpdate.getArgs(0) == mc.player) {
+            if (eventEntityDataUpdate.context.id() == VDataFlag.ID_LIVING_FLAGS
+                    && eventEntityDataUpdate.context.value() instanceof Number number) {
+                byte flagByte = number.byteValue();
+                boolean bl = (flagByte & (1 << VDataFlag.USING_ITEM_FLAG_INDEX)) > 0;
+                if (bl) {
+                    // only spread true flag
+                    // may receive false flag that transaction < currentUseItemTransaction
+                    Tasks.scheduleRepeatedPre(
+                            () -> {
+                                grimSlowedByItemFlag = true;
+                                return false;
+                            },
+                            1,
+                            1,
+                            2);
+                }
+
+                if (!bl) {
+                    lastNoSlowUseTick = 0;
+                }
+            }
+        }
+    }
+
+    public void onConsume(Event<EntityStatusS2CPacket> eventStatus) {
+        if (checkNull()) return;
+        if (useItem.get()
+                && eventStatus.context.getStatus() == EntityStatuses.CONSUME_ITEM
+                && eventStatus.context.getEntity(mc.world) == mc.player) {
+            grimSlowedByItemFlag = false;
+            lastNoSlowUseTick = 0;
+        }
+    }
+
+    public void onSendStartUse(Event<PlayerInteractItemC2SPacket> eventPost) {
+        if (useItem.get() && mc.player.isUsingItem()) {
+            grimSlowedByItemFlag = true;
+            lastNoSlowUseTick = 0;
+        }
+    }
+
+    boolean v3Tick;
+
     public void onSendMovePreNoSlowUse(Event<Packet<?>> event) {
         if (noSlowUseItemGrim()) {
-            if (useItemBypass.get().isIn(UseBypassMode.BYPASS_GRIM_LAZY_V3)) {
-                v3Tick = PlayerInputUtils.of(mc.player).forward()
-                        && mc.player.getHungerManager().canSprint()
-                        && !mc.player.hasBlindnessEffect();
-            } else {
-                v3Tick = false;
-            }
+            v3Tick = forceSprint.get()
+                    && PlayerInputUtils.of(mc.player).forward()
+                    && mc.player.getHungerManager().canSprint()
+                    && !mc.player.hasBlindnessEffect();
             preSwap(v3Tick);
         }
     }

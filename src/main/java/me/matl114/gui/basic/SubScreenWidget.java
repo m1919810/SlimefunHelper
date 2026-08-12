@@ -52,6 +52,15 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
     }
 
     @Override
+    public int getHeight() {
+        int height = super.getHeight();
+        for (var child : childrenRenderOrder()) {
+            height = Math.max(height, child.getY() + child.getHeight());
+        }
+        return height;
+    }
+
+    @Override
     public boolean canSelect() {
         //        for (var ch: children){
         //            if(ch.canSelect())return true;

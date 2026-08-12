@@ -18,6 +18,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
@@ -25,7 +26,6 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.*;
 import me.matl114.utils.*;
-import me.matl114.utils.entity.LegalMovementManager;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
@@ -41,6 +41,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
     private static LegalMovementManager.DelegateMovementModifier INSTANCE;
 
     public SpearAttack() {
+        super("SpearAttack");
         if (INSTANCE == null) {
             INSTANCE = new LegalMovementManager.DelegateMovementModifier(this::cast);
             MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> INSTANCE);

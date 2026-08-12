@@ -19,7 +19,6 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
-import me.matl114.utils.ColorUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.WorldUtils;
 import me.matl114.utils.inventory.ItemStackSample;
@@ -37,6 +36,7 @@ import net.minecraft.util.math.Box;
 public class MineESP extends BaseModule {
 
     public MineESP() {
+        super("MineESP");
         bindFlag(enable);
     }
 
@@ -54,15 +54,15 @@ public class MineESP extends BaseModule {
             flagBuilder(root.add("ghost-hand-predict")).build();
 
     public final NBTRef<WrapColor> colorName = builder(root.add("name-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Formatting.WHITE)))
+            .defaultValue(new WrapColor((Formatting.WHITE)))
             .build();
 
     public final NBTRef<WrapColor> colorFrame = builder(root.add("frame-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Formatting.AQUA)))
+            .defaultValue(new WrapColor((Formatting.AQUA)))
             .build();
 
     public final NBTRef<WrapColor> colorProgress = builder(root.add("progress-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Formatting.GOLD)))
+            .defaultValue(new WrapColor((Formatting.GOLD)))
             .build();
 
     @Override

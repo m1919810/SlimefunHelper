@@ -4,6 +4,7 @@ import java.util.List;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.IconElement;
 import me.matl114.gui.presets.lists.ListEntryWidgetController;
+import me.matl114.utils.ChatUtils;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
@@ -51,10 +52,10 @@ public class ListModifyWidget extends ScrollableListWidget {
     private static final Identifier SHIFT_DOWN_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/move_down");
     private static final Identifier DEL_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/remove");
     private static final Identifier NEW_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/add");
-    private static final List<Text> SHIFT_UP_TOOLTIPS = List.of(Text.literal("上移"));
-    private static final List<Text> SHIFT_DOWN_TOOLTIPS = List.of(Text.literal("下移"));
-    private static final List<Text> DEL_TOOLTIPS = List.of(Text.literal("删除"));
-    private static final List<Text> NEW_TOOLTIPS = List.of(Text.literal("插入"));
+
+    private static List<Text> insertTooltips() {
+        return ChatUtils.parseTooltipsTranslation("widget.gui.list-modify-widget.insert.tooltips", "");
+    }
 
     protected <T extends Element & Drawable & Selectable> SubScreenWidget wrapWidget(
             T widget, int listIndex, int startX, int startY) {
@@ -65,7 +66,7 @@ public class ListModifyWidget extends ScrollableListWidget {
                 : new ContentDelegateWidget<>(0, 0, width, height).setContentDelegate(widget);
         int curHeight = startY + height * listIndex;
         int buttonSize = Math.min(20, height);
-        int buttonMiddle = (height - buttonSize) / 2;
+        int buttonMiddle = 0;
         return new SubScreenWidget(startX, curHeight, width, height)
                 .addDrawableChild(wrap1)
                 .addDrawableChild(ExecutableWidget.instance(width + 1, 1 + buttonMiddle, buttonSize - 2, buttonSize - 2)
@@ -73,26 +74,29 @@ public class ListModifyWidget extends ScrollableListWidget {
                                     this.controller.shiftUp(listIndex);
                                 }))
                                 .setActive(listIndex != 0)
-                                .withTooltips(TooltipHandler.of(SHIFT_UP_TOOLTIPS))))
+                                .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                        "widget.gui.list-modify-widget.shift-up.tooltips", "")))))
                 .addDrawableChild(ExecutableWidget.instance(
                                 width + buttonSize + 1, 1 + buttonMiddle, buttonSize - 2, buttonSize - 2)
                         .setElementHandler(IconElement.fixedGui(SHIFT_DOWN_TEXTURE_SPRITE, ButtonAction.run(() -> {
                                     this.controller.shiftDown(listIndex);
                                 }))
                                 .setActive(listIndex != controller.size() - 1)
-                                .withTooltips(TooltipHandler.of(SHIFT_DOWN_TOOLTIPS))))
+                                .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                        "widget.gui.list-modify-widget.shift-down.tooltips", "")))))
                 .addDrawableChild(ExecutableWidget.instance(
                                 width + 2 * buttonSize + 1, 1 + buttonMiddle, buttonSize - 2, buttonSize - 2)
                         .setElementHandler(IconElement.fixedGui(DEL_TEXTURE_SPRITE, ButtonAction.run(() -> {
                                     this.controller.del(listIndex);
                                 }))
-                                .withTooltips(TooltipHandler.of(DEL_TOOLTIPS))))
+                                .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                        "widget.gui.list-modify-widget.delete.tooltips", "")))))
                 .addDrawableChild(ExecutableWidget.instance(
                                 width + 3 * buttonSize + 1, 1 + buttonMiddle, buttonSize - 2, buttonSize - 2)
                         .setElementHandler(IconElement.fixedGui(NEW_TEXTURE_SPRITE, ButtonAction.run(() -> {
                                     this.controller.insert(listIndex);
                                 }))
-                                .withTooltips(TooltipHandler.of(NEW_TOOLTIPS))));
+                                .withTooltips(TooltipHandler.of(ListModifyWidget.insertTooltips()))));
     }
 
     protected ExecutableWidget getListEndAdd(int startX, int startY) {
@@ -107,6 +111,6 @@ public class ListModifyWidget extends ScrollableListWidget {
                 .setElementHandler(IconElement.fixedGui(NEW_TEXTURE_SPRITE, ButtonAction.run(() -> {
                             this.controller.insert(-1);
                         }))
-                        .withTooltips(TooltipHandler.of(NEW_TOOLTIPS)));
+                        .withTooltips(TooltipHandler.of(ListModifyWidget.insertTooltips())));
     }
 }

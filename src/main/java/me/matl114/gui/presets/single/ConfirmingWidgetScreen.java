@@ -19,10 +19,8 @@ public class ConfirmingWidgetScreen extends ConfirmingBigScreen {
     }
 
     protected int getCenteredX() {
-        return CONTENT_START_X + ((this.width - this.widget.getWidth()) / 2) - this.widget.getX();
+        return ((this.width - this.widget.getWidth()) / 2) - this.widget.getX();
     }
-
-    int overrideY = 0;
 
     protected int getCenteredY() {
         return CONTENT_START_Y + ((content_end_y - CONTENT_START_Y - this.widget.getHeight()) / 2) - this.widget.getY();
@@ -44,9 +42,9 @@ public class ConfirmingWidgetScreen extends ConfirmingBigScreen {
 
     @Override
     protected void onConfirmButton() {
-        this.close();
         if (callback != null) {
             callback.run();
         }
+        this.close();
     }
 }

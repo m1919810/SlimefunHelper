@@ -66,6 +66,7 @@ public class RecipeDatabase extends BaseModule {
     public final ModulePath recipeRecord = makePath(Configs.SLIMEFUN_CONFIG, "recipe-record");
 
     public RecipeDatabase() {
+        super("RecipeDatabase");
         bindFlag(enable);
     }
 

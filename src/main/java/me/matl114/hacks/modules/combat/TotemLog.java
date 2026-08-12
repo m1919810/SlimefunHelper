@@ -6,14 +6,13 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
-import me.matl114.utils.ChatUtils;
-import me.matl114.utils.Debug;
 import net.minecraft.entity.player.PlayerEntity;
 
 public class TotemLog extends BaseModule {
     public final ModulePath totem = makePath(Configs.COMBAT_CONFIG, "totem");
 
     public TotemLog() {
+        super("TotemLog");
         bindFlag(enable);
     }
 
@@ -43,10 +42,9 @@ public class TotemLog extends BaseModule {
             PlayerEntity pl = event.context;
             int popCount = event.getArgs(0);
             if (logTotalCount.get()) {
-                Debug.chat(ChatUtils.stringToText(
-                        "&c[Totem]&f %s has triggered %d totems".formatted(pl.getNameForScoreboard(), popCount)));
+                logI18NSub("Totem", "message.module.totem-log.pop-count", pl.getNameForScoreboard(), popCount);
             } else {
-                Debug.chat(ChatUtils.stringToText("&c[Totem]&f %s trigger totem"));
+                logI18NSub("Totem", "message.module.totem-log.pop-once", pl.getNameForScoreboard());
             }
         }
     }
@@ -56,8 +54,8 @@ public class TotemLog extends BaseModule {
             Integer popCount = event.getArgs(1);
             if (popCount != null) {
                 int val = popCount;
-                Debug.chat(ChatUtils.stringToText("&c[Totem]&f %s died after trigger %d totems"
-                        .formatted(event.context.getNameForScoreboard(), val)));
+                logI18NSub(
+                        "Totem", "message.module.totem-log.death-after-pop", event.context.getNameForScoreboard(), val);
             }
         }
     }

@@ -16,6 +16,8 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
+import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.EnumRef;
@@ -26,7 +28,6 @@ import me.matl114.utils.ColorUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.RenderUtils;
-import me.matl114.utils.entity.LegalMovementManager;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
@@ -49,6 +50,7 @@ public class BowEnhance extends BaseModule {
     public final ModulePath bowAtt = makePath(Configs.COMBAT_CONFIG, "bow-att");
 
     public BowEnhance() {
+        super("BowEnhance");
         bindFlag(enable);
     }
 
@@ -115,7 +117,7 @@ public class BowEnhance extends BaseModule {
                 boolean searchEntity = enableAim.get();
                 Entity targetEntity;
                 if (searchEntity) {
-                    Entity entity = CombatTasks.targetSelector.searchAimableEntity(stack.getItem() instanceof BowItem);
+                    Entity entity = TargetSelector.INSTANCE.searchAimableEntity(stack.getItem() instanceof BowItem);
                     if (entity != null) {
                         Debug.chat(Text.literal("[Bow Aim] Aim at %s"
                                         .formatted(entity instanceof PlayerEntity player ? "player " : "entity "))
@@ -365,7 +367,7 @@ public class BowEnhance extends BaseModule {
                         }
                         movementManagerEvent.context.pushImportantRotation(true, true);
                         EntityUtils.setEntityPitchSafe(player, pitchYaw.x);
-                        EntityUtils.setEntityYawSafe(player, pitchYaw.y);
+                        PlayerStateManager.setPlayerYawSafe(player, pitchYaw.y);
                         movementManagerEvent.context.markForResetRot();
                     }
 

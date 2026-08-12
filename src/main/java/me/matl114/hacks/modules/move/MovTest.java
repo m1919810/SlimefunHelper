@@ -4,11 +4,10 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.hacks.ExtraTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.utils.Debug;
-import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
@@ -19,6 +18,7 @@ public class MovTest extends BaseModule implements LegalMovementManager.Movement
     public static LegalMovementManager.DelegateMovementModifier instance;
 
     public MovTest() {
+        super("MovTest");
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
             // register at here for the first time
@@ -28,7 +28,7 @@ public class MovTest extends BaseModule implements LegalMovementManager.Movement
     }
 
     public boolean enable() {
-        return ExtraTasks.getTests().flag4.get();
+        return false;
     }
 
     @Override

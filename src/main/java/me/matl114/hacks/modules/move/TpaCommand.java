@@ -27,7 +27,9 @@ import net.minecraft.util.math.Vec3d;
 import org.joml.Vector3d;
 
 public class TpaCommand extends BaseModule {
-    public TpaCommand() {}
+    public TpaCommand() {
+        super("TpaCommand");
+    }
 
     @Override
     public void registerAll() {
@@ -40,7 +42,7 @@ public class TpaCommand extends BaseModule {
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("tp")
-                    .helper("<x> <y> <z> [-far] 执行模拟tp行为")
+                    .helper("message.command.tpa.tp.help")
                     .arg(SimpleCommandArgs.argumentBuilder(PosArgumentType::new)
                             .name("position")
                             .build())
@@ -50,7 +52,7 @@ public class TpaCommand extends BaseModule {
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("mark")
-                    .helper("<type> [extra] 标注一个位置为临时缓存位置")
+                    .helper("message.command.tpa.mark.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("type")
                             .select(List.of("player", "camera", "this", "pos", "target", "cross", "clear"), "camera")
@@ -86,7 +88,7 @@ public class TpaCommand extends BaseModule {
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("tpa")
-                    .helper("<target> 传送到特殊目标位置")
+                    .helper("message.command.tpa.tpa.help")
                     .arg(SimpleCommandArgs.argumentBuilder(MovTasks.TpaArgumentType::new)
                             .name("tpa_target")
                             .build())

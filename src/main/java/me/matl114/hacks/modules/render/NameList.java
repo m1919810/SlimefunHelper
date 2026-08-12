@@ -20,7 +20,9 @@ import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 
 public class NameList extends INameTag {
-    public NameList() {}
+    public NameList() {
+        super("NameList");
+    }
 
     @Override
     protected ModulePath createRoot() {

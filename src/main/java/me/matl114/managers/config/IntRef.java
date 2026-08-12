@@ -2,6 +2,7 @@ package me.matl114.managers.config;
 
 import lombok.AllArgsConstructor;
 import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.BaseAttrKeyValue;
 
 @AllArgsConstructor
 public class IntRef extends Ref<Integer> {
@@ -56,7 +57,7 @@ public class IntRef extends Ref<Integer> {
     }
 
     @Override
-    public AttrKeyValue<Integer> _createKeyValue0(String key) {
+    public BaseAttrKeyValue<Integer> _createKeyValue0(String key) {
         return AttrKeyValue.integer(key, this.value);
     }
 

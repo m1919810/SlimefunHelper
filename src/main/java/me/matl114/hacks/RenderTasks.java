@@ -480,86 +480,90 @@ public class RenderTasks {
     public static final ModuleGroup moduleManager = new ModuleGroup("Render");
 
     @Getter
-    public static RenderExtra renderExtra;
+    private static RenderExtra renderExtra;
 
     @Getter
-    public static NoRender noRender;
+    private static NoRender noRender;
 
     @Getter
-    public static EntityLog entityLog;
+    private static NoSound noSound;
 
     @Getter
-    public static EntityESP entityESP;
+    private static EntityLog entityLog;
 
     @Getter
-    public static NameTag nameTag;
+    private static EntityESP entityESP;
 
     @Getter
-    public static NameList nameList;
+    private static NameTag nameTag;
 
     @Getter
-    public static ItemESP itemESP;
+    private static NameList nameList;
 
     @Getter
-    public static ItemList itemList;
+    private static ItemESP itemESP;
 
     @Getter
-    public static ChestESP chestESP;
+    private static ItemList itemList;
 
     @Getter
-    public static WorldScanner worldScanner;
+    private static ChestESP chestESP;
 
     @Getter
-    public static MineESP mineESP;
+    private static WorldScanner worldScanner;
 
     @Getter
-    public static PlayerLog playerLog;
+    private static MineESP mineESP;
 
     @Getter
-    public static PlayerQueue playerQueue;
+    private static PlayerLog playerLog;
 
     @Getter
-    public static ProjectileESP projectileESP;
+    private static PlayerQueue playerQueue;
 
     @Getter
-    public static Zoom zoom;
+    private static ProjectileESP projectileESP;
 
     @Getter
-    public static SleepMode sleepMode;
+    private static Zoom zoom;
 
     @Getter
-    public static CustomOverlay customOverlay;
+    private static SleepMode sleepMode;
 
     @Getter
-    public static Freecam freecam;
+    private static CustomOverlay customOverlay;
 
     @Getter
-    public static RenderOptimize renderOptimize;
+    private static Freecam freecam;
 
     @Getter
-    public static Hud hud;
+    private static RenderOptimize renderOptimize;
 
     @Getter
-    public static ModuleListHud moduleListHud;
+    private static Hud hud;
 
     @Getter
-    public static InvHud invHud;
+    private static ModuleListHud moduleListHud;
 
     @Getter
-    public static PlayerStatistic playerStatistic;
+    private static InvHud invHud;
 
     @Getter
-    public static EquipmentHud equipmentHud;
+    private static PlayerStatistic playerStatistic;
 
     @Getter
-    public static StorageDisplay storageDisplay;
+    private static EquipmentHud equipmentHud;
 
     @Getter
-    public static EnchantmentDisplay enchantmentDisplay;
+    private static StorageDisplay storageDisplay;
+
+    @Getter
+    private static EnchantmentDisplay enchantmentDisplay;
 
     private static void initModules(ModuleManager m) {
         renderExtra = new RenderExtra().register(m);
         noRender = new NoRender().register(m);
+        noSound = new NoSound().register(m);
         entityLog = new EntityLog().register(m);
         entityESP = new EntityESP().register(m);
         nameTag = new NameTag().register(m);

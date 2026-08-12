@@ -1,7 +1,7 @@
 package me.matl114.accessors.gui;
 
 import java.util.function.Consumer;
-import me.matl114.accessors.events.MetadataHolder;
+import me.matl114.accessors.interfaces.MetadataHolder;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;

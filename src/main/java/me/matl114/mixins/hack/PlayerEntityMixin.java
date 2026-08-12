@@ -6,7 +6,7 @@ import me.matl114.accessors.access.LivingEntityAccess;
 import me.matl114.accessors.hacks.EntityInternalAccess;
 import me.matl114.accessors.hacks.PlayerInternalAccess;
 import me.matl114.hacks.modules.combat.CombatExtra;
-import me.matl114.hacks.modules.mine.MineExtra;
+import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.utils.entity.Predictor;
 import me.matl114.hacks.utils.entity.PredictorImpl;
 import net.fabricmc.api.EnvType;
@@ -39,7 +39,6 @@ public abstract class PlayerEntityMixin extends LivingEntity
                                     "Lnet/minecraft/entity/player/PlayerEntity;getAttributeValue(Lnet/minecraft/registry/entry/RegistryEntry;)D",
                             ordinal = 1))
     private double onBlockBreakingSpeedAttrWrongValueFix(double original) {
-
         return original < 1E-5 ? 1.0F : original;
     }
 
@@ -84,8 +83,9 @@ public abstract class PlayerEntityMixin extends LivingEntity
 
     @Inject(method = "getBlockInteractionRange", at = @At("RETURN"), cancellable = true)
     private void getBlockInteractionRange(CallbackInfoReturnable<Double> cir) {
-        if (MineExtra.INSTANCE.reachDistance.get() > 1E-6) {
-            cir.setReturnValue(MineExtra.INSTANCE.getReachDistance());
+        double reach = InteractExtra.INSTANCE.reachDistance.get();
+        if (reach > 1E-6) {
+            cir.setReturnValue(cir.getReturnValueD() + reach);
         }
     }
 

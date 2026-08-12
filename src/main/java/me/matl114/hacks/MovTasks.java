@@ -22,6 +22,8 @@ import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.move.*;
+import me.matl114.hacks.utils.entity.EntityMovementStatus;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.*;
 import me.matl114.utils.commands.CommandUtils;
@@ -36,8 +38,6 @@ import me.matl114.utils.commands.params.impl.AbstractArgumentType;
 import me.matl114.utils.commands.params.impl.PosArgumentResult;
 import me.matl114.utils.commands.params.impl.PosArgumentType;
 import me.matl114.utils.commands.params.types.ExecutePos;
-import me.matl114.utils.entity.EntityMovementStatus;
-import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -60,7 +60,6 @@ import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 import org.apache.commons.lang3.function.Consumers;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 // todo: add more Functional Method as API
@@ -2188,98 +2187,85 @@ public class MovTasks {
     public static final ModuleGroup moduleManager = new ModuleGroup("Move");
 
     @Getter
-    public static MovExtra movExtra;
+    private static MovExtra movExtra;
 
     @Getter
-    public static PlayerStateManager playerStateManager;
+    private static PlayerStateManager playerStateManager;
 
     @Getter
-    public static PlayerInputManager playerInputManager;
+    private static PlayerInputManager playerInputManager;
 
     @Getter
-    public static LegacySnapRotManager legacySnapRotManager;
+    private static LegacySnapRotManager legacySnapRotManager;
 
     @Getter
-    public static ForwardTp forwardTp;
+    private static ForwardTp forwardTp;
 
     @Getter
-    public static NoSlowDown noSlowDown;
+    private static NoSlowDown noSlowDown;
 
     @Getter
-    public static NoFall noFall;
+    private static NoFall noFall;
 
     @Getter
-    public static SetBackLog setBackLog;
+    private static SetBackLog setBackLog;
 
     @Getter
-    public static AutoResync autoResync;
+    private static AutoResync autoResync;
 
     @Getter
-    public static AntiChunkLag antiChunkLag;
+    private static AntiChunkLag antiChunkLag;
 
     @Getter
-    public static Flight flight;
+    private static Flight flight;
 
     @Getter
-    public static Sprint sprint;
+    private static Sprint sprint;
 
     @Getter
-    public static MoveTimer moveTimer;
+    private static MoveTimer moveTimer;
 
     @Getter
-    public static StepHeight stepHeight;
+    private static StepHeight stepHeight;
 
     @Getter
-    public static ElytraExtra elytraExtra;
+    private static ElytraExtra elytraExtra;
 
     @Getter
-    public static ElytraFlight elytraFlight;
+    private static ElytraFlight elytraFlight;
 
     //    @Getter
-    //    public static ElytraFlightLegit elytraFlightLegit;
+    //    private static ElytraFlightLegit elytraFlightLegit;
 
     @Getter
-    public static ElytraGrimAccelerate elytraGrimAccelerate;
+    private static ElytraGrimAccelerate elytraGrimAccelerate;
 
     @Getter
-    public static ElytraJump elytraJump;
+    private static ElytraJump elytraJump;
 
     @Getter
-    public static AntiLiquid antiLiquid;
+    private static AntiLiquid antiLiquid;
 
     @Getter
-    public static Velocity velocity;
+    private static Velocity velocity;
 
     @Getter
-    public static FloatingUtils floatingUtils;
+    private static FloatingUtils floatingUtils;
 
     @Getter
-    public static ElytraSlowFall elytraSlowFall;
+    private static ElytraSlowFall elytraSlowFall;
 
     @Getter
-    public static MovTest movTest;
+    private static MovTest movTest;
 
     @Getter
-    public static TpaCommand tpaCommand;
+    private static TpaCommand tpaCommand;
 
     @Getter
-    public static TargetCommand targetCommand;
+    private static TargetCommand targetCommand;
 
     @Getter
-    public static TravellingControl travellingControl;
-
-    @Getter
-    public static SearchControl searchControl;
-
-    @Getter
-    public static PathManager pathManager;
-
-    @Getter
-    public static BaritoneFix baritoneFix;
-
-    @ApiStatus.Experimental
-    @Getter
-    public static ElytraFinder elytraFinder;
+    private static TravellingControl travellingControl;
 
     private static void initModules(ModuleManager m) {
         // move
@@ -2312,10 +2298,6 @@ public class MovTasks {
         tpaCommand = new TpaCommand().register(m);
         targetCommand = new TargetCommand().register(m);
         travellingControl = new TravellingControl().register(m);
-        searchControl = new SearchControl().register(m);
-        pathManager = new PathManager().register(m);
-        baritoneFix = new BaritoneFix().register(m);
-        elytraFinder = new ElytraFinder().register(m);
     }
 
     static {

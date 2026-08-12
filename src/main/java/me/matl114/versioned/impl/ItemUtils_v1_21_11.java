@@ -20,6 +20,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtInt;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.registry.RegistryOps;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -136,6 +137,21 @@ public class ItemUtils_v1_21_11 implements VItem {
         return tagCompound;
     }
 
+    public ItemStack fromNbt(NbtCompound tag, RegistryWrapper.WrapperLookup lookup) {
+        return tag.isEmpty()
+                ? ItemStack.EMPTY
+                : ItemStack.CODEC
+                        .decode(lookup.getOps(NbtOps.INSTANCE), tag)
+                        .getOrThrow()
+                        .getFirst();
+    }
+    // now we save DataVersion field
+    public NbtCompound toNbt(ItemStack tag, RegistryWrapper.WrapperLookup lookup) {
+        NbtCompound tagCompound = toNbt0(tag, lookup);
+        tagCompound.putInt(DataVersion.DATA_VERSION_FLAG, DataVersion.getDataVersion());
+        return tagCompound;
+    }
+
     @Override
     public MutableText getFormattedName(ItemStack stack) {
         MutableText mutableText =
@@ -152,6 +168,14 @@ public class ItemUtils_v1_21_11 implements VItem {
                 ? new NbtCompound()
                 : (NbtCompound) ItemStack.CODEC
                         .encodeStart(ItemStackUtils.registry().getOps(NbtOps.INSTANCE), tag)
+                        .getOrThrow();
+    }
+
+    private NbtCompound toNbt0(ItemStack tag, RegistryWrapper.WrapperLookup lookup) {
+        return tag.isEmpty()
+                ? new NbtCompound()
+                : (NbtCompound) ItemStack.CODEC
+                        .encodeStart(lookup.getOps(NbtOps.INSTANCE), tag)
                         .getOrThrow();
     }
 

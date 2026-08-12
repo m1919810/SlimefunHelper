@@ -1,6 +1,7 @@
 package me.matl114.hacks.modules.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import me.matl114.accessors.access.ChatScreenAccess;
 import me.matl114.commands.MainCommand;
@@ -49,6 +50,7 @@ public class SleepMode extends BaseModule {
     public final ModulePath render = makePath(Configs.RENDER_CONFIG, "render");
 
     public SleepMode() {
+        super("SleepMode");
         INSTANCE = this;
     }
 
@@ -80,6 +82,12 @@ public class SleepMode extends BaseModule {
         registerListener(Listener.getHotKeyTriggeredListener(), this::interceptHotKey, Integer.MIN_VALUE);
     }
 
+    @Override
+    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
+        super.addCustomWidgets(acceptor, dx, dy, dblank);
+        acceptor.accept(createTitleLabel("widget.sleep-mode.command", 0, dblank, dx, dy));
+    }
+
     boolean runnerOptimizeStart = false;
 
     public void checkOptimizeState() {
@@ -93,7 +101,7 @@ public class SleepMode extends BaseModule {
                 "sleep",
                 SubCommand.taskBuilder()
                         .name("sleep")
-                        .helper("<level> <confirm> 进入睡眠状态")
+                        .helper("message.command.sleep.help")
                         .arg(SimpleCommandArgs.argumentBuilder()
                                 .name("level")
                                 .intValue()

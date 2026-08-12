@@ -16,7 +16,6 @@ import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.utils.ChatUtils;
-import me.matl114.utils.ColorUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.RenderCollector;
@@ -47,6 +46,7 @@ public class ItemESP extends BaseModule {
     public final ModulePath itemEsp = detectEntity.add("item-esp");
 
     public ItemESP() {
+        super("ItemESP");
         bindFlag(enable);
     }
 
@@ -117,20 +117,20 @@ public class ItemESP extends BaseModule {
             .build();
     // 颜色（使用 WrapColor，默认绿色）
     public NBTRef<WrapColor> color = builder(itemEsp.add("color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Formatting.YELLOW)))
+            .defaultValue(new WrapColor((Formatting.YELLOW)))
             .build();
 
     // 颜色（使用 WrapColor，默认绿色）
     public NBTRef<WrapColor> specialColor = builder(itemEsp.add("special-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color("#ED0355")))
+            .defaultValue(new WrapColor(("#ED0355")))
             .build();
 
     public NBTRef<WrapColor> nameColor = builder(itemEsp.add("name-display-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Formatting.WHITE)))
+            .defaultValue(new WrapColor((Formatting.WHITE)))
             .build();
 
     public NBTRef<WrapColor> nameSpecialColor = builder(itemEsp.add("special-name-display-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Formatting.WHITE)))
+            .defaultValue(new WrapColor((Formatting.WHITE)))
             .build();
 
     public DoubleRef nameScale =

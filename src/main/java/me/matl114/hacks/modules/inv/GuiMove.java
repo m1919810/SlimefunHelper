@@ -21,6 +21,7 @@ import org.lwjgl.glfw.GLFW;
 
 public class GuiMove extends BaseModule {
     public GuiMove() {
+        super("GuiMove");
         bindFlag(enable);
     }
 

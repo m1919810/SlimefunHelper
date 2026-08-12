@@ -2,6 +2,7 @@ package me.matl114.managers.config;
 
 import lombok.AllArgsConstructor;
 import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.BaseAttrKeyValue;
 
 @AllArgsConstructor
 public class DoubleRef extends Ref<Double> {
@@ -15,10 +16,6 @@ public class DoubleRef extends Ref<Double> {
 
     public DoubleRef(Double doubleValue) {
         this(doubleValue.doubleValue());
-    }
-
-    public DoubleRef(Float floatValue) {
-        this(floatValue.doubleValue());
     }
 
     @Override
@@ -50,12 +47,15 @@ public class DoubleRef extends Ref<Double> {
         if (otherRef instanceof DoubleRef db) {
             this.set(db.get());
             return true;
+        } else if (otherRef instanceof FloatRef floatRef) {
+            this.set(floatRef.get());
+            return true;
         } else return false;
     }
 
     @Override
-    public AttrKeyValue<Double> _createKeyValue0(String key) {
-        return AttrKeyValue.doub(key, this.value);
+    public BaseAttrKeyValue<Double> _createKeyValue0(String key) {
+        return AttrKeyValue.doubleVal(key, this.value);
     }
 
     public void set(double va) {

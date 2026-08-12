@@ -22,6 +22,7 @@ public class PacketOrderManager extends BaseModule {
     public static PacketOrderManager INSTANCE;
 
     public PacketOrderManager() {
+        super("PacketOrderManager");
         INSTANCE = this;
     }
 

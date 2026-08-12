@@ -8,6 +8,7 @@ import me.matl114.events.PacketManager;
 import me.matl114.events.RenderListener;
 import me.matl114.events.catchers.PacketCatcherImpl;
 import me.matl114.events.packets.PacketStorage;
+import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -44,6 +45,7 @@ public class Airplace extends BaseModule {
     public final ModulePath airPlace = interactionTweaks.add("air-place");
 
     public Airplace() {
+        super("Airplace");
         bindFlag(enable);
     }
 
@@ -206,10 +208,10 @@ public class Airplace extends BaseModule {
                     if (i == 1) targetPos = null;
                     var ppp = checkPos;
                     RenderTasks.drawBox(Box.from(new BlockBox(ppp)), 50, Color.MAGENTA);
-                    mc.interactionManager.interactBlock(
-                            mc.player,
+                    InteractionTasks.interactBlock(
                             Hand.MAIN_HAND,
-                            new BlockHitResult(ppp.toBottomCenterPos().add(0, 1, 0), Direction.UP, ppp, false));
+                            new BlockHitResult(ppp.toBottomCenterPos().add(0, 1, 0), Direction.UP, ppp, false),
+                            false);
                     mc.player.swingHand(Hand.MAIN_HAND);
                     // work by magic
                     if (!PlayerInputUtils.of(mc.options).hasWASDMovement()) {

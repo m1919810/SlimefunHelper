@@ -9,6 +9,7 @@ public class CombatManager extends BaseModule {
     public static CombatManager INSTANCE;
 
     public CombatManager() {
+        super("CombatManager");
         INSTANCE = this;
     }
 

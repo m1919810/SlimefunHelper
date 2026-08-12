@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import me.matl114.accessors.access.ChunkAccess;
-import me.matl114.accessors.events.MetadataHolder;
+import me.matl114.accessors.interfaces.MetadataHolder;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
@@ -471,8 +471,7 @@ public class RenderOptimize extends BaseModule {
         ClientWorld mcwolrd = mc.world;
         if (mcwolrd == null) return false;
         for (var start : corners) {
-            Iterator<BlockPos> blockPosIterator =
-                    RaycastUtils.createRaycastBlockPosIterator(mc.world, start, cameraPos);
+            Iterator<BlockPos> blockPosIterator = RaycastUtils.createRaycastBlockPosIterator(start, cameraPos);
             int blockCount = 0;
             long startPos = BlockPos.ofFloored(start).asLong();
             while (blockPosIterator.hasNext()) {

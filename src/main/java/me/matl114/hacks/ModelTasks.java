@@ -12,16 +12,16 @@ public class ModelTasks {
     public static final ModuleGroup moduleManager = new ModuleGroup("Model");
 
     @Getter
-    public static ModelExtra modelExtra;
+    private static ModelExtra modelExtra;
 
     @Getter
-    public static CustomTextures customTextures;
+    private static CustomTextures customTextures;
 
     @Getter
-    public static NewStyleModel newStyleModel;
+    private static NewStyleModel newStyleModel;
 
     @Getter
-    public static SlimefunModels slimefunModels;
+    private static SlimefunModels slimefunModels;
 
     private static void initModule(ModuleManager m) {
         modelExtra = new ModelExtra().register(m);

@@ -17,7 +17,7 @@ public abstract class SlimefunEntryListScreen<T> extends SlimefunPageScreen {
     List<T> recipeEntries;
 
     public SlimefunEntryListScreen(List<T> recipeEntries) {
-        super(Text.literal("配方展示"));
+        super(Text.translatable("widget.gui.slimefun-entry-list-screen.title"));
         this.recipeEntries = recipeEntries;
     }
 

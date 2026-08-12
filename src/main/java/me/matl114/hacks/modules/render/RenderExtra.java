@@ -24,6 +24,7 @@ public class RenderExtra extends BaseModule {
     public final ModulePath render = makePath(Configs.RENDER_CONFIG, "render");
 
     public RenderExtra() {
+        super("RenderExtra");
         INSTANCE = this;
     }
 

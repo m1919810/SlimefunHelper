@@ -4,6 +4,7 @@ import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.ACTasks;
+import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -28,6 +29,7 @@ public class AutoShulker extends BaseModule {
     public final ModulePath autoShulkerPath = autoInv.add("auto-shulker");
 
     public AutoShulker() {
+        super("AutoShulker");
         bindFlag(autoShulker);
     }
 
@@ -115,10 +117,10 @@ public class AutoShulker extends BaseModule {
                 BlockState placedState = mc.world.getBlockState(placedBlock);
 
                 if (placedState.getBlock() instanceof ShulkerBoxBlock) {
-                    BlockHitResult hitResult1 = RaycastUtils.createHitResult(placedBlock);
+                    BlockHitResult hitResult1 = RaycastUtils.createRealHitResult(placedBlock);
                     // mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult1);
                     ACTasks.addPostTransactionAction((ch) -> {
-                        mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult1);
+                        InteractionTasks.interactBlock(Hand.MAIN_HAND, hitResult1, true);
                     });
                 }
             }

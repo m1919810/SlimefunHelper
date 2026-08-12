@@ -7,11 +7,9 @@ import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import java.util.function.Predicate;
-import me.matl114.hacks.modules.move.BaritoneFix;
 import me.matl114.hacks.modules.move.ElytraExtra;
 import me.matl114.hacks.modules.move.FloatingUtils;
-import me.matl114.utils.ChatUtils;
-import me.matl114.utils.Debug;
+import me.matl114.hacks.modules.survival.BaritoneFix;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -191,8 +189,7 @@ public abstract class ElytraBehaviourMixin {
             remap = false)
     private void onNoSolution3(CallbackInfo ci) {
         if (BaritoneFix.INSTANCE.freezeWhenFailCalculate.get()) {
-            Debug.chat(ChatUtils.stringToText(
-                    "&c[BaritoneFix] &fFreeze because of Baritone Elytra Computing Failure (All)"));
+            BaritoneFix.INSTANCE.logI18N("message.module.baritone-fix.freeze-all");
             FloatingUtils.INSTANCE.setGrimFloatingTick(true);
         }
     }
@@ -208,8 +205,7 @@ public abstract class ElytraBehaviourMixin {
             remap = false)
     private void onNoSolution4(CallbackInfo ci) {
         if (BaritoneFix.INSTANCE.freezeWhenFailCalculate.get()) {
-            Debug.chat(ChatUtils.stringToText(
-                    "&c[BaritoneFix] &fFreeze because of Baritone Elytra Computing Failure (Pitch)"));
+            BaritoneFix.INSTANCE.logI18N("message.module.baritone-fix.freeze-pitch");
             FloatingUtils.INSTANCE.setGrimFloatingTick(true);
         }
     }

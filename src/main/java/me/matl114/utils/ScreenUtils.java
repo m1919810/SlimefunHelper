@@ -11,7 +11,9 @@ import me.matl114.utils.collections.Point;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
 import net.minecraft.client.gui.Click;
+import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.navigation.GuiNavigationType;
+import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.GameMenuScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.*;
@@ -155,8 +157,17 @@ public class ScreenUtils {
             Map.entry(ScreenHandlerType.CARTOGRAPHY_TABLE, 3),
             Map.entry(ScreenHandlerType.STONECUTTER, 2));
 
-    public static Integer getUpperInventorySize(ScreenHandlerType<?> type) {
+    public static Integer getTopInventorySize(ScreenHandlerType<?> type) {
         return nonPlayerSlots.get(type);
+    }
+
+    public static void openChatScreen(String originalText) {
+        ChatHud.ChatMethod method =
+                originalText.startsWith("/") ? ChatHud.ChatMethod.COMMAND : ChatHud.ChatMethod.MESSAGE;
+        mc.openChatScreen(method);
+        if (mc.currentScreen instanceof ChatScreen chat) {
+            chat.insertText(originalText, true);
+        }
     }
 
     public static int getCurrentModifiers() {

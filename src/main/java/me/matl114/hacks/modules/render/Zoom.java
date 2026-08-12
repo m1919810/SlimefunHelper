@@ -17,6 +17,7 @@ import net.minecraft.client.Mouse;
 
 public class Zoom extends BaseModule {
     public Zoom() {
+        super("Zoom");
         bindFlag(enable);
     }
 
@@ -59,7 +60,7 @@ public class Zoom extends BaseModule {
         if (!currentHasScrollListener && useScroll.get()) {
             currentHasScrollListener = true;
             Listener.getMouseScroll().registerHandler((mouseEvent) -> {
-                if (useScroll.get() && holdUse.get().isAllPressed()) {
+                if (enable.get() && useScroll.get() && holdUse.get().isAllPressed()) {
                     onScroll(mouseEvent);
                     return true;
                 } else {
@@ -86,18 +87,30 @@ public class Zoom extends BaseModule {
     }
 
     public void tickFov(Event<Float> eventFov) {
-        if (holdUse.get().isAllPressed() && mc.currentScreen == null) {
-            if (currentScale == null) {
-                currentScale = defaultZoom.get();
+        if (enable.get()) {
+            if (holdUse.get().isAllPressed() && mc.currentScreen == null) {
+                if (currentScale == null) {
+                    currentScale = defaultZoom.get();
+                }
+                if (defaultMouseSensitivity == null) {
+                    defaultMouseSensitivity = mc.options.getMouseSensitivity().getValue();
+                }
+                mc.options.getMouseSensitivity().setValue(defaultMouseSensitivity / currentScale);
+                tryRegisterScrollListener();
+                eventFov.context((float) (eventFov.context() / currentScale));
+            } else {
+                currentScale = null;
+                if (defaultMouseSensitivity != null) {
+                    mc.options.getMouseSensitivity().setValue(defaultMouseSensitivity);
+                    defaultMouseSensitivity = null;
+                }
+                if (overrideCommonZoom.get().isPresent()) {
+                    float overrideScale =
+                            (float) (double) overrideCommonZoom.get().getValue();
+                    eventFov.context((float) (eventFov.context() / overrideScale));
+                }
             }
-            if (defaultMouseSensitivity == null) {
-                defaultMouseSensitivity = mc.options.getMouseSensitivity().getValue();
-            }
-            mc.options.getMouseSensitivity().setValue(defaultMouseSensitivity / currentScale);
-            tryRegisterScrollListener();
-            eventFov.context((float) (eventFov.context() / currentScale));
         } else {
-            currentScale = null;
             if (defaultMouseSensitivity != null) {
                 mc.options.getMouseSensitivity().setValue(defaultMouseSensitivity);
                 defaultMouseSensitivity = null;

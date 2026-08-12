@@ -1,7 +1,6 @@
 package me.matl114.utils.commands.params.types;
 
 import me.matl114.utils.commands.params.api.CommandExecution;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.Vec2f;
 import org.joml.Vector2f;
 
@@ -26,7 +25,8 @@ public interface ExecuteRotation {
     }
 
     static ExecuteRotation ofExecutor(CommandExecution execution) {
-        return new Fixed(currentRotation(execution));
+        Vector2f vec2f = execution.getExecuteRot();
+        return new Fixed(new Vec2f(vec2f.x, vec2f.y));
     }
 
     static ExecuteRotation relative(int flag, float pitch, float yaw) {
@@ -43,7 +43,7 @@ public interface ExecuteRotation {
     record RelativePitchYaw(int flag, Vec2f rotation) implements ExecuteRotation {
         @Override
         public Vector2f getRotation(CommandExecution execution) {
-            Vec2f base = currentRotation(execution);
+            Vector2f base = execution.getExecuteRot();
             Vec2f value = rotation == null ? new Vec2f(0.0F, 0.0F) : rotation;
             return new Vector2f(
                     (flag & 1) != 0 ? base.x + value.x : value.x, (flag & 2) != 0 ? base.y + value.y : value.y);
@@ -65,10 +65,5 @@ public interface ExecuteRotation {
 
     private static String formatAbsolute(float value) {
         return value == (long) value ? String.valueOf((long) value) : "%.1f".formatted(value);
-    }
-
-    private static Vec2f currentRotation(CommandExecution execution) {
-        PlayerEntity executor = execution == null ? null : execution.getExecutor();
-        return executor == null ? new Vec2f(0.0F, 0.0F) : new Vec2f(executor.getPitch(), executor.getYaw());
     }
 }

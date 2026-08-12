@@ -1,5 +1,6 @@
 package me.matl114.accessors.events;
 
+import me.matl114.accessors.interfaces.MetadataHolder;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 

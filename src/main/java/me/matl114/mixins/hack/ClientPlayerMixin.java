@@ -8,6 +8,7 @@ import java.util.Objects;
 import lombok.Getter;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.hacks.*;
+import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.MoveTimer;
 import me.matl114.hacks.modules.move.Sprint;
 import me.matl114.hacks.modules.render.NoRender;
@@ -139,7 +140,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
 
     @Inject(method = "closeHandledScreen", at = @At(value = "HEAD"), cancellable = true)
     public void closeHandledScreen(CallbackInfo ci) {
-        if (!this.forceCloseInv && InvTasks.getKeepInv().enable.get()) {
+        if (!this.forceCloseInv && InvExtra.INSTANCE.enableKeepInv.get()) {
             // do not keep the inventory handler because we can get accessed to it any time
             if (this.client.currentScreen instanceof HandledScreen handled
                     && !(handled.getScreenHandler() instanceof PlayerScreenHandler)

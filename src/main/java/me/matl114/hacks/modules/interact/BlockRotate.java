@@ -46,6 +46,7 @@ public class BlockRotate extends BaseModule {
     public static BlockRotate INSTANCE;
 
     public BlockRotate() {
+        super("BlockRotate");
         bindFlag(enable);
         INSTANCE = this;
     }

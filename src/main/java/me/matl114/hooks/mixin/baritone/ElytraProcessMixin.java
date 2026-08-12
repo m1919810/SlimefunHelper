@@ -8,13 +8,11 @@ import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.matl114.events.Event;
-import me.matl114.hacks.modules.move.BaritoneFix;
 import me.matl114.hacks.modules.move.FloatingUtils;
+import me.matl114.hacks.modules.survival.BaritoneFix;
 import me.matl114.hooks.BaritoneHooks;
-import me.matl114.hooks.impl.BaritoneFuture;
-import me.matl114.hooks.impl.BaritoneLanding;
-import me.matl114.utils.ChatUtils;
-import me.matl114.utils.Debug;
+import me.matl114.hooks.impl.baritone.BaritoneFuture;
+import me.matl114.hooks.impl.baritone.BaritoneLanding;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -185,8 +183,7 @@ public abstract class ElytraProcessMixin {
             remap = false)
     private void onNoSolution1(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
         if (BaritoneFix.INSTANCE.freezeWhenFailCalculate.get()) {
-            Debug.chat(ChatUtils.stringToText(
-                    "&c[BaritoneFix] &fFreeze because of Baritone Elytra Computing Failure (All)"));
+            BaritoneFix.INSTANCE.logI18N("message.module.baritone-fix.freeze-all");
             FloatingUtils.INSTANCE.setGrimFloatingTick(true);
         }
     }
@@ -202,8 +199,7 @@ public abstract class ElytraProcessMixin {
             remap = false)
     private void onNoSolution2(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
         if (BaritoneFix.INSTANCE.freezeWhenFailCalculate.get()) {
-            Debug.chat(ChatUtils.stringToText(
-                    "&c[BaritoneFix] &fFreeze because of Baritone Elytra Computing Failure (Pitch)"));
+            BaritoneFix.INSTANCE.logI18N("message.module.baritone-fix.freeze-pitch");
             FloatingUtils.INSTANCE.setGrimFloatingTick(true);
         }
     }

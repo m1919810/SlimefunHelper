@@ -9,6 +9,7 @@ import me.matl114.utils.commands.params.ArgumentInputStream;
 import me.matl114.utils.commands.params.ArgumentReader;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.utils.commands.params.api.CommandExecution;
+import net.minecraft.util.Language;
 import org.jetbrains.annotations.NotNull;
 
 public abstract class SubCommandImpl implements SubCommand {
@@ -62,6 +63,6 @@ public abstract class SubCommandImpl implements SubCommand {
 
     @Override
     public Stream<String> getHelp(String prefix) {
-        return Arrays.stream(help).map(s -> prefix + s);
+        return Arrays.stream(help).map(s -> prefix + Language.getInstance().get(s, s));
     }
 }

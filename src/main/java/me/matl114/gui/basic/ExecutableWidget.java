@@ -16,18 +16,18 @@ public class ExecutableWidget extends DrawableWidget {
         super(x, y, dx, dy);
     }
 
-    public <T extends ExecutableWidget> T setMouseHandler(InputHandler handler) {
+    public <T extends ExecutableWidget> T setInputHandler(InputHandler handler) {
         this.handler = handler;
         return (T) this;
     }
 
-    public <T extends ExecutableWidget> T updateMouseHandler(UnaryOperator<InputHandler> handlerUnaryOperator) {
+    public <T extends ExecutableWidget> T updateInputHandler(UnaryOperator<InputHandler> handlerUnaryOperator) {
         this.handler = handlerUnaryOperator.apply(this.handler);
         return (T) this;
     }
 
     public <T extends ExecutableWidget> T setElementHandler(ElementHandler handler) {
-        this.handler = handler;
+        setInputHandler(handler);
         setRenderHandler(handler);
         return (T) this;
     }

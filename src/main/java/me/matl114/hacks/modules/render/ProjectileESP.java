@@ -44,6 +44,7 @@ public class ProjectileESP extends BaseModule {
     public final ModulePath calculateTrace = detectEntity.add("calculate-trace");
 
     public ProjectileESP() {
+        super("ProjectileESP");
         bindFlag(enable);
     }
 

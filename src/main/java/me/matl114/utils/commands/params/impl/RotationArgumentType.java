@@ -10,9 +10,9 @@ import me.matl114.utils.commands.params.api.ArgumentType;
 import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.commands.params.api.InputArgument;
 import me.matl114.utils.commands.params.types.ExecuteRotation;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.Vec2f;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector2f;
 
 public class RotationArgumentType extends AbstractArgumentType<ExecuteRotation>
         implements ArgumentType<ExecuteRotation> {
@@ -136,7 +136,7 @@ public class RotationArgumentType extends AbstractArgumentType<ExecuteRotation>
     }
 
     private Vec2f currentRotation(CommandExecution sender) {
-        PlayerEntity executor = sender == null ? null : sender.getExecutor();
-        return executor == null ? new Vec2f(0.0F, 0.0F) : new Vec2f(executor.getPitch(), executor.getYaw());
+        Vector2f vec2 = sender.getExecuteRot();
+        return new Vec2f(vec2.x, vec2.y);
     }
 }

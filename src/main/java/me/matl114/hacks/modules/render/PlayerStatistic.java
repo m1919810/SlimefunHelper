@@ -13,6 +13,7 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectUtil;
 import net.minecraft.item.ItemStack;
@@ -22,6 +23,16 @@ import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 
 public class PlayerStatistic extends IRender2DColoredModule {
+    private static final int ITEM_SIZE = 8;
+    private static final int ITEM_TEXT_GAP = 2;
+    private static final int ITEM_ROW_HEIGHT = 9;
+    private static final int ITEM_TEXT_Y = 4;
+    private static final ItemStack TOTEM_STACK = new ItemStack(Items.TOTEM_OF_UNDYING);
+    private static final ItemStack TURTLE_STACK =
+            PotionContentsComponent.createStack(Items.POTION, Potions.TURTLE_MASTER);
+    private static final ItemStack FIREWORK_STACK = new ItemStack(Items.FIREWORK_ROCKET);
+    private static final ItemStack EXP_STACK = new ItemStack(Items.EXPERIENCE_BOTTLE);
+
     public PlayerStatistic() {
         super("Statistic");
     }
@@ -53,22 +64,45 @@ public class PlayerStatistic extends IRender2DColoredModule {
         if (set.getState(StatisticElement.TOTEM)) {
             handleTotem(vdraw);
         }
-        if (set.getState(StatisticElement.POP)) {
-            handlePop(vdraw);
-        }
         if (set.getState(StatisticElement.TURTLE)) {
             handleTurtle(vdraw);
         }
         if (set.getState(StatisticElement.FIREWORK)) {
             handleFirework(vdraw);
         }
+        if (set.getState(StatisticElement.EXP)) {
+            handleExp(vdraw);
+        }
         if (set.getState(StatisticElement.EFFECTS)) {
             handleEffects(vdraw);
         }
     }
 
+    private void drawItemStatistic(VDrawContext vdraw, ItemStack stack, int count) {
+        OrderedText text = Text.literal(String.valueOf(count)).asOrderedText();
+
+        vdraw.pushMatrix();
+        {
+            if (right.get()) {
+                vdraw.getMatrices().translate(-9, 0);
+            }
+            vdraw.getMatrices().pushMatrix();
+            vdraw.getMatrices().scale(0.5F, 0.5F);
+            vdraw.drawItem(stack, 0, 0, 0, 0);
+            vdraw.getMatrices().popMatrix();
+            if (!right.get()) {
+                vdraw.getMatrices().translate(9, 0);
+            } else {
+                int textWidth = mc.textRenderer.getWidth(text);
+                vdraw.getMatrices().translate(-textWidth, 0);
+            }
+        }
+        vdraw.drawText(mc.textRenderer, text, 0, 0, color.get().withAlpha(255), true);
+        vdraw.popMatrix();
+        vdraw.getMatrices().translate(0, ITEM_ROW_HEIGHT);
+    }
+
     public void handleTotem(VDrawContext vdraw) {
-        String serverName = "Totem: %d";
         var map = PlayerStateManager.INSTANCE.inventorySummary;
         int cnt;
         if (map != null) {
@@ -79,13 +113,7 @@ public class PlayerStatistic extends IRender2DColoredModule {
         } else {
             cnt = 0;
         }
-        drawText(vdraw, serverName.formatted(cnt));
-    }
-
-    public void handlePop(VDrawContext vdraw) {
-        String serverName = "Pop: %d";
-        int cnt = PlayerStateManager.INSTANCE.getPlayerPopCount(mc.player);
-        drawText(vdraw, serverName.formatted(cnt));
+        drawItemStatistic(vdraw, TOTEM_STACK, cnt);
     }
 
     private boolean isTurtle(ItemStack stack) {
@@ -100,7 +128,6 @@ public class PlayerStatistic extends IRender2DColoredModule {
     }
 
     public void handleTurtle(VDrawContext vdraw) {
-        String serverName = "Turtle: %d";
         var map = PlayerStateManager.INSTANCE.inventorySummary;
         int cnt;
         if (map != null) {
@@ -111,11 +138,10 @@ public class PlayerStatistic extends IRender2DColoredModule {
         } else {
             cnt = 0;
         }
-        drawText(vdraw, serverName.formatted(cnt));
+        drawItemStatistic(vdraw, TURTLE_STACK, cnt);
     }
 
     public void handleFirework(VDrawContext vdraw) {
-        String serverName = "Fireworks: %d";
         var map = PlayerStateManager.INSTANCE.inventorySummary;
         int cnt;
         if (map != null) {
@@ -126,7 +152,21 @@ public class PlayerStatistic extends IRender2DColoredModule {
         } else {
             cnt = 0;
         }
-        drawText(vdraw, serverName.formatted(cnt));
+        drawItemStatistic(vdraw, FIREWORK_STACK, cnt);
+    }
+
+    public void handleExp(VDrawContext vdraw) {
+        var map = PlayerStateManager.INSTANCE.inventorySummary;
+        int cnt;
+        if (map != null) {
+            cnt = map.entrySet().stream()
+                    .filter(s -> s.getKey().sample().getItem() == Items.EXPERIENCE_BOTTLE)
+                    .mapToInt(Map.Entry::getValue)
+                    .sum();
+        } else {
+            cnt = 0;
+        }
+        drawItemStatistic(vdraw, EXP_STACK, cnt);
     }
 
     private static final RegistryDisplays.IIcon<StatusEffect> statusEffectRenderer =
@@ -167,7 +207,7 @@ public class PlayerStatistic extends IRender2DColoredModule {
     public static class PlayerStatisticElementSelectSet extends BoundedPrimitiveFlagMap<StatisticElement>
             implements NBTParsable<PlayerStatisticElementSelectSet> {
         public static final NBTType<PlayerStatisticElementSelectSet> TYPE = createEnumMap(
-                PlayerStatisticElementSelectSet.class, StatisticElement.class, PlayerStatisticElementSelectSet::new);
+                "PlayerStatisticElementSelectSet", StatisticElement.class, PlayerStatisticElementSelectSet::new);
 
         public PlayerStatisticElementSelectSet(
                 List<StatisticElement> keys, Map<StatisticElement, Boolean> map, NBTType<Boolean> type) {
@@ -186,9 +226,9 @@ public class PlayerStatistic extends IRender2DColoredModule {
 
     public static enum StatisticElement implements Displayable {
         TOTEM,
-        POP,
         TURTLE,
         FIREWORK,
+        EXP,
         EFFECTS;
 
         @Override

@@ -38,13 +38,12 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
 
 public class PacketMine extends BaseModule {
     public static PacketMine INSTANCE;
 
     public PacketMine() {
+        super("PacketMine");
         bindFlag(autoEnable);
         INSTANCE = this;
     }
@@ -190,10 +189,8 @@ public class PacketMine extends BaseModule {
                         }
                         Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(currentItemSlot.index());
 
-                        Vec3d shouldFacing = pos.toCenterPos().subtract(mc.player.getEyePos());
-                        Direction dir = Direction.getFacing(shouldFacing).getOpposite();
                         progress = PlayerInteractionAccess.of(mc.interactionManager)
-                                .getCurrentMiningProgress(currentTool);
+                                .predictCurrentMiningProgressWithTool(currentTool);
 
                         if (realBreak.get() && progress > 0.98F) {
                             mc.interactionManager.breakBlock(pos);
@@ -201,7 +198,7 @@ public class PacketMine extends BaseModule {
                         for (int i = 0; i < multiplePackets.get(); ++i) {
                             if (swingHand.get())
                                 mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-                            PlayerInteractionAccess.of(mc.interactionManager).sendBreakPacket(pos, dir);
+                            PlayerInteractionAccess.of(mc.interactionManager).sendBreakPacket(pos);
                         }
                         currentTickCallback = callback;
                         postMineCallback = true;

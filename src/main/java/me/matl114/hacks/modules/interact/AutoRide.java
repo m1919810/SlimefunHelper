@@ -20,6 +20,7 @@ import net.minecraft.util.math.Box;
 
 public class AutoRide extends BaseModule {
     public AutoRide() {
+        super("AutoRide");
         bindFlag(enable);
     }
 

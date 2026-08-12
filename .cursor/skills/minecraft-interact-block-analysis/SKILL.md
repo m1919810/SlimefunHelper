@@ -547,3 +547,398 @@ disable-model-invocation: true
 - 潜行且手里拿着东西时，`interactBlock` 会直接跳过 `onUseWithItem` 和 `onUse`
 - 这会显著提高继续走到 `stack.useOnBlock`，进而触发 `BlockItem.useOnBlock` 的概率
 - 也就是“潜行覆盖方块交互，优先尝试放置”的根因之一
+
+## `isInteractable` / `mayInteract` 分类器维护建议
+
+目标不是判断“这个方块理论上有 `onUse`”，而是判断“当前这个状态下，这个点击有没有较大概率被原版方块交互吃掉，而不是继续掉到放置”。
+
+### 推荐分层
+
+1. **容器/界面类的实时判定**
+   - 先处理 `ChestBlock` / `ShulkerBoxBlock` / `EnderChestBlock` 这种会被遮挡条件影响的块
+   - 再处理 `state.createScreenHandlerFactory(world, pos) != null`
+   - 这一层不要塞进静态表，因为是否能开不是纯类型问题
+
+2. **强条件类的实时判定**
+   - 这些方块不是“碰到就算可交互”，而是要看当前状态、权限、命中面、手里物品、维度条件
+   - 适合单独写 `if` 分支
+
+3. **静态 `STATE_MAY_INTERACT` 家族表**
+   - 这里只放“原版确实存在会消费右键的交互家族”
+   - 它表达的是“这个类型值得进一步警惕/拦截放置”
+   - 不表达“当前这一帧一定会消费交互”
+
+### 应补进实时条件分支的对象
+
+#### `RespawnAnchorBlock`
+- 现有逻辑基本对
+- 应保留为实时判定
+- 当前态只有在有电量且维度允许设点/使用时，才稳定视为可交互
+
+#### `ChestBlock`
+- 现有逻辑对
+- 这是“有 GUI，但可能被猫/实心方块阻挡”的典型
+
+#### `ShulkerBoxBlock`
+- 现有逻辑对
+- 需要同时满足：容器能开、盒盖有展开空间
+
+#### `EnderChestBlock`
+- 现有逻辑对
+- 需要上方不被实心方块挡住
+
+#### `FenceBlock`
+- 原版只在“拴绳 + 有可挂载生物”时消费交互
+- 其他时候返回 `PASS`
+- 这类不适合只靠静态表硬判 true，更适合：
+  - 实时精判时：只在当前玩家手里是 `LeadItem` 且周围存在可挂载目标时返回 true
+  - 若做保守型 mayInteract，也可以保留在 `STATE_MAY_INTERACT`
+
+#### `CaveVinesHeadBlock` / `CaveVinesBodyBlock`
+- 只有 `BERRIES = true` 时采摘会消费交互
+- `BERRIES = false` 时返回 `PASS`
+- 适合实时判定
+
+#### `LightBlock`
+- 只有创造二级权限玩家能真正切换亮度
+- 非权限玩家也会得到 `CONSUME`
+- 也就是说它几乎总会挡住放置
+- 适合加入静态表
+
+#### `DaylightDetectorBlock`
+- 有改方块权限时翻转 `INVERTED` 并消费交互
+- 无权限时回退到默认基线 `PASS`
+- 适合实时判定 `player.canModifyBlocks()`；如果当前接口拿不到玩家，就保守地留在静态表
+
+#### `DragonEggBlock`
+- 右键会传送并 `SUCCESS`
+- 不是条件性的，而是稳定吃交互
+- 应加入静态表
+
+### 应补进 `STATE_MAY_INTERACT` 的家族
+
+下面这些类型建议纳入 `STATE_MAY_INTERACT`，因为原版确实存在会消费右键的分支，而你当前表里有遗漏：
+
+- `FenceBlock`
+- `DaylightDetectorBlock`
+- `DragonEggBlock`
+- `LightBlock`
+- `CaveVinesHeadBlock`
+- `CaveVinesBodyBlock`
+
+### `STATE_MAY_INTERACT` 推荐维护范围
+
+#### A. 一定保留
+- `OperatorBlock`
+- `AbstractSignBlock`
+- `AbstractCauldronBlock`
+- `DoorBlock`
+- `TrapdoorBlock`
+- `FenceGateBlock`
+- `BedBlock`
+- `CakeBlock`
+- `CandleBlock`
+- `CandleCakeBlock`
+- `CampfireBlock`
+- `BeehiveBlock`
+- `PumpkinBlock`
+- `FlowerPotBlock`
+- `DecoratedPotBlock`
+- `ComposterBlock`
+- `JukeboxBlock`
+- `LecternBlock`
+- `BellBlock`
+- `LeverBlock`
+- `ButtonBlock`
+- `RepeaterBlock`
+- `ComparatorBlock`
+- `RedstoneWireBlock`
+- `RedstoneOreBlock`
+- `NoteBlock`
+
+#### B. 需要新增
+- `FenceBlock`
+- `DaylightDetectorBlock`
+- `DragonEggBlock`
+- `LightBlock`
+- `CaveVinesHeadBlock`
+- `CaveVinesBodyBlock`
+
+#### C. 不建议放进静态表，而是走前置实时分支
+- `ChestBlock`
+- `ShulkerBoxBlock`
+- `EnderChestBlock`
+- `RespawnAnchorBlock`
+
+原因
+- 它们的“能不能真正交互”强依赖当前环境/阻挡/维度/开盖空间
+- 直接塞进静态表会把很多本来能放置的场景误判成不可放置
+
+### 推荐实现形态
+
+```java
+private static Set<Block> buildStateMayInteract() {
+    HashSet<Block> result = new HashSet<>();
+    for (Block entry : Registries.BLOCK) {
+        if (entry instanceof OperatorBlock
+                || entry instanceof AbstractSignBlock
+                || entry instanceof AbstractCauldronBlock
+                || entry instanceof DoorBlock
+                || entry instanceof TrapdoorBlock
+                || entry instanceof FenceGateBlock
+                || entry instanceof FenceBlock
+                || entry instanceof BedBlock
+                || entry instanceof CakeBlock
+                || entry instanceof CandleBlock
+                || entry instanceof CandleCakeBlock
+                || entry instanceof CampfireBlock
+                || entry instanceof BeehiveBlock
+                || entry instanceof PumpkinBlock
+                || entry instanceof FlowerPotBlock
+                || entry instanceof DecoratedPotBlock
+                || entry instanceof ComposterBlock
+                || entry instanceof JukeboxBlock
+                || entry instanceof LecternBlock
+                || entry instanceof BellBlock
+                || entry instanceof LeverBlock
+                || entry instanceof ButtonBlock
+                || entry instanceof RepeaterBlock
+                || entry instanceof ComparatorBlock
+                || entry instanceof RedstoneWireBlock
+                || entry instanceof RedstoneOreBlock
+                || entry instanceof NoteBlock
+                || entry instanceof DaylightDetectorBlock
+                || entry instanceof DragonEggBlock
+                || entry instanceof LightBlock
+                || entry instanceof CaveVinesHeadBlock
+                || entry instanceof CaveVinesBodyBlock) {
+            result.add(entry);
+        }
+    }
+    return Set.copyOf(result);
+}
+```
+
+### 推荐的 `isInteractable` 判断顺序
+
+```java
+public static boolean isInteractable(World world, BlockPos pos, BlockState state) {
+    Block block = state.getBlock();
+
+    if (block instanceof RespawnAnchorBlock) {
+        return state.get(RespawnAnchorBlock.CHARGES) > 0
+                && (world.getDimension().respawnAnchorWorks() || world.getDimension().bedWorks());
+    }
+
+    if (block instanceof ChestBlock) {
+        return InvTasks.predictOpenVanillaContainerSize(pos) > 0;
+    }
+
+    if (block instanceof ShulkerBoxBlock) {
+        return InvTasks.predictOpenVanillaContainerSize(pos) > 0 && canShulkerOpen(world, pos, state);
+    }
+
+    if (block instanceof EnderChestBlock) {
+        return !world.getBlockState(pos.up()).isSolidBlock(world, pos.up());
+    }
+
+    if (block instanceof CaveVinesHeadBlock || block instanceof CaveVinesBodyBlock) {
+        return state.contains(CaveVines.BERRIES) && state.get(CaveVines.BERRIES);
+    }
+
+    if (state.createScreenHandlerFactory(world, pos) != null) {
+        return true;
+    }
+
+    return STATE_MAY_INTERACT.contains(block);
+}
+```
+
+### 如果后续允许把 `player` 传进来
+
+更好的签名是：
+
+```java
+public static boolean isInteractable(World world, BlockPos pos, BlockState state, @Nullable PlayerEntity player)
+```
+
+这样可以继续把下列分支从“保守静态表”升级为“实时精判”：
+
+- `FenceBlock`
+  - 只有玩家手里拿 `LeadItem` 且当前确实有能挂到栅栏上的生物时，才返回 true
+- `DaylightDetectorBlock`
+  - 只有 `player.canModifyBlocks()` 时，才返回 true
+- `LightBlock`
+  - 可以直接按原版语义判成总拦截；或者只在 `player != null` 时区分“能修改亮度”与“只能被 consume”
+- `RepeaterBlock` / `ComparatorBlock` / `RedstoneWireBlock`
+  - 只有 `player.canModifyBlocks()` 时，才稳定视为可交互
+
+### 进一步贴近 `interactBlock` 的推荐签名
+
+如果目标是“尽量不漏判当前这一次右键，是否会在原版里先被方块交互吃掉”，`player` 还不够。
+
+更合适的是：
+
+```java
+public static boolean isInteractable(
+        World world,
+        BlockPos pos,
+        BlockState state,
+        @Nullable PlayerEntity player,
+        Hand hand,
+        BlockHitResult hit
+)
+```
+
+原因
+- `player.shouldCancelInteraction() && 任一手非空`
+  - 会让原版直接跳过 `onUseWithItem` 和 `onUse`
+  - 也就是潜行拿物时，很多本来会交互的块，这一击实际上不会进方块交互
+- `hand`
+  - `RespawnAnchorBlock` 要区分主手/副手，因为主手会看副手是否拿着 `GLOWSTONE`
+- `hit`
+  - `BellBlock` 要看命中侧面和命中高度
+  - `NoteBlock` 要看是否是顶面
+- `player`
+  - `DaylightDetectorBlock` / `RepeaterBlock` / `ComparatorBlock` / `RedstoneWireBlock` 要看能否改方块
+  - `LightBlock` 要看是否 `creative level two op`
+  - `FenceBlock` 要看当前是否存在拴在该玩家身上的可挂载生物
+
+### 精细版判断顺序
+
+1. 先处理“原版是否会跳过方块交互阶段”
+2. 再处理容器开盖/遮挡/维度这类实时环境条件
+3. 再处理命中面、命中高度、主副手差异、权限差异
+4. 最后再回退到 `STATE_MAY_INTERACT`
+
+### 精细版骨架
+
+```java
+public static boolean isInteractable(
+        World world,
+        BlockPos pos,
+        BlockState state,
+        @Nullable PlayerEntity player,
+        Hand hand,
+        BlockHitResult hit
+) {
+    Block block = state.getBlock();
+
+    if (player != null) {
+        boolean hasAnyStack = !player.getMainHandStack().isEmpty() || !player.getOffHandStack().isEmpty();
+        if (player.shouldCancelInteraction() && hasAnyStack) {
+            return false;
+        }
+    }
+
+    if (block instanceof RespawnAnchorBlock) {
+        return isInteractableRespawnAnchor(world, state, player, hand);
+    }
+
+    if (block instanceof ChestBlock) {
+        return InvTasks.predictOpenVanillaContainerSize(pos) > 0;
+    }
+
+    if (block instanceof ShulkerBoxBlock) {
+        return InvTasks.predictOpenVanillaContainerSize(pos) > 0 && canShulkerOpen(world, pos, state);
+    }
+
+    if (block instanceof EnderChestBlock) {
+        return !world.getBlockState(pos.up()).isSolidBlock(world, pos.up());
+    }
+
+    if (block instanceof CaveVinesHeadBlock || block instanceof CaveVinesBodyBlock) {
+        return state.contains(CaveVines.BERRIES) && state.get(CaveVines.BERRIES);
+    }
+
+    if (block instanceof FenceBlock) {
+        return canFenceConsume(world, pos, player);
+    }
+
+    if (block instanceof BellBlock) {
+        return canBellRing(state, world, pos, player, hit);
+    }
+
+    if (block instanceof DaylightDetectorBlock) {
+        return player != null && player.canModifyBlocks();
+    }
+
+    if (block instanceof RepeaterBlock
+            || block instanceof ComparatorBlock
+            || block instanceof RedstoneWireBlock) {
+        return player != null && player.getAbilities().allowModifyWorld;
+    }
+
+    if (block instanceof LightBlock) {
+        return true;
+    }
+
+    if (block instanceof DragonEggBlock) {
+        return true;
+    }
+
+    if (block instanceof NoteBlock) {
+        return !isNoteBlockTopInstrumentPass(player, hand, hit);
+    }
+
+    if (state.createScreenHandlerFactory(world, pos) != null) {
+        return true;
+    }
+
+    return STATE_MAY_INTERACT.contains(block);
+}
+```
+
+### 关键 helper 的语义
+
+#### `isInteractableRespawnAnchor(...)`
+- 当前手是 `GLOWSTONE` 且还能充能
+  - true
+- 当前手不是 `GLOWSTONE`，但主手点击且副手是 `GLOWSTONE` 且还能充能
+  - false
+  - 因为原版这里会 `PASS`，让后续物品逻辑接管
+- `CHARGES == 0`
+  - false
+- `CHARGES > 0` 且维度不可用
+  - true
+  - 因为会爆炸并吃掉这次交互
+- `CHARGES > 0` 且维度可用
+  - true
+  - 因为设出生点成功/重复设置时也会 `SUCCESS` 或 `CONSUME`
+
+#### `canFenceConsume(...)`
+- `player == null`
+  - false
+- 当前玩家手里不是 `LeadItem`
+  - false
+- 周围不存在 leash holder 为该玩家、且可挂到栅栏结点上的生物
+  - false
+- 否则 true
+
+#### `canBellRing(...)`
+- 命中面不能是上下
+- 命中高度不能太靠上
+- 挂载类型还要匹配允许敲击的方向轴
+- 同时服务端必须能拿到 `BellBlockEntity`
+- 全部满足才 true
+
+#### `isNoteBlockTopInstrumentPass(...)`
+- 当前手里物品属于 `NOTEBLOCK_TOP_INSTRUMENTS`
+- 且点击面是 `UP`
+- 这时原版 `onUseWithItem = PASS`
+- 应判 false，因为它在放行给后续物品逻辑
+
+### 对 `STATE_MAY_INTERACT` 的定位
+
+当签名已经升级到 `player + hand + hit` 后，`STATE_MAY_INTERACT` 更适合作为“兜底家族表”，而不是主判断器。
+
+也就是：
+- 能实时精判的，尽量前置精判
+- 只有那些“没有明显动态条件，但确实可能消费右键”的类型，才留给静态表兜底
+
+### 维护原则
+
+- `STATE_MAY_INTERACT` 只维护“有消费右键可能”的家族，不维护环境条件
+- 能被环境、权限、命中部位、容器开盖空间改变结果的块，优先放到前置实时分支
+- 你这个分类器如果用于“决定是否应该先避开交互再尝试放置”，宁可稍微保守，也不要把明确会吃交互的块漏掉
+- 但像 `ChestBlock`、`ShulkerBoxBlock`、`EnderChestBlock` 这种，必须继续保留实时判定，否则误报会很多

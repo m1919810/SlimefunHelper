@@ -67,9 +67,11 @@ public abstract class FogRendererMixin {
             @Local FogData fogData,
             @Local Vector4f color) {
         if (NoRender.INSTANCE.noDistanceFogVanilla()) {
-            fogData.environmentalStart = fogData.environmentalEnd;
-            fogData.renderDistanceStart = 2 * fogData.renderDistanceEnd;
-            fogData.renderDistanceEnd = 2 * fogData.renderDistanceEnd;
+            int d = 32 * viewDistance;
+            fogData.environmentalStart = d;
+            fogData.environmentalEnd = d;
+            fogData.renderDistanceStart = d;
+            fogData.renderDistanceEnd = d;
         }
     }
 }

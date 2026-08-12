@@ -2,8 +2,6 @@ package me.matl114.hooks.mixin.litematica;
 
 import fi.dy.masa.litematica.network.ServuxLitematicaHandler;
 import me.matl114.hacks.modules.extra.BadPacketsFix;
-import me.matl114.utils.ChatUtils;
-import me.matl114.utils.Debug;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.nbt.NbtCompound;
@@ -40,8 +38,8 @@ public abstract class ServuxLitematicaFixMixin {
                         "Litematic-TransmitCancel",
                         "Litematic-TransmitData",
                         "Litematic-TransmitEnd" -> {
-                    Debug.chat(ChatUtils.stringToText(
-                            "&c[LitematicaFix] &fServux file transmit request detected, may be a backdoor"));
+                    BadPacketsFix.INSTANCE.logI18NSub(
+                            "LitematicaFix", "message.module.bad-packets.litematica-backdoor");
                     if (BadPacketsFix.INSTANCE.cancelLitematicaTransmit.get()) {
                         ci.cancel();
                     }

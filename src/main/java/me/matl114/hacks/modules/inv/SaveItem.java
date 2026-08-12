@@ -30,7 +30,9 @@ import net.minecraft.util.Formatting;
 public class SaveItem extends BaseModule {
     public final ModulePath inventory = makePath(Configs.INV_CONFIG, "inventory");
 
-    public SaveItem() {}
+    public SaveItem() {
+        super("SaveItem");
+    }
 
     public KeyBindRef keyBind = hotkey(inventory.add("save-slot-item"))
             .defaultValue(new MultiKeyBind())
