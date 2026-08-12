@@ -13,6 +13,7 @@ public class CustomOverlay extends BaseModule {
     public final ModulePath customOverlay = makePath(Configs.RENDER_CONFIG, "custom-overlay");
 
     public CustomOverlay() {
+        super("CustomOverlay");
         bindFlag(enable);
     }
 

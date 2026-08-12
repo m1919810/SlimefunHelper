@@ -1,19 +1,18 @@
 package me.matl114.hacks.modules.move;
 
 import java.util.List;
-import javax.swing.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import me.matl114.events.Event;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.MathUtils;
-import me.matl114.utils.entity.LegalMovementManager;
 import net.minecraft.block.BlockState;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.Fluids;
@@ -24,6 +23,7 @@ public class AntiLiquid extends BaseModule implements LegalMovementManager.Movem
     static LegalMovementManager.DelegateMovementModifier instance;
 
     public AntiLiquid() {
+        super("AntiLiquid");
         bindFlag(enable);
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);

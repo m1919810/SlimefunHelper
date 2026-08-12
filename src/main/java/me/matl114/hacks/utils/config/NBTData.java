@@ -12,7 +12,7 @@ import net.minecraft.nbt.NbtElement;
 
 public record NBTData(NbtElement nbtElement) implements NBTParsable<NBTData> {
     public static final NBTType<NBTData> TYPE = new NBTType<NBTData>(
-            NBTData.class,
+            "nbtdata",
             VNbt.CODEC.xmap(NBTData::new, NBTData::nbtElement),
             BaseAttrKeyValue.getWidgetFactory(),
             AttrKeyValues.NBT_FACTORY.concat(WrapperFactory.of(s -> new NBTData((NbtCompound) s), NBTData::nbtElement)),

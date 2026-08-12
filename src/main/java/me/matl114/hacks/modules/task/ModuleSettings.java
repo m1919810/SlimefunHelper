@@ -2,17 +2,17 @@ package me.matl114.hacks.modules.task;
 
 import java.util.List;
 import me.matl114.accessors.events.ChatHudAccess;
+import me.matl114.accessors.gui.TextFieldAccess;
+import me.matl114.commands.MainCommand;
+import me.matl114.gui.WidgetUtils;
 import me.matl114.gui.basic.DrawableWidget;
+import me.matl114.gui.presets.single.KeyBindConfigurateWidget;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.StringFormat;
 import me.matl114.managers.Configs;
-import me.matl114.managers.config.ConfigEnum;
-import me.matl114.managers.config.EnumRef;
-import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.NBTRef;
+import me.matl114.managers.config.*;
 import me.matl114.utils.Debug;
-import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 
 public class ModuleSettings extends BaseModule {
@@ -50,6 +50,17 @@ public class ModuleSettings extends BaseModule {
     public final FlagRef moduleToggleCompress =
             flagBuilder(moduleSettings.add("compress-module-toggle-message")).build();
 
+    public final NBTRef<StringFormat> moduleLogMessageFormat = builder(
+                    moduleSettings.add("module-log-message-format"), StringFormat.class)
+            .defaultValue(new StringFormat(List.of("module_name", "message"), "&c[{module_name}] &f{message}", true))
+            .updateListener(s -> BaseModule.logFormat = s)
+            .build();
+
+    public final StringRef moduleCommandPrefix = builder(moduleSettings.add("module-command-prefix"), StringRef.TYPE)
+            .defaultValue("!!")
+            .updateListener(s -> MainCommand.MAIN_PREFIX = s)
+            .build();
+
     public boolean shouldNotExecuteConditionHotkey() {
         if (mc.currentScreen != null) {
             if (hotkeyPolicy.getValue() == HotkeyPolicy.RUN_IN_ALL_SCREEN) {
@@ -63,9 +74,19 @@ public class ModuleSettings extends BaseModule {
                     return true;
                 }
                 case WHEN_NO_INPUT_SCREEN: {
-                    if (mc.currentScreen.getFocused() instanceof TextFieldWidget textField
-                            || mc.currentScreen.getFocused() instanceof DrawableWidget gui) {
+                    var focused = mc.currentScreen.getFocused();
+                    if (focused instanceof TextFieldAccess) {
                         return true;
+                    }
+                    if (focused instanceof DrawableWidget widget) {
+                        var focus = WidgetUtils.getFocusedWidget(widget);
+                        if (WidgetUtils.isInputWidget(WidgetUtils.getFocusedWidget(focus))) {
+                            return true;
+                        }
+                        var list = WidgetUtils.getWidgetHierarchy(widget);
+                        if (list.stream().anyMatch(s -> s instanceof KeyBindConfigurateWidget)) {
+                            return true;
+                        }
                     }
                     return false;
                 }

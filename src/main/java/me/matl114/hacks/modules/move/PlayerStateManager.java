@@ -9,7 +9,7 @@ import java.util.stream.Stream;
 import lombok.Getter;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
-import me.matl114.accessors.events.MetadataHolder;
+import me.matl114.accessors.interfaces.MetadataHolder;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.annotations.Broadcast;
@@ -21,6 +21,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.*;
+import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.containers.MetaData;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.utils.inventory.ItemStackSample;
@@ -55,11 +56,14 @@ import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.*;
+import net.minecraft.world.World;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.joml.Vector2f;
+import org.joml.Vector3d;
 
 public class PlayerStateManager extends BaseModule {
     public static PlayerStateManager INSTANCE;
@@ -108,6 +112,7 @@ public class PlayerStateManager extends BaseModule {
     }
 
     public PlayerStateManager() {
+        super("PlayerStateManager");
         INSTANCE = this;
     }
 
@@ -577,6 +582,34 @@ public class PlayerStateManager extends BaseModule {
         return EntityUtils.isRotationDifferent(lastPitch, pitch, lastYaw, yaw);
     }
 
+    public Vec3d getLastRotationVector() {
+        return EntityUtils.pitchYawToRotation(lastPitch, lastYaw);
+    }
+
+    public void restoreLastRotation(PlayerEntity player) {
+        if (isRotationDifferent(player.getPitch(), player.getYaw())) {
+            mc.player.setPitch(lastPitch);
+            mc.player.setYaw(lastYaw);
+        }
+    }
+
+    public static void setPlayerYawSafe(PlayerEntity player, float yaw) {
+        float newYaw = EntityUtils.getSafeYaw(INSTANCE.lastYaw, yaw);
+        player.setYaw(newYaw);
+    }
+
+    public static void setPlayerYawSafe(PlayerEntity entity, Vec2f vec2f) {
+        setPlayerYawSafe(entity, (float) Math.toDegrees(Math.atan2(-vec2f.x, vec2f.y)));
+    }
+
+    public static void setPlayerRotationSafe(PlayerEntity entity, Vec3d vec) {
+        vec = vec.normalize();
+        EntityUtils.setEntityPitchSafe(entity, (float) Math.toDegrees(Math.asin(-vec.y)));
+
+        float newYaw = (float) Math.toDegrees(Math.atan2(-vec.x, vec.z));
+        setPlayerYawSafe(entity, newYaw);
+    }
+
     public void sendSprintStatus(boolean sprint) {
         if (sprint != lastSprint) {
             if (sprint) {
@@ -965,8 +998,7 @@ public class PlayerStateManager extends BaseModule {
         if (checkNull()) return;
         if (mc.world.getEntityById(eventUpdate.context.getEntityId()) instanceof PlayerEntity pl) {
             for (var re : eventUpdate.context.getEquipmentList()) {
-                if (!re.getSecond().isEmpty()
-                        && (re.getFirst() == EquipmentSlot.MAINHAND || re.getFirst() == EquipmentSlot.OFFHAND)) {
+                if (!re.getSecond().isEmpty()) {
                     // shit we should remove damage difference
                     ItemStack cleanItem = ItemStackUtils.getCleanedItem(re.getSecond(), 1, true, false, true);
                     getOrCreateStatus(pl).trackedInventoryItems.add(new ItemStackSample(cleanItem));
@@ -1057,6 +1089,57 @@ public class PlayerStateManager extends BaseModule {
         public int getRemainDurations() {
             int tick = startTick + duration;
             return Math.max(tick - Tasks.getTick(), 0);
+        }
+    }
+
+    public static CommandExecution createServer() {
+        return ServerPlayerContext.instance;
+    }
+
+    public static class ServerPlayerContext implements CommandExecution {
+
+        static final ServerPlayerContext instance = new ServerPlayerContext();
+
+        @Nullable
+        @Override
+        public PlayerEntity getExecutor() {
+            return mc.player;
+        }
+
+        @Override
+        public boolean hasPermission(String permission) {
+            return true;
+        }
+
+        @Override
+        public void sendMessage(@NotNull String message) {
+            if (mc.player != null) {
+                Debug.sendPlayer(ChatUtils.stringToText(message));
+            }
+        }
+
+        @Override
+        public void sendMessage(Text message) {
+            if (mc.player != null) {
+                Debug.sendPlayer(message);
+            }
+        }
+
+        @Override
+        public Vector2f getExecuteRot() {
+            return new Vector2f(INSTANCE.lastPitch, INSTANCE.lastYaw);
+        }
+
+        @NotNull
+        @Override
+        public Vector3d getExecutePos() {
+            return new Vector3d(INSTANCE.lastX, INSTANCE.lastY, INSTANCE.lastZ);
+        }
+
+        @NotNull
+        @Override
+        public World getExecuteWorld() {
+            return mc.world;
         }
     }
 }

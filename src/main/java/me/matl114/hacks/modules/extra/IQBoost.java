@@ -11,6 +11,7 @@ import net.minecraft.text.Text;
 
 public class IQBoost extends BaseModule {
     public IQBoost() {
+        super("IQBoost");
         bindFlag(enable);
     }
 

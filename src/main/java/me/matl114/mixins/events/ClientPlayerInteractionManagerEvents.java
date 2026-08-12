@@ -132,14 +132,16 @@ public abstract class ClientPlayerInteractionManagerEvents {
     public SequencedPacketCreator onModifyArgument(
             SequencedPacketCreator packetCreator,
             @Local(argsOnly = true) Hand hand,
-            @Local(argsOnly = true) BlockHitResult hitResult) {
+            @Local(argsOnly = true) BlockHitResult hitResult,
+            @Local MutableObject<ActionResult> actionResult) {
         ItemStack stackCopy = client.player.getStackInHand(hand).copy();
         BlockState state = client.world.getBlockState(hitResult.getBlockPos());
 
         return (seq) -> {
             var packet = packetCreator.predict(seq);
             if (packet instanceof PlayerInteractBlockC2SPacketAccess access) {
-                access.setUseContext(new PlayerInteractBlockC2SPacketAccess.UseContext(stackCopy, state));
+                access.setUseContext(
+                        new PlayerInteractBlockC2SPacketAccess.UseContext(stackCopy, state, actionResult.getValue()));
             }
             return packet;
         };

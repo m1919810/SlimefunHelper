@@ -34,7 +34,7 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
     public int getHeight() {
         int y = 0;
         for (DrawableWidget child : children) {
-            y += child.getHeight();
+            y += child.getY() + child.getHeight();
         }
         return y;
     }

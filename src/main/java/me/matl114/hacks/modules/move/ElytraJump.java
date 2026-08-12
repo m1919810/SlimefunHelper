@@ -4,12 +4,13 @@ import me.matl114.events.Event;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.utils.CollisionUtil;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 
@@ -17,6 +18,7 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
     static LegalMovementManager.DelegateMovementModifier instance;
 
     public ElytraJump() {
+        super("ElytraJump");
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
             MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
@@ -38,10 +40,21 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
 
     public final FlagRef sneak = flagBuilder(root.add("sneak")).build();
 
+    public final DoubleRef groundHeight =
+            doubleBuilder(root.add("ground-height")).defaultValue(3.0D).build();
+    boolean workThisTick = false;
+
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+        workThisTick = false;
+
         if (enable.get()) {
             // set the pitch first to avoid conflict with other mode
+            workThisTick = !CollisionUtil.getIntersectingBlockPositions(
+                            mc.world, mc.player.getBoundingBox().stretch(0, -groundHeight.get(), 0), false)
+                    .isEmpty();
+        }
+        if (workThisTick) {
             if (mc.player.isFallFlying() || lastFallFly) {
                 mc.player.setPitch((float) pitch.get());
                 movementManagerEvent.context.markForResetRot();
@@ -55,7 +68,7 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
 
     @Override
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
-        if (enable.get()) {
+        if (workThisTick) {
             var re = PlayerInputUtils.of(mc.player);
             if (mc.player.isOnGround()) {
                 re.jump(true).sprint(true).forward(true).sneak(sneak.get()).applyInput(mc.player);
@@ -77,13 +90,5 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
         }
         lastOnGround = mc.player.isOnGround();
         lastFallFly = mc.player.isFallFlying();
-    }
-
-    @Override
-    public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {}
-
-    @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-        return true;
     }
 }

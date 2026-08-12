@@ -52,7 +52,7 @@ public class NBTListModifyScreen<T> extends ConfirmingBigScreen {
             Consumer<List<T>> callback,
             int dx,
             int dy) {
-        super(Text.literal("列表编辑界面").formatted(Formatting.GREEN));
+        super(Text.translatable("widget.gui.nbt-list-modify-screen.title").formatted(Formatting.GREEN));
         validator = listValidator;
         this.attrFactory = attrElementFactory;
         this.list = list.stream().map(s -> attrFactory.apply("", s)).collect(Collectors.toCollection(ArrayList::new));

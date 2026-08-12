@@ -1,7 +1,6 @@
 package me.matl114.hacks.utils.config;
 
 import java.net.URI;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -18,9 +17,9 @@ import me.matl114.managers.config.NBTParsable;
 import me.matl114.managers.config.NBTType;
 import me.matl114.managers.config.Ref;
 import me.matl114.managers.config.StringRef;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.WrapperFactory;
-import net.minecraft.text.Text;
 import net.minecraft.util.Util;
 
 @Getter
@@ -28,9 +27,7 @@ import net.minecraft.util.Util;
 public class Regex implements NBTParsable<Regex>, Predicate<String> {
     public static Regex EMPTY = new Regex("");
     public static final NBTType<Regex> TYPE =
-            NBTTypes.createComapFlatMap(Regex.class, NBTTypes.STRING_TYPE, WrapperFactory.of(Regex::new, Regex::regex));
-    public static final List<Text> TOOLTIPS_REGEX =
-            List.of(Text.literal("该选项通过\"正则表达式\"进行便捷的字符串匹配和过滤"), Text.literal("如果你对\"正则表达式\"没有任何了解,请点击该按钮通过网络获取帮助"));
+            NBTTypes.createComapFlatMap("regex", NBTTypes.STRING_TYPE, WrapperFactory.of(Regex::new, Regex::regex));
 
     static {
         AttrKeyValue.CustomWidgetFactory<Regex> regexWidget = TYPE.customWidgetFactory();
@@ -40,7 +37,8 @@ public class Regex implements NBTParsable<Regex>, Predicate<String> {
             subScreenWidget.addDrawableChild(ExecutableWidget.instance(dx - dy, 0, dy, dy)
                     .setElementHandler(
                             IconElement.fixedGui(Constants.SEARCH_TEXTURE_SPRITE, ButtonAction.run(Regex::runHelpRegex))
-                                    .withTooltips(TooltipHandler.of(TOOLTIPS_REGEX))));
+                                    .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                            "widget.nbt-parsable.regex.rules.tooltips", "")))));
             return subScreenWidget;
         };
         TYPE.customWidgetFactory(newWidget);

@@ -4,9 +4,9 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
+import me.matl114.SlimefunHelper;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.hacks.ExtraTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
@@ -15,6 +15,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.StringRef;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.Debug;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.PacketType;
@@ -66,6 +67,10 @@ public class PacketDebugger extends BaseModule {
     public final FlagRef debugTime =
             flagBuilder(packetDebugger.add("debug-time")).build();
 
+    public final FlagRef stopDebugInChat = flagBuilder(packetDebugger.add("stop-debug-in-chat"))
+            .show(() -> SlimefunHelper.DEV_ENV)
+            .build();
+
     public final FlagRef interceptPacket =
             flagBuilder(packetDebugger.add("intercept-packet")).build();
 
@@ -110,7 +115,7 @@ public class PacketDebugger extends BaseModule {
                             positionLookS2CPacket.getYaw(),
                             timeStr);
                 } else {
-                    ExtraTasks.debug("Accept", simplifyId(type.getPacketId().id()), timeStr);
+                    debug("Accept", simplifyId(type.getPacketId().id()), timeStr);
                 }
             }
         }
@@ -123,7 +128,7 @@ public class PacketDebugger extends BaseModule {
             if (typesDebug.contains(type.getPacketId())) {
                 String timeStr = debugTime.get() ? (", Tick: " + Tasks.getTick()) : "";
                 if (type instanceof PlayerMoveC2SPacket moveC2SPacket) {
-                    ExtraTasks.debug(
+                    debug(
                             "Send",
                             simplifyId(type.getPacketId().id()),
                             moveC2SPacket.getX(0.0),
@@ -138,9 +143,9 @@ public class PacketDebugger extends BaseModule {
                             timeStr);
                 } else if (type instanceof PlayerInputC2SPacket playerInputC2SPacket) {
                     PlayerInputUtils.Input input = PlayerInputUtils.of(playerInputC2SPacket);
-                    ExtraTasks.debug("Send", simplifyId(type.getPacketId().id()), input, timeStr);
+                    debug("Send", simplifyId(type.getPacketId().id()), input, timeStr);
                 } else if (type instanceof PlayerActionC2SPacket actionC2SPacket) {
-                    ExtraTasks.debug(
+                    debug(
                             "Send",
                             simplifyId(type.getPacketId().id()),
                             actionC2SPacket.getAction().name(),
@@ -148,20 +153,20 @@ public class PacketDebugger extends BaseModule {
                             actionC2SPacket.getSequence(),
                             timeStr);
                 } else if (type instanceof PlayerInteractEntityC2SPacket interact) {
-                    ExtraTasks.debug(
+                    debug(
                             "Send",
                             simplifyId(type.getPacketId().id()),
                             ((Enum) interact.type.getType()).name(),
                             interact.entityId,
                             timeStr);
                 } else if (type instanceof ClientCommandC2SPacket ccmd) {
-                    ExtraTasks.debug(
+                    debug(
                             "Send",
                             simplifyId(type.getPacketId().id()),
                             ccmd.getMode().name(),
                             timeStr);
                 } else {
-                    ExtraTasks.debug("Send", simplifyId(type.getPacketId().id()), timeStr);
+                    debug("Send", simplifyId(type.getPacketId().id()), timeStr);
                 }
             }
         }
@@ -174,6 +179,14 @@ public class PacketDebugger extends BaseModule {
             if (typesIntercept.contains(type.getPacketId())) {
                 packetEvent.cancel();
             }
+        }
+    }
+
+    public void debug(Object... val) {
+        if (!stopDebugInChat.get()) {
+            Debug.chat(val);
+        } else {
+            Debug.info(val);
         }
     }
 }

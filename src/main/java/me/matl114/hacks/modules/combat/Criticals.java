@@ -18,17 +18,15 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.FloatingUtils;
+import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.CollisionUtil;
-import me.matl114.utils.EntityUtils;
-import me.matl114.utils.InventoryUtils;
-import me.matl114.utils.RaycastUtils;
-import me.matl114.utils.entity.LegalMovementManager;
+import me.matl114.utils.*;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.entity.Entity;
@@ -123,6 +121,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
     static LegalMovementManager.DelegateMovementModifier instance;
 
     public Criticals() {
+        super("Criticals");
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
             MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
@@ -238,8 +237,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
                     }
                     if (!shouldApplyGrimGroundSimulationAutoFakeGround()) {
                         mc.getNetworkHandler()
-                                .sendPacket(VPacket.newPositionAndOnGround(
-                                        x, y + getNotRecognizedAsDuplicateFullDelta(true), z, true, false));
+                                .sendPacket(VPacket.newPositionAndOnGround(x, y + MIN_HEIGHT_DELTA, z, true, false));
                     }
                     // trigger simulation to sync our position from y + 1.0E-5 -> y, critical
                     switch (setBackType.get()) {
@@ -335,7 +333,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
                     Vec3d cacheDirection = eyePos.subtract(predictedEyePos).normalize();
                     var py = EntityUtils.rotationToPitchYaw(cacheDirection);
                     acc.setPitch(py.x);
-                    acc.setYaw(EntityUtils.getSafeYaw(mc.player, py.y));
+                    acc.setYaw(EntityUtils.getSafeYaw(PlayerStateManager.INSTANCE.lastYaw, py.y));
                 }
             }
             var pkt = cache;
@@ -362,6 +360,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             });
             cache = null;
             cachedHandStack = null;
+            lastSetBackCriticalTick = Tasks.getTick();
         }
     }
 
@@ -383,16 +382,9 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
     public static final double MIN_HEIGHT_THRESHOLD = 1E-4;
     public static final double MIN_HEIGHT_DELTA = 1E-5;
 
-    public double getNotRecognizedAsDuplicateFullDelta(boolean hasMove) {
-        return (!hasMove && ViaFabricPlusHooks.isSupportDupRot()) ? 2.01E-4 : MIN_HEIGHT_DELTA;
-    }
-
-    public double getNotRecognizedAsDuplicateFullThreshold(boolean hasMove) {
-        return (!hasMove && ViaFabricPlusHooks.isSupportDupRot()) ? 5E-4 : MIN_HEIGHT_THRESHOLD;
-    }
-
     boolean lastShiftUp = false;
-    boolean lastTickSetBack;
+    Vec3d storedRotation1205;
+    int lastSetBackCriticalTick = 0;
 
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
@@ -464,21 +456,31 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
         if (enable.get()
                 && mode.get() == Mode.GRIM_GROUND_SIMULATION
                 && !canNotCrit()
+                && lastSetBackCriticalTick + 2 <= Tasks.getTick()
                 && shouldApplyGrimGroundSimulationAutoFakeGround()) {
             double yLevel = mc.player.getY();
 
             if (setbackFlag <= 0) {
                 // may be flag as duplicate rot
                 double delta;
-                boolean move = !Objects.equals(mc.player.getPos(), movementManagerEvent.context.playerStatus.pos);
-                delta = getNotRecognizedAsDuplicateFullDelta(move);
-                double thres = getNotRecognizedAsDuplicateFullThreshold(move);
+                boolean move = mc.player
+                                        .getPos()
+                                        .subtract(movementManagerEvent.context.playerStatus.pos)
+                                        .horizontalLengthSquared()
+                                > MathUtils.s2(2E-4)
+                        || Math.abs(mc.player.getPos().y - movementManagerEvent.context.playerStatus.pos.y) > 2E-4;
+                delta = MIN_HEIGHT_DELTA;
+                double thres = MIN_HEIGHT_THRESHOLD;
                 double thresNeg = 1.0D / thres;
                 double newYLevel = (((int) (yLevel * thresNeg)) * thres) + delta;
                 Vec3d pos = mc.player.getPos();
                 mc.player.setPosition(pos.withAxis(Direction.Axis.Y, newYLevel));
                 if (!Objects.equals(pos, mc.player.getPos())) {
                     // must resend because of ojng's shit move threshold
+                    if (!move && ViaFabricPlusHooks.isSupportDupRot()) {
+                        storedRotation1205 = mc.player.getRotationVector();
+                        PlayerStateManager.INSTANCE.restoreLastRotation(mc.player);
+                    }
                     ClientPlayerAccess.of(mc.player).resyncPos();
                 }
             }
@@ -545,6 +547,11 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
 
     @Override
     public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+        if (storedRotation1205 != null) {
+            PlayerStateManager.setPlayerRotationSafe(mc.player, storedRotation1205);
+            LegacySnapRotManager.INSTANCE.snapAt(storedRotation1205, false);
+            storedRotation1205 = null;
+        }
         return true;
     }
 
@@ -555,12 +562,14 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
                     mode.set(Mode.GRIM_GROUND_SIMULATION);
                 }
                 autoFakeGround.set(false);
+                autoWalk.set(false);
             }
             case AC_GRIM -> {
                 if (mode.get().isIn(Mode.PACKET)) {
                     mode.set(Mode.GRIM_GROUND_SIMULATION);
                 }
                 autoFakeGround.set(true);
+                autoWalk.set(true);
             }
             case HACKING, VANILLA -> {
                 mode.set(Mode.PACKET);

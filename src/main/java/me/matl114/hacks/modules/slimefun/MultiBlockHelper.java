@@ -8,7 +8,7 @@ import lombok.AllArgsConstructor;
 import me.matl114.accessors.access.ClientAccess;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.HandledScreenAccess;
-import me.matl114.accessors.access.TileInventoryScreen;
+import me.matl114.accessors.interfaces.TileInventory;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.ContentDelegateWidget;
@@ -17,6 +17,8 @@ import me.matl114.hacks.SlimefunTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
+import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.multiblock.BlockMatcher;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -27,7 +29,6 @@ import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.RaycastUtils;
 import me.matl114.utils.containers.MetaData;
-import me.matl114.utils.entity.LegalMovementManager;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.gui.screen.Screen;
@@ -49,6 +50,7 @@ import net.minecraft.world.World;
 
 public class MultiBlockHelper extends BaseModule {
     public MultiBlockHelper() {
+        super("MultiBlockHelper");
         bindFlag(enableClicker);
     }
 
@@ -101,7 +103,7 @@ public class MultiBlockHelper extends BaseModule {
 
                     int cursorIndex = (++executeCursor) % screens.size();
                     var executeData = screens.get(cursorIndex);
-                    if (executeData != null && executeData.getSecond() instanceof TileInventoryScreen holder) {
+                    if (executeData != null && executeData.getSecond() instanceof TileInventory holder) {
                         if (!holder.isVirtual() && holder.getBlockType() == Blocks.DISPENSER) {
                             // 当玩家关闭界面但并没有取消的时候,以低速运行
                             onMultiBlockExecute(holder.castHandled(), true, false);
@@ -128,7 +130,7 @@ public class MultiBlockHelper extends BaseModule {
 
     private void onScreenInit(Event<HandledScreen<?>> event) {
         if (enableCrafterGui.get()
-                && event.context() instanceof TileInventoryScreen screen
+                && event.context() instanceof TileInventory screen
                 && event.context() instanceof Generic3x3ContainerScreen containerScreen) {
             HandledScreenAccess screenAccess = HandledScreenAccess.of(containerScreen);
             MetaData holder = screenAccess.getMetadata();
@@ -247,7 +249,7 @@ public class MultiBlockHelper extends BaseModule {
                         //                        float yaw = args.getYaw();
                         movementManagerEvent.context.pushImportantRotation(true, true);
                         EntityUtils.setEntityPitchSafe(args, pitchYaw.x);
-                        EntityUtils.setEntityYawSafe(args, pitchYaw.y);
+                        PlayerStateManager.setPlayerYawSafe(args, pitchYaw.y);
                         movementManagerEvent.context.markForResetRot();
                     }
 
@@ -303,12 +305,12 @@ public class MultiBlockHelper extends BaseModule {
         }
     }
 
-    private List<Pair<BlockPos, TileInventoryScreen>> screens = new ArrayList<>();
+    private List<Pair<BlockPos, TileInventory>> screens = new ArrayList<>();
     private int executeCursor = 0;
 
     public void onMultiBlockExecute(Screen executingScreen, boolean clickMany, boolean clickDouble) {
         if (mc.player == null
-                || !(executingScreen instanceof TileInventoryScreen tile)
+                || !(executingScreen instanceof TileInventory tile)
                 || tile.isVirtual()
                 || tile.getWorld() != mc.world) {
             return;
@@ -321,7 +323,7 @@ public class MultiBlockHelper extends BaseModule {
             return;
         }
         // opening current Executing
-        if (mc.currentScreen instanceof TileInventoryScreen tileExecute && Objects.equals(pos, tileExecute.getPos())) {
+        if (mc.currentScreen instanceof TileInventory tileExecute && Objects.equals(pos, tileExecute.getPos())) {
             boolean hasItem = false;
             for (var slot : tileExecute.castHandled().getScreenHandler().slots) {
                 if (slot.inventory instanceof PlayerInventory) {
@@ -343,7 +345,7 @@ public class MultiBlockHelper extends BaseModule {
                 if (optional.isEmpty()) continue;
                 find = true;
                 for (var bp : optional) {
-                    BlockHitResult result = RaycastUtils.createHitResult(bp);
+                    BlockHitResult result = RaycastUtils.createRealHitResult(bp);
                     onClickBlockExecute(result, clickDouble, clickMany);
                 }
             }
@@ -361,11 +363,11 @@ public class MultiBlockHelper extends BaseModule {
         executeCursor = 0;
     }
     //    private static boolean AUTO_EXECUTE = false;
-    public boolean isMultiBlockExecuting(TileInventoryScreen screen) {
+    public boolean isMultiBlockExecuting(TileInventory screen) {
         return screens.stream().anyMatch(i -> Objects.equals(screen.getPos(), i.getFirst()));
     }
 
-    public void toggleMultiBlockAutoExecuteState(TileInventoryScreen screen, boolean val) {
+    public void toggleMultiBlockAutoExecuteState(TileInventory screen, boolean val) {
         if (screen.isVirtual()) {
             Debug.chat(Text.literal("[自动多方块] 找不到该屏幕对应的方块位置"));
         } else {

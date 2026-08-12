@@ -54,7 +54,7 @@ public class StringFormat implements NBTParsable<StringFormat> {
 
     BiConsumer<Map<String, String>, Consumer<Object>> cachedFormatter;
     public static NBTType<StringFormat> TYPE = new NBTType<>(
-            StringFormat.class,
+            "stringformat",
             RecordCodecBuilder.create(oInstance -> oInstance
                     .group(
                             Codec.list(Codec.STRING).fieldOf("arguments").forGetter(StringFormat::formattingArgument),
@@ -97,10 +97,8 @@ public class StringFormat implements NBTParsable<StringFormat> {
             new StringFormat(List.of(), ""));
 
     public static List<Text> generateTooltipsForArgument(List<String> formattingArgument) {
-        List<Text> tooltips = new ArrayList<>();
-        tooltips.add(Text.literal("在该参数中可以使用{...}来进行变量替换"));
-        tooltips.add(Text.literal("在真实应用时,字符串中的{...}会被替换为对应变量"));
-        tooltips.add(Text.literal("以下是当前位置可以使用的参数: "));
+        List<Text> tooltips = new ArrayList<>(
+                ChatUtils.parseTooltipsTranslation("widget.nbt-parsable.string-format.argument-info.tooltips", ""));
         for (var re : formattingArgument) {
             tooltips.add(Text.literal("- {%s}".formatted(re)));
         }
@@ -116,11 +114,8 @@ public class StringFormat implements NBTParsable<StringFormat> {
     }
 
     public List<Text> generateColorStringPreview() {
-        List<Text> tooltips = new ArrayList<>();
-        tooltips.add(Text.literal("该参数使用\"格式化代码\"来编码颜色字符"));
-        tooltips.add(Text.literal("详细规则点击该按钮打开MCWiki查询"));
-        tooltips.add(Text.literal("其中,&字符可以替代分节符,同时支持使用&x"));
-        tooltips.add(Text.literal("当前内容预览:"));
+        List<Text> tooltips = new ArrayList<>(
+                ChatUtils.parseTooltipsTranslation("widget.nbt-parsable.string-format.color-string-info.tooltips", ""));
         tooltips.add(this.formatText());
         return tooltips;
     }
@@ -183,9 +178,13 @@ public class StringFormat implements NBTParsable<StringFormat> {
         for (int i = 0; i < size; i++) {
             availableMap.put(formattingArgument.get(i), arguments[i]);
         }
+        return format(availableMap);
+    }
+
+    public String format(Map<String, String> arguments) {
         BiConsumer<Map<String, String>, Consumer<String>> builder = construct0();
         StringBuilder result = new StringBuilder();
-        builder.accept(availableMap, result::append);
+        builder.accept(arguments, result::append);
         return result.toString();
     }
 
@@ -195,9 +194,13 @@ public class StringFormat implements NBTParsable<StringFormat> {
         for (int i = 0; i < size; i++) {
             availableMap.put(formattingArgument.get(i), arguments[i]);
         }
+        return formatText(availableMap);
+    }
+
+    public MutableText formatText(Map<String, Object> arguments) {
         BiConsumer<Map<String, Object>, Consumer<Object>> builder = construct0();
         ChatUtils.TextBuilder result = ChatUtils.builder();
-        builder.accept(availableMap, (obj) -> {
+        builder.accept(arguments, (obj) -> {
             if (obj instanceof Text txt) {
                 result.appendText(txt);
             } else {
@@ -205,5 +208,19 @@ public class StringFormat implements NBTParsable<StringFormat> {
             }
         });
         return result.end().build();
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (!(object instanceof StringFormat format)) return false;
+        return Objects.equals(format.formatString, formatString)
+                && Objects.equals(format.formattingArgument, formattingArgument)
+                && Objects.equals(format.colorString, colorString);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(formatString, formattingArgument, colorString);
     }
 }

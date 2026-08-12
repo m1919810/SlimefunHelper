@@ -26,6 +26,7 @@ public class NbtTooltips extends BaseModule {
     public final ModulePath nbtTooltips = itemEditor.add("nbt-tooltips");
 
     public NbtTooltips() {
+        super("NbtTooltips");
         bindFlag(enable);
     }
 

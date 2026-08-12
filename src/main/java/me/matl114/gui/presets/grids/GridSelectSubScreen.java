@@ -10,6 +10,7 @@ import me.matl114.gui.PageSwitchSubScreen;
 import me.matl114.gui.basic.ContentDelegateWidget;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.SubScreenWidget;
+import me.matl114.utils.config.ValueAccessor;
 
 public class GridSelectSubScreen<R> extends SubScreenWidget {
     final PageSwitchSubScreen pageSwitcher;
@@ -28,6 +29,7 @@ public class GridSelectSubScreen<R> extends SubScreenWidget {
     final int filterDistance;
     final int elementX;
     final int elementY;
+    ValueAccessor<String> filterInput;
 
     public GridSelectSubScreen(
             int x,
@@ -42,6 +44,7 @@ public class GridSelectSubScreen<R> extends SubScreenWidget {
             int elementY,
             Supplier<List<R>> origins,
             BiPredicate<String, R> filter,
+            ValueAccessor<String> filterInput,
             Function<R, DrawableWidget> function) {
         super(x, y, dx, 0);
 
@@ -52,12 +55,10 @@ public class GridSelectSubScreen<R> extends SubScreenWidget {
         this.filterHeight = filterHeight;
         this.originalValues = origins;
         this.function = function;
+        this.filterInput = filterInput;
         this.pageSwitcher = new PageSwitchSubScreen(0, 0, dx, pageHeight, 100, (i) -> resetPage()).addToSub(this);
         this.delegate = FilterService.createFilter(
-                () -> this.getFilterTask().accept(FilterService.currentUserInput), 5, 0, dx - 10, this.filterHeight);
-        //            McWidgetHelpers.createTextFieldEditBox(
-        //            , PropertyTracker.event(this.getFilterTask()), FilterService.currentUserInput
-        //        );//.addToSub(this);
+                filterInput, (v) -> this.getFilterTask().accept(v), 5, 0, dx - 10, this.filterHeight);
         this.textFieldWidget = new ContentDelegateWidget(0, 0, 0, 0)
                 .setContentDelegate(this.delegate); // this.textFieldWidget.getDelegate();
         this.textFieldWidget.addToSub(this);
@@ -116,7 +117,7 @@ public class GridSelectSubScreen<R> extends SubScreenWidget {
         var filter = this.filter;
         if (this.filter != null) {
             values = originalValues.get().stream()
-                    .filter(t -> filter.test(FilterService.currentUserInput, t))
+                    .filter(t -> filter.test(filterInput.getValue(), t))
                     .toList();
             return true;
         } else {
@@ -131,7 +132,7 @@ public class GridSelectSubScreen<R> extends SubScreenWidget {
 
     public Consumer<String> getFilterTask() {
         return (str) -> {
-            FilterService.currentUserInput = str;
+            filterInput.setValue(str);
             refresh();
         };
     }

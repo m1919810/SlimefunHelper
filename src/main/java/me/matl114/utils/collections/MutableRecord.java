@@ -29,8 +29,27 @@ public class MutableRecord {
         return (T) this.values.get(key);
     }
 
+    public <T> T get(String key, T defaultValue) {
+        return (T) this.values.getOrDefault(key, defaultValue);
+    }
+
+    public <T> T getOrPut(String key, T defaultValue) {
+        T value = this.get(key);
+        if (value != null) {
+            return value;
+        } else {
+            set(key, defaultValue);
+            return defaultValue;
+        }
+    }
+
     public <T> void set(String key, T value) {
         this.values.put(key, value);
+    }
+
+    public void replaceMap(MutableRecord record) {
+        this.values.clear();
+        this.values.putAll(record.values);
     }
 
     public static <T extends Record> MutableRecord of(T value) {
@@ -65,14 +84,9 @@ public class MutableRecord {
         for (int i = 0; i < components.length; i++) {
             RecordComponent component = components[i];
             String name = keys.get(i);
-            Method accessor;
+            Method method = component.getAccessor();
             try {
-                accessor = clazz.getMethod(name);
-            } catch (NoSuchMethodException e) {
-                throw new RuntimeException("Record component accessor not found: " + name, e);
-            }
-            try {
-                Object val = accessor.invoke(value);
+                Object val = method.invoke(value);
                 argsMap.put(name, val);
             } catch (IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException("Failed to get value for " + name, e);

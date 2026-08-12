@@ -14,7 +14,6 @@ import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 
 public class ModuleListHud extends IRender2DColoredModule {
     public final ModulePath hudRoot = makePath(Configs.RENDER_CONFIG, "in-game-hud");
@@ -93,7 +92,7 @@ public class ModuleListHud extends IRender2DColoredModule {
             this.moduleEntry = moduleEntry;
             this.lastState = moduleEntry.getActiveState();
             this.switchCountDown = -1;
-            this.lastDisplay = moduleEntry.getDisplay().formatted(Formatting.BOLD);
+            this.lastDisplay = moduleEntry.getDisplay();
         }
 
         Text lastDisplay;
@@ -112,15 +111,14 @@ public class ModuleListHud extends IRender2DColoredModule {
 
             if (!Objects.equals(lastMeta, moduleEntry.getMetaData())) {
                 lastMeta = moduleEntry.getMetaData();
-                lastDisplay = ((lastMeta != null
-                                        && mc.textRenderer.getTextHandler().getWidth(lastMeta) > 0.0F)
+                lastDisplay =
+                        ((lastMeta != null && mc.textRenderer.getTextHandler().getWidth(lastMeta) > 0.0F)
                                 ? (moduleEntry
                                         .getDisplay()
                                         .append(Text.literal("["))
                                         .append(lastMeta)
                                         .append(Text.literal("]")))
-                                : moduleEntry.getDisplay())
-                        .formatted(Formatting.BOLD);
+                                : moduleEntry.getDisplay());
                 update = true;
             }
             return update;
@@ -155,7 +153,8 @@ public class ModuleListHud extends IRender2DColoredModule {
                 double height = text.getAnimationHeight();
                 if (height < 0 || i == size - 1) {
                     if (text.lastState) {
-                        drawText(vdraw, text.getDisplay().asOrderedText());
+                        Text display = text.getDisplay();
+                        drawText(vdraw, display);
                         cnt += 1;
                     }
                 } else {

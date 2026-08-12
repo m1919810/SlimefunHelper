@@ -1,6 +1,7 @@
 package me.matl114.gui.elements;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import me.matl114.gui.basic.*;
 import me.matl114.utils.InventoryUtils;
@@ -111,11 +112,20 @@ public class SlotElement extends AbstractElement {
         return this;
     }
 
-    private boolean tooltips = true;
+    private BooleanSupplier tooltips = () -> true;
+
+    public SlotElement setShowItemTooltips(boolean tooltips) {
+        return setShowItemTooltips(() -> tooltips);
+    }
+
+    public SlotElement setShowItemTooltips(BooleanSupplier tooltips) {
+        this.tooltips = tooltips;
+        return this;
+    }
 
     public AbstractElement withTooltips(TooltipHandler handler) {
         if (handler == null) return this;
-        tooltips = false;
+        tooltips = () -> false;
         return super.withTooltips(handler);
     }
 
@@ -130,7 +140,7 @@ public class SlotElement extends AbstractElement {
             boolean shouldHighlight) {
         // draw tooltips here;
         super.renderExtra0(element, context, mouseX, mouseY, delta, alpha, shouldHighlight);
-        if (shouldHighlight && tooltips) {
+        if (shouldHighlight && tooltips != null && tooltips.getAsBoolean()) {
             ItemStack stack = inventory.getStack(index);
             if (!stack.isEmpty()) {
                 context.drawTooltip(

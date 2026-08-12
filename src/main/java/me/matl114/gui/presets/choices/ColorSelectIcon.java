@@ -7,6 +7,7 @@ import java.util.List;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.BoxElement;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.config.ValueAccessor;
@@ -43,8 +44,10 @@ public class ColorSelectIcon extends BoxElement {
         this.color = color;
         combineAbsoluteRender(TooltipHandler.of(() -> {
             List<Text> tooltip = new ArrayList<>();
-            tooltip.add(Text.literal("当前颜色为: " + color.getValue().getName()));
-            tooltip.addAll(TOOLTIPS_SWAP_COLOR);
+            tooltip.add(Text.translatable(
+                    "widget.gui.color-select-icon.current-color",
+                    color.getValue().getName()));
+            tooltip.addAll(ChatUtils.parseTooltipsTranslation("widget.gui.color-select-icon.swap-color.tooltips", ""));
             return tooltip;
         }));
     }
@@ -53,12 +56,11 @@ public class ColorSelectIcon extends BoxElement {
         super(buttonAction);
         this.color = color;
         combineAbsoluteRender(TooltipHandler.of(() -> {
-            return List.of(Text.literal("当前颜色为: " + color.getValue().getName()));
+            return List.of(Text.translatable(
+                    "widget.gui.color-select-icon.current-color",
+                    color.getValue().getName()));
         }));
     }
-
-    public static final List<Text> TOOLTIPS_SWAP_COLOR =
-            List.of(Text.literal("左右键点击切换颜色"), Text.literal("shift点击打开颜色选取表"));
 
     public void renderCentered0(
             DrawableWidget element,

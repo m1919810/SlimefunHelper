@@ -17,7 +17,9 @@ import net.minecraft.util.math.Vec3d;
 public class SetBackLog extends BaseModule {
     public final ModulePath moveSafety = makePath(Configs.MOV_CONFIG, "move-safety");
 
-    public SetBackLog() {}
+    public SetBackLog() {
+        super("SetBackLog");
+    }
 
     public final FlagRef logResync =
             flagBuilder(moveSafety.add("log-resync-packets")).build();

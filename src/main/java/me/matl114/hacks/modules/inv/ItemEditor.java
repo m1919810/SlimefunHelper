@@ -21,7 +21,9 @@ import net.minecraft.util.Formatting;
 public class ItemEditor extends BaseModule {
     public final ModulePath itemEditor = makePath(Configs.INV_CONFIG, "item-editor");
 
-    public ItemEditor() {}
+    public ItemEditor() {
+        super("ItemEditor");
+    }
 
     public final KeyBindRef keyBind = hotkey(
                     Configs.INV_CONFIG, itemEditor.add("open-editor").toPath())

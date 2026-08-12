@@ -18,6 +18,7 @@ import me.matl114.managers.config.NBTParsable;
 import me.matl114.managers.config.NBTType;
 import me.matl114.managers.config.Ref;
 import me.matl114.managers.config.StringRef;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.RegistryUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.WrapperFactory;
@@ -40,7 +41,7 @@ public class RegistryRegex<T> implements NBTParsable<RegistryRegex<T>>, Predicat
     }
 
     public static final NBTType<RegistryRegex> TYPE = new NBTType<>(
-            RegistryRegex.class,
+            "registryregex",
             RecordCodecBuilder.create(instance -> instance.group(
                             Regex.TYPE.typeCodec().fieldOf("regex").forGetter(RegistryRegex::getParent),
                             ((Codec<Registry<?>>) Registries.REGISTRIES.getCodec())
@@ -94,7 +95,7 @@ public class RegistryRegex<T> implements NBTParsable<RegistryRegex<T>>, Predicat
                 .setElementHandler(IconElement.fixedGui(
                                 Constants.LIST_TAG_SPRITE, ButtonAction.run(() -> openRegexListView(registry, attr)))
                         .withTooltips(TooltipHandler.of(Streams.concat(
-                                        originValue.getRules().stream(), Constants.OPEN_LIST_PREVIEW_TOOLTIPS.stream())
+                                        originValue.getRules().stream(), Constants.openListPreviewTooltips().stream())
                                 .toList()))));
         return subScreenWidget;
     }
@@ -174,10 +175,7 @@ public class RegistryRegex<T> implements NBTParsable<RegistryRegex<T>>, Predicat
         return Optional.empty();
     }
 
-    public static final List<Text> TOOLTIPS_RULES =
-            List.of(Text.literal("该选项通过\"正则表达式\"匹配注册表项"), Text.literal("仅匹配路径,如minecraft:air(空气)只匹配air部分"));
-
     public List<Text> getRules() {
-        return TOOLTIPS_RULES;
+        return ChatUtils.parseTooltipsTranslation("widget.nbt-parsable.registry-regex.rules.tooltips", "");
     }
 }

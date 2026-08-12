@@ -26,6 +26,7 @@ public class TransactionBlocker extends BaseModule {
     public final ModulePath transactionBlocker = lagUtils.add("transaction-blocker");
 
     public TransactionBlocker() {
+        super("TransactionBlocker");
         bindFlag(enable);
     }
 

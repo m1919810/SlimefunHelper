@@ -1,11 +1,11 @@
 package me.matl114.gui;
 
-import java.util.List;
 import java.util.function.IntConsumer;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.LabelElement;
 import me.matl114.gui.elements.PageButtonElement;
 import me.matl114.gui.presets.single.IntFastInputWidget;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
@@ -47,7 +47,6 @@ public class PageSwitchSubScreen extends SubScreenWidget {
     // add scroll on top to switch page finished
     // add shift click to fastinput page finished
     private ContentDelegateWidget<IntFastInputWidget> hovering;
-    private static List<Text> TOOLTIPS_PAGE_LABEL = List.of(Text.literal("使用滚轮以前后切换页数"), Text.literal("点击以输入快捷切换的页数"));
 
     public PageSwitchSubScreen(int x, int y, int dx, int dy, int pageHeight, IntConsumer pageSwitchCallback) {
         super(x, y, dx, dy);
@@ -57,7 +56,8 @@ public class PageSwitchSubScreen extends SubScreenWidget {
     }
 
     protected void hoverInputPageWidget() {
-        AttrKeyValue<Integer> clampedValue = AttrKeyValue.clampedInt("输入页数", this.page, 1, this.maxPage);
+        AttrKeyValue<Integer> clampedValue =
+                AttrKeyValue.clampedInt("widget.gui.page-switch-sub-screen.input-page", this.page, 1, this.maxPage);
         hovering.setContentDelegate(IntFastInputWidget.instance(
                         clampedValue, this::hoverInputCallback, (dx - 96) / 2, (this.pageHeight - 30) / 2, 96, 30, 64)
                 .setFinishRunning(() -> this.hovering.setContentDelegate(null)));
@@ -83,7 +83,8 @@ public class PageSwitchSubScreen extends SubScreenWidget {
                             return true;
                         }))
                         .withInputHandler(InputHandler.clickRun(this::hoverInputPageWidget))
-                        .withTooltips(TooltipHandler.of(TOOLTIPS_PAGE_LABEL)))
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.page-switch-sub-screen.page-label.tooltips", ""))))
                 .addToSub(this);
         ExecutableWidget.instance(5, 0, dy, dy)
                 .setElementHandler(PageButtonElement.prev(this::getMaxPage, this::getPage, this::setPage))

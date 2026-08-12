@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import com.mojang.serialization.Codec;
 import java.lang.reflect.Field;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import me.matl114.utils.Debug;
@@ -20,16 +19,16 @@ public interface NBTParsable<T extends NBTParsable<T>> extends AutoRegisterType 
 
     public static void onLoad(Class<?> c) {
         if (NBTParsable.class.isAssignableFrom(c)) {
-            if (!registeredParsableTypes.containsKey(c.getSimpleName().toLowerCase(Locale.ROOT))) {
-                try {
-                    Field fieldLookup = c.getField("TYPE");
-                    Preconditions.checkArgument(NBTType.class.isAssignableFrom(fieldLookup.getType()));
-                    NBTType<?> type = (NBTType<?>) fieldLookup.get(null);
+            try {
+                Field fieldLookup = c.getField("TYPE");
+                Preconditions.checkArgument(NBTType.class.isAssignableFrom(fieldLookup.getType()));
+                NBTType<?> type = (NBTType<?>) fieldLookup.get(null);
+                if (!registeredParsableTypes.containsKey(type.typeName)) {
                     registerNBTType(type);
-                } catch (Throwable e) {
-                    Debug.info("Auto register fail for type " + c.getSimpleName()
-                            + ", because static NBTType TYPE field not found");
                 }
+            } catch (Throwable e) {
+                Debug.info("Auto register fail for type " + c.getSimpleName()
+                        + ", because static NBTType TYPE field not found");
             }
         }
     }

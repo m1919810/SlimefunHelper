@@ -1,7 +1,6 @@
 package me.matl114.gui.complex.slimefun;
 
 import com.google.common.base.Preconditions;
-import java.util.List;
 import java.util.function.BiConsumer;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -11,6 +10,7 @@ import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.SlimefunTasks;
 import me.matl114.hacks.utils.recipes.RecipeEntry;
 import me.matl114.hacks.utils.recipes.RecipeIngredient;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.inventory.MyIngredientImmutableInventory;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.inventory.Inventory;
@@ -53,10 +53,6 @@ public class SlimefunRecipeWidget extends SubScreenWidget {
         init0();
     }
 
-    private static final List<Text> CREATIVEGIVE_TOOLTIPS =
-            List.of(Text.literal("获得物品"), Text.literal(""), Text.literal("仅在创造模式可用"));
-    private static final List<Text> OPENEDITOR_TOOLTIPS = List.of(Text.literal("在物品编辑器中打开该物品"));
-    private static final List<Text> SAVEITEM_TOOLTIPS = List.of(Text.literal("将该物品加入保存物品"));
     protected static Identifier CANCEL_GUI_TEXTURE = new Identifier("minecraft", "container/beacon/cancel");
 
     private final void init0() {
@@ -103,7 +99,8 @@ public class SlimefunRecipeWidget extends SubScreenWidget {
                     .setElementHandler(new ButtonElement(TextProvider.of(Text.literal("G")), ButtonAction.run(() -> {
                                 InvTasks.creativeAddItem(output.copy(), 64);
                             }))
-                            .withTooltips(TooltipHandler.of(CREATIVEGIVE_TOOLTIPS)))
+                            .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                    "widget.gui.slimefun-recipe-widget.creative-give.tooltips", ""))))
                     .addToSub(this);
             index += 1;
         }
@@ -111,18 +108,21 @@ public class SlimefunRecipeWidget extends SubScreenWidget {
                 .setElementHandler(new ButtonElement(TextProvider.of(Text.literal("E")), ButtonAction.run(() -> {
                             InvTasks.openEditScreen(output.copy(), null);
                         }))
-                        .withTooltips(TooltipHandler.of(OPENEDITOR_TOOLTIPS)))
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.slimefun-recipe-widget.open-editor.tooltips", ""))))
                 .addToSub(this);
         index++;
         ExecutableWidget.instance(startX + index * 12, 44, 9, 9)
                 .setElementHandler(new ButtonElement(TextProvider.of(Text.literal("+")), ButtonAction.run(() -> {
                             InvTasks.getSaveItem().removeSavedItem(output.copy());
                         }))
-                        .withTooltips(TooltipHandler.of(SAVEITEM_TOOLTIPS)))
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.slimefun-recipe-widget.save-item.tooltips", ""))))
                 .addToSub(this);
         ExecutableWidget.instance(DX - 16, 0, 16, 16)
                 .setElementHandler(IconElement.fixedGui(CANCEL_GUI_TEXTURE, ButtonAction.run(this::cancelGui))
-                        .withTooltips(TooltipHandler.of(List.of(Text.literal("点击关闭当前子界面"))))
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.slimefun-recipe-widget.close-sub-screen.tooltips", "")))
                         .withPresentCondition((i) -> cancelCallback != null))
                 .addToSub(this);
         ExecutableWidget.instance(0, 0, DX, DY)

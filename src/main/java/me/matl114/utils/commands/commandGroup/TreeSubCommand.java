@@ -11,6 +11,7 @@ import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.commands.params.api.InputArgument;
 import me.matl114.utils.commands.params.api.TabResult;
+import net.minecraft.util.Language;
 import org.jetbrains.annotations.NotNull;
 
 @Accessors(chain = true, fluent = true)
@@ -39,7 +40,9 @@ public class TreeSubCommand extends SubCommandImpl implements SubCommandDispatch
 
     public Stream<String> getHelp(String prefix) {
         // the name should be included in the help
-        return Stream.concat(Stream.of(help).map(s -> prefix + s), SubCommandDispatcher.super.getHelp(prefix));
+        return Stream.concat(
+                Stream.of(help).map(s -> prefix + Language.getInstance().get(s, s)),
+                SubCommandDispatcher.super.getHelp(prefix));
     }
 
     @Override

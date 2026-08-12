@@ -6,7 +6,7 @@ import me.matl114.events.Event;
 import me.matl114.gui.Constants;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.Direction2d;
-import me.matl114.hacks.utils.config.Vec2;
+import me.matl114.hacks.utils.config.WidgetPos;
 import me.matl114.hacks.utils.render.ItemStackDisplayUtils;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
@@ -23,7 +23,9 @@ public class EquipmentHud extends IRender2DModule {
         return makePath(Configs.RENDER_CONFIG, "in-game-hud.equipment-hud");
     }
 
-    public EquipmentHud() {}
+    public EquipmentHud() {
+        super("EquipmentHud");
+    }
 
     public EnumRef<ItemStackDisplayUtils.DamageDisplay> damageDisplay = builder(
                     invHud.add("damage-display"), ItemStackDisplayUtils.DamageDisplay.class)
@@ -34,26 +36,26 @@ public class EquipmentHud extends IRender2DModule {
             .defaultValue(Direction2d.DOWN)
             .build();
 
-    public NBTRef<Vec2> handPos = builder(invHud.add("hand-pos"), Vec2.class)
-            .defaultValue(new Vec2(-60.0D, 0.0D))
+    public NBTRef<WidgetPos> handPos = builder(invHud.add("hand-pos"), WidgetPos.class)
+            .defaultValue(new WidgetPos(1, 0.0D, 0.0D, -60, 0))
             .build();
-    public NBTRef<Vec2> handPos2 = builder(invHud.add("offhand-pos"), Vec2.class)
-            .defaultValue(new Vec2(40.0D, 0.0D))
+    public NBTRef<WidgetPos> handPos2 = builder(invHud.add("offhand-pos"), WidgetPos.class)
+            .defaultValue(new WidgetPos(1, 0.0D, 0.0D, 40, 0))
             .build();
-    public NBTRef<Vec2> handPos3 = builder(invHud.add("head-pos"), Vec2.class)
-            .defaultValue(new Vec2(-40.0D, 0.0D))
+    public NBTRef<WidgetPos> handPos3 = builder(invHud.add("head-pos"), WidgetPos.class)
+            .defaultValue(new WidgetPos(1, 0.0D, 0.0D, -40, 0))
             .build();
-    public NBTRef<Vec2> handPos4 = builder(invHud.add("chest-pos"), Vec2.class)
-            .defaultValue(new Vec2(-20.0D, 0.0D))
+    public NBTRef<WidgetPos> handPos4 = builder(invHud.add("chest-pos"), WidgetPos.class)
+            .defaultValue(new WidgetPos(1, 0.0D, 0.0D, -20, 0))
             .build();
-    public NBTRef<Vec2> handPos5 = builder(invHud.add("leg-pos"), Vec2.class)
-            .defaultValue(new Vec2(0.0D, 0.0D))
+    public NBTRef<WidgetPos> handPos5 = builder(invHud.add("leg-pos"), WidgetPos.class)
+            .defaultValue(new WidgetPos(1, 0.0D, 0.0D, 0, 0))
             .build();
-    public NBTRef<Vec2> handPos6 = builder(invHud.add("feet-pos"), Vec2.class)
-            .defaultValue(new Vec2(20.0D, 0.0D))
+    public NBTRef<WidgetPos> handPos6 = builder(invHud.add("feet-pos"), WidgetPos.class)
+            .defaultValue(new WidgetPos(1, 0.0D, 0.0D, 20, 0))
             .build();
 
-    Map<EquipmentSlot, NBTRef<Vec2>> map = new LinkedHashMap<>();
+    Map<EquipmentSlot, NBTRef<WidgetPos>> map = new LinkedHashMap<>();
 
     {
         map.put(EquipmentSlot.MAINHAND, handPos);
@@ -77,8 +79,8 @@ public class EquipmentHud extends IRender2DModule {
             ItemStack stack = mc.player.getEquippedStack(re.getKey());
             {
                 var pp = re.getValue().get();
-                int startX = (int) pp.x();
-                int startY = (int) pp.y();
+                int startX = pp.getWindowX(mc.getWindow());
+                int startY = pp.getWindowY(mc.getWindow());
                 if (!stack.isEmpty()) {
                     vdraw.drawItem(stack, startX, startY, 999, 0);
                     vdraw.drawItemInSlot(mc.textRenderer, stack, startX, startY, null);

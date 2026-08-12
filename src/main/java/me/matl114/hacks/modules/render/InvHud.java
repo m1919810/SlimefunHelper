@@ -22,6 +22,7 @@ import net.minecraft.registry.Registries;
 
 public class InvHud extends BaseModule {
     public InvHud() {
+        super("InvHud");
         bindFlag(enable);
     }
 

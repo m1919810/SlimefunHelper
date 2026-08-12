@@ -1,8 +1,10 @@
 package me.matl114.hacks.modules.combat;
 
 import java.util.List;
+import java.util.function.Consumer;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -20,6 +22,7 @@ public class AttackArua extends BaseModule {
     public final ModulePath respectCooldown = attBot.add("respect-cooldown");
 
     public AttackArua() {
+        super("AttackArua");
         bindFlag(enable);
     }
 
@@ -59,6 +62,12 @@ public class AttackArua extends BaseModule {
         registerListener(Listener.getPreGameTick(), this::onTick);
     }
 
+    @Override
+    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
+        super.addCustomWidgets(acceptor, dx, dy, dblank);
+        acceptor.accept(createTitleLabel("widget.attack.attack.use-argument", 0, dblank, dx, dy));
+    }
+
     private int interval;
 
     public boolean checkEating() {
@@ -87,7 +96,7 @@ public class AttackArua extends BaseModule {
             int custom = customRate.get();
             if (custom <= interval) {
 
-                if (attack.legalMode.get()
+                if (attack.legalTargetingMode.get().isLegal()
                         || ((holdingWeapon && cooldownWeapon.get()) || (!holdingWeapon && cooldownHand.get()))) {
                     // do not attack because of legal mode
                     if (checkUsing()) return;

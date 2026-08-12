@@ -6,6 +6,7 @@ import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -25,7 +26,7 @@ public interface PlayerInteractBlockC2SPacketAccess {
 
     void setUseContext(UseContext stack);
 
-    public static record UseContext(ItemStack stack, BlockState oldState) {
+    public static record UseContext(ItemStack stack, BlockState oldState, ActionResult actionResult) {
         public boolean isEmpty() {
             return stack.isEmpty() || !(stack.getItem() instanceof BlockItem);
         }
@@ -38,6 +39,10 @@ public interface PlayerInteractBlockC2SPacketAccess {
                 return new ItemPlacementContext(MinecraftClient.getInstance().player, hand, stack, blockHitResult)
                         .getBlockPos();
             }
+        }
+
+        public boolean isAccepted() {
+            return actionResult.isAccepted();
         }
     }
 

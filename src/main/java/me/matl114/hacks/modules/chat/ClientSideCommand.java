@@ -46,6 +46,7 @@ public class ClientSideCommand extends BaseModule {
     public final ModulePath clientSideCommand = makePath(Configs.CHAT_CONFIG, "client-side-command");
 
     public ClientSideCommand() {
+        super("ClientSideCommand");
         bindFlag(enable);
     }
 

@@ -135,7 +135,9 @@ public class MultiKeyBind {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         else if (obj instanceof MultiKeyBind other) {
-            return Arrays.equals(keyCodes, other.keyCodes) && other.toggleOnRelease == toggleOnRelease;
+            return Arrays.equals(keyCodes, other.keyCodes)
+                    && other.toggleOnRelease == toggleOnRelease
+                    && other.allowVanilla == allowVanilla;
         } else return false;
     }
 }

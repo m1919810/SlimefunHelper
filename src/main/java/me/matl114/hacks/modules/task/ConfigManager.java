@@ -4,9 +4,11 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.Dynamic;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import me.matl114.commands.MainCommand;
+import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -99,22 +101,22 @@ public class ConfigManager extends BaseModule {
                 .build();
         main.subBuilder(SubCommand.taskBuilder())
                 .name("open")
-                .helper("打开配置文件界面")
+                .helper("message.command.config.open.help")
                 .post(e -> e.executor(CommandContext.run(this::onOpen)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("reload")
-                .helper("重载配置文件")
+                .helper("message.command.config.reload.help")
                 .post(e -> e.executor(CommandContext.run(this::onReload)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("openfolder")
-                .helper("打开配置导出和配置保存的文件夹")
+                .helper("message.command.config.openfolder.help")
                 .post(s -> s.executor(CommandContext.run(this::onOpenFolder)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("save")
-                .helper("<path> <config_name=all> <path_prefix=\"\"> 保存当前配置快照")
+                .helper("message.command.config.save.help")
                 .arg(manualPathArgument)
                 .arg(configOrAllNameArgument)
                 .arg(pathPrefixArgument)
@@ -122,7 +124,7 @@ public class ConfigManager extends BaseModule {
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("savemodule")
-                .helper("<path> <module...> 将若干模块的配置保存为快照")
+                .helper("message.command.config.savemodule.help")
                 .arg(manualPathArgument)
                 .post(e -> e.executor(new CommandContext() {
                     @Override
@@ -150,7 +152,7 @@ public class ConfigManager extends BaseModule {
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("load")
-                .helper("<path> <config_name=all> <path_prefix=\"\"> 加载配置快照")
+                .helper("message.command.config.load.help")
                 .arg(fileLoadArgument)
                 .arg(configOrAllNameArgument)
                 .arg(pathPrefixArgument)
@@ -158,7 +160,7 @@ public class ConfigManager extends BaseModule {
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("loadmodule")
-                .helper("<path> <module...> 加载配置快照中若干模块的配置")
+                .helper("message.command.config.loadmodule.help")
                 .arg(fileLoadArgument)
                 .post(e -> e.executor(new CommandContext() {
                     @Override
@@ -186,7 +188,7 @@ public class ConfigManager extends BaseModule {
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("set")
-                .helper("<config_name> <path> <string> 设置配置项")
+                .helper("message.command.config.set.help")
                 .arg(configNameArgument)
                 .arg(pathArgument)
                 .arg(SimpleCommandArgs.argumentBuilder().name("string").build())
@@ -194,14 +196,14 @@ public class ConfigManager extends BaseModule {
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("reset")
-                .helper("<config_name> <path> 重置配置项为默认值")
+                .helper("message.command.config.reset.help")
                 .arg(configNameArgument)
                 .arg(pathArgument)
                 .post(e -> e.executor(CommandContext.run(this::onReset)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("resetall")
-                .helper("<config_name> <all> 重置某个配置文件为默认值")
+                .helper("message.command.config.resetall.help")
                 .arg(configOrAllNameArgument)
                 .arg(SimpleCommandArgs.argumentBuilder()
                         .name("confirm")
@@ -212,7 +214,7 @@ public class ConfigManager extends BaseModule {
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("resetmodule")
-                .helper("<module...> 重置若干模块的配置为默认值")
+                .helper("message.command.config.resetmodule.help")
                 .post(e -> e.executor(new CommandContext() {
                     @Override
                     public boolean execute(
@@ -237,6 +239,12 @@ public class ConfigManager extends BaseModule {
                     }
                 }))
                 .complete();
+    }
+
+    @Override
+    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
+        super.addCustomWidgets(acceptor, dx, dy, dblank);
+        acceptor.accept(createTitleLabel("widget.config-manager.command", 0, dblank, dx, dy));
     }
 
     public void onOpen() {
@@ -349,8 +357,8 @@ public class ConfigManager extends BaseModule {
                     Text.literal("[确认]")
                             .formatted(Formatting.RED)
                             .formatted(Formatting.BOLD)
-                            .styled(style -> style.withClickEvent(
-                                    ChatUtils.getSuggestCommand("/!!config resetall " + configName + " --confirm"))));
+                            .styled(style -> style.withClickEvent(ChatUtils.getSuggestCommand(
+                                    MainCommand.MAIN_PREFIX + "config resetall " + configName + " --confirm"))));
         }
     }
 
@@ -477,9 +485,9 @@ public class ConfigManager extends BaseModule {
             return;
         }
 
-        try (FileStorage storage = FileManager.getInstance().getConfigStorage(fileName)) {
+        try (FileStorage storage =
+                FileManager.getInstance().getConfigStorage(fileName).asAutoSave()) {
             storage.write(encoded.result().get(), ConfigOp.INSTANCE);
-            storage.write();
             Debug.chat(Text.literal("成功保存配置快照: " + fileName + " ,点击本文本打开文件夹")
                     .formatted(Formatting.GREEN)
                     .styled(style -> style.withClickEvent(
@@ -566,7 +574,9 @@ public class ConfigManager extends BaseModule {
                 return null;
             }
 
-            return decoded.result().get();
+            ConfigSnapshot snapshot = decoded.result().get();
+            snapshot = portConfigs(snapshot);
+            return snapshot;
         }
     }
 
@@ -729,5 +739,32 @@ public class ConfigManager extends BaseModule {
             }
         }
         return baseName + ".nbt";
+    }
+
+    private static ConfigSnapshot portConfigs(ConfigSnapshot snapshot) {
+        if (portPaths.isEmpty()) return snapshot;
+        Map<Identifier, MapRef> copyMap = new LinkedHashMap<>(snapshot.snapSnot());
+        boolean modify = false;
+        for (var re : portPaths.entrySet()) {
+            ModulePath from = re.getKey();
+            ModulePath to = re.getValue();
+            Identifier fromId = from.getConfig().getRegistryKey().getValue();
+            Identifier toId = to.getConfig().getRegistryKey().getValue();
+            if (copyMap.containsKey(fromId)) {
+                MapRef ref = copyMap.get(fromId);
+                var section = ref.get(from.toPath());
+                if (section != null) {
+                    modify = true;
+                    MapRef toRef = copyMap.computeIfAbsent(toId, (vvv) -> new MapRef());
+                    ref.setValue(null, from.toPath());
+                    toRef.setValue(section, to.toPath());
+                }
+            }
+        }
+        if (modify) {
+            return new ConfigSnapshot(copyMap);
+        } else {
+            return snapshot;
+        }
     }
 }

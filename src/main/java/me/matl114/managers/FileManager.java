@@ -37,25 +37,25 @@ public class FileManager {
         if (!FOLDER.exists() || !FOLDER.isDirectory()) {
             Preconditions.checkArgument(FOLDER.mkdirs(), "File create failure");
         }
-        checkFile(INTERNAL_FOLDER);
-        checkFile(CONFIG_SAVE_FOLDER);
+        checkFolder(INTERNAL_FOLDER);
+        checkFolder(CONFIG_SAVE_FOLDER);
 
         ScheduleService.launchAsyncRepeatTask(this::onScheduleSave, 15 * 1000, 15 * 1000);
     }
 
-    public void checkFile(File file) {
+    public void checkFolder(File file) {
         if (!file.exists() || !file.isDirectory()) {
             Preconditions.checkArgument(file.mkdirs(), "File create failure");
         }
     }
 
     public File getAndCreateFile(String path) {
-        checkFile(path);
+        checkFolder(path);
         return getFile(path);
     }
 
     public File getAndCreateFile(File path) {
-        checkFile(path);
+        checkFolder(path);
         return path;
     }
 
@@ -63,8 +63,24 @@ public class FileManager {
         return new File(FOLDER, path);
     }
 
-    public void checkFile(String s) {
-        checkFile(new File(FOLDER, s));
+    public void checkFolder(String s) {
+        checkFolder(new File(FOLDER, s));
+    }
+
+    public void checkNotFolder(File file) {
+        // 啥比玩意写成文件夹了怎么办
+        if (file.exists() && file.isDirectory()) {
+            Preconditions.checkArgument(file.delete(), "File delete failure");
+            // rewrite the file , recover data now
+            FileStorage storage = trackedFileStorages.get(file);
+            if (storage != null && !storage.isDeprecated()) {
+                storage.write();
+            }
+        }
+    }
+
+    public void checkNotFolder(String s) {
+        checkNotFolder(new File(FOLDER, s));
     }
 
     private void onScheduleSave() {
@@ -84,6 +100,7 @@ public class FileManager {
     }
 
     public FileStorage getStorage(File file, boolean reload, boolean createOnNoExist) {
+        checkNotFolder(file);
         FileStorage storage = trackedFileStorages.get(file);
         if (storage != null) {
             if (storage.isDeprecated()) {

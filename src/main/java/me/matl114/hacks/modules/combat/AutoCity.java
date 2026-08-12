@@ -6,15 +6,18 @@ import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.CombatTasks;
+import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.mine.MineExtra;
 import me.matl114.hacks.modules.mine.PacketMine;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.EntityUtils;
 import me.matl114.utils.MathUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
@@ -27,6 +30,7 @@ public class AutoCity extends BaseModule {
     public final ModulePath autoCity = combatUtils.add("auto-city");
 
     public AutoCity() {
+        super("AutoCity");
         INSTANCE = this;
         bindFlag(enable);
     }
@@ -66,10 +70,8 @@ public class AutoCity extends BaseModule {
     boolean pendingSwitchPos;
 
     public void refreshTarget() {
-        double range = MineExtra.INSTANCE.getReachDistance() + 1;
-        if (targetEntity == null
-                || !targetEntity.isAlive()
-                || targetEntity.isRemoved()
+        double range = InteractExtra.INSTANCE.getBlockReachDistance() + 2;
+        if (!EntityUtils.isEntityValid(targetEntity)
                 || targetEntity.getBoundingBox().squaredMagnitude(mc.player.getEyePos()) > MathUtils.s2(range)) {
             targetEntity = null;
             targetPos = null;
@@ -106,8 +108,8 @@ public class AutoCity extends BaseModule {
         Set<BlockPos> outerPoses = new LinkedHashSet<>();
         Set<BlockPos> selfPoses = new LinkedHashSet<>();
         Vec3d pos = mc.player.getEyePos();
-        double range = MineExtra.INSTANCE.getReachDistance();
-        Predicate<BlockPos> filter = (np) -> MathUtils.getBlockBox(np).squaredMagnitude(pos) < range;
+        double range = InteractExtra.INSTANCE.getBlockReachDistance();
+        Predicate<BlockPos> filter = (np) -> MathUtils.getBlockBox(np).squaredMagnitude(pos) <= MathUtils.s2(range);
         selfPoses.addAll(MathUtils.getOccupiedBlockPositions(box).stream()
                 .sorted(Comparator.comparingInt(Vec3i::getY))
                 .toList());
@@ -159,6 +161,11 @@ public class AutoCity extends BaseModule {
         if (switchPosition) {
             if (MineExtra.INSTANCE.isVanillaMineCooldownComplete(1)) {
                 pendingSwitchPos = false;
+                Set<BlockPos> surroundPos = new HashSet<>();
+                if (InteractionTasks.getAutoSurround().enable.get()) {
+                    surroundPos.addAll(InteractionTasks.getAutoSurround().getTargetingPos());
+                }
+                outerPoses.removeAll(surroundPos);
                 List<BlockPos> selfPosList = selfPoses.stream().toList();
                 List<BlockPos> outerPosList = outerPoses.stream().toList();
                 BlockPos currentMinePos = null;

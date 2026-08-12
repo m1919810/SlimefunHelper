@@ -2,7 +2,7 @@ package me.matl114.hooks.mixin.baritone;
 
 import baritone.behavior.InventoryBehavior;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import me.matl114.hacks.modules.move.BaritoneFix;
+import me.matl114.hacks.modules.survival.BaritoneFix;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import org.spongepowered.asm.mixin.Mixin;

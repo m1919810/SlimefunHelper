@@ -13,6 +13,7 @@ import me.matl114.events.packets.PacketStorage;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.entity.EntityMovementStatus;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -20,7 +21,6 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.MathUtils;
 import me.matl114.utils.RenderUtils;
-import me.matl114.utils.entity.EntityMovementStatus;
 import me.matl114.versioned.api.VDataFlag;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
@@ -44,6 +44,7 @@ public class Blink extends BaseModule {
     public final ModulePath blink = lagUtils.add("blink");
 
     public Blink() {
+        super("Blink");
         bindFlag(enable);
     }
 

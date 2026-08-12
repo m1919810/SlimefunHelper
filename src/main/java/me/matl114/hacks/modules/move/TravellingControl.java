@@ -3,12 +3,14 @@ package me.matl114.hacks.modules.move;
 import com.google.common.util.concurrent.AtomicDouble;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
 import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.events.catchers.TimedPacketCatcherImpl;
+import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -16,6 +18,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.OptionalPrimitive;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -31,7 +34,6 @@ import me.matl114.utils.commands.params.ArgumentReader;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.commands.params.types.ExecutePos;
-import me.matl114.utils.entity.LegalMovementManager;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -246,7 +248,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
                     .name("travel")
                     .post(s -> s.subBuilder(SubCommand.taskBuilder())
                             .name("to")
-                            .helper("<coord> 自动传送旅行")
+                            .helper("message.command.travel.travel.to.help")
                             .arg(SimpleCommandArgs.argumentBuilder(MovTasks.TpaAndPosArgumentType::new)
                                     .name("target")
                                     .build())
@@ -254,12 +256,12 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
                             .complete()
                             .subBuilder(SubCommand.taskBuilder())
                             .name("auto")
-                            .helper("执行可手动控制的定向飞行")
+                            .helper("message.command.travel.travel.auto.help")
                             .post(e -> e.executor(CommandContext.execute(this::onTravelAuto)))
                             .complete()
                             .subBuilder(SubCommand.taskBuilder())
                             .name("cancel")
-                            .helper("中断传送旅行")
+                            .helper("message.command.travel.travel.cancel.help")
                             .post(e -> e.executor(CommandContext.run(this::onTravelCancel)))
                             .complete())
                     .complete();
@@ -284,11 +286,15 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
 
     public void onTravel(PlayerEntity var1, Vec3d parsedCoord) {
         checkSelf();
+        if (travelTask != null) {
+            Debug.chat("上一个travel task仍旧在执行,自动取消中");
+            onTravelCancel();
+        }
+        if (parsedCoord == null) return;
+        travelMode(Optional.of(parsedCoord));
         if (travelTask == null) {
-            if (parsedCoord == null) return;
-            travelMode(Optional.of(parsedCoord));
+
         } else {
-            Debug.chat("上一个travel task仍旧在执行,使用travel cancel取消");
         }
     }
 
@@ -830,7 +836,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
 
                     switch (ti.state) {
                         case STABLE, TOO_HIGH -> {
-                            EntityUtils.setEntityYawSafe(player, yaw);
+                            PlayerStateManager.setPlayerYawSafe(player, yaw);
                             double y = mc.player.getY();
                             double last3YY = this.last3Y[last3YIndex];
                             boolean goingDown = (y < last3YY);
@@ -855,7 +861,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
                             }
                         }
                         case TOO_LOW -> {
-                            EntityUtils.setEntityYawSafe(player, yaw);
+                            PlayerStateManager.setPlayerYawSafe(player, yaw);
                             EntityUtils.setEntityPitchSafe(
                                     player,
                                     Math.min(
@@ -913,7 +919,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
 
                     switch (ti.state) {
                         case STABLE, TOO_HIGH -> {
-                            EntityUtils.setEntityYawSafe(player, yaw);
+                            PlayerStateManager.setPlayerYawSafe(player, yaw);
                             double y = mc.player.getY();
                             double last3YY = this.last3Y[last3YIndex];
                             boolean goingDown = (y < last3YY);
@@ -960,7 +966,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
                                         }));
                             }
                             currentFlyingHigh = true;
-                            EntityUtils.setEntityYawSafe(player, yaw);
+                            PlayerStateManager.setPlayerYawSafe(player, yaw);
                             EntityUtils.setEntityPitchSafe(
                                     player,
                                     Math.min(
@@ -1048,6 +1054,11 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
         travelTask = null;
     }
 
+    @Override
+    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
+        acceptor.accept(createTitleLabel("widget.travelling-control.command", 0, dblank, dx, dy));
+    }
+
     public static TravelInfo travelTask;
 
     public static class TravelInfo {
@@ -1073,7 +1084,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             return pos0.orElseGet(() -> {
                 Vec3d playerPos = mc.player.getPos();
                 Vec3d horizontal = EntityUtils.pitchYawToRotation(0, mc.player.getYaw());
-                return playerPos.add(horizontal.multiply(100000)).withAxis(Direction.Axis.Y, playerPos.getY());
+                return playerPos.add(horizontal.multiply(10000)).withAxis(Direction.Axis.Y, playerPos.getY());
             });
         }
 

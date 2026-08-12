@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.EnumRef;
@@ -95,7 +96,7 @@ public class WrapEnum<T extends ConfigEnum> implements NBTParsable<WrapEnum<T>> 
 
     private static <T extends ConfigEnum> NBTType<WrapEnum<T>> create() {
         return new NBTType<WrapEnum<T>>(
-                (Class) WrapEnum.class,
+                "wrapenum",
                 (Codec) Codec.STRING.comapFlatMap(WrapEnum::fromString, WrapEnum::asString),
                 (s, x, y, dx, dy) -> {
                     WrapEnum<T> wrapEnum = s.getOriginValue();
@@ -130,5 +131,19 @@ public class WrapEnum<T extends ConfigEnum> implements NBTParsable<WrapEnum<T>> 
     @Override
     public NBTType<WrapEnum<T>> type() {
         return TYPE.cast();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof WrapEnum wrap)) {
+            return false;
+        }
+        return Objects.equals(wrap.type, type) && Objects.equals(wrap.valueString, valueString);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(type, valueString);
     }
 }

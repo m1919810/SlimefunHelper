@@ -12,7 +12,7 @@ import me.matl114.utils.config.kv.TypeConvertAttrKeyValue;
 @With
 public record Vec3(double x, double y, double z) implements NBTParsable<Vec3> {
     public static final NBTType<Vec3> TYPE = new NBTType<>(
-            Vec3.class,
+            "vec3",
             RecordCodecBuilder.<Vec3>create(s -> s.group(
                             Codec.DOUBLE.fieldOf("x").forGetter(Vec3::x),
                             Codec.DOUBLE.fieldOf("y").forGetter(Vec3::y),

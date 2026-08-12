@@ -89,7 +89,7 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                     .toList();
         } else {
             flattenMap = map.keySet().stream()
-                    .map(v -> new Pair<>(v, (Supplier<Text>) () -> Text.literal(v)))
+                    .map(v -> new Pair<>(v, (Supplier<Text>) () -> Text.translatableWithFallback(v, v)))
                     .toList();
         }
         return (s, x, y, dx, dy) -> {
@@ -108,7 +108,7 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
         } else {
             flattenMap = ((EnumAttrKeyValue<T>) this)
                     .getValueMap().keySet().stream()
-                            .map(v -> new Pair<>(v, (Supplier<Text>) () -> Text.literal(v)))
+                            .map(v -> new Pair<>(v, (Supplier<Text>) () -> Text.translatableWithFallback(v, v)))
                             .toList();
         }
         return generateSwitchingButton(flattenMap, this, x, y, dx, dy, () -> {
@@ -151,7 +151,9 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                 ex.valueChange(ex, flattenMap.get(integer.get()).getFirst());
                 runnable.run();
             };
-            subScreen.addDrawableChild(ExecutableWidget.instance(1, 1, dx - dy - 2, dy - 2)
+            boolean needSwitch = dx > 2 * dy;
+            int mainDx = needSwitch ? dx - dy : dx;
+            subScreen.addDrawableChild(ExecutableWidget.instance(1, 1, mainDx - 2, dy - 2)
                     .setElementHandler(new ButtonElement(
                                     (ign) -> {
                                         kvUpdater.run();
@@ -168,45 +170,47 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                                         indexUpdater.run();
                                     }))
                             .withTooltips(TooltipHandler.of(List.of(Text.translatable(ex.getKeyName()))))));
-            MutableBoolean show = new MutableBoolean(false);
-            subScreen.addDrawableChild(ExecutableWidget.instance(dx - dy + 2, 2, dy - 4, dy - 4)
-                    .setElementHandler(IconElement.statedGuiPredicate(
-                            Constants.EXPAND_GUI_ON_SPRITE,
-                            Constants.EXPAND_GUI_OFF_SPRITE,
-                            ButtonAction.run(() -> show.setValue(!show.booleanValue())),
-                            (eee) -> show.booleanValue())));
-            Supplier<SubScreenWidget> subScreenSupplier = Suppliers.memoize(() -> {
-                SubScreenWidget selectors = new SubScreenWidget(0, 0, 0, 0).setPriority(1);
-                int height = 0;
-                for (int i = 0; i < choices; ++i) {
-                    var section = flattenMap.get(i);
-                    var supplier = section.getSecond();
-                    final int finalI = i;
-                    selectors.addDrawableChild(ExecutableWidget.instance(0, height, dx - dy - 4, dy)
-                            .setElementHandler(new ColorBoxElement(
-                                    ButtonAction.run(() -> {
-                                        integer.set(finalI);
-                                        indexUpdater.run();
-                                        show.setValue(false);
-                                    }),
-                                    (el) -> supplier.get(),
-                                    ColorSampler.of(Color.GRAY.getRGB()),
-                                    ColorSampler.WHITE,
-                                    (el, rb) -> {
-                                        kvUpdater.run();
-                                        if (integer.get() == finalI) {
-                                            return Colors.GREEN;
-                                        } else if (rb) {
-                                            return Colors.WHITE;
-                                        } else return null;
-                                    })));
-                    height += dy;
-                }
-                return selectors;
-            });
-            ContentDelegateWidget<SubScreenWidget> dynamicDelegate =
-                    new DynamicContentWidget<>(() -> show.booleanValue() ? subScreenSupplier.get() : null, 2, dy);
-            subScreen.addDrawableChild(dynamicDelegate);
+            if (needSwitch) {
+                MutableBoolean show = new MutableBoolean(false);
+                subScreen.addDrawableChild(ExecutableWidget.instance(dx - dy + 2, 2, dy - 4, dy - 4)
+                        .setElementHandler(IconElement.statedGuiPredicate(
+                                Constants.EXPAND_GUI_ON_SPRITE,
+                                Constants.EXPAND_GUI_OFF_SPRITE,
+                                ButtonAction.run(() -> show.setValue(!show.booleanValue())),
+                                (eee) -> show.booleanValue())));
+                Supplier<SubScreenWidget> subScreenSupplier = Suppliers.memoize(() -> {
+                    SubScreenWidget selectors = new SubScreenWidget(0, 0, 0, 0).setPriority(1);
+                    int height = 0;
+                    for (int i = 0; i < choices; ++i) {
+                        var section = flattenMap.get(i);
+                        var supplier = section.getSecond();
+                        final int finalI = i;
+                        selectors.addDrawableChild(ExecutableWidget.instance(0, height, dx - dy - 4, dy)
+                                .setElementHandler(new ColorBoxElement(
+                                        ButtonAction.run(() -> {
+                                            integer.set(finalI);
+                                            indexUpdater.run();
+                                            show.setValue(false);
+                                        }),
+                                        (el) -> supplier.get(),
+                                        ColorSampler.of(Color.GRAY.getRGB()),
+                                        ColorSampler.WHITE,
+                                        (el, rb) -> {
+                                            kvUpdater.run();
+                                            if (integer.get() == finalI) {
+                                                return Colors.GREEN;
+                                            } else if (rb) {
+                                                return Colors.WHITE;
+                                            } else return null;
+                                        })));
+                        height += dy;
+                    }
+                    return selectors;
+                });
+                ContentDelegateWidget<SubScreenWidget> dynamicDelegate =
+                        new DynamicContentWidget<>(() -> show.booleanValue() ? subScreenSupplier.get() : null, 2, dy);
+                subScreen.addDrawableChild(dynamicDelegate);
+            }
             return subScreen;
         } else {
             // no choice

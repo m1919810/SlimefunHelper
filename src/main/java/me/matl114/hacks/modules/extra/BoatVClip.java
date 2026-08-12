@@ -7,14 +7,15 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.combat.CombatExtra;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.CollisionUtil;
+import me.matl114.utils.EntityUtils;
 import me.matl114.utils.InteractUtils;
 import me.matl114.utils.NetworkUtils;
-import me.matl114.utils.entity.LegalMovementManager;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
@@ -31,6 +32,7 @@ public class BoatVClip extends BaseModule implements LegalMovementManager.Moveme
     private static LegalMovementManager.DelegateMovementModifier instance;
 
     public BoatVClip() {
+        super("BoatVClip");
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
             MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
@@ -89,8 +91,7 @@ public class BoatVClip extends BaseModule implements LegalMovementManager.Moveme
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         if (enable.get()) {
-            if (lastVehicle == null
-                    || lastVehicle.isRemoved()
+            if (!EntityUtils.isEntityValid(lastVehicle)
                     || lastVehicle.getBoundingBox().squaredMagnitude(mc.player.getEyePos())
                             > CombatExtra.INSTANCE.getAttackRange()) {
                 lastVehicle = null;

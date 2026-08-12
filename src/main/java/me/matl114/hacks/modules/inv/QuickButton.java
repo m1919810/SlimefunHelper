@@ -27,6 +27,7 @@ public class QuickButton extends BaseModule {
             flagBuilder(quickButtons.add("enable-buttons")).build();
 
     public QuickButton() {
+        super("QuickButton");
         bindFlag(enable);
     }
 
@@ -35,7 +36,7 @@ public class QuickButton extends BaseModule {
     }
 
     public final ListRef taskList = builder(quickButtons.add("button-tasks"), ListRef.TYPE)
-            .defaultValue(List.of(KeepInv.CLEAR_KEEP, FastChest.TAKE_ALL, FastChest.SAVE_ALL, SlimefunGuide.OPEN_GUIDE))
+            .defaultValue(List.of(InvExtra.CLEAR_KEEP, FastInv.TAKE_ALL, FastInv.SAVE_ALL, SlimefunGuide.OPEN_GUIDE))
             .build();
 
     public final ListRef toggleList = builder(quickButtons.add("button-toggles"), ListRef.TYPE)

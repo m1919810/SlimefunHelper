@@ -18,6 +18,7 @@ import net.minecraft.registry.RegistryKey;
 
 public class CombatLog extends BaseModule {
     public CombatLog() {
+        super("CombatLog");
         bindFlag(enable);
     }
 

@@ -124,7 +124,9 @@ public class Warps extends BaseModule {
         }
     }
 
-    public Warps() {}
+    public Warps() {
+        super("Warps");
+    }
 
     @Override
     public void registerAll() {
@@ -239,7 +241,7 @@ public class Warps extends BaseModule {
                     .name("warp")
                     .post(m -> m.subBuilder(SubCommand.taskBuilder())
                             .name("list")
-                            .helper("显示世界的坐标点")
+                            .helper("message.command.warp_command.warp.list.help")
                             .arg(me.matl114.utils.commands.params.SimpleCommandArgs.argumentBuilder()
                                     .name("world")
                                     .tabSupplier(() -> mc.getNetworkHandler().getWorldKeys().stream()
@@ -250,7 +252,7 @@ public class Warps extends BaseModule {
                             .complete()
                             .subBuilder(SubCommand.taskBuilder())
                             .name("listall")
-                            .helper("显示服务器的坐标点")
+                            .helper("message.command.warp_command.warp.listall.help")
                             .arg(me.matl114.utils.commands.params.SimpleCommandArgs.argumentBuilder()
                                     .name("server")
                                     .tabSupplier(() -> parseVec3ds.keySet().stream())
@@ -262,7 +264,7 @@ public class Warps extends BaseModule {
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("setwarp")
-                    .helper("设置传送点")
+                    .helper("message.command.warp_command.setwarp.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("warpname")
                             .select("<输入自定义名称>")
@@ -276,7 +278,7 @@ public class Warps extends BaseModule {
         {
             main.subBuilder(SubCommand.taskBuilder())
                     .name("delwarp")
-                    .helper("移除传送点")
+                    .helper("message.command.warp_command.delwarp.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("warpname")
                             .tabCompletor(TabResult.ofStreamSupplier(this::getCurrentWorldWarpName))

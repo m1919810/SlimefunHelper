@@ -6,8 +6,8 @@ import baritone.api.command.Command;
 import baritone.api.command.argument.IArgConsumer;
 import baritone.command.defaults.ElytraCommand;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import me.matl114.hacks.modules.mine.SeedOre;
-import me.matl114.hacks.modules.move.BaritoneFix;
+import me.matl114.hacks.modules.survival.BaritoneFix;
+import me.matl114.hacks.modules.survival.SeedOre;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import net.fabricmc.api.EnvType;
@@ -39,8 +39,7 @@ public abstract class ElytraCommandMixin extends Command {
             require = 0)
     private RegistryKey<World> onExecuteNetherSupport(RegistryKey<World> original) {
         if (BaritoneFix.INSTANCE.enableDimensionFix.get() && original != World.NETHER) {
-            Debug.chat(ChatUtils.stringToText(
-                    "&c[BaritoneFix] &fIgnoring dimension limit... (may cause unexpected behaviour)"));
+            BaritoneFix.INSTANCE.logI18N("message.module.baritone-fix.ignore-dimension-limit");
             return World.NETHER;
         }
         return original;

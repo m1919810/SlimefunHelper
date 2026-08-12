@@ -5,6 +5,7 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.*;
@@ -27,6 +28,7 @@ import net.minecraft.world.World;
 
 public class MineArua extends BaseModule {
     public MineArua() {
+        super("MineArua");
         bindFlag(enable);
     }
 
@@ -114,7 +116,7 @@ public class MineArua extends BaseModule {
             // refresh only 4 ticks once
             if (Tasks.getTick() >= lastRefreshTick + 4) {
                 BlockPos currentBlockPos = mc.player.getBlockPos();
-                for (var vec : MineExtra.INSTANCE.getBlocksAround()) {
+                for (var vec : InteractExtra.INSTANCE.getBlocksAround()) {
                     BlockPos pos = currentBlockPos.add(vec);
                     if (isMineAruaTarget(mc.world, pos) && !MineTasks.distanceOutOfReach(pos, eyepos)) {
                         return pos;

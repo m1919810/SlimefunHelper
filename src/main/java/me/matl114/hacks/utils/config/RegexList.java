@@ -12,7 +12,7 @@ import me.matl114.utils.config.WrapperFactory;
 
 public record RegexList(List<Pattern> patterns) implements NBTParsable<RegexList>, Predicate<String> {
     public static final NBTType<RegexList> TYPE = NBTTypes.createListLke(
-            RegexList.class, NBTTypes.REGEX_TYPE, WrapperFactory.of(RegexList::new, RegexList::patterns), 300, 20);
+            "regexlist", NBTTypes.REGEX_TYPE, WrapperFactory.of(RegexList::new, RegexList::patterns), 300, 20);
 
     @Override
     public NBTType<RegexList> type() {

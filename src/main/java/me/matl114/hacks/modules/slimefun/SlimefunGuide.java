@@ -29,7 +29,9 @@ import net.minecraft.util.Identifier;
 public class SlimefunGuide extends BaseModule {
     // todo: support big recipe
     /// gui
-    public SlimefunGuide() {}
+    public SlimefunGuide() {
+        super("SlimefunGuide");
+    }
 
     public static final String OPEN_GUIDE = "slime-guide";
 

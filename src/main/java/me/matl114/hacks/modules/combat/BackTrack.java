@@ -34,6 +34,7 @@ import net.minecraft.util.math.Vec3d;
 
 public class BackTrack extends BaseModule {
     public BackTrack() {
+        super("BackTrack");
         bindFlag(enable);
     }
 

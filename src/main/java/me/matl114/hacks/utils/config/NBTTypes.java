@@ -35,6 +35,24 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
 public interface NBTTypes {
+    public static Map<String, NBTType<?>> PRIMITIVE_TYPES = new LinkedHashMap<>();
+
+    public static <T> NBTType<T> primitiveTypes(String string) {
+        return (NBTType<T>) PRIMITIVE_TYPES.get(string);
+    }
+
+    public static Codec<NBTType<?>> CODEC = Codec.STRING.flatXmap(
+            s -> {
+                var nbtType = primitiveTypes(s);
+                return nbtType == null ? DataResult.error(() -> "Not found") : DataResult.success(nbtType);
+            },
+            t -> {
+                if (PRIMITIVE_TYPES.containsKey(t.typeName())) {
+                    return DataResult.success(t.typeName());
+                } else {
+                    return DataResult.error(() -> "Not a primitive type: " + t.typeName());
+                }
+            });
     public NBTType<Integer> INT_TYPE = new NBTType<>("int", Codec.INT, getWidgetFactory(), INT_FACTORY, 0);
 
     public NBTType<Long> LONG_TYPE = new NBTType<>("long", Codec.LONG, getWidgetFactory(), LONG_FACTORY, 0L);
@@ -117,7 +135,19 @@ public interface NBTTypes {
 
     public NBTType<Primitive<?>> PRIMITIVE_TYPE = Primitive.TYPE.cast();
 
+    public NBTType<Holder<?>> HOLDER_TYPE = Holder.TYPE.cast();
+
+    public NBTType<WeakHolder<?>> WEAK_HOLDER_TYPE = WeakHolder.TYPE.cast();
+
+    public NBTType<Label> LABEL_TYPE = Label.TYPE;
+
     public NBTType<LabelPrimitive<?>> LABEL_PRIMITIVE_TYPE = LabelPrimitive.TYPE.cast();
+
+    public NBTType<StringFormat> STRING_FORMAT_TYPE = StringFormat.TYPE;
+
+    public NBTType<PrimitiveMap<?, ?>> PRIMITIVE_MAP_TYPE = PrimitiveMap.TYPE.cast();
+
+    public NBTType<PrimitiveList<?>> PRIMITIVE_LIST_TYPE = PrimitiveList.TYPE.cast();
 
     public static DrawableWidget generateColorInputWidget(
             AttrKeyValue<TextColor> keyValue, int x, int y, int dx, int dy) {
@@ -129,10 +159,6 @@ public interface NBTTypes {
     }
 
     // todo: color type, registry type getter, etc
-
-    public static <T, W> NBTType<T> createXMap(Class<T> targetClass, NBTType<W> type, WrapperFactory<W, T> wrapper) {
-        return createXMap(targetClass.getSimpleName().toLowerCase(Locale.ROOT), type, wrapper);
-    }
 
     public static <T, W> NBTType<T> createXMap(String name, NBTType<W> type, WrapperFactory<W, T> wrapper) {
         return new NBTType<>(
@@ -172,18 +198,6 @@ public interface NBTTypes {
 
     public static <T, W> NBTType<T> createComapFlatMap(String value, NBTType<W> type, WrapperFactory<W, T> wrapper) {
         return createComapFlatMap(value, type, wrapper, wrapper.create(type.empty()));
-    }
-
-    public static <T, W> NBTType<T> createComapFlatMap(
-            Class<T> targetClass, NBTType<W> type, WrapperFactory<W, T> wrapper) {
-        return createComapFlatMap(
-                targetClass.getSimpleName().toLowerCase(Locale.ROOT), type, wrapper, wrapper.create(type.empty()));
-    }
-
-    public static <T, W> NBTType<T> createListLke(
-            Class<T> targetClass, NBTType<W> type, WrapperFactory<List<W>, T> wrapper, int listWidth, int listHeight) {
-        return createListLke(
-                targetClass.getSimpleName().toLowerCase(Locale.ROOT), type, wrapper, listWidth, listHeight);
     }
 
     public static <T, W> NBTType<T> createListLke(
@@ -238,7 +252,7 @@ public interface NBTTypes {
     }
 
     public static <T, K1, K2> NBTType<T> createPairLike(
-            Class<T> targetClass,
+            String targetClass,
             NBTType<K1> k1Type,
             String name1,
             NBTType<K2> k2Type,
@@ -248,7 +262,7 @@ public interface NBTTypes {
             UnaryOperator<AttrKeyValue.CustomWidgetFactory<K2>> k2Resize) {
 
         return new NBTType<>(
-                targetClass.getSimpleName().toLowerCase(Locale.ROOT),
+                targetClass,
                 RecordCodecBuilder.<T>create(instance -> instance.group(
                                 k1Type.typeCodec().fieldOf(name1).forGetter(pairFactory::getFirst),
                                 k2Type.typeCodec().fieldOf(name2).forGetter(pairFactory::getSecond))
@@ -283,7 +297,7 @@ public interface NBTTypes {
     }
 
     public static <T, K1, K2> NBTType<T> createPairWithKey(
-            Class<T> targetClass,
+            String targetClass,
             Codec<K1> k1Codec,
             K1 k1Default,
             String name1,
@@ -294,7 +308,7 @@ public interface NBTTypes {
             UnaryOperator<AttrKeyValue.CustomWidgetFactory<K2>> k2Resize) {
 
         return new NBTType<>(
-                targetClass.getSimpleName().toLowerCase(Locale.ROOT),
+                targetClass,
                 RecordCodecBuilder.<T>create(instance -> instance.group(
                                 k1Codec.fieldOf(name1).forGetter(pairFactory::getFirst),
                                 k2Type.typeCodec().fieldOf(name2).forGetter(pairFactory::getSecond))
@@ -312,30 +326,6 @@ public interface NBTTypes {
                     return subScreenWidget;
                 },
                 pairFactory.create(k1Default, k2Type.empty()));
-    }
-
-    public static <T, K1, K2> NBTType<T> createArrayMapLike(
-            Class<T> targetClass,
-            NBTType<K1> k1Type,
-            String name1,
-            NBTType<K2> k2Type,
-            String name2,
-            WrapperFactory<Map<K1, K2>, T> mapLike,
-            UnaryOperator<AttrKeyValue.CustomWidgetFactory<K1>> k1Resize,
-            UnaryOperator<AttrKeyValue.CustomWidgetFactory<K2>> k2Resize,
-            int width,
-            int height) {
-        return createArrayMapLike(
-                targetClass.getSimpleName().toLowerCase(Locale.ROOT),
-                k1Type,
-                name1,
-                k2Type,
-                name2,
-                mapLike,
-                k1Resize,
-                k2Resize,
-                width,
-                height);
     }
 
     public static <T, K1, K2> NBTType<T> createArrayMapLike(
@@ -380,7 +370,7 @@ public interface NBTTypes {
         PairLikeFactory<K1, K2, Pair<K1, K2>> pairFactory =
                 PairLikeFactory.of(Pair::of, Pair::getFirst, Pair::getSecond);
         NBTType<Pair<K1, K2>> pairK1K2 =
-                createPairLike((Class) Pair.class, k1Type, name1, k2Type, name2, pairFactory, k1Resize, k2Resize);
+                createPairLike("pair", k1Type, name1, k2Type, name2, pairFactory, k1Resize, k2Resize);
         WrapperFactory<List<Pair<K1, K2>>, T> listToT =
                 WrapperFactory.<K1, K2>getListMapWrapper().concat(mapLike);
         return createListLke(
@@ -407,7 +397,7 @@ public interface NBTTypes {
         WrapperFactory<String, T> stringifyFactory2 = stringifyFactory.concat(factory.inverse());
         return new NBTType<>(
                 targetClass,
-                factory.wrapCodecSafe(type.typeCodec()),
+                factory.wrapCodecXmap(type.typeCodec()),
                 (attr, x, y, dx, dy) -> {
                     return new TypeConvertAttrKeyValue<Optional<T>, T>(
                                     attr, factory, type.customWidgetFactory(), stringifyFactory2)
@@ -433,7 +423,7 @@ public interface NBTTypes {
         WrapperFactory<String, T> stringifyFactory2 = stringifyFactory.concat(factory.inverse());
         return new NBTType<>(
                 targetClass,
-                factory.wrapCodec(type.typeCodec()),
+                factory.wrapCodecComapFlatMap(type.typeCodec()),
                 (attr, x, y, dx, dy) -> {
                     return new TypeConvertAttrKeyValue<Optional<T>, T>(
                                     attr, factory, type.customWidgetFactory(), stringifyFactory2)
@@ -469,7 +459,7 @@ public interface NBTTypes {
                                         TextProvider.of(Constants.OPEN_LIST_EDIT_TEXT), ButtonAction.run(() -> {
                                             openListModifyScreen(keyValue, typeW, supplier, listWidth, listHeight);
                                         }))
-                                .withTooltips(TooltipHandler.of(Constants.OPEN_LIST_EDIT_TOOLTIPS))))
+                                .withTooltips(TooltipHandler.of(Constants.openListEditTooltips()))))
                 .addDrawableChild(DisplayWidget.instance(0, 0, dy - 1, dy)
                         .setRenderHandler(IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.empty())));
     }
@@ -499,7 +489,7 @@ public interface NBTTypes {
                                                     listWidth,
                                                     listHeight);
                                         }))
-                                .withTooltips(TooltipHandler.of(Constants.OPEN_LIST_EDIT_TOOLTIPS))))
+                                .withTooltips(TooltipHandler.of(Constants.openListEditTooltips()))))
                 .addDrawableChild(DisplayWidget.instance(0, 0, dy - 1, dy)
                         .setRenderHandler(IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.empty())));
     }
@@ -546,25 +536,6 @@ public interface NBTTypes {
                 listHeight);
         ScreenAccess.of(listModifyScreenImmutable).openFromCurrent();
     }
-
-    public static Map<String, NBTType<?>> PRIMITIVE_TYPES = new LinkedHashMap<>();
-
-    public static <T> NBTType<T> primitiveTypes(String string) {
-        return (NBTType<T>) PRIMITIVE_TYPES.get(string);
-    }
-
-    public static Codec<NBTType<?>> CODEC = Codec.STRING.flatXmap(
-            s -> {
-                var nbtType = primitiveTypes(s);
-                return nbtType == null ? DataResult.error(() -> "Not found") : DataResult.success(nbtType);
-            },
-            t -> {
-                if (PRIMITIVE_TYPES.containsKey(t.typeName())) {
-                    return DataResult.success(t.typeName());
-                } else {
-                    return DataResult.error(() -> "Not a primitive type: " + t.typeName());
-                }
-            });
 
     public static <W> Codec<NBTType<W>> codec() {
         return (Codec) CODEC;

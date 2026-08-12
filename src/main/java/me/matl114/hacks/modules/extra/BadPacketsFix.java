@@ -229,10 +229,12 @@ public class BadPacketsFix extends BaseModule {
                                     VPacket.getCollisionFlag(full)),
                             full));
                 } else if (packet instanceof PlayerMoveC2SPacket.LookAndOnGround lookAndOnGround) {
-                    packetEvent.context(PlayerMoveC2SPacketAccess.setCauseFrom(
-                            VPacket.newOnGroundOnly(
-                                    lookAndOnGround.isOnGround(), VPacket.getCollisionFlag(lookAndOnGround)),
-                            lookAndOnGround));
+                    if (!mc.player.hasVehicle()) {
+                        packetEvent.context(PlayerMoveC2SPacketAccess.setCauseFrom(
+                                VPacket.newOnGroundOnly(
+                                        lookAndOnGround.isOnGround(), VPacket.getCollisionFlag(lookAndOnGround)),
+                                lookAndOnGround));
+                    }
                 }
             }
         } else {

@@ -20,7 +20,6 @@ import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.utils.ChatUtils;
-import me.matl114.utils.ColorUtils;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.OtherClientPlayerEntity;
@@ -38,6 +37,11 @@ import net.minecraft.util.math.MathHelper;
 
 public abstract class INameTag extends BaseModule {
     public INameTag() {
+        this("INameTag");
+    }
+
+    public INameTag(String name) {
+        super(name);
         bindFlag(enable);
     }
 
@@ -74,35 +78,35 @@ public abstract class INameTag extends BaseModule {
     public final FlagRef potion = flagBuilder(nameTag.add("potion")).build();
 
     public final NBTRef<WrapColor> nameColor = builder(nameTag.add("name-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Formatting.WHITE)))
+            .defaultValue(new WrapColor((Formatting.WHITE)))
             .build();
 
     public final NBTRef<WrapColor> friendNameColor = builder(nameTag.add("friend-name-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Formatting.WHITE)))
+            .defaultValue(new WrapColor((Formatting.WHITE)))
             .build();
 
     public final NBTRef<WrapColor> healthColor = builder(nameTag.add("health-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(new Color(20, 170, 170))))
+            .defaultValue(new WrapColor((new Color(20, 170, 170))))
             .build();
 
     public final NBTRef<WrapColor> pingColor = builder(nameTag.add("ping-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Formatting.GREEN)))
+            .defaultValue(new WrapColor((Formatting.GREEN)))
             .build();
 
     public final NBTRef<WrapColor> distColor = builder(nameTag.add("distance-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Formatting.RED)))
+            .defaultValue(new WrapColor((Formatting.RED)))
             .build();
 
     public final NBTRef<WrapColor> popColor = builder(nameTag.add("pop-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Color.ORANGE)))
+            .defaultValue(new WrapColor((Color.ORANGE)))
             .build();
 
     public final NBTRef<WrapColor> infoColor = builder(nameTag.add("other-info-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Formatting.YELLOW)))
+            .defaultValue(new WrapColor((Formatting.YELLOW)))
             .build();
 
     public final NBTRef<WrapColor> potionColor = builder(nameTag.add("potion-color"), WrapColor.class)
-            .defaultValue(new WrapColor(ColorUtils.color(Formatting.WHITE)))
+            .defaultValue(new WrapColor((Formatting.WHITE)))
             .build();
     List<PlayerNameTagInfo> nameTagInfos;
     protected static final EquipmentSlot[] SLOTS = {

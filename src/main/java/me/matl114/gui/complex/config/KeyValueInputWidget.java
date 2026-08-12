@@ -9,9 +9,9 @@ import net.minecraft.text.Text;
 
 public class KeyValueInputWidget<T> extends SubScreenWidget {
     AttrKeyValue<T> keyValueHolder;
-    int dkey;
-    int dblank;
-    int dvalue;
+    protected int dkey;
+    protected int dblank;
+    protected int dvalue;
 
     public KeyValueInputWidget(int x, int y, int dx, int dy, int dKey, AttrKeyValue<T> kv) {
         this(x, y, dx, dy, dKey, 0, dx - dKey, kv);

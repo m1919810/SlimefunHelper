@@ -7,7 +7,6 @@ import me.matl114.commands.MainCommand;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.utils.ChatUtils;
-import me.matl114.utils.EntityUtils;
 import me.matl114.utils.WorldUtils;
 import me.matl114.utils.commands.commandGroup.CommandContext;
 import me.matl114.utils.commands.commandGroup.SubCommand;
@@ -25,7 +24,9 @@ import net.minecraft.util.math.Vec3d;
 import org.joml.Vector3d;
 
 public class TargetCommand extends BaseModule {
-    public TargetCommand() {}
+    public TargetCommand() {
+        super("TargetCommand");
+    }
 
     @Override
     public void registerAll() {
@@ -42,7 +43,7 @@ public class TargetCommand extends BaseModule {
                     .name("calculate")
                     .post(m -> m.subBuilder(SubCommand.taskBuilder())
                             .name("waypoint")
-                            .helper("<waypoint> 计算路径点坐标")
+                            .helper("message.command.target.calculate.waypoint.help")
                             .arg(SimpleCommandArgs.argumentBuilder()
                                     .name("waypoint")
                                     .tabSupplier(WorldUtils::getWaypointNames)
@@ -51,7 +52,7 @@ public class TargetCommand extends BaseModule {
                             .complete()
                             .subBuilder(SubCommand.taskBuilder())
                             .name("pos")
-                            .helper("<坐标点> 计算位置相关数据")
+                            .helper("message.command.target.calculate.pos.help")
                             .arg(SimpleCommandArgs.argumentBuilder(MovTasks.TpaAndPosArgumentType::new)
                                     .name("target")
                                     .build())
@@ -59,7 +60,7 @@ public class TargetCommand extends BaseModule {
                             .complete()
                             .subBuilder(SubCommand.taskBuilder())
                             .name("chunk")
-                            .helper("<x> <z> 计算区块坐标")
+                            .helper("message.command.target.calculate.chunk.help")
                             .arg(SimpleCommandArgs.argumentBuilder()
                                     .name("z")
                                     .intValue()
@@ -77,7 +78,7 @@ public class TargetCommand extends BaseModule {
                     .name("target")
                     .post(m -> m.subBuilder(SubCommand.taskBuilder())
                             .name("waypoint")
-                            .helper("<waypoint> 转动视角朝向该路径点")
+                            .helper("message.command.target.target.waypoint.help")
                             .arg(SimpleCommandArgs.argumentBuilder()
                                     .name("waypoint")
                                     .tabSupplier(WorldUtils::getWaypointNames)
@@ -86,7 +87,7 @@ public class TargetCommand extends BaseModule {
                             .complete()
                             .subBuilder(SubCommand.taskBuilder())
                             .name("pos")
-                            .helper("<坐标点> 转动视角朝向坐标点")
+                            .helper("message.command.target.target.pos.help")
                             .arg(SimpleCommandArgs.argumentBuilder(MovTasks.TpaAndPosArgumentType::new)
                                     .name("target")
                                     .build())
@@ -94,7 +95,7 @@ public class TargetCommand extends BaseModule {
                             .complete()
                             .subBuilder(SubCommand.taskBuilder())
                             .name("chunk")
-                            .helper("<x> <z> 计算区块坐标")
+                            .helper("message.command.target.target.chunk.help")
                             .arg(SimpleCommandArgs.argumentBuilder()
                                     .name("z")
                                     .intValue()
@@ -180,14 +181,14 @@ public class TargetCommand extends BaseModule {
             var waypointData = waypointIns.getData();
             if (waypointData instanceof WorldUtils.WaypointData.Pos pos) {
                 Vec3d rotate = pos.pos().subtract(mc.player.getEyePos()).normalize();
-                EntityUtils.setEntityRotationSafe(mc.player, rotate);
+                PlayerStateManager.setPlayerRotationSafe(mc.player, rotate);
             } else if (waypointData instanceof WorldUtils.WaypointData.Chunk chunk) {
                 ChunkPos chunkPos = chunk.pos();
                 Vec2f rotate = new Vec2f(
                         (float) ((chunkPos.x << 4) - mc.player.getX()), (float) ((chunkPos.z << 4) - mc.player.getZ()));
-                EntityUtils.setEntityYawSafe(mc.player, rotate);
+                PlayerStateManager.setPlayerYawSafe(mc.player, rotate);
             } else if (waypointData instanceof WorldUtils.WaypointData.Direction direction) {
-                EntityUtils.setEntityYawSafe(mc.player, (float) direction.azimuth() * 57.29578f);
+                PlayerStateManager.setPlayerYawSafe(mc.player, (float) direction.azimuth() * 57.29578f);
             }
         }
     }
@@ -199,7 +200,7 @@ public class TargetCommand extends BaseModule {
             Vec3d target = new Vec3d(
                             vector3d.x - mc.player.getX(), vector3d.y - mc.player.getY(), vector3d.z - mc.player.getZ())
                     .normalize();
-            EntityUtils.setEntityRotationSafe(mc.player, target);
+            PlayerStateManager.setPlayerRotationSafe(mc.player, target);
         } else {
             p.sendMessage("输入了无效坐标!");
         }
@@ -209,7 +210,7 @@ public class TargetCommand extends BaseModule {
         int x = re.nextInt();
         int z = re.nextInt();
         Vec2f rotate = new Vec2f((float) ((x << 4) - mc.player.getX()), (float) ((z << 4) - mc.player.getZ()));
-        EntityUtils.setEntityYawSafe(mc.player, rotate);
+        PlayerStateManager.setPlayerYawSafe(mc.player, rotate);
     }
 
     public static Vec2f intersectRays(Vec3d posA, float azimuthA, Vec3d posB, float azimuthB) {
