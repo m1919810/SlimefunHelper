@@ -27,6 +27,7 @@ import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.stat.StatHandler;
 import net.minecraft.util.PlayerInput;
 import net.minecraft.util.math.Vec2f;
+import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -122,15 +123,15 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         this.lastOnGround = lastOnGround;
     }
 
-    public void resyncPos() {
-        this.lastX = 0;
-        this.lastZ = 0;
-        this.lastBaseY = 0;
+    public void setLastPos(Vec3d vec3d) {
+        this.lastXClient = vec3d.x;
+        this.lastZClient = vec3d.y;
+        this.lastYClient = vec3d.z;
     }
 
-    public void resyncRot() {
-        this.lastPitch = 0;
-        this.lastYaw = 0;
+    public void setLastRot(float pitch, float yaw) {
+        this.lastPitchClient = pitch;
+        this.lastYawClient = yaw;
     }
 
     public void resyncInput() {

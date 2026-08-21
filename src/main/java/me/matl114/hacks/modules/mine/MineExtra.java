@@ -7,6 +7,7 @@ import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.*;
 import me.matl114.events.Event;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;

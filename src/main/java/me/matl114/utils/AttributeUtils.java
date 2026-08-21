@@ -28,7 +28,7 @@ public class AttributeUtils {
         for (var re : equipmentOverrides.entrySet()) {
             ItemStack current = living.getEquippedStack(re.getKey());
             if (!ItemStack.areItemsAndComponentsEqual(re.getValue(), current)) {
-                filterMap.put(re.getKey(), current);
+                filterMap.put(re.getKey(), re.getValue());
             }
         }
         AttributeContainer attributeContainer = new AttributeContainer(

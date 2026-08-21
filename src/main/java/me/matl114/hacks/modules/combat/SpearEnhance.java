@@ -11,6 +11,7 @@ import me.matl114.accessors.events.MetadataHolder;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.UseItem;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
@@ -48,6 +49,7 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
@@ -441,10 +443,10 @@ public class SpearEnhance extends BaseModule {
         }
     }
 
-    public void onSpearUse(Event<ActionResult> eventAction) {
+    public void onSpearUse(Event<UseItem> eventAction) {
         if (checkNull()) return;
         if (fixOldVersionSpearSound.get()) {
-            Hand hand = eventAction.getArgs(0);
+            Hand hand = eventAction.context.hand();
             ItemStack stack = mc.player.getStackInHand(hand);
             if (materialSwordToSpearMap.containsKey(stack.getItem())
                     && VItem.getInstance().isSpear(stack)) {

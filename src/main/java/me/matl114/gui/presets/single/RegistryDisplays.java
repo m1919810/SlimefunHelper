@@ -8,7 +8,6 @@ import javax.annotation.Nonnull;
 import lombok.AllArgsConstructor;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.RenderHandler;
-import me.matl114.managers.Tasks;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.RegistryUtils;
@@ -16,9 +15,13 @@ import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.particle.ParticleSpriteManager;
+import net.minecraft.client.texture.MissingSprite;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
+import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.EntityAttribute;
@@ -27,6 +30,8 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.particle.ParticleType;
+import net.minecraft.potion.Potion;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKeys;
@@ -34,6 +39,8 @@ import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.random.LocalRandom;
+import net.minecraft.util.math.random.Random;
 
 public class RegistryDisplays {
 
@@ -53,22 +60,8 @@ public class RegistryDisplays {
     }
 
     public static <T> Text getDisplay(Registry<T> registry, @Nonnull T val) {
-        if (val instanceof StatusEffect effect) {
-            return effect.getName();
-        } else if (val instanceof EntityAttribute attribute) {
-            return Text.translatable(attribute.getTranslationKey());
-        } else if (val instanceof Enchantment enchantment) {
-            return enchantment.description();
-        } else if (val instanceof BlockEntityType<?> blockEntityType) {
-            return Text.literal(
-                    Registries.BLOCK_ENTITY_TYPE.getId(blockEntityType).getPath());
-        } else if (val instanceof EntityType<?> entityType) {
-            return Text.translatable(entityType.getTranslationKey());
-        } else if (val instanceof Item itemConvertible) {
-            return itemConvertible.getName();
-        } else if (val instanceof Block itemStack) {
-            return itemStack.getName();
-        }
+        Text re = guessTranslation(val);
+        if (re != null) return re;
         Identifier id = registry.getId(val);
         if (id != null) {
             return Text.translatable(registry.getKey().getValue().getPath() + ".minecraft." + id.getPath());
@@ -77,6 +70,22 @@ public class RegistryDisplays {
     }
 
     public static <T> Text getDisplay(@Nonnull T val) {
+        Text re = guessTranslation(val);
+        if (re != null) return re;
+        RegistryKey<? extends Registry<T>> registry = RegistryUtils.getRegistryTypeKey(val);
+        if (registry != null) {
+            Registry<T> re2 = Registries.REGISTRIES.get((RegistryKey) registry);
+            if (re2 != null) {
+                Identifier id = re2.getId(val);
+                if (id != null) {
+                    return Text.translatable(registry.getValue().getPath() + ".minecraft." + id.getPath());
+                }
+            }
+        }
+        return Text.literal(val.toString());
+    }
+
+    private static <T> Text guessTranslation(T val) {
         if (val instanceof StatusEffect effect) {
             return effect.getName();
         } else if (val instanceof EntityAttribute attribute) {
@@ -94,18 +103,10 @@ public class RegistryDisplays {
             return itemStack.getName();
         } else if (val instanceof SoundEvent soundEvent) {
             return Text.translatable("subtitles." + soundEvent.id().getPath());
+        } else if (val instanceof Potion potionType) {
+            return Text.translatable(Items.POTION.getTranslationKey() + ".effect." + potionType.getBaseName());
         }
-        RegistryKey<? extends Registry<T>> registry = RegistryUtils.getRegistryTypeKey(val);
-        if (registry != null) {
-            Registry<T> re = Registries.REGISTRIES.get((RegistryKey) registry);
-            if (re != null) {
-                Identifier id = re.getId(val);
-                if (id != null) {
-                    return Text.translatable(registry.getValue().getPath() + ".minecraft." + id.getPath());
-                }
-            }
-        }
-        return Text.literal(val.toString());
+        return null;
     }
 
     public static <T> RenderHandler of(Registry<T> registry, T value, Text name, Identifier identifier) {
@@ -116,6 +117,7 @@ public class RegistryDisplays {
 
     public static final ItemStack ANVIL_ITEM = new ItemStack(Items.ANVIL);
     public static final ItemStack AIR_ITEM = new ItemStack(Items.AIR);
+    private static final Random RAND = new LocalRandom(999);
     public static Map<Class<?>, IIcon<?>> TYPE_TO_ICON_MAP = ImmutableMap.<Class<?>, IIcon<?>>builder()
             .put(Item.class, IIcon.<ItemConvertible>renderItem(ItemStack::new))
             .put(Block.class, IIcon.<ItemConvertible>renderItem(ItemStack::new))
@@ -124,7 +126,7 @@ public class RegistryDisplays {
             .put(BlockEntityType.class, IIcon.<BlockEntityType<?>>renderItem(s -> {
                 if (s.blocks.isEmpty()) return AIR_ITEM;
                 List<Block> blockList = s.blocks.stream().toList();
-                int select = (Tasks.getSecond() % blockList.size());
+                int select = ((int) (System.currentTimeMillis() / 1000) % blockList.size());
                 return new ItemStack(blockList.get(select));
             }))
             .put(EntityType.class, IIcon.<EntityType<?>>renderItem((v) -> {
@@ -134,6 +136,20 @@ public class RegistryDisplays {
             .put(StatusEffect.class, IIcon.<StatusEffect>renderSprite(effect -> {
                 RegistryEntry<StatusEffect> entry = Registries.STATUS_EFFECT.getEntry(effect);
                 return getEffectTexture(entry);
+            }))
+            .put(Potion.class, IIcon.<Potion>renderItem((v) -> {
+                return PotionContentsComponent.createStack(Items.POTION, Registries.POTION.getEntry(v));
+            }))
+            .put(ParticleType.class, IIcon.<ParticleType<?>>renderSprite((v) -> {
+                Identifier id = Registries.PARTICLE_TYPE.getId(v);
+                ParticleSpriteManager manager = MinecraftClient.getInstance().particleSpriteManager;
+                var re = manager.spriteAwareParticleFactories;
+                var what = re.get(id);
+                if (what != null) {
+                    return what.getSprite(RAND);
+                } else {
+                    return null;
+                }
             }))
             .build();
 

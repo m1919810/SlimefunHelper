@@ -3,35 +3,30 @@ package me.matl114.hacks.modules.render;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import me.matl114.api.Displayable;
 import me.matl114.events.Event;
 import me.matl114.gui.presets.single.RegistryDisplays;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.PlayerStateManager;
-import me.matl114.hacks.utils.config.BoundedPrimitiveFlagMap;
+import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffectUtil;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.potion.Potion;
 import net.minecraft.potion.Potions;
+import net.minecraft.registry.Registries;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 
 public class PlayerStatistic extends IRender2DColoredModule {
-    private static final int ITEM_SIZE = 8;
-    private static final int ITEM_TEXT_GAP = 2;
     private static final int ITEM_ROW_HEIGHT = 9;
-    private static final int ITEM_TEXT_Y = 4;
-    private static final ItemStack TOTEM_STACK = new ItemStack(Items.TOTEM_OF_UNDYING);
-    private static final ItemStack TURTLE_STACK =
-            PotionContentsComponent.createStack(Items.POTION, Potions.TURTLE_MASTER);
-    private static final ItemStack FIREWORK_STACK = new ItemStack(Items.FIREWORK_ROCKET);
-    private static final ItemStack EXP_STACK = new ItemStack(Items.EXPERIENCE_BOTTLE);
 
     public PlayerStatistic() {
         super("Statistic");
@@ -45,10 +40,19 @@ public class PlayerStatistic extends IRender2DColoredModule {
     public final ModulePath hudRoot = makePath(Configs.RENDER_CONFIG, "in-game-hud");
     public final ModulePath hud = hudRoot.add("player-statistic");
 
-    public NBTRef<PlayerStatisticElementSelectSet> hudElementList = builder(
-                    hud.add("elements"), PlayerStatisticElementSelectSet.class)
-            .defaultValue(new PlayerStatisticElementSelectSet())
+    public final FlagRef enableItems = flagBuilder(hud.add("enable-items")).build();
+
+    public final NBTRef<EntrySet<Item>> itemTypes = builder(hud.add("item-types"), EntrySet.<Item>parameter())
+            .defaultValue(new EntrySet<>(Registries.ITEM, List.of(Items.TOTEM_OF_UNDYING, Items.FIREWORK_ROCKET)))
             .build();
+
+    public final FlagRef enablePotions = flagBuilder(hud.add("enable-potions")).build();
+
+    public final NBTRef<EntrySet<Potion>> potionTypes = builder(hud.add("potion-types"), EntrySet.<Potion>parameter())
+            .defaultValue(new EntrySet<>(Registries.POTION, List.of(Potions.TURTLE_MASTER.value())))
+            .build();
+
+    public final FlagRef enableEffect = flagBuilder(hud.add("enable-effect")).build();
 
     @Override
     public void registerAll() {
@@ -60,20 +64,18 @@ public class PlayerStatistic extends IRender2DColoredModule {
 
     @Override
     public void render2D(VDrawContext vdraw, float partialTicks) {
-        PlayerStatisticElementSelectSet set = hudElementList.get();
-        if (set.getState(StatisticElement.TOTEM)) {
-            handleTotem(vdraw);
+        if (enableItems.get()) {
+            for (var re : itemTypes.get().set()) {
+                handleItem(vdraw, re);
+            }
         }
-        if (set.getState(StatisticElement.TURTLE)) {
-            handleTurtle(vdraw);
+        if (enablePotions.get()) {
+            for (var re : potionTypes.get().set()) {
+                handleTurtle(vdraw, re);
+            }
         }
-        if (set.getState(StatisticElement.FIREWORK)) {
-            handleFirework(vdraw);
-        }
-        if (set.getState(StatisticElement.EXP)) {
-            handleExp(vdraw);
-        }
-        if (set.getState(StatisticElement.EFFECTS)) {
+
+        if (enableEffect.get()) {
             handleEffects(vdraw);
         }
     }
@@ -102,71 +104,48 @@ public class PlayerStatistic extends IRender2DColoredModule {
         vdraw.getMatrices().translate(0, ITEM_ROW_HEIGHT);
     }
 
-    public void handleTotem(VDrawContext vdraw) {
+    public void handleItem(VDrawContext vdraw, Item itemType) {
         var map = PlayerStateManager.INSTANCE.inventorySummary;
         int cnt;
         if (map != null) {
             cnt = map.entrySet().stream()
-                    .filter(s -> s.getKey().sample().getItem() == Items.TOTEM_OF_UNDYING)
+                    .filter(s -> s.getKey().sample().isOf(itemType))
                     .mapToInt(Map.Entry::getValue)
                     .sum();
         } else {
             cnt = 0;
         }
-        drawItemStatistic(vdraw, TOTEM_STACK, cnt);
+        drawItemStatistic(vdraw, new ItemStack(itemType), cnt);
     }
 
-    private boolean isTurtle(ItemStack stack) {
+    private boolean isTurtle(ItemStack stack, Potion potionType) {
         var potion = stack.get(DataComponentTypes.POTION_CONTENTS);
         if (potion != null) {
             var po = potion.potion().orElse(null);
-            return Objects.equals(po, Potions.TURTLE_MASTER)
-                    || Objects.equals(po, Potions.LONG_TURTLE_MASTER)
-                    || Objects.equals(po, Potions.STRONG_TURTLE_MASTER);
+            if (po == null) return false;
+            if (Objects.equals(po, potionType)) {
+                return true;
+            }
+            var re = potionType.getEffects().stream().map(StatusEffectInstance::getEffectType);
+            var re2 = po.value().getEffects().stream().map(StatusEffectInstance::getEffectType);
+            return Objects.equals(re, re2);
         }
         return false;
     }
 
-    public void handleTurtle(VDrawContext vdraw) {
+    public void handleTurtle(VDrawContext vdraw, Potion potionType) {
         var map = PlayerStateManager.INSTANCE.inventorySummary;
         int cnt;
         if (map != null) {
             cnt = map.entrySet().stream()
-                    .filter(s -> isTurtle(s.getKey().sample()))
+                    .filter(s -> isTurtle(s.getKey().sample(), potionType))
                     .mapToInt(Map.Entry::getValue)
                     .sum();
         } else {
             cnt = 0;
         }
-        drawItemStatistic(vdraw, TURTLE_STACK, cnt);
-    }
-
-    public void handleFirework(VDrawContext vdraw) {
-        var map = PlayerStateManager.INSTANCE.inventorySummary;
-        int cnt;
-        if (map != null) {
-            cnt = map.entrySet().stream()
-                    .filter(s -> s.getKey().sample().getItem() == Items.FIREWORK_ROCKET)
-                    .mapToInt(Map.Entry::getValue)
-                    .sum();
-        } else {
-            cnt = 0;
-        }
-        drawItemStatistic(vdraw, FIREWORK_STACK, cnt);
-    }
-
-    public void handleExp(VDrawContext vdraw) {
-        var map = PlayerStateManager.INSTANCE.inventorySummary;
-        int cnt;
-        if (map != null) {
-            cnt = map.entrySet().stream()
-                    .filter(s -> s.getKey().sample().getItem() == Items.EXPERIENCE_BOTTLE)
-                    .mapToInt(Map.Entry::getValue)
-                    .sum();
-        } else {
-            cnt = 0;
-        }
-        drawItemStatistic(vdraw, EXP_STACK, cnt);
+        drawItemStatistic(
+                vdraw, PotionContentsComponent.createStack(Items.POTION, Registries.POTION.getEntry(potionType)), cnt);
     }
 
     private static final RegistryDisplays.IIcon<StatusEffect> statusEffectRenderer =
@@ -201,39 +180,6 @@ public class PlayerStatistic extends IRender2DColoredModule {
             }
             vdraw.popMatrix();
             vdraw.getMatrices().translate(0, HEIGHT);
-        }
-    }
-
-    public static class PlayerStatisticElementSelectSet extends BoundedPrimitiveFlagMap<StatisticElement>
-            implements NBTParsable<PlayerStatisticElementSelectSet> {
-        public static final NBTType<PlayerStatisticElementSelectSet> TYPE = createEnumMap(
-                "PlayerStatisticElementSelectSet", StatisticElement.class, PlayerStatisticElementSelectSet::new);
-
-        public PlayerStatisticElementSelectSet(
-                List<StatisticElement> keys, Map<StatisticElement, Boolean> map, NBTType<Boolean> type) {
-            super(keys, map, type);
-        }
-
-        public PlayerStatisticElementSelectSet() {
-            super(StatisticElement.class);
-        }
-
-        @Override
-        public NBTType<PlayerStatisticElementSelectSet> type() {
-            return TYPE.cast();
-        }
-    }
-
-    public static enum StatisticElement implements Displayable {
-        TOTEM,
-        TURTLE,
-        FIREWORK,
-        EXP,
-        EFFECTS;
-
-        @Override
-        public Text getDisplay() {
-            return Text.literal(name());
         }
     }
 }

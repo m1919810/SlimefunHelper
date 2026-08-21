@@ -2,9 +2,7 @@ package me.matl114.hacks.modules.task;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Streams;
-import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.JavaOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.io.File;
 import java.util.*;
@@ -14,6 +12,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import lombok.Getter;
+import lombok.With;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.annotations.Broadcast;
@@ -34,8 +33,8 @@ import me.matl114.managers.FileManager;
 import me.matl114.managers.ScheduleService;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
-import me.matl114.managers.config.Ref;
 import me.matl114.managers.file.FileStorage;
+import me.matl114.utils.CollectionUtils;
 import me.matl114.utils.CommonUtils;
 import me.matl114.utils.Debug;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -60,62 +59,60 @@ public class ServerStorage extends BaseModule {
             .defaultValue(true)
             .build();
 
+    public final FlagRef enableProxyXaeroMap =
+            flagBuilder(path.add("enable-proxy-xaeromap-storage")).build();
+
+    public final FlagRef enableProxyBaritone =
+            flagBuilder(path.add("enable-proxy-baritone-storage")).build();
+
     FileStorage fileStorage = FileManager.getInstance().getInternalStorage("server-storage.nbt");
 
     static final String NAME_MAPPER_KEY = "persistent-storage-name-mapper";
-    Map<String, String> nameMapper;
+    static final String PROXY_KEY = "ip-proxies";
+    ServerFolder serverFolder;
 
     {
-        Map<String, Object> javaMap = fileStorage.as(JavaOps.INSTANCE);
-        if (!javaMap.containsKey(NAME_MAPPER_KEY) || !(javaMap.get(NAME_MAPPER_KEY) instanceof Map<?, ?>)) {
-            Ref<?> originalMapper = path.getConfig()
-                    .get(path.add("persistent-storage-name-mapper").toPath());
-            if (originalMapper instanceof NBTRef nbt && nbt.get() instanceof PrimitivePairList<?, ?> list) {
-                path.getConfig()
-                        .setValueNoNew(
-                                null, path.add("persistent-storage-name-mapper").toPath());
-                List<Pair<String, String>> listed = (List) list.list();
-                updateNameMapper(listed);
-            } else {
-                nameMapper = Map.of("3c3u.org", "3c3u");
-                fileStorage.write(Map.of(NAME_MAPPER_KEY, nameMapper), JavaOps.INSTANCE);
-            }
-        } else {
-            nameMapper = (Map) javaMap.get(NAME_MAPPER_KEY);
-        }
+        serverFolder = fileStorage.read(ServerFolder.CODEC, () -> new ServerFolder(Map.of(), Map.of()));
+        updateServerFolder(serverFolder);
     }
 
-    public void updateNameMapper(List<Pair<String, String>> listed) {
-        nameMapper = new HashMap<>(listed.size());
-        for (var entry : listed) {
-            nameMapper.put(entry.getFirst(), entry.getSecond());
-        }
-        fileStorage.write(Map.of(NAME_MAPPER_KEY, nameMapper), JavaOps.INSTANCE);
+    public void updateServerFolder(ServerFolder folder) {
+        this.serverFolder = folder;
+        fileStorage.write(ServerFolder.CODEC, folder);
     }
 
     @Override
     public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
         super.addCustomWidgets(acceptor, dx, dy, dblank);
         var pth = path.add("persistent-storage-name-mapper");
-        List<Pair<String, String>> pairList = nameMapper.entrySet().stream()
-                .map(s -> Pair.of(s.getKey(), s.getValue()))
-                .toList();
         NBTRef<PrimitivePairList<String, String>> ref = new NBTRef<>(new PrimitivePairList<>(
                 "widget.server-storage.ip",
                 "widget.server-storage.name",
                 NBTTypes.STRING_TYPE,
                 NBTTypes.STRING_TYPE,
-                pairList));
-        ref.addUpdateListener(s -> updateNameMapper(s.list()));
+                CollectionUtils.mapToPairList(serverFolder.ipToFolder())));
+        ref.addUpdateListener(s -> {
+            updateServerFolder(serverFolder.withIpToFolder(CollectionUtils.pairListToMap(s.list())));
+        });
         acceptor.accept(createRefEditor(pth.asString(), ref, 0, dblank, dx, dy));
+        var pth2 = path.add("ip-proxies");
+        NBTRef<PrimitivePairList<String, String>> ref2 = new NBTRef<>(new PrimitivePairList<>(
+                "widget.server-storage.proxy",
+                "widget.server-storage.ip",
+                NBTTypes.STRING_TYPE,
+                NBTTypes.STRING_TYPE,
+                CollectionUtils.mapToPairList(serverFolder.ipProxy())));
+        ref2.addUpdateListener(
+                s -> updateServerFolder(serverFolder.withIpProxy(CollectionUtils.pairListToMap(s.list()))));
+        acceptor.accept(createRefEditor(pth2.asString(), ref2, 0, dblank, dx, dy));
     }
 
-    //    public final NBTRef<PrimitivePairList<String, String>> serverNameMapper = builder(
-    //                    path.add("persistent-storage-name-mapper"),
-    //                    NBTType.<PrimitivePairList<String, String>>parameter(PrimitivePairList.class))
-    //            .defaultValue(new PrimitivePairList<>(
-    //                    "", "", NBTTypes.STRING_TYPE, NBTTypes.STRING_TYPE, List.of(Pair.of("3c3u.org", "3c3u"))))
-    //            .build();
+    public String getSaveId(String ip) {
+        if (enableProxyXaeroMap.get()) {
+            return serverFolder.getProxiedIp(ip);
+        }
+        return ip;
+    }
 
     public static final File SAVE_FILE = FileManager.getInstance().getAndCreateFile("server_storage");
 
@@ -255,19 +252,13 @@ public class ServerStorage extends BaseModule {
     private String mappedServerName() {
         String serverName = CommonUtils.getServerName();
         Preconditions.checkNotNull(serverName);
-        String replace = serverName;
-        for (var re : nameMapper.entrySet()) {
-            if (serverName.equalsIgnoreCase(re.getKey())) {
-                replace = re.getValue();
-            }
-        }
-        return replace;
+        return serverFolder.getPersistentFolder(serverName);
     }
 
     public static String PREFIX = "ws_";
 
     private String normalizedFileName(String path) {
-        path = path.trim().replace(" ", "_").replace("/", "_").replace("\\", "_");
+        path = path.trim().replace(" ", "_").replaceAll("[\\\\/:*?\"<>|]|\\p{Cntrl}", "_");
         return PREFIX + path;
     }
 
@@ -808,6 +799,33 @@ public class ServerStorage extends BaseModule {
                             allWorldStorages().stream(),
                             allEntityStorages().stream())
                     .anyMatch(IStorage::isDirty);
+        }
+    }
+
+    @With
+    public static record ServerFolder(Map<String, String> ipToFolder, Map<String, String> ipProxy) {
+        public static final Codec<ServerFolder> CODEC = RecordCodecBuilder.create(oinstance -> oinstance
+                .group(
+                        Codec.unboundedMap(Codec.STRING, Codec.STRING)
+                                .optionalFieldOf(NAME_MAPPER_KEY, Map.of())
+                                .forGetter(ServerFolder::ipToFolder),
+                        Codec.unboundedMap(Codec.STRING, Codec.STRING)
+                                .optionalFieldOf(PROXY_KEY, Map.of())
+                                .forGetter(ServerFolder::ipProxy))
+                .apply(oinstance, ServerFolder::new));
+
+        public String getPersistentFolder(String ip) {
+            String ip2 = getProxiedIp(ip);
+            for (var re : ipToFolder.entrySet()) {
+                if (re.getKey().equalsIgnoreCase(ip2)) {
+                    return re.getValue();
+                }
+            }
+            return ip2;
+        }
+
+        public String getProxiedIp(String ip) {
+            return ipProxy.getOrDefault(ip, ip);
         }
     }
 }

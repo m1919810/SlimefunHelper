@@ -25,7 +25,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 
 public class PacketDebugger extends BaseModule {
-    public final ModulePath packetDebugger = makePath(Configs.TEST_CONFIG, "packet-debugger");
+    public final ModulePath packetDebugger = makePath(Configs.EXTRA_CONFIG, "packet-debugger");
 
     public PacketDebugger() {
         super("PacketDebug");
@@ -84,7 +84,7 @@ public class PacketDebugger extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPacketPreHandlePoint(), this::onPacketHandle, Integer.MIN_VALUE);
-        registerListener(Listener.getPacketPostSendPoint(), this::onPacketSend, Integer.MIN_VALUE);
+        registerListener(Listener.getPacketPostScheduleSendPoint(), this::onPacketSend, Integer.MIN_VALUE);
         registerListener(Listener.getPacketPoint(), this::onPacket);
     }
 

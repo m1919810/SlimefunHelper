@@ -21,7 +21,7 @@ import net.minecraft.network.packet.c2s.play.UpdateBeaconC2SPacket;
 import net.minecraft.text.Text;
 
 public class BeaconEnhance extends BaseModule {
-    public final ModulePath other = makePath(Configs.TEST_CONFIG, "other");
+    public final ModulePath other = makePath(Configs.EXTRA_CONFIG, "other");
 
     public BeaconEnhance() {
         super("BeaconPlus");

@@ -41,7 +41,7 @@ public class BoatVClip extends BaseModule implements LegalMovementManager.Moveme
         bindFlag(enable);
     }
 
-    public final ModulePath boatVClip = makePath(Configs.TEST_CONFIG, "other.boat-vclip");
+    public final ModulePath boatVClip = makePath(Configs.EXTRA_CONFIG, "other.boat-vclip");
 
     public final FlagRef enable = flagBuilder(boatVClip.addEnable()).build();
     public final KeyBindRef hotkey = moduleEntry(boatVClip.addHotkey(), new MultiKeyBind(), boatVClip.addEnable())

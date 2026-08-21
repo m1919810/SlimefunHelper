@@ -3,8 +3,10 @@ package me.matl114.utils;
 import static me.matl114.hacks.RenderTasks.*;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import me.matl114.accessors.moonrise.MoonriseBlockStateBaseAccess;
 import me.matl114.accessors.moonrise.MoonriseChunkBlockCountingAccess;
 import me.matl114.accessors.moonrise.MoonriseVoxelShapeAccess;
@@ -17,8 +19,10 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.ShulkerEntity;
 import net.minecraft.entity.vehicle.AbstractMinecartEntity;
 import net.minecraft.entity.vehicle.BoatEntity;
+import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.math.*;
 import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.EmptyBlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.*;
@@ -2343,5 +2347,32 @@ public final class CollisionUtil {
                 );
 
         return hasCollision;
+    }
+
+    public static boolean hasAnyIntersects(World world, Predicate<Entity> exceptPredicate, VoxelShape shape) {
+        if (shape.isEmpty()) return false;
+        Iterator<Entity> iterator =
+                world.getOtherEntities(null, shape.getBoundingBox()).iterator();
+
+        while (iterator.hasNext()) {
+            Entity entity = iterator.next();
+
+            if (entity.isRemoved()) {
+                continue;
+            }
+
+            if (!entity.intersectionChecked) {
+                continue;
+            }
+            if (exceptPredicate.test(entity)) {
+                continue;
+            }
+            if (VoxelShapes.matchesAnywhere(
+                    shape, VoxelShapes.cuboid(entity.getBoundingBox()), BooleanBiFunction.AND)) {
+
+                return true;
+            }
+        }
+        return false;
     }
 }

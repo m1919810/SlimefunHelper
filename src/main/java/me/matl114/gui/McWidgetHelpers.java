@@ -206,11 +206,7 @@ public class McWidgetHelpers {
             if (Objects.equals(lastStoredAttrKeyValue, attrKeyValue.getValue())) {
                 this.attrKeyValue.valueChange(this, valueUpdate);
                 String updateValue = attrKeyValue.getValue();
-                if (Objects.equals(getText(), updateValue)) {
-                    lastStoredAttrKeyValue = updateValue;
-                } else {
-                    setText(updateValue);
-                }
+                lastStoredAttrKeyValue = updateValue;
             } else {
                 // internal change, update from internal
                 lastStoredAttrKeyValue = attrKeyValue.getValue();

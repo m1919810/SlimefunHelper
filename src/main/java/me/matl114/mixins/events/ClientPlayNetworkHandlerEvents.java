@@ -34,6 +34,7 @@ import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagGroupLoader;
 import net.minecraft.registry.tag.TagKey;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
@@ -331,7 +332,7 @@ public abstract class ClientPlayNetworkHandlerEvents {
                             value = "INVOKE",
                             target =
                                     "Lnet/minecraft/registry/tag/TagPacketSerializer$Serialized;toRegistryTags(Lnet/minecraft/registry/Registry;)Lnet/minecraft/registry/tag/TagGroupLoader$RegistryTags;"))
-    private static <T> TagGroupLoader.RegistryTags<T> onRegistryTagReload(
+    private <T> TagGroupLoader.RegistryTags<T> onRegistryTagReload(
             TagGroupLoader.RegistryTags<T> original,
             @Local(argsOnly = true) RegistryKey<? extends Registry<? extends T>> registryKey) {
         Map<TagKey<T>, List<RegistryEntry<T>>> tagMap = original.tags();
@@ -341,5 +342,18 @@ public abstract class ClientPlayNetworkHandlerEvents {
             return new TagGroupLoader.RegistryTags<>(original.key(), event.context);
         }
         return original;
+    }
+
+    @Inject(
+            method = "onChunkData",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/network/ClientPlayNetworkHandler;loadChunk(IILnet/minecraft/network/packet/s2c/play/ChunkData;)V",
+                            shift = At.Shift.AFTER))
+    private void onLoadChunkPost(ChunkDataS2CPacket packet, CallbackInfo ci) {
+        ChunkPos pos = new ChunkPos(packet.getChunkX(), packet.getChunkZ());
+        Listener.getChunkUpdateListener().broadcast(pos);
     }
 }

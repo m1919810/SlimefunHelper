@@ -26,7 +26,7 @@ import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
 import net.minecraft.network.packet.s2c.play.SubtitleS2CPacket;
 
 public class EventNotify extends BaseModule {
-    public final ModulePath path = makePath(Configs.TEST_CONFIG, "other.queue-notify");
+    public final ModulePath path = makePath(Configs.EXTRA_CONFIG, "other.queue-notify");
 
     public EventNotify() {
         super("EventNotify");
@@ -50,7 +50,7 @@ public class EventNotify extends BaseModule {
     public final FlagRef enableQueue = flagBuilder(path.add("enable-queue")).build();
 
     public final NBTRef<Regex> queueRegex = builder(path.add("queue-3c-title-regex"), Regex.class)
-            .defaultValue(new Regex(".*(正在游玩.*队列位置|Queue.*position)[：:]\\s*(\\d+)"))
+            .defaultValue(new Regex(".*(正在游玩.*队列位置|Position.*queue)[：:]\\s*(\\d+)"))
             .build();
 
     public final NBTRef<IntPrimitiveList> order = builder(path.add("order"), IntPrimitiveList.class)
