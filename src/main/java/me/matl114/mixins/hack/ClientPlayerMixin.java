@@ -166,7 +166,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
             method = "applyMovementSpeedFactors",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z"))
     private boolean noSlowUsingItem(boolean original) {
-        if (MovTasks.getNoSlowDown().shouldNoSlowUseItem()) {
+        if (MovTasks.getNoSlowDown().workNoSlowItemThisTick) {
             return false;
         }
         return original;
@@ -176,7 +176,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
             method = "isBlockedFromSprinting",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z"))
     private boolean noSlowUsingItemDoNotBlockSprint(boolean original) {
-        if (MovTasks.getNoSlowDown().shouldNoSlowUseItem()) {
+        if (MovTasks.getNoSlowDown().workNoSlowItemThisTick) {
             return false;
         }
         return original;
@@ -190,7 +190,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
                             target = "Lnet/minecraft/client/network/ClientPlayerEntity;canStartSprinting()Z"))
     private boolean noSlowUsingItemDoNotBlockSprint1(ClientPlayerEntity instance, Operation<Boolean> original) {
         // fix viafabric
-        if (MovTasks.getNoSlowDown().shouldNoSlowUseItem()) {
+        if (MovTasks.getNoSlowDown().workNoSlowItemThisTick) {
             boolean v = usingItem;
             usingItem = false;
             try {
@@ -210,7 +210,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
                             target = "Lnet/minecraft/client/network/ClientPlayerEntity;shouldStopSprinting()Z"))
     private boolean noSlowUsingItemDoNotBlockSprint2(ClientPlayerEntity instance, Operation<Boolean> original) {
         // fix viafabric
-        if (MovTasks.getNoSlowDown().shouldNoSlowUseItem()) {
+        if (MovTasks.getNoSlowDown().workNoSlowItemThisTick) {
             boolean v = usingItem;
             usingItem = false;
             try {
@@ -230,7 +230,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
                             target = "Lnet/minecraft/client/network/ClientPlayerEntity;shouldStopSwimSprinting()Z"))
     private boolean nnoSlowUsingItemDoNotBlockSprint3(ClientPlayerEntity instance, Operation<Boolean> original) {
         // fix viafabric
-        if (MovTasks.getNoSlowDown().shouldNoSlowUseItem()) {
+        if (MovTasks.getNoSlowDown().workNoSlowItemThisTick) {
             boolean v = usingItem;
             usingItem = false;
             try {

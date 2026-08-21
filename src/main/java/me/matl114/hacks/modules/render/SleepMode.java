@@ -7,6 +7,7 @@ import me.matl114.accessors.access.ChatScreenAccess;
 import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.*;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.LabelElement;
@@ -27,8 +28,6 @@ import me.matl114.utils.commands.commandGroup.CommandContext;
 import me.matl114.utils.commands.commandGroup.SubCommand;
 import me.matl114.utils.commands.params.ArgumentInputStream;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
-import net.minecraft.client.Keyboard;
-import net.minecraft.client.Mouse;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ChatScreen;
@@ -438,10 +437,10 @@ public class SleepMode extends BaseModule {
         }
     }
 
-    public void interceptScreenKeyboardAction(Event<Keyboard> event) {
+    public void interceptScreenKeyboardAction(Event<KeyboardAction> event) {
         if (isScreenSleeping()) {
             event.cancel();
-            if (((Integer) event.getArgs(0)).intValue() == keyBindRef.get().getLastKey()) {
+            if (event.context.keyCode() == keyBindRef.get().getLastKey()) {
                 wakeUpScreen();
                 return;
             }
@@ -456,54 +455,56 @@ public class SleepMode extends BaseModule {
         }
     }
 
-    public void interceptScreenMouseAction(Event<Mouse> event) {
+    public void interceptScreenMouseAction(Event<MouseClickAction> event) {
         if (isScreenSleeping()) {
             event.cancel();
             if (sleepingScreenInstance != null) {
                 ScreenUtils.simulateMouseButton(
-                        sleepingScreenInstance, (Integer) event.getArgs(0), (Integer) event.getArgs(1), (Integer)
-                                event.getArgs(2));
+                        sleepingScreenInstance,
+                        event.context.eventButton(),
+                        event.context.action(),
+                        event.context.mode());
             }
         }
     }
 
-    public void interceptScreenMouseScroll(Event<Mouse> event) {
+    public void interceptScreenMouseScroll(Event<MouseScrollAction> event) {
         if (isScreenSleeping()) {
             event.cancel();
 
             if (sleepingScreenInstance != null) {
                 ScreenUtils.simulateMouseScroll(
-                        sleepingScreenInstance, (double) event.extraArgs[0], (double) event.extraArgs[1]);
+                        sleepingScreenInstance, event.context.horizontal(), event.context.vertical());
             }
         }
     }
 
-    public void interceptCharType(Event<Character> event) {
+    public void interceptCharType(Event<CharTypedAction> event) {
         if (isScreenSleeping()) {
             event.cancel();
             if (sleepingScreenInstance != null) {
-                sleepingScreenInstance.charTyped(new CharInput(event.context, (Integer) event.extraArgs[1]));
+                sleepingScreenInstance.charTyped(new CharInput(event.context.chr(), event.context.codepoint()));
             }
         }
     }
 
-    public void interceptMouseMove(Event<Mouse> event) {
+    public void interceptMouseMove(Event<MouseMoveAction> event) {
         if (isScreenSleeping()) {
             event.cancel();
             if (sleepingScreenInstance != null) {
-                sleepingScreenInstance.mouseMoved((Double) event.extraArgs[0], (Double) event.extraArgs[1]);
+                sleepingScreenInstance.mouseMoved(event.context.mouseX(), event.context.mouseY());
             }
         }
     }
 
-    public void interceptMouseDragged(Event<Mouse> event) {
+    public void interceptMouseDragged(Event<MouseDragAction> event) {
         if (isScreenSleeping()) {
             event.cancel();
             if (sleepingScreenInstance != null) {
                 sleepingScreenInstance.mouseDragged(
-                        new Click((double) event.extraArgs[0], (double) event.extraArgs[1], event.context.activeButton),
-                        (Double) event.extraArgs[2],
-                        (Double) event.extraArgs[3]);
+                        new Click(event.context.mouseX(), event.context.mouseY(), event.context.mouse().activeButton),
+                        event.context.deltaX(),
+                        event.context.deltaY());
             }
         }
     }

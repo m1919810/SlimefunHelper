@@ -43,3 +43,5 @@ logs/
 run*.bat
 
 scripts/
+
+.cursor/

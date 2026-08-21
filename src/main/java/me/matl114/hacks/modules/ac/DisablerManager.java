@@ -2,9 +2,9 @@ package me.matl114.hacks.modules.ac;
 
 import java.util.Objects;
 import me.matl114.events.Event;
-import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
@@ -33,7 +33,7 @@ import net.minecraft.util.math.Vec3d;
 public class DisablerManager extends BaseModule {
     public static DisablerManager INSTANCE;
 
-    public final ModulePath disablers = makePath(Configs.TEST_CONFIG, "disablers");
+    public final ModulePath disablers = makePath(Configs.EXTRA_CONFIG, "disablers");
 
     public final FlagRef enable =
             builder(disablers.addEnable(), Boolean.class).defaultValue(true).build();
@@ -120,8 +120,8 @@ public class DisablerManager extends BaseModule {
         return false;
     }
 
-    public boolean isMultiRotPlaceCheckDisabled() {
-        return isMultiPlaceCheckDisabled() && isRotationPlaceCheckDisabled();
+    public boolean isMultiRotPlaceCheckDisabled(boolean methodCanMultiRot) {
+        return isMultiPlaceCheckDisabled() && (methodCanMultiRot || isRotationPlaceCheckDisabled());
     }
 
     public boolean isRotationPlaceCheckDisabled() {

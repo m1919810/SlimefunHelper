@@ -6,10 +6,7 @@ import java.util.List;
 import java.util.Map;
 import me.matl114.events.Event;
 import me.matl114.hacks.api.ModulePath;
-import me.matl114.hacks.utils.config.NBTTypes;
-import me.matl114.hacks.utils.config.PrimitiveList;
-import me.matl114.hacks.utils.config.Regex;
-import me.matl114.hacks.utils.config.RegistryRegex;
+import me.matl114.hacks.utils.config.*;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
@@ -44,7 +41,7 @@ public class ItemList extends IRender2DColoredModule {
 
     public NBTRef<PrimitiveList<NbtCompound>> nbtPredicate;
 
-    public NBTRef<RegistryRegex<Item>> itemType;
+    public NBTRef<EntrySet<Item>> itemType;
     public List<NbtPredicate> predicate;
 
     public void updatePredicate(List<NbtCompound> compound) {
@@ -86,8 +83,8 @@ public class ItemList extends IRender2DColoredModule {
                 .defaultValue(new PrimitiveList<>(NBTTypes.NBT_COMPOUND_TYPE, List.of()))
                 .updateListener(s -> updatePredicate(s.list()))
                 .build();
-        itemType = builder(hud.add("item-type"), RegistryRegex.<Item>parameter())
-                .defaultValue(new RegistryRegex<>(
+        itemType = builder(hud.add("item-type"), EntrySet.<Item>parameter())
+                .defaultValue(new EntrySet<>(
                         new Regex(
                                 "^(.*ton_skull|netherite.*|.*_star|.*_apple|.*potion|tot.*|end_c.*l|obsi.*|.*anchor|expe.*|mace|ely.*|.*shulker.*|trident)$"),
                         Registries.ITEM))

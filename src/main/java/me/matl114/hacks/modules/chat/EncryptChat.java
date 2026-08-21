@@ -77,6 +77,7 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableObject;
 
 public class EncryptChat extends BaseModule {
     private final ModulePath encryptChat = makePath(Configs.CHAT_CONFIG, "encrypt-chat");
@@ -155,34 +156,37 @@ public class EncryptChat extends BaseModule {
     private void openKeyListEditScreen() {
         List<ChatKeyEntry> currentList = new ArrayList<>(
                 keyList.entries().stream().map(ChatKeyEntry::copy).toList());
-        MutableInt index = new MutableInt(keyList.selected());
+        int indexList = keyList.selected();
+        MutableObject<ChatKeyEntry> index = new MutableObject<>(
+                (indexList >= 0 && indexList < currentList.size()) ? currentList.get(indexList) : null);
         ListEntryWidgetController controller = ListEntryWidgetController.mutable(
-                currentList, ChatKeyEntry::empty, value -> createEditRenderHandler(value, currentList, index), 30, 220);
+                currentList, ChatKeyEntry::empty, value -> createEditRenderHandler(value, index), 30, 220);
         ListModifyWidget listWidget = new ListModifyWidget(controller, 0, 0, 320, 260);
         ConfirmingWidgetScreen confirmScreen = new ConfirmingWidgetScreen(
                 Text.translatable("widget.encrypt-chat.key-list-editor.title"),
                 listWidget,
                 () -> true,
-                () -> setKeyList(new KeyList(index.getValue(), List.copyOf(currentList))));
+                () -> setKeyList(new KeyList(
+                        index.getValue() == null ? -1 : currentList.indexOf(index.getValue()),
+                        List.copyOf(currentList))));
         confirmScreen.access().openFromCurrent();
     }
 
-    private DrawableWidget createEditRenderHandler(ChatKeyEntry entry, List<ChatKeyEntry> entryList, MutableInt index) {
+    private DrawableWidget createEditRenderHandler(ChatKeyEntry entry, MutableObject<ChatKeyEntry> index) {
         SubScreenWidget subScreen = new SubScreenWidget(0, 0, 220, 20);
         ExecutableWidget.instance(2, 2, 16, 16)
                 .setElementHandler(IconElement.statedGuiPredicate(
                         ButtonElement.BUTTON,
                         ButtonElement.BUTTON_INACTIVE,
                         ButtonAction.run(() -> {
-                            int currentIndex = index.getValue();
-                            int elementIndex = entryList.indexOf(entry);
-                            if (elementIndex != -1) {
-                                index.setValue(currentIndex == elementIndex ? -1 : elementIndex);
+                            if (entry == index.getValue()) {
+                                index.setValue(null);
+                            } else {
+                                index.setValue(entry);
                             }
                         }),
                         bl -> {
-                            int idx = index.getValue();
-                            return idx >= 0 && idx < entryList.size() && entryList.get(idx) == entry;
+                            return index.getValue() == entry;
                         }))
                 .addToSub(subScreen);
         DisplayWidget.instance(45, 0, 100, 20)

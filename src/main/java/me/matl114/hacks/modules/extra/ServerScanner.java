@@ -59,7 +59,7 @@ public class ServerScanner extends BaseModule {
         bindFlag(enable);
     }
 
-    public final ModulePath scanner = makePath(Configs.TEST_CONFIG, "other.server-scanner");
+    public final ModulePath scanner = makePath(Configs.EXTRA_CONFIG, "other.server-scanner");
     public final FlagRef enable =
             builder(scanner.addEnable(), FlagRef.TYPE).defaultValue(true).build();
 

@@ -1,13 +1,15 @@
 package me.matl114.hacks.modules.interact;
 
+import com.mojang.datafixers.util.Pair;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import me.matl114.events.Event;
-import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.DynamicContentWidget;
 import me.matl114.hacks.InteractionTasks;
@@ -38,6 +40,7 @@ import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
 import net.minecraft.util.Hand;
@@ -79,11 +82,13 @@ public class PrinterRewrite extends BaseModule {
             .validator(Configs.INT_POSITIVE)
             .build();
 
-    public final FlagRef autoSneak =
-            flagBuilder(litematicaPrinterRewrite.add("auto-sneak")).build();
+    public final FlagRef autoSneak = builder(litematicaPrinterRewrite.add("auto-sneak"), Boolean.class)
+            .defaultValue(true)
+            .build();
 
-    public final FlagRef supportWater =
-            flagBuilder(litematicaPrinterRewrite.add("support-water-place")).build();
+    public final FlagRef supportWater = builder(litematicaPrinterRewrite.add("support-water-place"), Boolean.class)
+            .defaultValue(true)
+            .build();
 
     public final FlagRef useIce = flagBuilder(litematicaPrinterRewrite.add("use-ice-to-form-water"))
             .show(supportWater::get)
@@ -186,7 +191,8 @@ public class PrinterRewrite extends BaseModule {
             World litematicaWorld = LitematicaHooks.getInstance().getSchematicWorld();
             BlockPos posStanding = mc.player.getSteppingPos();
             BlockPos posCenter = posStanding.add(0, 1, 0);
-            int multiply = (mode.get().canMultiRotPlace() || (DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled()))
+            int multiply = ((DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled(
+                            mode.get().canMultiRotPlace())))
                     ? mul.get()
                     : 1;
             int placeCount = 0;
@@ -240,9 +246,6 @@ public class PrinterRewrite extends BaseModule {
                                 && (clientState.isAir() || clientState.isLiquid() || clientState.isReplaceable())
                                 && clientState != state) {
                             // do place
-                            if (placeCount != 0) {
-                                InteractionTasks.flushACPlaceQueue();
-                            }
                             if (doPlace(
                                     checkPos, state, airplace.get(), !mode.get().isLegal())) {
                                 placeCount += 1;
@@ -427,43 +430,20 @@ public class PrinterRewrite extends BaseModule {
     }
 
     public boolean canBeReplaceTo(BlockState fromState, BlockState toState) {
-        return new InteractUtils().canBeReplaceTo(fromState, toState);
+        return InteractUtils.canBeReplaceTo(fromState, toState);
     }
 
     private boolean isDesyncStateInteractTransition(BlockState currentState, BlockState targetState) {
         if (currentState == null || targetState == null) return false;
         Block currentBlock = currentState.getBlock();
         Block targetBlock = targetState.getBlock();
-        if (currentBlock instanceof NoteBlock
-                && targetState.equals(currentState.with(NoteBlock.NOTE, (currentState.get(NoteBlock.NOTE) + 1) % 25))) {
+        if (currentBlock instanceof NoteBlock) {
             return true;
         }
-        if (currentBlock instanceof DoorBlock && targetState.equals(currentState.cycle(DoorBlock.OPEN))) {
+        if (currentBlock instanceof LeverBlock) {
             return true;
         }
-        if (currentBlock instanceof TrapdoorBlock && targetState.equals(currentState.cycle(TrapdoorBlock.OPEN))) {
-            return true;
-        }
-        if (currentBlock instanceof FenceGateBlock && targetState.equals(currentState.cycle(FenceGateBlock.OPEN))) {
-            return true;
-        }
-        if (currentBlock instanceof LeverBlock && targetState.equals(currentState.cycle(LeverBlock.POWERED))) {
-            return true;
-        }
-        if (currentBlock instanceof ButtonBlock
-                && !currentState.get(ButtonBlock.POWERED)
-                && targetState.equals(currentState.with(ButtonBlock.POWERED, true))) {
-            return true;
-        }
-        if (currentBlock instanceof RepeaterBlock && targetState.equals(currentState.cycle(RepeaterBlock.DELAY))) {
-            return true;
-        }
-        if (currentBlock instanceof ComparatorBlock && targetState.equals(currentState.cycle(ComparatorBlock.MODE))) {
-            return true;
-        }
-        if (currentBlock instanceof RespawnAnchorBlock
-                && targetBlock instanceof RespawnAnchorBlock
-                && currentState.get(RespawnAnchorBlock.CHARGES) < targetState.get(RespawnAnchorBlock.CHARGES)) {
+        if (currentBlock instanceof ButtonBlock) {
             return true;
         }
         if (currentBlock instanceof CandleBlock
@@ -479,19 +459,14 @@ public class PrinterRewrite extends BaseModule {
                 && targetState.equals(currentState.with(CandleBlock.LIT, true))) {
             return true;
         }
-        if (currentBlock instanceof FlowerPotBlock fromPot && targetBlock instanceof FlowerPotBlock targetPot) {
-            return (fromPot.getContent() == Blocks.AIR && targetPot.getContent() != Blocks.AIR)
-                    || (fromPot.getContent() != Blocks.AIR && targetPot.getContent() == Blocks.AIR);
-        }
         if (currentBlock instanceof CakeBlock && targetBlock instanceof CakeBlock) {
-            return currentState.get(CakeBlock.BITES) < 6
-                    && targetState.equals(currentState.with(CakeBlock.BITES, currentState.get(CakeBlock.BITES) + 1));
+            return true;
         }
         if (currentBlock instanceof CakeBlock && targetBlock instanceof CandleCakeBlock) {
-            return currentState.get(CakeBlock.BITES) == 0;
+            return true;
         }
         if (currentBlock instanceof CandleCakeBlock && targetBlock instanceof CakeBlock) {
-            return targetState.get(CakeBlock.BITES) == 1;
+            return true;
         }
         return false;
     }
@@ -520,17 +495,6 @@ public class PrinterRewrite extends BaseModule {
             return currentState.get(LeafLitterBlock.SEGMENT_AMOUNT) < targetState.get(LeafLitterBlock.SEGMENT_AMOUNT);
         }
         return false;
-    }
-
-    public boolean doMultiPlace(BlockPos pos, BlockState currentState, BlockState targetState) {
-        if (!isStackedPlacementTransition(currentState, targetState)) {
-            return false;
-        }
-        boolean success = doPlace(pos, targetState, false, !mode.get().isLegal());
-        if (success && isDesyncStateInteractTransition(currentState, targetState)) {
-            desyncWaitBlocks.put(pos, Tasks.getTick() + 20);
-        }
-        return success;
     }
 
     private BlockHitResult createStateInteractHitResult(BlockPos pos) {
@@ -581,132 +545,40 @@ public class PrinterRewrite extends BaseModule {
         return -2;
     }
 
-    private boolean isSupportedStateInteractTransition(BlockState currentState, BlockState targetState) {
-        if (currentState == null || targetState == null) return false;
-        Block currentBlock = currentState.getBlock();
-        Block targetBlock = targetState.getBlock();
-        if (currentBlock instanceof RepeaterBlock && targetState.equals(currentState.cycle(RepeaterBlock.DELAY))) {
-            return true;
-        }
-        if (currentBlock instanceof ComparatorBlock && targetState.equals(currentState.cycle(ComparatorBlock.MODE))) {
-            return true;
-        }
-        if (currentBlock instanceof DoorBlock && targetState.equals(currentState.cycle(DoorBlock.OPEN))) {
-            return true;
-        }
-        if (currentBlock instanceof TrapdoorBlock && targetState.equals(currentState.cycle(TrapdoorBlock.OPEN))) {
-            return true;
-        }
-        if (currentBlock instanceof FenceGateBlock && targetState.equals(currentState.cycle(FenceGateBlock.OPEN))) {
-            return true;
-        }
-        if (currentBlock instanceof LeverBlock && targetState.equals(currentState.cycle(LeverBlock.POWERED))) {
-            return true;
-        }
-        if (currentBlock instanceof ButtonBlock
-                && !currentState.get(ButtonBlock.POWERED)
-                && targetState.equals(currentState.with(ButtonBlock.POWERED, true))) {
-            return true;
-        }
-        if (currentBlock instanceof NoteBlock
-                && targetState.equals(currentState.with(NoteBlock.NOTE, (currentState.get(NoteBlock.NOTE) + 1) % 25))) {
-            return true;
-        }
-        if (currentBlock instanceof RespawnAnchorBlock
-                && targetBlock instanceof RespawnAnchorBlock
-                && currentState.get(RespawnAnchorBlock.CHARGES) < targetState.get(RespawnAnchorBlock.CHARGES)) {
-            return true;
-        }
-        if (currentBlock instanceof CandleBlock
-                && targetBlock instanceof CandleBlock
-                && currentState.get(CandleBlock.LIT)
-                && targetState.equals(currentState.with(CandleBlock.LIT, false))) {
-            return true;
-        }
-        if (currentBlock instanceof CandleBlock
-                && targetBlock instanceof CandleBlock
-                && !currentState.get(CandleBlock.LIT)
-                && !currentState.get(CandleBlock.WATERLOGGED)
-                && targetState.equals(currentState.with(CandleBlock.LIT, true))) {
-            return true;
-        }
-        if (currentBlock instanceof PumpkinBlock && targetBlock == Blocks.CARVED_PUMPKIN) {
-            return true;
-        }
-        if (currentBlock instanceof FlowerPotBlock fromPot && targetBlock instanceof FlowerPotBlock targetPot) {
-            return (fromPot.getContent() == Blocks.AIR && targetPot.getContent() != Blocks.AIR)
-                    || (fromPot.getContent() != Blocks.AIR && targetPot.getContent() == Blocks.AIR);
-        }
-        if (currentBlock instanceof CakeBlock && targetBlock instanceof CakeBlock) {
-            return currentState.get(CakeBlock.BITES) < 6
-                    && targetState.equals(currentState.with(CakeBlock.BITES, currentState.get(CakeBlock.BITES) + 1));
-        }
-        if (currentBlock instanceof CakeBlock && targetBlock instanceof CandleCakeBlock) {
-            return currentState.get(CakeBlock.BITES) == 0;
-        }
-        if (currentBlock instanceof CandleCakeBlock && targetBlock instanceof CakeBlock) {
-            return targetState.get(CakeBlock.BITES) == 1;
+    public boolean doMultiReplace(BlockPos pos, BlockState currentState, BlockState targetState) {
+        Pair<BlockState, Predicate<ItemStack>> nextStepState =
+                InteractUtils.getNextInteractionStep(currentState, targetState).stream()
+                        .findAny()
+                        .orElse(null);
+        if (nextStepState != null) {
+            BlockState nextBlockState = nextStepState.getFirst();
+            Predicate<ItemStack> needStack = nextStepState.getSecond();
+            // self replacement
+            var re = InventoryUtils.findPlayerItem(needStack, true, true);
+            if (re != null) {
+                FlagEntry<BlockHitResult> hitResult;
+                if (nextBlockState.getBlock() == currentState.getBlock() && !needStack.test(ItemStack.EMPTY)) {
+                    hitResult = InteractionTasks.createSpecificStateHitResult(
+                            pos, targetState, airplace.get(), !mode.get().isLegal());
+                } else {
+                    hitResult = new FlagEntry<>(false, RaycastUtils.createHitResult(pos, mc.player.getEyePos()));
+                }
+                if (InteractUtils.canInteractAndPlace(mc.player, hitResult)) {
+                    InvExtra.INSTANCE.swapInventoryIndexToHand(re.index());
+                    InteractionTasks.handlePlaceMode(mode.get(), hitResult.val(), Hand.MAIN_HAND);
+                    putSuccessPlace(pos);
+                    if (isDesyncStateInteractTransition(currentState, targetState)) {
+                        desyncWaitBlocks.put(pos, Tasks.getTick() + 20);
+                    }
+                    return true;
+                } else {
+                    putCanNotPlace(pos);
+                }
+            } else {
+                putCanNotPlace(pos);
+            }
         }
         return false;
-    }
-
-    private boolean doStateInteract(BlockPos pos, BlockState currentState, BlockState targetState) {
-        if (!isSupportedStateInteractTransition(currentState, targetState)) {
-            return false;
-        }
-        int itemIndex = supplyInteractionItem(currentState, targetState);
-        if (itemIndex == -1) {
-            putCanNotPlace(pos);
-            return false;
-        }
-        if (itemIndex >= 0 && mc.player.shouldCancelInteraction()) {
-            putCanNotPlace(pos);
-            return false;
-        }
-        if (itemIndex == -2 && mc.player.shouldCancelInteraction()) {
-            needSneak = true;
-        }
-        BlockHitResult result = createStateInteractHitResult(pos);
-        if (!InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), pos, interactRangeOverride.get())) {
-            putCanNotPlace(pos);
-            return false;
-        }
-        FlagRef enableRotateFix = InteractionTasks.getBlockRotate().enable2;
-        FlagRef enableLegalLook = InteractionTasks.getBlockRotate().legal;
-        EnumRef<Configs.BypassMode> enableRot = InteractionTasks.getBlockRotate().bypassMode2;
-        boolean state = enableRotateFix.get();
-        boolean state2 = enableLegalLook.get();
-        Configs.BypassMode bypassMode = enableRot.get();
-        if (!state) enableRotateFix.set(true);
-        if (!state2) enableLegalLook.set(true);
-        enableRot.set(Configs.BypassMode.NO_BYPASS);
-        try {
-            if (itemIndex >= 0) {
-                Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(itemIndex);
-                if (callback == null) {
-                    putCanNotPlace(pos);
-                    return false;
-                }
-            }
-            handlePlace(result);
-            if (isDesyncStateInteractTransition(currentState, targetState)) {
-                desyncWaitBlocks.put(pos, Tasks.getTick() + 20);
-            }
-            mc.world.setBlockState(pos, targetState, WorldUtils.UPDATE_BLOCK_NO_PHYSICS);
-            putSuccessPlace(pos);
-            return true;
-        } finally {
-            if (!state) enableRotateFix.set(false);
-            if (!state2) enableLegalLook.set(false);
-            enableRot.set(bypassMode);
-        }
-    }
-
-    public boolean doMultiReplace(BlockPos pos, BlockState currentState, BlockState targetState) {
-        if (doMultiPlace(pos, currentState, targetState)) {
-            return true;
-        }
-        return doStateInteract(pos, currentState, targetState);
     }
 
     private void onBlockUpdate(Event<BlockUpdateS2CPacket> event) {

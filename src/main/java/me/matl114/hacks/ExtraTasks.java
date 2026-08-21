@@ -5,6 +5,7 @@ import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.extra.*;
+import me.matl114.hacks.modules.extra.AutoLogout;
 
 public class ExtraTasks {
     public static void init() {}
@@ -37,13 +38,13 @@ public class ExtraTasks {
     public static AutoReconnect autoReconnect;
 
     @Getter
+    private static AutoLogout autoLogout;
+
+    @Getter
     public static Warps warps;
 
     @Getter
     public static BoatVClip boatVClip;
-
-    @Getter
-    public static IQBoost iqBoost;
 
     @Getter
     public static SkinBlink skinBlink;
@@ -62,9 +63,10 @@ public class ExtraTasks {
 
         serverScanner = new ServerScanner().register(m);
         autoReconnect = new AutoReconnect().register(m);
+        autoLogout = new AutoLogout().register(m);
         warps = new Warps().register(m);
         boatVClip = new BoatVClip().register(m);
-        iqBoost = new IQBoost().register(m);
+
         skinBlink = new SkinBlink().register(m);
         eventNotify = new EventNotify().register(m);
     }

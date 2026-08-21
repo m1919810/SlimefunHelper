@@ -5,17 +5,17 @@ import java.util.*;
 import java.util.List;
 import me.matl114.accessors.moonrise.MoonriseBlockStateBaseAccess;
 import me.matl114.events.Event;
-import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
-import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
@@ -80,9 +80,9 @@ public class AutoSlab extends BaseModule {
     public final FlagRef useBlockEntities =
             flagBuilder(autoPlate.add("use-block-entities")).build();
 
-    public final NBTRef<RegistryRegex<Block>> blackList = builder(
-                    autoPlate.add("black-list-item"), RegistryRegex.<Block>parameter())
-            .defaultValue(new RegistryRegex<>(new Regex("^(ender_chest|chest)$"), Registries.BLOCK))
+    public final NBTRef<EntrySet<Block>> blackList = builder(
+                    autoPlate.add("black-list-item"), EntrySet.<Block>parameter())
+            .defaultValue(new EntrySet<>(new Regex("^(ender_chest|chest)$"), Registries.BLOCK))
             .build();
 
     public final FlagRef useBlockRotate =
@@ -224,7 +224,8 @@ public class AutoSlab extends BaseModule {
 
     public void tickPlace() {
         int cnt = 0;
-        int multiply = (mode.get().canMultiRotPlace() || (DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled()))
+        int multiply = ((DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled(
+                        mode.get().canMultiRotPlace())))
                 ? mul.get()
                 : 1;
         List<Runnable> stack = new ArrayList<>(multiply);

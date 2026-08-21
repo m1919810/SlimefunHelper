@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.move;
 
+import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -50,6 +51,10 @@ public class LegacySnapRotManager extends BaseModule {
                 && move instanceof PlayerMoveC2SPacketAccess acc) {
             acc.setCause(PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP);
         }
+        // reset snap packets because there are other rot packets
+        if (event.context.changesLook()) {
+            lastSnapPitchYaw = null;
+        }
     }
 
     public void onInteractItem(Event<PlayerInteractItemC2SPacket> eventInteract) {
@@ -65,17 +70,8 @@ public class LegacySnapRotManager extends BaseModule {
 
     public void resyncSnap() {
         if (lastSnapPitchYaw != null && PlayerStateManager.INSTANCE.isRotationDifferent()) {
-            mc.getNetworkHandler()
-                    .sendPacket(PlayerMoveC2SPacketAccess.setCause(
-                            VPacket.newFull(
-                                    mc.player.getX(),
-                                    mc.player.getY(),
-                                    mc.player.getZ(),
-                                    mc.player.getYaw(),
-                                    mc.player.getPitch(),
-                                    mc.player.isOnGround(),
-                                    mc.player.horizontalCollision),
-                            PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP));
+            ClientPlayerAccess access = ClientPlayerAccess.of(mc.player);
+            access.resyncRot();
         }
         lastSnapPitchYaw = null;
     }

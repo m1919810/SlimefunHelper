@@ -5,9 +5,9 @@ import java.util.*;
 import java.util.List;
 import java.util.stream.IntStream;
 import me.matl114.events.Event;
-import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -177,7 +177,8 @@ public class AutoPlate extends BaseModule {
 
     public void tickPlace() {
         int cnt = 0;
-        int multiply = (mode.get().canMultiRotPlace() || (DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled()))
+        int multiply = ((DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled(
+                        mode.get().canMultiRotPlace())))
                 ? mul.get()
                 : 1;
         List<Runnable> stack = new ArrayList<>(multiply);

@@ -84,9 +84,9 @@ public class AutoLibrarian extends BaseModule {
 
     public final FlagRef log = flagBuilder(root.add("log")).build();
 
-    public final NBTRef<RegistryRegex<Block>> workstationPredicate = builder(
-                    root.add("work-station-down-block"), RegistryRegex.<Block>parameter())
-            .defaultValue(new RegistryRegex<>(new Regex("^(magma_block|.*_fence)$"), Registries.BLOCK))
+    public final NBTRef<EntrySet<Block>> workstationPredicate = builder(
+                    root.add("work-station-down-block"), EntrySet.<Block>parameter())
+            .defaultValue(new EntrySet<>(Registries.BLOCK, List.of(Blocks.MAGMA_BLOCK, Blocks.OAK_FENCE)))
             .build();
 
     public final FlagRef autoLockTrade =

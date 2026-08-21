@@ -1,6 +1,7 @@
 package me.matl114.utils;
 
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nonnull;
 import me.matl114.accessors.access.HandledScreenAccess;
@@ -50,6 +51,24 @@ public class ScreenUtils {
     }
 
     private static final MinecraftClient mc = MinecraftClient.getInstance();
+
+    public static Slot getSelectingOrHandSlot() {
+        if (mc.player == null) return null;
+        if (mc.currentScreen instanceof HandledScreen<?> s) {
+            Point mouseCoord = ScreenUtils.getMouseCoord(mc);
+            Slot slot = HandledScreenAccess.of(s).reallyGetSlotAt(mouseCoord.x, mouseCoord.y);
+            if (slot != null) {
+                return slot;
+            }
+        } else {
+            int selected = InventoryUtils.getSelectedSlot();
+            OptionalInt optionalInt = mc.player.playerScreenHandler.getSlotIndex(mc.player.getInventory(), selected);
+            if (optionalInt.isPresent()) {
+                return mc.player.playerScreenHandler.getSlot(optionalInt.getAsInt());
+            }
+        }
+        return null;
+    }
 
     public static ItemStack getSelectingOrHandItem() {
         if (mc.player == null) return null;
@@ -159,6 +178,17 @@ public class ScreenUtils {
 
     public static Integer getTopInventorySize(ScreenHandlerType<?> type) {
         return nonPlayerSlots.get(type);
+    }
+
+    public static ScreenHandlerType<?> getGenericScreenType(int size) {
+        return switch ((size - 1) / 9) {
+            case 0 -> ScreenHandlerType.GENERIC_9X1;
+            case 1 -> ScreenHandlerType.GENERIC_9X2;
+            case 2 -> ScreenHandlerType.GENERIC_9X3;
+            case 3 -> ScreenHandlerType.GENERIC_9X4;
+            case 4 -> ScreenHandlerType.GENERIC_9X5;
+            default -> ScreenHandlerType.GENERIC_9X6;
+        };
     }
 
     public static void openChatScreen(String originalText) {

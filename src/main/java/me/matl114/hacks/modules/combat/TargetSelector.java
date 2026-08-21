@@ -418,7 +418,7 @@ public class TargetSelector extends BaseModule {
         return getAttackableEntities(nearbyOverride, 0, this::canAttack);
     }
 
-    private List<Entity> getAttackableEntities(double nearbyOverride, int ticks, Predicate<Entity> predicate) {
+    public List<Entity> getAttackableEntities(double nearbyOverride, int ticks, Predicate<Entity> predicate) {
         List<Entity> entities = new ArrayList<>();
         List<Entity> et = ImmutableList.copyOf(mc.world.getEntities());
         for (var e : et) {

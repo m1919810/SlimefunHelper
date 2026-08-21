@@ -299,19 +299,22 @@ public class PositionPredict extends BaseModule {
     }
 
     @With
-    public static record PredictArgument(int ticksLater, int ticksHistory, Mode mode)
+    public static record PredictArgument(double ticksLater, int ticksHistory, Mode mode)
             implements NBTParsable<PredictArgument> {
         public static NBTType<PredictArgument> TYPE = new NBTType<>(
                 "predictargument",
                 RecordCodecBuilder.<PredictArgument>create(s -> s.group(
-                                Codec.INT.fieldOf("ticks").forGetter(PredictArgument::ticksLater),
+                                Codec.withAlternative(Codec.DOUBLE, Codec.INT.xmap(t -> (double) (int) t, t ->
+                                                (int) (double) t))
+                                        .fieldOf("ticks")
+                                        .forGetter(PredictArgument::ticksLater),
                                 Codec.INT.fieldOf("history").forGetter(PredictArgument::ticksHistory),
                                 CodecUtils.enumCodec(Mode.class).fieldOf("mode").forGetter(PredictArgument::mode))
                         .apply(s, PredictArgument::new)),
                 (s, x, y, dx, dy) -> {
                     SubScreenWidget subScreenWidget = SubScreenWidget.instance(x, y, dx, dy);
                     int half = dx / 4;
-                    WrapperFactory<Integer, PredictArgument> firstWrapper =
+                    WrapperFactory<Double, PredictArgument> firstWrapper =
                             WrapperFactory.of((d) -> s.getOriginValue().withTicksLater(d), PredictArgument::ticksLater);
                     WrapperFactory<Integer, PredictArgument> secondWrapper = WrapperFactory.of(
                             (d) -> s.getOriginValue().withTicksHistory(d), PredictArgument::ticksHistory);
@@ -325,9 +328,8 @@ public class PositionPredict extends BaseModule {
                                                             "widget.nbt-parsable.predict-argument.ticks", "F:")),
                                                     ButtonAction.empty())
                                             .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                                    "widget.nbt-parsable.predict-argument.ticks.tooltips",
-                                                    "预测前瞻量（ticksLater）")))))
-                            .addDrawableChild(new TypeConvertAttrKeyValue<>(s, firstWrapper, NBTTypes.INT_TYPE)
+                                                    "widget.nbt-parsable.predict-argument.ticks.tooltips", "")))))
+                            .addDrawableChild(new TypeConvertAttrKeyValue<>(s, firstWrapper, NBTTypes.DOUBLE_TYPE)
                                     .generateValueWidget(dy, 0, half - dy, dy))
                             .addDrawableChild(DisplayWidget.instance(half, 0, dy, dy)
                                     .setRenderHandler(new ButtonElement(
@@ -335,8 +337,7 @@ public class PositionPredict extends BaseModule {
                                                             "widget.nbt-parsable.predict-argument.history", "H:")),
                                                     ButtonAction.empty())
                                             .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                                    "widget.nbt-parsable.predict-argument.history.tooltips",
-                                                    "预测历史长度（ticksHistory）")))))
+                                                    "widget.nbt-parsable.predict-argument.history.tooltips", "")))))
                             .addDrawableChild(new TypeConvertAttrKeyValue<>(s, secondWrapper, NBTTypes.INT_TYPE)
                                     .generateValueWidget(half + dy, 0, half - dy, dy))
                             .addDrawableChild(DisplayWidget.instance(2 * half, 0, dy, dy)
@@ -345,8 +346,7 @@ public class PositionPredict extends BaseModule {
                                                             "widget.nbt-parsable.predict-argument.mode", "M:")),
                                                     ButtonAction.empty())
                                             .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                                    "widget.nbt-parsable.predict-argument.mode.tooltips",
-                                                    "预测模式（Mode）")))))
+                                                    "widget.nbt-parsable.predict-argument.mode.tooltips", "")))))
                             .addDrawableChild(new TypeConvertAttrKeyValue<>(
                                             s,
                                             thirdWrapper,
@@ -362,15 +362,24 @@ public class PositionPredict extends BaseModule {
         }
 
         public Vec3d predict(Entity entity) {
-            return EntityInternalAccess.of(entity)
+            return predict0(entity, ticksLater);
+        }
+
+        public Vec3d predict0(Entity entity, double ticksLater) {
+            int floor = (int) Math.floor(ticksLater);
+            Vec3d floorPos =
+                    EntityInternalAccess.of(entity).getPositionPredictor().predict(floor, mode.ordinal(), ticksHistory);
+            if (Math.abs(floor - ticksLater) < 1E-2) {
+                return floorPos;
+            }
+            Vec3d roofPos = EntityInternalAccess.of(entity)
                     .getPositionPredictor()
-                    .predict(ticksLater, mode.ordinal(), ticksHistory);
+                    .predict(floor + 1, mode.ordinal(), ticksHistory);
+            return floorPos.multiply(floor + 1 - ticksLater).add(roofPos.multiply(ticksLater - floor));
         }
 
         public Vec3d predictWithExtraTicks(Entity entity, int ticks) {
-            return EntityInternalAccess.of(entity)
-                    .getPositionPredictor()
-                    .predict(ticksLater + ticks, mode.ordinal(), ticksHistory);
+            return predict0(entity, ticksLater + ticks);
         }
     }
 }
