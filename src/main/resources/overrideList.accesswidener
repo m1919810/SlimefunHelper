@@ -110,3 +110,7 @@ accessible field net/minecraft/block/AbstractCauldronBlock behaviorMap Lnet/mine
 accessible method net/minecraft/entity/passive/AllayEntity canDuplicate ()Z
 accessible method net/minecraft/entity/passive/OcelotEntity isTrusting ()Z
 accessible field net/minecraft/client/option/KeyBinding timesPressed I
+accessible field net/minecraft/client/MinecraftClient particleSpriteManager Lnet/minecraft/client/particle/ParticleSpriteManager;
+accessible field net/minecraft/client/particle/ParticleSpriteManager spriteAwareParticleFactories Ljava/util/Map;
+accessible class net/minecraft/client/particle/ParticleSpriteManager$SimpleSpriteProvider
+accessible field net/minecraft/component/type/ContainerComponent stacks Lnet/minecraft/util/collection/DefaultedList;

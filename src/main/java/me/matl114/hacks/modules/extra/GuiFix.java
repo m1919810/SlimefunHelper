@@ -25,7 +25,7 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableTextContent;
 
 public class GuiFix extends BaseModule {
-    public final ModulePath guiFix = makePath(Configs.TEST_CONFIG, "other.gui-fix");
+    public final ModulePath guiFix = makePath(Configs.EXTRA_CONFIG, "other.gui-fix");
 
     public GuiFix() {
         super("GuiFix");

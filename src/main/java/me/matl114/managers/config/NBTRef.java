@@ -62,7 +62,6 @@ public class NBTRef<T extends NBTParsable<?>> extends LazilyRegisterTypeRef<T, N
             this.resolved = true;
             this.set(val);
         } catch (Throwable e) {
-            Debug.info(e);
             throw new RuntimeException("Raw NBT value could not be parsed into type " + type.typeName
                     + ", which may be caused by a corrupted config file: "
                     + (this.configReference == null ? "Unknown" : this.configReference.getConfigName()));

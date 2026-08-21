@@ -7,17 +7,14 @@ import java.util.function.Consumer;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.channels.ListenerPoint;
+import me.matl114.events.impl.BlockUpdate;
 import me.matl114.utils.CommonUtils;
 import me.matl114.utils.WorldUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
-import net.minecraft.network.packet.s2c.play.ChunkDeltaUpdateS2CPacket;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkStatus;
@@ -138,13 +135,11 @@ public class WorldTasks {
         }
     }
 
-    public static void onPostBlockStateUpdate(Event<BlockUpdateS2CPacket> updateS2CPacketEvent) {
-        if (mc.world == null || mc.player == null) return;
+    private static void onBlockStateUpdate(Event<BlockUpdate> event) {
         if (shouldExecuteWorldScan()) {
-            BlockUpdateS2CPacket blockUpdateS2CPacket = updateS2CPacketEvent.context();
-            BlockPos blockPos = blockUpdateS2CPacket.getPos();
-            ChunkPos chunkPos = CommonUtils.toChunk(blockPos);
-            scheduleChunkTask(chunkPos, () -> onSingleBlockValueChange(blockPos.toImmutable()), true);
+            BlockPos pos = event.context.pos().toImmutable();
+            ChunkPos chunkPos = new ChunkPos(pos);
+            scheduleChunkTask(chunkPos, () -> onSingleBlockValueChange(pos), true);
         }
     }
 
@@ -160,35 +155,16 @@ public class WorldTasks {
         }
     }
 
-    public static void onChunkUpdate(Event<ChunkDataS2CPacket> chunkDataS2CPacketEvent) {
+    public static void onChunkUpdate(Event<ChunkPos> chunkDataS2CPacketEvent) {
         if (mc.world == null || mc.player == null) return;
         if (shouldExecuteWorldScan()) {
-            ChunkDataS2CPacket packet = chunkDataS2CPacketEvent.context();
-            Chunk updatedChunk = mc.world.getChunk(packet.getChunkX(), packet.getChunkZ(), ChunkStatus.FULL, false);
+            ChunkPos pos = chunkDataS2CPacketEvent.context;
+            Chunk updatedChunk = mc.world.getChunk(pos.x, pos.z, ChunkStatus.FULL, false);
             if (updatedChunk != null) {
-                ChunkPos chunkPos = new ChunkPos(packet.getChunkX(), packet.getChunkZ());
                 // because of chunk update, cancel all the last
-                cancelPendingChunkTask(chunkPos);
-                scheduleChunkTask(chunkPos, () -> onChunkReScann(chunkPos), true);
+                cancelPendingChunkTask(pos);
+                scheduleChunkTask(pos, () -> onChunkReScann(pos), true);
             }
-        }
-    }
-
-    public static void onChunkDeltaUpdate(Event<ChunkDeltaUpdateS2CPacket> chunkDeltaUpdateS2CPacketEvent) {
-        if (mc.world == null || mc.player == null) return;
-        if (shouldExecuteWorldScan()) {
-            ChunkDeltaUpdateS2CPacket packet = chunkDeltaUpdateS2CPacketEvent.context();
-            ChunkSectionPos chunkSecPos = packet.sectionPos;
-            // Chunk updateChunk = mc.world.getChunk(chunkPos.getX(), chunkPos.getZ(), ChunkStatus.FULL, false);
-            ChunkPos chunkPos = new ChunkPos(chunkSecPos.getX(), chunkSecPos.getZ());
-            scheduleChunkTask(
-                    chunkPos,
-                    () -> {
-                        packet.visitUpdates((bp, bs) -> {
-                            onSingleBlockValueChange(bp.toImmutable());
-                        });
-                    },
-                    true);
         }
     }
 
@@ -197,16 +173,10 @@ public class WorldTasks {
     }
 
     static {
-        registerListener(
-                Listener.getPacketPostHandlePoint().getChannel(BlockUpdateS2CPacket.class),
-                WorldTasks::onPostBlockStateUpdate);
-        registerListener(
-                Listener.getPacketPostHandlePoint().getChannel(ChunkDataS2CPacket.class), WorldTasks::onChunkUpdate);
+        registerListener(Listener.getBlockUpdateListener(), WorldTasks::onBlockStateUpdate);
+        registerListener(Listener.getChunkUpdateListener(), WorldTasks::onChunkUpdate);
         registerListener(Listener.getWorldSwitchPoint(), WorldTasks::onWorldChange);
         registerListener(Listener.getServerLeavePoint(), WorldTasks::onGameExit);
-        registerListener(
-                Listener.getPacketPostHandlePoint().getChannel(ChunkDeltaUpdateS2CPacket.class),
-                WorldTasks::onChunkDeltaUpdate);
         registerListener(Listener.getPostGameTick(), WorldTasks::onTick);
     }
 }

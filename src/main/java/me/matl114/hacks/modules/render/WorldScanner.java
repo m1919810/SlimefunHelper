@@ -50,10 +50,8 @@ public class WorldScanner extends BaseModule {
 
     public FlagRef enable = flagBuilder(worldScanner.add("enable")).build();
 
-    public NBTRef<RegistryRegex<Block>> typeFilter = builder(
-                    worldScanner.add("search-type"), RegistryRegex.<Block>parameter())
-            .defaultValue(
-                    new RegistryRegex<>(new Regex("^(.*_portal|end_gateway|end_portal_frame)$"), Registries.BLOCK))
+    public NBTRef<EntrySet<Block>> typeFilter = builder(worldScanner.add("search-type"), EntrySet.<Block>parameter())
+            .defaultValue(new EntrySet<>(new Regex("^(.*_portal|end_gateway|end_portal_frame)$"), Registries.BLOCK))
             .updateListener(this::updateBlockTypeFilter)
             .build();
 
@@ -154,8 +152,8 @@ public class WorldScanner extends BaseModule {
         }
     }
 
-    public void updateBlockTypeFilter(RegistryRegex<Block> typeFilter) {
-        Set<Block> update = typeFilter.getFilterValue();
+    public void updateBlockTypeFilter(EntrySet<Block> typeFilter) {
+        Set<Block> update = typeFilter.set();
         if (!Objects.equals(update, currentSearchingSet)) {
             currentSearchingSet = update;
             if (!checkNull()) {
@@ -188,8 +186,8 @@ public class WorldScanner extends BaseModule {
 
     int resultUpdate = 0;
     // List<IndexEntry<Box>> boxes = new ArrayList<>();
-    final RenderCollector<Box> boxOutlineCollector = RenderCollectors.createBoxCollector(true, false, false);
-    final RenderCollector<Box> boxSolidCollector = RenderCollectors.createBoxCollector(false, true, false);
+    final RenderCollector<Box> boxOutlineCollector = RenderCollectors.createOutlineCollector();
+    final RenderCollector<Box> boxSolidCollector = RenderCollectors.createFaceCollector();
     final RenderCollector<Vec3d> traceLineCollector = RenderCollectors.createTracerCollector();
     int lastLogTick = 0;
     final int MAX_RENDER_BLOCKS = 10_000;

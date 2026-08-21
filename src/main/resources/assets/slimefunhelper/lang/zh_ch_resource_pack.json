@@ -201,5 +201,41 @@
 	"module-toggle.render.no-render.enable": "禁用渲染",
 	"module-toggle.combat-utils.anchor-arua.enable": "重生锚光环",
 	"module-toggle.move-safety.anti-chunk-lag.enable": "防卡区块",
-	"module-toggle.interaction-tweaks.no-interact.enable": "禁止交互"
+	"module-toggle.interaction-tweaks.no-interact.enable": "禁止交互",
+	"widget.click-gui.module-name.Inv.KitReplenish": "套装补给",
+	"widget.click-gui.module-name.Combat.AttackAura": "攻击光环",
+	"module-toggle.combat-utils.pearl-phase.enable": "珍珠相位",
+	"module-toggle.combat-utils.crystal-aura.enable": "水晶光环",
+	"widget.click-gui.module-name.Combat.CrystalAura": "水晶光环",
+	"module-toggle.combat-utils.auto-web.enable": "自动蛛网",
+	"widget.click-gui.module-name.Combat.AutoWeb": "自动蛛网",
+	"module-toggle.combat-utils.anchor-aura.enable": "重生锚光环",
+	"widget.click-gui.module-name.Combat.AnchorAura": "重生锚光环",
+	"module-toggle.interaction-tweaks.auto-click.enable": "自动点击",
+	"widget.click-gui.module-name.Interaction.AutoClick": "自动点击",
+	"module-toggle.interact-arua.interact.enable": "交互光环",
+	"widget.click-gui.module-name.Interaction.Interact": "交互光环",
+	"render-utils.villager-esp.color": "村民ESP: 颜色",
+	"widget.click-gui.module-name.Survival.VillagerEsp": "村民ESP",
+	
+	"widget.click-gui.module-name.Survival.WorldManager": "世界管理",
+	
+	"widget.click-gui.module-name.Survival.BlockFarm": "方块农场",
+	
+	"widget.click-gui.module-name.Survival.AntiAXray": "反反矿透",
+	"widget.click-gui.module-name.Survival.SeedOre": "种子矿石",
+	
+	"module-toggle.survival-mine-utils.auto-librarian.enable": "自动图书管理员",
+	"widget.click-gui.module-name.Survival.AutoLibrarian": "自动图书管理员",
+
+	"module-toggle.survival-interact-utils.auto-breed.enable": "自动繁殖",
+	"widget.click-gui.module-name.Survival.AutoBreed": "自动繁殖",
+	"widget.click-gui.module-name.Survival.SearchControl": "搜索控制",
+	
+	"widget.click-gui.module-name.Survival.PathManager": "路径管理",
+	"widget.click-gui.module-name.Survival.BaritoneFix": "Baritone 修复",
+	
+	"widget.click-gui.module-name.Survival.XaeroHelper": "Xaero助手",
+	
+	"widget.click-gui.module-name.Extra.AutoLogout": "自动退出"
 }

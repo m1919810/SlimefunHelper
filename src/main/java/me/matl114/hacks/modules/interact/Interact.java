@@ -5,9 +5,9 @@ import com.google.common.collect.Streams;
 import java.util.*;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
-import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.*;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -96,9 +96,9 @@ public class Interact extends BaseModule {
     public final FlagRef ignoreUseItem =
             flagBuilder(root.add("ignore-use-item")).build();
 
-    public final NBTRef<RegistryRegex<Item>> useItemBlackList = builder(
-                    root.add("use-item-black-list"), RegistryRegex.<Item>parameter())
-            .defaultValue(new RegistryRegex<>(new Regex("^()$"), Registries.ITEM))
+    public final NBTRef<EntrySet<Item>> useItemBlackList = builder(
+                    root.add("use-item-black-list"), EntrySet.<Item>parameter())
+            .defaultValue(new EntrySet<>(new Regex("^()$"), Registries.ITEM))
             .build();
 
     public final FlagRef entityPriority = builder(root.add("entity-priority"), Boolean.class)
@@ -109,9 +109,9 @@ public class Interact extends BaseModule {
             .defaultValue(true)
             .build();
 
-    public final NBTRef<RegistryRegex<Block>> blockWhiteList = builder(
-                    root.add("block-whitelist"), RegistryRegex.<Block>parameter())
-            .defaultValue(new RegistryRegex<>(new Regex("^(.*chest|shulker.*)$"), Registries.BLOCK))
+    public final NBTRef<EntrySet<Block>> blockWhiteList = builder(
+                    root.add("block-whitelist"), EntrySet.<Block>parameter())
+            .defaultValue(new EntrySet<>(new Regex("^(.*chest|shulker.*)$"), Registries.BLOCK))
             .build();
 
     public final FlagRef blockOnlyHandNotPlace = builder(

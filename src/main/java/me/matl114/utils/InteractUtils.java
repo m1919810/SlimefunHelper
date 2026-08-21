@@ -1,10 +1,11 @@
 package me.matl114.utils;
 
-import java.util.ArrayDeque;
+import com.mojang.datafixers.util.Pair;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import me.matl114.utils.collections.FlagEntry;
 import me.matl114.versioned.api.VItem;
@@ -51,6 +52,7 @@ import net.minecraft.world.attribute.EnvironmentAttributes;
 
 public class InteractUtils {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
+    private static final Predicate<ItemStack> ALWAYS_TRUE = stack -> true;
 
     @Nullable
     public static BlockState getBlockPlacement(
@@ -77,14 +79,14 @@ public class InteractUtils {
                 ? blockItem.getPlacementState(new ItemPlacementContext(player, hand, stack, hitResult))
                 : null;
     }
-
+    // should equals getBlockPlacement(STONE) != null
     public static boolean canCubePlace(PlayerEntity player, BlockPos pos) {
         // cube
         World world = player.getEntityWorld();
         BlockState state = Blocks.STONE.getDefaultState();
         return state.canPlaceAt(world, pos) && world.canPlace(state, pos, ShapeContext.ofPlacement(player));
     }
-
+    // should equals getBlockPlacement(state.getBlock) != null
     public static boolean canBlockPlace(PlayerEntity player, BlockPos pos, BlockState state) {
         World world = player.getEntityWorld();
         return state.canPlaceAt(world, pos) && world.canPlace(state, pos, ShapeContext.ofPlacement(player));
@@ -750,7 +752,7 @@ public class InteractUtils {
         return player.shouldCancelInteraction() || !flag;
     }
 
-    public boolean canBeReplaceTo(BlockState fromState, BlockState toState) {
+    public static boolean canBeReplaceTo(BlockState fromState, BlockState toState) {
         if (fromState == null || toState == null) {
             return false;
         }
@@ -758,151 +760,167 @@ public class InteractUtils {
             return true;
         }
 
-        ArrayDeque<BlockState> pending = new ArrayDeque<>();
-        Set<BlockState> visited = new HashSet<>();
-        pending.add(fromState);
-        visited.add(fromState);
-
-        while (!pending.isEmpty()) {
-            BlockState current = pending.removeFirst();
-            for (BlockState next : getInteractionStates(current, toState)) {
-                if (next.equals(toState)) {
-                    return true;
-                }
-                if (visited.add(next)) {
-                    pending.addLast(next);
-                }
-            }
-        }
-        return false;
+        return !getNextInteractionStep(fromState, toState).isEmpty();
     }
 
-    private static Set<BlockState> getInteractionStates(BlockState fromState, BlockState targetState) {
-        Set<BlockState> result = new HashSet<>();
+    public static Set<Pair<BlockState, Predicate<ItemStack>>> getNextInteractionStep(
+            BlockState fromState, BlockState toState) {
+        Set<Pair<BlockState, Predicate<ItemStack>>> result = new HashSet<>();
+        if (fromState == null || toState == null) {
+            return result;
+        }
         Block fromBlock = fromState.getBlock();
-        Block targetBlock = targetState.getBlock();
+        Block targetBlock = toState.getBlock();
 
         if (fromBlock == targetBlock) {
             if (fromBlock instanceof SlabBlock
                     && fromState.get(SlabBlock.TYPE) != SlabType.DOUBLE
-                    && targetState.equals(
-                            fromState.with(SlabBlock.TYPE, SlabType.DOUBLE).with(SlabBlock.WATERLOGGED, false))) {
-                result.add(targetState);
+                    && toState.get(SlabBlock.TYPE) == SlabType.DOUBLE) {
+                result.add(Pair.of(fromState.with(SlabBlock.TYPE, SlabType.DOUBLE), isItem(fromBlock.asItem())));
             }
+            int layers;
             if (fromBlock instanceof SnowBlock
-                    && fromState.get(SnowBlock.LAYERS) < 8
-                    && targetState.equals(fromState.with(SnowBlock.LAYERS, fromState.get(SnowBlock.LAYERS) + 1))) {
-                result.add(targetState);
+                    && (layers = fromState.get(SnowBlock.LAYERS)) < 8
+                    && toState.get(SnowBlock.LAYERS) > layers) {
+                result.add(Pair.of(fromState.with(SnowBlock.LAYERS, layers + 1), isItem(fromBlock.asItem())));
             }
             if (fromBlock instanceof CandleBlock
-                    && fromState.get(CandleBlock.CANDLES) < 4
-                    && targetState.equals(
-                            fromState.with(CandleBlock.CANDLES, fromState.get(CandleBlock.CANDLES) + 1))) {
-                result.add(targetState);
+                    && (layers = fromState.get(CandleBlock.CANDLES)) < 4
+                    && toState.get(CandleBlock.CANDLES) > layers) {
+                result.add(Pair.of(fromState.with(CandleBlock.CANDLES, layers + 1), isItem(fromBlock.asItem())));
             }
             if (fromBlock instanceof SeaPickleBlock
-                    && fromState.get(SeaPickleBlock.PICKLES) < 4
-                    && targetState.equals(
-                            fromState.with(SeaPickleBlock.PICKLES, fromState.get(SeaPickleBlock.PICKLES) + 1))) {
-                result.add(targetState);
+                    && (layers = fromState.get(SeaPickleBlock.PICKLES)) < 4
+                    && toState.get(SeaPickleBlock.PICKLES) > layers) {
+                result.add(Pair.of(fromState.with(SeaPickleBlock.PICKLES, layers + 1), isItem(fromBlock.asItem())));
             }
             if (fromBlock instanceof FlowerbedBlock
-                    && fromState.get(FlowerbedBlock.FLOWER_AMOUNT) < 4
-                    && targetState.equals(fromState.with(
-                            FlowerbedBlock.FLOWER_AMOUNT, fromState.get(FlowerbedBlock.FLOWER_AMOUNT) + 1))) {
-                result.add(targetState);
+                    && (layers = fromState.get(FlowerbedBlock.FLOWER_AMOUNT)) < 4
+                    && toState.get(FlowerbedBlock.FLOWER_AMOUNT) > layers) {
+                result.add(
+                        Pair.of(fromState.with(FlowerbedBlock.FLOWER_AMOUNT, layers + 1), isItem(fromBlock.asItem())));
             }
             if (fromBlock instanceof LeafLitterBlock
                     && fromState.get(LeafLitterBlock.SEGMENT_AMOUNT) < 4
-                    && targetState.equals(fromState.with(
+                    && toState.equals(fromState.with(
                             LeafLitterBlock.SEGMENT_AMOUNT, fromState.get(LeafLitterBlock.SEGMENT_AMOUNT) + 1))) {
-                result.add(targetState);
+                result.add(Pair.of(toState, isItem(fromBlock.asItem())));
             }
-            if (fromBlock instanceof RepeaterBlock && targetState.equals(fromState.cycle(RepeaterBlock.DELAY))) {
-                result.add(targetState);
+            if (fromBlock instanceof RepeaterBlock
+                    && !toState.get(RepeaterBlock.DELAY).equals(fromState.get(RepeaterBlock.DELAY))) {
+                result.add(Pair.of(fromState.cycle(RepeaterBlock.DELAY), ALWAYS_TRUE));
             }
-            if (fromBlock instanceof ComparatorBlock && targetState.equals(fromState.cycle(ComparatorBlock.MODE))) {
-                result.add(targetState);
+            if (fromBlock instanceof ComparatorBlock
+                    && toState.get(ComparatorBlock.MODE) != fromState.get(ComparatorBlock.MODE)) {
+                result.add(Pair.of(fromState.cycle(ComparatorBlock.MODE), ALWAYS_TRUE));
             }
-            if (fromBlock instanceof DoorBlock && targetState.equals(fromState.cycle(DoorBlock.OPEN))) {
-                result.add(targetState);
+            if (fromBlock instanceof DoorBlock && toState.get(DoorBlock.OPEN) != fromState.get(DoorBlock.OPEN)) {
+                result.add(Pair.of(fromState.cycle(DoorBlock.OPEN), ALWAYS_TRUE));
             }
-            if (fromBlock instanceof TrapdoorBlock && targetState.equals(fromState.cycle(TrapdoorBlock.OPEN))) {
-                result.add(targetState);
+            if (fromBlock instanceof TrapdoorBlock
+                    && toState.get(TrapdoorBlock.OPEN) != fromState.get(TrapdoorBlock.OPEN)) {
+                result.add(Pair.of(fromState.cycle(TrapdoorBlock.OPEN), ALWAYS_TRUE));
             }
-            if (fromBlock instanceof FenceGateBlock && targetState.equals(fromState.cycle(FenceGateBlock.OPEN))) {
-                result.add(targetState);
+            if (fromBlock instanceof FenceGateBlock
+                    && toState.get(FenceGateBlock.OPEN) != fromState.get(FenceGateBlock.OPEN)) {
+                result.add(Pair.of(fromState.cycle(FenceGateBlock.OPEN), ALWAYS_TRUE));
             }
-            if (fromBlock instanceof LeverBlock && targetState.equals(fromState.cycle(LeverBlock.POWERED))) {
-                result.add(targetState);
+            if (fromBlock instanceof LeverBlock
+                    && toState.get(LeverBlock.POWERED) != fromState.get(LeverBlock.POWERED)) {
+                result.add(Pair.of(fromState.cycle(LeverBlock.POWERED), ALWAYS_TRUE));
             }
             if (fromBlock instanceof ButtonBlock
                     && !fromState.get(ButtonBlock.POWERED)
-                    && targetState.equals(fromState.with(ButtonBlock.POWERED, true))) {
-                result.add(targetState);
+                    && toState.equals(fromState.with(ButtonBlock.POWERED, true))) {
+                result.add(Pair.of(toState, ALWAYS_TRUE));
             }
-            if (fromBlock instanceof NoteBlock
-                    && targetState.equals(fromState.with(NoteBlock.NOTE, (fromState.get(NoteBlock.NOTE) + 1) % 25))) {
-                result.add(targetState);
+            if (fromBlock instanceof NoteBlock && toState.get(NoteBlock.NOTE) != fromState.get(NoteBlock.NOTE)) {
+                result.add(Pair.of(fromState.cycle(NoteBlock.NOTE), ALWAYS_TRUE));
             }
             if (fromBlock instanceof CandleBlock
                     && fromState.get(CandleBlock.LIT)
-                    && targetState.equals(fromState.with(CandleBlock.LIT, false))) {
-                result.add(targetState);
+                    && toState.equals(fromState.with(CandleBlock.LIT, false))) {
+                result.add(Pair.of(toState, ItemStack::isEmpty));
             }
             if (fromBlock instanceof CandleBlock
                     && !fromState.get(CandleBlock.LIT)
                     && !fromState.get(CandleBlock.WATERLOGGED)
-                    && targetState.equals(fromState.with(CandleBlock.LIT, true))) {
-                result.add(targetState);
+                    && toState.equals(fromState.with(CandleBlock.LIT, true))) {
+                result.add(Pair.of(toState, isAnyOf(Items.FLINT_AND_STEEL, Items.FIRE_CHARGE)));
             }
             if (fromBlock instanceof RespawnAnchorBlock
                     && fromState.get(RespawnAnchorBlock.CHARGES) < 4
-                    && targetState.equals(fromState.with(
-                            RespawnAnchorBlock.CHARGES, fromState.get(RespawnAnchorBlock.CHARGES) + 1))) {
-                result.add(targetState);
+                    && toState.get(RespawnAnchorBlock.CHARGES) > fromState.get(RespawnAnchorBlock.CHARGES)) {
+                result.add(Pair.of(
+                        fromState.with(RespawnAnchorBlock.CHARGES, fromState.get(RespawnAnchorBlock.CHARGES) + 1),
+                        isItem(Items.GLOWSTONE)));
             }
             if (fromBlock instanceof CakeBlock
                     && fromState.get(CakeBlock.BITES) < 6
-                    && targetState.equals(fromState.with(CakeBlock.BITES, fromState.get(CakeBlock.BITES) + 1))) {
-                result.add(targetState);
-            }
-            if (fromBlock instanceof ComposterBlock) {
-                int level = fromState.get(ComposterBlock.LEVEL);
-                if (level < 7 && targetState.equals(fromState.with(ComposterBlock.LEVEL, level + 1))) {
-                    result.add(targetState);
-                }
-                if (level == 8 && targetState.equals(fromState.with(ComposterBlock.LEVEL, 0))) {
-                    result.add(targetState);
-                }
+                    && toState.equals(fromState.with(CakeBlock.BITES, fromState.get(CakeBlock.BITES) + 1))) {
+                result.add(Pair.of(toState, ALWAYS_TRUE));
             }
             if (fromBlock instanceof FlowerPotBlock fromPot
                     && targetBlock instanceof FlowerPotBlock targetPot
                     && fromPot.getContent() != Blocks.AIR
                     && targetPot.getContent() == Blocks.AIR) {
-                result.add(targetState);
+                result.add(Pair.of(toState, ItemStack::isEmpty));
             }
         }
 
         if (fromBlock instanceof CakeBlock
                 && targetBlock instanceof CandleCakeBlock
                 && fromState.get(CakeBlock.BITES) == 0) {
-            result.add(targetState);
+            Item candleItem = getRequiredCandleItem(targetBlock);
+            if (candleItem != null) {
+                result.add(Pair.of(toState, isItem(candleItem)));
+            }
         }
         if (fromBlock instanceof CandleCakeBlock
                 && targetBlock instanceof CakeBlock
-                && targetState.get(CakeBlock.BITES) == 1) {
-            result.add(targetState);
+                && toState.get(CakeBlock.BITES) == 1) {
+            result.add(Pair.of(toState, ALWAYS_TRUE));
         }
         if (fromBlock instanceof FlowerPotBlock fromPot
                 && targetBlock instanceof FlowerPotBlock targetPot
                 && fromPot.getContent() == Blocks.AIR
                 && targetPot.getContent() != Blocks.AIR) {
-            result.add(targetState);
+            Block content = targetPot.getContent();
+            result.add(Pair.of(
+                    toState,
+                    stack -> stack != null && stack.getItem() instanceof BlockItem item && item.getBlock() == content));
         }
         if (fromBlock instanceof PumpkinBlock && targetBlock == Blocks.CARVED_PUMPKIN) {
-            result.add(targetState);
+            result.add(Pair.of(toState, isItem(Items.SHEARS)));
         }
         return result;
+    }
+
+    private static Predicate<ItemStack> isItem(Item item) {
+        return stack -> stack != null && stack.isOf(item);
+    }
+
+    private static Predicate<ItemStack> isAnyOf(Item... items) {
+        return stack -> {
+            if (stack == null) {
+                return false;
+            }
+            for (Item item : items) {
+                if (stack.isOf(item)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+    }
+
+    private static Item getRequiredCandleItem(Block candleCakeBlock) {
+        var blockId = Registries.BLOCK.getId(candleCakeBlock);
+        String path = blockId.getPath();
+        if (!path.endsWith("_cake")) {
+            return null;
+        }
+        Item item = Registries.ITEM.get(blockId.withPath(path.substring(0, path.length() - 5)));
+        return item == Items.AIR ? null : item;
     }
 }

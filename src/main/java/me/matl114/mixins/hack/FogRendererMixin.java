@@ -55,7 +55,7 @@ public abstract class FogRendererMixin {
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/client/render/fog/FogRenderer;applyFog(Ljava/nio/ByteBuffer;ILorg/joml/Vector4f;FFFFFF)V",
+                                    "Lcom/mojang/blaze3d/systems/CommandEncoder;mapBuffer(Lcom/mojang/blaze3d/buffers/GpuBuffer;ZZ)Lcom/mojang/blaze3d/buffers/GpuBuffer$MappedView;",
                             shift = At.Shift.BEFORE))
     private void applyFog(
             Camera camera,
@@ -67,7 +67,7 @@ public abstract class FogRendererMixin {
             @Local FogData fogData,
             @Local Vector4f color) {
         if (NoRender.INSTANCE.noDistanceFogVanilla()) {
-            int d = 32 * viewDistance;
+            int d = 64 * viewDistance;
             fogData.environmentalStart = d;
             fogData.environmentalEnd = d;
             fogData.renderDistanceStart = d;

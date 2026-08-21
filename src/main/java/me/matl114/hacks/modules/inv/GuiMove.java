@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.inv;
 
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.KeyboardAction;
 import me.matl114.gui.WidgetUtils;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.api.BaseModule;
@@ -11,7 +12,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.managers.input.SimpleInputManager;
-import net.minecraft.client.Keyboard;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.*;
@@ -77,12 +77,12 @@ public class GuiMove extends BaseModule {
                 : inputBindings;
     }
 
-    public void onKeyInput(Event<Keyboard> eventInput) {
+    public void onKeyInput(Event<KeyboardAction> eventInput) {
         if (checkNull()) return;
         if (enable.get()) {
             if (skip()) return;
-            int keyCode = eventInput.getArgs(0);
-            int action = eventInput.getArgs(2);
+            int keyCode = eventInput.context.keyCode();
+            int action = eventInput.context.action();
             for (var re : getBindings()) {
                 if (handle(re, keyCode, action)) {}
             }

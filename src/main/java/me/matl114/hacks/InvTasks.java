@@ -1105,11 +1105,16 @@ public class InvTasks {
         return 0;
     }
 
-    public static void executePredictInventoryAction(Consumer<ScreenHandler> callback) {
+    public static void executePredictInventoryAction(Inventory topInventory, Consumer<ScreenHandler> callback) {
         // todo fix prediction initialization
         int nextPredictedIndex = (InvTasks.LAST_SYNC_ID % 100) + 1;
-        ScreenHandler fakeScreenHandler =
-                GenericContainerScreenHandler.createGeneric9x6(nextPredictedIndex, mc.player.getInventory());
+        ScreenHandler fakeScreenHandler = new GenericContainerScreenHandler(
+                ScreenUtils.getGenericScreenType(topInventory.size()),
+                nextPredictedIndex,
+                mc.player.getInventory(),
+                topInventory,
+                ((topInventory.size() - 1) / 9) + 1);
+        GenericContainerScreenHandler.createGeneric9x6(nextPredictedIndex, mc.player.getInventory());
         ScreenHandler handler = mc.player.currentScreenHandler;
         try {
             mc.player.currentScreenHandler = fakeScreenHandler;
@@ -1151,10 +1156,7 @@ public class InvTasks {
     private static ChestHistory chestHistory;
 
     @Getter
-    private static KitManager kitManager;
-
-    @Getter
-    private static Replenish replenish;
+    private static KitReplenish kitReplenish;
 
     @Getter
     private static ItemEditor itemEditor;
@@ -1191,8 +1193,8 @@ public class InvTasks {
         autoSteal = new AutoSteal().register(m);
         autoShulker = new AutoShulker().register(m);
         chestHistory = new ChestHistory().register(m);
-        kitManager = new KitManager().register(m);
-        replenish = new Replenish().register(m);
+        kitReplenish = new KitReplenish().register(m);
+
         itemEditor = new ItemEditor().register(m);
         quickButton = new QuickButton().register(m);
         saveItem = new SaveItem().register(m);

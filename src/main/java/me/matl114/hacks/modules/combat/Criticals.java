@@ -8,9 +8,9 @@ import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.PlayerInteractEntityC2SPacketAccess;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
-import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -21,6 +21,7 @@ import me.matl114.hacks.modules.move.FloatingUtils;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
+import me.matl114.hacks.utils.tasks.TimerExecutor;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -37,10 +38,7 @@ import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.*;
 
 public class Criticals extends BaseModule implements LegalMovementManager.MovementModifier {
     public final ModulePath attBot = makePath(Configs.COMBAT_CONFIG, "att-bot");
@@ -118,6 +116,10 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             .show(() -> mode.get().isNotIn(Mode.FREEZE))
             .build();
 
+    public final IntRef cooldownCritical = builder(criticals.add("critical-cooldown"), Integer.class)
+            .defaultValue(10)
+            .build();
+
     static LegalMovementManager.DelegateMovementModifier instance;
 
     public Criticals() {
@@ -156,6 +158,10 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
     public void onPlayerAttack(Event<PlayerInteractEntityC2SPacket> event) {
         // can not crit in water or boat
         if (checkNull() || event.isCancelled() || canNotCrit()) return;
+        if (PlayerStateManager.INSTANCE.fallDistance > 1E-6) return;
+        boolean canRun = cooldownTimer.canRun(cooldownCritical.get());
+        cooldownTimer.mark();
+        if (!canRun) return;
         if (enable.get()
                 && PlayerInteractEntityC2SPacketAccess.of(event.context).isAttack()
                 && mc.world != null
@@ -168,13 +174,15 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
 
     int walkCnt = 0;
     boolean nextAttackIsKillarua = false;
+    TimerExecutor cooldownTimer = new TimerExecutor();
 
     public void handleCritical(Event<PlayerInteractEntityC2SPacket> event) {
         // todo: handle wall critical, handle in wall critical
 
         // todo: handle sprint, handle inWater, handle condition
+
         if (inWallPacket.get()
-                && PlayerStateManager.INSTANCE.lastInWall
+                && (PlayerStateManager.INSTANCE.lastInWall || PlayerStateManager.INSTANCE.lastUnderBlock)
                 && mode.get().isNotIn(Mode.FREEZE, Mode.PACKET)) {
             handleCriticalWall(event);
             return;
@@ -262,19 +270,10 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
                     fakeMovementThisTick = true;
                 }
             }
-            case GRIM_NEW -> {
-                if (mc.player.isOnGround()) {
-                    //
-                    // mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(x, y, z, true,
-                    //                     false));
-                    mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(x, y + 0.0625, z, false, false));
-                    mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(x, y + 0.04535, z, false, false));
-                    ClientPlayerAccess.of(mc.player).resyncRot();
-                    event.cancel();
-                    cache = event.context;
-                    cachedHandStack = mc.player.getStackInHand(Hand.MAIN_HAND).copy();
-                    lastStartCacheTick = Tasks.getTick();
-                    fakeMovementThisTick = true;
+            case GRIM_WALL -> {
+                if (mc.player.isOnGround()
+                        && (PlayerStateManager.INSTANCE.lastInWall || PlayerStateManager.INSTANCE.lastUnderBlock)) {
+                    handleCriticalWall(event);
                 }
             }
         }
@@ -289,9 +288,11 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
         mc.getNetworkHandler()
                 .sendPacket(VPacket.newPositionAndOnGround(
                         x, y + customInWallJumpPacketHeight.get() * 0.75, z, false, false));
+        ClientPlayerAccess.of(mc.player).resyncPos();
     }
 
     public void onSwing(Event<HandSwingC2SPacket> eventSwing) {
+        cooldownTimer.mark();
         if (cache != null) {
             eventSwing.cancel();
         }
@@ -319,6 +320,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             Entity entity = mc.world.getEntityById(
                     PlayerInteractEntityC2SPacketAccess.of(cache).getEntityId());
             var pkt0 = event.context;
+            Vec2f useLegacySnap = null;
             if (entity != null) {
                 boolean canDirectlyHit = RaycastUtils.canRaycastHit(
                         mc.player,
@@ -332,15 +334,23 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
                     Vec3d eyePos = entity.getEyePos();
                     Vec3d cacheDirection = eyePos.subtract(predictedEyePos).normalize();
                     var py = EntityUtils.rotationToPitchYaw(cacheDirection);
-                    acc.setPitch(py.x);
-                    acc.setYaw(EntityUtils.getSafeYaw(PlayerStateManager.INSTANCE.lastYaw, py.y));
+                    if (ViaFabricPlusHooks.isSupportDupRot()) {
+                        useLegacySnap = py;
+                    } else {
+                        acc.setPitch(py.x);
+                        acc.setYaw(EntityUtils.getSafeYaw(PlayerStateManager.INSTANCE.lastYaw, py.y));
+                    }
                 }
             }
             var pkt = cache;
             var stack = cachedHandStack;
+            final Vec2f legacySnapTarget = useLegacySnap;
             PacketManager.schedulePostCallback(event.context, () -> {
                 var weapon = mc.player.getStackInHand(Hand.MAIN_HAND);
                 // Debug.chat("Attack");
+                if (legacySnapTarget != null) {
+                    LegacySnapRotManager.INSTANCE.snapAt(legacySnapTarget.x, legacySnapTarget.y, false);
+                }
                 Runnable callback = null;
                 if (delaySwap.get()
                         && stack != null
@@ -584,7 +594,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
         //        OLD_GRIM_V2,
         //        OLD_GRIM_V3,
         GRIM_GROUND_SIMULATION,
-        GRIM_NEW,
+        GRIM_WALL,
         TEST;
 
         @Override

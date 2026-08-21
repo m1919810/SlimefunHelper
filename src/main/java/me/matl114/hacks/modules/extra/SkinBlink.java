@@ -19,7 +19,7 @@ public class SkinBlink extends BaseModule {
         bindFlag(enable);
     }
 
-    public final ModulePath path = makePath(Configs.TEST_CONFIG, "other.skin-blink");
+    public final ModulePath path = makePath(Configs.EXTRA_CONFIG, "other.skin-blink");
 
     public final FlagRef enable = flagBuilder(path.addEnable()).build();
 

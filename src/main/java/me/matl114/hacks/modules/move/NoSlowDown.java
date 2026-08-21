@@ -4,8 +4,8 @@ import java.util.*;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.PlayerInteractEntityC2SPacketAccess;
 import me.matl114.events.Event;
-import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.ACTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -71,7 +71,6 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         registerListener(Listener.getEntityTrackDataUpdate().getChannel(EntityType.PLAYER), this::onServerSyncSneak);
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class), this::onInteractSend);
-        registerListener(Listener.getPreHandleInputEvents(), this::onInputEvent);
         registerListener(Listener.getPlayerWebSlowPoint(), this::onWeb);
         registerListener(Listener.getEntityTrackDataUpdate().getChannel(EntityType.PLAYER), this::onEntityDataUpdate);
         registerListener(Listener.getPacketPostHandlePoint().getChannel(EntityStatusS2CPacket.class), this::onConsume);
@@ -114,8 +113,8 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             .defaultValue(1)
             .build();
 
-    public final FlagRef forceSprint = flagBuilder(noSlowdown.add("use-item-swap-force-sprint"))
-            .show(() -> useItemBypass.get().isIn(UseBypassMode.BYPASS_GRIM_LAZY, UseBypassMode.BYPASS_GRIM_LAZY_V3))
+    public final FlagRef noSprint = flagBuilder(noSlowdown.add("use-item-swap-no-sprint"))
+            .show(() -> useItemBypass.get().isIn(UseBypassMode.BYPASS_GRIM_LAZY_V3))
             .build();
 
     public final EnumRef<Configs.BypassMode> blockInBypass = builder(
@@ -239,22 +238,6 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             }
         }
         return;
-    }
-
-    public void onInputEvent(Event<Void> event) {
-        if (blockIn.get() && blockInBypass.get() == Configs.BypassMode.BYPASS_GRIM) {
-            // TRY
-            // can not bypass fastbreak
-            //            BlockPos pos = mc.player.getVelocityAffectingPos().add(0, 1,0);
-            //            BlockState state = mc.world.getBlockState(pos);
-            //            if(state.getBlock() == Blocks.COBWEB){
-            //                mc.interactionManager.sendSequencedPacket(mc.world, (seq)->new
-            // PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, Direction.UP));
-            //                mc.interactionManager.sendSequencedPacket(mc.world, (seq)->new
-            // PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, Direction.UP));
-            //            }
-
-        }
     }
 
     public void resetPlayer() {
@@ -414,20 +397,6 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     public boolean shouldNoSlowSneak() {
         return sneak.get()
                 && (!lastPredictWasSneakEdge || !fakeSneakBypass.get().hasAc());
-    }
-
-    public boolean shouldNoSlowUseItem() {
-        if (useItem.get()) {
-            switch (useItemBypass.get()) {
-                case BYPASS_GRIM_LAZY_V3 -> {
-                    return true;
-                }
-                default -> {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     public boolean shouldFakeSneakStatus() {
@@ -648,12 +617,13 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
 
     public boolean noSlowUseItemGrim() {
         if (mc.player.isUsingItem() && useItem.get()) {
-            if (preAttackUseTick) {
-                return true;
-            }
+
             return switch (useItemBypass.get()) {
-                case NO_BYPASS -> false;
+                case NO_BYPASS, BYPASS_GRIM_50 -> false;
                 case BYPASS_GRIM_LAZY -> {
+                    if (preAttackUseTick) {
+                        yield true;
+                    }
                     boolean isNotFallFlying;
                     if (mc.player.isFallFlying()) {
                         if (mc.player.isTouchingWater()) {
@@ -742,39 +712,52 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         }
     }
 
-    boolean v3Tick;
-
     public void onSendMovePreNoSlowUse(Event<Packet<?>> event) {
         if (noSlowUseItemGrim()) {
-            v3Tick = forceSprint.get()
-                    && PlayerInputUtils.of(mc.player).forward()
-                    && mc.player.getHungerManager().canSprint()
-                    && !mc.player.hasBlindnessEffect();
-            preSwap(v3Tick);
+            preSwap(false);
         }
     }
 
     public void onSendMovePostNoSlowUse(Event<Packet<?>> event) {
-        postSwap(v3Tick);
+        postSwap(false);
     }
+
+    public boolean workNoSlowItemThisTick;
+    boolean grimFlagNoSlowOnce = false;
 
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
-        //        if(mc.player.isCrawling()){
-        //            BlockPos vc = mc.player.getVelocityAffectingPos();
-        //            BlockPos vc2 = vc.add(0, 2,0);
-        //            mc.interactionManager.sendSequencedPacket(mc.world, (seq)->new
-        // PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, vc2, Direction.DOWN, seq));
-        //            mc.world.setBlockState(vc2, Blocks.AIR.getDefaultState());
-        //        }
         ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
         if (shouldNoSlowSneak()) {
             PlayerInputUtils.of(args).sneak(mc.options.sneakKey.isPressed()).applyInput(args);
         }
+        workNoSlowItemThisTick = false;
+        if (useItem.get() && mc.player.isUsingItem()) {
+            if (useItemBypass.get() == UseBypassMode.BYPASS_GRIM_50) {
+                PlayerInputUtils.Input input = PlayerInputUtils.of(args);
+                if (input.hasWASDMovement()) {
+                    if (grimFlagNoSlowOnce) {
+                        grimFlagNoSlowOnce = false;
+                        workNoSlowItemThisTick = false;
+                    } else {
+                        grimFlagNoSlowOnce = true;
+                        workNoSlowItemThisTick = true;
+                    }
+                } else {
+                    if (grimFlagNoSlowOnce) {
+                        ClientPlayerAccess.of(mc.player).resyncPos();
+                        grimFlagNoSlowOnce = false;
+                    }
+                }
+            } else {
+                workNoSlowItemThisTick = true;
+            }
+        } else {
+            grimFlagNoSlowOnce = false;
+        }
     }
 
     BlockPos cachedPos;
-    Vec3d cachedVelocity;
 
     @Override
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
@@ -816,46 +799,18 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                     }
                 }
                 cachedPos = args.getVelocityAffectingPos();
-                //                PlayerInputUtils.Input input = PlayerInputUtils.of(args.input);
-                //                Vec3d movementInput = new Vec3d(input.sidewaysSpeed(), input.upwardSpeed(),
-                // input.forwardSpeed());
-                //                cachedVelocity = EntityUtils.movementInputToVelocity(movementInput, 1.0F,
-                // args.getYaw());
-
-                //                if (false) {
-                //                    PlayerInputUtils.Input pinput = PlayerInputUtils.of(args.input.playerInput);
-                //
-                //                    // fake input as preTick
-                //                    Vec3d velocity =
-                // movementManagerEvent.context.playerStatus.calculateLastMoveVelocity(
-                //                            pinput.forwardSpeed(), pinput.sidewaysSpeed(), pinput.jump());
-                //                    if (velocity.horizontalLengthSquared() < 1e-7) {
-                //                        if (lastSneakingPos != null
-                //                                && lastSneakingPos.subtract(args.getPos()).length() < 1e-4) {
-                //                            lastPredictWasSneakEdge = true;
-                //
-                //                            // Debug.chat("Edge history");
-                //                        }
-                //                    }
-                //                    if (!this.lastPredictWasSneakEdge) {
-                //                        Vec3d vec3dSimulation = ((Entity) args).adjustMovementForSneaking(velocity,
-                // MovementType.SELF);
-                //                        lastPredictWasSneakEdge =
-                //                                Math.abs(vec3dSimulation.subtract(velocity).horizontalLengthSquared())
-                // > 0;
-                //                        if (lastPredictWasSneakEdge) {
-                //                            lastSneakingPos = args.getPos();
-                //                            // Debug.chat("Edge");
-                //                        }
-                //                    }
-                //                }
-
-                // Math.abs(vec3dSimulation.subtract(velocity).horizontalLengthSquared()) > 1e-7;
             }
         }
-
-        //        boolean noSlowUse = noSlowUseItemGrim();
-        //        lastTickNoSlowUse = noSlowUse;
+        if (useItem.get()
+                && useItemBypass.get().isIn(UseBypassMode.BYPASS_GRIM_LAZY_V3)
+                && noSprint.get()
+                && grimSlowedByItemFlag) {
+            if (!mc.player.hasVehicle()
+                    && PlayerInputUtils.of(args).hasWASDMovement()
+                    && getActiveItemSpeedMultiplier() < 0.99F) {
+                PlayerInputUtils.of(args).sprint(false).applyInput(args);
+            }
+        }
     }
 
     boolean lastPredictWasSneakEdge = false;
@@ -893,100 +848,11 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             //
             //            }
 
-        } else {
-            //            Vec3d realMovement = args.getPos().subtract(movementManagerEvent.context.playerStatus.pos);
-            //            if(Math.abs(realMovement.horizontalLengthSquared()) >0){
-            //                Debug.chat("move");
-            //            }
         }
         onSendMovePreNoSlowUse(null);
         lastPredictWasSneakEdge = false;
     }
 
-    /**
-     * [05:52:11] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 188.0057478763745 63.5 197.50643412620974 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:52:12] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 188.0057478763745 63.5 197.50643412620974 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:52:13] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 188.0057478763745 63.5 197.50643412620974 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:52:14] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 188.0057478763745 63.5 197.50643412620974 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:52:15] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.90775312429543 63.5 197.50541941599815 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:52:15] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.75625323136643 63.5 197.50385067394666 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:52:15] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.7255395281401 63.5 197.50197943047544 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:52:15] [Render thread/INFO] (Minecraft) [System] [CHAT] [GrimAC] matl114 failed Simulation (vl:78.0): .071609 /gl 140
-     * [05:52:15] [Render thread/INFO] (Minecraft) [System] [CHAT] Pos Resync [187.67,63.50,197.50]
-     * [05:52:15] [Render thread/INFO] (Minecraft) [System] [CHAT] [AC] 反作弊回弹! tp号:-2062579318
-     * [05:52:15] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos_rot 187.67353428021917 63.5 197.50299414068706 , Pitch: 75.00008 , Yaw: 450.598 , onGround: false
-     * [05:52:15] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.67353428021917 63.42162607581029 197.50299414068706 , Pitch: 0.0 , Yaw: 0.0 , onGround: false
-     * [05:52:15] [Render thread/INFO] (Minecraft) [System] [CHAT] Pos Resync [187.63,63.42,197.50]
-     * [05:52:15] [Render thread/INFO] (Minecraft) [System] [CHAT] [AC] 反作弊回弹! tp号:-1300224046
-     * [05:52:15] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos_rot 187.6283697276468 63.42159999847412 197.502526473473 , Pitch: 75.00008 , Yaw: 450.598 , onGround: false
-     * [05:52:15] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.58411106972696 63.266378122138896 197.5020793759112 , Pitch: 0.0 , Yaw: 0.0 , onGround: false
-     * [05:52:15] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.52423674017348 63.035860678843875 197.50146957508343 , Pitch: 0.0 , Yaw: 0.0 , onGround: false
-     * [05:52:15] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.45015214902384 62.731553578492104 197.50071171427942 , Pitch: 0.0 , Yaw: 0.0 , onGround: false
-     */
-
-    /**
-     * [05:53:14] [Render thread/INFO] (Minecraft) [System] [CHAT] matl114: 2
-     * [05:53:14] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 188.34316275067525 63.5 197.62313465356922 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:15] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 188.34316275067525 63.5 197.62313465356922 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:16] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 188.34316275067525 63.5 197.62313465356922 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:17] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 188.34316275067525 63.5 197.62313465356922 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:18] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 188.34316275067525 63.5 197.62313465356922 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:18] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 188.31376528296994 63.5 197.6235208029856 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:18] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 188.29771426373847 63.5 197.62373164059144 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:18] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 188.28895040622015 63.5 197.6238467579376 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:19] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 188.28416533945935 63.5 197.6239096120159 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:19] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 188.25476787175404 63.5 197.62429576143228 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:19] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 188.20931938481726 63.5 197.62489274845447 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:19] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 188.15510704036214 63.5 197.62560485282282 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:19] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 188.0961096291462 63.5 197.62637981126946 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:19] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 188.03449957117542 63.5 197.62718908804686 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:19] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.97146300791078 63.5 197.62801710263503 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:19] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.90764757266524 63.5 197.62885534806904 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:19] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.84340687326872 63.5 197.62969917954555 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:19] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.7789339796188 63.5 197.6305460610016 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:19] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.6313946077467 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:19] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.6322440637397 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:19] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.63309401618213 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:19] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.63394423968597 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:19] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.63479461118936 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:19] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.6356450635005 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:19] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.6364955599327 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:19] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.637346080455 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:19] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.63819661413046 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:20] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.6390471549876 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:20] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.6398976997659 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:20] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.64074824668515 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:20] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.6415987947734 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:20] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.64244934349986 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:20] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.64329989257484 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:20] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.64415044184008 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:20] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.64500099120923 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:20] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.6458515406351 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:20] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.64670209009194 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:20] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.64755263956567 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:20] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.64840318904865 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:20] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.64925373853666 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:20] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.71433430789182 63.5 197.64971813861106 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:20] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.70379451186733 63.5 197.6498565837358 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:20] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.69803978256954 63.5 197.6499321747827 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:20] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.69489770000797 63.42159999847412 197.6499734474991 , Pitch: 0.0 , Yaw: 0.0 , onGround: false
-     * [05:53:20] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.69489770000797 63.26636799395752 197.6499734474991 , Pitch: 0.0 , Yaw: 0.0 , onGround: false
-     * [05:53:21] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.69489770000797 63.03584062504456 197.6499734474991 , Pitch: 0.0 , Yaw: 0.0 , onGround: false
-     * [05:53:21] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.69489770000797 62.731523797587016 197.6499734474991 , Pitch: 0.0 , Yaw: 0.0 , onGround: false
-     * [05:53:21] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.69489770000797 62.35489329934836 197.6499734474991 , Pitch: 0.0 , Yaw: 0.0 , onGround: false
-     * [05:53:21] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.69489770000797 62.0 197.6499734474991 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:22] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.69489770000797 62.0 197.6499734474991 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:23] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.69489770000797 62.0 197.6499734474991 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:24] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.69489770000797 62.0 197.6499734474991 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:25] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.69489770000797 62.0 197.6499734474991 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:26] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.69489770000797 62.0 197.6499734474991 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:27] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.69489770000797 62.0 197.6499734474991 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:28] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.69489770000797 62.0 197.6499734474991 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:29] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.69489770000797 62.0 197.6499734474991 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:30] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.69489770000797 62.0 197.6499734474991 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:31] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.69489770000797 62.0 197.6499734474991 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     * [05:53:32] [Render thread/INFO] (Minecraft) [System] [CHAT] Send minecraft:move_player_pos 187.69489770000797 62.0 197.6499734474991 , Pitch: 0.0 , Yaw: 0.0 , onGround: true
-     */
     @Override
     public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
         onSendMovePostNoSlowUse(null);
@@ -1007,8 +873,11 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
 
     public static enum UseBypassMode implements ConfigEnum {
         NO_BYPASS,
+        // fixed in 2026.0701 grim commit
         BYPASS_GRIM_LAZY,
-        BYPASS_GRIM_LAZY_V3;
+        // fixed in 2026.0701 grim commit
+        BYPASS_GRIM_LAZY_V3,
+        BYPASS_GRIM_50;
 
         @Override
         public String getConfigEnumType() {

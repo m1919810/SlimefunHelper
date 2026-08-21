@@ -495,6 +495,9 @@ public class RenderTasks {
     private static EntityESP entityESP;
 
     @Getter
+    private static ExplosiveESP explosiveESP;
+
+    @Getter
     private static NameTag nameTag;
 
     @Getter
@@ -566,6 +569,8 @@ public class RenderTasks {
         noSound = new NoSound().register(m);
         entityLog = new EntityLog().register(m);
         entityESP = new EntityESP().register(m);
+        explosiveESP = new ExplosiveESP().register(m);
+
         nameTag = new NameTag().register(m);
         nameList = new NameList().register(m);
         chestESP = new ChestESP().register(m);

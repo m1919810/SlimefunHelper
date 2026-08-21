@@ -28,4 +28,14 @@ public abstract class ImmutableInventory implements Inventory {
 
     @Override
     public void clear() {}
+
+    @Override
+    public boolean isEmpty() {
+        int size = size();
+        for (var re = 0; re < size; ++re) {
+            var item = getStack(re);
+            if (!item.isEmpty()) return false;
+        }
+        return true;
+    }
 }

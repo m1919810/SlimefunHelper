@@ -8,10 +8,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.CharTypedAction;
+import me.matl114.events.impl.KeyboardAction;
+import me.matl114.events.impl.MouseClickAction;
+import me.matl114.events.impl.MouseScrollAction;
 import me.matl114.managers.InputState;
-import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.Mouse;
 import org.lwjgl.glfw.GLFW;
 
 public class SimpleInputManager implements IInputManager {
@@ -96,7 +98,8 @@ public class SimpleInputManager implements IInputManager {
         // Update record key states
         boolean stateChange = onKeyInputPre(keyCode, scanCode, modifiers, action);
         // fire event to ask if the input is consumed
-        Event<Keyboard> hardWareInput = new Event<>(mc.keyboard, true, false, keyCode, scanCode, action, modifiers);
+        Event<KeyboardAction> hardWareInput =
+                new Event<>(new KeyboardAction(this.mc.keyboard, keyCode, scanCode, action, modifiers), true, false);
         Listener.getKeyboardInput().handleValue(hardWareInput);
         boolean canceled = hardWareInput.isCancelled();
 
@@ -114,7 +117,8 @@ public class SimpleInputManager implements IInputManager {
             boolean isMouseClicked = action == GLFW.GLFW_PRESS;
             // Update the cached pressed keys status
             boolean stateChange = onKeyInputPre(transferedKeyCode, 0, 0, action);
-            Event<Mouse> hardWareInput = new Event<>(mc.mouse, true, false, eventButton, action, mode);
+            Event<MouseClickAction> hardWareInput =
+                    new Event<>(new MouseClickAction(mc.mouse, eventButton, action, mode), true, false);
             Listener.getMouseButton().handleValue(hardWareInput);
             cancel = this.checkKeyBindsForChanges(transferedKeyCode, stateChange, isMouseClicked)
                     || hardWareInput.isCancelled();
@@ -123,7 +127,8 @@ public class SimpleInputManager implements IInputManager {
     }
 
     public boolean onMouseScroll(double horizontal, double vertical) {
-        Event<Mouse> scrollEvent = new Event<>(mc.mouse, true, false, horizontal, vertical);
+        Event<MouseScrollAction> scrollEvent =
+                new Event<>(new MouseScrollAction(mc.mouse, horizontal, vertical), true, false);
         Listener.getMouseScroll().handleValue(scrollEvent);
         if (scrollEvent.isCancelled()) {
             return true;
@@ -134,7 +139,8 @@ public class SimpleInputManager implements IInputManager {
     public boolean onCharTyped(int codePoint, int modifiers) {
 
         if (Character.charCount(codePoint) == 1) {
-            Event<Character> charTypedInput = new Event<>((char) codePoint, true, false, codePoint, modifiers);
+            Event<CharTypedAction> charTypedInput =
+                    new Event<>(new CharTypedAction((char) codePoint, codePoint, modifiers), true, false);
             Listener.getCharTyped().handleValue(charTypedInput);
             if (charTypedInput.isCancelled()) {
                 return true;
@@ -145,7 +151,8 @@ public class SimpleInputManager implements IInputManager {
 
             for (int var8 = 0; var8 < var7; ++var8) {
                 char c = var6[var8];
-                Event<Character> charTypedInput = new Event<>((char) c, true, false, codePoint, modifiers, var8);
+                Event<CharTypedAction> charTypedInput =
+                        new Event<>(new CharTypedAction(c, codePoint, modifiers), true, false);
                 Listener.getCharTyped().handleValue(charTypedInput);
                 if (charTypedInput.isCancelled()) {
                     return true;

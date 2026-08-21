@@ -3,6 +3,7 @@ package me.matl114.hacks.utils.config;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.*;
+import java.util.function.Predicate;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import me.matl114.accessors.gui.ScreenAccess;
@@ -18,20 +19,32 @@ import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.IconElement;
 import me.matl114.gui.presets.choices.RegistrySelectScreen;
 import me.matl114.managers.config.NBTParsable;
+import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.config.NBTType;
+import me.matl114.managers.config.Ref;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 
 @Getter
 @Accessors(fluent = true)
-public class EntrySet<T> implements NBTParsable<EntrySet<T>> {
+public class EntrySet<T> implements NBTParsable<EntrySet<T>>, Predicate<T> {
     final Registry<T> registry;
     final Set<T> set;
     List<Identifier> data;
 
     public static <T> Class<EntrySet<T>> parameter() {
         return (Class) EntrySet.class;
+    }
+
+    public EntrySet(Regex regex, Registry<T> registry) {
+        this.registry = registry;
+        this.set = new LinkedHashSet<>();
+        for (var re : registry.getIds()) {
+            if (regex.test(re.getPath())) {
+                this.set.add(registry.get(re));
+            }
+        }
     }
 
     public EntrySet(Registry<T> registry, Collection<T> set) {
@@ -126,5 +139,20 @@ public class EntrySet<T> implements NBTParsable<EntrySet<T>> {
     @Override
     public boolean isSameType(NBTParsable<?> type) {
         return NBTParsable.super.isSameType(type) && type instanceof EntrySet<?> that && that.registry == registry;
+    }
+
+    @Override
+    public <W> Optional<EntrySet<T>> tryTypeConvert(Ref<W> ref) {
+        if (ref instanceof NBTRef nbt && nbt.get() instanceof RegistryRegex<?> oldRegex) {
+            if (oldRegex.registry == this.registry) {
+                return Optional.of((EntrySet<T>) new EntrySet<>(oldRegex.getParent(), oldRegex.registry));
+            }
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public boolean test(T t) {
+        return set.contains(t);
     }
 }

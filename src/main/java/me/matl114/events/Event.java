@@ -9,6 +9,8 @@ import lombok.experimental.Accessors;
 @Getter
 @Setter
 public class Event<T> {
+    public static final Event<Void> VOID = new Event<>(null, false, false);
+
     public Event(T context, boolean canCancel) {
         this(context, canCancel, false, new Object[0]);
     }
