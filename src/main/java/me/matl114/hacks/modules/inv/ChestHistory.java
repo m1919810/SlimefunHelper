@@ -40,7 +40,9 @@ import me.matl114.versioned.api.VRender;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.block.enums.ChestType;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
+import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
@@ -114,6 +116,10 @@ public class ChestHistory extends BaseModule {
 
     private static final Text ENDER_CHEST_TITLE = Text.translatable("container.enderchest");
 
+    public static boolean isEnderChest(Screen handler) {
+        return handler instanceof GenericContainerScreen screen && Objects.equals(screen.getTitle(), ENDER_CHEST_TITLE);
+    }
+
     public void onOpenHandledScreen(Event<HandledScreen<?>> screenEvent) {
         HandledScreen<?> screen = screenEvent.context();
         if (screen instanceof CreativeInventoryScreen) return;
@@ -152,6 +158,7 @@ public class ChestHistory extends BaseModule {
         PlayerInteractBlockC2SPacketAccess.UseContext useContext = access.getUseContext();
         if (useContext != null
                 && useContext.isAccepted()
+                && useContext.blockPlace()
                 && useContext.stack().getItem() instanceof BlockItem bi
                 && bi.getBlock() instanceof ShulkerBoxBlock) {
             //

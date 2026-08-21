@@ -1,17 +1,14 @@
 package me.matl114.utils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import me.matl114.utils.annotations.NeedTest;
 import net.minecraft.block.BlockState;
-import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.block.Blocks;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.item.ItemStack;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
@@ -19,331 +16,135 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.EmptyBlockView;
 
 @NeedTest
 public final class ExplosionUtils {
     private static final double EPSILON = 1.0E-7D;
+    private static final MinecraftClient mc = MinecraftClient.getInstance();
 
-    @NeedTest
-    private ExplosionUtils() {}
+    public static final float END_CRYSTAL_POWER = 6.0F;
+    public static final float RESPAWN_ANCHOR_POWER = 5.0F;
+    public static final float BED_POWER = 5.0F;
+    public static final float LARGE_FIREBALL_POWER = 1.0F;
 
-    @NeedTest
-    public static ExplosionProfile getDefaultProfile(ExplosionType type) {
-        return switch (type) {
-            case LARGE_FIREBALL -> new ExplosionProfile(type, 1.0F, 2.0D, true, "大火球默认爆炸");
-            case END_CRYSTAL -> new ExplosionProfile(type, 6.0F, 12.0D, true, "水晶爆炸");
-            case RESPAWN_ANCHOR -> new ExplosionProfile(type, 5.0F, 10.0D, true, "重生锚爆炸");
-            case WIND_CHARGE -> new ExplosionProfile(type, 1.2F, 2.4D, false, "风弹爆炸默认不走爆炸扣血；玩家风弹 1.2，Breeze 可传 3.0");
-        };
+    /**
+     * Mirrors the Comet-style explosionDamage entry point.
+     *
+     * <p>The return value includes armor, resistance and explosion-protection reductions
+     * for {@code target}. Use calculateQuickDamage when the raw damage is required.
+     */
+    public static float explosionDamage(
+            LivingEntity target, Vec3d explosionPos, float power, BlockView world, HitRule hitRule) {
+        if (target == null) {
+            return 0.0F;
+        }
+        return (float)
+                calculateExplosionRawDamage(power, explosionPos, target.getBoundingBox(), fromWorld(world), hitRule);
     }
 
-    @NeedTest
-    public static ExplosionProfile createProfile(ExplosionType type, float power, double damageScale) {
-        return new ExplosionProfile(type, power, damageScale, true, type.name().toLowerCase());
+    public static float explosionDamage(
+            Box predictedPos, Vec3d explosionPos, float power, BlockView world, HitRule hitRule) {
+
+        return calculateExplosionRawDamage(power, explosionPos, predictedPos, fromWorld(world), hitRule);
     }
 
-    @NeedTest
-    public static ExplosionProfile createProfile(
-            ExplosionType type, float power, double damageScale, boolean damagesEntities) {
-        return new ExplosionProfile(
-                type, power, damageScale, damagesEntities, type.name().toLowerCase());
+    public static float crystalDamage(Box predicatedPos, Vec3d explosionPos, BlockView world, HitRule hitRule) {
+        return calculateExplosionRawDamage(END_CRYSTAL_POWER, explosionPos, predicatedPos, fromWorld(world), hitRule);
     }
 
-    @NeedTest
-    public static QuickDamageResult largeFireballDamage(
-            Vec3d explosionPos, Vec3d targetPos, Box targetBox, BlockStateAccess access) {
-        return toQuickDamageResult(calculateDamage(
-                getDefaultProfile(ExplosionType.LARGE_FIREBALL),
+    public static float respawnAnchorDamage(Box predictedPos, Vec3d explosionPos, BlockView world, HitRule hitRule) {
+        return calculateExplosionRawDamage(
+                RESPAWN_ANCHOR_POWER,
                 explosionPos,
-                targetPos,
-                targetBox,
-                access,
-                EstimatedDamageContext.none()));
+                predictedPos,
+                fromWorldWithOverrides(world, Map.of(BlockPos.ofFloored(explosionPos), Blocks.AIR.getDefaultState())),
+                hitRule);
+    }
+
+    public static float calculateExplosionMaxDamage(float power, Box targetBox, Vec3d explosionPos) {
+        Vec3d targetPos =
+                new Vec3d((targetBox.minX + targetBox.maxX) / 2, targetBox.minY, (targetBox.minZ + targetBox.maxZ) / 2);
+        double normalizedDistance = getNormalizedDistance(power, explosionPos, targetPos);
+        if (normalizedDistance >= 1) {
+            return 0.0F;
+        }
+        double impact;
+        impact = getImpact(normalizedDistance, 1);
+        return (float) getRawDamage(power, impact);
+    }
+
+    public static float calculateExplosionRawDamage(
+            float power, Vec3d explosionPos, Box targetBox, BlockStateAccess access, HitRule hitRule) {
+        Vec3d targetPos =
+                new Vec3d((targetBox.minX + targetBox.maxX) / 2, targetBox.minY, (targetBox.minZ + targetBox.maxZ) / 2);
+        double normalizedDistance = getNormalizedDistance(power, explosionPos, targetPos);
+        if (normalizedDistance >= 1) {
+            return 0.0F;
+        }
+        double allExposureDamage = getRawDamage(power, 1.0F);
+        double impact;
+        double exposure;
+        if (allExposureDamage > 2) {
+            exposure = getExposure(access, explosionPos, targetBox, hitRule);
+        } else {
+            exposure = getExposureSimplified(access, explosionPos, targetBox, hitRule);
+        }
+        impact = getImpact(normalizedDistance, exposure);
+        return (float) getRawDamage(power, impact);
     }
 
     @NeedTest
-    public static QuickDamageResult crystalDamage(
-            Vec3d explosionPos, Vec3d targetPos, Box targetBox, BlockStateAccess access) {
-        return toQuickDamageResult(calculateDamage(
-                getDefaultProfile(ExplosionType.END_CRYSTAL),
-                explosionPos,
-                targetPos,
-                targetBox,
-                access,
-                EstimatedDamageContext.none()));
-    }
+    private static Set<BlockPos> collectPotentiallyDestroyedBlocks(
+            float power, Vec3d explosionPos, BlockStateAccess access) {
+        if (power <= 0.0F) {
+            return Set.of();
+        }
 
-    @NeedTest
-    public static QuickDamageResult anchorDamage(
-            Vec3d explosionPos, Vec3d targetPos, Box targetBox, BlockStateAccess access) {
-        return toQuickDamageResult(calculateDamage(
-                getDefaultProfile(ExplosionType.RESPAWN_ANCHOR),
-                explosionPos,
-                targetPos,
-                targetBox,
-                access,
-                EstimatedDamageContext.none()));
-    }
+        Set<BlockPos> destroyedBlocks = new HashSet<>();
+        for (int x = 0; x < 16; ++x) {
+            for (int y = 0; y < 16; ++y) {
+                for (int z = 0; z < 16; ++z) {
+                    if (x != 0 && x != 15 && y != 0 && y != 15 && z != 0 && z != 15) {
+                        continue;
+                    }
 
-    @NeedTest
-    public static QuickDamageResult windChargeDamage(
-            Vec3d explosionPos, Vec3d targetPos, Box targetBox, BlockStateAccess access, float power) {
-        return toQuickDamageResult(calculateDamage(
-                createProfile(ExplosionType.WIND_CHARGE, power, power * 2.0D, false),
-                explosionPos,
-                targetPos,
-                targetBox,
-                access,
-                EstimatedDamageContext.none()));
-    }
+                    double directionX = (double) x / 15.0D * 2.0D - 1.0D;
+                    double directionY = (double) y / 15.0D * 2.0D - 1.0D;
+                    double directionZ = (double) z / 15.0D * 2.0D - 1.0D;
+                    double length =
+                            Math.sqrt(directionX * directionX + directionY * directionY + directionZ * directionZ);
+                    directionX /= length;
+                    directionY /= length;
+                    directionZ /= length;
 
-    @NeedTest
-    public static QuickDamageResult calculateQuickDamage(
-            ExplosionProfile profile, Vec3d explosionPos, Vec3d targetPos, Box targetBox, BlockView world) {
-        return toQuickDamageResult(
-                calculateDamage(profile, explosionPos, targetPos, targetBox, world, EstimatedDamageContext.none()));
-    }
+                    // Use the maximum vanilla random multiplier so any block that can be removed
+                    // by this blast is treated as non-persistent cover.
+                    double energy = power * 1.3D;
+                    double currentX = explosionPos.x;
+                    double currentY = explosionPos.y;
+                    double currentZ = explosionPos.z;
 
-    @NeedTest
-    public static QuickDamageResult calculateQuickDamage(
-            ExplosionProfile profile,
-            Vec3d explosionPos,
-            Vec3d targetPos,
-            Box targetBox,
-            BlockView world,
-            EstimatedDamageContext context) {
-        return toQuickDamageResult(calculateDamage(profile, explosionPos, targetPos, targetBox, world, context));
-    }
+                    while (energy > 0.0D) {
+                        BlockPos pos = BlockPos.ofFloored(currentX, currentY, currentZ);
+                        BlockState state = access.getBlockState(pos);
+                        if (access.hasBlastResistance(pos, state)) {
+                            energy -= (access.getBlastResistance(pos, state) + 0.3D) * 0.3D;
+                        }
+                        if (energy > 0.0D && state != null && !state.isAir()) {
+                            destroyedBlocks.add(pos.toImmutable());
+                        }
 
-    @NeedTest
-    public static QuickDamageResult calculateQuickDamage(
-            ExplosionProfile profile,
-            Vec3d explosionPos,
-            Vec3d targetPos,
-            Box targetBox,
-            Map<BlockPos, BlockState> overrides,
-            BlockView world) {
-        return calculateQuickDamage(
-                profile, explosionPos, targetPos, targetBox, overrides, world, EstimatedDamageContext.none());
-    }
-
-    @NeedTest
-    public static QuickDamageResult calculateQuickDamage(
-            ExplosionProfile profile,
-            Vec3d explosionPos,
-            Vec3d targetPos,
-            Box targetBox,
-            Map<BlockPos, BlockState> overrides,
-            BlockView world,
-            EstimatedDamageContext context) {
-        return toQuickDamageResult(calculateDamage(
-                profile, explosionPos, targetPos, targetBox, fromWorldWithOverrides(world, overrides), context));
-    }
-
-    @NeedTest
-    public static QuickDamageResult calculateQuickDamage(
-            ExplosionProfile profile,
-            Vec3d explosionPos,
-            Vec3d targetPos,
-            Box targetBox,
-            Map<BlockPos, BlockState> overrides,
-            BlockView world,
-            LivingEntity entity) {
-        return calculateQuickDamage(
-                profile, explosionPos, targetPos, targetBox, overrides, world, createEstimatedDamageContext(entity));
-    }
-
-    @NeedTest
-    public static QuickDamageResult calculateQuickDamage(
-            ExplosionProfile profile,
-            Vec3d explosionPos,
-            Vec3d targetPos,
-            Box targetBox,
-            Map<BlockPos, BlockState> overrides,
-            BlockView world,
-            LivingEntity entity,
-            int hiddenResistanceLevel) {
-        return calculateQuickDamage(
-                profile,
-                explosionPos,
-                targetPos,
-                targetBox,
-                overrides,
-                world,
-                createEstimatedDamageContext(entity, hiddenResistanceLevel));
-    }
-
-    @NeedTest
-    private static ExplosionDamageTrace calculateDamage(
-            ExplosionProfile profile, Vec3d explosionPos, Vec3d targetPos, Box targetBox, BlockView world) {
-        return calculateDamage(
-                profile, explosionPos, targetPos, targetBox, fromWorld(world), EstimatedDamageContext.none());
-    }
-
-    @NeedTest
-    private static ExplosionDamageTrace calculateDamage(
-            ExplosionProfile profile, Vec3d explosionPos, Vec3d targetPos, Box targetBox, BlockStateAccess access) {
-        return calculateDamage(profile, explosionPos, targetPos, targetBox, access, EstimatedDamageContext.none());
-    }
-
-    @NeedTest
-    private static ExplosionDamageTrace calculateDamage(
-            ExplosionProfile profile,
-            Vec3d explosionPos,
-            Vec3d targetPos,
-            Box targetBox,
-            BlockView world,
-            EstimatedDamageContext context) {
-        return calculateDamage(profile, explosionPos, targetPos, targetBox, fromWorld(world), context);
-    }
-
-    @NeedTest
-    private static ExplosionDamageTrace calculateDamage(
-            ExplosionProfile profile,
-            Vec3d explosionPos,
-            Vec3d targetPos,
-            Box targetBox,
-            BlockStateAccess access,
-            EstimatedDamageContext context) {
-        ExposureTrace exposureTrace = traceExposure(explosionPos, targetBox, access);
-        double normalizedDistance = getNormalizedDistance(profile.power(), explosionPos, targetPos);
-        double impact = getImpact(normalizedDistance, exposureTrace.exposure());
-        double rawDamage = profile.damagesEntities() ? getRawDamage(profile.damageScale(), impact) : 0.0D;
-        EstimatedDamageBreakdown estimatedBreakdown = estimateDamage(rawDamage, context);
-        return new ExplosionDamageTrace(
-                profile,
-                explosionPos,
-                targetPos,
-                targetBox,
-                normalizedDistance,
-                exposureTrace.exposure(),
-                impact,
-                rawDamage,
-                estimatedBreakdown.estimatedDamage(),
-                estimatedBreakdown,
-                exposureTrace);
-    }
-
-    @NeedTest
-    private static QuickDamageResult toQuickDamageResult(ExplosionDamageTrace trace) {
-        return trace == null
-                ? new QuickDamageResult(0.0D, 0.0D)
-                : new QuickDamageResult(trace.rawDamage(), trace.estimatedDamage());
-    }
-
-    @NeedTest
-    private static ExposureTrace traceExposure(Vec3d explosionPos, Box targetBox, BlockView world) {
-        return traceExposure(explosionPos, targetBox, fromWorld(world));
-    }
-
-    @NeedTest
-    private static ExposureTrace traceExposure(Vec3d explosionPos, Box targetBox, BlockStateAccess access) {
-        List<Vec3d> samplePoints = collectExposureSamplePoints(targetBox);
-        List<RayTraceSample> rays = new ArrayList<>(samplePoints.size());
-        Set<BlockPos> visitedBlocks = new LinkedHashSet<>();
-        Set<BlockPos> affectingBlocks = new LinkedHashSet<>();
-        int visibleCount = 0;
-
-        for (Vec3d samplePoint : samplePoints) {
-            RayTraceSample ray = traceSample(samplePoint, explosionPos, access);
-            rays.add(ray);
-            for (RayTraceStep step : ray.steps()) {
-                visitedBlocks.add(step.pos().toImmutable());
-                if (step.blocksRay()) {
-                    affectingBlocks.add(step.pos().toImmutable());
+                        currentX += directionX * 0.3D;
+                        currentY += directionY * 0.3D;
+                        currentZ += directionZ * 0.3D;
+                        energy -= 0.22500001D;
+                    }
                 }
             }
-            if (ray.visible()) {
-                visibleCount++;
-            }
         }
-
-        double exposure = samplePoints.isEmpty() ? 0.0D : (double) visibleCount / (double) samplePoints.size();
-        return new ExposureTrace(
-                samplePoints.size(),
-                visibleCount,
-                exposure,
-                Collections.unmodifiableList(rays),
-                Collections.unmodifiableList(new ArrayList<>(visitedBlocks)),
-                Collections.unmodifiableList(new ArrayList<>(affectingBlocks)));
-    }
-
-    @NeedTest
-    private static RayTraceSample traceSample(Vec3d samplePoint, Vec3d explosionPos, BlockStateAccess access) {
-        List<RayTraceStep> steps = traceRaySteps(samplePoint, explosionPos, access);
-        BlockPos firstBlockingBlock = null;
-        for (RayTraceStep step : steps) {
-            if (step.blocksRay()) {
-                firstBlockingBlock = step.pos().toImmutable();
-                break;
-            }
-        }
-        return new RayTraceSample(
-                samplePoint,
-                explosionPos,
-                firstBlockingBlock == null,
-                firstBlockingBlock,
-                Collections.unmodifiableList(steps));
-    }
-
-    @NeedTest
-    private static List<RayTraceStep> traceRaySteps(Vec3d start, Vec3d end, BlockStateAccess access) {
-        double dx = end.x - start.x;
-        double dy = end.y - start.y;
-        double dz = end.z - start.z;
-
-        int x = MathHelper.floor(start.x);
-        int y = MathHelper.floor(start.y);
-        int z = MathHelper.floor(start.z);
-        int endX = MathHelper.floor(end.x);
-        int endY = MathHelper.floor(end.y);
-        int endZ = MathHelper.floor(end.z);
-
-        int stepX = Integer.compare(endX, x);
-        int stepY = Integer.compare(endY, y);
-        int stepZ = Integer.compare(endZ, z);
-
-        double tMaxX = stepX == 0 ? Double.POSITIVE_INFINITY : intBound(start.x, dx);
-        double tMaxY = stepY == 0 ? Double.POSITIVE_INFINITY : intBound(start.y, dy);
-        double tMaxZ = stepZ == 0 ? Double.POSITIVE_INFINITY : intBound(start.z, dz);
-
-        double tDeltaX = stepX == 0 ? Double.POSITIVE_INFINITY : (double) stepX / dx;
-        double tDeltaY = stepY == 0 ? Double.POSITIVE_INFINITY : (double) stepY / dy;
-        double tDeltaZ = stepZ == 0 ? Double.POSITIVE_INFINITY : (double) stepZ / dz;
-
-        List<RayTraceStep> steps = new ArrayList<>();
-        int guard = 0;
-        int maxSteps = Math.max(64, (Math.abs(endX - x) + Math.abs(endY - y) + Math.abs(endZ - z) + 4) * 4);
-
-        while (guard++ < maxSteps) {
-            BlockPos pos = new BlockPos(x, y, z);
-            BlockState state = access.getBlockState(pos);
-            VoxelShape shape = access.getCollisionShape(pos);
-            double resistance = access.getBlockResistance(pos, state);
-            boolean hasShape = shape != null && !shape.isEmpty();
-            boolean intersects = hasShape && doesLineIntersectShape(start, end, pos, shape);
-            boolean blocksRay = intersects;
-
-            steps.add(new RayTraceStep(pos.toImmutable(), state, resistance, hasShape, intersects, blocksRay));
-
-            if (blocksRay || (x == endX && y == endY && z == endZ)) {
-                break;
-            }
-
-            if (tMaxX <= tMaxY && tMaxX <= tMaxZ) {
-                x += stepX;
-                tMaxX += tDeltaX;
-            } else if (tMaxY <= tMaxX && tMaxY <= tMaxZ) {
-                y += stepY;
-                tMaxY += tDeltaY;
-            } else {
-                z += stepZ;
-                tMaxZ += tDeltaZ;
-            }
-        }
-
-        return steps;
+        return destroyedBlocks;
     }
 
     @NeedTest
@@ -390,7 +191,7 @@ public final class ExplosionUtils {
         if (power <= 0.0F) {
             return Double.POSITIVE_INFINITY;
         }
-        return explosionPos.distanceTo(targetPos) / power;
+        return explosionPos.distanceTo(targetPos) / (power * 2.0D);
     }
 
     @NeedTest
@@ -401,112 +202,105 @@ public final class ExplosionUtils {
         return (1.0D - normalizedDistance) * MathHelper.clamp(exposure, 0.0D, 1.0D);
     }
 
-    @NeedTest
-    public static double getRawDamage(double damageScale, double impact) {
+    public static double getRawDamage(float power, double impact) {
+        double damageScale = power * 2;
         if (impact <= 0.0D) {
             return 0.0D;
         }
         return ((impact * impact + impact) / 2.0D) * 7.0D * damageScale + 1.0D;
     }
 
-    @NeedTest
-    private static EstimatedDamageBreakdown estimateDamage(double rawDamage, EstimatedDamageContext context) {
-        double afterArmor = applyArmorReduction(rawDamage, context.armor(), context.armorToughness());
-        double afterResistance =
-                applyResistanceReduction(afterArmor, context.visibleResistanceLevel(), context.hiddenResistanceLevel());
-        int effectiveProtection = getEffectiveExplosionProtection(context.protection(), context.blastProtection());
-        double estimatedDamage = applyProtectionReduction(afterResistance, effectiveProtection);
-        return new EstimatedDamageBreakdown(
-                rawDamage, afterArmor, afterResistance, effectiveProtection, estimatedDamage);
-    }
+    private static float getExposure(BlockStateAccess access, Vec3d source, Box box, HitRule hitRule) {
+        double xDiff = box.maxX - box.minX;
+        double yDiff = box.maxY - box.minY;
+        double zDiff = box.maxZ - box.minZ;
 
-    @NeedTest
-    public static double applyArmorReduction(double damage, double armor, double armorToughness) {
-        double armorRatio = Math.min(20.0D, Math.max(armor * 0.2D, armor - damage / (2.0D + armorToughness / 4.0D)));
-        return damage * (1.0D - armorRatio / 25.0D);
-    }
+        double xStep = 1 / (xDiff * 2 + 1);
+        double yStep = 1 / (yDiff * 2 + 1);
+        double zStep = 1 / (zDiff * 2 + 1);
 
-    @NeedTest
-    public static double applyResistanceReduction(
-            double damage, int visibleResistanceLevel, int hiddenResistanceLevel) {
-        int totalLevel = Math.max(0, visibleResistanceLevel) + Math.max(0, hiddenResistanceLevel);
-        if (totalLevel <= 0) {
-            return damage;
-        }
-        double multiplier = Math.max(0.0D, 1.0D - totalLevel * 0.2D);
-        return damage * multiplier;
-    }
+        if (xStep > 0 && yStep > 0 && zStep > 0) {
+            int misses = 0;
+            int hits = 0;
 
-    @NeedTest
-    public static int getEffectiveExplosionProtection(int protection, int blastProtection) {
-        int epf = Math.max(0, protection) + Math.max(0, blastProtection) * 2;
-        return Math.min(20, epf);
-    }
+            double xOffset = (1 - Math.floor(1 / xStep) * xStep) * 0.5;
+            double zOffset = (1 - Math.floor(1 / zStep) * zStep) * 0.5;
 
-    @NeedTest
-    public static double applyProtectionReduction(double damage, int effectiveProtection) {
-        return damage * (1.0D - MathHelper.clamp(effectiveProtection, 0, 20) / 25.0D);
-    }
+            xStep = xStep * xDiff;
+            yStep = yStep * yDiff;
+            zStep = zStep * zDiff;
 
-    @NeedTest
-    public static EstimatedDamageContext createEstimatedDamageContext(LivingEntity entity) {
-        return createEstimatedDamageContext(entity, 0);
-    }
+            double startX = box.minX + xOffset;
+            double startY = box.minY;
+            double startZ = box.minZ + zOffset;
+            double endX = box.maxX + xOffset;
+            double endY = box.maxY;
+            double endZ = box.maxZ + zOffset;
 
-    @NeedTest
-    public static EstimatedDamageContext createEstimatedDamageContext(LivingEntity entity, int hiddenResistanceLevel) {
-        if (entity == null) {
-            return EstimatedDamageContext.none().withHiddenResistanceLevel(hiddenResistanceLevel);
-        }
-        double armor = entity.getAttributeValue(EntityAttributes.ARMOR);
-        double armorToughness = entity.getAttributeValue(EntityAttributes.ARMOR_TOUGHNESS);
-        int protection = 0;
-        int blastProtection = 0;
-        for (var slot :
-                new EquipmentSlot[] {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
-            ItemStack stack = entity.getEquippedStack(slot);
-            var enchantments = stack.getEnchantments();
-            protection +=
-                    ItemStackUtils.getEnchantmentLevel(enchantments, net.minecraft.enchantment.Enchantments.PROTECTION);
-            blastProtection += ItemStackUtils.getEnchantmentLevel(
-                    enchantments, net.minecraft.enchantment.Enchantments.BLAST_PROTECTION);
-        }
-        int visibleResistanceLevel = entity.hasStatusEffect(net.minecraft.entity.effect.StatusEffects.RESISTANCE)
-                ? entity.getStatusEffect(net.minecraft.entity.effect.StatusEffects.RESISTANCE)
-                                .getAmplifier()
-                        + 1
-                : 0;
-        return new EstimatedDamageContext(
-                armor,
-                armorToughness,
-                protection,
-                blastProtection,
-                visibleResistanceLevel,
-                Math.max(0, hiddenResistanceLevel));
-    }
+            for (double x = startX; x <= endX; x += xStep) {
+                for (double y = startY; y <= endY; y += yStep) {
+                    for (double z = startZ; z <= endZ; z += zStep) {
+                        Vec3d position = new Vec3d(x, y, z);
 
-    @NeedTest
-    public static String getRawDamageFormulaDescription() {
-        return "distanceRatio = distance(explosionPos, targetPos) / power; exposure = visibleSamples / totalSamples; impact = (1 - distanceRatio) * exposure; rawDamage = ((impact^2 + impact) / 2) * 7 * damageScale + 1";
-    }
-
-    @NeedTest
-    public static String getEstimatedDamageFormulaDescription() {
-        return "afterArmor = rawDamage * (1 - min(20, max(armor*0.2, armor - rawDamage/(2 + armorToughness/4))) / 25); afterResistance = afterArmor * (1 - 0.2 * (visibleResistanceLevel + hiddenResistanceLevel)); effectiveProtection = min(20, protection + 2 * blastProtection); estimatedDamage = afterResistance * (1 - effectiveProtection / 25)";
-    }
-
-    @NeedTest
-    private static boolean doesLineIntersectShape(Vec3d start, Vec3d end, BlockPos pos, VoxelShape shape) {
-        for (Box localBox : shape.getBoundingBoxes()) {
-            Box worldBox = localBox.offset(pos.getX(), pos.getY(), pos.getZ());
-            if (worldBox.raycast(start, end).isPresent()) {
-                return true;
+                        if (!rayCastAccept(access, source, position, hitRule)) {
+                            misses++;
+                        }
+                        hits++;
+                    }
+                }
             }
-            if (worldBox.contains(start) || worldBox.contains(end)) {
+
+            return (float) misses / hits;
+        }
+
+        return 0f;
+    }
+
+    private static float getExposureSimplified(BlockStateAccess access, Vec3d source, Box box, HitRule hitRule) {
+        Vec3d center = box.getCenter();
+        List<Vec3d> samplePoints = List.of(
+                new Vec3d(box.minX, center.y, center.z),
+                new Vec3d(box.maxX, center.y, center.z),
+                new Vec3d(center.x, box.minY, center.z),
+                new Vec3d(center.x, box.maxY, center.z),
+                new Vec3d(center.x, center.y, box.minZ),
+                new Vec3d(center.x, center.y, box.maxZ));
+
+        int visibleCount = 0;
+        for (Vec3d samplePoint : samplePoints) {
+            if (!rayCastAccept(access, source, samplePoint, hitRule)) {
+                visibleCount++;
+            }
+        }
+        return (float) visibleCount / (float) samplePoints.size();
+    }
+
+    private static boolean rayCastAccept(BlockStateAccess stateAccess, Vec3d source, Vec3d pos, HitRule hitRule) {
+        BlockPos startFuckPos = BlockPos.ofFloored(MathHelper.lerp(-1E-7, source, pos));
+        BlockPos endFuckPos = BlockPos.ofFloored(MathHelper.lerp(-1E-7, pos, source));
+        for (var re : RaycastUtils.createRaycastBlockPoses(pos, source, true)) {
+            boolean strict = Objects.equals(startFuckPos, re) || Objects.equals(endFuckPos, re);
+            BlockState state = stateAccess.getBlockState(re);
+            if (hitRule.mayHit(pos, source, re, state, strict)) {
                 return true;
             }
         }
         return false;
+    }
+
+    public static float getMultipliedDamageByDifficulty(ClientWorld world, float amount) {
+        if (world.getDifficulty() == Difficulty.PEACEFUL) {
+            amount = 0.0F;
+        }
+
+        if (world.getDifficulty() == Difficulty.EASY) {
+            amount = Math.min(amount / 2.0F + 1.0F, amount);
+        }
+
+        if (world.getDifficulty() == Difficulty.HARD) {
+            amount = amount * 3.0F / 2.0F;
+        }
+        return amount;
     }
 
     @NeedTest
@@ -522,6 +316,12 @@ public final class ExplosionUtils {
             @NeedTest
             public VoxelShape getCollisionShape(BlockPos pos) {
                 return world.getBlockState(pos).getCollisionShape(world, pos);
+            }
+
+            @Override
+            @NeedTest
+            public double getFluidResistance(BlockPos pos) {
+                return world.getFluidState(pos).getBlastResistance();
             }
         };
     }
@@ -544,6 +344,18 @@ public final class ExplosionUtils {
                     return overrideState == null ? VoxelShapes.empty() : overrideState.getCollisionShape(world, pos);
                 }
                 return world.getBlockState(pos).getCollisionShape(world, pos);
+            }
+
+            @Override
+            @NeedTest
+            public double getFluidResistance(BlockPos pos) {
+                if (safeOverrides.containsKey(pos)) {
+                    BlockState overrideState = safeOverrides.get(pos);
+                    return overrideState == null
+                            ? 0.0D
+                            : overrideState.getFluidState().getBlastResistance();
+                }
+                return world.getFluidState(pos).getBlastResistance();
             }
         };
     }
@@ -579,6 +391,18 @@ public final class ExplosionUtils {
                 }
                 return safeFallback.getBlockResistance(pos, state);
             }
+
+            @Override
+            @NeedTest
+            public double getFluidResistance(BlockPos pos) {
+                if (safeOverrides.containsKey(pos)) {
+                    BlockState overrideState = safeOverrides.get(pos);
+                    return overrideState == null
+                            ? 0.0D
+                            : overrideState.getFluidState().getBlastResistance();
+                }
+                return safeFallback.getFluidResistance(pos);
+            }
         };
     }
 
@@ -591,22 +415,6 @@ public final class ExplosionUtils {
                 return null;
             }
         };
-    }
-
-    @NeedTest
-    private static double intBound(double start, double delta) {
-        if (delta > 0.0D) {
-            return (1.0D - frac(start)) / delta;
-        }
-        if (delta < 0.0D) {
-            return frac(start) / -delta;
-        }
-        return Double.POSITIVE_INFINITY;
-    }
-
-    @NeedTest
-    private static double frac(double value) {
-        return value - Math.floor(value);
     }
 
     @NeedTest
@@ -627,88 +435,48 @@ public final class ExplosionUtils {
         default double getBlockResistance(BlockPos pos, BlockState state) {
             return state == null ? 0.0D : state.getBlock().getBlastResistance();
         }
-    }
 
-    @NeedTest
-    public enum ExplosionType {
-        LARGE_FIREBALL,
-        END_CRYSTAL,
-        RESPAWN_ANCHOR,
-        WIND_CHARGE
-    }
-
-    @NeedTest
-    public record ExplosionProfile(
-            ExplosionType type, float power, double damageScale, boolean damagesEntities, String note) {}
-
-    @NeedTest
-    public record EstimatedDamageContext(
-            double armor,
-            double armorToughness,
-            int protection,
-            int blastProtection,
-            int visibleResistanceLevel,
-            int hiddenResistanceLevel) {
         @NeedTest
-        public static EstimatedDamageContext none() {
-            return new EstimatedDamageContext(0.0D, 0.0D, 0, 0, 0, 0);
+        default double getFluidResistance(BlockPos pos) {
+            return 0.0D;
         }
 
         @NeedTest
-        public EstimatedDamageContext withHiddenResistanceLevel(int level) {
-            return new EstimatedDamageContext(
-                    armor, armorToughness, protection, blastProtection, visibleResistanceLevel, Math.max(0, level));
+        default double getBlastResistance(BlockPos pos, BlockState state) {
+            return Math.max(getBlockResistance(pos, state), getFluidResistance(pos));
+        }
+
+        @NeedTest
+        default boolean hasBlastResistance(BlockPos pos, BlockState state) {
+            return (state != null && !state.isAir()) || getFluidResistance(pos) > 0.0D;
         }
     }
 
-    @NeedTest
-    private record EstimatedDamageBreakdown(
-            double rawDamage,
-            double afterArmor,
-            double afterResistance,
-            int effectiveProtection,
-            double estimatedDamage) {}
+    public static final HitRule ALL_TERRAIN = (pos, state) -> {
+        return true;
+    };
+
+    public static final HitRule EXPLOSION_RESISTENCE = (pos, state) -> {
+        return state.getBlock().getBlastResistance() > 600;
+    };
 
     @NeedTest
-    public record QuickDamageResult(double rawDamage, double estimatedDamage) {}
+    public interface HitRule {
+        default boolean mayHit(Vec3d start, Vec3d end, BlockPos pos, BlockState state, boolean strictCheck) {
+            if (!state.isAir() && !state.isLiquid() && mayHitIgnoreShape(pos, state)) {
+                if (!strictCheck && state.isFullCube(mc.world, pos)) {
+                    return true;
+                }
+                var shape = state.getCollisionShape(mc.world, pos);
+                if (shape.isEmpty()) {
+                    return false;
+                }
+                BlockHitResult result = shape.raycast(start, end, pos);
+                return result != null && result.getType() == HitResult.Type.BLOCK;
+            }
+            return false;
+        }
 
-    @NeedTest
-    private record RayTraceStep(
-            BlockPos pos,
-            BlockState state,
-            double resistance,
-            boolean hasCollisionShape,
-            boolean intersectsSegment,
-            boolean blocksRay) {}
-
-    @NeedTest
-    private record RayTraceSample(
-            Vec3d samplePoint,
-            Vec3d explosionPoint,
-            boolean visible,
-            BlockPos firstBlockingBlock,
-            List<RayTraceStep> steps) {}
-
-    @NeedTest
-    private record ExposureTrace(
-            int sampleCount,
-            int visibleSampleCount,
-            double exposure,
-            List<RayTraceSample> rays,
-            List<BlockPos> visitedBlocks,
-            List<BlockPos> affectingBlocks) {}
-
-    @NeedTest
-    private record ExplosionDamageTrace(
-            ExplosionProfile profile,
-            Vec3d explosionPos,
-            Vec3d targetPos,
-            Box targetBox,
-            double normalizedDistance,
-            double exposure,
-            double impact,
-            double rawDamage,
-            double estimatedDamage,
-            EstimatedDamageBreakdown estimatedDamageBreakdown,
-            ExposureTrace exposureTrace) {}
+        public boolean mayHitIgnoreShape(BlockPos pos, BlockState state);
+    }
 }

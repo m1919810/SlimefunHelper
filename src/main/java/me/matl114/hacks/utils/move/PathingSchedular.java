@@ -14,7 +14,7 @@ import me.matl114.events.Event;
 import me.matl114.hacks.modules.interact.Interact;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.ChestHistory;
-import me.matl114.hacks.modules.inv.Replenish;
+import me.matl114.hacks.modules.inv.KitReplenish;
 import me.matl114.hacks.modules.survival.SchedularSettings;
 import me.matl114.hacks.utils.config.Vec3;
 import me.matl114.hacks.utils.move.goal.GoalDirection;
@@ -166,7 +166,10 @@ public class PathingSchedular {
     @Getter
     boolean autoAfk = false;
 
-    public void mine(boolean bool) {}
+    public PathingSchedular mine(boolean bool) {
+        engine.setCanMine(bool);
+        return this;
+    }
 
     public int update(StateMachine machine, int state) {
         if (!enable) {
@@ -610,8 +613,8 @@ public class PathingSchedular {
         if (container != null) {
             boolean isShulker = isEmptyShulkerBox(container.val());
             Pair<BlockPos, BlockHitResult> searchPos = (isShulker
-                            ? Replenish.INSTANCE.searchAvailableShulkerPosition()
-                            : Replenish.INSTANCE.searchAvailableChestLikePosition(false))
+                            ? KitReplenish.INSTANCE.searchAvailableShulkerPosition()
+                            : KitReplenish.INSTANCE.searchAvailableChestLikePosition(false))
                     .findFirst()
                     .orElse(null);
             if (searchPos != null) {

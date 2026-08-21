@@ -76,7 +76,7 @@ public abstract class IRender2DModule extends BaseModule {
         var pp = pos.get();
         int posX = pp.getWindowX(mc.getWindow());
         int posY = pp.getWindowY(mc.getWindow());
-        int startX = (right.get() ? (sizeX - posX) : posX);
+        int startX = posX;
         int startY = (posY);
         vdraw.getMatrices().translate(startX, startY);
     }

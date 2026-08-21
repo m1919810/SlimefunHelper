@@ -18,6 +18,7 @@ import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShulkerBoxBlock;
+import net.minecraft.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.Hand;
@@ -65,13 +66,15 @@ public class AutoShulker extends BaseModule {
             BlockHitResult hitResult = packet.getBlockHitResult();
             boolean hasShift = mc.player.isSneaking();
             BlockState state = mc.world.getBlockState(hitResult.getBlockPos());
-            if (state.getBlock() instanceof ShulkerBoxBlock && !hasShift) {
+            if (state.getBlock() instanceof ShulkerBoxBlock
+                    && !hasShift
+                    && mc.world.getBlockEntity(hitResult.getBlockPos()) instanceof ShulkerBoxBlockEntity bl) {
                 int size = InvTasks.predictOpenVanillaContainerSize(hitResult.getBlockPos());
                 // can open
                 if (size > 0) {
                     // interact shulker
                     if (autoShulker0TickSteal.get()) {
-                        InvTasks.executePredictInventoryAction(handler -> {
+                        InvTasks.executePredictInventoryAction(bl, handler -> {
                             for (var i = 0; i < size; ++i) {
                                 mc.interactionManager.clickSlot(
                                         handler.syncId, i, 0, SlotActionType.QUICK_MOVE, mc.player);

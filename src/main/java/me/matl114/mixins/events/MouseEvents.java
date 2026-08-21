@@ -5,6 +5,8 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.MouseDragAction;
+import me.matl114.events.impl.MouseMoveAction;
 import me.matl114.managers.input.SimpleInputManager;
 import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.collections.FPoint;
@@ -90,7 +92,7 @@ public abstract class MouseEvents {
             method = "tick",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;mouseMoved(DD)V"))
     private void onMouseMove(Screen instance, double f, double g, Operation<Void> original) {
-        Event<Mouse> event = new Event<>((Mouse) (Object) this, true, false, f, g);
+        Event<MouseMoveAction> event = new Event<>(new MouseMoveAction((Mouse) (Object) this, f, g), true, false);
         Listener.getMouseMove().handleValue(event);
         if (!event.isCancelled()) {
             original.call(instance, f, g);
@@ -98,11 +100,12 @@ public abstract class MouseEvents {
     }
 
     @WrapOperation(
-            method = "tick",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;mouseDragged(DDIDD)Z"))
+        method = "tick",
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;mouseDragged(DDIDD)Z"))
     private boolean onMouseDrag(
-            Screen instance, double f, double g, int activeButton, double h, double i, Operation<Boolean> original) {
-        Event<Mouse> event = new Event<>((Mouse) (Object) this, true, false, f, g, h, i);
+        Screen instance, double f, double g, int activeButton, double h, double i, Operation<Boolean> original) {
+        Event<MouseDragAction> event =
+            new Event<>(new MouseDragAction((Mouse) (Object) this,  f, g, h, i), true, false);
         Listener.getMouseDrag().handleValue(event);
         if (!event.isCancelled()) {
             original.call(instance, f, g, activeButton, h, i);
@@ -124,7 +127,7 @@ public abstract class MouseEvents {
             double g = getY()
                     * (double) this.client.getWindow().getScaledHeight()
                     / (double) this.client.getWindow().getHeight();
-            Event<Mouse> event = new Event<>((Mouse) (Object) this, true, false, f, g);
+            Event<MouseMoveAction> event = new Event<>(new MouseMoveAction((Mouse) (Object) this, f, g), true, false);
             Listener.getMouseMove().handleValue(event);
 
             if (this.activeButton != -1) {
@@ -134,7 +137,8 @@ public abstract class MouseEvents {
                 double i = this.cursorDeltaY
                         * (double) this.client.getWindow().getScaledHeight()
                         / (double) this.client.getWindow().getHeight();
-                Event<Mouse> event2 = new Event<>((Mouse) (Object) this, true, false, f, g, h, i);
+                Event<MouseDragAction> event2 =
+                        new Event<>(new MouseDragAction((Mouse) (Object) this, f, g, h, i), true, false);
                 Listener.getMouseDrag().handleValue(event2);
             }
         }

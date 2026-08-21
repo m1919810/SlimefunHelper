@@ -32,7 +32,7 @@ import me.matl114.utils.CodecUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.collections.MutableRecord;
 import net.minecraft.text.Text;
-import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.ApiStatus;
 
 public class ConnectionProxy extends BaseModule {
@@ -100,11 +100,13 @@ public class ConnectionProxy extends BaseModule {
         List<MutableRecord> currentList = new ArrayList<>(proxyList.entries().stream()
                 .map(s -> MutableRecord.of(ProxyEntry.KEYS, s))
                 .toList());
-        MutableInt index = new MutableInt(proxyList.selected());
+        int indexList = proxyList.selected();
+        MutableObject<MutableRecord> index = new MutableObject<>(
+                (indexList >= 0 && indexList < currentList.size()) ? currentList.get(indexList) : null);
         ListEntryWidgetController controller = ListEntryWidgetController.mutable(
                 currentList,
                 () -> MutableRecord.of(ProxyEntry.KEYS, ProxyEntry.EMPTY),
-                (v) -> createEditRenderHandler(v, currentList, index),
+                (v) -> createEditRenderHandler(v, index),
                 30,
                 220);
         ListModifyWidget listSelect = new ListModifyWidget(controller, 0, 0, 320, 260);
@@ -113,36 +115,27 @@ public class ConnectionProxy extends BaseModule {
                     List<ProxyEntry> newProxies = currentList.stream()
                             .map(s -> s.toRecord(ProxyEntry.class))
                             .toList();
-                    setProxyList(new ProxyList(index.getValue(), newProxies));
+                    setProxyList(new ProxyList(
+                            index.getValue() == null ? -1 : currentList.indexOf(index.getValue()), newProxies));
                 });
         confirmScreen.access().openFromCurrent();
     }
 
-    public DrawableWidget createEditRenderHandler(
-            MutableRecord argsMap, List<MutableRecord> argsMapList, MutableInt index) {
+    public DrawableWidget createEditRenderHandler(MutableRecord argsMap, MutableObject<MutableRecord> index) {
         SubScreenWidget subScreen = new SubScreenWidget(0, 0, 220, 20);
         ExecutableWidget.instance(2, 2, 16, 16)
                 .setElementHandler(IconElement.statedGuiPredicate(
                         ButtonElement.BUTTON,
                         ButtonElement.BUTTON_INACTIVE,
                         ButtonAction.run(() -> {
-                            int currentIndex = index.getValue();
-                            int elementIndex = argsMapList.indexOf(argsMap);
-                            if (elementIndex != -1) {
-                                if (currentIndex == elementIndex) {
-                                    index.setValue(-1);
-                                } else {
-                                    index.setValue(elementIndex);
-                                }
+                            if (argsMap != index.getValue()) {
+                                index.setValue(argsMap);
+                            } else {
+                                index.setValue(null);
                             }
                         }),
                         (bl) -> {
-                            int idx = index.getValue();
-                            if (idx >= 0 && idx < argsMapList.size()) {
-                                return argsMapList.get(idx) == argsMap;
-                            } else {
-                                return false;
-                            }
+                            return argsMap == index.getValue();
                         }))
                 .addToSub(subScreen);
         DisplayWidget.instance(45, 0, 100, 20)

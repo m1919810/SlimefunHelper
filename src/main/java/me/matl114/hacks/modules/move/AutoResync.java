@@ -3,9 +3,10 @@ package me.matl114.hacks.modules.move;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
-import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -33,8 +34,11 @@ import net.minecraft.world.World;
 public class AutoResync extends BaseModule {
     public final ModulePath moveSafety = makePath(Configs.MOV_CONFIG, "move-safety");
 
+    public static AutoResync INSTANCE;
+
     public AutoResync() {
         super("AutoResync");
+        INSTANCE = this;
     }
 
     public Optional<Vec3d> pos;
@@ -177,17 +181,6 @@ public class AutoResync extends BaseModule {
                 pitch = 0;
             }
         }
-        if (noVelocitySetback.get()) {
-            recreate = true;
-            if (newFlags == null) {
-                newFlags = new HashSet<>(flags);
-            }
-            newFlags.remove(PositionFlag.ROTATE_DELTA);
-            newFlags.add(PositionFlag.DELTA_X);
-            newFlags.add(PositionFlag.DELTA_Y);
-            newFlags.add(PositionFlag.DELTA_Z);
-            deltaMovement = Vec3d.ZERO;
-        }
         if (recreate && newFlags != null) {
             event.context(new PlayerPositionLookS2CPacket(
                     packet.teleportId(), new PlayerPosition(position, deltaMovement, yaw, pitch), newFlags));
@@ -197,8 +190,8 @@ public class AutoResync extends BaseModule {
     public void onPreSetBack(Event<PlayerPositionLookS2CPacket> event) {
         if (autoResyncRot.get() && !modifyPacketRot.get()) {
             restoreRot = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
-            //            mc.player.setPitch(PlayerStateManager.INSTANCE.lastPitch);
-            //            mc.player.setYaw(PlayerStateManager.INSTANCE.lastYaw);
+            mc.player.setPitch(PlayerStateManager.INSTANCE.lastPitch);
+            mc.player.setYaw(PlayerStateManager.INSTANCE.lastYaw);
         }
     }
 
@@ -208,6 +201,8 @@ public class AutoResync extends BaseModule {
                 eventRotate.cancel();
             } else {
                 restoreRot = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
+                mc.player.setPitch(PlayerStateManager.INSTANCE.lastPitch);
+                mc.player.setYaw(PlayerStateManager.INSTANCE.lastYaw);
             }
         }
     }
@@ -216,6 +211,8 @@ public class AutoResync extends BaseModule {
         if (restoreRot != null) {
             EntityUtils.setEntityPitchSafe(mc.player, restoreRot.x);
             PlayerStateManager.setPlayerYawSafe(mc.player, restoreRot.y);
+            // fucking very important. shit
+            ClientPlayerAccess.of(mc.player).resyncRot();
             restoreRot = null;
         }
     }

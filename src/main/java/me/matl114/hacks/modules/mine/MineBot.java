@@ -15,8 +15,8 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
-import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.hacks.utils.tasks.TimerExecutor;
 import me.matl114.managers.*;
 import me.matl114.managers.config.*;
@@ -55,9 +55,9 @@ public class MineBot extends BaseModule {
                     mineBot.addHotkey(), new MultiKeyBind(), mineBot.addEnable(), moduleMeta(() -> this.mineBotMode))
             .build();
 
-    public final NBTRef<RegistryRegex<Block>> whiteListBlockRegex = builder(
-                    mineBot.add("whitelist"), RegistryRegex.BLOCK_TYPE)
-            .defaultValue(new RegistryRegex<>(new Regex("^(cobblestone|stone|.*ore)$"), Registries.BLOCK))
+    public final NBTRef<EntrySet<Block>> whiteListBlockRegex = builder(
+                    mineBot.add("whitelist"), EntrySet.<Block>parameter())
+            .defaultValue(new EntrySet<>(new Regex("^(cobblestone|stone|.*ore)$"), Registries.BLOCK))
             .build();
 
     public final EnumRef<MineBotMode> mineBotMode = builder(mineBot.add("mine-mode"), MineBotMode.class)

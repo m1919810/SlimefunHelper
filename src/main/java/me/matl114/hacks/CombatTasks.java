@@ -208,7 +208,7 @@ public class CombatTasks {
     private static Attack attack;
 
     @Getter
-    private static AttackArua attackArua;
+    private static AttackAura attackAura;
 
     @Getter
     private static Criticals criticals;
@@ -232,9 +232,6 @@ public class CombatTasks {
     private static TotemLog totemLog;
 
     @Getter
-    private static AutoLogout autoLogout;
-
-    @Getter
     private static SpearEnhance spearEnhance;
 
     @Getter
@@ -253,7 +250,13 @@ public class CombatTasks {
     private static AutoCity autoCity;
 
     @Getter
-    private static AnchorArua anchorArua;
+    private static CrystalAura crystalAura;
+
+    @Getter
+    private static AutoWeb autoWeb;
+
+    @Getter
+    private static AnchorAura anchorAura;
 
     @Getter
     private static ElytraBot elytraBot;
@@ -278,7 +281,7 @@ public class CombatTasks {
         targetSelector = new TargetSelector().register(m);
         positionPredict = new PositionPredict().register(m);
         attack = new Attack().register(m);
-        attackArua = new AttackArua().register(m);
+        attackAura = new AttackAura().register(m);
         criticals = new Criticals().register(m);
         bowEnhance = new BowEnhance().register(m);
         bowTp = new BowTp().register(m);
@@ -286,14 +289,16 @@ public class CombatTasks {
         combatLog = new CombatLog().register(m);
         autoTotem = new AutoTotem().register(m);
         totemLog = new TotemLog().register(m);
-        autoLogout = new AutoLogout().register(m);
+
         spearEnhance = new SpearEnhance().register(m);
         spearAttack = new SpearAttack().register(m);
         blink = new Blink().register(m);
         backTrack = new BackTrack().register(m);
         pearlFly = new PearlFly().register(m);
         autoCity = new AutoCity().register(m);
-        anchorArua = new AnchorArua().register(m);
+        crystalAura = new CrystalAura().register(m);
+        autoWeb = new AutoWeb().register(m);
+        anchorAura = new AnchorAura().register(m);
         elytraBot = new ElytraBot().register(m);
         // transactionBlocker = new TransactionBlocker().register(m);
     }

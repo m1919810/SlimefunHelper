@@ -19,25 +19,20 @@ import me.matl114.events.catchers.PacketCatcher;
 import me.matl114.events.channels.EventChannel;
 import me.matl114.events.channels.EventChannelDispatcher;
 import me.matl114.events.channels.PacketEventChannel;
+import me.matl114.events.impl.*;
 import me.matl114.hacks.MovTasks;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.input.IHotKey;
 import me.matl114.managers.input.IInputManager;
 import me.matl114.utils.collections.FPoint;
-import me.matl114.utils.collections.MutableEntry;
 import me.matl114.utils.collections.Point;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.Mouse;
 import net.minecraft.client.gui.hud.ChatHudLine;
 import net.minecraft.client.gui.hud.MessageIndicator;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.gui.screen.recipebook.RecipeBookProvider;
-import net.minecraft.client.gui.screen.recipebook.RecipeBookWidget;
-import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.input.Input;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
@@ -71,12 +66,10 @@ import net.minecraft.recipe.NetworkRecipeId;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
-import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.Text;
 import net.minecraft.util.*;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
-import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -316,12 +309,16 @@ public class Listener {
     // disconnect or enter reconfiguration
     @Getter
     @Broadcast
-    @ExtraArgs({boolean.class}) // whether disconnect or not
+    @ExtraArgs(
+            value = {boolean.class},
+            names = "isRealDisconnect") // whether disconnect or not
     private static final EventChannel<Void> serverLeavePoint = new EventChannel<>();
     // disconnect from server
     @Getter
     @Broadcast
-    @ExtraArgs({boolean.class}) // whether transferring
+    @ExtraArgs(
+            value = {boolean.class},
+            names = "isTransferring") // whether transferring
     private static final EventChannel<Void> serverDisconnectPoint = new EventChannel<>();
 
     @Getter
@@ -428,19 +425,16 @@ public class Listener {
 
     @Getter // stores argument of the RecipeBook
     @Broadcast
-    @ExtraArgs({RecipeBookWidget.class, ButtonWidget.class})
-    private static final EventChannel<RecipeBookProvider> postToggleRecipeBook = new EventChannel<>();
+    private static final EventChannel<RecipeBookToggle> postToggleRecipeBook = new EventChannel<>();
 
     @Getter
     @Cancelable
-    @ExtraArgs({int.class, int.class, int.class})
-    private static final EventChannelDispatcher<SlotActionType> preClickSlot =
+    private static final EventChannelDispatcher<SlotClickAction> preClickSlot =
             new EventChannelDispatcher<>(Function.identity());
 
     @Getter
     @Broadcast
-    @ExtraArgs({int.class, int.class, int.class})
-    private static final EventChannelDispatcher<SlotActionType> postClickSlot =
+    private static final EventChannelDispatcher<SlotClickAction> postClickSlot =
             new EventChannelDispatcher<>(Function.identity());
 
     @Getter
@@ -653,6 +647,14 @@ public class Listener {
     private static final EventChannel<BlockEntityTickInvoker> blockEntityTickListener = new EventChannel<>();
 
     @Getter
+    @Broadcast
+    private static final EventChannel<BlockUpdate> blockUpdateListener = new EventChannel<>();
+
+    @Getter
+    @Broadcast
+    private static final EventChannel<ChunkPos> chunkUpdateListener = new EventChannel<>();
+
+    @Getter
     @Modifiable
     private static final EventChannel<Boolean> preWorldScannListener = new EventChannel<>();
 
@@ -697,29 +699,28 @@ public class Listener {
     @Cancelable
     @Modifiable
     @ExtraArgs({Hand.class})
-    private static final EventChannel<ActionResult> prePlayerUseItem = new EventChannel<>();
+    private static final EventChannel<UseItem> prePlayerUseItem = new EventChannel<>();
 
     @Getter
     @Modifiable
     @ExtraArgs({Hand.class})
-    private static final EventChannel<ActionResult> postPlayerUseItem = new EventChannel<>();
+    private static final EventChannel<UseItem> postPlayerUseItem = new EventChannel<>();
 
     @Getter // player interact at block
     @Cancelable
     @Modifiable
-    @ExtraArgs({Hand.class})
-    private static final EventChannel<MutableEntry<BlockHitResult, ActionResult>> prePlayerUseItemAtBlock =
-            new EventChannel<>();
+    private static final EventChannel<UseItemOnBlock> prePlayerUseItemAtBlock = new EventChannel<>();
 
     @Getter
     @Broadcast
-    @ExtraArgs({BlockHitResult.class, Hand.class})
-    private static final EventChannel<ActionResult> postPlayerUseItemAtBlock = new EventChannel<>();
+    private static final EventChannel<UseItemOnBlock> postPlayerUseItemAtBlock = new EventChannel<>();
 
     @Getter // player attack at block
     @Cancelable
     @Modifiable
-    @ExtraArgs({boolean.class})
+    @ExtraArgs(
+            value = {boolean.class},
+            names = {"isAttack"})
     private static final EventChannel<HitResult> mineBlockAction = new EventChannel<>();
 
     @Getter
@@ -740,45 +741,27 @@ public class Listener {
 
     @Getter // glfw events
     @Cancelable
-    @ExtraArgs(
-            value = {int.class, int.class, int.class, int.class},
-            names = {"keyCode", "scanCode", "action", "modifiers"})
-    private static final EventChannel<Keyboard> KeyboardInput = new EventChannel<>();
+    private static final EventChannel<KeyboardAction> KeyboardInput = new EventChannel<>();
 
     @Getter
     @Cancelable
-    @ExtraArgs(
-            value = {int.class, int.class, int.class},
-            names = {"eventButton", "action", "mode"})
-    private static final EventChannel<Mouse> mouseButton = new EventChannel<>();
+    private static final EventChannel<MouseClickAction> mouseButton = new EventChannel<>();
 
     @Getter
     @Cancelable
-    @ExtraArgs(
-            value = {double.class, double.class},
-            names = {"horizontal", "vertical"})
-    private static final EventChannel<Mouse> mouseScroll = new EventChannel<>();
+    private static final EventChannel<MouseScrollAction> mouseScroll = new EventChannel<>();
 
     @Getter
     @Cancelable
-    @ExtraArgs(
-            value = {double.class, double.class},
-            names = {"mouseX", "mouseY"})
-    private static final EventChannel<Mouse> mouseMove = new EventChannel<>();
+    private static final EventChannel<MouseMoveAction> mouseMove = new EventChannel<>();
 
     @Getter
     @Cancelable
-    @ExtraArgs(
-            value = {double.class, double.class, double.class, double.class},
-            names = {"mouseX", "mouseY", "deltaX", "deltaY"})
-    private static final EventChannel<Mouse> mouseDrag = new EventChannel<>();
+    private static final EventChannel<MouseDragAction> mouseDrag = new EventChannel<>();
 
     @Getter
     @Cancelable
-    @ExtraArgs(
-            value = {int.class, int.class},
-            names = {"codepoint", "modifiers"})
-    private static final EventChannel<Character> charTyped = new EventChannel<>();
+    private static final EventChannel<CharTypedAction> charTyped = new EventChannel<>();
 
     @Getter // multiKeybind driven by glfw
     @Cancelable

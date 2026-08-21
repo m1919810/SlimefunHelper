@@ -273,7 +273,15 @@ public class RaycastUtils {
         return () -> createRaycastBlockPosIterator(start, end);
     }
 
+    public static Iterable<BlockPos> createRaycastBlockPoses(Vec3d start, Vec3d end, boolean enableThreshold) {
+        return () -> createRaycastBlockPosIterator(start, end, enableThreshold);
+    }
+
     public static Iterator<BlockPos> createRaycastBlockPosIterator(Vec3d start, Vec3d end) {
+        return createRaycastBlockPosIterator(start, end, false);
+    }
+
+    public static Iterator<BlockPos> createRaycastBlockPosIterator(Vec3d start, Vec3d end, boolean enableThreshold) {
 
         // 起点与终点重合时，只返回起点所在方块
         if (start.equals(end)) {
@@ -282,14 +290,13 @@ public class RaycastUtils {
             return blocks.iterator();
         }
 
-        double d = end.x; //  MathHelper.lerp(-1.0E-7, end.x, start.x);
-        double e = end.y; //  MathHelper.lerp(-1.0E-7, end.y, start.y);
-        double f = end.z; //  MathHelper.lerp(-1.0E-7, end.z, start.z);
-        // t= -1e-7 to contain the position behind
-        // remove behind
-        double g = start.x; // MathHelper.lerp(-1.0E-7, start.x, end.x);
-        double h = start.y; // MathHelper.lerp(-1.0E-7, start.y, end.y);
-        double i = start.z; // MathHelper.lerp(-1.0E-7, start.z, end.z);
+        double threshold = enableThreshold ? -1.0E-7D : 0.0D;
+        double d = MathHelper.lerp(threshold, end.x, start.x);
+        double e = MathHelper.lerp(threshold, end.y, start.y);
+        double f = MathHelper.lerp(threshold, end.z, start.z);
+        double g = MathHelper.lerp(threshold, start.x, end.x);
+        double h = MathHelper.lerp(threshold, start.y, end.y);
+        double i = MathHelper.lerp(threshold, start.z, end.z);
 
         // check pos = start + t * (end - start)
 

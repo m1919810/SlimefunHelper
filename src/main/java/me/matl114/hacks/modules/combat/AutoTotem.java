@@ -6,15 +6,15 @@ import java.util.List;
 import java.util.Random;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
-import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
-import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.hacks.utils.tasks.StateExecutor;
 import me.matl114.hacks.utils.tasks.TimerExecutor;
 import me.matl114.managers.Configs;
@@ -59,9 +59,9 @@ public class AutoTotem extends BaseModule {
 
     public final FlagRef smartTotem = flagBuilder(totem.add("smart-auto-totem")).build();
 
-    public final NBTRef<RegistryRegex<Item>> enableHandItems = builder(
-                    totem.add("enable-hand-items"), RegistryRegex.ITEM_TYPE)
-            .defaultValue(new RegistryRegex<>(new Regex("^()$"), Registries.ITEM))
+    public final NBTRef<EntrySet<Item>> enableHandItems = builder(
+                    totem.add("enable-hand-items"), EntrySet.<Item>parameter())
+            .defaultValue(new EntrySet<>(new Regex("^()$"), Registries.ITEM))
             .build();
 
     public final FlagRef antiMiss = flagBuilder(totem.add("anti-miss")).build();

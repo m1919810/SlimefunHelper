@@ -5,7 +5,7 @@ import java.util.Map;
 import me.matl114.events.Event;
 import me.matl114.gui.Constants;
 import me.matl114.hacks.api.ModulePath;
-import me.matl114.hacks.utils.config.Vec2;
+import me.matl114.hacks.utils.config.WidgetPos;
 import me.matl114.hacks.utils.render.ItemStackDisplayUtils;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
@@ -35,16 +35,15 @@ public class NameList extends INameTag {
                 .defaultValue(20)
                 .build();
         right = flagBuilder(nameTag.add("list-right")).build();
-        pos = builder(nameTag.add("list-pos"), Vec2.class)
-                .defaultValue(new Vec2(0.02D, 0.02D))
-                .validator((v) -> v.x() >= 0.0D && v.y() >= 0.0D && v.x() <= 1.0D && v.y() <= 1.0D)
+        pos = builder(nameTag.add("list-pos"), WidgetPos.class)
+                .defaultValue(new WidgetPos(0, 0.02D, 0.02D, 5, 5))
                 .build();
     }
 
     public IntRef playerListMaxLength;
 
     public FlagRef right;
-    public NBTRef<Vec2> pos;
+    public NBTRef<WidgetPos> pos;
 
     @Override
     public void onRender(Event<VDrawContext> event) {
@@ -77,8 +76,8 @@ public class NameList extends INameTag {
         // - 30,sizeX, sizeY - 20, sizeY, 0, 0,1,0 , 1);
         //        vdraw.popMatrix();
         var pp = pos.get();
-        double xPer = pp.x();
-        double yPer = pp.y();
+        double xPer = pp.getWindowX(mc.getWindow());
+        double yPer = pp.getWindowY(mc.getWindow());
         int startX = (int) (right.get() ? (sizeX - xPer * sizeX) : xPer * sizeX);
         int startY = (int) (yPer * sizeY);
         vdraw.getMatrices().translate(startX, startY);

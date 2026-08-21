@@ -26,7 +26,8 @@ public interface PlayerInteractBlockC2SPacketAccess {
 
     void setUseContext(UseContext stack);
 
-    public static record UseContext(ItemStack stack, BlockState oldState, ActionResult actionResult) {
+    public static record UseContext(
+            ItemStack stack, BlockState oldState, ActionResult actionResult, boolean blockPlace) {
         public boolean isEmpty() {
             return stack.isEmpty() || !(stack.getItem() instanceof BlockItem);
         }

@@ -8,6 +8,7 @@ import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.SlotClickAction;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -33,6 +34,7 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
@@ -84,8 +86,8 @@ public class InvExtra extends BaseModule {
         TaskManagers.getTaskManager().register(TaskManagers.PREFIX_BUTTON_TASKS + "." + CLEAR_KEEP, this::clearKeep);
     }
 
-    public void onClickSlot(Event<SlotActionType> event) {
-        onInvClick(event.getArgs(0));
+    public void onClickSlot(Event<SlotClickAction> event) {
+        onInvClick(event.context.syncId());
     }
 
     public void onInvClick(int syncId) {
@@ -233,7 +235,7 @@ public class InvExtra extends BaseModule {
         int selected = InventoryUtils.getSelectedSlot();
         OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), selected);
         if (slotIndex.isPresent()) {
-            return swapInventorySlots(slot, slotIndex.getAsInt());
+            return swapScreenSlots(slot, slotIndex.getAsInt());
         } else {
             return null;
         }
@@ -243,13 +245,24 @@ public class InvExtra extends BaseModule {
         int selected = 40;
         OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), selected);
         if (slotIndex.isPresent()) {
-            return swapInventorySlots(slot, slotIndex.getAsInt());
+            return swapScreenSlots(slot, slotIndex.getAsInt());
         } else {
             return null;
         }
     }
 
-    public Runnable swapInventorySlots(int armorSlot, int targetSlot) {
+    public Runnable swapInventoryIndexes(int slot1, int slot2) {
+        ;
+        OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), slot1);
+        OptionalInt slotIndex2 = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), slot2);
+        if (slotIndex.isPresent() && slotIndex2.isPresent()) {
+            return swapScreenSlots(slotIndex.getAsInt(), slotIndex2.getAsInt());
+        } else {
+            return null;
+        }
+    }
+
+    public Runnable swapScreenSlots(int armorSlot, int targetSlot) {
         if (armorSlot == targetSlot) return Runnables.doNothing();
         var handler = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
         var slots = handler.slots;
@@ -290,6 +303,39 @@ public class InvExtra extends BaseModule {
                     swapTwoIdiotSlot(handler, targetSlot, armorSlot);
                     syncAttr();
                 };
+            }
+        }
+    }
+
+    public void mergeScreenSlotTo(int from, int to) {
+        if (from == to) return;
+        var handler = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
+        var slots = handler.slots;
+        if (slots.size() <= from || slots.size() <= to) {
+            return;
+        }
+        MovTasks.getMovExtra().sendPacketsForInventoryAction();
+        var fromSlotInstance = handler.slots.get(from);
+        var toSlotInstance = handler.slots.get(to);
+        ItemStack fromStack = fromSlotInstance.getStack();
+        if (fromStack.isEmpty()) {
+            return;
+        }
+        if (!toSlotInstance.canInsert(fromStack)) {
+            return;
+        }
+
+        if (toSlotInstance.getStack().isEmpty()
+                || !ItemStack.areItemsAndComponentsEqual(fromStack, toSlotInstance.getStack())) {
+            swapScreenSlots(from, to);
+        } else {
+            ItemStack toStack = toSlotInstance.getStack();
+            int maxSize = toStack.getMaxCount();
+            boolean overStack = fromStack.getCount() + toStack.getCount() > maxSize;
+            mc.interactionManager.clickSlot(handler.syncId, from, 0, SlotActionType.PICKUP, mc.player);
+            mc.interactionManager.clickSlot(handler.syncId, to, 0, SlotActionType.PICKUP, mc.player);
+            if (overStack) {
+                mc.interactionManager.clickSlot(handler.syncId, from, 0, SlotActionType.PICKUP, mc.player);
             }
         }
     }

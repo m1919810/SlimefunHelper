@@ -18,7 +18,7 @@ import net.minecraft.client.network.ServerInfo;
 import net.minecraft.text.Text;
 
 public class AutoReconnect extends BaseModule {
-    public final ModulePath autoReconnect = makePath(Configs.TEST_CONFIG, "other.auto-reconnect");
+    public final ModulePath autoReconnect = makePath(Configs.EXTRA_CONFIG, "other.auto-reconnect");
 
     public final FlagRef enable = flagBuilder(autoReconnect.add("enable")).build();
 

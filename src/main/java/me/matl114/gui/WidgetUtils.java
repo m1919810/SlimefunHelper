@@ -272,7 +272,7 @@ public class WidgetUtils {
                                 })));
         DrawableWidget scrollableWidget = new DynamicContentWidget<>(
                 () -> {
-                    if (widget.getY() + widget.getHeight() > 2 * totalY) {
+                    if (widget.getY() + widget.getHeight() > 1.14514 * totalY) {
                         return scroll;
                     } else {
                         return null;

@@ -11,6 +11,7 @@ import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.accessors.interfaces.TileInventory;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.UseItemOnBlock;
 import me.matl114.gui.basic.ContentDelegateWidget;
 import me.matl114.gui.complex.slimefun.SlimefunDispensorSuggestBookWidget;
 import me.matl114.hacks.SlimefunTasks;
@@ -40,7 +41,6 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -83,9 +83,9 @@ public class MultiBlockHelper extends BaseModule {
     private int lastChatTimestamp = 0;
     private int lastInteractTimestamp = 0;
 
-    public void onBlockClick(Event<ActionResult> result) {
+    public void onBlockClick(Event<UseItemOnBlock> result) {
         if (enableClicker.get()) {
-            onClickBlockExecute(result.getArgs(0), false, true);
+            onClickBlockExecute(result.context.hitResult(), false, true);
         }
     }
 

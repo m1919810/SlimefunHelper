@@ -50,7 +50,7 @@ public class ClientExtra extends BaseModule {
         INSTANCE = this;
     }
 
-    public final ModulePath other = makePath(Configs.TEST_CONFIG, "other");
+    public final ModulePath other = makePath(Configs.EXTRA_CONFIG, "other");
 
     public final FlagRef noCrash = builder(other.add("no-client-crash"), Boolean.class)
             .defaultValue(false)
@@ -85,7 +85,7 @@ public class ClientExtra extends BaseModule {
             .build();
 
     public final KeyBindRef cursorSwitchKey = hotkey(
-                    Configs.TEST_CONFIG, other.add("cursor-switch-hotkey").toPath())
+                    Configs.EXTRA_CONFIG, other.add("cursor-switch-hotkey").toPath())
             .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.asHandler(this::onCursorLockSwitch))
             .build();
@@ -362,18 +362,20 @@ public class ClientExtra extends BaseModule {
             int count = (int) InventoryUtils.computePlayerInventory(
                     s -> s.isOf(Items.TOTEM_OF_UNDYING) ? (double) s.getCount() : null, false);
             Debug.info("  - TotemCount: " + count);
-            List<AbstractClientPlayerEntity> players = mc.world.getPlayers();
-            Debug.info("  - Players in visual range: " + players.size());
-            List<AbstractClientPlayerEntity> playersSort = players.stream()
-                    .sorted(Comparator.comparingDouble(s -> s.getPos().squaredDistanceTo(mc.player.getPos())))
-                    .toList();
-            for (var re : playersSort) {
-                if (re != mc.player) {
-                    Debug.info("    - Name: " + re.getNameForScoreboard() + ", Pos: " + re.getPos()
-                            + ", dist: %.2f"
-                                    .formatted(re.getPos()
-                                            .subtract(mc.player.getPos())
-                                            .length()));
+            if (mc.world != null) {
+                List<AbstractClientPlayerEntity> players = mc.world.getPlayers();
+                Debug.info("  - Players in visual range: " + players.size());
+                List<AbstractClientPlayerEntity> playersSort = players.stream()
+                        .sorted(Comparator.comparingDouble(s -> s.getPos().squaredDistanceTo(mc.player.getPos())))
+                        .toList();
+                for (var re : playersSort) {
+                    if (re != mc.player) {
+                        Debug.info("    - Name: " + re.getNameForScoreboard() + ", Pos: " + re.getPos()
+                                + ", dist: %.2f"
+                                        .formatted(re.getPos()
+                                                .subtract(mc.player.getPos())
+                                                .length()));
+                    }
                 }
             }
         }

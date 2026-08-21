@@ -3,6 +3,7 @@ package me.matl114.hacks.modules.render;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.MouseScrollAction;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.NBTTypes;
@@ -13,7 +14,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
-import net.minecraft.client.Mouse;
 
 public class Zoom extends BaseModule {
     public Zoom() {
@@ -72,11 +72,11 @@ public class Zoom extends BaseModule {
         }
     }
 
-    private void onScroll(Event<Mouse> eventMouseScroll) {
+    private void onScroll(Event<MouseScrollAction> eventMouseScroll) {
         if (currentScale == null) {
             currentScale = defaultZoom.get();
         }
-        double vertical = eventMouseScroll.getArgs(1);
+        double vertical = eventMouseScroll.context.vertical();
         if (vertical > 0) {
             currentScale *= 1.1;
         } else if (vertical < 0) {

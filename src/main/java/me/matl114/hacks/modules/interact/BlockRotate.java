@@ -6,9 +6,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import me.matl114.accessors.access.HitResultAccess;
 import me.matl114.accessors.access.PlayerInteractBlockC2SPacketAccess;
 import me.matl114.events.Event;
-import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -27,9 +27,9 @@ import me.matl114.utils.InteractUtils;
 import me.matl114.utils.NetworkUtils;
 import me.matl114.utils.WorldUtils;
 import net.minecraft.block.*;
+import net.minecraft.block.enums.BlockFace;
 import net.minecraft.block.enums.Orientation;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
@@ -129,111 +129,82 @@ public class BlockRotate extends BaseModule {
     public void onPreSendInteractBlockRotate(Event<PlayerInteractBlockC2SPacket> e) {
         if (e.isCancelled()) return;
         if (enable.get() && enableBlockRotateModify()) {
-            if (e.context instanceof PlayerInteractBlockC2SPacketAccess paccess
-                    && paccess.hasUseContext()
-                    && !paccess.getUseContext().isEmpty()) {
+            if (e.context instanceof PlayerInteractBlockC2SPacketAccess paccess) {
                 //
-                PlayerInteractBlockC2SPacketAccess.UseContext context = paccess.getUseContext();
-                Item checkItem = context.stack().getItem();
-                if (checkItem instanceof BlockItem blockItem) {
-                    Event<PitchYawDeceive> yawDeceive = new Event<>(new PitchYawDeceive(), false, true);
-                    Event<Vec3d> playerLookAt = new Event<>(null, false, true);
-                    handlePlaceCorrectLitematica(blockItem, e.context, context, yawDeceive, playerLookAt);
-                    handlePlaceCorrectTemperarySchematic(blockItem, e.context, context, yawDeceive);
-                    PitchYawDeceive deceivePy = null;
-                    Vec2f currentPy =
-                            new Vec2f(PlayerStateManager.INSTANCE.lastPitch, PlayerStateManager.INSTANCE.lastYaw);
-                    if (yawDeceive.context != null && yawDeceive.context.hasDeceive()) {
-                        deceivePy = yawDeceive.context;
-                        //                        PitchYawDeceive py = yawDeceive.context;
-                        //                        if (py.pitch != null && py.yaw != null) {
-                        //                            Vec2f py2 = new Vec2f(py.pitch, py.yaw);
-                        //                            Direction direction = EntityUtils.pitchYawToDirection(py2);
-                        //                            Direction currentDirection =
-                        // EntityUtils.pitchYawToDirection(currentPy);
-                        //                            Direction horizontal =
-                        // EntityUtils.yawToHorizontalDirection(py.yaw);
-                        //                            Direction currentHorizontal =
-                        // EntityUtils.yawToHorizontalDirection(currentPy.y);
-                        //                            if (direction != currentDirection || horizontal !=
-                        // currentHorizontal) {
-                        //                                deceivePy = py;
-                        //                            }
-                        //                        } else if (py.yaw != null) {
-                        //                            Direction horizontal =
-                        // EntityUtils.yawToHorizontalDirection(py.yaw);
-                        //                            Direction currentHorizontal =
-                        // EntityUtils.yawToHorizontalDirection(currentPy.y);
-                        //                            if (horizontal != currentHorizontal) {
-                        //                                deceivePy = py;
-                        //                            }
-                        //                        } else if (py.pitch != null) {
-                        //                            boolean upper = py.pitch > 0;
-                        //                            boolean meUpper = currentPy.x > 0;
-                        //                            if (upper != meUpper) {
-                        //                                deceivePy = py;
-                        //                            }
-                        //                        }
-                    }
-                    if (deceivePy != null
-                            && ViaFabricPlusHooks.getInstance()
-                                    .getCurrentVersion()
-                                    .isHigherOrEqualTo(21, 0)) {
-                        if (bypassMode.get() == Configs.BypassMode.BYPASS_GRIM) {
-                            // to ensure the rotate is successfully done
-                            // use a wrong sequence id to ensure that this packet cancelled by grimac
-                            Listener.sendPacketNoEvents(new PlayerInteractBlockC2SPacket(
-                                    Hand.OFF_HAND, e.context.getBlockHitResult(), e.context.getSequence() - 1));
+                Vec2f currentPy = new Vec2f(PlayerStateManager.INSTANCE.lastPitch, PlayerStateManager.INSTANCE.lastYaw);
+                PitchYawDeceive deceivePy = null;
+                Vec3d lookVec = null;
+                if (paccess.hasUseContext()) {
+                    if (paccess.getUseContext().blockPlace()) {
+                        PlayerInteractBlockC2SPacketAccess.UseContext context = paccess.getUseContext();
+                        Item blockItem = context.stack().getItem();
+                        Event<PitchYawDeceive> yawDeceive = new Event<>(new PitchYawDeceive(), false, true);
+                        Event<Vec3d> playerLookAt = new Event<>(null, false, true);
+                        handlePlaceCorrectLitematica(blockItem, e.context, context, yawDeceive, playerLookAt);
+                        handlePlaceCorrectTemperarySchematic(blockItem, e.context, context, yawDeceive);
+
+                        if (yawDeceive.context != null && yawDeceive.context.hasDeceive()) {
+                            deceivePy = yawDeceive.context;
                         }
-                        mc.getNetworkHandler()
-                                .sendPacket(new PlayerInteractItemC2SPacket(
-                                        Hand.MAIN_HAND,
-                                        e.context.getSequence(),
-                                        deceivePy.getYaw(currentPy.y),
-                                        deceivePy.getPitch(currentPy.x)));
-                        PlayerInteractBlockC2SPacketAccess.of(e.context)
-                                .setSequence(NetworkUtils.generateNextSequence());
-                    }
-                    if (deceivePy != null
-                            && ViaFabricPlusHooks.getInstance()
-                                    .getCurrentVersion()
-                                    .isLowerOrEqualTo(20, 8)) {
-                        LegacySnapRotManager.INSTANCE.snapAt(
-                                deceivePy.getPitch(currentPy.x), deceivePy.getYaw(currentPy.y), true);
-                    }
-                    // todo: check legacy snap
-                    if (playerLookAt.context != null
-                            && (bypassMode2.get().hasAc()
-                                    || (deceivePy != null
-                                            && ViaFabricPlusHooks.getInstance()
-                                                    .getCurrentVersion()
-                                                    .isLowerOrEqualTo(20, 8)))) {
-                        Vec3d lookVec = playerLookAt.context;
-                        if (ViaFabricPlusHooks.isSupportDupRot()) {
-                            var packet =
-                                    LegacySnapRotManager.INSTANCE.createSnapAt(lookVec.subtract(mc.player.getEyePos()));
-                            PacketManager.schedulePostSendPacket(e.context, packet);
-                        } else {
-                            InteractionTasks.addPostRotationCorrectTask(
-                                    lookVec, mc.player.getEyePos(), Runnables.doNothing());
+                        if (playerLookAt.context != null) {
+                            lookVec = playerLookAt.context;
+                        }
+                    } else if (paccess.getUseContext().isAccepted()) {
+                        BlockState oldState = paccess.getUseContext().oldState();
+                        BlockPos interactState = e.context.getBlockHitResult().getBlockPos();
+                        BlockState newState = mc.world.getBlockState(interactState);
+                        if (oldState != newState) {
+                            // handle yaw fix
+                            Event<PitchYawDeceive> yawDeceive = new Event<>(new PitchYawDeceive(), false, true);
+                            handleInteractCorrectLitematica(interactState, newState, yawDeceive);
+                            if (yawDeceive.context != null && yawDeceive.context.hasDeceive()) {
+                                deceivePy = yawDeceive.context;
+                            }
                         }
                     }
-                    //                    if (enable3.get()
-                    //                            && LitematicaHooks.getInstance().isEnabled()
-                    //                            && LitematicaHooks.getInstance().isEasyPlaceEnabled()) {
-                    //                        // fix post
-                    //                        ACTasks.addPostTransactionAction(ch -> {
-                    //                            Listener.sendPacketNoEvents(e.context);
-                    //                        });
-                    //                        e.cancel();
-                    //                    }
+                }
+                if (deceivePy != null
+                        && ViaFabricPlusHooks.getInstance().getCurrentVersion().isHigherOrEqualTo(21, 0)) {
+                    if (bypassMode.get() == Configs.BypassMode.BYPASS_GRIM) {
+                        // to ensure the rotate is successfully done
+                        // use a wrong sequence id to ensure that this packet cancelled by grimac
+                        Listener.sendPacketNoEvents(new PlayerInteractBlockC2SPacket(
+                                Hand.OFF_HAND, e.context.getBlockHitResult(), e.context.getSequence() - 1));
+                    }
+                    mc.getNetworkHandler()
+                            .sendPacket(new PlayerInteractItemC2SPacket(
+                                    Hand.MAIN_HAND,
+                                    e.context.getSequence(),
+                                    deceivePy.getYaw(currentPy.y),
+                                    deceivePy.getPitch(currentPy.x)));
+                    PlayerInteractBlockC2SPacketAccess.of(e.context).setSequence(NetworkUtils.generateNextSequence());
+                }
+                if (deceivePy != null
+                        && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(20, 8)) {
+                    LegacySnapRotManager.INSTANCE.snapAt(
+                            deceivePy.getPitch(currentPy.x), deceivePy.getYaw(currentPy.y), true);
+                }
+                if (lookVec != null
+                        && (bypassMode2.get().hasAc()
+                                || (deceivePy != null
+                                        && ViaFabricPlusHooks.getInstance()
+                                                .getCurrentVersion()
+                                                .isLowerOrEqualTo(20, 8)))) {
+                    if (ViaFabricPlusHooks.isSupportDupRot()) {
+                        var packet =
+                                LegacySnapRotManager.INSTANCE.createSnapAt(lookVec.subtract(mc.player.getEyePos()));
+                        PacketManager.schedulePostSendPacket(e.context, packet);
+                    } else {
+                        InteractionTasks.addPostRotationCorrectTask(
+                                lookVec, mc.player.getEyePos(), Runnables.doNothing());
+                    }
                 }
             }
         }
     }
 
     public void handlePlaceCorrectTemperarySchematic(
-            BlockItem item,
+            Item item,
             PlayerInteractBlockC2SPacket packet,
             PlayerInteractBlockC2SPacketAccess.UseContext useContext,
             Event<PitchYawDeceive> yawDeceive) {
@@ -270,7 +241,7 @@ public class BlockRotate extends BaseModule {
     }
 
     public void handlePlaceCorrectLitematica(
-            BlockItem item,
+            Item item,
             PlayerInteractBlockC2SPacket packet,
             PlayerInteractBlockC2SPacketAccess.UseContext useContext,
             Event<PitchYawDeceive> yawDeceive,
@@ -312,8 +283,19 @@ public class BlockRotate extends BaseModule {
         }
     }
 
+    public void handleInteractCorrectLitematica(BlockPos pos, BlockState newState, Event<PitchYawDeceive> yawDeceive) {
+        if (enable2.get() && LitematicaHooks.getInstance().isEnabled()) {
+            World litematicaWorld = LitematicaHooks.getInstance().getSchematicWorld();
+            if (!LitematicaHooks.getInstance().isPositionWithinRange(pos)) return;
+            BlockState litematicaState = litematicaWorld.getBlockState(pos);
+            if (litematicaState.getBlock() == newState.getBlock() && litematicaState != newState) {
+                handleYawInteractDeceive(litematicaState, yawDeceive.context);
+            }
+        }
+    }
+
     public BlockHitResult handlePlaceCorrect(
-            BlockItem item,
+            Item item,
             BlockPos modifyingBlockPos,
             BlockState targetState,
             PlayerInteractBlockC2SPacket packet,
@@ -356,6 +338,14 @@ public class BlockRotate extends BaseModule {
 
     public static void handleYawDeceive(BlockState targetState, PitchYawDeceive deceive) {
         Block block = targetState.getBlock();
+        if (block instanceof WallMountedBlock lever) {
+            if (targetState.get(WallMountedBlock.FACE) == BlockFace.FLOOR
+                    || targetState.get(WallMountedBlock.FACE) == BlockFace.CEILING) {
+                Direction direction = targetState.get(WallMountedBlock.FACING);
+                deceive.yaw = EntityUtils.directionToPitchYaw(direction).y;
+                return;
+            }
+        }
         if (block instanceof ObserverBlock ob) {
             Vec2f pitchYaw = EntityUtils.directionToPitchYaw(targetState.get(ObserverBlock.FACING));
             deceive.pitch = pitchYaw.x;
@@ -521,6 +511,15 @@ public class BlockRotate extends BaseModule {
             Direction facing = targetState.get(AnvilBlock.FACING);
             Direction playerFacing = facing.rotateYCounterclockwise();
             deceive.yaw = EntityUtils.rotationToYaw(playerFacing);
+            return;
+        }
+    }
+
+    public static void handleYawInteractDeceive(BlockState targetState, PitchYawDeceive deceive) {
+        Block block = targetState.getBlock();
+        if (block instanceof FenceGateBlock fenceGateBlock) {
+            Direction facing = targetState.get(FenceGateBlock.FACING);
+            deceive.yaw = EntityUtils.rotationToYaw(facing);
             return;
         }
     }
