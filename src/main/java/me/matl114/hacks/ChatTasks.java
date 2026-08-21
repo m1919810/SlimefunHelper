@@ -12,8 +12,8 @@ import lombok.Getter;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
-import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.gui.complex.invcache.InventoryViewScreen;
 import me.matl114.hacks.api.*;
 import me.matl114.hacks.modules.HackModules;
@@ -225,6 +225,7 @@ public class ChatTasks {
 
         {
             main.subBuilder(SubCommand.taskBuilder())
+                    .name("specialtask")
                     .helper("message.command.sfh.task.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("taskid")
@@ -250,6 +251,7 @@ public class ChatTasks {
 
         {
             main.subBuilder(SubCommand.taskBuilder())
+                    .name("asyncspecialtask")
                     .helper("message.command.sfh.asynctask.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("taskid")

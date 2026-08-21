@@ -5,6 +5,7 @@ import me.matl114.accessors.access.LivingEntityAccess;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.math.Vec3d;
 
 public interface ClientPlayerEntityAccess extends LivingEntityAccess<ClientPlayerEntity> {
     public LegalMovementManager getLegalMovementManager();
@@ -29,9 +30,17 @@ public interface ClientPlayerEntityAccess extends LivingEntityAccess<ClientPlaye
 
     public void setLastOnGroundFlag(boolean lastOnGround);
 
-    public void resyncPos();
+    default void resyncPos() {
+        setLastPos(Vec3d.ZERO);
+    }
 
-    public void resyncRot();
+    public void setLastPos(Vec3d vec3d);
+
+    default void resyncRot() {
+        setLastRot(0, 0);
+    }
+
+    public void setLastRot(float pitch, float yaw);
 
     public void resyncMovementPacket();
 

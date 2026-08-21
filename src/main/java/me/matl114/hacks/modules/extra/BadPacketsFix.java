@@ -28,7 +28,7 @@ import net.minecraft.world.World;
 
 public class BadPacketsFix extends BaseModule {
     public static BadPacketsFix INSTANCE;
-    public final ModulePath badPackets = makePath(Configs.TEST_CONFIG, "bad-packets");
+    public final ModulePath badPackets = makePath(Configs.EXTRA_CONFIG, "bad-packets");
 
     public BadPacketsFix() {
         super("BadPackets");

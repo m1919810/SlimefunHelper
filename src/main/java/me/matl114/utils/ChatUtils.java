@@ -976,7 +976,7 @@ public class ChatUtils {
 
         public TextBuilder appendText(Text text) {
             end();
-            this.empty.append(text);
+            this.empty.append(this.style.isEmpty() ? text : text.copy().styled(s -> s.withParent(this.style)));
             return this;
         }
 

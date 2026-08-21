@@ -3,6 +3,7 @@ package me.matl114.hacks.modules.mine;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import lombok.Getter;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
@@ -69,6 +70,7 @@ public class MiningProgressManager extends BaseModule {
         }
     }
 
+    @Getter
     public static class BlockBreakTracker {
         public BlockBreakTracker(PlayerEntity player) {
             this.player = player;

@@ -65,8 +65,8 @@ public class ItemESP extends BaseModule {
         launchDelayUpdateTask();
     }
 
-    public void updateSet(RegistryRegex<Item> reg) {
-        Set<Item> set = reg.getFilterValue();
+    public void updateSet(EntrySet<Item> reg) {
+        Set<Item> set = reg.set();
         if (!Objects.equals(set, itemSet)) {
             itemSet = set;
             launchDelayUpdateTask();
@@ -100,8 +100,8 @@ public class ItemESP extends BaseModule {
             .build();
 
     // 物品类型过滤器（默认识别所有物品）
-    public NBTRef<RegistryRegex<Item>> itemType = builder(itemEsp.add("item-type"), RegistryRegex.<Item>parameter())
-            .defaultValue(new RegistryRegex<>(
+    public NBTRef<EntrySet<Item>> itemType = builder(itemEsp.add("item-type"), EntrySet.<Item>parameter())
+            .defaultValue(new EntrySet<>(
                     new Regex(
                             "^(.*ton_skull|netherite.*|.*_star|.*_apple|.*potion|tot.*|end_c.*l|obsi.*|.*anchor|expe.*|mace|ely.*|.*shulker.*|trident)$"),
                     Registries.ITEM))

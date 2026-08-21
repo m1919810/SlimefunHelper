@@ -298,6 +298,9 @@ public class MainTasks {
     @Getter
     private static ConnectionProxy connectionProxy;
 
+    @Getter
+    public static IQBoost iqBoost;
+
     private static void initModule(ModuleManager m) {
         moduleSettings = new ModuleSettings().register(m);
         clickGui = new ClickGui().register(m);
@@ -306,6 +309,7 @@ public class MainTasks {
         eventCommand = new EventCommand().register(m);
         serverStorage = new ServerStorage().register(m);
         connectionProxy = new ConnectionProxy().register(m);
+        iqBoost = new IQBoost().register(m);
     }
 
     // TODO: add entity inspect in info command

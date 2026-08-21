@@ -5,13 +5,12 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.EntityTypeRegex;
+import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
-import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
-import me.matl114.managers.config.NBTType;
 import me.matl114.managers.input.MultiKeyBind;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.entity.effect.StatusEffect;
@@ -90,9 +89,9 @@ public class NoRender extends BaseModule {
     public final FlagRef noEffectForce =
             flagBuilder(effectSetting.add("force-no")).build();
 
-    public final NBTRef<RegistryRegex<StatusEffect>> noEffectTypes = builder(
-                    effectSetting.add("types"), NBTType.<RegistryRegex<StatusEffect>>parameter(RegistryRegex.class))
-            .defaultValue(new RegistryRegex<>(new Regex("^(blindness|darkness|nausea)$"), Registries.STATUS_EFFECT))
+    public final NBTRef<EntrySet<StatusEffect>> noEffectTypes = builder(
+                    effectSetting.add("types"), EntrySet.<StatusEffect>parameter())
+            .defaultValue(new EntrySet<>(new Regex("^(blindness|darkness|nausea)$"), Registries.STATUS_EFFECT))
             .build();
 
     public final FlagRef noFlyFov = flagBuilder(fovEffect.add("fly")).build();
@@ -113,9 +112,9 @@ public class NoRender extends BaseModule {
 
     public final FlagRef ignoreParticle = flagBuilder(particle.add("force-no")).build();
 
-    public final NBTRef<RegistryRegex<ParticleType<?>>> particleTypes = builder(
-                    particle.add("types"), RegistryRegex.<ParticleType<?>>parameter())
-            .defaultValue(new RegistryRegex<>(new Regex("^()$"), Registries.PARTICLE_TYPE))
+    public final NBTRef<EntrySet<ParticleType<?>>> particleTypes = builder(
+                    particle.add("types"), EntrySet.<ParticleType<?>>parameter())
+            .defaultValue(new EntrySet<>(new Regex("^()$"), Registries.PARTICLE_TYPE))
             .build();
 
     @Override
@@ -132,7 +131,9 @@ public class NoRender extends BaseModule {
 
     public void doCancelEffect(Event<EntityStatusEffectS2CPacket> packet) {
         if (checkNull()) return;
-        if (enable.get() && noEffectForce.get() && noEffectTypes.get().test(packet.context.getEffectId())) {
+        if (enable.get()
+                && noEffectForce.get()
+                && noEffectTypes.get().test(packet.context.getEffectId().value())) {
             packet.cancel();
         }
     }
@@ -213,6 +214,22 @@ public class NoRender extends BaseModule {
 
     public boolean noWeather() {
         return isActive() && noWeather.get();
+    }
+
+    public boolean noFlyFov() {
+        return isActive() && noFlyFov.get();
+    }
+
+    public boolean noSlowDownFov() {
+        return isActive() && noSlowDownFov.get();
+    }
+
+    public boolean noSpeedFov() {
+        return isActive() && noSpeedFov.get();
+    }
+
+    public boolean noUseItemFov() {
+        return isActive() && noUseItemFov.get();
     }
 
     // 状态效果相关

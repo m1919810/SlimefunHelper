@@ -42,7 +42,7 @@ public class QuestionScreen extends GenericBackGroundScreen {
         int size = this.a.size();
         int lan = size / 3;
         int extra = size % 3;
-        int yLevelStart = this.y + 300 - 30 * (((size - 1) / 3) + 1);
+        int yLevelStart = this.y + this.backgroundHeight - 20 - 30 * (((size - 1) / 3) + 1);
         for (int i = 0; i < lan; ++i) {
             for (int j = 0; j < 3; ++j) {
                 Solution s1 = a.get(3 * i + j);

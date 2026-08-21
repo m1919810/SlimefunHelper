@@ -4,6 +4,7 @@ import lombok.Getter;
 import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.RecipeBookToggle;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.other.TradeInformationSubScreen;
 import me.matl114.gui.elements.ButtonElement;
@@ -24,7 +25,6 @@ import net.minecraft.client.gui.screen.ingame.CraftingScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.gui.screen.ingame.MerchantScreen;
-import net.minecraft.client.gui.screen.recipebook.RecipeBookProvider;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.recipe.Ingredient;
@@ -74,8 +74,8 @@ public class FastCraft extends BaseModule {
         }
     }
 
-    public void onRecipeBookToggle(Event<RecipeBookProvider> event) {
-        if (event.context() == lastScreen) {
+    public void onRecipeBookToggle(Event<RecipeBookToggle> event) {
+        if (event.context().provider() == lastScreen) {
             // recalculate x
             lastScreenWidget.setX(HandledScreenAccess.of(lastScreen).getScreenX());
         }

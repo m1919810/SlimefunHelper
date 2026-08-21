@@ -1,7 +1,10 @@
 package me.matl114.hooks.mixin.xaero;
 
 import java.util.ArrayList;
+
+import lombok.Getter;
 import me.matl114.hooks.XaeroHooks;
+import me.matl114.hooks.access.XaeroGuiMapAccess;
 import me.matl114.hooks.impl.xaeroworldmap.MapClickContext;
 import me.matl114.hooks.impl.xaeroworldmap.RightClickPosOption;
 import net.fabricmc.api.EnvType;
@@ -22,7 +25,8 @@ import xaero.map.gui.dropdown.rightclick.RightClickOption;
 @Pseudo
 @Environment(EnvType.CLIENT)
 @Mixin(GuiMap.class)
-public abstract class XaeroGuiMapMixin implements IRightClickableElement {
+@Getter
+public abstract class XaeroGuiMapMixin implements IRightClickableElement , XaeroGuiMapAccess {
     @Shadow
     private RegistryKey<World> rightClickDim;
 
@@ -35,17 +39,5 @@ public abstract class XaeroGuiMapMixin implements IRightClickableElement {
     @Shadow
     private int rightClickZ;
 
-    @Inject(method = "getRightClickOptions", at = @At("RETURN"))
-    private void onRightClickOptionsAdd(CallbackInfoReturnable<ArrayList<RightClickOption>> cir) {
-        ArrayList<MapClickContext> list = new ArrayList<>();
-        RegistryKey<World> world = this.rightClickDim;
-        BlockPos pos = new BlockPos(this.rightClickX, this.rightClickY, this.rightClickZ);
-        XaeroHooks.getWorldMapRightClickOption().broadcast(list, world, pos);
-        if (!list.isEmpty()) {
-            ArrayList<RightClickOption> contexts = cir.getReturnValue();
-            for (var re : list) {
-                contexts.add(new RightClickPosOption(re, world, pos, contexts.size(), this));
-            }
-        }
-    }
+
 }

@@ -6,8 +6,8 @@ import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.interact.InteractExtra;
+import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
-import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.*;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -40,9 +40,9 @@ public class MineArua extends BaseModule {
     public KeyBindRef keyBind = moduleEntry(mineArua.addHotkey(), new MultiKeyBind(), mineArua.addEnable())
             .build();
 
-    public NBTRef<RegistryRegex<Block>> whiteListRegex = builder(
-                    mineArua.add("block-whitelist"), RegistryRegex.BLOCK_TYPE)
-            .defaultValue(new RegistryRegex<>(new Regex("^(.*bed)$"), Registries.BLOCK))
+    public NBTRef<EntrySet<Block>> whiteListRegex = builder(
+                    mineArua.add("block-whitelist"), EntrySet.<Block>parameter())
+            .defaultValue(new EntrySet<>(new Regex("^(.*bed)$"), Registries.BLOCK))
             .build();
 
     public FlagRef autoBreak = flagBuilder(mineArua.add("auto-break")).build();

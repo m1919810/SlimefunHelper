@@ -20,7 +20,7 @@ public class Configs {
             MINE_CONFIG.registerGlobal();
             CHAT_CONFIG.registerGlobal();
             RENDER_CONFIG.registerGlobal();
-            TEST_CONFIG.registerGlobal();
+            EXTRA_CONFIG.registerGlobal();
             COMBAT_CONFIG.registerGlobal();
             INV_CONFIG.registerGlobal();
             MOV_CONFIG.registerGlobal();
@@ -230,7 +230,7 @@ public class Configs {
                     "sfhelper-configs/render.yml", "render settings")
             .markForSave();
 
-    public static final Config TEST_CONFIG = ConfigLoader.loadExternalConfig(
+    public static final Config EXTRA_CONFIG = ConfigLoader.loadExternalConfig(
                     "sfhelper-configs/test.yml", "test settings")
             .markForSave();
 

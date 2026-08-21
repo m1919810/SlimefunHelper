@@ -8,9 +8,9 @@ import lombok.With;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.hacks.EntityInternalAccess;
 import me.matl114.events.Event;
-import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.*;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -399,7 +399,7 @@ public class Attack extends BaseModule {
         // we use event to handle shield predict
 
     }
-
+    // return if it is a delay attack
     public boolean attackEntity(Entity target) {
         return attackEntity(target, createAttackSettings());
     }
@@ -435,7 +435,7 @@ public class Attack extends BaseModule {
             case LEGACY_SLIENT_ROT -> processLegacySnapAttack(target, settings);
             case NONE -> {
                 attackWithSettings(mc.player, target, settings);
-                yield true;
+                yield false;
             }
         };
     }
@@ -574,6 +574,11 @@ public class Attack extends BaseModule {
                                 Vec3d cacheDirection = attackOffsetted
                                         .subtract(predictedEyePos)
                                         .normalize();
+                                // only fix silent entities, because they will not move
+                                if (!(target instanceof LivingEntity)) {
+                                    cacheDirection = fixRayCastBigBox(
+                                            predictedEyePos, target.getBoundingBox(), cacheDirection, attackRange);
+                                }
                                 movementManagerEvent.context.pushImportantRotation(true, true);
                                 PlayerStateManager.setPlayerRotationSafe(args, cacheDirection);
                                 if (RenderTasks.DEBUG_RENDER_COMBAT) {
@@ -731,6 +736,7 @@ public class Attack extends BaseModule {
                     attackOffsetRand.nextDouble(-0.05d, 0.05d),
                     attackOffsetRand.nextDouble(-0.05d, 0.05d));
             Vec3d cacheDirection = attackOffsetted.subtract(predictedEyePos).normalize();
+            cacheDirection = fixRayCastBigBox(predictedEyePos, target.getBoundingBox(), cacheDirection, attackRange);
             // mace
             LegacySnapRotManager.INSTANCE.snapAt(cacheDirection, false);
             attackWithSettings(mc.player, target, settings);
@@ -738,6 +744,20 @@ public class Attack extends BaseModule {
 
         mc.player.setSprinting(sprintFlag);
         return false;
+    }
+
+    private Vec3d fixRayCastBigBox(Vec3d usingEyePos, Box targetBox, Vec3d currentRayCast, double currentAttackRange) {
+        Vec3d rayCastTest = currentRayCast.normalize().multiply(currentAttackRange - 0.009178);
+        var ray = targetBox.raycast(usingEyePos, usingEyePos.add(rayCastTest));
+        if (ray.isPresent()) {
+            return currentRayCast;
+        } else {
+            // ?
+            Box shrinkedBox = targetBox.expand(-1E-7, -1E-7, -1E-7);
+
+            Vec3d targetingPos = MathUtils.magnitudePoint(shrinkedBox, usingEyePos);
+            return targetingPos.subtract(usingEyePos).normalize();
+        }
     }
 
     private boolean processIllegalAttack(Entity target, AttackSettings settings) {

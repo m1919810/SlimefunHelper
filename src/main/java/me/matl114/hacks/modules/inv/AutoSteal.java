@@ -4,8 +4,8 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
-import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
@@ -51,8 +51,8 @@ public class AutoSteal extends BaseModule {
             .build();
 
     // 物品过滤器（RegistryRegex 类型，基于物品注册表过滤）
-    public final NBTRef<RegistryRegex<Item>> itemFilter = builder(steal.add("item-filter"), RegistryRegex.ITEM_TYPE)
-            .defaultValue(new RegistryRegex<>(new Regex(".*"), Registries.ITEM))
+    public final NBTRef<EntrySet<Item>> itemFilter = builder(steal.add("item-filter"), EntrySet.<Item>parameter())
+            .defaultValue(new EntrySet<>(new Regex(".*"), Registries.ITEM))
             .build();
 
     public AutoSteal() {

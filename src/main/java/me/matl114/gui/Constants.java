@@ -26,6 +26,8 @@ public interface Constants {
 
     public static final Identifier EDITOR_SPRITE = new Identifier("slimefunhelper", "gui/editor");
 
+    public static final Identifier REMOVE_SPRITE = new Identifier("slimefunhelper", "gui/remove");
+
     public static List<Text> searchRegistryTooltips() {
         return ChatUtils.parseTooltipsTranslation("widget.gui.constants.search-registry.tooltips", "");
     }

@@ -61,6 +61,13 @@ public class MathUtils {
         return MathHelper.squaredMagnitude(d, e, f);
     }
 
+    public static Vec3d magnitudePoint(Box shrinkedBox, Vec3d bestEyePos) {
+        double x = Math.clamp(bestEyePos.x, shrinkedBox.minX, shrinkedBox.maxX);
+        double y = Math.clamp(bestEyePos.y, shrinkedBox.minY, shrinkedBox.maxY);
+        double z = Math.clamp(bestEyePos.z, shrinkedBox.minZ, shrinkedBox.maxZ);
+        return new Vec3d(x, y, z);
+    }
+
     public static int sgn(int t) {
         return Integer.compare(t, 0);
     }

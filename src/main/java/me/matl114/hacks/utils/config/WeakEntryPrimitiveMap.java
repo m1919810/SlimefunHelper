@@ -161,7 +161,9 @@ public class WeakEntryPrimitiveMap<T, W> extends PrimitiveMap<WeakHolder<T>, W> 
 
     @Nullable
     public W getOrDefault(Identifier value) {
-        return super.getOrDefault(new WeakHolder<>(registry(), value));
+        var map = map();
+        var re = map.get(new WeakHolder<T>(registry(), value));
+        return re != null ? re : map.get(new WeakHolder<T>(registry(), WeakHolder.DEFAULT_KEY));
     }
 
     @Nullable

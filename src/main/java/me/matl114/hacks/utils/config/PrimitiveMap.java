@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import me.matl114.managers.config.NBTParsable;
@@ -125,16 +124,6 @@ public class PrimitiveMap<T, W> implements NBTParsable<PrimitiveMap<T, W>> {
         return defaultValuePrimitive
                 .map(this::copyValuePrimitive)
                 .orElseGet(() -> Primitive.of(valueType, valueType.createEmpty()));
-    }
-
-    @Nullable
-    public W getOrDefault(T key) {
-        return map.getOrDefault(key, defaultValuePrimitive.map(Primitive::value).orElse(null));
-    }
-
-    public W getOrWithDefault(T key, W value) {
-        W result = getOrDefault(key);
-        return result == null ? value : result;
     }
 
     NBTType<Map<Primitive<T>, Primitive<W>>> cachedEntryType;

@@ -132,11 +132,25 @@ public class AutoCity extends BaseModule {
                     .forEach(outerPoses::add);
         }
         if (surround.get()) {
+            // check burrow, if target burrow in bedrock then don't waste time mining their feet
+            Box box1 = box.expand(0.99, 0, 0);
+            Box box2 = box.expand(0, 0, 0.99);
+            BlockPos targetBlockPos = targetEntity.getBlockPos();
+            if (PacketMine.INSTANCE.isMineable(mc.world.getBlockState(targetBlockPos))) {
+                // only mine feet
+                box1 = box1.withMaxY(box.minY + 0.5);
+                box2 = box2.withMaxY(box.minY + 0.5);
+            } else if (box.maxY > targetBlockPos.getY() + 1
+                    && PacketMine.INSTANCE.isMineable(mc.world.getBlockState(targetBlockPos.up()))) {
+                // mine eye because they burrow themselves in bedrock
+                box1 = box1.withMinY(box.minY + 1.0);
+                box2 = box2.withMinY(box.minY + 1.0);
+            } else {
+                // mine whatever. shit
+            }
             Set<BlockPos> surround = new HashSet<>();
-            surround.addAll(
-                    MathUtils.getOccupiedBlockPositions(box.expand(0.99, 0, 0).withMaxY(box.minY + 0.5)));
-            surround.addAll(
-                    MathUtils.getOccupiedBlockPositions(box.expand(0, 0, 0.99).withMaxY(box.minY + 0.5)));
+            surround.addAll(MathUtils.getOccupiedBlockPositions(box1));
+            surround.addAll(MathUtils.getOccupiedBlockPositions(box2));
             surround.stream().filter(filter).sorted(blockPosComparator).forEach(outerPoses::add);
         }
 
@@ -176,7 +190,11 @@ public class AutoCity extends BaseModule {
                     // process selfPos first
                     for (var bp : selfPosList) {
                         BlockState bs = mc.world.getBlockState(bp);
-                        if (!bs.isAir() && !bs.isLiquid() && PacketMine.INSTANCE.isMineable(bs)) {
+                        // 只挖硬的 软的可以炸掉
+                        if (!bs.isAir()
+                                && !bs.isLiquid()
+                                && PacketMine.INSTANCE.isMineable(bs)
+                                && bs.getBlock().getBlastResistance() > 600) {
                             if (Objects.equals(bp, nowCurrentFailMinePos)) {
                                 continue;
                             }

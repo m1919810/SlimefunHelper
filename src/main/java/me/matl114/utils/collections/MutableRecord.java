@@ -10,6 +10,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.RecordComponent;
 import java.util.*;
+import java.util.function.UnaryOperator;
 
 public class MutableRecord {
     public final List<String> fields;
@@ -45,6 +46,10 @@ public class MutableRecord {
 
     public <T> void set(String key, T value) {
         this.values.put(key, value);
+    }
+
+    public <T> void update(String key, UnaryOperator<T> valueUpdate) {
+        this.values.put(key, valueUpdate.apply(this.get(key)));
     }
 
     public void replaceMap(MutableRecord record) {

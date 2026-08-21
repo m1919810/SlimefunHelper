@@ -2,14 +2,15 @@ package me.matl114.hacks.modules.interact;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
-import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.*;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -21,6 +22,7 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import net.minecraft.entity.Entity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
@@ -88,12 +90,14 @@ public class TpInteract extends BaseModule {
                                 (sel) -> executeTp(sel, () -> {
                                     Debug.chat("[TpInteract] 尝试和物品栏交互");
                                     Listener.sendPacketNoEvents(packetToSend);
-                                    InvTasks.executePredictInventoryAction((handler) -> {
-                                        for (var i = 0; i < size; ++i) {
-                                            mc.interactionManager.clickSlot(
-                                                    handler.syncId, i, 0, SlotActionType.QUICK_MOVE, mc.player);
-                                        }
-                                    });
+                                    InvTasks.executePredictInventoryAction(
+                                            InventoryUtils.createInventory(Collections.nCopies(size, ItemStack.EMPTY)),
+                                            (handler) -> {
+                                                for (var i = 0; i < size; ++i) {
+                                                    mc.interactionManager.clickSlot(
+                                                            handler.syncId, i, 0, SlotActionType.QUICK_MOVE, mc.player);
+                                                }
+                                            });
                                 }))) {
                             event.cancel();
                         }

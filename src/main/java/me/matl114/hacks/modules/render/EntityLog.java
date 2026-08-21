@@ -8,10 +8,7 @@ import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
-import me.matl114.hacks.utils.config.Regex;
-import me.matl114.hacks.utils.config.RegistryRegex;
-import me.matl114.hacks.utils.config.TracingOption;
-import me.matl114.hacks.utils.config.WrapColor;
+import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hacks.utils.render.RenderElements;
 import me.matl114.managers.Configs;
@@ -59,9 +56,9 @@ public class EntityLog extends BaseModule {
                     entityLog.add("hotkey"), new MultiKeyBind(), entityLog.add("enable"))
             .build();
 
-    public final NBTRef<RegistryRegex<EntityType<?>>> whiteList = builder(
-                    entityLog.add("whitelist"), RegistryRegex.<EntityType<?>>parameter())
-            .defaultValue(new RegistryRegex<>(new Regex("player"), Registries.ENTITY_TYPE))
+    public final NBTRef<EntrySet<EntityType<?>>> whiteList = builder(
+                    entityLog.add("whitelist"), EntrySet.<EntityType<?>>parameter())
+            .defaultValue(new EntrySet<>(new Regex("player"), Registries.ENTITY_TYPE))
             .build();
 
     public final FlagRef chatLog = builder(entityLog.add("log-entity-to-chat"), Boolean.class)
@@ -95,6 +92,43 @@ public class EntityLog extends BaseModule {
 
     public final FlagRef logLogReconnect =
             flagBuilder(entityLog.add("log-log-reconnect")).build();
+
+    public final NBTRef<StringFormat> logSpawnFormat = builder(entityLog.add("log-spawn-format"), StringFormat.class)
+            .defaultValue(new StringFormat(
+                    List.of("type", "name", "position", "distance"),
+                    "{type} {name} spawn at position {position}, distance: {distance}",
+                    true))
+            .build();
+
+    public final NBTRef<StringFormat> logDisappearFormat = builder(
+                    entityLog.add("log-disappear-format"), StringFormat.class)
+            .defaultValue(new StringFormat(
+                    List.of("type", "name", "position", "distance"),
+                    "{type} {name} disappear at position {position}, distance: {distance}",
+                    true))
+            .build();
+
+    public final NBTRef<StringFormat> logPlayerLogoutFormat = builder(
+                    entityLog.add("log-player-logout-format"), StringFormat.class)
+            .defaultValue(new StringFormat(
+                    List.of("name", "action", "position"), "Player {name} {action} at {position}", true))
+            .build();
+
+    public final NBTRef<StringFormat> logPlayerJoinQueueFormat = builder(
+                    entityLog.add("log-player-join-queue-format"), StringFormat.class)
+            .defaultValue(new StringFormat(
+                    List.of("name", "position", "queue_count"),
+                    "Player {name} join queue, last position: {position}, current queue: {queue_count}",
+                    true))
+            .build();
+
+    public final NBTRef<StringFormat> logPlayerReloginFormat = builder(
+                    entityLog.add("log-player-relogin-format"), StringFormat.class)
+            .defaultValue(new StringFormat(
+                    List.of("name", "position", "track_button"),
+                    "Player {name} reLogin, last position: {position} {track_button}",
+                    true))
+            .build();
 
     public Map<UUID, Entry> offLinePos = new LinkedHashMap<>();
 
@@ -133,32 +167,32 @@ public class EntityLog extends BaseModule {
                                         .formatted(Formatting.GREEN);
                             }
                         }
-
-                        Debug.chat(ChatUtils.builder()
-                                .withColorString("&c[Entity] &fPlayer ")
-                                .appendText(text == null ? Text.empty() : text)
-                                .withColorString(" spawn at position ")
-                                .appendText(ChatUtils.getDisplayedLocation(packet.getX(), packet.getY(), packet.getZ()))
-                                .withColorString(" ,distance: %.2f"
-                                        .formatted(calculateDistance(packet.getX(), packet.getY(), packet.getZ())))
-                                .end()
-                                .build());
-                        // Debug.chat("Player Entity Id ", packet.getEntityId());
+                        logSub(
+                                "Entity",
+                                logSpawnFormat
+                                        .get()
+                                        .formatText(
+                                                "Player",
+                                                text == null ? Text.empty() : text,
+                                                ChatUtils.getDisplayedLocation(
+                                                        packet.getX(), packet.getY(), packet.getZ()),
+                                                formatDistance(packet.getX(), packet.getY(), packet.getZ())));
                     }
                     onPlayerAppear(packet.getUuid());
                 } else {
                     // if(LivingEntity.class.isAssignableFrom( packet.getEntityType().getBaseClass())){
                     // only log the living Entity; the common Entities are mostly functional and are noisy
                     if (chatLog.get()) {
-                        Debug.chat(ChatUtils.builder()
-                                .withColorString("&c[Entity] &fEntity "
-                                        + packet.getEntityType().getName() + " spawn at position ")
-                                .appendText(ChatUtils.getDisplayedLocation(packet.getX(), packet.getY(), packet.getZ()))
-                                .withColorString(" ,distance: %.2f"
-                                        .formatted(calculateDistance(packet.getX(), packet.getY(), packet.getZ())))
-                                .end()
-                                .build());
-                        // }
+                        logSub(
+                                "Entity",
+                                logSpawnFormat
+                                        .get()
+                                        .formatText(
+                                                "Entity",
+                                                packet.getEntityType().getName(),
+                                                ChatUtils.getDisplayedLocation(
+                                                        packet.getX(), packet.getY(), packet.getZ()),
+                                                formatDistance(packet.getX(), packet.getY(), packet.getZ())));
                     }
                 }
             }
@@ -171,6 +205,10 @@ public class EntityLog extends BaseModule {
             return Math.sqrt(player.getPos().squaredDistanceTo(x1, y1, z1));
         }
         return -1.0f;
+    }
+
+    private static String formatDistance(double x1, double y1, double z1) {
+        return "%.2f".formatted(calculateDistance(x1, y1, z1));
     }
 
     public void onEntityRemove(Event<EntitiesDestroyS2CPacket> packetEvent) {
@@ -191,30 +229,30 @@ public class EntityLog extends BaseModule {
                 for (var entity : removing) {
                     if (entity instanceof PlayerEntity pl) {
                         if (chatLog.get()) {
-                            Debug.chat(ChatUtils.builder()
-                                    .withColorString("&c[Entity] &fPlayer ")
-                                    .appendText(pl.getDisplayName())
-                                    .withColorString(" disappear at position ")
-                                    .appendText(
-                                            ChatUtils.getDisplayedLocation(entity.getX(), entity.getY(), entity.getZ()))
-                                    .withColorString(" ,distance: %.2f"
-                                            .formatted(calculateDistance(entity.getX(), entity.getY(), entity.getZ())))
-                                    .end()
-                                    .build());
+                            logSub(
+                                    "Entity",
+                                    logDisappearFormat
+                                            .get()
+                                            .formatText(
+                                                    "Player",
+                                                    pl.getDisplayName(),
+                                                    ChatUtils.getDisplayedLocation(
+                                                            entity.getX(), entity.getY(), entity.getZ()),
+                                                    formatDistance(entity.getX(), entity.getY(), entity.getZ())));
                         }
                         onPlayerDisappear(pl);
                     } else {
                         if (chatLog.get()) {
-                            Debug.chat(ChatUtils.builder()
-                                    .withColorString("&c[Entity] &fEntity "
-                                            + entity.getType().getName() + " ")
-                                    .appendText(entity.hasCustomName() ? entity.getCustomName() : Text.empty())
-                                    .withColorString(" disappear at position ")
-                                    .appendText(
-                                            ChatUtils.getDisplayedLocation(entity.getX(), entity.getY(), entity.getZ()))
-                                    .withColorString(" ,distance: %.2f"
-                                            .formatted(
-                                                    calculateDistance(entity.getX(), entity.getY(), entity.getZ()))));
+                            logSub(
+                                    "Entity",
+                                    logDisappearFormat
+                                            .get()
+                                            .formatText(
+                                                    "Player",
+                                                    createEntityDisplayName(entity),
+                                                    ChatUtils.getDisplayedLocation(
+                                                            entity.getX(), entity.getY(), entity.getZ()),
+                                                    formatDistance(entity.getX(), entity.getY(), entity.getZ())));
                         }
                     }
                 }
@@ -254,37 +292,31 @@ public class EntityLog extends BaseModule {
                         if (pe == null) {
                             entry.exitCode = 0;
                             if (logLog.get()) {
-                                Debug.chat(
-                                        Text.literal("[Entity]").formatted(Formatting.RED),
-                                        "Player",
-                                        entry.displayName,
-                                        "logout at",
-                                        ChatUtils.getDisplayedLocation(
-                                                entry.leavePos.x, entry.leavePos.y, entry.leavePos.z),
-                                        ChatUtils.stringToText("&a&l[&aTrack&a&l]")
-                                                .styled(s -> s.withClickEvent(ChatUtils.getSuggestCommand(
-                                                                MainCommand.getMainCommandPrefix() + "pqueue add "
-                                                                        + entry.scoreboardName))
-                                                        .withHoverEvent(ChatUtils.getHoverShowText(List.of(
-                                                                Text.literal("Click to track player in queue"))))));
+                                logSub(
+                                        "Entity",
+                                        logPlayerLogoutFormat
+                                                .get()
+                                                .formatText(
+                                                        entry.displayName,
+                                                        "logout",
+                                                        ChatUtils.getDisplayedLocation(
+                                                                entry.leavePos.x, entry.leavePos.y, entry.leavePos.z),
+                                                        createTracking(entry.scoreboardName)));
                             }
                             return true;
                         } else if (pe.getGameMode() == GameMode.SPECTATOR) {
                             entry.exitCode = 0;
                             if (logLog.get()) {
-                                Debug.chat(
-                                        Text.literal("[Entity]").formatted(Formatting.RED),
-                                        "Player",
-                                        entry.displayName,
-                                        "was kicked at",
-                                        ChatUtils.getDisplayedLocation(
-                                                entry.leavePos.x, entry.leavePos.y, entry.leavePos.z),
-                                        ChatUtils.stringToText("&a&l[&aTrack&a&l]")
-                                                .styled(s -> s.withClickEvent(ChatUtils.getSuggestCommand(
-                                                                MainCommand.getMainCommandPrefix() + "pqueue add "
-                                                                        + entry.scoreboardName))
-                                                        .withHoverEvent(ChatUtils.getHoverShowText(List.of(
-                                                                Text.literal("Click to track player in queue"))))));
+                                logSub(
+                                        "Entity",
+                                        logPlayerLogoutFormat
+                                                .get()
+                                                .formatText(
+                                                        entry.displayName,
+                                                        "got kicked",
+                                                        ChatUtils.getDisplayedLocation(
+                                                                entry.leavePos.x, entry.leavePos.y, entry.leavePos.z),
+                                                        createTracking(entry.scoreboardName)));
                             }
                             handleJoinServer(VRecord.getId(pe.getProfile()));
                             return true;
@@ -317,7 +349,6 @@ public class EntityLog extends BaseModule {
         if (checkNull()) return;
         if (enable.get() && renderLogPosition.get()) {
             var worldKey = mc.world.getRegistryKey();
-            ;
             var color = this.color.get();
             for (var re : offLinePos.values()) {
                 switch (re.exitCode) {
@@ -423,21 +454,24 @@ public class EntityLog extends BaseModule {
                 int count = (int) mc.getNetworkHandler().getPlayerList().stream()
                         .filter(s -> s.getGameMode() == GameMode.SPECTATOR)
                         .count();
-                Debug.chat(
-                        Text.literal("[Entity]").formatted(Formatting.RED),
-                        "Player",
-                        entry.displayName,
-                        "join queue, last position:",
-                        ChatUtils.getDisplayedLocation(entry.leavePos.x, entry.leavePos.y, entry.leavePos.z),
-                        ", current queue:",
-                        count,
-                        ChatUtils.stringToText("&a&l[&aTrack&a&l]").styled(s -> s.withClickEvent(
-                                        ChatUtils.getSuggestCommand(MainCommand.getMainCommandPrefix() + "pqueue add "
-                                                + entry.scoreboardName))
-                                .withHoverEvent(ChatUtils.getHoverShowText(
-                                        List.of(Text.literal("Click to track player in queue"))))));
+                logSub(
+                        "Entity",
+                        logPlayerJoinQueueFormat
+                                .get()
+                                .formatText(
+                                        entry.displayName,
+                                        ChatUtils.getDisplayedLocation(
+                                                entry.leavePos.x, entry.leavePos.y, entry.leavePos.z),
+                                        count,
+                                        createTracking(entry.scoreboardName)));
             }
         }
+    }
+
+    private Text createTracking(String name) {
+        return ChatUtils.stringToText("&a&l[&aTrack&a&l]").styled(s -> s.withClickEvent(
+                        ChatUtils.getSuggestCommand(MainCommand.getMainCommandPrefix() + "pqueue add " + name))
+                .withHoverEvent(ChatUtils.getHoverShowText(List.of(Text.literal("Click to track player in queue")))));
     }
 
     public void handleReLogin(UUID uuid) {
@@ -445,12 +479,14 @@ public class EntityLog extends BaseModule {
         if (entry != null && (entry.exitCode == 0 || entry.exitCode == 3)) {
             entry.exitCode = 4;
             if (logLogReconnect.get()) {
-                Debug.chat(
-                        Text.literal("[Entity]").formatted(Formatting.RED),
-                        "Player",
-                        entry.displayName,
-                        "reLogin, last position:",
-                        ChatUtils.getDisplayedLocation(entry.leavePos.x, entry.leavePos.y, entry.leavePos.z));
+                logSub(
+                        "Entity",
+                        logPlayerReloginFormat
+                                .get()
+                                .formatText(
+                                        entry.displayName,
+                                        ChatUtils.getDisplayedLocation(
+                                                entry.leavePos.x, entry.leavePos.y, entry.leavePos.z)));
             }
         }
     }
@@ -466,6 +502,14 @@ public class EntityLog extends BaseModule {
 
     public boolean loginServerCheck() {
         return mc.world.getWorldBorder().getSize() < 100;
+    }
+
+    private Text createEntityDisplayName(Entity entity) {
+        var text = Text.empty().append(entity.getType().getName().copy());
+        if (entity.hasCustomName() && entity.getCustomName() != null) {
+            text.append(Text.literal(" ")).append(entity.getCustomName().copy());
+        }
+        return text;
     }
 
     @AllArgsConstructor
