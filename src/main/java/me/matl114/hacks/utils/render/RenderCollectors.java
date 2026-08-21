@@ -3,12 +3,16 @@ package me.matl114.hacks.utils.render;
 import static me.matl114.utils.RenderUtils.*;
 
 import java.awt.*;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+import lombok.val;
 import me.matl114.events.RenderListener;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.collections.IndexEntry;
+import me.matl114.utils.render.ColorQuad;
 import me.matl114.utils.render.RenderCollector;
 import me.matl114.versioned.api.VDrawContext;
 import me.matl114.versioned.api.VRender;
@@ -158,6 +162,97 @@ public class RenderCollectors {
                     }
                 }
             }
+        };
+    }
+
+    public static RenderCollector<Box> createOutlineCollector() {
+        return new RenderCollector<Box>() {
+            private final Map<RenderElements.Line, Integer> lines = new LinkedHashMap<>();
+
+            private void addInternal(RenderElements.Line line, int color) {
+                if (lines.containsKey(line)) {
+                    lines.remove(line);
+                } else {
+                    lines.put(line, color);
+                }
+            }
+
+            @Override
+            public void submit(Box val, int color) {
+                for (RenderElements.Line line : RenderElements.boxOutline(val)) {
+                    addInternal(line, color);
+                }
+            }
+
+            @Override
+            public void clear() {
+                lines.clear();
+            }
+
+            @Override
+            public void render3D(MatrixStack matrices) {
+                if (lines.isEmpty()) return;
+                Vec3d cameraPos = getCameraPos().negate();
+                VRender.getInstance().createLinesLayer((op, vtx) -> {
+                    for (var entry : lines.entrySet()) {
+                        var line = entry.getKey().offset(cameraPos);
+                        op.drawLine(
+                                matrices,
+                                vtx,
+                                new Vec3d(line.x0(), line.y0(), line.z0()),
+                                new Vec3d(line.x1(), line.y1(), line.z1()),
+                                entry.getValue());
+                    }
+                });
+            }
+
+            @Override
+            public void render2D(VDrawContext vDrawContext) {}
+        };
+    }
+
+    public static RenderCollector<Box> createFaceCollector() {
+        return new RenderCollector<Box>() {
+            private final Map<RenderElements.Quad, Integer> quads = new LinkedHashMap<>();
+
+            private void addInternal(RenderElements.Quad quad, int color) {
+                if (quads.containsKey(quad)) {
+                    quads.remove(quad);
+                } else {
+                    quads.put(quad, color);
+                }
+            }
+
+            @Override
+            public void submit(Box val, int color) {
+                for (RenderElements.Quad quad : RenderElements.boxFaces(val)) {
+                    addInternal(quad, color);
+                }
+            }
+
+            @Override
+            public void clear() {
+                quads.clear();
+            }
+
+            @Override
+            public void render3D(MatrixStack matrices) {
+                if (quads.isEmpty()) return;
+                Vec3d cameraPos = getCameraPos().negate();
+                VRender.getInstance()
+                        .createQuadsLayer(
+                                (op, vtx) -> {
+                                    for (var entry : quads.entrySet()) {
+                                        var quad =
+                                                entry.getKey().offset(cameraPos).toRenderQuad();
+                                        op.drawQuad(matrices, vtx, quad, ColorQuad.of(entry.getValue()));
+                                    }
+                                },
+                                false);
+            }
+
+            @Override
+            public void render2D(VDrawContext vDrawContext) {}
         };
     }
 

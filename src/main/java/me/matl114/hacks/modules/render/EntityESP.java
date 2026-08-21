@@ -48,10 +48,10 @@ public class EntityESP extends BaseModule {
             .defaultValue(RenderMode.RENDER_3D)
             .build();
 
-    public final NBTRef<RegistryRegex<EntityType<?>>> whiteList = builder(
-                    Configs.RENDER_CONFIG, RegistryRegex.<EntityType<?>>parameter())
+    public final NBTRef<EntrySet<EntityType<?>>> whiteList = builder(
+                    Configs.RENDER_CONFIG, EntrySet.<EntityType<?>>parameter())
             .path(entityEsp.add("whitelist").toPath())
-            .defaultValue(new RegistryRegex<>(new Regex("player,wither"), Registries.ENTITY_TYPE))
+            .defaultValue(new EntrySet<>(new Regex("player,wither"), Registries.ENTITY_TYPE))
             .build();
 
     public final NBTRef<EntryPrimitiveMap<EntityType<?>, TextColor>> renderColor = builder(
@@ -125,7 +125,7 @@ public class EntityESP extends BaseModule {
         entities = new ArrayList<>();
         boolean enable = this.enable.get();
 
-        var whitelist = whiteList.get().getFilterValue();
+        var whitelist = whiteList.get().set();
         var glowMap = highLightSettings.get();
         for (Entity entity : mc.world.getEntities()) {
             if (entity == mc.gameRenderer.getCamera().getFocusedEntity()) continue;

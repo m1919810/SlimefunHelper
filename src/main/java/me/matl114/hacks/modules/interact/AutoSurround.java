@@ -1,20 +1,23 @@
 package me.matl114.hacks.modules.interact;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import me.matl114.events.Event;
-import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.*;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.ac.DisablerManager;
+import me.matl114.hacks.modules.combat.Attack;
+import me.matl114.hacks.modules.combat.TargetSelector;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.modules.mine.MiningProgressManager;
 import me.matl114.hacks.modules.mine.PacketMine;
 import me.matl114.hacks.modules.move.PlayerInputManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
-import me.matl114.hacks.utils.config.Regex;
-import me.matl114.hacks.utils.config.RegistryRegex;
+import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
@@ -25,7 +28,9 @@ import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
-import net.minecraft.entity.Entity;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.decoration.EndCrystalEntity;
 import net.minecraft.item.BlockItem;
@@ -34,10 +39,12 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShape;
 
 public class AutoSurround extends BaseModule implements LegalMovementManager.MovementModifier {
     static LegalMovementManager.DelegateMovementModifier instance;
@@ -84,10 +91,18 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
 
     public final FlagRef airplace = flagBuilder(autoSurround.add("air-place")).build();
 
+    public final NBTRef<OptionalPrimitive<Double>> onlyPlayerNear = builder(
+                    autoSurround.add("only-player-near"), OptionalPrimitive.DOUBLE_TYPE)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 10.0D))
+            .build();
+
     public final FlagRef placeUpper = flagBuilder(autoSurround.add("upper")).build();
 
     public final FlagRef autoAttackCrystals =
             flagBuilder(autoSurround.add("auto-attack-crystal")).build();
+
+    public final FlagRef antiPacketMine =
+            flagBuilder(autoSurround.add("anti-packet-mine")).build();
 
     public final FlagRef onlyGround =
             flagBuilder(autoSurround.add("only-ground")).build();
@@ -99,9 +114,12 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
     public final FlagRef useWhiteList =
             flagBuilder(autoSurround.add("use-white-list")).build();
 
-    public final NBTRef<RegistryRegex<Item>> whiteList = builder(
-                    autoSurround.add("white-list"), RegistryRegex.<Item>parameter())
-            .defaultValue(new RegistryRegex<>(new Regex("^(obsidian)$"), Registries.ITEM))
+    public final NBTRef<EntrySet<Item>> whiteList = builder(autoSurround.add("white-list"), EntrySet.<Item>parameter())
+            .defaultValue(new EntrySet<>(Registries.ITEM, List.of(Items.OBSIDIAN)))
+            .build();
+
+    public final FlagRef onlyBlastResistance = builder(autoSurround.add("only-blast-resistance"), Boolean.class)
+            .defaultValue(true)
             .build();
 
     public final FlagRef swingHand = builder(autoSurround.add("swing-hand"), Boolean.class)
@@ -140,6 +158,8 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                         triggerCenterFix = true;
                     }
                     delayTicks = 0;
+                } else {
+                    triggerCenterFix = false;
                 }
             }
             if (needSneak) {
@@ -179,6 +199,10 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
         BlockPos vcPos = PlayerStateManager.INSTANCE.lastVelocityAffectingPos;
         lastSurround = vcPos;
         Box playerBox = mc.player.getBoundingBox();
+        playerBox = playerBox.withMaxY(Math.max(
+                playerBox.minY
+                        + InteractExtra.INSTANCE.getPotentialEyeHeights().max().orElse(0),
+                playerBox.maxY));
         var occupiedPoses = new LinkedHashSet<>(MathUtils.getOccupiedBlockPositions(playerBox));
         var occupiedBasePoses = new LinkedHashSet<BlockPos>();
         for (BlockPos occupiedPos : occupiedPoses) {
@@ -211,21 +235,46 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
         return result;
     }
 
+    private boolean canCubePlace(ClientPlayerEntity player, BlockPos pos, Set<EndCrystalEntity> pendingRemove) {
+        BlockState state = Blocks.OBSIDIAN.getDefaultState();
+        VoxelShape shape = state.getCollisionShape(mc.world, pos, ShapeContext.of(mc.player))
+                .offset(pos);
+
+        return !CollisionUtil.hasAnyIntersects(
+                mc.world, (entity) -> entity instanceof EndCrystalEntity end && pendingRemove.contains(end), shape);
+    }
+
     public boolean checkSurround() {
         if (onlyGround.get() && !mc.player.isOnGround() && !CollisionUtil.isEntitySupported(mc.player, 1.5D)) {
             return false;
         }
+        if (onlyPlayerNear.get().isPresent()) {
+            var emeries = TargetSelector.INSTANCE.getAttackableEntities(
+                    onlyPlayerNear.get().getValue());
+            if (emeries.isEmpty()) {
+                return false;
+            }
+        }
         boolean legal = mode.get().isLegal();
 
-        int mul = (mode.get().canMultiRotPlace() || (DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled()))
+        int mul = ((DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled(
+                        mode.get().canMultiRotPlace())))
                 ? multiply.get()
                 : 1;
 
         int placeCnt = 0;
         Runnable invCallback = null;
-        List<Entity> entities = new ArrayList<>();
+        Set<EndCrystalEntity> pendingRemoval = new HashSet<>();
         boolean offhandOk = offhand.get();
         var resultPoses = getTargetingPos();
+        Set<BlockPos> bbs = Set.of();
+        if (antiPacketMine.get()) {
+            bbs = MiningProgressManager.INSTANCE.getBreakingMap().values().stream()
+                    .map(MiningProgressManager.BlockBreakTracker::getBlockPos)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+        }
+        Set<BlockPos> pendingMine = new HashSet<>();
         for (var test : resultPoses) {
             BlockState state = mc.world.getBlockState(test);
             if ((state.isAir() || state.isReplaceable())) {
@@ -242,9 +291,20 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                     }
                     needSneak = true;
                 }
-                boolean canPlace = hitResult != null && InteractUtils.canInteractAndPlace(mc.player, hitResult);
+                boolean canPlace = InteractUtils.canInteractAndPlace(mc.player, hitResult);
                 if (canPlace) {
-                    if (InteractUtils.canCubePlace(mc.player, test)) {
+                    if (autoAttackCrystals.get()) {
+                        mc.world
+                                .getOtherEntities(
+                                        null, MathUtils.getBlockBox(test), (e) -> e instanceof EndCrystalEntity)
+                                .forEach(endCrystalEntity -> {
+                                    if (endCrystalEntity instanceof EndCrystalEntity endCrystal
+                                            && !Attack.INSTANCE.attackEntity(endCrystalEntity)) {
+                                        pendingRemoval.add(endCrystal);
+                                    }
+                                });
+                    }
+                    if (canCubePlace(mc.player, test, pendingRemoval)) {
                         if (placeCnt == 0) {
                             var supply = supplyBlocks();
                             if (supply == null) {
@@ -255,8 +315,6 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                             invCallback = offhandOk
                                     ? InvExtra.INSTANCE.swapInventoryIndexToOffhand(supply.index())
                                     : InvExtra.INSTANCE.swapInventoryIndexToHand(supply.index());
-                        } else {
-                            InteractionTasks.flushACPlaceQueue();
                         }
                         InteractionTasks.handlePlaceMode(
                                 mode.get(),
@@ -267,21 +325,36 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                         if (placeCnt >= mul) {
                             break;
                         }
-                    } else {
-                        // can not place: todo rewrite autoAttackCrystals
-                        entities.addAll(mc.world.getOtherEntities(
-                                null, MathUtils.getBlockBox(test), (e) -> e instanceof EndCrystalEntity));
                     }
+                }
+            } else if (antiPacketMine.get() && bbs.contains(test)) {
+                pendingMine.add(test);
+            }
+        }
+        if (placeCnt < mul) {
+            for (var test : pendingMine) {
+                BlockHitResult selfHitResult = RaycastUtils.createHitResult(test, mc.player.getEyePos());
+                if (placeCnt == 0) {
+                    var supply = supplyBlocks();
+                    if (supply == null) {
+                        break;
+                    }
+                    mul = Math.min(mul, supply.val().getCount());
+                    offhandOk |= supply.index() == 40;
+                    invCallback = offhandOk
+                            ? InvExtra.INSTANCE.swapInventoryIndexToOffhand(supply.index())
+                            : InvExtra.INSTANCE.swapInventoryIndexToHand(supply.index());
+                }
+                InteractionTasks.handlePlaceMode(
+                        mode.get(), selfHitResult, offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND, swingHand.get());
+                placeCnt += 1;
+                if (placeCnt >= mul) {
+                    break;
                 }
             }
         }
         if (invCallback != null) {
             invCallback.run();
-        }
-        if (placeCnt == 0 && !entities.isEmpty() && autoAttackCrystals.get()) {
-            for (var re : entities) {
-                CombatTasks.getAttack().attackEntity(re);
-            }
         }
         return placeCnt > 0;
     }
@@ -294,6 +367,9 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                             if (!whiteList.get().test(blockItem)) {
                                 return null;
                             }
+                        }
+                        if (onlyBlastResistance.get() && blockItem.getBlock().getBlastResistance() < 600) {
+                            return null;
                         }
                         return (double) (blockItem.getBlock().getBlastResistance())
                                 + ((blockItem == Items.OBSIDIAN) ? 1E8 : 0)

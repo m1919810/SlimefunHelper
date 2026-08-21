@@ -2,6 +2,7 @@ package me.matl114.utils.commands.commandGroup;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.Setter;
@@ -39,7 +40,7 @@ public abstract class SubCommandImpl implements SubCommand {
      * @param help Help text lines for this sub-command
      */
     public SubCommandImpl(String name, SimpleCommandArgs argsTemplate, String... help) {
-        this.name = name;
+        this.name = Objects.requireNonNull(name);
         this.template = argsTemplate;
         this.help = help;
     }

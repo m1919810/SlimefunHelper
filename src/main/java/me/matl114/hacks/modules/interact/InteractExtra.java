@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.interact;
 
 import java.util.*;
 import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
@@ -12,10 +13,8 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.utils.MathUtils;
 import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.math.*;
 import org.joml.Vector2i;
 
 public class InteractExtra extends BaseModule {
@@ -128,6 +127,10 @@ public class InteractExtra extends BaseModule {
         return DoubleStream.of(mc.player.dimensions.eyeHeight());
     }
 
+    public Stream<Vec3d> getPotentialEyeHeights(Vec3d playerPos) {
+        return getPotentialEyeHeights().mapToObj(s -> playerPos.add(0, s, 0));
+    }
+
     public boolean isWithinInteractRange(Vec3d pos, BlockPos bp) {
         return isWithinInteractRange(pos, bp, getBlockReachDistance());
     }
@@ -151,49 +154,22 @@ public class InteractExtra extends BaseModule {
                 .anyMatch(ps -> box.squaredMagnitude(ps) < MathUtils.s2(range));
     }
 
-    public Vec3d getBestInteractEyePos(Vec3d pos, BlockPos box) {
-        return getBestInteractEyePos(pos, new Box(box));
-    }
-
-    public Vec3d getBestInteractEyePos(Vec3d pos, Box box) {
-        var poses = getPotentialEyeHeights().mapToObj(s -> pos.add(0, s, 0)).toList();
-        Vec3d playerPos = pos.add(mc.player.getEyePos().subtract(mc.player.getPos()));
-        double s2 = box.squaredMagnitude(playerPos);
-        for (var pp : poses) {
-            double s3 = box.squaredMagnitude(pp);
-            if (s3 < s2) {
-                s2 = s3;
-                playerPos = pp;
-            }
-        }
-        return playerPos;
-    }
-
-    public Optional<Vec3d> getBestInteractEyePos(Vec3d pos, BlockPos box, double range) {
-        return getBestInteractEyePos(pos, new Box(box), range);
-    }
-
-    public Optional<Vec3d> getBestInteractEyePos(Vec3d pos, Box box, double range) {
-        if (box.squaredMagnitude(pos) > MathUtils.s2(range + 3 + mc.player.dimensions.eyeHeight())) {
-            // filter all outofrange
-            // optimize calculation
-            return Optional.empty();
-        }
-        var poses = getPotentialEyeHeights().mapToObj(s -> pos.add(0, s, 0)).toList();
-        Vec3d playerPos = pos.add(mc.player.getEyePos().subtract(mc.player.getPos()));
-        double s2 = box.squaredMagnitude(playerPos);
-        for (var pp : poses) {
-            double s3 = box.squaredMagnitude(pp);
-            if (s3 < s2) {
-                s2 = s3;
-                playerPos = pp;
-            }
-        }
-        if (MathUtils.s2(range) >= s2) {
-            return Optional.of(playerPos);
-        } else {
-            return Optional.empty();
-        }
+    public Vec3d getBestInteractEyePos(Vec3d pos, BlockHitResult blockHitResult) {
+        BlockPos blockPos = blockHitResult.getBlockPos();
+        Direction direction = blockHitResult.getSide();
+        Vec3d plateCenter = blockPos.toCenterPos().offset(direction, 0.5);
+        Vec3d directionVector = Vec3d.of(direction.getVector());
+        Box blockBox = new Box(blockPos);
+        return getPotentialEyeHeights(pos)
+                .filter(s -> {
+                    if (blockBox.contains(s)) {
+                        return true;
+                    } else {
+                        return s.subtract(plateCenter).dotProduct(directionVector) > 0;
+                    }
+                })
+                .findFirst()
+                .orElseGet(() -> pos.add(mc.player.getEyePos().subtract(mc.player.getPos())));
     }
 
     public void onCooldown(Event<Integer> event) {

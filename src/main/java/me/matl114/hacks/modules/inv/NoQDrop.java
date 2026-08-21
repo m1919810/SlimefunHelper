@@ -4,8 +4,8 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
-import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
@@ -35,10 +35,10 @@ public class NoQDrop extends BaseModule {
     public final FlagRef forceEquipment =
             flagBuilder(root.add("force-equipment")).build();
 
-    public final NBTRef<RegistryRegex<Item>> whiteListItem = builder(
-                    root.add("white-list-items"), RegistryRegex.<Item>parameter())
-            .defaultValue(new RegistryRegex<>(
-                    new Regex("^(.*diamond.*|.*netherite.*|elytra|mace|.*sword)$"), Registries.ITEM))
+    public final NBTRef<EntrySet<Item>> whiteListItem = builder(
+                    root.add("white-list-items"), EntrySet.<Item>parameter())
+            .defaultValue(
+                    new EntrySet<>(new Regex("^(.*diamond.*|.*netherite.*|elytra|mace|.*sword)$"), Registries.ITEM))
             .build();
 
     public final FlagRef log = flagBuilder(root.add("log-to-player")).build();

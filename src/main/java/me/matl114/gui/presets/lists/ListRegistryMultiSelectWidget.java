@@ -6,8 +6,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.RenderHandler;
@@ -24,16 +24,25 @@ public class ListRegistryMultiSelectWidget<T> extends ListMultiSelectWidget<Trip
         return buildSelected().stream().map(Triplet::getC).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    private static final BiPredicate<Triplet<Text, Identifier, Object>, String> filter = (s, b) -> {
-        String id = s.getB().toString();
-        if (FilterService.nameMatch(id, b)) {
-            return true;
+    private static final FilterService.Filter<Triplet<Text, Identifier, Object>> filter = (s, b, bl) -> {
+        if (bl) {
+            try {
+                return Pattern.matches(b, s.getB().getPath())
+                        || Pattern.matches(b, s.getA().getString());
+            } catch (Throwable e) {
+                return false;
+            }
+        } else {
+            String id = s.getB().toString();
+            if (FilterService.nameMatch(id, b)) {
+                return true;
+            }
+            String zhcn = s.getA().getString();
+            if (FilterService.nameMatch(zhcn, b)) {
+                return true;
+            }
+            return false;
         }
-        String zhcn = s.getA().getString();
-        if (FilterService.nameMatch(zhcn, b)) {
-            return true;
-        }
-        return false;
     };
 
     private static <T> Pair<List<Triplet<Text, Identifier, T>>, Set<Triplet<Text, Identifier, T>>> buildPairInternal(
@@ -87,7 +96,7 @@ public class ListRegistryMultiSelectWidget<T> extends ListMultiSelectWidget<Trip
                 pairData.getSecond(),
                 renderFactory,
                 filterInput,
-                (BiPredicate) filter,
+                (FilterService.Filter) filter,
                 x,
                 y,
                 dx,

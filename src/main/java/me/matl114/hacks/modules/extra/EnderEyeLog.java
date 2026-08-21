@@ -20,7 +20,7 @@ import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.util.math.Vec3d;
 
 public class EnderEyeLog extends BaseModule {
-    public final ModulePath other = makePath(Configs.TEST_CONFIG, "other");
+    public final ModulePath other = makePath(Configs.EXTRA_CONFIG, "other");
 
     public EnderEyeLog() {
         super("EnderEyeLog");

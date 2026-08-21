@@ -7,8 +7,8 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.combat.TargetSelector;
+import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
-import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
@@ -42,9 +42,8 @@ public class AutoUse extends BaseModule {
 
     public final FlagRef useFood = flagBuilder(path.add("use-food")).build();
 
-    public final NBTRef<RegistryRegex<Item>> whiteList = builder(
-                    path.add("use-item-white-list"), RegistryRegex.ITEM_TYPE)
-            .defaultValue(new RegistryRegex<>(new Regex("^(.*spear|.*sword|shield)$"), Registries.ITEM))
+    public final NBTRef<EntrySet<Item>> whiteList = builder(path.add("use-item-white-list"), EntrySet.<Item>parameter())
+            .defaultValue(new EntrySet<>(new Regex("^(.*spear|.*sword|shield)$"), Registries.ITEM))
             .build();
 
     public boolean isUsableNotFood(ItemStack stack) {

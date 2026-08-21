@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.survival;
 
+import java.util.List;
 import java.util.function.Consumer;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
@@ -10,8 +11,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.interact.Interact;
 import me.matl114.hacks.modules.inv.InvExtra;
-import me.matl114.hacks.utils.config.Regex;
-import me.matl114.hacks.utils.config.RegistryRegex;
+import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hacks.utils.render.RenderElements;
 import me.matl114.managers.Configs;
@@ -58,9 +58,8 @@ public class BlockFarm extends BaseModule {
     public final FlagRef enableWhiteList =
             flagBuilder(root.add("white-list-enable")).build();
 
-    public final NBTRef<RegistryRegex<Item>> whiteList = builder(
-                    root.add("white-list"), RegistryRegex.<Item>parameter())
-            .defaultValue(new RegistryRegex<>(new Regex("^(ender_chest|bookshelf)$"), Registries.ITEM))
+    public final NBTRef<EntrySet<Item>> whiteList = builder(root.add("white-list"), EntrySet.<Item>parameter())
+            .defaultValue(new EntrySet<>(Registries.ITEM, List.of(Items.ENDER_CHEST, Items.BOOKSHELF)))
             .build();
 
     public final FlagRef swingHand =

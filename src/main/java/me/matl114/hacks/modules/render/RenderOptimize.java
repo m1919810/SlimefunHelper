@@ -13,8 +13,8 @@ import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
-import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -85,23 +85,20 @@ public class RenderOptimize extends BaseModule {
                     renderOptimize.add("optimize-culling-enable"))
             .build();
 
-    public final NBTRef<RegistryRegex<EntityType<?>>> cullingTypes = builder(
-                    renderOptimize.add("optimize-culling-entity-types"),
-                    NBTType.<RegistryRegex<EntityType<?>>>parameter(RegistryRegex.class))
-            .defaultValue(new RegistryRegex<>(new Regex("^(item.*)$"), Registries.ENTITY_TYPE))
+    public final NBTRef<EntrySet<EntityType<?>>> cullingTypes = builder(
+                    renderOptimize.add("optimize-culling-entity-types"), EntrySet.<EntityType<?>>parameter())
+            .defaultValue(new EntrySet<>(new Regex("^(item.*)$"), Registries.ENTITY_TYPE))
             .build();
 
-    public final NBTRef<RegistryRegex<BlockEntityType<?>>> cullingTypes2 = builder(
-                    renderOptimize.add("optimize-culling-block-entity-types"),
-                    NBTType.<RegistryRegex<BlockEntityType<?>>>parameter(RegistryRegex.class))
-            .defaultValue(new RegistryRegex<>(
+    public final NBTRef<EntrySet<BlockEntityType<?>>> cullingTypes2 = builder(
+                    renderOptimize.add("optimize-culling-block-entity-types"), EntrySet.<BlockEntityType<?>>parameter())
+            .defaultValue(new EntrySet<>(
                     new Regex("^((.*sign)|barrel|skull|(.*chest)|enchanting_table)$"), Registries.BLOCK_ENTITY_TYPE))
             .build();
 
-    public final NBTRef<RegistryRegex<ParticleType<?>>> cullingTypes3 = builder(
-                    renderOptimize.add("optimize-culling-block-entity-types"),
-                    NBTType.<RegistryRegex<ParticleType<?>>>parameter(RegistryRegex.class))
-            .defaultValue(new RegistryRegex<>(new Regex("^(.*)$"), Registries.PARTICLE_TYPE))
+    public final NBTRef<EntrySet<ParticleType<?>>> cullingTypes3 = builder(
+                    renderOptimize.add("optimize-culling-block-entity-types"), EntrySet.<ParticleType<?>>parameter())
+            .defaultValue(new EntrySet<>(new Regex("^(.*)$"), Registries.PARTICLE_TYPE))
             .build();
 
     public final DoubleRef cullingRadius = builder(renderOptimize.add("optimize-culling-radius"), DoubleRef.TYPE)

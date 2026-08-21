@@ -2,13 +2,15 @@ package me.matl114.gui.presets.lists;
 
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import me.matl114.gui.Constants;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.elements.IconElement;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.ValueAccessor;
@@ -22,9 +24,10 @@ public class ListMultiSelectWidget<W> extends ScrollableListWidget {
     int entryHeight;
     List<Map.Entry<W, AttrKeyValue<Boolean>>> filterList;
     BiFunction<W, AttrKeyValue<Boolean>, RenderHandler> renderFactory;
-    BiPredicate<W, String> filter;
+    FilterService.Filter<W> filter;
     ValueAccessor<String> filterInput;
     boolean modifiable = true;
+    boolean useRegexFilter = false;
 
     public Set<W> buildSelected() {
         return list.entrySet().stream()
@@ -38,7 +41,7 @@ public class ListMultiSelectWidget<W> extends ScrollableListWidget {
             Set<W> currentSelection,
             BiFunction<W, AttrKeyValue<Boolean>, RenderHandler> renderFactory,
             ValueAccessor<String> filterInput,
-            BiPredicate<W, String> filter,
+            FilterService.Filter<W> filter,
             int x,
             int y,
             int dx,
@@ -67,13 +70,6 @@ public class ListMultiSelectWidget<W> extends ScrollableListWidget {
         for (var i = 0; i < size; ++i) {
             addScrollingWidget(generateEntry(i));
         }
-    }
-
-    protected void toggleSelected(AttrKeyValue<Boolean> attrKeyValue) {
-        if (!modifiable) {
-            return;
-        }
-        attrKeyValue.valueChange(null, attrKeyValue.getOriginValue() == Boolean.TRUE ? "false" : "true");
     }
 
     protected DrawableWidget generateEntry(int index) {
@@ -113,16 +109,45 @@ public class ListMultiSelectWidget<W> extends ScrollableListWidget {
             }
         };
         filterList = list.entrySet().stream()
-                .filter(i -> filter == null || filter.test(i.getKey(), filterInput.getValue()))
+                .filter(i -> filter == null || filter.isAccepted(i.getKey(), filterInput.getValue(), useRegexFilter))
                 .sorted(comparator)
                 .toList();
+
         refreshList();
+    }
+
+    protected void selectAllShown() {
+        this.filterList.forEach(s -> s.getValue().valueChangeInternal(null, true));
+    }
+
+    protected void unselectAllShown() {
+        this.filterList.forEach(s -> s.getValue().valueChangeInternal(null, false));
     }
 
     protected void init() {
         int textHeight = Math.min(20, this.entryHeight);
-        this.scrollableBorder.addDrawableChild(FilterService.createFilter(
-                filterInput, this::updateFilterList, 1, -textHeight + 1, dx - 2, textHeight - 2));
+        this.scrollableBorder.addDrawableChild(FilterService.createFilterWithRegex(
+                filterInput,
+                ValueAccessor.of(() -> this.useRegexFilter, (bl) -> this.useRegexFilter = bl),
+                this::updateFilterList,
+                1,
+                -textHeight + 1,
+                dx - 1 - 2 * textHeight,
+                textHeight - 2));
+        SubScreenWidget widget =
+                new SubScreenWidget(dx - 2 * textHeight, -textHeight + 1, 2 * textHeight, textHeight - 2);
+        widget.addDrawableChild(ExecutableWidget.instance(1, 0, textHeight - 2, textHeight - 2)
+                .setElementHandler(
+                        IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.run(this::selectAllShown))
+                                .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                        "widget.gui.list-multi-select-widget.select-all.tooltips", "")))));
+
+        widget.addDrawableChild(ExecutableWidget.instance(1 + textHeight, 0, textHeight - 2, textHeight - 2)
+                .setElementHandler(
+                        IconElement.fixedGui(Constants.REMOVE_SPRITE, ButtonAction.run(this::unselectAllShown))
+                                .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                        "widget.gui.list-multi-select-widget.unselect-all.tooltips", "")))));
+        this.scrollableBorder.addDrawableChild(widget);
         this.updateFilterList();
     }
 }

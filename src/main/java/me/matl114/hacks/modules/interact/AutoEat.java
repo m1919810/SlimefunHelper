@@ -7,6 +7,7 @@ import me.matl114.accessors.access.ClientAccess;
 import me.matl114.accessors.hacks.KeyBindAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.UseItem;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -14,8 +15,8 @@ import me.matl114.hacks.modules.combat.TargetSelector;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.ElytraExtra;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
-import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -102,9 +103,9 @@ public class AutoEat extends BaseModule {
     public final IntRef cooldown =
             intBuilder(autoEat.add("cooldown")).defaultValue(20).build();
 
-    public final NBTRef<RegistryRegex<Item>> whiteListItem = builder(
-                    autoEat.add("white-list-item"), RegistryRegex.ITEM_TYPE)
-            .defaultValue(new RegistryRegex<>(new Regex("^(golden_apple|potion|golden_carrot)$"), Registries.ITEM))
+    public final NBTRef<EntrySet<Item>> whiteListItem = builder(
+                    autoEat.add("white-list-item"), EntrySet.<Item>parameter())
+            .defaultValue(new EntrySet<>(new Regex("^(golden_apple|potion|golden_carrot)$"), Registries.ITEM))
             .build();
 
     public final FlagRef fireworkFix = builder(autoEat.add("firework-fix"), Boolean.class)
@@ -334,8 +335,8 @@ public class AutoEat extends BaseModule {
         }
     }
 
-    public void onRightClick(Event<ActionResult> event) {
-        Hand hand = event.getArgs(0);
+    public void onRightClick(Event<UseItem> event) {
+        Hand hand = event.context.hand();
         if (enable.get() && forceEatLeftClick.get() && mc.options.useKey.isPressed() && !eating) {
             ItemStack stack = mc.player.getStackInHand(hand);
             Hand offhand = hand == Hand.MAIN_HAND ? Hand.OFF_HAND : Hand.MAIN_HAND;
@@ -366,7 +367,7 @@ public class AutoEat extends BaseModule {
                     tryStartEating(re, hand == Hand.OFF_HAND);
                     if (eating) {
                         event.cancel();
-                        event.context(ActionResult.SUCCESS);
+                        event.context.actionResult(ActionResult.SUCCESS);
                     }
                 }
             }

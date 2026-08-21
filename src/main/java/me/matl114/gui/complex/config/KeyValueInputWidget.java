@@ -57,7 +57,7 @@ public class KeyValueInputWidget<T> extends SubScreenWidget {
     public DrawableWidget createKeyLabel() {
         ElementHandler button = new ButtonElement(TextProvider.of(getTranslationName()), ButtonAction.empty());
         button = button.withTooltips(TooltipHandler.of(this::getTooltips));
-        return DisplayWidget.instance(1, 1, dkey - 1, dy - 1)
+        return DisplayWidget.instance(1, 1, dkey - 2, dy - 2)
                 .setRenderHandler(
                         button
                         // LabelElement.instance(Text.literal(this.keyValueHolder.getKeyName()))
@@ -68,7 +68,7 @@ public class KeyValueInputWidget<T> extends SubScreenWidget {
 
         this.keyLabel = createKeyLabel().addToSub(this);
         this.interactPlace = this.keyValueHolder
-                .generateValueWidget(dkey + 1 + dblank, 1, dvalue - 2, dy - 2)
+                .generateValueWidget(dkey + dblank, 0, dvalue, dy)
                 .addToSub(this);
     }
 }

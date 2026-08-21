@@ -4,8 +4,8 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
-import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -38,14 +38,6 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
 
     public final KeyBindRef hotkey = moduleEntry(
                     antiKb.addHotkey(), new MultiKeyBind(), antiKb.addEnable(), moduleMeta(() -> this.mode))
-            .build();
-
-    public final FlagRef hurtOnly = builder(antiKb.add("ground-hurt-only"), Boolean.class)
-            .defaultValue(true)
-            .build();
-
-    public final FlagRef hurtElytraOnly = builder(antiKb.add("elytra-hurt-only"), Boolean.class)
-            .defaultValue(true)
             .build();
 
     public final DoubleRef minHorizontalVelocity = builder(antiKb.add("horizontal-threshold"), DoubleRef.TYPE)
@@ -216,12 +208,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
                 event.cancel();
                 return;
             }
-            boolean shouldApply;
-            if (mc.player.isFallFlying()) {
-                shouldApply = !hurtElytraOnly.get() || canCancel > 0;
-            } else {
-                shouldApply = !hurtOnly.get() || canCancel > 0;
-            }
+            boolean shouldApply = canCancel > 0;
             if (shouldApply) {
                 canCancel = Math.max(canCancel - 1, 0);
                 if (event.isCancelled()) {

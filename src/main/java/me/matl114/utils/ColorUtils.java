@@ -38,6 +38,10 @@ public class ColorUtils {
         return withAlpha(color, (int) (alpha * 255));
     }
 
+    public static int withAlphaInt(Color color, int alpha) {
+        return withAlphaInt(color.getRGB(), alpha);
+    }
+
     public static int withAlphaInt(int color, int alpha) {
         return (color & 0x00FFFFFF) | (alpha << 24);
     }

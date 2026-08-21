@@ -15,6 +15,7 @@ import me.matl114.events.Listener;
 import me.matl114.events.annotations.Broadcast;
 import me.matl114.events.annotations.ExtraArgs;
 import me.matl114.events.channels.EventChannel;
+import me.matl114.events.impl.SlotClickAction;
 import me.matl114.hacks.ACTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -55,7 +56,6 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.registry.tag.TagKey;
-import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.*;
@@ -133,10 +133,19 @@ public class PlayerStateManager extends BaseModule {
                 Listener.getPacketPoint().getChannel(PlayerInputC2SPacket.class),
                 this::onPlayerInput,
                 Integer.MAX_VALUE);
+        registerListener(
+                Listener.getPacketPostHandlePoint().getChannel(PlayerPositionLookS2CPacket.class),
+                this::onPostPlayerPositionLook,
+                Integer.MAX_VALUE);
         registerListener(Listener.getPlayerWebSlowPoint(), this::handleInWeb);
         registerListener(Listener.getPlayerFluidVelocityPoint(), this::handleInFluid);
         registerListener(Listener.getPreGameTick(), this::onPreGameTick);
-        registerListener(Listener.getPacketPoint().getChannel(EntityDamageS2CPacket.class), this::onEntityAttackEvent);
+        registerListener(
+                Listener.getClientPlayerSendMovementPoint(), this::onPrePlayerSendMovePacket, Integer.MAX_VALUE);
+        registerListener(
+                Listener.getPacketPoint().getChannel(EntityDamageS2CPacket.class),
+                this::onEntityAttackEvent,
+                Integer.MAX_VALUE);
         registerListener(
                 Listener.getPacketPoint().getChannel(ClientCommandC2SPacket.class),
                 this::onPlayerCommand,
@@ -206,17 +215,53 @@ public class PlayerStateManager extends BaseModule {
             if (PlayerMoveC2SPacketAccess.of(packet).getCause() != PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP) {
                 if (PlayerMoveC2SPacketAccess.of(packet).getCause() == PlayerMoveC2SPacketAccess.Cause.SET_BACK) {
                     lastKnownRealMovementSpeed = Vec3d.ZERO;
-                    lastKnownClientVelocity = Vec3d.ZERO;
                 } else {
                     lastKnownRealMovementSpeed = lastKnownMovementSpeed;
                     lastKnownClientVelocity = lastKnownRealMovementSpeed;
                 }
             }
             lastTickHasMovement = true;
+        } else {
+            if (packet.changesLook()) {
+                lastPitch = packet.getPitch(lastPitch);
+                lastYaw = packet.getYaw(lastYaw);
+            }
         }
         // update input here , low version
         if (!ViaFabricPlusHooks.isSupportEndTick()) {
             lastInput = PlayerInputUtils.of(mc.player);
+        }
+    }
+
+    public void onPostPlayerPositionLook(Event<PlayerPositionLookS2CPacket> eventPositionLook) {
+        if (checkNull()) return;
+        if (mc.player.hasVehicle()) {
+            return;
+        }
+        // only when vanilla teleport
+        // grim teleport will send a EntityVelocityUpdateS2C to sync the clientVelocity
+        if (eventPositionLook.context.teleportId() >= 0) {
+            if (!ViaFabricPlusHooks.isSupportEndTick()) {
+                var relativesSet = eventPositionLook.context.relatives();
+                double lastClientVX = relativesSet.contains(PositionFlag.X) ? lastKnownClientVelocity.x : 0;
+                double lastClientVY = relativesSet.contains(PositionFlag.Y) ? lastKnownClientVelocity.y : 0;
+                double lastClientVZ = relativesSet.contains(PositionFlag.Z) ? lastKnownClientVelocity.z : 0;
+                lastKnownClientVelocity = new Vec3d(lastClientVX, lastClientVY, lastClientVZ);
+            } else {
+                var relativesSet = eventPositionLook.context.relatives();
+                EntityPosition position = eventPositionLook.context.change();
+                Vec3d deltaMovement = position.deltaMovement();
+                double lastClientVX = relativesSet.contains(PositionFlag.DELTA_X)
+                        ? lastKnownClientVelocity.x + deltaMovement.x
+                        : deltaMovement.x;
+                double lastClientVY = relativesSet.contains(PositionFlag.DELTA_Y)
+                        ? lastKnownClientVelocity.y + deltaMovement.y
+                        : deltaMovement.y;
+                double lastClientVZ = relativesSet.contains(PositionFlag.DELTA_Z)
+                        ? lastKnownClientVelocity.z + deltaMovement.z
+                        : deltaMovement.z;
+                lastKnownClientVelocity = new Vec3d(lastClientVX, lastClientVY, lastClientVZ);
+            }
         }
     }
 
@@ -241,6 +286,13 @@ public class PlayerStateManager extends BaseModule {
         if (eventInput.isCancelled()) return;
         if (ViaFabricPlusHooks.isSupportEndTick()) {
             lastInput = PlayerInputUtils.of(eventInput.context);
+        }
+    }
+
+    public void onPrePlayerSendMovePacket(Event<ClientPlayerEntity> eventPre) {
+        // force resync
+        if (isRotationDifferent()) {
+            ClientPlayerAccess.of(mc.player).setLastRot(lastPitch, lastYaw);
         }
     }
 
@@ -519,7 +571,7 @@ public class PlayerStateManager extends BaseModule {
         }
     }
 
-    public void onClickSlot(Event<SlotActionType> eventClick) {
+    public void onClickSlot(Event<SlotClickAction> eventClick) {
         cooldownInvSummary = 100;
     }
 

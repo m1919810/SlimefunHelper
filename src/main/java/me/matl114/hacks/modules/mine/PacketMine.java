@@ -17,8 +17,8 @@ import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.FloatingUtils;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
-import me.matl114.hacks.utils.config.RegistryRegex;
 import me.matl114.managers.*;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
@@ -90,9 +90,9 @@ public class PacketMine extends BaseModule {
     public final FlagRef whiteList =
             flagBuilder(packetMine.add("enable-mine-white-list")).build();
 
-    public final NBTRef<RegistryRegex<Block>> whiteListRegex = builder(
-                    packetMine.add("mine-white-list"), RegistryRegex.<Block>parameter())
-            .defaultValue(new RegistryRegex<>(new Regex("^()$"), Registries.BLOCK))
+    public final NBTRef<EntrySet<Block>> whiteListRegex = builder(
+                    packetMine.add("mine-white-list"), EntrySet.<Block>parameter())
+            .defaultValue(new EntrySet<>(new Regex("^()$"), Registries.BLOCK))
             .build();
 
     BlockPos lastMinePos;

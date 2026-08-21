@@ -140,7 +140,9 @@ public class EntryPrimitiveMap<T, W> extends PrimitiveMap<Holder<T>, W> {
 
     @Nullable
     public W getEntryValue(T value) {
-        return super.getOrDefault(Holder.of(registry(), value));
+        var map = map();
+        var re = map.get(Holder.of(registry(), value));
+        return re != null ? re : map.get(Holder.of(registry(), null));
     }
 
     public W getEntryValueOr(T value, W fallback) {

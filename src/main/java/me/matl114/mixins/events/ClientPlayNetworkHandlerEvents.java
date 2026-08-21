@@ -24,6 +24,12 @@ import net.minecraft.network.listener.PacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.play.*;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.TagGroupLoader;
+import net.minecraft.registry.tag.TagKey;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
@@ -313,5 +319,18 @@ public abstract class ClientPlayNetworkHandlerEvents {
             return;
         }
         Listener.callPacketHandleEvent(instance, t, original::call);
+    }
+
+    @Inject(
+        method = "onChunkData",
+        at =
+        @At(
+            value = "INVOKE",
+            target =
+                "Lnet/minecraft/client/network/ClientPlayNetworkHandler;loadChunk(IILnet/minecraft/network/packet/s2c/play/ChunkData;)V",
+            shift = At.Shift.AFTER))
+    private void onLoadChunkPost(ChunkDataS2CPacket packet, CallbackInfo ci) {
+        ChunkPos pos = new ChunkPos(packet.getChunkX(), packet.getChunkZ());
+        Listener.getChunkUpdateListener().broadcast(pos);
     }
 }

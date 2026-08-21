@@ -3,9 +3,9 @@ package me.matl114.utils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -29,6 +29,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.AbstractNbtNumber;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.screen.GenericContainerScreenHandler;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Hand;
 import net.minecraft.util.dynamic.Codecs;
@@ -40,11 +42,6 @@ public class InventoryUtils {
             @Override
             public int size() {
                 return 1;
-            }
-
-            @Override
-            public boolean isEmpty() {
-                return itemStackSupplier.get().isEmpty();
             }
 
             @Override
@@ -96,6 +93,21 @@ public class InventoryUtils {
         return new MutableArrayInventory(array);
     }
 
+    public static Inventory createSubInventoryView(Inventory view, int from, int to) {
+
+        return new ImmutableInventory() {
+            @Override
+            public int size() {
+                return Math.min(view.size(), to) - Math.min(view.size(), from);
+            }
+
+            @Override
+            public ItemStack getStack(int slot) {
+                return view.getStack(slot + from);
+            }
+        };
+    }
+
     public static Stream<ItemStack> streamInventory(Inventory inv) {
         return IntStream.range(0, inv instanceof PlayerInventory pinv ? getPlayerInvSize() : inv.size())
                 .mapToObj(inv::getStack);
@@ -117,8 +129,36 @@ public class InventoryUtils {
         }
     }
 
+    public static Inventory getTopInventory(ScreenHandler screen) {
+        if (screen instanceof GenericContainerScreenHandler generic) {
+            return generic.getInventory();
+        } else {
+            List<Slot> slots = screen.slots;
+            int index = 0;
+            for (var i = 0; i < slots.size(); i++) {
+                if (slots.get(i).inventory instanceof PlayerInventory pinv) {
+                    index = i;
+                    break;
+                }
+            }
+            return new SlotInventory(slots.subList(0, index));
+        }
+    }
+
     public static Inventory getBottomInventory(HandledScreen<?> screen) {
         List<Slot> slots = screen.getScreenHandler().slots;
+        int index = 0;
+        for (var i = 0; i < slots.size(); i++) {
+            if (slots.get(i).inventory instanceof PlayerInventory pinv) {
+                index = i;
+                break;
+            }
+        }
+        return new SlotInventory(slots.subList(index, slots.size()));
+    }
+
+    public static Inventory getBottomInventory(ScreenHandler handler) {
+        List<Slot> slots = handler.slots;
         int index = 0;
         for (var i = 0; i < slots.size(); i++) {
             if (slots.get(i).inventory instanceof PlayerInventory pinv) {
@@ -430,6 +470,10 @@ public class InventoryUtils {
         return sum;
     }
 
+    public static int getPlayerBackpackSize() {
+        return 36;
+    }
+
     public static int getPlayerInvSize() {
         // 傻逼mojang你给玩家放特么的saddle槽位干什么
         return 41;
@@ -494,5 +538,16 @@ public class InventoryUtils {
     public static IndexEntry<ItemStack> getSelectedItem() {
         int idx = InventoryUtils.getSelectedSlot();
         return new IndexEntry<>(idx, mc.player.getInventory().main.get(idx));
+    }
+
+    public static Map<ItemStackSample, IntList> collectItemIndexes(Iterable<ItemStack> stacks) {
+        Map<ItemStackSample, IntList> indexMap = new LinkedHashMap<>();
+        int idx = 0;
+        for (ItemStack stack : stacks) {
+            indexMap.computeIfAbsent(ItemStackSample.of(stack), (i) -> new IntArrayList())
+                    .add(idx);
+            idx += 1;
+        }
+        return indexMap;
     }
 }
