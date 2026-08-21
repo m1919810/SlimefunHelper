@@ -1,8 +1,8 @@
 package me.matl114.hacks.modules.move;
 
 import me.matl114.events.Event;
-import me.matl114.events.EventContainer;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -93,6 +93,20 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
 
     public final FlagRef useAutoRescale = flagBuilder(simpleFlightControl.add("use-auto-rescale"))
             .show(() -> ElytraExtra.INSTANCE.autoRescale.get())
+            .build();
+
+    public final NBTRef<OptionalPrimitive<Double>> overridePullupAngle = builder(
+                    simpleFlightControl.add("override-pullup-angle"), OptionalPrimitive.DOUBLE_TYPE)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 45.0D))
+            .validator(s -> s.getValue() > 0 && s.getValue() < 90)
+            .show(() -> this.controlMode.get().isIn(Mode.CONTROL))
+            .build();
+
+    public final NBTRef<OptionalPrimitive<Double>> overrideDownwardAngle = builder(
+                    simpleFlightControl.add("override-downward-angle"), OptionalPrimitive.DOUBLE_TYPE)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 45.0D))
+            .validator(s -> s.getValue() > 0 && s.getValue() < 90)
+            .show(() -> this.controlMode.get().isIn(Mode.CONTROL))
             .build();
 
     @ApiStatus.Experimental
@@ -209,6 +223,21 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                         Vec3d movementInput =
                                 new Vec3d(input.sidewaysSpeed(), input.upwardSpeed(), input.forwardSpeed());
                         Vec3d velocity = EntityUtils.movementInputToVelocity(movementInput, 1.0F, player.getYaw());
+                        if (movementInput.horizontalLengthSquared() > 0.0D) {
+                            if (movementInput.y > 0) {
+                                if (overridePullupAngle.get().isPresent()) {
+                                    double angle = overridePullupAngle.get().getValue();
+                                    double yLevel = Math.tan(Math.abs(angle)) * velocity.horizontalLength();
+                                    velocity = velocity.withAxis(Direction.Axis.Y, yLevel);
+                                }
+                            } else if (movementInput.y < 0) {
+                                if (overrideDownwardAngle.get().isPresent()) {
+                                    double angle = overrideDownwardAngle.get().getValue();
+                                    double yLevel = Math.tan(Math.abs(angle)) * velocity.horizontalLength();
+                                    velocity = velocity.withAxis(Direction.Axis.Y, -yLevel);
+                                }
+                            }
+                        }
                         if (useAutoRescale.get()
                                 && autoRescaleBestClimbingSpeed.get()
                                 && movementInput.horizontalLength() > 0) {
@@ -216,7 +245,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
 
                                 velocity = ElytraOptimizeUtils.calculateBestPullupSpeed(velocity);
                             } else if (movementInput.y < 0 && velocity.y < 0) {
-                                velocity = ElytraOptimizeUtils.calculateBestDownForwardSpeed(velocity);
+                                velocity = ElytraOptimizeUtils.calculateBestDownForwardSpeed(velocity, false);
                             }
                         }
 
@@ -348,7 +377,10 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     mc.player.setVelocity(
                             (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS && useAutoRescale.get())
                                     ? ElytraExtra.INSTANCE.applyAxisLimit(
-                                            realVector, mc.player.getRotationVector(), !mc.player.hasNoGravity())
+                                            realVector,
+                                            mc.player.getPitch(),
+                                            mc.player.getYaw(),
+                                            !mc.player.hasNoGravity())
                                     : realVector);
                 }
 
