@@ -491,7 +491,9 @@ public class SleepMode extends BaseModule {
             event.cancel();
             if (sleepingScreenInstance != null) {
                 sleepingScreenInstance.mouseDragged(
-                        event.context.mouseX(), event.context.mouseY(), event.context.mouse().activeButton,
+                        event.context.mouseX(),
+                        event.context.mouseY(),
+                        event.context.mouse().activeButton,
                         event.context.deltaX(),
                         event.context.deltaY());
             }

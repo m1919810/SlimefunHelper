@@ -1,9 +1,9 @@
 package me.matl114.mixins.fix;
 
-import me.matl114.accessors.interfaces.MetadataHolder;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.accessors.events.MetadataHolder;
+import me.matl114.accessors.interfaces.MetadataHolder;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.modules.render.RenderOptimize;
 import net.fabricmc.api.EnvType;
