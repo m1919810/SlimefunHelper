@@ -226,12 +226,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             .experimental()
             .build();
 
-    public final DoubleRef autoRescaleZeroPointThreeXZ = builder(
-                    customFireworksPath.add("auto-rescale-xz-zero-point-three"), Double.class)
-            .defaultValue(0.02)
-            .show(this.autoRescale::get)
-            .build();
-
     public final DoubleRef autoRescaleZeroPointThreeY = builder(
                     customFireworksPath.add("auto-rescale-axis-zero-point-three"), Double.class)
             .defaultValue(0.03)
