@@ -93,7 +93,6 @@
 		"hack.ClientPlayerMixin",
 		"hack.ClientWorldMixin",
 		"hack.CobwebBlockMixin",
-		"hack.DispenserCraftScreenMixin",
 		"hack.EntityElytraModelMixin",
 		"hack.EntityMixin",
 		"hack.EntityRenderDisplayNameMixin",
