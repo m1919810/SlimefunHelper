@@ -8,9 +8,7 @@
 
 往期版本有1.21.8和1.20.4,不再更新,可以在旧release中找到
 
-旨在**为[粘液科技游戏](https://slimefun-wiki.guizhanss.cn/)和普通生存提供更多便利和增强游戏与开发体验**
-
-更多功能有待开发
+该模组旨在**为[粘液科技游戏](https://slimefun-wiki.guizhanss.cn/)和普通生存/各类无规则生存提供更多便利和增强游戏与开发体验**
 
 ## 安装须知
 **该Mod不是服务端插件或者模组，请不要把他放到服务端里**
@@ -27,7 +25,7 @@
 
 但是该模组与以下模组均有关联,推荐同时安装
 
-注: 不是必须安装
+注: **不是必须安装**
 
 - ViaFabricPlus(强烈推荐安装)
 - Litematica
@@ -35,6 +33,7 @@
 - Baritone
 - IMBlocker
 - Meteor
+- XaeroMap系列(XaeroWorldMap, XaeroMiniMap, XaeroPlus)
 
 如果遇到了和其他客户端同时使用导致的异常行为或者崩溃,请联系作者或者提出issue
 
@@ -66,47 +65,12 @@
 
 目前更多功能还在开发中
 
+## 问题解答
+下载仓库中的[常见问题Q&A.pdf](常见问题Q&A.pdf)
+
 ## JsMacros与脚本
 slimefunHelper目前对jsMacros提供了拓展支持
 slimefunHelper对jsMacros的脚本运行环境注入了部分lib和utils,同时提供了有用的工具
-目前的提供的工具lib列表
-- ClientHelper
-- DataHelper
-
-- InputHelper
-
-- KeyBindingHelper
-
-- PacketHelper
-
-- RenderHelper
-
-- ReflectHelper
-- JsHelper
-- RegistryHelper
-- NBTHelper
-- EnumHelper
-- EntityHelper
-- ScreenHelper
-- ItemStackHelper
-- FileHelper
-- WorldHelper
-- MovTasks
-- Tasks
-- CombatTasks
-- MineTasks
-- InvTasks
-- CommonUtils
-- ChatUtils
-- InventoryUtils
-- CollectionUtils
-- RaycastUtils
-- ItemStackUtils
-- Consts        
-- Debug        
-- 等
-
-其中Consts之中还提供了方法用于向js运行环境导入所有的常用java类
 之后会提供相关wiki或文档
 
 ## 不支持的模组
@@ -123,9 +87,9 @@ slimefunHelper对jsMacros的脚本运行环境注入了部分lib和utils,同时�
 
 如果你觉得这个模组不错，也可以给我打赏喵~
 
-该打赏的全部金额将用于我购买优先队列😋
+该打赏的全部金额将用于我购买优先队列和生活费😋
 <div align="center">
   <img src="assets/1.jpg"  width="400">
 </div>
 
-注: 打赏 != 接定制,作者暂时不接私人功能定制
+注: 打赏 != 接定制,作者暂时不接私人功能定制,作者暂时不出售额外版本,作者拒绝一切形式的强制催更,,,
