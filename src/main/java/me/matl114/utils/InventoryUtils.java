@@ -37,6 +37,10 @@ import net.minecraft.util.dynamic.Codecs;
 
 @ApiMethod
 public class InventoryUtils {
+    public static Iterable<ItemStack> iterable(Inventory inventory) {
+        return inventory;
+    }
+
     public static Inventory createReadOnlyOneItemInventory(Supplier<ItemStack> itemStackSupplier) {
         return new ImmutableInventory() {
             @Override
