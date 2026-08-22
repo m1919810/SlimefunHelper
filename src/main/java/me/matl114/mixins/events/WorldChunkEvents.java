@@ -25,7 +25,8 @@ public abstract class WorldChunkEvents {
     private World world;
 
     @Inject(method = "setBlockState", at = @At("TAIL"))
-    private void onSetBlockState(BlockPos pos, BlockState state, int flags, CallbackInfoReturnable<BlockState> cir) {
+    private void onSetBlockState(
+            BlockPos pos, BlockState state, boolean moved, CallbackInfoReturnable<BlockState> cir) {
         if (this.world instanceof ClientWorld world && MinecraftClient.getInstance().world == world) {
             BlockState oldState = cir.getReturnValue();
             if (oldState != null) {

@@ -46,8 +46,8 @@ public abstract class BackGroundRenderMixin {
         if (fogType == BackgroundRenderer.FogType.FOG_TERRAIN && NoRender.INSTANCE.noDistanceFog()) {
             Fog fog = cir.getReturnValue();
             if (fog != null) {
-                cir.setReturnValue(
-                        new Fog(fog.end() * 2, fog.end() * 2, fog.shape(), fog.red(), fog.green(), fog.blue(), 0));
+                float d = 4 * viewDistance;
+                cir.setReturnValue(new Fog(d, d, fog.shape(), fog.red(), fog.green(), fog.blue(), 0));
             }
         }
     }

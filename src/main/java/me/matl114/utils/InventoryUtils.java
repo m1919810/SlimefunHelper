@@ -38,7 +38,30 @@ import net.minecraft.util.dynamic.Codecs;
 @ApiMethod
 public class InventoryUtils {
     public static Iterable<ItemStack> iterable(Inventory inventory) {
-        return inventory;
+        return () -> new InventoryIterator(inventory);
+    }
+
+    public static class InventoryIterator implements Iterator<ItemStack> {
+        private final Inventory inventory;
+        private int index;
+        private final int size;
+
+        public InventoryIterator(Inventory inventory) {
+            this.inventory = inventory;
+            this.size = inventory.size();
+        }
+
+        public boolean hasNext() {
+            return this.index < this.size;
+        }
+
+        public ItemStack next() {
+            if (!this.hasNext()) {
+                throw new NoSuchElementException();
+            } else {
+                return this.inventory.getStack(this.index++);
+            }
+        }
     }
 
     public static Inventory createReadOnlyOneItemInventory(Supplier<ItemStack> itemStackSupplier) {
