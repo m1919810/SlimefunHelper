@@ -118,8 +118,8 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
 
     public void setLastPos(Vec3d vec3d) {
         this.lastXClient = vec3d.x;
-        this.lastZClient = vec3d.y;
-        this.lastYClient = vec3d.z;
+        this.lastZClient = vec3d.z;
+        this.lastYClient = vec3d.y;
     }
 
     public void setLastRot(float pitch, float yaw) {

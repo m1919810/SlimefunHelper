@@ -154,7 +154,7 @@ public class EntityUtils {
                 && !entity.isRemoved()
                 && mc.world != null
                 && mc.world == entity.getEntityWorld()
-                && mc.world.getEntity(entity.getUuid()) == entity;
+                && mc.world.getEntityLookup().get(entity.getUuid()) == entity;
     }
 
     public static Vector2d getEntityLookXZ(Entity entity) {

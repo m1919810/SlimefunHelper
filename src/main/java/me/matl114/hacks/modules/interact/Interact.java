@@ -157,7 +157,7 @@ public class Interact extends BaseModule {
         if (!TargetSelector.INSTANCE.isTargetInRange(entity, range, 0)) {
             return false;
         }
-        if (entity.isInteractable() && interactWhiteList.get().test(entity.getType())) {
+        if (entity.isAlive() && !entity.isSpectator() && interactWhiteList.get().test(entity.getType())) {
             if (entityOnlyInteractable.get()
                     && !InteractUtils.isInteractAcceptable(
                             mc.world, mc.player, entity, mc.player.getStackInHand(Hand.MAIN_HAND))) {

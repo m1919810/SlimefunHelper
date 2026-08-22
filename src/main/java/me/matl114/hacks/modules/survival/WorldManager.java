@@ -250,7 +250,7 @@ public class WorldManager extends BaseModule {
         var iter2 = currentEntities.entrySet().iterator();
         while (iter2.hasNext()) {
             var re = iter2.next();
-            if (mc.world.getEntity(re.getKey()) instanceof LivingEntity entity) {
+            if (mc.world.getEntityLookup().get(re.getKey()) instanceof LivingEntity entity) {
                 re.getValue().update(entity);
             }
         }
