@@ -15,6 +15,8 @@ import net.minecraft.component.type.UnbreakableComponent;
 import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtInt;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -115,6 +117,23 @@ public class ItemUtils_v1_21_4 implements VItem {
     }
 
     @Override
+    public ItemStack fromNbt(NbtCompound tag, RegistryWrapper.WrapperLookup lookup) {
+        return tag.isEmpty()
+                ? ItemStack.EMPTY
+                : ItemStack.CODEC
+                        .decode(lookup.getOps(NbtOps.INSTANCE), tag)
+                        .getOrThrow()
+                        .getFirst();
+    }
+
+    @Override
+    public NbtCompound toNbt(ItemStack tag, RegistryWrapper.WrapperLookup lookup) {
+        NbtCompound tagCompound = toNbt0(tag, lookup);
+        tagCompound.putInt(DataVersion.DATA_VERSION_FLAG, DataVersion.getDataVersion());
+        return tagCompound;
+    }
+
+    @Override
     public MutableText getFormattedName(ItemStack stack) {
         MutableText mutableText =
                 Text.empty().append(stack.getName()).formatted(stack.getRarity().getFormatting());
@@ -127,6 +146,14 @@ public class ItemUtils_v1_21_4 implements VItem {
 
     private NbtCompound toNbt0(ItemStack tag) {
         return tag.isEmpty() ? new NbtCompound() : (NbtCompound) tag.toNbt(ItemStackUtils.registry());
+    }
+
+    private NbtCompound toNbt0(ItemStack tag, RegistryWrapper.WrapperLookup lookup) {
+        return tag.isEmpty()
+                ? new NbtCompound()
+                : (NbtCompound) ItemStack.CODEC
+                        .encodeStart(lookup.getOps(NbtOps.INSTANCE), tag)
+                        .getOrThrow();
     }
 
     @Override
