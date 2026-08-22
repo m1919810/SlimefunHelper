@@ -20,12 +20,12 @@ public abstract class XaeroGuiMapMixin implements IRightClickableElement, XaeroG
     @Shadow
     private RegistryKey<World> rightClickDim;
 
-    @Shadow
+    @Shadow(remap = false)
     private int rightClickX;
 
-    @Shadow
+    @Shadow(remap = false)
     private int rightClickY;
 
-    @Shadow
+    @Shadow(remap = false)
     private int rightClickZ;
 }
