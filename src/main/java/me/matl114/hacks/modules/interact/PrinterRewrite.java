@@ -491,9 +491,10 @@ public class PrinterRewrite extends BaseModule {
         if (block instanceof FlowerbedBlock) {
             return currentState.get(FlowerbedBlock.FLOWER_AMOUNT) < targetState.get(FlowerbedBlock.FLOWER_AMOUNT);
         }
-        if (block instanceof LeafLitterBlock) {
-            return currentState.get(LeafLitterBlock.SEGMENT_AMOUNT) < targetState.get(LeafLitterBlock.SEGMENT_AMOUNT);
-        }
+        //        if (block instanceof LeafLitterBlock) {
+        //            return currentState.get(LeafLitterBlock.SEGMENT_AMOUNT) <
+        // targetState.get(LeafLitterBlock.SEGMENT_AMOUNT);
+        //        }
         return false;
     }
 

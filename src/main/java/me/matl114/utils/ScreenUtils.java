@@ -12,7 +12,6 @@ import me.matl114.utils.collections.Point;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
 import net.minecraft.client.gui.navigation.GuiNavigationType;
-import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.GameMenuScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.*;
@@ -186,12 +185,7 @@ public class ScreenUtils {
     }
 
     public static void openChatScreen(String originalText) {
-        ChatHud.ChatMethod method =
-                originalText.startsWith("/") ? ChatHud.ChatMethod.COMMAND : ChatHud.ChatMethod.MESSAGE;
-        mc.openChatScreen(method);
-        if (mc.currentScreen instanceof ChatScreen chat) {
-            chat.insertText(originalText, true);
-        }
+        mc.openChatScreen(originalText);
     }
 
     public static int getCurrentModifiers() {

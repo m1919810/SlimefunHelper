@@ -15,7 +15,7 @@ import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.particle.ParticleSpriteManager;
+import net.minecraft.client.particle.ParticleManager;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
@@ -32,6 +32,7 @@ import net.minecraft.particle.ParticleType;
 import net.minecraft.potion.Potion;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.sound.SoundEvent;
@@ -140,8 +141,8 @@ public class RegistryDisplays {
             }))
             .put(ParticleType.class, IIcon.<ParticleType<?>>renderSprite((v) -> {
                 Identifier id = Registries.PARTICLE_TYPE.getId(v);
-                ParticleSpriteManager manager = MinecraftClient.getInstance().particleSpriteManager;
-                var re = manager.spriteAwareParticleFactories;
+                ParticleManager manager = MinecraftClient.getInstance().particleManager;
+                var re = manager.spriteAwareFactories;
                 var what = re.get(id);
                 if (what != null) {
                     return what.getSprite(RAND);

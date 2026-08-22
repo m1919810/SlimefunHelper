@@ -183,7 +183,7 @@ public class WorldManager extends BaseModule {
             if (eventDataUpdate.context.id() == VDataFlag.ID_VILLAGER_PROFESSION_DATA
                     && eventDataUpdate.context.value() instanceof VillagerData data) {
                 asyncExecutor.execute(() -> {
-                    var profession = data.profession().getKey().orElse(null);
+                    var profession = data.getProfession();
                     if (Objects.equals(profession, VillagerProfession.NONE)
                             || Objects.equals(profession, VillagerProfession.NITWIT)) {
                         var status = getStatus(villager, false);
@@ -192,7 +192,7 @@ public class WorldManager extends BaseModule {
                             status.markDirty();
                         }
                     } else {
-                        if (data.level() > 1) {
+                        if (data.getLevel() > 1) {
                             setVillagerTradeLock(villager, true);
                         }
                     }
@@ -250,7 +250,7 @@ public class WorldManager extends BaseModule {
         var iter2 = currentEntities.entrySet().iterator();
         while (iter2.hasNext()) {
             var re = iter2.next();
-            if (mc.world.getEntity(re.getKey()) instanceof LivingEntity entity) {
+            if (mc.world.getEntityLookup().get(re.getKey()) instanceof LivingEntity entity) {
                 re.getValue().update(entity);
             }
         }
