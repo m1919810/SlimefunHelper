@@ -48,10 +48,7 @@ public interface VItem {
 
     public Integer getAttackDurabilityCost(ItemStack stack);
 
-    public ItemStack fromNbt(NbtCompound tag);
     // now we save DataVersion field
-    public NbtCompound toNbt(ItemStack tag);
-
     public ItemStack fromNbt(NbtCompound tag, RegistryWrapper.WrapperLookup lookup);
     // now we save DataVersion field
     public NbtCompound toNbt(ItemStack tag, RegistryWrapper.WrapperLookup lookup);

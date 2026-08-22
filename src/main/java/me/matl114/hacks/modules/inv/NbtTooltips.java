@@ -11,6 +11,7 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.*;
 import me.matl114.utils.ChatUtils;
+import me.matl114.utils.ItemStackUtils;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -66,7 +67,7 @@ public class NbtTooltips extends BaseModule {
     }
 
     public NbtCompound getSimplifiedNbt(ItemStack stack) {
-        NbtCompound nbtCompound = VItem.getInstance().toNbt(stack);
+        NbtCompound nbtCompound = VItem.getInstance().toNbt(stack, ItemStackUtils.registry());
         nbtCompound = (NbtCompound) nbtCompound.get("components");
         nbtCompound = nbtCompound == null ? new NbtCompound() : nbtCompound;
         nbtCompound = replaceMcKey(nbtCompound);
