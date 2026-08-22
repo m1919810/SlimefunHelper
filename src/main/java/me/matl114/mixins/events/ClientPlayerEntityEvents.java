@@ -28,7 +28,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.stat.StatHandler;
-import net.minecraft.util.PlayerInput;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Final;
@@ -165,7 +164,8 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         // changed, update movementVector
         PlayerInputUtils.Input newInput = PlayerInputUtils.of(this.input);
         if (!Objects.equals(currentInput, newInput)) {
-            Vec2f movementVector = compatMovementVectorWithViaFabric(new Vec2f(i0.sidewaysSpeed(), i0.forwardSpeed()));
+            Vec2f movementVector =
+                    compatMovementVectorWithViaFabric(new Vec2f(newInput.sidewaysSpeed(), newInput.forwardSpeed()));
             this.input.movementForward = movementVector.y;
             this.input.movementSideways = movementVector.x;
             if (this.shouldSlowDown()) {

@@ -106,7 +106,7 @@ public class InteractExtra extends BaseModule {
     }
 
     public double getBlockReachDistance() {
-        return mc.player.getAttributeValue(EntityAttributes.BLOCK_INTERACTION_RANGE) + reachDistance.get();
+        return mc.player.getAttributeValue(EntityAttributes.PLAYER_BLOCK_INTERACTION_RANGE) + reachDistance.get();
     }
 
     private final double[] FALL_FLYING_EYE_HEIGHTS = {0.4D, 1.62D, 1.27D};

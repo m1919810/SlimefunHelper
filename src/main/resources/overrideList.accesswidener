@@ -100,3 +100,4 @@ accessible field net/minecraft/component/type/ContainerComponent stacks Lnet/min
 
 accessible method net/minecraft/client/option/GameOptions setPlayerModelPart (Lnet/minecraft/entity/player/PlayerModelPart;Z)V
 accessible method net/minecraft/client/MinecraftClient openChatScreen (Ljava/lang/String;)V
+accessible field net/minecraft/potion/Potion baseName Ljava/lang/String;

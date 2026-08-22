@@ -19,24 +19,22 @@ import net.minecraft.block.enums.SlabType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ChargedProjectilesComponent;
-import net.minecraft.component.type.ConsumableComponent;
-import net.minecraft.component.type.EquippableComponent;
+import net.minecraft.component.type.FoodComponent;
 import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.entity.*;
+import net.minecraft.entity.Leashable;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.entity.decoration.LeashKnotEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.PiglinActivity;
 import net.minecraft.entity.mob.PiglinEntity;
-import net.minecraft.entity.Leashable;
 import net.minecraft.entity.mob.ShulkerEntity;
 import net.minecraft.entity.passive.*;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.vehicle.*;
 import net.minecraft.item.*;
 import net.minecraft.potion.Potions;
-import net.minecraft.recipe.RecipePropertySet;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.ItemTags;
@@ -482,7 +480,7 @@ public class InteractUtils {
         if (entity instanceof MinecartEntity minecart) {
             return !player.shouldCancelInteraction() && !minecart.hasPassengers();
         }
-        if (entity instanceof AbstractBoatEntity) {
+        if (entity instanceof BoatEntity) {
             return !player.shouldCancelInteraction();
         }
         return false;
@@ -502,7 +500,7 @@ public class InteractUtils {
             return true;
         }
         if (entity instanceof AllayEntity allay) {
-            if (allay.isDancing() && stack.isIn(ItemTags.DUPLICATES_ALLAYS) && allay.canDuplicate()) {
+            if (allay.isDancing() && stack.isOf(Items.AMETHYST_SHARD) && allay.canDuplicate()) {
                 return true;
             }
             if (!allay.isHoldingItem() && !stack.isEmpty()) {
@@ -552,8 +550,7 @@ public class InteractUtils {
                     }
                     if (wolf.isInSittingPose()
                             && wolf.isWearingBodyArmor()
-                            && wolf.getBodyArmor().isDamaged()
-                            && wolf.getBodyArmor().canRepairWith(stack)) {
+                            && wolf.getBodyArmor().isDamaged()) {
                         return true;
                     }
                     return true;
@@ -642,28 +639,9 @@ public class InteractUtils {
         if (!interactStack.isItemEnabled(world.getEnabledFeatures())) {
             return false;
         }
-        if (player.getItemCooldownManager().isCoolingDown(interactStack)) {
+        if (player.getItemCooldownManager().isCoolingDown(interactStack.getItem())) {
             return false;
         }
-
-        ConsumableComponent consumableComponent = interactStack.get(DataComponentTypes.CONSUMABLE);
-        if (consumableComponent != null) {
-            return consumableComponent.canConsume(player, interactStack);
-        }
-
-        EquippableComponent equippableComponent = interactStack.get(DataComponentTypes.EQUIPPABLE);
-        if (equippableComponent != null && equippableComponent.swappable()) {
-            if (!player.canUseSlot(equippableComponent.slot()) || !equippableComponent.allows(player.getType())) {
-                return false;
-            }
-            ItemStack equippedStack = player.getEquippedStack(equippableComponent.slot());
-            return !ItemStack.areItemsAndComponentsEqual(interactStack, equippedStack);
-        }
-
-        if (interactStack.getItem() instanceof ShieldItem || VItem.getInstance().isSpear(interactStack)) {
-            return true;
-        }
-
         Item item = interactStack.getItem();
         if (item instanceof BowItem) {
             return player.isInCreativeMode()
@@ -678,6 +656,29 @@ public class InteractUtils {
         if (item instanceof TridentItem) {
             return true;
         }
+        if (interactStack.getMaxUseTime(player) > 0) {
+            FoodComponent consumableComponent = interactStack.get(DataComponentTypes.FOOD);
+            if (consumableComponent != null) {
+                return player.canConsume(consumableComponent.canAlwaysEat());
+            } else {
+                return true;
+            }
+        }
+
+        if (interactStack.getItem() instanceof Equipment equipment
+                && (equipment instanceof ArmorItem || equipment instanceof ElytraItem)) {
+            EquipmentSlot slot = equipment.getSlotType();
+            if (!player.canUseSlot(slot)) {
+                return false;
+            }
+            ItemStack equippedStack = player.getEquippedStack(slot);
+            return !ItemStack.areItemsAndComponentsEqual(interactStack, equippedStack);
+        }
+
+        if (interactStack.getItem() instanceof ShieldItem || VItem.getInstance().isSpear(interactStack)) {
+            return true;
+        }
+
         if (item instanceof GoatHornItem) {
             return interactStack.contains(DataComponentTypes.INSTRUMENT);
         }

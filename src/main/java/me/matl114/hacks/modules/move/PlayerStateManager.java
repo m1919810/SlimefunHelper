@@ -43,7 +43,6 @@ import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerPosition;
 import net.minecraft.entity.projectile.thrown.PotionEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
@@ -241,27 +240,28 @@ public class PlayerStateManager extends BaseModule {
         }
         // only when vanilla teleport
         // grim teleport will send a EntityVelocityUpdateS2C to sync the clientVelocity
-        if (eventPositionLook.context.teleportId() >= 0) {
+        if (eventPositionLook.context.getTeleportId() >= 0) {
             if (!ViaFabricPlusHooks.isSupportEndTick()) {
-                var relativesSet = eventPositionLook.context.relatives();
+                var relativesSet = eventPositionLook.context.getFlags();
                 double lastClientVX = relativesSet.contains(PositionFlag.X) ? lastKnownClientVelocity.x : 0;
                 double lastClientVY = relativesSet.contains(PositionFlag.Y) ? lastKnownClientVelocity.y : 0;
                 double lastClientVZ = relativesSet.contains(PositionFlag.Z) ? lastKnownClientVelocity.z : 0;
                 lastKnownClientVelocity = new Vec3d(lastClientVX, lastClientVY, lastClientVZ);
             } else {
-                var relativesSet = eventPositionLook.context.relatives();
-                PlayerPosition position = eventPositionLook.context.change();
-                Vec3d deltaMovement = position.deltaMovement();
-                double lastClientVX = relativesSet.contains(PositionFlag.DELTA_X)
-                        ? lastKnownClientVelocity.x + deltaMovement.x
-                        : deltaMovement.x;
-                double lastClientVY = relativesSet.contains(PositionFlag.DELTA_Y)
-                        ? lastKnownClientVelocity.y + deltaMovement.y
-                        : deltaMovement.y;
-                double lastClientVZ = relativesSet.contains(PositionFlag.DELTA_Z)
-                        ? lastKnownClientVelocity.z + deltaMovement.z
-                        : deltaMovement.z;
-                lastKnownClientVelocity = new Vec3d(lastClientVX, lastClientVY, lastClientVZ);
+                // not available in 1.21.1
+                //                var relativesSet = eventPositionLook.context.getFlags();
+                //                PlayerPosition position = eventPositionLook.context.change();
+                //                Vec3d deltaMovement = position.deltaMovement();
+                //                double lastClientVX = relativesSet.contains(PositionFlag.DELTA_X)
+                //                        ? lastKnownClientVelocity.x + deltaMovement.x
+                //                        : deltaMovement.x;
+                //                double lastClientVY = relativesSet.contains(PositionFlag.DELTA_Y)
+                //                        ? lastKnownClientVelocity.y + deltaMovement.y
+                //                        : deltaMovement.y;
+                //                double lastClientVZ = relativesSet.contains(PositionFlag.DELTA_Z)
+                //                        ? lastKnownClientVelocity.z + deltaMovement.z
+                //                        : deltaMovement.z;
+                //                lastKnownClientVelocity = new Vec3d(lastClientVX, lastClientVY, lastClientVZ);
             }
         }
     }

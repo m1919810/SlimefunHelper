@@ -103,7 +103,7 @@ public class PacketDebugger extends BaseModule {
                 if (type instanceof PlayerPositionLookS2CPacket positionLookS2CPacket) {
                     Vec3d vec3d = new Vec3d(
                             positionLookS2CPacket.getX(), positionLookS2CPacket.getY(), positionLookS2CPacket.getZ());
-                    ExtraTasks.debug(
+                    debug(
                             "Accept",
                             simplifyId(type.getPacketId().id()),
                             vec3d.x,

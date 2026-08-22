@@ -70,9 +70,12 @@ public abstract class BackGroundRenderMixin {
     @ModifyArg(
             method = "applyFog",
             at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderFogStart(F)V"))
-    private static float applyFog(float shaderFogStart, @Local(argsOnly = true) BackgroundRenderer.FogType fogType) {
+    private static float applyFog(
+            float shaderFogStart,
+            @Local(argsOnly = true) BackgroundRenderer.FogType fogType,
+            @Local(argsOnly = true, ordinal = 0) float viewDistance) {
         if (fogType == BackgroundRenderer.FogType.FOG_TERRAIN && NoRender.INSTANCE.noDistanceFog()) {
-            return Float.MAX_VALUE;
+            return viewDistance * 4;
         }
         return shaderFogStart;
     }
@@ -80,9 +83,12 @@ public abstract class BackGroundRenderMixin {
     @ModifyArg(
             method = "applyFog",
             at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderFogEnd(F)V"))
-    private static float applyFogEnd(float shaderFogEnd, @Local(argsOnly = true) BackgroundRenderer.FogType fogType) {
+    private static float applyFogEnd(
+            float shaderFogEnd,
+            @Local(argsOnly = true) BackgroundRenderer.FogType fogType,
+            @Local(argsOnly = true, ordinal = 0) float viewDistance) {
         if (fogType == BackgroundRenderer.FogType.FOG_TERRAIN && NoRender.INSTANCE.noDistanceFog()) {
-            return Float.MAX_VALUE;
+            return viewDistance * 4;
         }
         return shaderFogEnd;
     }

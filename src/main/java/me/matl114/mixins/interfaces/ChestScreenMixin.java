@@ -15,7 +15,7 @@ import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.entity.vehicle.AbstractChestBoatEntity;
+import net.minecraft.entity.vehicle.ChestBoatEntity;
 import net.minecraft.entity.vehicle.StorageMinecartEntity;
 import net.minecraft.entity.vehicle.VehicleInventory;
 import net.minecraft.screen.GenericContainerScreenHandler;
@@ -118,12 +118,12 @@ public abstract class ChestScreenMixin extends HandledScreen<GenericContainerScr
         var player = MinecraftClient.getInstance().player;
         vehicleEntity = (VehicleInventory) InteractionTasks.predictScreenFrom(ex -> {
             return ex instanceof StorageMinecartEntity
-                    || (player != null && player.shouldCancelInteraction() && ex instanceof AbstractChestBoatEntity);
+                    || (player != null && player.shouldCancelInteraction() && ex instanceof ChestBoatEntity);
         });
         if (vehicleEntity == null
                 && player != null
                 && player.hasVehicle()
-                && player.getVehicle() instanceof AbstractChestBoatEntity ccb) {
+                && player.getVehicle() instanceof ChestBoatEntity ccb) {
             vehicleEntity = ccb;
         }
         if (this.handler instanceof EntityInventory.Handler handler1) {

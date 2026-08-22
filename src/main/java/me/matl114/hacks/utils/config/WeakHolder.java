@@ -85,6 +85,10 @@ public record WeakHolder<T>(Identifier registry, Identifier location) implements
     }
 
     public Optional<RegistryEntry<T>> getEntry() {
-        return ItemStackUtils.registry().getOptionalEntry(toRegistryKey()).map(s -> s);
+        RegistryKey<T> key = toRegistryKey();
+        return ItemStackUtils.registry()
+                .get(toRegistryKey().getRegistryRef())
+                .getEntry(key)
+                .map(s -> s);
     }
 }

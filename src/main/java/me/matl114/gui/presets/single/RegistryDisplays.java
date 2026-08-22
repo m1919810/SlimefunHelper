@@ -101,9 +101,9 @@ public class RegistryDisplays {
         } else if (val instanceof Block itemStack) {
             return itemStack.getName();
         } else if (val instanceof SoundEvent soundEvent) {
-            return Text.translatable("subtitles." + soundEvent.id().getPath());
+            return Text.translatable("subtitles." + soundEvent.getId().getPath());
         } else if (val instanceof Potion potionType) {
-            return Text.translatable(Items.POTION.getTranslationKey() + ".effect." + potionType.getBaseName());
+            return Text.translatable(Items.POTION.getTranslationKey() + ".effect." + potionType.baseName);
         }
         return null;
     }

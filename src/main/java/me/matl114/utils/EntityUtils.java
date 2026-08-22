@@ -534,7 +534,7 @@ public class EntityUtils {
                 vec2f = vec2f.multiply(0.2F);
             }
             if (p.shouldSlowDown()) {
-                float f = (float) p.getAttributeValue(EntityAttributes.SNEAKING_SPEED);
+                float f = (float) p.getAttributeValue(EntityAttributes.PLAYER_SNEAKING_SPEED);
                 vec2f = vec2f.multiply(f);
             }
             float f = vec2f.length();

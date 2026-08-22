@@ -2,6 +2,7 @@ package me.matl114.mixins.events;
 
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.RecipeBookToggle;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.screen.ingame.AbstractInventoryScreen;
@@ -42,7 +43,8 @@ public abstract class InventoryScreenEvents extends AbstractInventoryScreen<Play
         return (button -> {
             pressAction.onPress(button);
             if (!Listener.getPostToggleRecipeBook().isEmpty()) {
-                Event<RecipeBookProvider> toggleRecipeBook = new Event<>(this, false, false, recipeBook, button);
+                Event<RecipeBookToggle> toggleRecipeBook =
+                        new Event<>(new RecipeBookToggle(this, recipeBook, button), false, false);
                 Listener.getPostToggleRecipeBook().handleValue(toggleRecipeBook);
             }
         });

@@ -111,7 +111,7 @@ public class ItemUtils_v1_21_1 implements VItem {
 
     @Override
     public NbtCompound toNbt(ItemStack tag) {
-        NbtCompound nbt = (NbtCompound) tag.encodeAllowEmpty(ItemStackUtils.registry());
+        NbtCompound nbt = toNbt0(tag);
         nbt.putInt(DataVersion.DATA_VERSION_FLAG, DataVersion.getDataVersion());
         return nbt;
     }
@@ -145,7 +145,11 @@ public class ItemUtils_v1_21_1 implements VItem {
     }
 
     private NbtCompound toNbt0(ItemStack tag) {
-        return tag.isEmpty() ? new NbtCompound() : (NbtCompound) tag.toNbt(ItemStackUtils.registry());
+        return tag.isEmpty()
+                ? new NbtCompound()
+                : (NbtCompound) ItemStack.CODEC
+                        .encodeStart(ItemStackUtils.registry().getOps(NbtOps.INSTANCE), tag)
+                        .getOrThrow();
     }
 
     private NbtCompound toNbt0(ItemStack tag, RegistryWrapper.WrapperLookup lookup) {

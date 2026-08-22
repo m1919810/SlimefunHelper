@@ -2,7 +2,6 @@ package me.matl114.mixins.events;
 
 import me.matl114.events.Listener;
 import me.matl114.events.impl.RecipeBookToggle;
-import net.minecraft.client.gui.screen.ingame.RecipeBookScreen;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.screen.ingame.CraftingScreen;

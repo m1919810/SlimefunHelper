@@ -701,7 +701,7 @@ public class PathingSchedular {
         if (mc.world == null || mc.player == null) {
             return null;
         }
-        int maxY = Math.min(mc.world.getTopYInclusive() - 2, targetPos.getY() + PATH_STOP_SEARCH_VERTICAL);
+        int maxY = Math.min(mc.world.getTopY() - 2, targetPos.getY() + PATH_STOP_SEARCH_VERTICAL);
         int minY = mc.world.getBottomY();
         if (maxY < minY) {
             return null;
@@ -745,7 +745,7 @@ public class PathingSchedular {
         if (mc.world == null || mc.player == null) {
             return false;
         }
-        if (supportPos.getY() < mc.world.getBottomY() || standPos.getY() >= mc.world.getTopYInclusive()) {
+        if (supportPos.getY() < mc.world.getBottomY() || standPos.getY() >= mc.world.getTopY()) {
             return false;
         }
         var supportState = mc.world.getBlockState(supportPos);

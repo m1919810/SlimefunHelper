@@ -80,7 +80,7 @@ public class FarmingUtils {
             Items.PUFFERFISH_BUCKET,
             Items.COD_BUCKET,
             Items.SALMON_BUCKET,
-            Items.OPEN_EYEBLOSSOM,
+            //            Items.OPEN_EYEBLOSSOM,
             Items.POPPY,
             Items.BLUE_ORCHID,
             Items.ALLIUM,

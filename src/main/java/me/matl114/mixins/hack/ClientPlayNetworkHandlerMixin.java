@@ -3,7 +3,6 @@ package me.matl114.mixins.hack;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import java.util.Set;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.modules.extra.BadPacketsFix;
@@ -12,12 +11,8 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityPosition;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerPosition;
 import net.minecraft.network.packet.s2c.play.*;
-import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -111,20 +106,12 @@ public abstract class ClientPlayNetworkHandlerMixin {
 
     @WrapOperation(
             method = "onPlayerPositionLook",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target =
-                                    "Lnet/minecraft/client/network/ClientPlayNetworkHandler;setPosition(Lnet/minecraft/entity/player/PlayerPosition;Ljava/util/Set;Lnet/minecraft/entity/Entity;Z)Z"))
-    private boolean wrapSetPositionLook(
-            PlayerPosition pos, Set<PositionFlag> flags, Entity entity, boolean bl, Operation<Boolean> original) {
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;setVelocity(DDD)V"))
+    private void wrapSetPositionLook(PlayerEntity instance, double v, double v2, double v3, Operation<Void> original) {
         if (AutoResync.INSTANCE.noVelocitySetback.get()) {
-            Vec3d currentVelocity = entity.getVelocity();
-            boolean re = original.call(pos, flags, entity, bl);
-            entity.setVelocity(currentVelocity);
-            return re;
+            return;
         } else {
-            return original.call(pos, flags, entity, bl);
+            original.call(instance, v, v2, v3);
         }
     }
 }
