@@ -115,7 +115,8 @@ public abstract class ElytraBehaviourPathManagerMixin {
             },
             at = @At(value = "INVOKE", target = "Lbaritone/process/elytra/NetherPath;<init>(Ljava/util/List;)V"),
             require = 0,
-            expect = 0, remap = false)
+            expect = 0,
+            remap = false)
     private List<BetterBlockPos> captureNetherPathArgumentUpdate(List<BetterBlockPos> list) {
         BaritoneHooks.currentNetherElytraPath = (List) list;
         return list;
@@ -123,7 +124,8 @@ public abstract class ElytraBehaviourPathManagerMixin {
 
     @Inject(
             method = {"a()V", "Lbaritone/process/elytra/ElytraBehavior$PathManager;clear()V"},
-            at = @At("HEAD"), remap = false)
+            at = @At("HEAD"),
+            remap = false)
     private void captureNetherPathArgumentClear(CallbackInfo ci) {
         BaritoneHooks.currentNetherElytraPath = List.of();
     }
