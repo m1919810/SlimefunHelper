@@ -238,7 +238,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
     private boolean canCubePlace(ClientPlayerEntity player, BlockPos pos, Set<EndCrystalEntity> pendingRemove) {
         BlockState state = Blocks.OBSIDIAN.getDefaultState();
         VoxelShape shape = state.getCollisionShape(mc.world, pos, ShapeContext.of(mc.player))
-                .offset(pos);
+                .offset(pos.getX(), pos.getY(), pos.getZ());
 
         return !CollisionUtil.hasAnyIntersects(
                 mc.world, (entity) -> entity instanceof EndCrystalEntity end && pendingRemove.contains(end), shape);
