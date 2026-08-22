@@ -113,14 +113,14 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     }
 
     public void setLastPos(Vec3d vec3d) {
-        this.lastXClient = vec3d.x;
-        this.lastZClient = vec3d.y;
-        this.lastYClient = vec3d.z;
+        this.lastX = vec3d.x;
+        this.lastZ = vec3d.z;
+        this.lastBaseY = vec3d.y;
     }
 
     public void setLastRot(float pitch, float yaw) {
-        this.lastPitchClient = pitch;
-        this.lastYawClient = yaw;
+        this.lastPitch = pitch;
+        this.lastYaw = yaw;
     }
 
     public void resyncInput() {

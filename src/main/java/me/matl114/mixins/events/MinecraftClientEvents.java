@@ -117,13 +117,12 @@ public abstract class MinecraftClientEvents {
     }
 
     @Inject(
-            method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;ZZ)V",
+            method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;Z)V",
             at =
                     @At(
                             value = "INVOKE",
                             target = "Lnet/minecraft/client/network/ClientPlayNetworkHandler;unloadWorld()V"))
-    public void onServerDisconnect(
-            Screen disconnectionScreen, boolean transferring, boolean stopSounds, CallbackInfo ci) {
+    public void onServerDisconnect(Screen disconnectionScreen, boolean transferring, CallbackInfo ci) {
         // origin exit
         // ensure that player is exiting from PLAY stage , we inject before the unloadWorld
         Listener.getServerLeavePoint().handleValue(new Event<>(null, false, false, true));

@@ -12,10 +12,8 @@ import net.minecraft.block.*;
 import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.block.enums.SlabType;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.mob.CamelHuskEntity;
 import net.minecraft.entity.mob.ZombieHorseEntity;
 import net.minecraft.entity.passive.AnimalEntity;
-import net.minecraft.entity.passive.HappyGhastEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -106,13 +104,13 @@ public class FarmingUtils {
             Items.MANGROVE_PROPAGULE,
             Items.CHERRY_LEAVES,
             Items.PINK_PETALS,
-            Items.WILDFLOWERS,
+            //            Items.WILDFLOWERS,
             Items.CHORUS_FLOWER,
-            Items.SPORE_BLOSSOM,
-            Items.CACTUS_FLOWER);
+            Items.SPORE_BLOSSOM
+            //            Items.CACTUS_FLOWER
+            );
 
-    private static final Set<Class<? extends Entity>> FOOD_ONLY_ENTITY_TYPES =
-            Set.of(CamelHuskEntity.class, HappyGhastEntity.class, ZombieHorseEntity.class);
+    private static final Set<Class<? extends Entity>> FOOD_ONLY_ENTITY_TYPES = Set.of(ZombieHorseEntity.class);
 
     private static final Predicate<ItemStack> ALWAYS_TRUE = stack -> true;
 
@@ -212,12 +210,13 @@ public class FarmingUtils {
                 return Pair.of(isItem(block1.asItem()), null);
             }
 
-            if (block1 instanceof LeafLitterBlock
-                    && state1.get(LeafLitterBlock.SEGMENT_AMOUNT) < 4
-                    && state2.equals(state1.with(
-                            LeafLitterBlock.SEGMENT_AMOUNT, state1.get(LeafLitterBlock.SEGMENT_AMOUNT) + 1))) {
-                return Pair.of(isItem(block1.asItem()), null);
-            }
+            //            if (block1 instanceof LeafLitterBlock
+            //                    && state1.get(LeafLitterBlock.SEGMENT_AMOUNT) < 4
+            //                    && state2.equals(state1.with(
+            //                            LeafLitterBlock.SEGMENT_AMOUNT, state1.get(LeafLitterBlock.SEGMENT_AMOUNT) +
+            // 1))) {
+            //                return Pair.of(isItem(block1.asItem()), null);
+            //            }
 
             if (block1 instanceof RepeaterBlock && state2.equals(state1.cycle(RepeaterBlock.DELAY))) {
                 return Pair.of(ALWAYS_TRUE, null);
@@ -296,13 +295,15 @@ public class FarmingUtils {
                 }
             }
 
-            if (block1 instanceof CopperGolemStatueBlock
-                    && state1.get(CopperGolemStatueBlock.POSE).getNext() == state2.get(CopperGolemStatueBlock.POSE)
-                    && state1.get(CopperGolemStatueBlock.FACING) == state2.get(CopperGolemStatueBlock.FACING)
-                    && state1.get(CopperGolemStatueBlock.WATERLOGGED)
-                            == state2.get(CopperGolemStatueBlock.WATERLOGGED)) {
-                return Pair.of(FarmingUtils::isStatuePoseSwitchItem, null);
-            }
+            //            if (block1 instanceof CopperGolemStatueBlock
+            //                    && state1.get(CopperGolemStatueBlock.POSE).getNext() ==
+            // state2.get(CopperGolemStatueBlock.POSE)
+            //                    && state1.get(CopperGolemStatueBlock.FACING) ==
+            // state2.get(CopperGolemStatueBlock.FACING)
+            //                    && state1.get(CopperGolemStatueBlock.WATERLOGGED)
+            //                            == state2.get(CopperGolemStatueBlock.WATERLOGGED)) {
+            //                return Pair.of(FarmingUtils::isStatuePoseSwitchItem, null);
+            //            }
         }
 
         if (block1 instanceof CakeBlock && block2 instanceof CandleCakeBlock) {
@@ -620,11 +621,10 @@ public class FarmingUtils {
         CACTUS(
                 Items.CACTUS,
                 false,
-                allStates(Blocks.CACTUS, Blocks.CACTUS_FLOWER),
-                Set.of(Blocks.CACTUS, Blocks.CACTUS_FLOWER),
+                allStates(Blocks.CACTUS),
+                Set.of(Blocks.CACTUS),
                 setOf(Blocks.CACTUS.getDefaultState()),
-                (world, pos) -> world.getBlockState(pos).isOf(Blocks.CACTUS_FLOWER)
-                        || isVerticalHarvestable(world, pos, Blocks.CACTUS)),
+                (world, pos) -> isVerticalHarvestable(world, pos, Blocks.CACTUS)),
         SUGAR_CANE(
                 Items.SUGAR_CANE,
                 false,

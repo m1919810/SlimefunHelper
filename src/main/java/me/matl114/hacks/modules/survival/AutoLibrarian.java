@@ -176,12 +176,12 @@ public class AutoLibrarian extends BaseModule {
     private boolean isLowLevelOrNoProfessionVillager(VillagerEntity villager) {
         VillagerData villagerData = villager.getVillagerData();
         if (villagerData != null) {
-            var profession = villagerData.profession().getKey().orElse(null);
+            var profession = villagerData.getProfession();
             if (Objects.equals(profession, VillagerProfession.NONE)) {
                 return true;
             }
             if (Objects.equals(profession, VillagerProfession.LIBRARIAN)) {
-                return villagerData.level() <= 1 && !WorldManager.INSTANCE.isVillagerTradeLock(villager);
+                return villagerData.getLevel() <= 1 && !WorldManager.INSTANCE.isVillagerTradeLock(villager);
             } else {
                 return false;
             }
@@ -293,8 +293,7 @@ public class AutoLibrarian extends BaseModule {
         BlockPos targetWorkspace = targetWorkStationBase.add(0, 1, 0);
         BlockState currentState = mc.world.getBlockState(targetWorkspace);
         VillagerData data = targetVillager.getVillagerData();
-        RegistryKey<VillagerProfession> professionRegistryKey =
-                data.profession().getKey().orElse(null);
+        var professionRegistryKey = data.getProfession();
         if (currentState.isAir() || currentState.isLiquid() || currentState.isReplaceable()) {
             hasOpened = false;
             if (Objects.equals(professionRegistryKey, VillagerProfession.NONE)) {

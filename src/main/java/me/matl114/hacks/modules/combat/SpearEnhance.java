@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.IntSupplier;
 import lombok.Setter;
-import me.matl114.accessors.events.MetadataHolder;
+import me.matl114.accessors.interfaces.MetadataHolder;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
