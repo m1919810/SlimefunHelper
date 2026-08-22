@@ -644,7 +644,7 @@ public class Interact extends BaseModule {
                     minY = Math.min(minY, movementList.get(i).vec3d().y);
                 }
                 // calculate max deltaY
-                if (Math.abs(maxY - minY) > player.getAttributeValue(EntityAttributes.SAFE_FALL_DISTANCE) - 1) {
+                if (Math.abs(maxY - minY) > player.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE) - 1) {
                     ClientPlayerAccess.of((ClientPlayerEntity) player).setForceNoFall(true);
                     // in case that resync packet cause OnGround falldamage
                     player.setOnGround(false);

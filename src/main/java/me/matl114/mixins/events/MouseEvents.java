@@ -90,19 +90,19 @@ public abstract class MouseEvents {
     }
 
     @Redirect(
-        method = "tick",
-        at =
-        @At(
-            value = "INVOKE",
-            target =
-                "Lnet/minecraft/client/gui/screen/Screen;wrapScreenError(Ljava/lang/Runnable;Ljava/lang/String;Ljava/lang/String;)V",
-            ordinal = 0))
+            method = "tick",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/gui/screen/Screen;wrapScreenError(Ljava/lang/Runnable;Ljava/lang/String;Ljava/lang/String;)V",
+                            ordinal = 0))
     private void onMouseMove(
-        Runnable task,
-        String errorTitle,
-        String screenName,
-        @Local(ordinal = 2) double f,
-        @Local(ordinal = 3) double g) {
+            Runnable task,
+            String errorTitle,
+            String screenName,
+            @Local(ordinal = 2) double f,
+            @Local(ordinal = 3) double g) {
         Event<MouseMoveAction> event = new Event<>(new MouseMoveAction((Mouse) (Object) this, f, g), true, false);
         Listener.getMouseMove().handleValue(event);
         if (!event.isCancelled()) {
@@ -126,8 +126,7 @@ public abstract class MouseEvents {
             @Local(ordinal = 3) double g,
             @Local(ordinal = 4) double h,
             @Local(ordinal = 5) double i) {
-        Event<MouseDragAction> event =
-            new Event<>(new MouseDragAction((Mouse) (Object) this,  f, g, h, i), true, false);
+        Event<MouseDragAction> event = new Event<>(new MouseDragAction((Mouse) (Object) this, f, g, h, i), true, false);
         Listener.getMouseDrag().handleValue(event);
         if (!event.isCancelled()) {
             Screen.wrapScreenError(task, errorTitle, screenName);

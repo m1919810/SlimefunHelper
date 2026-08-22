@@ -142,16 +142,24 @@ public class MathUtils {
         return positions;
     }
 
-    public static final Direction[] HORIZONTALS = Arrays.stream(Direction.values())
+    public static final Direction[] HORIZONTALS = (Direction[]) Arrays.stream(Direction.values())
             .filter((direction) -> {
                 return direction.getAxis().isHorizontal();
             })
-            .sorted(Comparator.comparingInt(Direction::getHorizontalQuarterTurns))
+            .sorted(Comparator.comparingInt(Direction::getHorizontal))
             .toArray(Direction[]::new);
+
+    public static Direction fromHorizontalQuarterTurns(int quarterTurns) {
+        return HORIZONTALS[MathHelper.abs(quarterTurns % HORIZONTALS.length)];
+    }
+
+    public static Direction fromHorizontalDegrees(double angle) {
+        return fromHorizontalQuarterTurns(MathHelper.floor(angle / 90.0 + 0.5) & 3);
+    }
 
     public static Direction getHorizontalFacing(Vec3d vec3d) {
         float yaw = EntityUtils.rotationToYaw(vec3d.normalize());
-        return Direction.fromHorizontalDegrees(yaw);
+        return fromHorizontalDegrees(yaw);
     }
 
     public static ChunkPos toChunkPos(Vec3d vec3d) {

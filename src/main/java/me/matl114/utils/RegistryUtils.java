@@ -87,7 +87,9 @@ public class RegistryUtils {
     }
 
     public static <W> RegistryEntry<W> getRegistryEntry(RegistryWrapper.WrapperLookup lookup, RegistryKey<W> key) {
-        return lookup.getOptionalEntry(key).orElse(null);
+        return lookup.getOptionalWrapper(key.getRegistryRef())
+                .flatMap((registry) -> registry.getOptional(key))
+                .orElse(null);
     }
 
     public static <W> RegistryEntry<W> getRegistryEntry(

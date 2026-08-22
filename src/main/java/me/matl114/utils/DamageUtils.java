@@ -247,7 +247,7 @@ public class DamageUtils {
             }
 
             builder.withArmor((float) player.getArmor());
-            builder.withArmorToughness((float) player.getAttributeValue(EntityAttributes.ARMOR_TOUGHNESS));
+            builder.withArmorToughness((float) player.getAttributeValue(EntityAttributes.GENERIC_ARMOR_TOUGHNESS));
             for (EquipmentSlot armorSlot : EquipmentSlot.values()) {
                 ItemStack armorStack = player.getEquippedStack(armorSlot);
                 if (armorStack == null || armorStack.isEmpty()) {

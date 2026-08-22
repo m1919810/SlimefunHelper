@@ -22,7 +22,6 @@ import me.matl114.utils.MathUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerRotationS2CPacket;
 import net.minecraft.network.packet.s2c.play.PositionFlag;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
@@ -88,10 +87,12 @@ public class AutoResync extends BaseModule {
                 Listener.getPacketPreHandlePoint().getChannel(PlayerPositionLookS2CPacket.class), this::onPreSetBack);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(PlayerPositionLookS2CPacket.class), this::onPostSetBack);
-        registerListener(
-                Listener.getPacketPreHandlePoint().getChannel(PlayerRotationS2CPacket.class), this::onPreRotate);
-        registerListener(
-                Listener.getPacketPostHandlePoint().getChannel(PlayerRotationS2CPacket.class), this::onPostRotate);
+        //        registerListener(
+        //                Listener.getPacketPreHandlePoint().getChannel(PlayerRotationS2CPacket.class),
+        // this::onPreRotate);
+        //        registerListener(
+        //                Listener.getPacketPostHandlePoint().getChannel(PlayerRotationS2CPacket.class),
+        // this::onPostRotate);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
         registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
     }
@@ -198,17 +199,17 @@ public class AutoResync extends BaseModule {
         }
     }
 
-    public void onPreRotate(Event<PlayerRotationS2CPacket> eventRotate) {
-        if (autoResyncRot.get()) {
-            if (modifyPacketRot.get()) {
-                eventRotate.cancel();
-            } else {
-                restoreRot = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
-                mc.player.setPitch(PlayerStateManager.INSTANCE.lastPitch);
-                mc.player.setYaw(PlayerStateManager.INSTANCE.lastYaw);
-            }
-        }
-    }
+    //    public void onPreRotate(Event<PlayerRotationS2CPacket> eventRotate) {
+    //        if (autoResyncRot.get()) {
+    //            if (modifyPacketRot.get()) {
+    //                eventRotate.cancel();
+    //            } else {
+    //                restoreRot = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
+    //                mc.player.setPitch(PlayerStateManager.INSTANCE.lastPitch);
+    //                mc.player.setYaw(PlayerStateManager.INSTANCE.lastYaw);
+    //            }
+    //        }
+    //    }
 
     public void onPostSetBack(Event<PlayerPositionLookS2CPacket> event) {
         if (restoreRot != null) {
@@ -220,13 +221,13 @@ public class AutoResync extends BaseModule {
         }
     }
 
-    public void onPostRotate(Event<PlayerRotationS2CPacket> eventRotate) {
-        if (restoreRot != null) {
-            EntityUtils.setEntityPitchSafe(mc.player, restoreRot.x);
-            PlayerStateManager.setPlayerYawSafe(mc.player, restoreRot.y);
-            restoreRot = null;
-        }
-    }
+    //    public void onPostRotate(Event<PlayerRotationS2CPacket> eventRotate) {
+    //        if (restoreRot != null) {
+    //            EntityUtils.setEntityPitchSafe(mc.player, restoreRot.x);
+    //            PlayerStateManager.setPlayerYawSafe(mc.player, restoreRot.y);
+    //            restoreRot = null;
+    //        }
+    //    }
 
     public void executeResyncTo(Vec3d resyncPos, Vec3d resyncToPos, boolean currentOnGround) {
         mc.player.setPosition(resyncPos);

@@ -50,10 +50,10 @@ import net.minecraft.entity.*;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.projectile.FireworkRocketEntity;
+import net.minecraft.item.*;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.MaceItem;
-import net.minecraft.item.*;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
@@ -690,7 +690,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     private boolean canUnbreakableFlyItem(ItemStack item) {
-        return item.isEmpty() || (!VItem.getInstance().canGlide(item) && mc.player.getPreferredEquipmentSlot(item) == EquipmentSlot.CHEST);
+        return item.isEmpty()
+                || (!VItem.getInstance().canGlide(item)
+                        && mc.player.getPreferredEquipmentSlot(item) == EquipmentSlot.CHEST);
     }
 
     public int findEmptyPlaceForElytra() {
