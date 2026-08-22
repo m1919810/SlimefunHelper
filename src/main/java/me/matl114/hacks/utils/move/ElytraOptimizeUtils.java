@@ -106,8 +106,8 @@ public class ElytraOptimizeUtils {
             vec3d = vec3d.withAxis(Direction.Axis.X, 5);
             horizontal = vec3d.horizontalLength();
         }
-        Vec2f py = EntityUtils.rotationToPitchYaw(vec3d);
-        if (py.x > 60) {
+        Vec2f py = EntityUtils.rotationToPitchYaw(vec3d.normalize());
+        if (py.x > 75) {
             return vec3d;
         }
         double pitchDeg = 30.5;
@@ -129,12 +129,12 @@ public class ElytraOptimizeUtils {
             vec3d = vec3d.withAxis(Direction.Axis.X, 5);
             horizontal = vec3d.horizontalLength();
         }
-        Vec2f py = EntityUtils.rotationToPitchYaw(vec3d);
+        Vec2f py = EntityUtils.rotationToPitchYaw(vec3d.normalize());
         if (py.x < -70) {
             return vec3d;
         }
-        double pitchDeg = -30.5;
-        if (natural && py.x > pitchDeg) {
+        double pitchDeg = 5;
+        if (natural && py.x < pitchDeg) {
             return vec3d;
         }
         return EntityUtils.pitchYawToRotation(5, py.y);
