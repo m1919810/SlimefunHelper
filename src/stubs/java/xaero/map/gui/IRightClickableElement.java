@@ -1,8 +1,8 @@
 package xaero.map.gui;
 
+import java.util.ArrayList;
 import xaero.map.gui.dropdown.rightclick.RightClickOption;
 
-import java.util.ArrayList;
-
-public interface IRightClickableElement
-{ ArrayList<RightClickOption> getRightClickOptions();}
+public interface IRightClickableElement {
+    ArrayList<RightClickOption> getRightClickOptions();
+}
