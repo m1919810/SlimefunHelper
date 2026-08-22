@@ -81,7 +81,7 @@ public interface ItemStackData {
         if (stack.isEmpty()) {
             return JsonNull.INSTANCE;
         } else {
-            NbtCompound nbt = VItem.getInstance().toNbt(stack);
+            NbtCompound nbt = VItem.getInstance().toNbt(stack, ItemStackUtils.registry());
             return new JsonPrimitive(VNbt.getInstance().writeNbt(nbt));
         }
     }

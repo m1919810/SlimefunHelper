@@ -276,8 +276,8 @@ public final class ExplosionUtils {
     }
 
     private static boolean rayCastAccept(BlockStateAccess stateAccess, Vec3d source, Vec3d pos, HitRule hitRule) {
-        BlockPos startFuckPos = BlockPos.ofFloored(MathHelper.lerp(-1E-7, source, pos));
-        BlockPos endFuckPos = BlockPos.ofFloored(MathHelper.lerp(-1E-7, pos, source));
+        BlockPos startFuckPos = BlockPos.ofFloored(MathUtils.lerp(-1E-7, source, pos));
+        BlockPos endFuckPos = BlockPos.ofFloored(MathUtils.lerp(-1E-7, pos, source));
         for (var re : RaycastUtils.createRaycastBlockPoses(pos, source, true)) {
             boolean strict = Objects.equals(startFuckPos, re) || Objects.equals(endFuckPos, re);
             BlockState state = stateAccess.getBlockState(re);
