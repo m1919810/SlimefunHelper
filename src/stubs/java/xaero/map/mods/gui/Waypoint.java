@@ -17,11 +17,10 @@ public class Waypoint implements Comparable<Waypoint> {
         this.editable = editable;
         this.setName = setName;
         this.dimDiv = dimDiv;
-
     }
 
     public String getName() {
-        return ((xaero.common.minimap.waypoints.Waypoint)this.original).getLocalizedName();
+        return ((xaero.common.minimap.waypoints.Waypoint) this.original).getLocalizedName();
     }
 
     public int compareTo(Waypoint arg0) {
@@ -35,53 +34,50 @@ public class Waypoint implements Comparable<Waypoint> {
     }
 
     public int getX() {
-        return ((xaero.common.minimap.waypoints.Waypoint)this.original).getX();
+        return ((xaero.common.minimap.waypoints.Waypoint) this.original).getX();
     }
 
     public int getY() {
-        return ((xaero.common.minimap.waypoints.Waypoint)this.original).getY();
+        return ((xaero.common.minimap.waypoints.Waypoint) this.original).getY();
     }
 
     public int getZ() {
-        return ((xaero.common.minimap.waypoints.Waypoint)this.original).getZ();
+        return ((xaero.common.minimap.waypoints.Waypoint) this.original).getZ();
     }
 
     public boolean isDisabled() {
-        return ((xaero.common.minimap.waypoints.Waypoint)this.original).isDisabled();
+        return ((xaero.common.minimap.waypoints.Waypoint) this.original).isDisabled();
     }
 
     /** @deprecated */
     @Deprecated
-    public void setDisabled(boolean disabled) {
-    }
+    public void setDisabled(boolean disabled) {}
 
     /** @deprecated */
     @Deprecated
     public int getType() {
-        return ((xaero.common.minimap.waypoints.Waypoint)this.original).getWaypointType();
+        return ((xaero.common.minimap.waypoints.Waypoint) this.original).getWaypointType();
     }
 
     public WaypointPurpose getPurpose() {
-        return ((xaero.common.minimap.waypoints.Waypoint)this.original).getPurpose();
+        return ((xaero.common.minimap.waypoints.Waypoint) this.original).getPurpose();
     }
 
     public int getYaw() {
-        return ((xaero.common.minimap.waypoints.Waypoint)this.original).getYaw();
+        return ((xaero.common.minimap.waypoints.Waypoint) this.original).getYaw();
     }
 
     /** @deprecated */
     @Deprecated
-    public void setYaw(int yaw) {
-    }
+    public void setYaw(int yaw) {}
 
     public boolean isRotation() {
-        return ((xaero.common.minimap.waypoints.Waypoint)this.original).isRotation();
+        return ((xaero.common.minimap.waypoints.Waypoint) this.original).isRotation();
     }
 
     /** @deprecated */
     @Deprecated
-    public void setRotation(boolean rotation) {
-    }
+    public void setRotation(boolean rotation) {}
 
     public boolean isEditable() {
         return this.editable;
@@ -92,18 +88,16 @@ public class Waypoint implements Comparable<Waypoint> {
     }
 
     public String getSymbol() {
-        return ((xaero.common.minimap.waypoints.Waypoint)this.original).getInitials();
+        return ((xaero.common.minimap.waypoints.Waypoint) this.original).getInitials();
     }
 
     /** @deprecated */
     @Deprecated
-    public void setTemporary(boolean temporary) {
-    }
+    public void setTemporary(boolean temporary) {}
 
     /** @deprecated */
     @Deprecated
-    public void setGlobal(boolean global) {
-    }
+    public void setGlobal(boolean global) {}
 
     public String getSetName() {
         return this.setName;
@@ -123,25 +117,27 @@ public class Waypoint implements Comparable<Waypoint> {
     }
 
     public int getColor() {
-        return ((xaero.common.minimap.waypoints.Waypoint)this.original).getWaypointColor().getHex();
+        return ((xaero.common.minimap.waypoints.Waypoint) this.original)
+                .getWaypointColor()
+                .getHex();
     }
 
     public boolean isGlobal() {
-        return ((xaero.common.minimap.waypoints.Waypoint)this.original).isGlobal();
+        return ((xaero.common.minimap.waypoints.Waypoint) this.original).isGlobal();
     }
 
     public double getRenderX() {
         int x = this.getX();
-        return this.dimDiv == 1.0 ? (double)x + 0.5 : Math.floor((double)x / this.dimDiv) + 0.5;
+        return this.dimDiv == 1.0 ? (double) x + 0.5 : Math.floor((double) x / this.dimDiv) + 0.5;
     }
 
     public double getRenderZ() {
         int z = this.getZ();
-        return this.dimDiv == 1.0 ? (double)z + 0.5 : Math.floor((double)z / this.dimDiv) + 0.5;
+        return this.dimDiv == 1.0 ? (double) z + 0.5 : Math.floor((double) z / this.dimDiv) + 0.5;
     }
 
     public boolean isTemporary() {
-        return ((xaero.common.minimap.waypoints.Waypoint)this.original).isTemporary();
+        return ((xaero.common.minimap.waypoints.Waypoint) this.original).isTemporary();
     }
 
     public float getDestAlpha() {
@@ -152,8 +148,6 @@ public class Waypoint implements Comparable<Waypoint> {
         this.destAlpha = destAlpha;
     }
 
-
-
     public float getAlpha() {
         return this.alpha;
     }
@@ -163,11 +157,10 @@ public class Waypoint implements Comparable<Waypoint> {
     }
 
     public boolean isyIncluded() {
-        return ((xaero.common.minimap.waypoints.Waypoint)this.original).isYIncluded();
+        return ((xaero.common.minimap.waypoints.Waypoint) this.original).isYIncluded();
     }
 
     public int getCachedNameLength() {
         return this.cachedNameLength;
     }
-
 }
