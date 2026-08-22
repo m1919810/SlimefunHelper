@@ -1423,7 +1423,7 @@ public class KitReplenish extends BaseModule {
                             .filter(s -> !s.val().isEmpty())
                             .map(s -> {
                                 return new IndexEntry<>(
-                                        s.index(), VItem.getInstance().toNbt(s.val()));
+                                        s.index(), VItem.getInstance().toNbt(s.val(), ItemStackUtils.registry()));
                             })
                             .toList(),
                     maxSize,
@@ -1433,7 +1433,8 @@ public class KitReplenish extends BaseModule {
         public List<IndexEntry<ItemStack>> toItem() {
             return itemNBT.stream()
                     .map(s -> {
-                        return new IndexEntry<>(s.index(), VItem.getInstance().fromNbt(s.val()));
+                        return new IndexEntry<>(
+                                s.index(), VItem.getInstance().fromNbt(s.val(), ItemStackUtils.registry()));
                     })
                     .toList();
         }
