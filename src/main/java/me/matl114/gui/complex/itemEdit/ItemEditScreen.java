@@ -289,7 +289,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
 
         protected ItemStack validateItemStack(NbtElement element) {
             // may throw
-            ItemStack decode = VItem.getInstance().fromNbt((NbtCompound) element);
+            ItemStack decode = VItem.getInstance().fromNbt((NbtCompound) element, ItemStackUtils.registry());
             Preconditions.checkArgument(decode != ItemStack.EMPTY);
             this.lastResult = decode;
             return decode;
@@ -302,7 +302,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
         protected void init() {
             // transform item to json
             this.lastResult = ItemEditScreen.this.itemStack.copy();
-            NbtElement compound = VItem.getInstance().toNbt(this.lastResult);
+            NbtElement compound = VItem.getInstance().toNbt(this.lastResult, ItemStackUtils.registry());
             this.itemAttrValue = new NbtAttrKeyValue<>("", compound, this::validateItemStack);
             if (!itemAttrValue.validateAndUpdate()) {
                 error();

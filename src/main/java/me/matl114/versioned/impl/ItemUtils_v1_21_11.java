@@ -120,23 +120,6 @@ public class ItemUtils_v1_21_11 implements VItem {
         return stack.contains(DataComponentTypes.CONSUMABLE);
     }
 
-    @Override
-    public ItemStack fromNbt(NbtCompound tag) {
-        return tag.isEmpty()
-                ? ItemStack.EMPTY
-                : ItemStack.CODEC
-                        .decode(ItemStackUtils.registry().getOps(NbtOps.INSTANCE), tag)
-                        .getOrThrow()
-                        .getFirst();
-    }
-
-    @Override
-    public NbtCompound toNbt(ItemStack tag) {
-        NbtCompound tagCompound = toNbt0(tag);
-        tagCompound.putInt(DataVersion.DATA_VERSION_FLAG, DataVersion.getDataVersion());
-        return tagCompound;
-    }
-
     public ItemStack fromNbt(NbtCompound tag, RegistryWrapper.WrapperLookup lookup) {
         return tag.isEmpty()
                 ? ItemStack.EMPTY
