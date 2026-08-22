@@ -227,7 +227,7 @@ public class PathingSchedular {
             dischargeSource.add(pos);
         } else {
             boolean hasNoEmpty = false;
-            for (var re : handledScreen) {
+            for (var re : InventoryUtils.iterable(handledScreen)) {
                 if (!re.isEmpty()) {
                     hasNoEmpty = true;
                     break;

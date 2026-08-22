@@ -512,14 +512,14 @@ public class KitReplenish extends BaseModule {
                 Inventory shulkerView = InventoryUtils.createReadOnlyInventory(container.stacks);
                 Map<Item, Integer> itemTypeCount = new LinkedHashMap<>();
                 boolean hasSame = false;
-                for (var re : view) {
+                for (var re : InventoryUtils.iterable(view)) {
                     Item type = re.getItem();
                     Integer itemCount = itemTypeCount.get(type);
                     if (itemCount != null) {
                         itemTypeCount.put(type, itemCount - 1);
                     } else {
                         int countSlot = -1;
-                        for (var item : shulkerView) {
+                        for (var item : InventoryUtils.iterable(shulkerView)) {
                             if (item.isOf(type)) {
                                 hasSame = true;
                                 countSlot += 1;
@@ -1271,7 +1271,7 @@ public class KitReplenish extends BaseModule {
                                 indexOf.setValue(null);
                             }
                         }))
-                        .setActivePredicate(el -> indexOf.get() == record)));
+                        .setActivePredicate(el -> indexOf.getValue() == record)));
         final String nameKey = Kit.KEYS.get(0);
         AttrKeyValue<String> name =
                 AttrKeyValue.str("widget.kit-manager.open-kit-list.name", record.getOrPut(nameKey, ""));
