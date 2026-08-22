@@ -80,6 +80,13 @@ public class MathUtils {
         return Math.abs(t) > threshold ? sgn(t) : 0.0D;
     }
 
+    public static Vec3d lerp(double delta, Vec3d start, Vec3d end) {
+        return new Vec3d(
+                MathHelper.lerp(delta, start.x, end.x),
+                MathHelper.lerp(delta, start.y, end.y),
+                MathHelper.lerp(delta, start.z, end.z));
+    }
+
     public static boolean isInBox(Vec3d a, Vec3d b, double range) {
         return isInBox(a.subtract(b), range);
     }
