@@ -425,9 +425,7 @@ public class InteractUtils {
         if (stack.isOf(Items.LEAD) && entity instanceof Leashable && !(entity instanceof LeashKnotEntity)) {
             return true;
         }
-        if (stack.isOf(Items.SADDLE)
-                && entity instanceof LivingEntity livingEntity
-                && livingEntity.canEquip(stack, EquipmentSlot.SADDLE)) {
+        if (stack.isOf(Items.SADDLE) && entity instanceof Saddleable livingEntity && livingEntity.canBeSaddled()) {
             return true;
         }
         if (stack.isOf(Items.WATER_BUCKET) && entity instanceof Bucketable) {
@@ -443,10 +441,10 @@ public class InteractUtils {
             if (!mooshroom.isBaby() && stack.isOf(Items.BOWL)) {
                 return true;
             }
-            return mooshroom.getVariant() == MooshroomEntity.Variant.BROWN
+            return mooshroom.getVariant() == MooshroomEntity.Type.BROWN
                     && SuspiciousStewIngredient.of(stack.getItem()) != null;
         }
-        if (entity instanceof AbstractCowEntity cow) {
+        if (entity instanceof CowEntity cow) {
             return stack.isOf(Items.BUCKET) && !cow.isBaby();
         }
         if (entity instanceof GoatEntity goat) {
@@ -525,12 +523,12 @@ public class InteractUtils {
             return true;
         }
         if (entity instanceof PigEntity pig) {
-            if (pig.hasSaddleEquipped() && !pig.hasPassengers() && !player.shouldCancelInteraction()) {
+            if (pig.isSaddled() && !pig.hasPassengers() && !player.shouldCancelInteraction()) {
                 return true;
             }
         }
         if (entity instanceof StriderEntity strider) {
-            if (strider.hasSaddleEquipped() && !strider.hasPassengers() && !player.shouldCancelInteraction()) {
+            if (strider.isSaddled() && !strider.hasPassengers() && !player.shouldCancelInteraction()) {
                 return true;
             }
         }
@@ -662,9 +660,7 @@ public class InteractUtils {
             return !ItemStack.areItemsAndComponentsEqual(interactStack, equippedStack);
         }
 
-        if (interactStack.contains(DataComponentTypes.BLOCKS_ATTACKS)
-                || interactStack.contains(DataComponentTypes.KINETIC_WEAPON)
-                || VItem.getInstance().isSpear(interactStack)) {
+        if (interactStack.getItem() instanceof ShieldItem || VItem.getInstance().isSpear(interactStack)) {
             return true;
         }
 
@@ -734,7 +730,7 @@ public class InteractUtils {
     }
 
     private static boolean canArmorStandUseSlot(ArmorStandEntity armorStand, EquipmentSlot slot) {
-        return slot != EquipmentSlot.BODY && slot != EquipmentSlot.SADDLE && armorStand.canUseSlot(slot);
+        return slot != EquipmentSlot.BODY && armorStand.canUseSlot(slot);
     }
 
     public static boolean canInteractAndPlace(PlayerEntity player, FlagEntry<BlockHitResult> sneak) {
@@ -793,12 +789,13 @@ public class InteractUtils {
                 result.add(
                         Pair.of(fromState.with(FlowerbedBlock.FLOWER_AMOUNT, layers + 1), isItem(fromBlock.asItem())));
             }
-            if (fromBlock instanceof LeafLitterBlock
-                    && fromState.get(LeafLitterBlock.SEGMENT_AMOUNT) < 4
-                    && toState.equals(fromState.with(
-                            LeafLitterBlock.SEGMENT_AMOUNT, fromState.get(LeafLitterBlock.SEGMENT_AMOUNT) + 1))) {
-                result.add(Pair.of(toState, isItem(fromBlock.asItem())));
-            }
+            //            if (fromBlock instanceof LeafLitterBlock
+            //                    && fromState.get(LeafLitterBlock.SEGMENT_AMOUNT) < 4
+            //                    && toState.equals(fromState.with(
+            //                            LeafLitterBlock.SEGMENT_AMOUNT, fromState.get(LeafLitterBlock.SEGMENT_AMOUNT)
+            // + 1))) {
+            //                result.add(Pair.of(toState, isItem(fromBlock.asItem())));
+            //            }
             if (fromBlock instanceof RepeaterBlock
                     && !toState.get(RepeaterBlock.DELAY).equals(fromState.get(RepeaterBlock.DELAY))) {
                 result.add(Pair.of(fromState.cycle(RepeaterBlock.DELAY), ALWAYS_TRUE));

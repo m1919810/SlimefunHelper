@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Environment(EnvType.CLIENT)
 @Mixin(SoundSystem.class)
@@ -29,11 +29,10 @@ public abstract class SoundSystemEvents {
 
     @Shadow
     @Final
-    private SoundManager soundManager;
+    private SoundManager loader;
 
     @WrapOperation(
-            method =
-                    "play(Lnet/minecraft/client/sound/SoundInstance;)Lnet/minecraft/client/sound/SoundSystem$PlayResult;",
+            method = "play(Lnet/minecraft/client/sound/SoundInstance;)V",
             at =
                     @At(
                             value = "INVOKE",
@@ -58,19 +57,13 @@ public abstract class SoundSystemEvents {
         }
     }
 
-    @Inject(
-            method =
-                    "play(Lnet/minecraft/client/sound/SoundInstance;)Lnet/minecraft/client/sound/SoundSystem$PlayResult;",
-            at = @At("HEAD"),
-            cancellable = true)
+    @Inject(method = "play(Lnet/minecraft/client/sound/SoundInstance;)V", at = @At("HEAD"), cancellable = true)
     private void onInterceptPlay(
-            SoundInstance sound,
-            CallbackInfoReturnable<SoundSystem.PlayResult> cir,
-            @Local(argsOnly = true) LocalRef<SoundInstance> args) {
+            SoundInstance sound, CallbackInfo ci, @Local(argsOnly = true) LocalRef<SoundInstance> args) {
         Event<SoundInstance> event = new Event<>(sound, true, true);
         Listener.getSoundPlayEvent().handleValue(event);
         if (event.isCancelled()) {
-            cir.setReturnValue(SoundSystem.PlayResult.NOT_STARTED);
+            ci.cancel();
             onSoundPlayed(event.context);
             return;
         }
@@ -82,7 +75,7 @@ public abstract class SoundSystemEvents {
     @Unique
     private void onSoundPlayed(SoundInstance sound) {
         // need getSoundSet to initialize getSound , wtf mojang pieces of shit
-        WeightedSoundSet weightedSoundSet = sound.getSoundSet(this.soundManager);
+        WeightedSoundSet weightedSoundSet = sound.getSoundSet(this.loader);
         if (weightedSoundSet == null) {
             return;
         }

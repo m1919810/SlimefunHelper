@@ -15,6 +15,7 @@ import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityPosition;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerPosition;
 import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
@@ -114,9 +115,9 @@ public abstract class ClientPlayNetworkHandlerMixin {
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/client/network/ClientPlayNetworkHandler;setPosition(Lnet/minecraft/entity/EntityPosition;Ljava/util/Set;Lnet/minecraft/entity/Entity;Z)Z"))
+                                    "Lnet/minecraft/client/network/ClientPlayNetworkHandler;setPosition(Lnet/minecraft/entity/player/PlayerPosition;Ljava/util/Set;Lnet/minecraft/entity/Entity;Z)Z"))
     private boolean wrapSetPositionLook(
-            EntityPosition pos, Set<PositionFlag> flags, Entity entity, boolean bl, Operation<Boolean> original) {
+            PlayerPosition pos, Set<PositionFlag> flags, Entity entity, boolean bl, Operation<Boolean> original) {
         if (AutoResync.INSTANCE.noVelocitySetback.get()) {
             Vec3d currentVelocity = entity.getVelocity();
             boolean re = original.call(pos, flags, entity, bl);

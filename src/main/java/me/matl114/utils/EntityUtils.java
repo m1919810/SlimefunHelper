@@ -11,7 +11,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.NbtComponent;
-import net.minecraft.component.type.UseEffectsComponent;
 import net.minecraft.entity.*;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -158,7 +157,7 @@ public class EntityUtils {
                 && !entity.isRemoved()
                 && mc.world != null
                 && mc.world == entity.getEntityWorld()
-                && mc.world.getEntity(entity.getUuid()) == entity;
+                && mc.world.getEntityLookup().get(entity.getUuid()) == entity;
     }
 
     public static Vector2d getEntityLookXZ(Entity entity) {
@@ -532,9 +531,7 @@ public class EntityUtils {
         if (entity instanceof ClientPlayerEntity p) {
             vec2f = vec2f.multiply(0.98F);
             if (p.isUsingItem() && !p.hasVehicle()) {
-                vec2f = vec2f.multiply(p.getActiveItem()
-                        .getOrDefault(DataComponentTypes.USE_EFFECTS, UseEffectsComponent.DEFAULT)
-                        .speedMultiplier());
+                vec2f = vec2f.multiply(0.2F);
             }
             if (p.shouldSlowDown()) {
                 float f = (float) p.getAttributeValue(EntityAttributes.SNEAKING_SPEED);

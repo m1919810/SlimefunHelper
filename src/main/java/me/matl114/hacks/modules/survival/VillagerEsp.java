@@ -108,7 +108,7 @@ public class VillagerEsp extends BaseModule {
     }
 
     private boolean isTrackedLibrarian(VillagerEntity villager) {
-        var profession = villager.getVillagerData().profession().getKey().orElse(null);
+        var profession = villager.getVillagerData().getProfession();
         return Objects.equals(profession, VillagerProfession.LIBRARIAN)
                 && WorldManager.INSTANCE.getVillagerTradeList(villager) != null;
     }
