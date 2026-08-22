@@ -160,8 +160,8 @@ public class InteractionTasks {
                     return true;
                 }));
                 InteractionTasks.interactBlock(hand, result, swingHand);
-                if (catcher.get() != null) {
-                    var pkt = catcher.get();
+                if (catcher.getValue() != null) {
+                    var pkt = catcher.getValue();
                     InteractionTasks.addPostRotationCorrectTask(
                             result.getBlockPos().toCenterPos(), bestEyePos, () -> mc.getNetworkHandler()
                                     .sendPacket(pkt));
