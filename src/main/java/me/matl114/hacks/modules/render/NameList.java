@@ -69,8 +69,6 @@ public class NameList extends INameTag {
     }
 
     public void handleRenderPosition(VDrawContext vdraw) {
-        int sizeX = mc.getWindow().getScaledWidth();
-        int sizeY = mc.getWindow().getScaledHeight();
         //        vdraw.pushMatrix();
         //        vdraw.drawTexturedQuad(Identifier.tryParse("slimefunhelper:textures/custom/genshin_impact.png"), sizeX
         // - 30,sizeX, sizeY - 20, sizeY, 0, 0,1,0 , 1);
@@ -78,9 +76,7 @@ public class NameList extends INameTag {
         var pp = pos.get();
         double xPer = pp.getWindowX(mc.getWindow());
         double yPer = pp.getWindowY(mc.getWindow());
-        int startX = (int) (right.get() ? (sizeX - xPer * sizeX) : xPer * sizeX);
-        int startY = (int) (yPer * sizeY);
-        vdraw.getMatrices().translate(startX, startY);
+        vdraw.getMatrices().translate((float) xPer, (float) yPer);
     }
 
     public void onRenderList(PlayerNameTagInfo player, VDrawContext vdraw, float tick) {
