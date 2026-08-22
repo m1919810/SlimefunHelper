@@ -24,7 +24,7 @@ public abstract class ChestScreenHandlerMixin extends ScreenHandler
     @Unique
     private BlockPos pos;
 
-    protected ChestScreenHandlerMixin(@org.jspecify.annotations.Nullable ScreenHandlerType<?> type, int syncId) {
+    protected ChestScreenHandlerMixin(ScreenHandlerType<?> type, int syncId) {
         super(type, syncId);
     }
 

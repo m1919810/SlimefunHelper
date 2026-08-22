@@ -17,7 +17,7 @@ import xaeroplus.util.BaritonePathHelper;
 @Environment(EnvType.CLIENT)
 @Mixin(BaritonePathHelper.class)
 public abstract class XaeroPlusBaritonePathHelperMixin {
-    @Inject(method = "getBaritonePath", at = @At("HEAD"), cancellable = true, expect = 0, require = 0)
+    @Inject(method = "getBaritonePath", at = @At("HEAD"), cancellable = true, expect = 0, require = 0, remap = false)
     private static void hookGetBaritonePath(CallbackInfoReturnable<List<BlockPos>> cir) {
         if (XaeroHelper.INSTANCE.xplusBaritonePathFix.get()) {
             if (BaritoneHooks.getInstance().isBaritoneElytraProcessing()) {
