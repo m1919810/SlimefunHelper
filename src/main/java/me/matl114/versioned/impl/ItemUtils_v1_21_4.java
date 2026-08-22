@@ -105,18 +105,6 @@ public class ItemUtils_v1_21_4 implements VItem {
     }
 
     @Override
-    public ItemStack fromNbt(NbtCompound tag) {
-        return ItemStack.fromNbtOrEmpty(ItemStackUtils.registry(), tag);
-    }
-
-    @Override
-    public NbtCompound toNbt(ItemStack tag) {
-        NbtCompound tagCompound = toNbt0(tag);
-        tagCompound.putInt(DataVersion.DATA_VERSION_FLAG, DataVersion.getDataVersion());
-        return tagCompound;
-    }
-
-    @Override
     public ItemStack fromNbt(NbtCompound tag, RegistryWrapper.WrapperLookup lookup) {
         return tag.isEmpty()
                 ? ItemStack.EMPTY
