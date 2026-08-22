@@ -13,8 +13,6 @@
 		"baritone.ElytraCommandMixin",
 		"baritone.ElytraProcessMixin",
 		"baritone.InventoryBehaviourMixin",
-		"litematica.PlacementManagerDaemonFixMixin",
-		"litematica.ServuxLitematicaFixMixin",
 		"meteor.BaritoneSettingsMixin",
 		"viaversion.PacketWrapperSendEvents",
 		"xaero.XaeroGuiMapMixin",
