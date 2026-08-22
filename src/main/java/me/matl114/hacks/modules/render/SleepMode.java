@@ -29,8 +29,6 @@ import me.matl114.utils.commands.commandGroup.CommandContext;
 import me.matl114.utils.commands.commandGroup.SubCommand;
 import me.matl114.utils.commands.params.ArgumentInputStream;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
-import net.minecraft.client.Keyboard;
-import net.minecraft.client.Mouse;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
@@ -491,7 +489,9 @@ public class SleepMode extends BaseModule {
             event.cancel();
             if (sleepingScreenInstance != null) {
                 sleepingScreenInstance.mouseDragged(
-                        event.context.mouseX(), event.context.mouseY(), event.context.mouse().activeButton,
+                        event.context.mouseX(),
+                        event.context.mouseY(),
+                        event.context.mouse().activeButton,
                         event.context.deltaX(),
                         event.context.deltaY());
             }
