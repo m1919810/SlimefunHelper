@@ -1,7 +1,6 @@
 package xaero.map.gui;
 
 import java.util.ArrayList;
-import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.text.Text;
@@ -28,8 +27,4 @@ public class GuiMap extends Screen implements IRightClickableElement {
     }
 
     public void onRightClickClosed() {}
-
-    public boolean mouseClicked(Click event, boolean doubleClick) {
-        return false;
-    }
 }
