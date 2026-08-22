@@ -2,8 +2,6 @@ package xaero.common.minimap.waypoints;
 
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.resource.language.I18n;
-import net.minecraft.util.math.Vec3d;
-import org.joml.Vector3fc;
 import xaero.hud.minimap.waypoint.WaypointColor;
 import xaero.hud.minimap.waypoint.WaypointPurpose;
 
@@ -240,31 +238,15 @@ public class Waypoint implements Comparable<Waypoint> {
     }
 
     public String getComparisonName() {
-        String comparisonName = this.getLocalizedName().toLowerCase().trim();
-        if (comparisonName.startsWith("the ")) {
-            return comparisonName.substring(4);
-        } else {
-            return comparisonName.startsWith("a ") ? comparisonName.substring(2) : comparisonName;
-        }
+        return null;
     }
 
     public double getComparisonDistance(Camera camera, double dimDiv) {
-        Vec3d cameraPos = camera.getCameraPos();
-        double offX = (double) this.getX(dimDiv) - cameraPos.x;
-        double offY = !this.isYIncluded() ? 0.0 : (double) this.getY() - cameraPos.y;
-        double offZ = (double) this.getZ(dimDiv) - cameraPos.z;
-        return offX * offX + offY * offY + offZ * offZ;
+        return 0.0D;
     }
 
     public double getComparisonAngleCos(Camera camera, double dimDiv) {
-        Vector3fc lookVector = camera.getHorizontalPlane();
-        Vec3d cameraPos = camera.getCameraPos();
-        double offX = (double) this.getX(dimDiv) - cameraPos.x;
-        double offY = !this.isYIncluded() ? 0.0 : (double) this.getY() - cameraPos.y;
-        double offZ = (double) this.getZ(dimDiv) - cameraPos.z;
-        double distance = Math.sqrt(offX * offX + offY * offY + offZ * offZ);
-        return (offX * (double) lookVector.x() + offY * (double) lookVector.y() + offZ * (double) lookVector.z())
-                / distance;
+        return 0.0D;
     }
 
     private double getRenderSortingDistanceSquared() {
