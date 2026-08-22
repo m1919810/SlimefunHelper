@@ -43,6 +43,7 @@ import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerPosition;
 import net.minecraft.entity.projectile.thrown.PotionEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
@@ -249,7 +250,7 @@ public class PlayerStateManager extends BaseModule {
                 lastKnownClientVelocity = new Vec3d(lastClientVX, lastClientVY, lastClientVZ);
             } else {
                 var relativesSet = eventPositionLook.context.relatives();
-                EntityPosition position = eventPositionLook.context.change();
+                PlayerPosition position = eventPositionLook.context.change();
                 Vec3d deltaMovement = position.deltaMovement();
                 double lastClientVX = relativesSet.contains(PositionFlag.DELTA_X)
                         ? lastKnownClientVelocity.x + deltaMovement.x
