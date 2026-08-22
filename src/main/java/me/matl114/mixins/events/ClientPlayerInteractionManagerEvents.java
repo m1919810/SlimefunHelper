@@ -75,7 +75,7 @@ public abstract class ClientPlayerInteractionManagerEvents {
             MutableObject<ActionResult> mutableObject,
             int sequence,
             CallbackInfoReturnable<Packet> cir) {
-        ActionResult acc = mutableObject.get();
+        ActionResult acc = mutableObject.getValue();
         Event<UseItem> eventResult = new Event<>(new UseItem(acc, hand), false, true);
         Listener.getPostPlayerUseItem().handleValue(eventResult);
         mutableObject.setValue(eventResult.context.actionResult());
@@ -115,7 +115,7 @@ public abstract class ClientPlayerInteractionManagerEvents {
             BlockHitResult hitResult,
             CallbackInfoReturnable<ActionResult> cir,
             @Local MutableObject<ActionResult> mutableObject) {
-        ActionResult acc = mutableObject.get();
+        ActionResult acc = mutableObject.getValue();
         Event<UseItemOnBlock> eventResult = new Event<>(new UseItemOnBlock(hitResult, acc, hand), false, true);
         Listener.getPostPlayerUseItemAtBlock().handleValue(eventResult);
         mutableObject.setValue(eventResult.context.actionResult());
