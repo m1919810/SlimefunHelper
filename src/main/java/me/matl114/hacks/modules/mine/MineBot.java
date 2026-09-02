@@ -176,31 +176,50 @@ public class MineBot extends BaseModule {
     public int onMineCommon(Supplier<BlockPos> posFinder) {
         int tryMine = 0;
         Vec2f originPy = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
+
+        // 1. 如果当前正在正常挖掘某个硬度较大的方块（如玄武岩），优先保持挖掘该方块
+        var access = PlayerInteractionAccess.of(mc.interactionManager);
+        BlockPos currentBreakingPos = access.getCurrentMiningPos();
+
+        if (currentBreakingPos != null && checkDistanceAndCondition(currentBreakingPos)) {
+            lastMinePos = currentBreakingPos;
+        } else if (!checkDistanceAndCondition(lastMinePos)) {
+            // 只有当 lastMinePos 无效时才寻路寻找新方块
+            lastMinePos = posFinder.get();
+        }
+
+        if (lastMinePos == null) {
+            noBlocksAround.run(NO_BLOCK_MENTION_LIMIT, () -> logI18N("message.module.mine-bot.no-blocks"));
+            return 0;
+        }
+
+        // 锁定本次 Tick 处理的初始目标，禁止在 do-while 内部漂移到新方块
+        BlockPos targetPos = lastMinePos;
         do {
-            if (!checkDistanceAndCondition(lastMinePos)) {
-                lastMinePos = posFinder.get();
-            }
-            if (lastMinePos == null) {
+            // 校验距离与状态
+            if (!checkDistanceAndCondition(targetPos)) {
+                // 当前目标已不满足挖掘条件（如已被秒挖破坏），清除并跳出，等待下个Tick或重新寻路
+                lastMinePos = null;
                 break;
             }
-            if (considerCooldown.get()) {
-                if (MineExtra.INSTANCE.getMiningPacketCooldown() > 0) {
-                    break;
-                }
-            }
-            PlayerInteractionAccess.of(mc.interactionManager).setMiningCooldown(0);
 
-            BlockState mineState = mc.world.getBlockState(lastMinePos);
+            if (considerCooldown.get() && MineExtra.INSTANCE.getMiningPacketCooldown() > 0) {
+                break;
+            }
+
+            access.setMiningCooldown(0);
+
+            BlockState mineState = mc.world.getBlockState(targetPos);
             IndexEntry<ItemStack> bestStack = autoSwap.get()
                     ? InventoryUtils.findBestPlayerItem(
-                            s -> {
-                                if (isDurabilityOk(s)) {
-                                    return (double) WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
-                                            mc.player, mineState, s);
-                                } else return null;
-                            },
-                            true,
-                            true)
+                    s -> {
+                        if (isDurabilityOk(s)) {
+                            return (double) WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
+                                    mc.player, mineState, s);
+                        } else return null;
+                    },
+                    true,
+                    true)
                     : InventoryUtils.getSelectedItem();
             if (bestStack == null || !isDurabilityOk(bestStack.val())) {
                 if (toolProtect.get()) {
@@ -213,10 +232,11 @@ public class MineBot extends BaseModule {
             }
             InvExtra.INSTANCE.swapInventoryIndexToHand(bestStack.index());
             AttributeUtils.updateAttribute(mc.player);
-            float speed = MineExtra.INSTANCE.predictBlockBreakingSpeedAt(lastMinePos);
+
+            float speed = MineExtra.INSTANCE.predictBlockBreakingSpeedAt(targetPos);
             tryMine += 1;
-            // use real Direction
-            Vec3d shouldFacing = lastMinePos.toCenterPos().subtract(mc.player.getEyePos());
+
+            Vec3d shouldFacing = targetPos.toCenterPos().subtract(mc.player.getEyePos());
             Direction dir = Direction.getFacing(shouldFacing).getOpposite();
             switch (legalMode.get()) {
                 case SWING_HAND_AND_ROT -> {
@@ -248,26 +268,37 @@ public class MineBot extends BaseModule {
                     }
                 }
             }
-            mc.interactionManager.updateBlockBreakingProgress(lastMinePos, dir);
-            // fake a swing packet , so that we can bypass some packet check
+
+            mc.interactionManager.updateBlockBreakingProgress(targetPos, dir);
 
             if (legalMode.get().hasSwing()) {
                 mc.player.swingHand(Hand.MAIN_HAND);
             }
 
+            // 修正点2：如果不是瞬采方块（如玄武岩/高硬度方块），必须跳出循环让客户端正常按 Tick 累积挖掘进度
             if (!MineExtra.INSTANCE.shouldTreatAsInstantBreak(speed)) {
-                //
-                var access = PlayerInteractionAccess.of(mc.interactionManager);
                 if (doubleBreak.get()
-                        && Objects.equals(access.getCurrentMiningPos(), lastMinePos)
+                        && Objects.equals(access.getCurrentMiningPos(), targetPos)
                         && access.isFailBreakEmpty()) {
                     access.sendFailBreakCurrentPos(null);
                 } else {
                     break;
                 }
             }
+            // 如果是秒挖方块（地狱岩），在发包后如果下一个秒挖目标需要切换，重新获取 posFinder 目标
+            if (MineExtra.INSTANCE.shouldTreatAsInstantBreak(speed)) {
+                // 获取下一个秒挖目标
+                targetPos = posFinder.get();
+                lastMinePos = targetPos;
+            }
+            // 修正点3：如果方块已经被破坏（变成了空气/不可采），及时清除 lastMinePos 寻找下一个
+            if (!isMineable(mc.world.getBlockState(lastMinePos))) {
+                lastMinePos = null;
+                break;
+            }
 
-        } while (!mc.interactionManager.isBreakingBlock() && tryMine < maxInstaMine.get());
+        } while (!mc.interactionManager.isBreakingBlock() && tryMine < maxInstaMine.get() && targetPos != null);
+
         if (mc.player.getPitch() != originPy.x || mc.player.getYaw() != originPy.y) {
             mc.player.setPitch(originPy.x);
             mc.player.setYaw(originPy.y);
@@ -337,6 +368,7 @@ public class MineBot extends BaseModule {
     }
 
     private boolean checkDistanceAndCondition(BlockPos newPos) {
+        if (newPos == null) return false;
         var access = PlayerInteractionAccess.of(mc.interactionManager);
         // do not mine on double break
         if (Objects.equals(access.getCurrentFailBreakPos(), newPos)) {
