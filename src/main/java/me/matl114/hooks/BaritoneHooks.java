@@ -8,6 +8,7 @@ import baritone.api.event.events.RotationMoveEvent;
 import baritone.api.event.listener.AbstractGameEventListener;
 import baritone.api.pathing.goals.*;
 import baritone.api.utils.BetterBlockPos;
+import baritone.api.utils.Rotation;
 import baritone.process.ElytraProcess;
 import baritone.process.elytra.ElytraBehavior;
 import java.awt.*;
@@ -82,7 +83,11 @@ public abstract class BaritoneHooks implements IHooks {
 
     public abstract void setBaritoneCurrentElytraDestination(@Nullable BlockPos pos);
 
+    public abstract BlockPos getBaritoneCurrentElytraDestination();
+
     public abstract void setBaritoneCurrentPathingDestination(@Nullable BlockPos pos);
+
+    public abstract void updateBaritoneLookTarget(float pitch, float yaw);
 
     public abstract Vec2f getBaritoneCurrentMoveRot(ClientPlayerEntity player);
 
@@ -323,6 +328,13 @@ public abstract class BaritoneHooks implements IHooks {
             }
         }
 
+        public BlockPos getBaritoneCurrentElytraDestination() {
+            return BaritoneAPI.getProvider()
+                    .getPrimaryBaritone()
+                    .getElytraProcess()
+                    .currentDestination();
+        }
+
         @Override
         public void cancelBaritone() {
             BaritoneAPI.getProvider().getPrimaryBaritone().getPathingBehavior().cancelEverything();
@@ -388,6 +400,14 @@ public abstract class BaritoneHooks implements IHooks {
                     .getPrimaryBaritone()
                     .getCustomGoalProcess()
                     .isActive();
+        }
+
+        @Override
+        public void updateBaritoneLookTarget(float pitch, float yaw) {
+            BaritoneAPI.getProvider()
+                    .getPrimaryBaritone()
+                    .getLookBehavior()
+                    .updateTarget(new Rotation(yaw, pitch), false);
         }
     }
 
@@ -466,7 +486,15 @@ public abstract class BaritoneHooks implements IHooks {
         public void setBaritoneCurrentElytraDestination(BlockPos pos) {}
 
         @Override
+        public BlockPos getBaritoneCurrentElytraDestination() {
+            return null;
+        }
+
+        @Override
         public void setBaritoneCurrentPathingDestination(BlockPos pos) {}
+
+        @Override
+        public void updateBaritoneLookTarget(float pitch, float yaw) {}
 
         @Override
         public Vec2f getBaritoneCurrentMoveRot(ClientPlayerEntity player) {

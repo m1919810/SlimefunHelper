@@ -60,7 +60,7 @@ public class SkinBlink extends BaseModule {
 
     public void onTick(Event<ClientPlayerEntity> eventTick) {
         if (enable.get()) {
-            if (++lastDelay > delay.get()) {
+            if (++lastDelay >= delay.get()) {
                 lastDelay = 0;
                 if (needRestore) {
                     restore();

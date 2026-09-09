@@ -181,7 +181,7 @@ public class Scaffold extends BaseModule {
         // todo: check this
         if (mc.player != null && enable.get()) {
             // check hand item
-            if (++delayTick <= delay.get()) {
+            if (++delayTick < delay.get()) {
                 return;
             }
             delayTick = 0;

@@ -4,10 +4,7 @@ import com.mojang.datafixers.util.Pair;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.IntConsumer;
-import java.util.function.Supplier;
+import java.util.function.*;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.basic.*;
@@ -18,6 +15,7 @@ import me.matl114.gui.elements.ColorLabelTextElement;
 import me.matl114.gui.elements.IconElement;
 import me.matl114.gui.elements.TextFieldElement;
 import me.matl114.gui.presets.lists.StringListModifyScreen;
+import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.managers.config.Ref;
 import me.matl114.managers.config.Refs;
 import me.matl114.utils.ChatUtils;
@@ -27,10 +25,17 @@ import me.matl114.utils.config.ValueAccessor;
 import me.matl114.utils.config.kv.ListAttrKeyValue;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.text.Text;
+import net.minecraft.util.Colors;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
 public class WidgetUtils {
     public static final ConfigScreenLayout DEFAULT_CONFIG_SCREEN_LAYOUT = new ConfigScreenLayout(140, 10, 180, 18, 2);
+
+    public static WidgetUtils.ConfigScreenPalette DEFAULT_PALETTE = new WidgetUtils.ConfigScreenPalette(
+            () -> Colors.WHITE,
+            () -> new WrapColor(("#984FDB")).withAlpha(255),
+            () -> Colors.WHITE,
+            () -> new WrapColor(("#323232")).withAlpha(255));
 
     public static DrawableWidget getFocusedWidget(DrawableWidget drawable) {
         DrawableWidget current = drawable;
@@ -338,5 +343,9 @@ public class WidgetUtils {
                                     .openFromCurrent();
                         }))
                         .withTooltips(TooltipHandler.of(Constants.openListEditTooltips())));
+    }
+
+    public static DrawableWidget withCondition(DrawableWidget widget, BooleanSupplier supplier) {
+        return new DynamicContentWidget<>(() -> (supplier.getAsBoolean() ? widget : null), 0, 0);
     }
 }

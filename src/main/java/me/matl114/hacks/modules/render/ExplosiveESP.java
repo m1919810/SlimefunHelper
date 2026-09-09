@@ -16,13 +16,11 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.ColorUtils;
-import me.matl114.utils.ExplosionUtils;
-import me.matl114.utils.MathUtils;
-import me.matl114.utils.RenderUtils;
+import me.matl114.utils.*;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Box;
@@ -120,8 +118,15 @@ public class ExplosiveESP extends BaseModule {
                         mc.player.getBoundingBox(), explosionPos, mc.world, ExplosionUtils.ALL_TERRAIN);
         textCollector.submit(
                 new RenderElements.Text(
-                        Text.literal("%.1f/%.1f"
-                                .formatted(damage, ExplosionUtils.getMultipliedDamageByDifficulty(mc.world, damage))),
+                        Text.literal("%.1f/%.1f/%.1f"
+                                .formatted(
+                                        damage,
+                                        DamageUtils.getMultipliedDamageByDifficulty(mc.world, damage),
+                                        DamageUtils.getFinalDamage(
+                                                mc.player,
+                                                damage,
+                                                DamageUtils.createDamageSource(
+                                                        DamageTypes.PLAYER_EXPLOSION, null, mc.player)))),
                         explosionPos,
                         0.66F),
                 ColorUtils.withAlphaInt(color, 255));

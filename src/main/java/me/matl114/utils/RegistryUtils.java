@@ -95,6 +95,10 @@ public class RegistryUtils {
         return lookup.getOptional(key).map(s -> s.getEntry(value)).orElse(null);
     }
 
+    public static <W> Registry<W> getRegistry(DynamicRegistryManager lookup, RegistryKey<Registry<W>> key) {
+        return lookup.getOptional(key).orElse(null);
+    }
+
     public static <T> RegistryKey<? extends Registry<T>> getRegistryTypeKey(T value) {
         Class<?> clazz = value.getClass();
         while (clazz != Object.class) {

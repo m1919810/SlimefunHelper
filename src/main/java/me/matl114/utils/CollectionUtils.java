@@ -116,4 +116,15 @@ public class CollectionUtils {
         }
         return list;
     }
+
+    public static <A, B> Map<A, B> ofOrdered(Object... objects) {
+        Map<A, B> map = new LinkedHashMap<>();
+        int size = objects.length;
+        for (int i = 0; i < size - 1; i += 2) {
+            Object k1 = objects[i];
+            Object k2 = objects[i + 1];
+            ((Map) map).put(k1, k2);
+        }
+        return map;
+    }
 }

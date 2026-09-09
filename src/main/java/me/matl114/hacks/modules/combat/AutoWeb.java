@@ -11,6 +11,7 @@ import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.tasks.TimerExecutor;
@@ -188,7 +189,7 @@ public class AutoWeb extends BaseModule {
         List<BlockPos> result = new ArrayList<>(positions.size());
         positions.stream()
                 .map(BlockPos::toImmutable)
-                .sorted(Comparator.comparingDouble(this::getPlaceDistance))
+                .sorted(Comparator.comparingDouble(s -> new Box(s).squaredMagnitude(mc.player.getEyePos())))
                 .forEach(result::add);
         return result;
     }
@@ -202,14 +203,15 @@ public class AutoWeb extends BaseModule {
         if (!InteractUtils.canInteractAndPlace(mc.player, hitResult)) {
             return null;
         }
-        if (!isWithinInteractRange(hitResult.val().getBlockPos())) {
+        if (!InteractExtra.INSTANCE.isWithinInteractRange(
+                mc.player.getPos(), hitResult.val().getBlockPos())) {
             return null;
         }
         return hitResult;
     }
 
     private boolean isValidWebPos(PlayerEntity target, BlockPos pos) {
-        if (!isWithinInteractRange(pos)) {
+        if (!InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), pos)) {
             return false;
         }
         BlockState state = mc.world.getBlockState(pos);
@@ -227,14 +229,6 @@ public class AutoWeb extends BaseModule {
 
     private boolean shouldIgnoreWebCollision(Entity entity, PlayerEntity target) {
         return entity == target || (selfWeb.get() && entity == mc.player);
-    }
-
-    private double getPlaceDistance(BlockPos pos) {
-        return new Box(pos).squaredMagnitude(mc.player.getEyePos());
-    }
-
-    private boolean isWithinInteractRange(BlockPos pos) {
-        return getPlaceDistance(pos) <= MathUtils.s2(interactRange.get());
     }
 
     private boolean isPlayerAlreadyWebbed() {

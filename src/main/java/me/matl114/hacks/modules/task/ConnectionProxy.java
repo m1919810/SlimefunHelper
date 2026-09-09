@@ -163,7 +163,7 @@ public class ConnectionProxy extends BaseModule {
                                     argsMap,
                                     s -> "widget.connection-proxy." + s,
                                     WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT,
-                                    ClickGui.CONFIG_PALETTE);
+                                    WidgetUtils.DEFAULT_PALETTE);
                             new CenterScreen(re).access().openFromCurrent();
                         })))
                 .addToSub(subScreen);

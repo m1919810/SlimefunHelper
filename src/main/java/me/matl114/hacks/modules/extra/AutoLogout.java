@@ -96,6 +96,7 @@ public class AutoLogout extends BaseModule {
                 }
             }
             if (minHeightEnable.get() && player.getY() < minHeightThreshold.get()) {
+                minHeightEnable.set(false);
                 MainTasks.scheduleDisconnect();
                 return;
             }
@@ -131,6 +132,7 @@ public class AutoLogout extends BaseModule {
                 Entity entity = mc.world.getEntityById(spawn.getEntityId());
                 if (entity != null && CombatTasks.getTargetSelector().isNotFriend(entity)) {
                     MainTasks.scheduleDisconnect();
+                    strangerPlayerEnable.set(false);
                 }
             }
         }

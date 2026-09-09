@@ -28,6 +28,11 @@ public interface Constants {
 
     public static final Identifier REMOVE_SPRITE = new Identifier("slimefunhelper", "gui/remove");
 
+    public static final Identifier SHIFT_UP_SPRITE = new Identifier("slimefunhelper", "gui/move_up");
+    public static final Identifier SHIFT_DOWN_SPRITE = new Identifier("slimefunhelper", "gui/move_down");
+
+    public static final Identifier ADD_SPRITE = new Identifier("slimefunhelper", "gui/add");
+
     public static List<Text> searchRegistryTooltips() {
         return ChatUtils.parseTooltipsTranslation("widget.gui.constants.search-registry.tooltips", "");
     }

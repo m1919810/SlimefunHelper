@@ -143,21 +143,28 @@ public abstract class DrawableWidget
 
     public void render0(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
         this.selected = !disableSelect && isMouseOver(mouseX, mouseY);
-        context.getMatrices().pushMatrix();
-        context.getMatrices().translate(getX(), getY());
+        float textureScale = getTextureScale();
+
+        boolean shouldRescale = getX() != 0 || getY() != 0 || textureScale != 1.0F;
+        if (shouldRescale) {
+            context.getMatrices().pushMatrix();
+            context.getMatrices().translate(getX(), getY());
+        }
+
         // compat low version
         if (priority != 0) {
             context.pushLayer(priority);
         }
-        float textureScale = getTextureScale();
-        if (textureScale != 1.0f) {
+        if (shouldRescale && textureScale != 1.0f) {
             context.getMatrices().scale(textureScale, textureScale);
         }
         renderInDefaultMatrix(context, mouseX, mouseY, delta, disableSelect);
         if (priority != 0) {
             context.popLayer();
         }
-        context.getMatrices().popMatrix();
+        if (shouldRescale) {
+            context.getMatrices().popMatrix();
+        }
         renderAbsolute(context, mouseX, mouseY, delta, disableSelect);
     }
 

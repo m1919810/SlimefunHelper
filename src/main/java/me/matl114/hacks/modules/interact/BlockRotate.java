@@ -22,10 +22,7 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
-import me.matl114.utils.EntityUtils;
-import me.matl114.utils.InteractUtils;
-import me.matl114.utils.NetworkUtils;
-import me.matl114.utils.WorldUtils;
+import me.matl114.utils.*;
 import net.minecraft.block.*;
 import net.minecraft.block.enums.BlockFace;
 import net.minecraft.block.enums.Orientation;
@@ -275,7 +272,14 @@ public class BlockRotate extends BaseModule {
                     }
                 }
                 if (legal.get()) {
-                    look.context(packetHitResult.getBlockPos().toCenterPos());
+                    if (!RaycastUtils.canRaycastHit(
+                            mc.player,
+                            PlayerStateManager.INSTANCE.lastPitch,
+                            PlayerStateManager.INSTANCE.lastYaw,
+                            packetHitResult.getBlockPos(),
+                            InteractExtra.INSTANCE.getBlockReachDistance())) {
+                        look.context(packetHitResult.getBlockPos().toCenterPos());
+                    }
                 }
                 handleYawDeceive(litematicaState, yawDeceive.context);
             }

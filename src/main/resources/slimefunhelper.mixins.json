@@ -87,7 +87,7 @@
 		"hack.ClientLoginNetworkHandlerMixin",
 		"hack.ClientMixin",
 		"hack.ClientPlayNetworkHandlerMixin",
-		"hack.ClientPlayerMixin",
+		"hack.ClientPlayerEntityMixin",
 		"hack.ClientWorldMixin",
 		"hack.CobwebBlockMixin",
 		"hack.EntityMixin",

@@ -1,6 +1,5 @@
 package me.matl114.hacks;
 
-import java.util.*;
 import lombok.Getter;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
@@ -35,6 +34,9 @@ public class MineTasks {
     private static MiningProgressManager miningProgressManager;
 
     @Getter
+    private static FakeBlockManager fakeBlockManager;
+
+    @Getter
     private static MineBot mineBot;
 
     @Getter
@@ -49,6 +51,7 @@ public class MineTasks {
     private static void initModules(ModuleManager m) {
         mineExtra = new MineExtra().register(m);
         miningProgressManager = new MiningProgressManager().register(m);
+        fakeBlockManager = new FakeBlockManager().register(m);
         mineBot = new MineBot().register(m);
         queueMine = new QueueMine().register(m);
         packetMine = new PacketMine().register(m);

@@ -46,6 +46,7 @@ import me.matl114.utils.*;
 import me.matl114.utils.collections.FlagEntry;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.collections.MutableRecord;
+import me.matl114.utils.commands.commandGroup.BridgeSubCommand;
 import me.matl114.utils.commands.commandGroup.CommandContext;
 import me.matl114.utils.commands.commandGroup.SubCommand;
 import me.matl114.utils.commands.commandGroup.TreeSubCommand;
@@ -53,13 +54,14 @@ import me.matl114.utils.commands.params.ArgumentInputStream;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.config.AttrKeyValue;
-import me.matl114.utils.inventory.ItemStackSample;
+import me.matl114.utils.inventory.MutableInventory;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ShulkerBoxBlock;
 import net.minecraft.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
+import net.minecraft.component.ComponentType;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ContainerComponent;
 import net.minecraft.entity.player.PlayerEntity;
@@ -109,10 +111,10 @@ public class KitReplenish extends BaseModule {
             .validator(s -> s.getValue() < 9 && s.getValue() >= 0)
             .build();
 
-    public final IntRef searchRange = intBuilder(replenishRoot.add("search-range"))
-            .defaultValue(3)
-            .validator(Configs.INT_POSITIVE)
-            .updateListener(s -> blockSeq = MathUtils.create3DPointListInRange(s))
+    public final DoubleRef searchRange = doubleBuilder(replenishRoot.add("search-range"))
+            .defaultValue(4.5D)
+            .validator(Configs.doubleRange(0, 100))
+            .updateListener(s -> blockSeq = MathUtils.create3DPointListAroundPlayer(s))
             .build();
 
     public final FlagRef zeroTickSupplyShulker =
@@ -175,6 +177,8 @@ public class KitReplenish extends BaseModule {
         shulkerBoxRequest = null;
     }
 
+    int timerPostResortInventory = 0;
+
     public void onPreInputEvent(Event<Void> event) {
         if (checkNull()) return;
         if (transaction != null) {
@@ -189,25 +193,33 @@ public class KitReplenish extends BaseModule {
                         mc.currentScreen.close();
                     }
                     if (transaction.rule.type() == Type.AUTO) {
-                        resortInventories(transaction.inventory, transaction.rule.from(), transaction.rule.to());
+                        resortInventories(
+                                transaction.inventory, transaction.rule.from(), transaction.rule.to(), transaction);
                     }
                     transaction.stage = Transaction.STAGE_FIND_SHULKER;
                 }
                 if (transaction.stage == Transaction.STAGE_FIND_SHULKER) {
+                    if (transaction.toReplenishSummary.isEmpty()) {
+                        if (log.get()) {
+                            logI18N("message.kit-manager.kit-replenish.success.replenish-finish");
+                        }
+                        transaction.complete(true);
+                        break process;
+                    }
                     var re = findShulker(mc.player.getInventory(), transaction);
                     transaction.findResult = re;
                     if (re != null) {
                         transaction.stage = Transaction.STAGE_SWITCH_HOT_BAR;
                     } else {
+                        if (log.get()) {
+                            logI18N("message.kit-manager.kit-replenish.failure.no-shulker");
+                        }
                         if (transaction.enableUseEnderChest) {
                             transaction.stage = Transaction.STAGE_USE_ENDER_CHEST;
                             transaction.useEnderChest = true;
                             enderChestRequest = true;
                             break process;
                         } else {
-                            if (log.get()) {
-                                logI18N("message.kit-manager.kit-replenish.failure.no-shulker");
-                            }
                             transaction.complete(false);
                             break process;
                         }
@@ -294,10 +306,8 @@ public class KitReplenish extends BaseModule {
                                     Optional.of(new Slot(mc.player.getInventory(), index, 0, 0)),
                                     (ch) -> {
                                         applyReplenish(ch, trans);
-                                        if (log.get()) {
-                                            logI18N("message.kit-manager.kit-replenish.success.replenish-finish");
-                                        }
-                                        trans.complete(true);
+                                        trans.stage = Transaction.STAGE_POST_REORDER_INVENTORY;
+                                        timerPostResortInventory = 5;
                                     },
                                     () -> {
                                         if (log.get()) {
@@ -319,6 +329,18 @@ public class KitReplenish extends BaseModule {
                         }
                         transaction.complete(false);
                         break process;
+                    }
+                }
+                if (transaction.stage == Transaction.STAGE_POST_REORDER_INVENTORY) {
+                    if (timerPostResortInventory > 0) {
+                        --timerPostResortInventory;
+                    } else {
+                        resortInventories(
+                                transaction.inventory, transaction.rule.from(), transaction.rule.to(), transaction);
+                        if (log.get()) {
+                            logI18N("message.kit-manager.kit-replenish.success.replenish-finish");
+                        }
+                        transaction.complete(true);
                     }
                 }
             }
@@ -432,6 +454,14 @@ public class KitReplenish extends BaseModule {
                         Interact.INSTANCE.interactBlock(
                                 shulkerBoxRequest.placePos().get().getSecond());
                         runnable.run();
+                        if (!(mc.world.getBlockEntity(pos) instanceof ShulkerBoxBlockEntity)) {
+                            if (log.get()) {
+                                logI18N("message.kit-manager.kit-replenish.failure.place-failure");
+                            }
+                            shulkerBoxRequest.failureCallback().run();
+                            shulkerBoxRequest = null;
+                            break shulker_place;
+                        }
                         if (!shulkerBoxRequest.useZeroTick()) {
                             break shulker_place;
                         }
@@ -453,10 +483,11 @@ public class KitReplenish extends BaseModule {
                         Interact.INSTANCE.interactBlock(pos);
                         // use predictor
                         if (shulkerBoxRequest.useZeroTick()) {
-                            InvTasks.executePredictInventoryAction(shulkerCurrent, handler -> {
-                                shulkerBoxRequest.successCallback().accept(handler);
-                                shulkerBoxRequest = null;
-                            });
+                            InvTasks.executePredictInventoryAction(
+                                    convertShulkerCurrentToViaItems(shulkerCurrent), handler -> {
+                                        shulkerBoxRequest.successCallback().accept(handler);
+                                        shulkerBoxRequest = null;
+                                    });
                         } else {
                             break shulker_place;
                         }
@@ -471,6 +502,30 @@ public class KitReplenish extends BaseModule {
                 }
             }
         }
+    }
+
+    private Inventory convertShulkerCurrentToViaItems(Inventory inventory) {
+        Inventory newInventory = new MutableInventory(inventory.size(), new ArrayList<>());
+        Map<ReplenishTemplate, ItemStack> playerInventoryTemplate = new HashMap<>();
+        for (var re : InventoryUtils.iterable(mc.player.getInventory())) {
+            if (!re.isEmpty()) {
+                playerInventoryTemplate.put(ReplenishTemplate.of(re), re);
+            }
+        }
+        for (var re = 0; re < inventory.size(); re++) {
+            ItemStack stackTemplate = inventory.getStack(re);
+            if (stackTemplate.isEmpty()) {
+                newInventory.setStack(re, stackTemplate);
+            } else {
+                ItemStack optional = playerInventoryTemplate.get(ReplenishTemplate.of(stackTemplate));
+                if (optional == null) {
+                    newInventory.setStack(re, stackTemplate);
+                } else {
+                    newInventory.setStack(re, optional.copyWithCount(stackTemplate.getCount()));
+                }
+            }
+        }
+        return inventory;
     }
 
     public IndexEntry<ItemStack> findShulker(Inventory inventory, Transaction transaction) {
@@ -541,21 +596,21 @@ public class KitReplenish extends BaseModule {
         return null;
     }
 
-    private Double estimateShulkerNumberValue(ItemStack stack, Map<ItemStackSample, Integer> replenishSupply) {
+    private Double estimateShulkerNumberValue(ItemStack stack, Map<ReplenishTemplate, Integer> replenishSupply) {
         if (isShulker(stack) && stack.contains(DataComponentTypes.CONTAINER)) {
             ContainerComponent container = stack.get(DataComponentTypes.CONTAINER);
             if (container != null && !Objects.equals(ContainerComponent.DEFAULT, container)) {
-                Map<ItemStackSample, Integer> integerMap = new LinkedHashMap<>(replenishSupply);
+                Map<ReplenishTemplate, Integer> integerMap = new LinkedHashMap<>(replenishSupply);
                 for (var re : integerMap.entrySet()) {
-                    int maxCount = re.getKey().sample().getMaxCount();
+                    int maxCount = re.getKey().stackTemplate().getMaxCount();
                     if (maxCount < 64) {
                         re.setValue(re.getValue() * 64 / maxCount);
                     }
                 }
-                Map<ItemStackSample, Integer> extraItems = new LinkedHashMap<>();
+                Map<ReplenishTemplate, Integer> extraItems = new LinkedHashMap<>();
                 boolean hasNeeded = false;
                 for (var re : container.iterateNonEmpty()) {
-                    ItemStackSample sample = ItemStackSample.of(re);
+                    ReplenishTemplate sample = ReplenishTemplate.of(re);
                     Integer need = integerMap.get(sample);
                     int weightedCount = re.getCount();
                     int maxCount = re.getItem().getMaxCount();
@@ -629,15 +684,13 @@ public class KitReplenish extends BaseModule {
             if (isShulker(currentStack)) {
                 continue;
             }
-            if (!rule.dump()
-                    && !currentStack.isEmpty()
-                    && !ItemStack.areItemsAndComponentsEqual(currentStack, templateItem)) {
+            if (!rule.dump() && !currentStack.isEmpty() && !canReplenish(templateItem, currentStack)) {
                 continue;
             }
             int slotI = handler.getSlotIndex(playerInventory, i).getAsInt();
             for (var s = 0; s < topInventory.size(); ++s) {
                 ItemStack stack = topInventory.getStack(s);
-                if (ItemStack.areItemsAndComponentsEqual(templateItem, stack)) {
+                if (canReplenish(templateItem, stack)) {
                     InvExtra.INSTANCE.mergeScreenSlotTo(s, slotI);
                     if (playerInventory.getStack(i).getCount() >= templateItem.getCount()) {
                         break;
@@ -645,6 +698,7 @@ public class KitReplenish extends BaseModule {
                 }
             }
         }
+        emptyLeftSlot(handler, transaction);
     }
 
     private void applyReplenishGreedy(ScreenHandler handler, Transaction transaction) {
@@ -654,22 +708,21 @@ public class KitReplenish extends BaseModule {
         int from = rule.from();
         int to = rule.to();
         Inventory playerInventory = mc.player.getInventory();
-        List<IndexEntry<ItemStackSample>> toReplenished = transaction.toReplenishSummary.entrySet().stream()
-                .map(s ->
-                        new IndexEntry<>(s.getValue() * 64 / s.getKey().sample().getMaxCount(), s.getKey()))
+        List<IndexEntry<ReplenishTemplate>> toReplenished = transaction.toReplenishSummary.entrySet().stream()
+                .map(s -> new IndexEntry<>(
+                        s.getValue() * 64 / s.getKey().stackTemplate().getMaxCount(), s.getKey()))
                 .collect(Collectors.toCollection(ArrayList::new));
-        Comparator<IndexEntry<ItemStackSample>> collector = Comparator.<IndexEntry<ItemStackSample>>comparingInt(
+        Comparator<IndexEntry<ReplenishTemplate>> collector = Comparator.<IndexEntry<ReplenishTemplate>>comparingInt(
                         IndexEntry::index)
                 .thenComparingLong(s -> s.val().hashCode())
                 .reversed();
         toReplenished.sort(collector);
 
         while (!toReplenished.isEmpty()) {
-            IndexEntry<ItemStackSample> replenishItem = toReplenished.remove(0);
+            IndexEntry<ReplenishTemplate> replenishItem = toReplenished.remove(0);
             int supplyIndex = -1;
             for (var i = 0; i < topInventory.size(); ++i) {
-                if (ItemStack.areItemsAndComponentsEqual(
-                        topInventory.getStack(i), replenishItem.val().sample())) {
+                if (replenishItem.val().match(topInventory.getStack(i))) {
                     supplyIndex = i;
                     break;
                 }
@@ -685,8 +738,7 @@ public class KitReplenish extends BaseModule {
                     break;
                 }
                 if (stackJ.getCount() < stackJ.getMaxCount()
-                        && ItemStack.areItemsAndComponentsEqual(
-                                stackJ, replenishItem.val().sample())) {
+                        && replenishItem.val().match(stackJ)) {
                     findAny = true;
                     break;
                 }
@@ -695,7 +747,7 @@ public class KitReplenish extends BaseModule {
                 continue;
             }
             int count = topInventory.getStack(supplyIndex).getCount();
-            int maxCount = replenishItem.val().sample().getMaxCount();
+            int maxCount = replenishItem.val().stackTemplate().getMaxCount();
             mc.interactionManager.clickSlot(handler.syncId, supplyIndex, 0, SlotActionType.QUICK_MOVE, mc.player);
             int count2 = topInventory.getStack(supplyIndex).getCount();
             if (count2 >= count) {
@@ -709,6 +761,7 @@ public class KitReplenish extends BaseModule {
             toReplenished.add(new IndexEntry<>(newInd, replenishItem.val()));
             toReplenished.sort(collector);
         }
+        emptyLeftSlot(handler, transaction);
     }
 
     private void applyReplenishOrdered(ScreenHandler handler, Transaction transaction) {
@@ -718,12 +771,12 @@ public class KitReplenish extends BaseModule {
         int from = rule.from();
         int to = rule.to();
         Inventory playerInventory = mc.player.getInventory();
-        Map<ItemStackSample, Integer> replenishCount = new LinkedHashMap<>(transaction.toReplenishSummary);
+        Map<ReplenishTemplate, Integer> replenishCount = new LinkedHashMap<>(transaction.toReplenishSummary);
         for (var i = 0; i < topInventory.size(); ++i) {
             if (replenishCount.isEmpty()) break;
             ItemStack stack = topInventory.getStack(i);
             if (stack.isEmpty()) continue;
-            ItemStackSample sample = ItemStackSample.of(stack);
+            ReplenishTemplate sample = ReplenishTemplate.of(stack);
             Integer value = replenishCount.get(sample);
             if (value != null) {
                 boolean findAny = false;
@@ -733,8 +786,7 @@ public class KitReplenish extends BaseModule {
                         findAny = true;
                         break;
                     }
-                    if (stackJ.getCount() < stackJ.getMaxCount()
-                            && ItemStack.areItemsAndComponentsEqual(stackJ, sample.sample())) {
+                    if (stackJ.getCount() < stackJ.getMaxCount() && canReplenish(sample.stackTemplate(), stackJ)) {
                         findAny = true;
                         break;
                     }
@@ -758,9 +810,29 @@ public class KitReplenish extends BaseModule {
                 }
             }
         }
+        emptyLeftSlot(handler, transaction);
     }
 
-    private void resortInventories(Inventory inventory, int from, int to) {
+    private void emptyLeftSlot(ScreenHandler handler, Transaction transaction) {
+        OptionalInt slotIndex = handler.getSlotIndex(mc.player.getInventory(), transaction.leftEmptySlotForShulker);
+        if (slotIndex.isPresent()
+                && !mc.player
+                        .getInventory()
+                        .getStack(transaction.leftEmptySlotForShulker)
+                        .isEmpty()) {
+            for (int i = 0; i < InventoryUtils.getPlayerBackpackSize(); ++i) {
+                if (i != transaction.leftEmptySlotForShulker
+                        && mc.player.getInventory().getStack(i).isEmpty()) {
+                    InvExtra.INSTANCE.swapInventoryIndexes(transaction.leftEmptySlotForShulker, i);
+                    return;
+                }
+            }
+            mc.interactionManager.clickSlot(
+                    handler.syncId, slotIndex.getAsInt(), 0, SlotActionType.QUICK_MOVE, mc.player);
+        }
+    }
+
+    private void resortInventories(Inventory inventory, int from, int to, Transaction trans) {
         if (checkNull()) {
             return;
         }
@@ -769,27 +841,32 @@ public class KitReplenish extends BaseModule {
         from = Math.clamp(from, 0, Math.min(inventory.size(), InventoryUtils.getPlayerBackpackSize()));
         to = Math.clamp(to, from, Math.min(inventory.size(), InventoryUtils.getPlayerBackpackSize()));
         for (int i = from; i < to; ++i) {
+            if (i == trans.leftEmptySlotForShulker) {
+                continue;
+            }
             ItemStack templateStack = inventory.getStack(i);
             if (templateStack.isEmpty() || isShulker(templateStack)) {
                 continue;
             }
             ItemStack currentStack = playerInventory.getStack(i);
-            if (ItemStack.areItemsAndComponentsEqual(currentStack, templateStack)) {
+            if (canReplenish(templateStack, currentStack)) {
                 continue;
             }
-            int candidate = findResortSwapCandidate(inventory, playerInventory, templateStack, i, from, to);
+            int candidate = findResortSwapCandidate(playerInventory, templateStack, i, to);
             if (candidate >= 0) {
                 InvExtra.INSTANCE.swapInventoryIndexes(candidate, i);
             }
         }
         for (int i = from; i < to; ++i) {
+            if (i == trans.leftEmptySlotForShulker) {
+                continue;
+            }
             ItemStack templateStack = inventory.getStack(i);
             if (templateStack.isEmpty() || isShulker(templateStack)) {
                 continue;
             }
             ItemStack currentStack = playerInventory.getStack(i);
-            if (!ItemStack.areItemsAndComponentsEqual(currentStack, templateStack)
-                    || currentStack.getCount() >= templateStack.getCount()) {
+            if (!canReplenish(templateStack, currentStack) || currentStack.getCount() >= templateStack.getCount()) {
                 continue;
             }
             int targetSlot = handler.getSlotIndex(playerInventory, i).orElse(-1);
@@ -797,11 +874,14 @@ public class KitReplenish extends BaseModule {
                 continue;
             }
             for (int j = from; j < to; ++j) {
+                if (j == trans.leftEmptySlotForShulker) {
+                    continue;
+                }
                 if (j == i) {
                     continue;
                 }
                 ItemStack otherStack = playerInventory.getStack(j);
-                if (!ItemStack.areItemsAndComponentsEqual(otherStack, templateStack)) {
+                if (!canReplenish(templateStack, otherStack)) {
                     continue;
                 }
                 int sourceSlot = handler.getSlotIndex(playerInventory, j).orElse(-1);
@@ -817,28 +897,14 @@ public class KitReplenish extends BaseModule {
     }
 
     private int findResortSwapCandidate(
-            Inventory templateInventory,
-            PlayerInventory playerInventory,
-            ItemStack templateStack,
-            int targetIndex,
-            int from,
-            int to) {
+            PlayerInventory playerInventory, ItemStack templateStack, int targetIndex, int to) {
         int fallback = -1;
-        for (int i = from; i < to; ++i) {
-            if (i == targetIndex) {
-                continue;
-            }
+        for (int i = targetIndex + 1; i < to; ++i) {
             ItemStack candidate = playerInventory.getStack(i);
-            if (!ItemStack.areItemsAndComponentsEqual(candidate, templateStack)) {
+            if (!canReplenish(templateStack, candidate)) {
                 continue;
             }
-            if (fallback < 0) {
-                fallback = i;
-            }
-            ItemStack expected = templateInventory.getStack(i);
-            if (!ItemStack.areItemsAndComponentsEqual(candidate, expected)) {
-                return i;
-            }
+            return i;
         }
         return fallback;
     }
@@ -851,31 +917,51 @@ public class KitReplenish extends BaseModule {
                 .build();
         main.subBuilder(SubCommand.taskBuilder())
                 .name("import")
+                .helper("message.command.kit.import.help")
                 .arg(SimpleCommandArgs.argumentBuilder().name("name").build())
                 .post(e -> e.executor(CommandContext.execute(this::onImportKitCommand)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("importitem")
+                .helper("message.command.kit.importitem.help")
                 .arg(SimpleCommandArgs.argumentBuilder().name("name").build())
                 .post(e -> e.executor(CommandContext.execute(this::onImportItemKitCommand)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("request")
+                .helper("message.command.kit.request.help")
                 .arg(kitNameArgument)
                 .post(e -> e.executor(CommandContext.execute(this::onRequestKitCommand)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("clearRequest")
+                .helper("message.command.kit.clear-request.help")
                 .post(e -> e.executor(CommandContext.execute(this::onClearRequestCommand)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("start")
+                .helper("message.command.kit.start.help")
                 .post(e -> e.executor(CommandContext.run(this::onStartCommand)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("edit")
+                .helper("message.command.kit.edit.help")
                 .post(e -> e.executor(CommandContext.execute(this::onEditCommand)))
+                .complete()
+                .subBuilder(SubCommand.taskBuilder())
+                .name("give")
+                .helper("message.command.kit.give.help")
+                .arg(kitNameArgument)
+                .post(e -> e.executor(CommandContext.execute(this::onGiveCommand)))
+                .complete()
+                .subBuilder(SubCommand.taskBuilder())
+                .name("giveshulker")
+                .helper("message.command.kit.giveshulker.help")
+                .arg(kitNameArgument)
+                .post(s -> s.executor(CommandContext.execute(this::onGiveShulkerCommand)))
                 .complete();
+        ;
+        mainCommand.registerSub(new BridgeSubCommand("kit", main));
     }
 
     private boolean onImportKitCommand(CommandExecution sender, ArgumentInputStream streamArgs) {
@@ -944,6 +1030,52 @@ public class KitReplenish extends BaseModule {
         sender.sendMessage("&a正在打开Kit编辑界面");
     }
 
+    private void onGiveCommand(CommandExecution sender, ArgumentInputStream streamArgs) {
+        String name = streamArgs.nextNonnullString();
+        Kit kit = findKitByName(name);
+        if (kit == null) {
+            sender.sendMessage("&c未找到Kit: " + name);
+            return;
+        }
+        if (mc.interactionManager.getCurrentGameMode().isCreative()) {
+            Rule rule = kit.rule();
+            Inventory inventory = createInventory(kit);
+            for (var i = rule.from(); i < rule.to(); ++i) {
+                InvTasks.setCreativeInventory(inventory.getStack(i), i);
+            }
+        } else {
+            sender.sendMessage("&c当前并不处于创造模式,无法使用该功能");
+        }
+    }
+
+    private void onGiveShulkerCommand(CommandExecution sender, ArgumentInputStream streamArgs) {
+        String name = streamArgs.nextNonnullString();
+        Kit kit = findKitByName(name);
+        if (kit == null) {
+            sender.sendMessage("&c未找到Kit: " + name);
+            return;
+        }
+        if (mc.interactionManager.getCurrentGameMode().isCreative()) {
+            Rule rule = kit.rule();
+            Inventory inventory = createInventory(kit);
+            List<ItemStack> stacks = new ArrayList<>();
+            Inventory shulkerInventory = new MutableInventory(27, stacks);
+            int from = rule.from();
+            for (var i = from; i < rule.to(); ++i) {
+                int idx = i - from;
+                if (idx >= shulkerInventory.size()) break;
+                shulkerInventory.setStack(idx, inventory.getStack(i));
+            }
+            ContainerComponent shulkerComponent = ContainerComponent.fromStacks(stacks);
+            ItemStack newShulker = new ItemStack(Items.SHULKER_BOX);
+            newShulker.set(DataComponentTypes.CONTAINER, shulkerComponent);
+            newShulker.set(DataComponentTypes.CUSTOM_NAME, Text.literal(name));
+            InvTasks.creativeGive(newShulker, 1);
+        } else {
+            sender.sendMessage("&c当前并不处于创造模式,无法使用该功能");
+        }
+    }
+
     private Stream<String> streamKitNames() {
         return kitMap.kitList().stream().map(Kit::name);
     }
@@ -962,14 +1094,15 @@ public class KitReplenish extends BaseModule {
     }
 
     public static class Transaction {
-        static int STAGE_REORDER_INVENTORY = 0;
-        static int STAGE_FIND_SHULKER = 1;
-        static int STAGE_USE_ENDER_CHEST = 2;
-        static int STAGE_SWITCH_HOT_BAR = 3;
-        static int STAGE_PLACE_SHULKER = 4;
-        static int STAGE_APPLY_INV = 5;
-        static int STAGE_COMPLETE = 6;
-        static int STAGE_FAIL = 7;
+        static final int STAGE_REORDER_INVENTORY = 0;
+        static final int STAGE_FIND_SHULKER = 1;
+        static final int STAGE_USE_ENDER_CHEST = 2;
+        static final int STAGE_SWITCH_HOT_BAR = 3;
+        static final int STAGE_PLACE_SHULKER = 4;
+        static final int STAGE_APPLY_INV = 5;
+        static final int STAGE_POST_REORDER_INVENTORY = 6;
+        static final int STAGE_COMPLETE = 7;
+        static final int STAGE_FAIL = 8;
         BlockPos currentReplenishPos;
         String name;
         Rule rule = Rule.DEFAULT;
@@ -979,7 +1112,7 @@ public class KitReplenish extends BaseModule {
         boolean enableUseEnderChest = true;
         boolean useEnderChest = false;
         int leftEmptySlotForShulker = -1;
-        Map<ItemStackSample, Integer> toReplenishSummary = new LinkedHashMap<>();
+        Map<ReplenishTemplate, Integer> toReplenishSummary = new LinkedHashMap<>();
         public CompletableFuture<Transaction> future = new CompletableFuture<>();
         int stage;
 
@@ -993,7 +1126,7 @@ public class KitReplenish extends BaseModule {
             for (int i = from; i < to; ++i) {
                 var re = inventory.getStack(i);
                 if (!re.isEmpty()) {
-                    ItemStackSample sample = ItemStackSample.of(re);
+                    ReplenishTemplate sample = ReplenishTemplate.of(re);
                     toReplenishSummary.merge(sample, re.getCount(), Integer::sum);
                 }
             }
@@ -1001,7 +1134,7 @@ public class KitReplenish extends BaseModule {
             for (int i = from; i < to; ++i) {
                 var re = playerInventory.getStack(i);
                 if (!re.isEmpty()) {
-                    ItemStackSample sample = ItemStackSample.of(re);
+                    ReplenishTemplate sample = ReplenishTemplate.of(re);
                     Integer value = toReplenishSummary.get(sample);
                     if (value != null) {
                         int newValue = value - re.getCount();
@@ -1012,9 +1145,6 @@ public class KitReplenish extends BaseModule {
                         }
                     }
                 }
-            }
-            if (toReplenishSummary.isEmpty()) {
-                complete(true);
             }
         }
 
@@ -1218,8 +1348,8 @@ public class KitReplenish extends BaseModule {
                 dx - indexWidth - blankWidth,
                 dy));
         acceptor.accept(kitEditEntry);
-        acceptor.accept(DisplayWidget.instance(0, dblank, dx, dy)
-                .setRenderHandler(new ButtonElement(
+        acceptor.accept(ExecutableWidget.instance(0, dblank, dx, dy)
+                .setElementHandler(new ButtonElement(
                         el -> {
                             Kit kit = kitMap.getDefaultKit();
                             if (kit != null) {
@@ -1231,7 +1361,7 @@ public class KitReplenish extends BaseModule {
                                 return Text.translatable("widget.kit-manager.kit-default.absent");
                             }
                         },
-                        ButtonAction.empty())));
+                        ButtonAction.run(this::openKitEditScreen))));
         acceptor.accept(createTitleLabel("widget.kit-manager.command", 0, dblank, dx, dy));
         acceptor.accept(createTitleLabel("widget.interact.interact-all.use-argument", 0, dblank, dx, dy));
     }
@@ -1301,11 +1431,11 @@ public class KitReplenish extends BaseModule {
         AttrKeyValue<Integer> ruleMin =
                 AttrKeyValue.integer("widget.kit-manager.open-kit-list.rule.from", currentRule.from());
         ruleMin.addListener(s -> record.set(ruleKey, record.<Rule>get(ruleKey).withFrom(s)));
-        ruleMin.addValidator(Configs.intRange(0, InventoryUtils.getPlayerBackpackSize()));
+        ruleMin.addValidator(Configs.intRange(0, InventoryUtils.getPlayerInvSize()));
         AttrKeyValue<Integer> ruleMax =
                 AttrKeyValue.integer("widget.kit-manager.open-kit-list.rule.to", currentRule.to());
         ruleMax.addListener(s -> record.set(ruleKey, record.<Rule>get(ruleKey).withTo(s)));
-        ruleMax.addValidator(Configs.intRange(0, InventoryUtils.getPlayerBackpackSize()));
+        ruleMax.addValidator(Configs.intRange(0, InventoryUtils.getPlayerInvSize()));
         Runnable reload = () -> {
             name.valueChangeInternal(null, record.getOrPut(nameKey, ""));
             maxSize.valueChangeInternal(null, record.getOrPut(maxSizeKey, 0));
@@ -1402,6 +1532,22 @@ public class KitReplenish extends BaseModule {
         return Kit.fromItem(name, stack, maxSize, type);
     }
 
+    private static final List<ComponentType<?>> MUST_MATCH = List.of(
+            DataComponentTypes.ENCHANTMENTS,
+            DataComponentTypes.STORED_ENCHANTMENTS,
+            DataComponentTypes.UNBREAKABLE,
+            DataComponentTypes.FIREWORKS,
+            DataComponentTypes.FIREWORK_EXPLOSION,
+            DataComponentTypes.CONSUMABLE,
+            DataComponentTypes.CUSTOM_NAME,
+            DataComponentTypes.LORE,
+            DataComponentTypes.ATTRIBUTE_MODIFIERS);
+
+    public static boolean canReplenish(ItemStack template, ItemStack realStack) {
+        return template.isOf(realStack.getItem())
+                && MUST_MATCH.stream().allMatch(s -> Objects.equals(template.get(s), realStack.get(s)));
+    }
+
     public static record Kit(String name, List<IndexEntry<NbtCompound>> itemNBT, int maxSize, Rule rule) {
         public static final Kit EMPTY = new Kit("", List.of(), 0, new Rule());
 
@@ -1488,6 +1634,39 @@ public class KitReplenish extends BaseModule {
 
         public Rule() {
             this(Type.GREEDY, 9, 36, false);
+        }
+    }
+
+    public static record ReplenishTemplate(ItemStack stackTemplate, int hash) {
+        public ReplenishTemplate(ItemStack stack) {
+            this(stack.copyWithCount(1), hashTemplate(stack));
+        }
+
+        public static ReplenishTemplate of(ItemStack stack) {
+            return new ReplenishTemplate(stack);
+        }
+
+        private static int hashTemplate(ItemStack stack) {
+            int code = stack.getItem().hashCode();
+            for (var re : MUST_MATCH) {
+                var r = stack.get(re);
+                code = 31 * code + (r == null ? 0 : r.hashCode());
+            }
+            return code;
+        }
+
+        public boolean match(ItemStack stack) {
+            return canReplenish(stackTemplate, stack);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return o == this || (o instanceof ReplenishTemplate temp && match(temp.stackTemplate));
+        }
+
+        @Override
+        public int hashCode() {
+            return hash;
         }
     }
 

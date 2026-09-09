@@ -17,6 +17,7 @@ import me.matl114.versioned.api.VDrawContext;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.component.ComponentChanges;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -35,12 +36,12 @@ public class ItemList extends IRender2DColoredModule {
         return makePath(Configs.RENDER_CONFIG, "detect-entity.item-list");
     }
 
+    public FlagRef collectItemFrame;
+
     FlagRef renderSimple;
 
     FlagRef renderImportant;
-
     public NBTRef<PrimitiveList<NbtCompound>> nbtPredicate;
-
     public NBTRef<EntrySet<Item>> itemType;
     public List<NbtPredicate> predicate;
 
@@ -76,6 +77,7 @@ public class ItemList extends IRender2DColoredModule {
     @Override
     protected void initializeSettings() {
         super.initializeSettings();
+        collectItemFrame = flagBuilder(hud.add("render-item-frame")).build();
         renderSimple = flagBuilder(hud.add("render-simple")).build();
 
         renderImportant = flagBuilder(hud.add("render-important")).build();
@@ -106,7 +108,14 @@ public class ItemList extends IRender2DColoredModule {
             for (var re : mc.world.getEntities()) {
                 if (re instanceof ItemEntity item) {
                     ItemStack stack = item.getStack();
-                    itemMap.merge(ItemStackSample.of(stack), stack.getCount(), Integer::sum);
+                    if (!stack.isEmpty()) {
+                        itemMap.merge(ItemStackSample.of(stack), stack.getCount(), Integer::sum);
+                    }
+                } else if (re instanceof ItemFrameEntity frame && collectItemFrame.get()) {
+                    ItemStack stack = frame.getHeldItemStack();
+                    if (!stack.isEmpty()) {
+                        itemMap.merge(ItemStackSample.of(stack), stack.getCount(), Integer::sum);
+                    }
                 }
             }
             for (var re : itemMap.entrySet()) {

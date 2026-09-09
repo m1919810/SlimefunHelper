@@ -1,6 +1,7 @@
 package me.matl114.gui.basic;
 
 import java.util.function.Supplier;
+import lombok.Setter;
 import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
@@ -8,7 +9,9 @@ import net.minecraft.client.gui.Selectable;
 import org.jetbrains.annotations.Nullable;
 
 public class DynamicContentWidget<W extends Element & Drawable & Selectable> extends ContentDelegateWidget<W> {
+    @Setter
     Supplier<W> contentSupplier;
+
     ValueAccessor<Integer> xSupplier;
     ValueAccessor<Integer> ySupplier;
 

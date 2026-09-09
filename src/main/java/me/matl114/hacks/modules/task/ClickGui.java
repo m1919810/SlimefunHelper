@@ -912,4 +912,8 @@ public class ClickGui extends BaseModule {
             () -> ClickGui.INSTANCE.moduleListColor.get().withAlpha(255),
             () -> ClickGui.INSTANCE.textColor.get().withAlpha(255),
             () -> ClickGui.INSTANCE.configColor.get().withAlpha(255));
+
+    static {
+        WidgetUtils.DEFAULT_PALETTE = CONFIG_PALETTE;
+    }
 }

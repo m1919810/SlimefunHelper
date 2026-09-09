@@ -6,15 +6,14 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
-import lombok.Getter;
 import me.matl114.accessors.access.ClientPlayerAccess;
+import me.matl114.accessors.access.PlayerInteractEntityC2SPacketAccess;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.accessors.interfaces.MetadataHolder;
+import me.matl114.events.CombatListener;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.events.annotations.Broadcast;
-import me.matl114.events.annotations.ExtraArgs;
-import me.matl114.events.channels.EventChannel;
+import me.matl114.events.impl.CombatPlayer;
 import me.matl114.events.impl.SlotClickAction;
 import me.matl114.hacks.ACTasks;
 import me.matl114.hacks.MovTasks;
@@ -82,10 +81,12 @@ public class PlayerStateManager extends BaseModule {
     public boolean lastPlayerOnGround;
     public boolean lastSprint;
     public Vec3d lastKnownMovementSpeed = Vec3d.ZERO;
+    public Vec3d lastKnownChangePosMovementSpeed = Vec3d.ZERO;
     public Vec3d lastKnownRealMovementSpeed = Vec3d.ZERO;
     public Vec3d lastKnownClientVelocity = Vec3d.ZERO;
     public Vec3d lastAverageMovementSpeed = Vec3d.ZERO;
     public Vec3d lastSetBackPosition = Vec3d.ZERO;
+    public int lastAttackStrengthResetTick = 0;
     public boolean lastMovementContainsPosition = false;
     boolean lastTickHasMovement = false;
     public boolean lastClimbing;
@@ -184,7 +185,12 @@ public class PlayerStateManager extends BaseModule {
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(EntityEquipmentUpdateS2CPacket.class),
                 this::onEntityEquipmentUpdate);
+        registerListener(
+                Listener.getPacketPostHandlePoint().getChannel(EntitySpawnS2CPacket.class),
+                this::onPlayerEnterVisualRange);
         registerListener(Listener.getOtherPlayerExitPoint(), this::onPlayerLeave);
+        registerListener(Listener.getPacketPoint().getChannel(HandSwingC2SPacket.class), this::onSwingHand);
+        registerListener(Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class), this::onAttack);
     }
 
     public void onMove(Event<PlayerMoveC2SPacket> event) {
@@ -215,6 +221,9 @@ public class PlayerStateManager extends BaseModule {
                 lastYaw = packet.getYaw(lastYaw);
             }
             lastKnownMovementSpeed = new Vec3d(lastX - oldMove.x, lastY - oldMove.y, lastZ - oldMove.z);
+            if (lastKnownMovementSpeed.lengthSquared() > 1E-7) {
+                lastKnownChangePosMovementSpeed = lastKnownMovementSpeed;
+            }
             if (PlayerMoveC2SPacketAccess.of(packet).getCause() != PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP) {
                 if (PlayerMoveC2SPacketAccess.of(packet).getCause() == PlayerMoveC2SPacketAccess.Cause.SET_BACK) {
                     lastKnownRealMovementSpeed = Vec3d.ZERO;
@@ -567,6 +576,17 @@ public class PlayerStateManager extends BaseModule {
         }
     }
 
+    public void onSwingHand(Event<HandSwingC2SPacket> event) {
+        lastAttackStrengthResetTick = Tasks.getTick();
+    }
+
+    public void onAttack(Event<PlayerInteractEntityC2SPacket> event) {
+        if (PlayerInteractEntityC2SPacketAccess.of(event.context).isAttack()
+                && mc.world.getEntityById(event.context.entityId) instanceof LivingEntity living) {
+            lastAttackStrengthResetTick = Tasks.getTick();
+        }
+    }
+
     public void handleMaceSmash() {
         if (fallDistance > 1.5) {
             fallDistance = 0;
@@ -623,11 +643,17 @@ public class PlayerStateManager extends BaseModule {
         if (!lastTickHasMovement) {
             lastKnownMovementSpeed = Vec3d.ZERO;
             lastMovementContainsPosition = false;
+        } else {
+            lastKnownChangePosMovementSpeed = lastKnownMovementSpeed;
         }
         lastTickHasMovement = false;
     }
 
     // api methods
+
+    public Vec3d getLastPosition() {
+        return new Vec3d(lastX, lastY, lastZ);
+    }
 
     public boolean isRotationDifferent() {
         return EntityUtils.isRotationDifferent(lastPitch, mc.player.getPitch(), lastYaw, mc.player.getYaw());
@@ -719,16 +745,6 @@ public class PlayerStateManager extends BaseModule {
         }
     }
 
-    @Getter
-    @Broadcast
-    @ExtraArgs(int.class)
-    public static final EventChannel<PlayerEntity> playerPopTotem = new EventChannel<>();
-
-    @Getter
-    @Broadcast
-    @ExtraArgs({PlayerStatus.class, Integer.class})
-    public static final EventChannel<PlayerEntity> playerDeathInfo = new EventChannel<>();
-
     public void onTotemPop(Event<EntityStatusS2CPacket> event) {
         if (checkNull()) return;
         EntityStatusS2CPacket packet = event.context;
@@ -736,7 +752,7 @@ public class PlayerStateManager extends BaseModule {
             if (packet.getStatus() == EntityStatuses.USE_TOTEM_OF_UNDYING) {
                 UUID uid = player.getUuid();
                 int val = popMap.merge(uid, 1, Integer::sum);
-                playerPopTotem.broadcast(player, val);
+                CombatListener.getPlayerPopTotem().broadcast(new CombatPlayer(player, val));
             }
             if (packet.getStatus() == EntityStatuses.PLAY_DEATH_SOUND_OR_ADD_PROJECTILE_HIT_PARTICLES) {
                 onDeath(player);
@@ -746,23 +762,43 @@ public class PlayerStateManager extends BaseModule {
 
     private void onDeath(PlayerEntity entity) {
         Integer popCount = popMap.remove(entity.getUuid());
-        PlayerStatus status = getPlayerStatus(entity);
-        playerDeathInfo.broadcast(entity, status, popCount);
+        CombatListener.getPlayerDeathInfo().broadcast(new CombatPlayer(entity, popCount == null ? 0 : popCount));
     }
 
     public void onRespawn(Event<PlayerRespawnS2CPacket> eventRespawn) {
         if (checkNull()) return;
-        onDeath(mc.player);
+        if (eventRespawn.context.flag() < 3 && mc.player.getHealth() <= 0) {
+            onDeath(mc.player);
+        }
     }
 
     public void onOtherPlayerRemoveDeath(Event<Entity> eventRemoval) {
-        if (eventRemoval.context instanceof PlayerEntity pl && pl.getHealth() <= 0 && pl != mc.player) {
-            onDeath(pl);
+        if (eventRemoval.context instanceof PlayerEntity pl && pl != mc.player) {
+            CombatListener.getPlayerLeaveVisualRange().broadcast(new CombatPlayer(pl, getPlayerPopCount(pl)));
+            if (pl.getHealth() <= 0) {
+                onDeath(pl);
+            }
+        }
+    }
+
+    public void onPlayerEnterVisualRange(Event<EntitySpawnS2CPacket> event) {
+        if (event.context.getEntityType() == EntityType.PLAYER) {
+            UUID uid = event.context.getUuid();
+            Tasks.scheduleDelayedPre(
+                    () -> {
+                        Entity player = mc.world.getEntityLookup().get(uid);
+                        if (player instanceof PlayerEntity pl) {
+                            CombatListener.getPlayerEnterVisualRange()
+                                    .broadcast(new CombatPlayer(pl, getPlayerPopCount(pl)));
+                        }
+                    },
+                    0);
         }
     }
 
     public void onLeave(Event<Void> event) {
         popMap.clear();
+        onPlayerReset();
     }
 
     public void onPlayerLeave(Event<PlayerListEntry> eventRemove) {

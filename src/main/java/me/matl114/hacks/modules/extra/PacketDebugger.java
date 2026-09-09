@@ -7,6 +7,9 @@ import java.util.regex.Pattern;
 import me.matl114.SlimefunHelper;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.PacketManager;
+import me.matl114.events.impl.SlotClickAction;
+import me.matl114.events.packets.PacketStorage;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
@@ -17,6 +20,7 @@ import me.matl114.managers.config.StringRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.entity.PlayerInputUtils;
+import net.minecraft.network.NetworkSide;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.PacketType;
 import net.minecraft.network.packet.c2s.play.*;
@@ -58,6 +62,12 @@ public class PacketDebugger extends BaseModule {
     public final FlagRef debugOut =
             flagBuilder(packetDebugger.add("debug-packet-out")).build();
 
+    public final FlagRef debugClicks =
+            flagBuilder(packetDebugger.add("debug-click-actions")).build();
+
+    public final FlagRef debugViaPackets =
+            flagBuilder(packetDebugger.add("debug-via-packet")).build();
+
     public final StringRef debugPacketType = builder(packetDebugger.add("debug-packet-type"), StringRef.TYPE)
             .defaultValue("^(move_player_.*)$")
             .validator(Configs.REGEX_VALIDATOR)
@@ -85,7 +95,12 @@ public class PacketDebugger extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPacketPreHandlePoint(), this::onPacketHandle, Integer.MIN_VALUE);
         registerListener(Listener.getPacketPostScheduleSendPoint(), this::onPacketSend, Integer.MIN_VALUE);
+        registerListener(
+                PacketManager.getPacketQueueEvent().getChannel(NetworkSide.SERVERBOUND),
+                this::onViaSend,
+                Integer.MIN_VALUE);
         registerListener(Listener.getPacketPoint(), this::onPacket);
+        registerListener(Listener.getPreClickSlot(), this::onClick);
     }
 
     public static String simplifyId(Identifier id) {
@@ -112,6 +127,8 @@ public class PacketDebugger extends BaseModule {
                             positionLookS2CPacket.change().pitch(),
                             ", Yaw:",
                             positionLookS2CPacket.change().yaw(),
+                            ", Id:",
+                            positionLookS2CPacket.teleportId(),
                             timeStr);
                 } else {
                     debug("Accept", simplifyId(type.getPacketId().id()), timeStr);
@@ -164,10 +181,26 @@ public class PacketDebugger extends BaseModule {
                             simplifyId(type.getPacketId().id()),
                             ccmd.getMode().name(),
                             timeStr);
+                } else if (type instanceof TeleportConfirmC2SPacket confirm) {
+                    debug("Send", simplifyId(type.getPacketId().id()), ", Id:", confirm.getTeleportId(), timeStr);
                 } else {
                     debug("Send", simplifyId(type.getPacketId().id()), timeStr);
                 }
             }
+        }
+    }
+
+    public void onClick(Event<SlotClickAction> eventAction) {
+        if (enable.get() && debugClicks.get()) {
+            String timeStr = debugTime.get() ? (", Tick: " + Tasks.getTick()) : "";
+            debug(
+                    "Click: button:",
+                    eventAction.context.button(),
+                    ",slot:",
+                    eventAction.context.slotId(),
+                    ",type:",
+                    eventAction.context.actionType().name(),
+                    timeStr);
         }
     }
 
@@ -177,6 +210,19 @@ public class PacketDebugger extends BaseModule {
             Packet<?> type = packetEvent.context();
             if (typesIntercept.contains(type.getPacketId())) {
                 packetEvent.cancel();
+            }
+        }
+    }
+
+    public void onViaSend(Event<PacketStorage> eventPacketStorage) {
+        if (!(eventPacketStorage.context instanceof PacketManager.PacketStorageImpl)
+                && enable.get()
+                && debugViaPackets.get()) {
+            // via packets
+            PacketType<?> type = eventPacketStorage.context.packetType();
+            if (type != null && typesDebug.contains(type)) {
+                String timeStr = debugTime.get() ? (", Tick: " + Tasks.getTick()) : "";
+                debug("Send by via:", simplifyId(type.id()), timeStr);
             }
         }
     }
