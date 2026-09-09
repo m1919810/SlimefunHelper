@@ -102,7 +102,7 @@ accessible method net/minecraft/client/option/GameOptions setPlayerModelPart (Ln
 accessible method net/minecraft/client/MinecraftClient openChatScreen (Ljava/lang/String;)V
 accessible field net/minecraft/potion/Potion baseName Ljava/lang/String;
 accessible field net/minecraft/loot/condition/AlternativeLootCondition terms Ljava/util/List;
-accessible method net/minecraft/entity/LivingEntity tryUseDeathProtector (Lnet/minecraft/entity/damage/DamageSource;)Z
+accessible method net/minecraft/entity/LivingEntity tryUseTotem (Lnet/minecraft/entity/damage/DamageSource;)Z
 accessible field net/minecraft/entity/Entity movementMultiplier Lnet/minecraft/util/math/Vec3d;
 accessible method net/minecraft/block/vault/VaultSharedData getConnectedPlayers ()Ljava/util/Set;
 accessible method net/minecraft/enchantment/EnchantmentHelper$Consumer accept (Lnet/minecraft/registry/entry/RegistryEntry;I)V

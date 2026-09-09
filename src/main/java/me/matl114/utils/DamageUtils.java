@@ -179,7 +179,7 @@ public class DamageUtils {
     public static float getRealAttackDamage(
             PlayerEntity player, Entity livingEntity, ItemStack stack, double fallDistance) {
         var attribute = AttributeUtils.getAttributeWith(player, Map.of(EquipmentSlot.MAINHAND, stack));
-        float f = player.isUsingRiptide() ? 8.0F : (float) attribute.getValue(EntityAttributes.ATTACK_DAMAGE);
+        float f = player.isUsingRiptide() ? 8.0F : (float) attribute.getValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
         DamageSource damageSource = createDamageSource(player, player, stack);
         float g = player.getAttackCooldownProgress(0.5F);
         float h = g * (getDamageAgainst(stack, f, damageSource) - f);
@@ -255,8 +255,7 @@ public class DamageUtils {
     public static DamageSource createDamageSource(Entity source, PlayerEntity attacker, ItemStack weapon) {
         DamageSource newSource;
         try {
-            newSource = (DamageSource) Optional.ofNullable(weapon.getItem().getDamageSource(attacker))
-                    .orElse(attacker.getDamageSources().playerAttack(attacker));
+            newSource = (DamageSource) attacker.getDamageSources().playerAttack(attacker);
             ;
         } catch (Throwable e) {
             newSource = createDamageSource(DamageTypes.PLAYER_ATTACK, source, attacker);
@@ -506,8 +505,8 @@ public class DamageUtils {
 
     public static DamageContext.Builder fromPlayer(PlayerEntity player) {
         DamageContext.Builder builder = new DamageContext.Builder();
-        builder.withArmor((float) player.getAttributes().getValue(EntityAttributes.ARMOR));
-        builder.withArmorToughness((float) player.getAttributes().getValue(EntityAttributes.ARMOR_TOUGHNESS));
+        builder.withArmor((float) player.getAttributes().getValue(EntityAttributes.GENERIC_ARMOR));
+        builder.withArmorToughness((float) player.getAttributes().getValue(EntityAttributes.GENERIC_ARMOR_TOUGHNESS));
         for (EquipmentSlot slot : EquipmentSlot.values()) {
             ItemStack stack = player.getEquippedStack(slot);
             builder.withArmorSlot(slot, stack);

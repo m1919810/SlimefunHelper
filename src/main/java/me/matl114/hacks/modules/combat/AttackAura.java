@@ -127,7 +127,7 @@ public class AttackAura extends BaseModule {
         }
         AttributeContainer swapContainer =
                 AttributeUtils.getAttributeWith(mc.player, Map.of(EquipmentSlot.MAINHAND, currentWeapon.val()));
-        double attackSpeed = swapContainer.getValue(EntityAttributes.ATTACK_SPEED);
+        double attackSpeed = swapContainer.getValue(EntityAttributes.GENERIC_ATTACK_SPEED);
         float perTick = (float) (1.0 / attackSpeed * 20.0);
         float progress = (float) MathHelper.clamp(((float) strength + 0.5) / perTick, 0.0F, 1.0F);
         return progress >= cooldownProgress.get();

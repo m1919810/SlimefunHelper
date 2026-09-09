@@ -166,7 +166,7 @@ public class FakePlayer extends BaseModule {
         fakePlayer.setFreeze(!hasPhysics.get());
         fakePlayer
                 .getAttributes()
-                .getCustomInstance(EntityAttributes.MAX_HEALTH)
+                .getCustomInstance(EntityAttributes.GENERIC_MAX_HEALTH)
                 .setBaseValue(maxHealth.get());
         fakePlayer.setTickTask(this::onFakePlayerTick);
         if (copyEquipment.get()) {
@@ -176,7 +176,7 @@ public class FakePlayer extends BaseModule {
         // enable absorption
         fakePlayer
                 .getAttributes()
-                .getCustomInstance(EntityAttributes.MAX_ABSORPTION)
+                .getCustomInstance(EntityAttributes.GENERIC_MAX_ABSORPTION)
                 .setBaseValue(1024);
         mc.world.addEntity(fakePlayer);
         return fakePlayer;
@@ -269,9 +269,14 @@ public class FakePlayer extends BaseModule {
             return;
         }
         Map<BlockPos, BlockState> stateMap = new LinkedHashMap<>();
-        BlockPos explodeCenter = BlockPos.ofFloored(event.context.center());
+        Vec3d center = new Vec3d(
+            event.context.getX(),
+            event.context.getY(),
+            event.context.getZ()
+        );
+        BlockPos explodeCenter = BlockPos.ofFloored(center);
         float radius = 0;
-        if (Objects.equals(event.context.center(), explodeCenter.toCenterPos())
+        if (Objects.equals(center, explodeCenter.toCenterPos())
                 && mc.world.getBlockState(explodeCenter).getBlock() instanceof RespawnAnchorBlock) {
             stateMap.put(explodeCenter, Blocks.AIR.getDefaultState());
             if (radius <= 0) {
@@ -285,7 +290,7 @@ public class FakePlayer extends BaseModule {
         for (var re : fakes) {
             float damage = ExplosionUtils.calculateExplosionRawDamage(
                     radius,
-                    event.context.center(),
+                    center,
                     re.getBoundingBox(),
                     ExplosionUtils.fromWorldWithOverrides(mc.world, stateMap),
                     ExplosionUtils.ALL_TERRAIN);
@@ -373,7 +378,7 @@ public class FakePlayer extends BaseModule {
         if (!canDamage) {
             return;
         }
-        double e = mc.player.getAttributeBaseValue(EntityAttributes.ATTACK_DAMAGE);
+        double e = mc.player.getAttributeBaseValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
         // use netherite spear data
         float damage = (float) (e + MathHelper.floor(h * 1.2F));
         onDamage(
