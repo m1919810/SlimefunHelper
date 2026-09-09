@@ -270,7 +270,7 @@ public class FakePlayer extends BaseModule {
         }
         Map<BlockPos, BlockState> stateMap = new LinkedHashMap<>();
         BlockPos explodeCenter = BlockPos.ofFloored(event.context.center());
-        float radius = event.context.radius();
+        float radius = 0;
         if (Objects.equals(event.context.center(), explodeCenter.toCenterPos())
                 && mc.world.getBlockState(explodeCenter).getBlock() instanceof RespawnAnchorBlock) {
             stateMap.put(explodeCenter, Blocks.AIR.getDefaultState());

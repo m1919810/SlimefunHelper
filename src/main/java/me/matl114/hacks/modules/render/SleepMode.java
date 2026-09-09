@@ -29,6 +29,7 @@ import me.matl114.utils.commands.commandGroup.CommandContext;
 import me.matl114.utils.commands.commandGroup.SubCommand;
 import me.matl114.utils.commands.params.ArgumentInputStream;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
+import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ChatScreen;

@@ -21,7 +21,7 @@ import org.apache.commons.lang3.mutable.MutableFloat;
 public class EnchantmentUtils {
     public static float calculate(ItemStack stack, Calculator<Float> consumer, float baseValue) {
         MutableFloat mutableFloat = new MutableFloat(baseValue);
-        EnchantmentHelper.forEachEnchantment(stack, (enchantment, level) -> {
+        EnchantmentHelper.forEachEnchantment(stack, (enchantment,  level, slot) -> {
             mutableFloat.setValue(consumer.calculate(mutableFloat.getValue(), enchantment, level));
         });
         return mutableFloat.getValue();

@@ -11,7 +11,7 @@ import me.matl114.hooks.XaeroHooks;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.DrawnTextConsumer;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.hud.ChatHudLine;
 import net.minecraft.client.gui.screen.ChatScreen;
@@ -62,14 +62,9 @@ public abstract class ChatHudMixin {
         }
     }
 
-    @Inject(method = "render(Lnet/minecraft/client/font/DrawnTextConsumer;IIZ)V", at = @At("HEAD"))
+    @Inject(method = "render", at = @At("HEAD"))
     private void onRenderChatScreen(
-            DrawnTextConsumer textConsumer,
-            int windowHeight,
-            int currentTick,
-            boolean expanded,
-            CallbackInfo ci,
-            @Local(argsOnly = true) LocalBooleanRef expanding) {
+        DrawContext context, int currentTick, int mouseX, int mouseY, boolean focused, CallbackInfo ci, @Local(argsOnly = true) LocalBooleanRef expanding) {
         if (XaeroHelper.INSTANCE.transparentGuiMapFix.get()
                 && XaeroHooks.getInstance().isXaeroWorldMapEnable()
                 && XaeroHooks.getInstance().isGuiMap(client.currentScreen)) {
