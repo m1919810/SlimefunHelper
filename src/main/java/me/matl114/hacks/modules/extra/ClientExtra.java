@@ -6,6 +6,7 @@ import java.util.List;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.gui.GenericScreen;
 import me.matl114.gui.presets.choices.QuestionScreen;
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -84,10 +85,14 @@ public class ClientExtra extends BaseModule {
             .defaultValue("")
             .build();
 
-    public final KeyBindRef cursorSwitchKey = hotkey(
-                    Configs.EXTRA_CONFIG, other.add("cursor-switch-hotkey").toPath())
+    public final KeyBindRef cursorSwitchKey = hotkey(other.add("cursor-switch-hotkey"))
             .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.asHandler(this::onCursorLockSwitch))
+            .build();
+
+    public final KeyBindRef blankScreenKey = hotkey(other.add("create-blank-transparent-screen"))
+            .defaultValue(new MultiKeyBind())
+            .registerHotkey(HotKeyUtils.asHandler(this::onBlankScreenCreate))
             .build();
 
     public final FlagRef paletteException =
@@ -344,6 +349,10 @@ public class ClientExtra extends BaseModule {
                 mc.mouse.lockCursor();
             }
         }
+    }
+
+    public void onBlankScreenCreate() {
+        new GenericScreen(Text.empty(), 0, 0).access().openFromCurrent();
     }
 
     public void onServerLeave(Event<Void> eventVoid) {

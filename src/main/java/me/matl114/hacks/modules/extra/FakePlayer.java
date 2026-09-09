@@ -300,7 +300,10 @@ public class FakePlayer extends BaseModule {
     private void onTickKinetic(Event<ClientPlayerEntity> event) {
         if (checkNull()) return;
         if (SpearEnhance.isUsingSpear(mc.player) && SpearEnhance.canSpearKineticAttack(mc.player)) {
-            Vec3d startEye = new Vec3d(mc.player.lastX, mc.player.lastY, mc.player.lastZ)
+            Vec3d startEye = new Vec3d(
+                            PlayerStateManager.INSTANCE.lastX,
+                            PlayerStateManager.INSTANCE.lastY,
+                            PlayerStateManager.INSTANCE.lastZ)
                     .add(0, mc.player.getEyeHeight(mc.player.getPose()), 0);
             Vec3d direction = PlayerStateManager.INSTANCE.getLastRotationVector();
             double minRange = 2.0;
