@@ -1,10 +1,7 @@
 package me.matl114.utils;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.ComponentType;
 import net.minecraft.component.DataComponentTypes;
@@ -40,7 +37,8 @@ import net.minecraft.util.math.random.LocalRandom;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.World;
-import org.jspecify.annotations.Nullable;
+
+import javax.annotation.Nullable;
 
 public class DamageUtils {
     public static final MinecraftClient mc = MinecraftClient.getInstance();
@@ -258,7 +256,7 @@ public class DamageUtils {
     public static DamageSource createDamageSource(Entity source, PlayerEntity attacker, ItemStack weapon) {
         DamageSource newSource;
         try {
-            newSource = attacker.getDamageSource(weapon);
+            newSource = (DamageSource) Optional.ofNullable(weapon.getItem().getDamageSource(attacker)).orElse(attacker.getDamageSources().playerAttack(attacker));;
         } catch (Throwable e) {
             newSource = createDamageSource(DamageTypes.PLAYER_ATTACK, source, attacker);
         }

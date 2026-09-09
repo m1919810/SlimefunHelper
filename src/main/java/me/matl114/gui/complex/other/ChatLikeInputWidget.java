@@ -7,7 +7,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 import net.minecraft.util.math.MathHelper;
@@ -47,12 +46,8 @@ public class ChatLikeInputWidget extends TextFieldWidget {
         }
     }
 
-    public boolean keyPressed(KeyInput input) {
-        return super.keyPressed(input) || keyPressed(input.key(), input.scancode(), input.modifiers());
-    }
-
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-
+        if(super.keyPressed(keyCode, scanCode, modifiers))return true;
         if (this.isFocused()) {
             if (keyCode != 257 && keyCode != 335) {
                 if (keyCode == 265) {

@@ -100,3 +100,8 @@ accessible method net/minecraft/entity/LivingEntity tryUseDeathProtector (Lnet/m
 accessible method net/minecraft/entity/player/PlayerEntity getDamageSource (Lnet/minecraft/item/ItemStack;)Lnet/minecraft/entity/damage/DamageSource;
 accessible field net/minecraft/entity/Entity movementMultiplier Lnet/minecraft/util/math/Vec3d;
 accessible method net/minecraft/block/vault/VaultSharedData getConnectedPlayers ()Ljava/util/Set;
+accessible method net/minecraft/enchantment/EnchantmentHelper$Consumer accept (Lnet/minecraft/registry/entry/RegistryEntry;I)V
+accessible class net/minecraft/enchantment/EnchantmentHelper$Consumer
+accessible method net/minecraft/enchantment/EnchantmentHelper forEachEnchantment (Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/enchantment/EnchantmentHelper$ContextAwareConsumer;)V
+accessible class net/minecraft/enchantment/EnchantmentHelper$ContextAwareConsumer
+accessible method net/minecraft/enchantment/EnchantmentHelper$ContextAwareConsumer accept (Lnet/minecraft/registry/entry/RegistryEntry;ILnet/minecraft/enchantment/EnchantmentEffectContext;)V
