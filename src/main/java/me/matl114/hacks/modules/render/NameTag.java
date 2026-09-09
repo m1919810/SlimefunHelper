@@ -57,7 +57,7 @@ public class NameTag extends INameTag {
         if (checkNull()) {
             return;
         }
-        if (enable.get() && nameTagInfos != null) {
+        if (enable.get() && !event.<Boolean>getArgs(1) && nameTagInfos != null) {
             var stack = event.context;
             Matrix4f cam = RenderListener.getWorldModelViewMatrix();
             Matrix4f proj = RenderListener.getWorldBasicProjectionMatrix();

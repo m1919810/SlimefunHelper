@@ -173,6 +173,9 @@ public class InteractUtils {
         if (Objects.equals(worldName, "minecraft:overworld") || Objects.equals(worldName, "minecraft:the_end")) {
             return true;
         }
+        if (!world.getDimension().hasCeiling()) {
+            return true;
+        }
         if (world.getDimension().respawnAnchorWorks()) {
             // may not explode
             return false;

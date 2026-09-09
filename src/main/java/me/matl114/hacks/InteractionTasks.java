@@ -267,6 +267,10 @@ public class InteractionTasks {
                 .anyMatch(eye -> eye.subtract(plateCenter).dotProduct(directionVec) > 0);
     }
 
+    public static boolean checkInteractRange(BlockPos interactBlockPos, Vec3d playerPos, double range) {
+        return interactExtra.isWithinInteractRange(playerPos, interactBlockPos, range);
+    }
+
     public static FlagEntry<BlockHitResult> getPlaceSupportingResult(
             BlockPos blockPos, boolean enableAirPlace, boolean enablePositionPlace) {
         return getPlaceSupportingResult(
@@ -291,6 +295,22 @@ public class InteractionTasks {
             Direction preferredDirection,
             boolean enableAirPlace,
             boolean enablePositionPlace) {
+        return getPlaceSupportingResult(
+                playerPos,
+                blockPos,
+                preferredDirection,
+                interactExtra.getBlockReachDistance(),
+                enableAirPlace,
+                enablePositionPlace);
+    }
+
+    public static FlagEntry<BlockHitResult> getPlaceSupportingResult(
+            Vec3d playerPos,
+            BlockPos blockPos,
+            Direction preferredDirection,
+            double interactRange,
+            boolean enableAirPlace,
+            boolean enablePositionPlace) {
         Direction dir = preferredDirection;
         List<Direction> order = new ArrayList<>();
         order.add(dir);
@@ -303,49 +323,80 @@ public class InteractionTasks {
         }
         Vec3d centerPos = blockPos.toCenterPos();
         if (enableAirPlace) {
-            if (order.isEmpty()) {
-                return null;
+            if (!order.isEmpty() && checkInteractRange(blockPos, playerPos, interactRange)) {
+                Direction availableDirection = order.get(0);
+                Vec3d plateCenter = centerPos.offset(availableDirection, 0.5);
+                return new FlagEntry<>(
+                        false, new BlockHitResult(plateCenter, availableDirection.getOpposite(), blockPos, false));
             }
-            Direction availableDirection = order.get(0);
-            Vec3d plateCenter = centerPos.offset(availableDirection, 0.5);
-            return new FlagEntry<>(
-                    false, new BlockHitResult(plateCenter, availableDirection.getOpposite(), blockPos, false));
-        } else {
-            FlagEntry<BlockHitResult> result = null;
-            for (var direction : order) {
-                Vec3d plateCenter = centerPos.offset(direction, 0.5);
-                Vec3d interactBlockCenter = centerPos.offset(direction, 1.0D);
-                BlockPos targetPos = BlockPos.ofFloored(interactBlockCenter);
-                BlockState interactState = mc.world.getBlockState(targetPos);
-                if ((interactState.isAir() || interactState.isLiquid())) {
-                    continue;
-                }
-                boolean mayInteract = InteractUtils.isInteractAcceptable(mc.world, mc.player, targetPos, interactState);
-
-                if (checkInHead(targetPos, playerPos)) {
-                    // ?
-                    var re = new FlagEntry<>(
-                            mayInteract, new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, true));
-                    if (!re.flag()) {
-                        return re;
-                    } else if (result == null) {
-                        result = re;
-                    }
-                } else {
-                    if (enablePositionPlace || checkPositionPlace(targetPos, direction.getOpposite(), playerPos)) {
+        }
+        FlagEntry<BlockHitResult> result = null;
+        BlockState currentState = mc.world.getBlockState(blockPos);
+        if (enableAirPlace || (!currentState.isAir() && !currentState.isLiquid() && currentState.isReplaceable())) {
+            if (checkInteractRange(blockPos, playerPos, interactRange)) {
+                for (Direction direction : order) {
+                    Vec3d plateCenter = centerPos.offset(direction, 0.5);
+                    boolean mayInteract =
+                            InteractUtils.isInteractAcceptable(mc.world, mc.player, blockPos, currentState);
+                    if (checkInHead(blockPos, playerPos)) {
+                        // ?
                         var re = new FlagEntry<>(
-                                mayInteract,
-                                new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, false));
+                                mayInteract, new BlockHitResult(plateCenter, direction.getOpposite(), blockPos, true));
                         if (!re.flag()) {
                             return re;
                         } else if (result == null) {
                             result = re;
                         }
+                    } else {
+                        if (enablePositionPlace || checkPositionPlace(blockPos, direction.getOpposite(), playerPos)) {
+                            var re = new FlagEntry<>(
+                                    mayInteract,
+                                    new BlockHitResult(plateCenter, direction.getOpposite(), blockPos, false));
+                            if (!re.flag()) {
+                                return re;
+                            } else if (result == null) {
+                                result = re;
+                            }
+                        }
                     }
                 }
             }
-            return result;
         }
+        for (var direction : order) {
+            Vec3d plateCenter = centerPos.offset(direction, 0.5);
+            Vec3d interactBlockCenter = centerPos.offset(direction, 1.0D);
+            BlockPos targetPos = BlockPos.ofFloored(interactBlockCenter);
+            if (!checkInteractRange(targetPos, playerPos, interactRange)) {
+                continue;
+            }
+            BlockState interactState = mc.world.getBlockState(targetPos);
+            if ((interactState.isAir() || interactState.isLiquid() || interactState.isReplaceable())) {
+                continue;
+            }
+            boolean mayInteract = InteractUtils.isInteractAcceptable(mc.world, mc.player, targetPos, interactState);
+
+            if (checkInHead(targetPos, playerPos)) {
+                // ?
+                var re = new FlagEntry<>(
+                        mayInteract, new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, true));
+                if (!re.flag()) {
+                    return re;
+                } else if (result == null) {
+                    result = re;
+                }
+            } else {
+                if (enablePositionPlace || checkPositionPlace(targetPos, direction.getOpposite(), playerPos)) {
+                    var re = new FlagEntry<>(
+                            mayInteract, new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, false));
+                    if (!re.flag()) {
+                        return re;
+                    } else if (result == null) {
+                        result = re;
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     @Nonnull
@@ -353,6 +404,23 @@ public class InteractionTasks {
             Vec3d playerPos,
             BlockPos blockPos,
             Direction preferredDirection,
+            boolean enableAirPlace,
+            boolean enablePositionPlace) {
+        return getAllPlaceSupportingResult(
+                playerPos,
+                blockPos,
+                preferredDirection,
+                interactExtra.getBlockReachDistance(),
+                enableAirPlace,
+                enablePositionPlace);
+    }
+
+    @Nonnull
+    public static List<FlagEntry<BlockHitResult>> getAllPlaceSupportingResult(
+            Vec3d playerPos,
+            BlockPos blockPos,
+            Direction preferredDirection,
+            double interactRange,
             boolean enableAirPlace,
             boolean enablePositionPlace) {
         List<FlagEntry<BlockHitResult>> result = new ArrayList<>();
@@ -367,21 +435,43 @@ public class InteractionTasks {
             }
         }
         Vec3d centerPos = blockPos.toCenterPos();
-        if (enableAirPlace) {
-            if (!order.isEmpty()) {
-                Direction availableDirection = order.get(0);
-                Vec3d plateCenter = centerPos.offset(availableDirection, 0.5);
-                result.add(new FlagEntry<>(
-                        false, new BlockHitResult(plateCenter, availableDirection.getOpposite(), blockPos, false)));
+        BlockState currentState = mc.world.getBlockState(blockPos);
+        if (enableAirPlace || (!currentState.isAir() && !currentState.isLiquid() && currentState.isReplaceable())) {
+            if (checkInteractRange(blockPos, playerPos, interactRange)) {
+                for (Direction direction : order) {
+                    Vec3d plateCenter = centerPos.offset(direction, 0.5);
+                    boolean mayInteract =
+                            InteractUtils.isInteractAcceptable(mc.world, mc.player, blockPos, currentState);
+                    if (checkInHead(blockPos, playerPos)) {
+                        // ?
+                        var re = new FlagEntry<>(
+                                mayInteract, new BlockHitResult(plateCenter, direction.getOpposite(), blockPos, true));
+                        if (!re.flag()) {
+                            result.add(re);
+                        }
+                    } else {
+                        if (enablePositionPlace || checkPositionPlace(blockPos, direction.getOpposite(), playerPos)) {
+                            var re = new FlagEntry<>(
+                                    mayInteract,
+                                    new BlockHitResult(plateCenter, direction.getOpposite(), blockPos, false));
+                            if (!re.flag()) {
+                                result.add(re);
+                            }
+                        }
+                    }
+                }
             }
         }
-        FlagEntry<BlockHitResult> current = null;
+
         for (var direction : order) {
             Vec3d plateCenter = centerPos.offset(direction, 0.5);
             Vec3d interactBlockCenter = centerPos.offset(direction, 1.0D);
             BlockPos targetPos = BlockPos.ofFloored(interactBlockCenter);
+            if (!checkInteractRange(targetPos, playerPos, interactRange)) {
+                continue;
+            }
             BlockState interactState = mc.world.getBlockState(targetPos);
-            if ((interactState.isAir() || interactState.isLiquid())) {
+            if ((interactState.isAir() || interactState.isLiquid() || interactState.isReplaceable())) {
                 continue;
             }
             boolean mayInteract = InteractUtils.isInteractAcceptable(mc.world, mc.player, targetPos, interactState);
@@ -417,6 +507,7 @@ public class InteractionTasks {
         BlockState currentState = mc.world.getBlockState(placeTargetBlock);
         Vec3d centerPos = placeTargetBlock.toCenterPos();
         Vec3d playerFeetPos = mc.player.getPos();
+        double interactRange = interactExtra.getBlockReachDistance();
         List<Direction> order = new ArrayList<>(6);
         FlagEntry<BlockHitResult> result = getDirectReplacingPlacement(
                 preferredDirection, placeTargetBlock, currentState, targetState, enablePositionPlace);
@@ -432,7 +523,9 @@ public class InteractionTasks {
                 Vec3d plateCenter = centerPos.offset(direction, 0.5);
                 Vec3d interactBlockCenter = centerPos.offset(direction, 1.0D);
                 BlockPos targetPos = BlockPos.ofFloored(interactBlockCenter);
-
+                if (!checkInteractRange(targetPos, playerFeetPos, interactRange)) {
+                    continue;
+                }
                 Vec3d interactPos = (direction == Direction.DOWN || direction == Direction.UP)
                         ? plateCenter
                         : plateCenter.add(0, 0.25 * (half == BlockHalf.TOP ? 1 : -1), 0);
@@ -441,7 +534,7 @@ public class InteractionTasks {
                             false, new BlockHitResult(interactPos, direction.getOpposite(), placeTargetBlock, false));
                 }
                 BlockState interactState = mc.world.getBlockState(targetPos);
-                if (interactState.isAir() || interactState.isLiquid()) {
+                if (interactState.isAir() || interactState.isLiquid() || interactState.isReplaceable()) {
                     continue;
                 }
                 boolean mayInteract = InteractUtils.isInteractAcceptable(mc.world, mc.player, targetPos, interactState);
@@ -489,6 +582,9 @@ public class InteractionTasks {
                 Vec3d plateCenter = centerPos.offset(direction, 0.5);
                 Vec3d interactBlockCenter = centerPos.offset(direction, 1.0D);
                 BlockPos targetPos = BlockPos.ofFloored(interactBlockCenter);
+                if (!checkInteractRange(targetPos, playerFeetPos, interactRange)) {
+                    continue;
+                }
                 // check double condition
                 BlockState interactState = mc.world.getBlockState(targetPos);
                 // this will make the interactState become DOUBLE
@@ -504,7 +600,7 @@ public class InteractionTasks {
                     return new FlagEntry<>(
                             false, new BlockHitResult(interactPos, direction.getOpposite(), placeTargetBlock, false));
                 }
-                if ((interactState.isAir() || interactState.isLiquid())) {
+                if ((interactState.isAir() || interactState.isLiquid() || interactState.isReplaceable())) {
                     continue;
                 }
                 boolean mayInteract = InteractUtils.isInteractAcceptable(mc.world, mc.player, targetPos, interactState);
@@ -552,6 +648,9 @@ public class InteractionTasks {
                 Vec3d plateCenter = centerPos.offset(direction, 0.5);
                 Vec3d interactBlockCenter = centerPos.offset(direction, 1.0);
                 BlockPos targetPos = BlockPos.ofFloored(interactBlockCenter);
+                if (!checkInteractRange(targetPos, playerFeetPos, interactRange)) {
+                    continue;
+                }
                 BlockState interactState = mc.world.getBlockState(targetPos);
                 // 交互点：对于垂直方向使用 plateCenter，对于水平方向需要根据 HALF 调整 Y 偏移
                 Vec3d interactPos;
@@ -565,7 +664,7 @@ public class InteractionTasks {
                     return new FlagEntry<>(
                             false, new BlockHitResult(interactPos, direction.getOpposite(), placeTargetBlock, false));
                 }
-                if ((interactState.isAir() || interactState.isLiquid())) {
+                if ((interactState.isAir() || interactState.isLiquid() || interactState.isReplaceable())) {
                     continue;
                 }
                 boolean mayInteract = InteractUtils.isInteractAcceptable(mc.world, mc.player, targetPos, interactState);
@@ -745,47 +844,79 @@ public class InteractionTasks {
                     order.add(direction);
                 }
             }
-            if (enableAirPlace) {
-                if (order.isEmpty()) {
-                    return null;
+            if (enableAirPlace || (!currentState.isAir() && !currentState.isLiquid() && currentState.isReplaceable())) {
+                if (checkInteractRange(placeTargetBlock, playerFeetPos, interactRange)) {
+                    for (Direction direction : order) {
+                        Vec3d plateCenter = centerPos.offset(direction, 0.5);
+                        boolean mayInteract =
+                                InteractUtils.isInteractAcceptable(mc.world, mc.player, placeTargetBlock, currentState);
+                        if (checkInHead(placeTargetBlock, playerFeetPos)) {
+                            // ?
+                            var re = new FlagEntry<>(
+                                    mayInteract,
+                                    new BlockHitResult(plateCenter, direction.getOpposite(), placeTargetBlock, true));
+                            if (!re.flag()) {
+                                return re;
+                            } else if (result == null) {
+                                result = re;
+                            }
+                        } else {
+                            if (enablePositionPlace
+                                    || checkPositionPlace(placeTargetBlock, direction.getOpposite(), playerFeetPos)) {
+                                var re = new FlagEntry<>(
+                                        mayInteract,
+                                        new BlockHitResult(
+                                                plateCenter, direction.getOpposite(), placeTargetBlock, false));
+                                if (!re.flag()) {
+                                    return re;
+                                } else if (result == null) {
+                                    result = re;
+                                }
+                            }
+                        }
+                    }
                 }
+            }
+            if (enableAirPlace
+                    && !order.isEmpty()
+                    && checkInteractRange(placeTargetBlock, playerFeetPos, interactRange)) {
                 Direction availableDirection = order.get(0);
                 Vec3d plateCenter = centerPos.offset(availableDirection, 0.5);
                 return new FlagEntry<>(
                         forceSneak,
                         new BlockHitResult(plateCenter, availableDirection.getOpposite(), placeTargetBlock, false));
-            } else {
-                for (var direction : order) {
-                    Vec3d plateCenter = centerPos.offset(direction, 0.5);
-                    Vec3d interactBlockCenter = centerPos.offset(direction, 1.0D);
-                    BlockPos targetPos = BlockPos.ofFloored(interactBlockCenter);
-                    BlockState interactState = mc.world.getBlockState(targetPos);
-                    if ((interactState.isAir() || interactState.isLiquid())) {
-                        continue;
+            }
+            for (var direction : order) {
+                Vec3d plateCenter = centerPos.offset(direction, 0.5);
+                Vec3d interactBlockCenter = centerPos.offset(direction, 1.0D);
+                BlockPos targetPos = BlockPos.ofFloored(interactBlockCenter);
+                if (!checkInteractRange(targetPos, playerFeetPos, interactRange)) {
+                    continue;
+                }
+                BlockState interactState = mc.world.getBlockState(targetPos);
+                if ((interactState.isAir() || interactState.isLiquid() || interactState.isReplaceable())) {
+                    continue;
+                }
+                boolean mayInteract = InteractUtils.isInteractAcceptable(mc.world, mc.player, targetPos, interactState);
+                if (checkInHead(targetPos, playerFeetPos)) {
+                    // ?
+                    var re = new FlagEntry<>(
+                            mayInteract || forceSneak,
+                            new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, true));
+                    if (currentSneaking == re.flag()) {
+                        return re;
+                    } else if (result == null) {
+                        result = re;
                     }
-                    boolean mayInteract =
-                            InteractUtils.isInteractAcceptable(mc.world, mc.player, targetPos, interactState);
-                    if (checkInHead(targetPos, playerFeetPos)) {
-                        // ?
+                } else {
+                    if (enablePositionPlace || checkPositionPlace(targetPos, direction.getOpposite(), playerFeetPos)) {
                         var re = new FlagEntry<>(
                                 mayInteract || forceSneak,
-                                new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, true));
+                                new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, false));
                         if (currentSneaking == re.flag()) {
                             return re;
                         } else if (result == null) {
                             result = re;
-                        }
-                    } else {
-                        if (enablePositionPlace
-                                || checkPositionPlace(targetPos, direction.getOpposite(), playerFeetPos)) {
-                            var re = new FlagEntry<>(
-                                    mayInteract || forceSneak,
-                                    new BlockHitResult(plateCenter, direction.getOpposite(), targetPos, false));
-                            if (currentSneaking == re.flag()) {
-                                return re;
-                            } else if (result == null) {
-                                result = re;
-                            }
                         }
                     }
                 }

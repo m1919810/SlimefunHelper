@@ -23,14 +23,12 @@ import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.ac.PacketOrderManager;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.HotKeyUtils;
-import me.matl114.hacks.utils.config.NBTTypes;
-import me.matl114.hacks.utils.config.OptionalPrimitive;
-import me.matl114.hacks.utils.config.Regex;
-import me.matl114.hacks.utils.config.WrapEnum;
+import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.move.ElytraOptimizeUtils;
 import me.matl114.hacks.utils.tasks.CounterExecutor;
 import me.matl114.hacks.utils.tasks.StateExecutor;
+import me.matl114.hacks.utils.tasks.TimerExecutor;
 import me.matl114.hooks.BaritoneHooks;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
@@ -107,6 +105,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public final FlagRef noFallLanding =
             flagBuilder(elytraTweaks.add("no-fall-when-landing")).build();
+    public final FlagRef noFallResetFallDistance =
+            flagBuilder(elytraTweaks.add("no-fall-disable-no-fall-module")).build();
 
     public final FlagRef autoSwitch =
             flagBuilder(elytraTweaks.add("auto-switch")).build();
@@ -124,6 +124,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public final FlagRef autoTakeOffWhenJoinServer =
             flagBuilder(elytraTweaks.add("auto-start-fly-join-server")).build();
+
+    public final FlagRef fireworkSpeedLimitWeb =
+            flagBuilder(elytraTweaks.add("firwork-speed-limit-web")).build();
 
     public final FlagRef fireworksLiquidFly =
             flagBuilder(elytraTweaks.add("firework-liquid-fly")).hideConfig().build();
@@ -192,6 +195,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public final FlagRef renderFix = flagBuilder(armorFlyPath.add("render-fix")).build();
 
+    public final FlagRef handControl = builder(armorFlyPath.add("enable-manually-swap"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     public final NBTRef<Regex> customFireworks = builder(customFireworksPath.add("firework-item-id"), Regex.class)
             .defaultValue(new Regex("^()$"))
             .build();
@@ -206,6 +213,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public final FlagRef autoRocket =
             flagBuilder(customFireworksPath.add("firework-auto-use-vanilla")).build();
 
+    public final IntRef rocketExtraEffectiveTicks = intBuilder(customFireworksPath.add("rocket-extra-effect-ticks"))
+            .defaultValue(3)
+            .build();
+
     public final FlagRef autoRescale =
             flagBuilder(customFireworksPath.add("auto-rescale-firework-box")).build();
 
@@ -217,6 +228,14 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public final EnumRef<Al> autoRescaleAl = builder(customFireworksPath.add("auto-rescale-firework-al"), Al.class)
             .defaultValue(Al.V1)
             .show(this.autoRescale::get)
+            .build();
+
+    @ApiStatus.Experimental
+    public final DoubleRef autoRescaleThreshold = doubleBuilder(
+                    customFireworksPath.add("auto-rescale-firework-anti-lag-threshold"))
+            .show(() -> autoRescaleAl.get().isIn(Al.V3, Al.V4))
+            .defaultValue(0.002)
+            .experimental()
             .build();
 
     @ApiStatus.Experimental
@@ -357,7 +376,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                             return true;
                         }
                     },
-                    10,
+                    20,
                     1);
         }
     }
@@ -370,9 +389,33 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         return false;
     }
 
+    public Vec3d clampFireworkSpeedInWeb(Vec3d oldVelocity) {
+        if (fireworkSpeedLimitWeb.get() && canFireworkControlMotion() && PlayerStateManager.INSTANCE.lastInWeb) {
+            Vec3d simulationVelocity = oldVelocity;
+            Vec3d stuckSpeedMultiplier = mc.player.movementMultiplier;
+            if (stuckSpeedMultiplier != null && stuckSpeedMultiplier.horizontalLengthSquared() > 1E-7) {
+                simulationVelocity = simulationVelocity.multiply(stuckSpeedMultiplier);
+            }
+            Vec3d slowMovement = new Vec3d(0.25, 0.05F, 0.25);
+            if (mc.player.hasStatusEffect(StatusEffects.WEAVING)) {
+                slowMovement = new Vec3d(0.5, 0.25, 0.5);
+            }
+            double multiplier = slowMovement.horizontalLength() / (new Vec3d(1, 0, 1).horizontalLength());
+            double delta = 1 - multiplier;
+            double threshold = 0.245;
+            double maxLength = threshold / delta;
+            double scaling = maxLength / simulationVelocity.horizontalLength();
+            if (scaling < 1.0D) {
+                return oldVelocity.multiply(scaling);
+            }
+        }
+        return oldVelocity;
+    }
+
     // elytra unbreakable?
 
     private boolean nextTimeLaunchElytraUnbreakable = false;
+    private int nextTimeDelaySwitchElytraUnbreakable = 0;
     public int elytraUnbreakableSwitchSlot = -1;
 
     public boolean isCurrentArmorGliding() {
@@ -412,7 +455,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     private final CounterExecutor armorGlideAbortCounter = new CounterExecutor();
 
     public void onArmorStateTick(Event<ClientPlayerEntity> event) {
-        if (armorFly.get() && mc.player.isFallFlying() && thisFallFlyingIsArmorFly != -1) {
+        if (armorFly.get() && mc.player.isFallFlying() && thisFallFlyingIsArmorFly != -1 && handControl.get()) {
             if (armorMode.get() == ArmorFlyMode.TICK_LEGACY) {
                 armorGlideAbortCounter.reset();
                 thisFallFlyingArmorFlyAbort = false;
@@ -534,34 +577,19 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             if ((data & (1 << VDataFlag.FALL_FLYING_FLAG_INDEX)) == 0) {
                 elytraUnbreakableDurabilityCounter.reset();
                 if (nextTimeLaunchElytraUnbreakable) {
-                    nextTimeLaunchElytraUnbreakable = false;
                     canRunElytraUnbreakable = true;
                 }
                 canRunArmorGlide = true;
+            } else {
+                // reset delay mode
+                thisTickTickStartFallFly = false;
             }
             if (shouldElytraUnbreakable() && canRunElytraUnbreakable) {
                 var val = serializedEntryUpdateEvent.context();
                 data = (byte) val.value();
-                if (elytraUnbreakableSwitchSlot != -1) {
-                    switchSlotToArmor(elytraUnbreakableSwitchSlot);
-                }
-                // cancel stop fallflying only when can continue
-                if (canContinueGliding()) {
-                    serializedEntryUpdateEvent.context(new DataTracker.SerializedEntry(
-                            val.id(), val.handler(), (byte) (data | (1 << VDataFlag.FALL_FLYING_FLAG_INDEX))));
-                    mc.getNetworkHandler()
-                            .sendPacket(new ClientCommandC2SPacket(
-                                    mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                    thisTickHasStartFallFly = true;
-                    if (elytraUnbreakableSwitchSlot != -1) {
-                        flushRockets();
-                    }
-                    MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
-                } else {
-                    clearRockets();
-                }
-
-                elytraUnbreakableSwitchSlot = -1;
+                serializedEntryUpdateEvent.context(new DataTracker.SerializedEntry(
+                        val.id(), val.handler(), (byte) (data | (1 << VDataFlag.FALL_FLYING_FLAG_INDEX))));
+                nextTimeDelaySwitchElytraUnbreakable = 1;
             } else if (armorFly.get() && this.thisFallFlyingIsArmorFly != -1 && canRunArmorGlide) {
                 var val = serializedEntryUpdateEvent.context();
                 data = (byte) val.value();
@@ -1256,6 +1284,39 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             onEndArmorFlyTransaction(false);
         }
         // todo handle this
+        if (nextTimeDelaySwitchElytraUnbreakable > 0) {
+            if (nextTimeDelaySwitchElytraUnbreakable > 1) {
+                nextTimeDelaySwitchElytraUnbreakable--;
+            } else {
+                nextTimeDelaySwitchElytraUnbreakable = 0;
+
+                nextTimeLaunchElytraUnbreakable = false;
+                elytraUnbreakableSwitchSlot = findElytra();
+                if (elytraUnbreakableSwitchSlot != -1) {
+                    switchSlotToArmor(elytraUnbreakableSwitchSlot);
+                }
+                // cancel stop fallflying only when can continue
+                if (canContinueGliding()) {
+                    mc.getNetworkHandler()
+                            .sendPacket(new ClientCommandC2SPacket(
+                                    mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                    if (!mc.player.isFallFlying()) {
+                        EntityInternalAccess.of(mc.player).setDataFlag(VDataFlag.FALL_FLYING_FLAG_INDEX, true);
+                    }
+
+                    thisTickHasStartFallFly = true;
+                    if (elytraUnbreakableSwitchSlot != -1) {
+                        flushRockets();
+                    }
+                    MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
+                } else {
+                    clearRockets();
+                    EntityInternalAccess.of(mc.player).setDataFlag(VDataFlag.FALL_FLYING_FLAG_INDEX, false);
+                }
+
+                elytraUnbreakableSwitchSlot = -1;
+            }
+        }
         if (!mc.player.isFallFlying() && nextTimeLaunchElytraUnbreakable) {
             nextTimeLaunchElytraUnbreakable = false;
             // unexpected behaviour:
@@ -1301,21 +1362,15 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 && canFireworkControlMotion(0)
                 && !BaritoneHooks.getInstance().isBaritoneElytraProcessing()) {
             // Vec3d vec3d = player.getVelocity();
-            Vec2f pitchYaw = new Vec2f(player.getPitch(), player.getYaw());
-            Vec3d modifiedVelocity =
-                    EntityUtils.pitchYawToRotation(pitchYaw.x, pitchYaw.y).multiply(rocketBoostSpeed.get());
+            Vec3d modifiedVelocity = EntityUtils.pitchYawToRotation(player.getPitch(), player.getYaw())
+                    .multiply(rocketBoostSpeed.get());
             player.setVelocity(modifiedVelocity);
             // do not use axis limit when using baritone, may cause problems(shit baritone)
             if (rocketBoostUseRescale.get()) {
+                float newYaw = mc.player.getYaw() + ((Tasks.getTick() % 2 == 0) ? 0.01F : -0.01F);
+                mc.player.setYaw(newYaw);
                 mc.player.setVelocity(
-                        applyAxisLimit(modifiedVelocity, pitchYaw.x, pitchYaw.y, mc.player.hasNoGravity()));
-
-                float yaw = mc.player.getYaw();
-                if (Tasks.getTick() % 2 == 0) {
-                    PlayerStateManager.setPlayerYawSafe(mc.player, yaw + 0.01F);
-                } else {
-                    PlayerStateManager.setPlayerYawSafe(mc.player, yaw - 0.01F);
-                }
+                        applyAxisLimit(modifiedVelocity, mc.player.getPitch(), newYaw, mc.player.hasNoGravity()));
             }
         }
         // slow falling with no crash
@@ -1502,7 +1557,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     public boolean canFireworkControlMotion() {
-        return canFireworkControlMotion(3);
+        return canFireworkControlMotion(rocketExtraEffectiveTicks.get());
     }
 
     public boolean canFireworkControlMotion(int extraTicks) {
@@ -1719,6 +1774,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public void applyBeforeInputPacketModify(Event<LegalMovementManager> movementManagerEvent) {}
 
     boolean nextTickIsOnGroundTick = false;
+    TimerExecutor noGroundPeriod = new TimerExecutor();
     // Vec3d storedPos = null;
     Packet<?> storedNoFallPacket;
     int lastLagBackTick = 0;
@@ -1743,6 +1799,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             // must send packet to reset flight, which is a common case when player is not freezing or player is
             // freezing using FUtils
             ClientPlayerAccess.of(player).resyncPos();
+            FloatingUtils.INSTANCE.setSendPacketIgnoreRotation(true);
+            FloatingUtils.INSTANCE.setForceSilent(false);
         }
         thisTickHasStartFallFly = false;
         NoFall noFallModule = MovTasks.getNoFall();
@@ -1758,7 +1816,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             if (MovTasks.getElytraJump().enable.get()) {
                 break noFall;
             }
-            {
+            if (noGroundPeriod.run(5)) {
                 boolean shouldHandle = player.isOnGround() && !movementManagerEvent.context.playerStatus.onGround;
                 if (shouldHandle) {
                     // use direct judgement, do not use rocketBuffer
@@ -1785,6 +1843,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                         movementManagerEvent.context.playerStatus.restorePos();
                         FloatingUtils.INSTANCE.setGrimFloatingTick(true);
                         handleNoFall = true;
+                        if (noFallResetFallDistance.get()) {
+                            MovTasks.getNoFall()
+                                    .setLastOnGroundHeight(movementManagerEvent.context.playerStatus.pos.y + 9E-8);
+                        }
                         break noFall;
                     }
                     // what can I say.
@@ -1801,6 +1863,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                     player.setOnGround(false);
                     // storedPos = player.getPos();
                     handleNoFall = true;
+                    if (noFallResetFallDistance.get()) {
+                        MovTasks.getNoFall()
+                                .setLastOnGroundHeight(movementManagerEvent.context.playerStatus.pos.y + 9E-8);
+                    }
                 }
             }
         }
@@ -1828,6 +1894,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         nextRequestVelocity = vec3d;
     }
 
+    public boolean hasFireworkVelocityOverrides() {
+        return nextRequestVelocity != null;
+    }
+
     public Vec3d requestNextOverrideVelocity() {
         if (nextRequestVelocity != null) {
             var re = nextRequestVelocity;
@@ -1841,7 +1911,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         if (!autoRescale.get()) return currentMotion;
         return switch (autoRescaleAl.get()) {
             case V1 -> applyAxisLimit1(currentMotion, pitch, yaw, applyGravity);
-            case V2 -> applyAxisLimit2(currentMotion, pitch, yaw);
+            case V2 -> applyAxisLimit2(currentMotion, pitch, yaw, true);
             case V3 -> applyAxisLimit3(currentMotion, pitch, yaw);
         };
     }
@@ -1909,13 +1979,13 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         return currentMotion;
     }
 
-    public Vec3d applyAxisLimit2(Vec3d currentMotion, float pitch, float yaw) {
+    public Vec3d applyAxisLimit2(Vec3d currentMotion, float pitch, float yaw, boolean apply) {
         if (!autoRescale.get()) {
-            setOverridingFireworkVelocity(null);
+            if (apply) setOverridingFireworkVelocity(null);
             return currentMotion;
         }
         if (currentMotion.lengthSquared() < 1E-6) {
-            setOverridingFireworkVelocity(null);
+            if (apply) setOverridingFireworkVelocity(null);
             return currentMotion;
         }
         Vec3d currentRotation = EntityUtils.pitchYawToRotation(pitch, yaw);
@@ -2006,22 +2076,22 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
         // 退化情况：所有 scale 为 0
         if (maxScale < 1E-6) {
-            setOverridingFireworkVelocity(null);
+            if (apply) setOverridingFireworkVelocity(null);
             return currentMotion;
         }
         Vec3d predictedMotion = EntityUtils.calculateGlidingVelocity(mc.player, currentMotion, currentRotation, true);
         double limitScale = currentMotion.length() / predictedMotion.length();
         // 已在盒内，无需缩放
         if (maxScale >= limitScale) {
-            setOverridingFireworkVelocity(null);
+            if (apply) setOverridingFireworkVelocity(null);
             return currentMotion;
         }
 
         // 需要缩小至盒子边界
 
         Vec3d clampedMotion = currentMotion.multiply(1 / maxScale);
-        setOverridingFireworkVelocity(clampedMotion); // <-- 保存边界值
-        return currentMotion;
+        if (apply) setOverridingFireworkVelocity(clampedMotion); // <-- 保存边界值
+        return clampedMotion;
     }
 
     public Vec3d applyAxisLimit3(Vec3d currentMotion, float pitch, float yaw) {

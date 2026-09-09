@@ -21,6 +21,9 @@ public class SurvivalTasks {
     private static VillagerEsp villagerEsp;
 
     @Getter
+    private static TrialInfoESP trialInfoESP;
+
+    @Getter
     private static WorldManager worldManager;
 
     @Getter
@@ -39,7 +42,13 @@ public class SurvivalTasks {
     private static AutoBreed autoBreed;
 
     @Getter
+    private static WalkControl walkControl;
+
+    @Getter
     private static SearchControl searchControl;
+
+    @Getter
+    private static SearchLabel searchLabel;
 
     @Getter
     private static PathManager pathManager;
@@ -54,19 +63,26 @@ public class SurvivalTasks {
     @Getter
     public static XaeroHelper xaeroHelper;
 
+    @Getter
+    public static XaeroMapScanner xaeroMapScanner;
+
     private static void initModules(ModuleManager m) {
         schedularSettings = new SchedularSettings().register(m);
         villagerEsp = new VillagerEsp().register(m);
+        trialInfoESP = new TrialInfoESP().register(m);
         worldManager = new WorldManager().register(m);
         blockFarm = new BlockFarm().register(m);
         antiAXray = new AntiAXray().register(m);
         seedOre = new SeedOre().register(m);
         autoLibrarian = new AutoLibrarian().register(m);
         autoBreed = new AutoBreed().register(m);
+        walkControl = new WalkControl().register(m);
         searchControl = new SearchControl().register(m);
+        searchLabel = new SearchLabel().register(m);
         pathManager = new PathManager().register(m);
         baritoneFix = new BaritoneFix().register(m);
         xaeroHelper = new XaeroHelper().register(m);
+        xaeroMapScanner = new XaeroMapScanner().register(m);
     }
 
     static {

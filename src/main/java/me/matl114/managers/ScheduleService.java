@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import me.matl114.utils.Debug;
 
 public class ScheduleService {
-    private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
     private static final ConcurrentHashMap<String, ScheduledFuture<?>> runningTasks = new ConcurrentHashMap<>();
     private static final AtomicInteger taskIdGenerator = new AtomicInteger(0);
 

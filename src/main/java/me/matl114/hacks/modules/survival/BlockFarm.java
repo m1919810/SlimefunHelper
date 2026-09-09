@@ -10,6 +10,7 @@ import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.interact.Interact;
+import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.render.RenderCollectors;
@@ -32,7 +33,6 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 
 public class BlockFarm extends BaseModule {
     public BlockFarm() {
@@ -117,9 +117,7 @@ public class BlockFarm extends BaseModule {
             BlockState state = mc.world.getBlockState(pos);
             if (state.getBlock() == currentPlacingItem.getBlock()) {
 
-                if (timer++ > delay.get()
-                        && new Box(pos).squaredMagnitude(mc.player.getEyePos())
-                                < MathUtils.s2(AttributeUtils.getPlayerBlockInteractionRange(mc.player))) {
+                if (++timer >= delay.get() && InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), pos)) {
                     timer = 0;
                     tickMineAndPlace(currentPlacingItem);
                 }

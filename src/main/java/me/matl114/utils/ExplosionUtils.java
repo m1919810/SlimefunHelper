@@ -5,7 +5,6 @@ import me.matl114.utils.annotations.NeedTest;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -16,7 +15,6 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.Difficulty;
 import net.minecraft.world.EmptyBlockView;
 
 @NeedTest
@@ -286,21 +284,6 @@ public final class ExplosionUtils {
             }
         }
         return false;
-    }
-
-    public static float getMultipliedDamageByDifficulty(ClientWorld world, float amount) {
-        if (world.getDifficulty() == Difficulty.PEACEFUL) {
-            amount = 0.0F;
-        }
-
-        if (world.getDifficulty() == Difficulty.EASY) {
-            amount = Math.min(amount / 2.0F + 1.0F, amount);
-        }
-
-        if (world.getDifficulty() == Difficulty.HARD) {
-            amount = amount * 3.0F / 2.0F;
-        }
-        return amount;
     }
 
     @NeedTest

@@ -149,25 +149,16 @@ public class InteractExtra extends BaseModule {
             // optimize calculation
             return false;
         }
-        return getPotentialEyeHeights()
-                .mapToObj(s -> pos.add(0, s, 0))
-                .anyMatch(ps -> box.squaredMagnitude(ps) < MathUtils.s2(range));
+        return getPotentialEyeHeights(pos).anyMatch(ps -> box.squaredMagnitude(ps) < MathUtils.s2(range));
     }
 
     public Vec3d getBestInteractEyePos(Vec3d pos, BlockHitResult blockHitResult) {
         BlockPos blockPos = blockHitResult.getBlockPos();
-        Direction direction = blockHitResult.getSide();
-        Vec3d plateCenter = blockPos.toCenterPos().offset(direction, 0.5);
-        Vec3d directionVector = Vec3d.of(direction.getVector());
+        //        Vec3d plateCenter = blockPos.toCenterPos().offset(direction, 0.5);
+        //        Vec3d directionVector = Vec3d.of(direction.getVector());
         Box blockBox = new Box(blockPos);
         return getPotentialEyeHeights(pos)
-                .filter(s -> {
-                    if (blockBox.contains(s)) {
-                        return true;
-                    } else {
-                        return s.subtract(plateCenter).dotProduct(directionVector) > 0;
-                    }
-                })
+                .sorted(Comparator.comparingDouble(blockBox::squaredMagnitude))
                 .findFirst()
                 .orElseGet(() -> pos.add(mc.player.getEyePos().subtract(mc.player.getPos())));
     }

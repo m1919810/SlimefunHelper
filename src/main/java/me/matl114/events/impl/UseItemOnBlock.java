@@ -20,5 +20,7 @@ public class UseItemOnBlock {
     @Setter
     ActionResult actionResult;
 
+    boolean placeBlock;
+
     final Hand hand;
 }

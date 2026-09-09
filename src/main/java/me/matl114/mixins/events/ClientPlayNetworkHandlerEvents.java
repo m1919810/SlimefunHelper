@@ -8,7 +8,7 @@ import java.util.Objects;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.hacks.MovTasks;
+import me.matl114.events.impl.Teleportation;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -17,7 +17,6 @@ import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkSide;
 import net.minecraft.network.listener.PacketListener;
@@ -25,7 +24,6 @@ import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -168,46 +166,31 @@ public abstract class ClientPlayNetworkHandlerEvents {
     @Shadow
     public abstract void sendChatCommand(String command);
 
-    @Inject(
+    @WrapOperation(
             method = "onPlayerPositionLook",
             at =
                     @At(
                             value = "INVOKE",
                             target =
                                     "Lnet/minecraft/network/ClientConnection;send(Lnet/minecraft/network/packet/Packet;)V",
-                            ordinal = 1,
-                            shift = At.Shift.BEFORE),
-            locals = LocalCapture.CAPTURE_FAILHARD,
-            cancellable = true)
+                            ordinal = 1))
     private void onTeleportConfirmResponse(
-            PlayerPositionLookS2CPacket packet, CallbackInfo ci, @Local PlayerEntity playerEntity) {
-        // turn this into Event
-
-        {
-            MovTasks.MovInfo eventContext = new MovTasks.MovInfo(
-                    playerEntity.getPos(), false, false, new Vec2f(playerEntity.getPitch(), playerEntity.getYaw()));
-            Event<MovTasks.MovInfo> setBackEvent = new Event<>(eventContext, false, true);
-            Listener.getTeleportConfirmResponsePoint().handleValue(setBackEvent);
-            eventContext = setBackEvent.context();
-            Vec2f override = eventContext.rotationOverride();
-            float pitch = override == null ? playerEntity.getPitch() : override.x;
-            float yaw = override == null ? playerEntity.getYaw() : override.y;
-            boolean onGround =
-                    eventContext.oGroundOverride() == null ? playerEntity.isOnGround() : eventContext.oGroundOverride();
-            // send and cancel
-            this.getConnection()
-                    .send(PlayerMoveC2SPacketAccess.setCause(
-                            new PlayerMoveC2SPacket.Full(
-                                    eventContext.vec3d().x,
-                                    eventContext.vec3d().y,
-                                    eventContext.vec3d().z,
-                                    yaw,
-                                    pitch,
-                                    onGround),
-                            PlayerMoveC2SPacketAccess.Cause.SET_BACK));
-
-            ci.cancel();
+            ClientConnection instance,
+            Packet<?> packet,
+            Operation<Void> original,
+            @Local(argsOnly = true) PlayerPositionLookS2CPacket posLook) {
+        if (packet instanceof PlayerMoveC2SPacket.Full fullPacket) {
+            packet = PlayerMoveC2SPacketAccess.setCause(fullPacket, PlayerMoveC2SPacketAccess.Cause.SET_BACK);
+            Listener.getTeleportationConfirm()
+                    .broadcast(new Teleportation(
+                            posLook.getTeleportId(),
+                            fullPacket.getX(0.0D),
+                            fullPacket.getY(0.0D),
+                            fullPacket.getZ(0.0D),
+                            fullPacket.getPitch(0.0F),
+                            fullPacket.getYaw(0.0F)));
         }
+        original.call(instance, packet);
     }
 
     @Inject(

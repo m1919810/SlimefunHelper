@@ -214,6 +214,7 @@ public class Airplace extends BaseModule {
                             false);
                     mc.player.swingHand(Hand.MAIN_HAND);
                     // work by magic
+                    // work by placeAfterPlace bypass
                     if (!PlayerInputUtils.of(mc.options).hasWASDMovement()) {
                         FloatingUtils.INSTANCE.setGrimFloatingTick(true);
                     }

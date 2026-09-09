@@ -109,6 +109,10 @@ public class MathUtils {
                 + Math.abs(pos1.getZ() - pos2.getZ());
     }
 
+    public static boolean intersectsXZ(Box box, int minX, int minZ, int maxX, int maxZ) {
+        return box.minX < maxX && box.maxX > minX && box.minZ < maxZ && box.maxZ > minZ;
+    }
+
     public static Box getBlockBox(BlockPos pos) {
         return new Box(pos);
     }
@@ -247,7 +251,7 @@ public class MathUtils {
 
     public static List<Vec3i> create2DPointListInRange(double i, int x) {
         List<Vec3i> list = new ArrayList<>();
-        int range = (int) i;
+        int range = ((int) i) + 1;
         for (var y = -range; y <= range; ++y) {
             for (var z = -range; z <= range; ++z) {
                 list.add(new Vec3i(y, x, z));
@@ -257,11 +261,11 @@ public class MathUtils {
         return list;
     }
 
-    public static List<Vec3i> create3DPointListInRange(double i) {
+    public static List<Vec3i> create3DPointListAroundPlayer(double i) {
         List<Vec3i> list = new ArrayList<>();
-        int range = (int) i;
+        int range = ((int) i) + 1;
         for (var x = -range; x <= range; ++x) {
-            for (var y = -range; y <= range; ++y) {
+            for (var y = -range; y <= range + 1; ++y) {
                 for (var z = -range; z <= range; ++z) {
                     list.add(new Vec3i(x, y, z));
                 }
@@ -564,6 +568,82 @@ public class MathUtils {
                 }
                 return result.add(d.multiply(ticksLater));
             } else if (diff.size() == 1) {
+                return currentPos.add(diff.get(0).multiply(ticksLater));
+            }
+
+            return result;
+        }
+    }
+
+    public static class AcceleratePredictor {
+        private final Vec3d[] pointList;
+        private final IntSupplier supplier;
+
+        public AcceleratePredictor(Vec3d[] historyStack, IntSupplier currentIndex) {
+            pointList = historyStack;
+            supplier = currentIndex;
+        }
+
+        public Vec3d compute(int ticksLater) {
+            int idx = supplier.getAsInt();
+            Vec3d currentPos = pointList[idx];
+            if (currentPos == null) return null;
+            int len = pointList.length;
+            int i = 1;
+            List<Vec3d> points = new ArrayList<>();
+            points.add(currentPos);
+            for (; i < len; i++) {
+                Vec3d v3d = pointList[(idx - i + len) % len];
+                if (v3d != null) {
+                    points.add(0, v3d);
+                } else {
+                    break;
+                }
+            }
+            Vec3d result = null;
+            if (!points.isEmpty()) {
+                result = currentPos;
+            }
+            if (points.size() < 2) return result;
+            List<Vec3d> diff = new ArrayList<>();
+            Vec3d oldV = null;
+            for (Vec3d v : points) {
+                if (oldV == null) {
+                    oldV = v;
+                    continue;
+                }
+
+                diff.add(v.subtract(oldV));
+
+                oldV = v;
+            }
+            if (diff.size() >= 3) {
+                Vec3d d = new Vec3d(0, 0, 0);
+                for (Vec3d v : diff) {
+                    d = d.add(v).multiply(0.5);
+                }
+                List<Vec3d> dvs = new ArrayList<>();
+                Vec3d oldDelta = null;
+                for (Vec3d v : diff) {
+                    if (oldDelta == null) {
+                        oldDelta = v;
+                        continue;
+                    }
+                    dvs.add(v.subtract(oldDelta));
+                    oldDelta = v;
+                }
+                Vec3d nextDv = new Vec3d(0, 0, 0);
+                for (Vec3d v : dvs) {
+                    nextDv = nextDv.add(v).multiply(0.5);
+                }
+                Vec3d finalSpeed = result;
+                for (var newTick = 0; newTick < ticksLater; ++newTick) {
+                    d = d.add(nextDv);
+                    finalSpeed = finalSpeed.add(d);
+                }
+
+                return finalSpeed;
+            } else if (diff.size() > 0) {
                 return currentPos.add(diff.get(0).multiply(ticksLater));
             }
 

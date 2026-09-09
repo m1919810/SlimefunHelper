@@ -34,33 +34,27 @@ public class WeakEntryPrimitiveMap<T, W> extends PrimitiveMap<WeakHolder<T>, W> 
 
     public WeakEntryPrimitiveMap(
             RegistryKey<? extends Registry<T>> registry, NBTType<W> type, Map<Identifier, W> map, W defaultValue) {
-        this(registry.getValue(), type, map, Optional.ofNullable(defaultValue).map(value -> Primitive.of(type, value)));
+        this(registry.getValue(), type, map, Optional.ofNullable(defaultValue));
     }
 
     public WeakEntryPrimitiveMap(
-            Identifier registry, NBTType<W> type, Map<Identifier, W> map, Optional<Primitive<W>> defaultPrimitive) {
-        this(registry, type, defaultPrimitive, valueMapToWeakHolderMap(registry, map));
+            Identifier registry, NBTType<W> type, Map<Identifier, W> map, Optional<W> defaultPrimitive) {
+        this(registry, type, Optional.empty(), valueMapToWeakHolderMap(registry, map, defaultPrimitive));
     }
 
-    private WeakEntryPrimitiveMap(
+    public WeakEntryPrimitiveMap(
             Identifier registry, NBTType<W> type, Optional<Primitive<W>> defaultPrimitive, Map<WeakHolder<T>, W> map) {
         super(WeakHolder.TYPE.<WeakHolder<T>>cast(), type, map, createDefaultKeyPrimitive(registry), defaultPrimitive);
     }
 
     public WeakEntryPrimitiveMap(Map<WeakHolder<T>, Primitive<W>> map, Identifier registry, NBTType<W> type) {
-        this(map, registry, type, Optional.empty());
-    }
-
-    public WeakEntryPrimitiveMap(
-            Map<WeakHolder<T>, Primitive<W>> map,
-            Identifier registry,
-            NBTType<W> type,
-            Optional<Primitive<W>> defaultPrimitive) {
         this(
                 registry,
                 type,
-                weakMapToValueMap(map, registry, type),
-                resolveDefaultPrimitive(map, registry, type, defaultPrimitive));
+                Optional.empty(),
+                map.entrySet().stream()
+                        .map(s -> Map.entry(s.getKey(), s.getValue().value()))
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
 
     private static <T> Optional<Primitive<WeakHolder<T>>> createDefaultKeyPrimitive(Identifier registry) {
@@ -68,11 +62,13 @@ public class WeakEntryPrimitiveMap<T, W> extends PrimitiveMap<WeakHolder<T>, W> 
                 Primitive.of(WeakHolder.TYPE.<WeakHolder<T>>cast(), new WeakHolder<>(registry, DEFAULT_KEY)));
     }
 
-    private static <T, W> Map<WeakHolder<T>, W> valueMapToWeakHolderMap(Identifier registry, Map<Identifier, W> map) {
+    private static <T, W> Map<WeakHolder<T>, W> valueMapToWeakHolderMap(
+            Identifier registry, Map<Identifier, W> map, Optional<W> defaultMap) {
         Map<WeakHolder<T>, W> result = new LinkedHashMap<>(map.size());
         for (var entry : map.entrySet()) {
             result.put(new WeakHolder<>(registry, entry.getKey()), entry.getValue());
         }
+        defaultMap.ifPresent(s -> map.put(WeakHolder.DEFAULT_KEY, s));
         return result;
     }
 
@@ -132,8 +128,8 @@ public class WeakEntryPrimitiveMap<T, W> extends PrimitiveMap<WeakHolder<T>, W> 
     }
 
     private static <T, W> WeakEntryPrimitiveMap<T, W> fromPrimitiveMap(PrimitiveMap<WeakHolder<T>, W> map) {
-        return new WeakEntryPrimitiveMap<>(
-                toLegacyMap(map), resolveRegistry(map), map.valueType(), map.defaultValuePrimitive());
+        Identifier registryId = map.defaultKeyPrimitive().orElseThrow().value().registry();
+        return new WeakEntryPrimitiveMap<>(registryId, map.valueType(), map.defaultValuePrimitive(), map.map());
     }
 
     private static <T, W> WrapperFactory<PrimitiveMap<WeakHolder<T>, W>, WeakEntryPrimitiveMap<T, W>> wrapperFactory() {

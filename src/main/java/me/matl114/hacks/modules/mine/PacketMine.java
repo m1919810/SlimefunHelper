@@ -13,6 +13,7 @@ import me.matl114.events.annotations.ExtraArgs;
 import me.matl114.events.channels.EventChannel;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.FloatingUtils;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
@@ -23,7 +24,6 @@ import me.matl114.managers.*;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.InventoryUtils;
-import me.matl114.utils.MathUtils;
 import me.matl114.utils.WorldUtils;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.entity.PlayerInputUtils;
@@ -37,7 +37,6 @@ import net.minecraft.registry.Registries;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 
 public class PacketMine extends BaseModule {
     public static PacketMine INSTANCE;
@@ -159,9 +158,7 @@ public class PacketMine extends BaseModule {
             Runnable currentTickCallback = null;
             boolean postMineCallback = false;
             float progress = 0;
-            // todo: add predicted speed
-            double lenSq = new Box(pos).squaredMagnitude(mc.player.getEyePos());
-            if (lenSq <= MathUtils.s2(mc.player.getBlockInteractionRange() + 1)) {
+            if (InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), pos)) {
                 BlockState blockState = mc.world.getBlockState(pos);
                 IndexEntry<ItemStack> currentItemSlot = getCurrentUsableTool(blockState);
 
@@ -192,13 +189,11 @@ public class PacketMine extends BaseModule {
                         progress = PlayerInteractionAccess.of(mc.interactionManager)
                                 .predictCurrentMiningProgressWithTool(currentTool);
 
-                        if (realBreak.get() && progress > 0.98F) {
-                            mc.interactionManager.breakBlock(pos);
-                        }
                         for (int i = 0; i < multiplePackets.get(); ++i) {
                             if (swingHand.get())
                                 mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-                            PlayerInteractionAccess.of(mc.interactionManager).sendBreakPacket(pos);
+                            PlayerInteractionAccess.of(mc.interactionManager)
+                                    .sendBreakPacket(pos, !(realBreak.get() && progress > 0.7F));
                         }
                         currentTickCallback = callback;
                         postMineCallback = true;

@@ -509,6 +509,34 @@ public class ItemStackUtils {
         return Objects.equals(stack1.get(TOOL), stack2.get(TOOL)) && matchEfficiency(stack1, stack2);
     }
 
+    public static boolean matchVersionedItem(ItemStack stack1, ItemStack stack2) {
+        if (!stack1.isOf(stack2.getItem())) {
+            return false;
+        }
+        if (stack1.isEmpty()) {
+            return stack2.isEmpty();
+        } else if (stack2.isEmpty()) {
+            return false;
+        } else {
+            var compound1 = stack1.components.changedComponents;
+            var compound2 = stack2.components.changedComponents;
+            Map<ComponentType, Optional> map1 = compound1 == null ? new HashMap<>() : new HashMap<>(compound1);
+            Map<ComponentType, Optional> map2 = compound2 == null ? new HashMap<>() : new HashMap<>(compound2);
+            var n1 = map1.remove(CUSTOM_DATA);
+            var n2 = map2.remove(CUSTOM_DATA);
+            // both having or not having lore
+            if (map1.equals(map2)) {
+                NbtElement nbt1 =
+                        (n1 == null || n1.isEmpty()) ? null : ((NbtComponent) n1.get()).nbt.get(BUKKIT_NAMESPACE);
+                NbtElement nbt2 =
+                        (n2 == null || n2.isEmpty()) ? null : ((NbtComponent) n2.get()).nbt.get(BUKKIT_NAMESPACE);
+                return Objects.equals(nbt1, nbt2);
+            } else {
+                return false;
+            }
+        }
+    }
+
     private static boolean matchEfficiency(ItemStack stack1, ItemStack stack2) {
         ItemEnchantmentsComponent ench1 = stack1.get(ENCHANTMENTS);
         ItemEnchantmentsComponent ench2 = stack2.get(ENCHANTMENTS);

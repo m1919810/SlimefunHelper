@@ -10,10 +10,12 @@ import me.matl114.hooks.impl.xaeroplus.impl.MapDrawFactoryImpl;
 import me.matl114.hooks.impl.xaerowaypoints.IXWaypointFactory;
 import me.matl114.hooks.impl.xaerowaypoints.impl.XaeroWaypointFactoryImpl;
 import me.matl114.hooks.impl.xaeroworldmap.MapClickContext;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.math.BlockPos;
 import xaero.hud.minimap.BuiltInHudModules;
 import xaero.map.WorldMap;
+import xaero.map.gui.GuiMap;
 import xaero.minimap.XaeroMinimap;
 import xaeroplus.Globals;
 
@@ -70,6 +72,10 @@ public class XaeroHooks implements IHooks {
         return enable;
     }
 
+    public boolean isGuiMap(Screen screen) {
+        return worldMapHooks.isGuiMap(screen);
+    }
+
     public IMapDrawFactory getMapDrawFactory() {
         return plusHooks.getMapDrawFactory();
     }
@@ -82,6 +88,10 @@ public class XaeroHooks implements IHooks {
         public boolean isEnabled() {
             return false;
         }
+
+        public boolean isGuiMap(Screen screen) {
+            return false;
+        }
     }
 
     public static class XaeroWorldMapImpl extends XaeroWorldMapHooks {
@@ -91,6 +101,10 @@ public class XaeroHooks implements IHooks {
 
         public boolean isEnabled() {
             return true;
+        }
+
+        public boolean isGuiMap(Screen screen) {
+            return screen instanceof GuiMap;
         }
     }
 

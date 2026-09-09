@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 import me.matl114.accessors.moonrise.MoonriseBlockStateBaseAccess;
 import me.matl114.accessors.moonrise.MoonriseChunkBlockCountingAccess;
 import me.matl114.accessors.moonrise.MoonriseVoxelShapeAccess;
@@ -1775,6 +1776,22 @@ public final class CollisionUtil {
             final java.util.function.BiPredicate<net.minecraft.block.BlockState, net.minecraft.util.math.BlockPos>
                     predicate,
             BiFunction<net.minecraft.block.BlockState, net.minecraft.util.math.BlockPos, Box> environmentFilter) {
+        return getCollisionsForBlocksOrWorldBorder(
+                world, entity, aabb, intoVoxel, intoAABB, null, collisionFlags, predicate, environmentFilter, false);
+    }
+
+    public static boolean getCollisionsForBlocksOrWorldBorder(
+            final net.minecraft.world.World world,
+            final net.minecraft.entity.Entity entity,
+            final net.minecraft.util.math.Box aabb,
+            final java.util.List<net.minecraft.util.shape.VoxelShape> intoVoxel,
+            final java.util.List<net.minecraft.util.math.Box> intoAABB,
+            @Nullable final List<BlockPos> intoBlocks,
+            final int collisionFlags,
+            final java.util.function.BiPredicate<net.minecraft.block.BlockState, net.minecraft.util.math.BlockPos>
+                    predicate,
+            BiFunction<net.minecraft.block.BlockState, net.minecraft.util.math.BlockPos, Box> environmentFilter,
+            boolean fastReturn) {
         final boolean checkOnly = (collisionFlags & COLLISION_FLAG_CHECK_ONLY) != 0;
         boolean ret = false;
 
@@ -1839,6 +1856,7 @@ public final class CollisionUtil {
                         } else {
                             intoAABB.add(getBoxForChunk(currChunkX, currChunkZ));
                             ret = true;
+                            if (fastReturn) return true;
                         }
                     }
                     continue;
@@ -1898,6 +1916,12 @@ public final class CollisionUtil {
                                             environmentFilter.apply(blockData, mutablePos);
                                     if (extraEnvironmentBox != null) {
                                         intoAABB.add(extraEnvironmentBox);
+                                        if (intoBlocks != null) {
+                                            intoBlocks.add(mutablePos.toImmutable());
+                                        }
+                                        ret = true;
+                                        if (fastReturn) return true;
+                                        continue;
                                     }
                                 }
                                 //                                if(blockData.getBlock() == Blocks.LAVA){
@@ -1950,6 +1974,10 @@ public final class CollisionUtil {
                                         } else {
                                             ret = true;
                                             intoAABB.add(singleAABB);
+                                            if (intoBlocks != null) {
+                                                intoBlocks.add(mutablePos.toImmutable());
+                                            }
+                                            if (fastReturn) return true;
                                             continue;
                                         }
                                     }
@@ -1977,6 +2005,10 @@ public final class CollisionUtil {
                                     } else {
                                         ret = true;
                                         intoVoxel.add(blockCollisionOffset);
+                                        if (intoBlocks != null) {
+                                            intoBlocks.add(mutablePos.toImmutable());
+                                        }
+                                        if (fastReturn) return true;
                                         continue;
                                     }
                                 }
@@ -2335,18 +2367,31 @@ public final class CollisionUtil {
         List<Box> aabbShapes = new ArrayList<>();
         int flags = 0; // 不需要加载未加载区块，不需要边界检测
 
-        boolean hasCollision = CollisionUtil.getCollisionsForBlocksOrWorldBorder(
+        return CollisionUtil.getCollisionsForBlocksOrWorldBorder(
                 world,
                 entity, // 可为 null，但传入实体可能用于特殊上下文（如忽略自身）
                 checkBox,
                 voxelShapes,
                 aabbShapes,
+                null,
                 flags,
                 null, // 方块过滤器（可选）
-                null // 环境过滤器（可选）
-                );
+                null, // 环境过滤器（可选）
+                true);
+    }
 
-        return hasCollision;
+    public static boolean isBoxCollided(World world, Entity owner, Box checkBox) {
+        List<VoxelShape> voxelShapes = new ArrayList<>();
+        List<Box> aabbShapes = new ArrayList<>();
+        return CollisionUtil.getCollisionsForBlocksOrWorldBorder(
+                world, owner, checkBox, voxelShapes, aabbShapes, null, 0, null, null, true);
+    }
+
+    public static List<BlockPos> getBoxCollision(World world, Entity owner, Box checkBox) {
+        List<BlockPos> blockPosList = new ArrayList<>();
+        CollisionUtil.getCollisionsForBlocksOrWorldBorder(
+                world, owner, checkBox, new ArrayList<>(), new ArrayList<>(), blockPosList, 0, null, null, false);
+        return blockPosList;
     }
 
     public static boolean hasAnyIntersects(World world, Predicate<Entity> exceptPredicate, VoxelShape shape) {

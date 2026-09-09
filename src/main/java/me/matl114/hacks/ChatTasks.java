@@ -829,6 +829,17 @@ public class ChatTasks {
 
         {
             main.subBuilder(SubCommand.taskBuilder())
+                    .name("show")
+                    .helper("message.command.sfh.show.help")
+                    .post(e -> e.executor((a, b, c) -> {
+                        Debug.chat(ChatUtils.stringToText(c.getRemainingArgStr()));
+                        return true;
+                    }))
+                    .complete();
+        }
+
+        {
+            main.subBuilder(SubCommand.taskBuilder())
                     .name("logout")
                     .helper("message.command.sfh.exit.help")
                     .post(e -> e.executor(CommandContext.run(MainTasks::scheduleDisconnect)))
