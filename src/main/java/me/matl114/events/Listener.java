@@ -20,7 +20,6 @@ import me.matl114.events.channels.EventChannel;
 import me.matl114.events.channels.EventChannelDispatcher;
 import me.matl114.events.channels.PacketEventChannel;
 import me.matl114.events.impl.*;
-import me.matl114.hacks.MovTasks;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.input.IHotKey;
 import me.matl114.managers.input.IInputManager;
@@ -530,8 +529,8 @@ public class Listener {
     private static final EventChannel<Vec3d> playerFluidVelocityPoint = new EventChannel<>();
 
     @Getter
-    @Modifiable
-    private static final EventChannel<MovTasks.MovInfo> teleportConfirmResponsePoint = new EventChannel<>();
+    @Broadcast
+    private static final EventChannel<Teleportation> teleportationConfirm = new EventChannel<>();
 
     @Getter
     @Cancelable
@@ -648,7 +647,8 @@ public class Listener {
 
     @Getter
     @Broadcast
-    private static final EventChannel<BlockUpdate> blockUpdateListener = new EventChannel<>();
+    private static final EventChannelDispatcher<BlockUpdate> blockUpdateListener =
+            new EventChannelDispatcher<>(s -> s.newState().getBlock());
 
     @Getter
     @Broadcast

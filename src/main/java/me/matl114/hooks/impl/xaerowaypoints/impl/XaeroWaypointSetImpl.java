@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import me.matl114.hooks.impl.xaerowaypoints.IXWaypoint;
 import me.matl114.hooks.impl.xaerowaypoints.IXWaypointAccess;
 import xaero.common.minimap.waypoints.Waypoint;
@@ -56,6 +57,17 @@ public record XaeroWaypointSetImpl(WaypointSet waypointSet) implements IXWaypoin
     @Override
     public void removeAll(Collection<IXWaypoint> IXWaypoints) {
         waypointSet.removeAll(IXWaypoints.stream().map(WaypointWrapper::unwrap).toList());
+    }
+
+    @Override
+    public void removeIf(Predicate<IXWaypoint> predicate) {
+        var iter = waypointSet.getWaypoints().iterator();
+        while (iter.hasNext()) {
+            var val = iter.next();
+            if (predicate.test(new WaypointWrapper(val))) {
+                iter.remove();
+            }
+        }
     }
 
     @Override

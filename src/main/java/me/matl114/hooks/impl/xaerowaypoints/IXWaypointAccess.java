@@ -3,6 +3,7 @@ package me.matl114.hooks.impl.xaerowaypoints;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public interface IXWaypointAccess {
     String getName();
@@ -22,6 +23,8 @@ public interface IXWaypointAccess {
     public IXWaypoint remove(int slot);
 
     public void removeAll(Collection<IXWaypoint> IXWaypoints);
+
+    public void removeIf(Predicate<IXWaypoint> predicate);
 
     public void clear();
 

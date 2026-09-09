@@ -33,20 +33,20 @@ public interface PlayerInteractionAccess {
      *
      * <p>调用方应把它理解成一次 stop/finish 动作入口，而不是自由组合的底层包接口。
      */
-    default void sendBreakPacket() {
+    default void sendBreakPacket(boolean silent) {
         BlockPos currentPos = getCurrentMiningPos();
-        sendBreakPacket(currentPos);
+        sendBreakPacket(currentPos, silent);
     }
 
-    default void sendBreakPacket(BlockPos currentPos) {
+    default void sendBreakPacket(BlockPos currentPos, boolean silent) {
         Vec3d shouldFacing = currentPos
                 .toCenterPos()
                 .subtract(MinecraftClient.getInstance().player.getEyePos());
         Direction dir = Direction.getFacing(shouldFacing).getOpposite();
-        sendBreakPacket(currentPos, dir);
+        sendBreakPacket(currentPos, dir, silent);
     }
 
-    public void sendBreakPacket(BlockPos pos, Direction direction);
+    public void sendBreakPacket(BlockPos pos, Direction direction, boolean silent);
 
     public boolean breakIfComplete();
 

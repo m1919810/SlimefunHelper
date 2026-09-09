@@ -128,8 +128,8 @@ public class VillagerEsp extends BaseModule {
         if (lines.isEmpty()) {
             return null;
         }
-        MutableText result = Text.empty();
-        for (int i = 0; i < lines.size(); i++) {
+        MutableText result = Text.empty().append(lines.get(0));
+        for (int i = 1; i < lines.size(); i++) {
             result = result.append(Text.literal("\n")).append(lines.get(i));
         }
         return result;

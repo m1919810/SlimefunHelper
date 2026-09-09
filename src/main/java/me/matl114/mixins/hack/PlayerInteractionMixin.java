@@ -268,13 +268,16 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
             resetLocalMiningProgress();
         }
         this.blockBreakingSoundCooldown = 0.0F;
-        this.blockBreakingCooldown = MineExtra.INSTANCE.getMiningPacketCooldown();
+        this.blockBreakingCooldown = MineExtra.INSTANCE.getMiningPacketCooldown(0);
     }
 
     @Override
     @Unique
-    public void sendBreakPacket(BlockPos pos, Direction direction) {
+    public void sendBreakPacket(BlockPos pos, Direction direction, boolean silent) {
         this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence -> {
+            if (!silent) {
+                breakBlock(pos);
+            }
             return new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, direction, sequence);
         }));
     }
@@ -409,7 +412,6 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
     public void abortBreak(Direction direction) {
         this.networkHandler.sendPacket(new PlayerActionC2SPacket(
                 PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, this.currentBreakingPos, direction));
-        breakingBlock = false;
     }
 
     @Override
@@ -551,7 +553,9 @@ public abstract class PlayerInteractionMixin implements PlayerInteractionAccess 
                         .subtract(MinecraftClient.getInstance().player.getEyePos());
                 direction = Direction.getFacing(shouldFacing).getOpposite();
             }
-            sendBreakPacket(currentBreakingPos, direction);
+            sendBreakPacket(currentBreakingPos, direction, true);
+            // ... add cooldown here
+            this.blockBreakingCooldown = MineExtra.INSTANCE.getMiningPacketCooldown(0);
             return true;
         }
         return false;

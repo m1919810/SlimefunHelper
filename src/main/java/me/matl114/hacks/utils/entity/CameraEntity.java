@@ -39,7 +39,6 @@ public class CameraEntity extends AbstractClientPlayerEntity {
     public void copyEquipments(PlayerInventory p) {
         // copy inventory before we set the delegate player
         getInventory().clone(p);
-        super.isSpectator();
     }
 
     @Override

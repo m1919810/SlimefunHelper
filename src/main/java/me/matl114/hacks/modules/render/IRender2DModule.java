@@ -6,6 +6,7 @@ import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.WidgetPos;
+import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
@@ -44,6 +45,9 @@ public abstract class IRender2DModule extends BaseModule {
             .defaultValue(new WidgetPos(0, 0.0D, 0.0D, 0, 0))
             .build();
 
+    public DoubleRef size =
+            builder(hud.add("scaling"), DoubleRef.TYPE).defaultValue(1.0D).build();
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -79,6 +83,7 @@ public abstract class IRender2DModule extends BaseModule {
         int startX = posX;
         int startY = (posY);
         vdraw.getMatrices().translate(startX, startY);
+        vdraw.getMatrices().scale((float) size.get(), (float) size.get());
     }
 
     public abstract void render2D(VDrawContext vdraw, float partialTicks);

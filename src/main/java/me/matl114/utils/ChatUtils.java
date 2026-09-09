@@ -694,6 +694,12 @@ public class ChatUtils {
         return Language.getInstance().get(key, key);
     }
 
+    @ApiMethod
+    @Nullable
+    public static String parseTranslation(String key, String defaultV) {
+        return Language.getInstance().get(key, defaultV);
+    }
+
     public static boolean hasTranslation(String key) {
         return Language.getInstance().hasTranslation(key);
     }

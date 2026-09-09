@@ -3,11 +3,14 @@ package me.matl114.hacks.modules.interact;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import java.util.function.Consumer;
 import me.matl114.accessors.moonrise.MoonriseBlockStateBaseAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.events.impl.EventContainer;
+import me.matl114.gui.WidgetUtils;
+import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -72,7 +75,7 @@ public class AutoSlab extends BaseModule {
     public final DoubleRef range = doubleBuilder(autoPlate.add("interact-range"))
             .defaultValue(5.0D)
             .validator(Configs.doubleRange(0.0D, 100.0D))
-            .updateListener(s -> blocksSeq = MathUtils.create3DPointListInRange(s))
+            .updateListener(s -> blocksSeq = MathUtils.create3DPointListAroundPlayer(s))
             .build();
 
     public final FlagRef slabOnly = flagBuilder(autoPlate.add("slab-only")).build();
@@ -131,6 +134,14 @@ public class AutoSlab extends BaseModule {
         registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvent);
         registerListener(RenderListener.getRender3DEvent(), this::onRender3D);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
+    }
+
+    @Override
+    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
+        super.addCustomWidgets(acceptor, dx, dy, dblank);
+        acceptor.accept(WidgetUtils.withCondition(
+                createTitleLabel("widget.block-rotate.yaw-deceive.use-argument", 0, dblank, dx, dy),
+                useBlockRotate::get));
     }
 
     public void initializeMap() {
