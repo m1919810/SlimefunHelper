@@ -898,18 +898,19 @@ public class ElytraBot extends BaseModule {
                     return predictorPos.subtract(mc.player.getPos()).normalize();
                 }
             } else {
+                Vec3d legacy;
                 if (SpearEnhance.isUsingSpear(mc.player)) {
-
                     Vec3d targetPos = predictorPos.add(0, base.target.getEyeHeight(base.target.getPose()), 0);
-                    Vec3d legacy = targetPos.subtract(mc.player.getEyePos());
-                    Vec3d forward = ElytraOptimizeUtils.calculateLookTowardsTargetV3Direction(legacy, 1.7);
-                    if (legacy.dotProduct(forward) < 0) {
-                        return legacy;
-                    } else {
-                        return forward;
-                    }
+                    legacy = targetPos.subtract(mc.player.getEyePos());
                 } else {
-                    return predictorPos.subtract(mc.player.getPos()).normalize();
+                    legacy = predictorPos.subtract(mc.player.getPos());
+                }
+
+                Vec3d forward = ElytraOptimizeUtils.calculateLookTowardsTargetV3Direction(legacy, 1.7);
+                if (legacy.dotProduct(forward) < 0) {
+                    return legacy;
+                } else {
+                    return forward;
                 }
             }
         }

@@ -977,6 +977,7 @@ public class InvTasks {
     }
 
     public static void onInventoryOld(Event<ScreenHandlerSlotUpdateS2CPacket> invS2CPacket) {
+        if (mc.player == null || mc.world == null) return;
         int syncId = invS2CPacket.context.getSyncId();
         if (mc.interactionManager.getCurrentGameMode().isSurvivalLike()
                 && ClientPlayerAccess.of(mc.player).getServerScreenHandler().syncId != syncId
@@ -994,6 +995,7 @@ public class InvTasks {
     }
 
     public static void onInventoryOld2(Event<InventoryS2CPacket> eventInv) {
+        if (mc.player == null || mc.world == null) return;
         int syncId = eventInv.context.getSyncId();
         if (mc.interactionManager.getCurrentGameMode().isSurvivalLike()
                 && ClientPlayerAccess.of(mc.player).getServerScreenHandler().syncId != syncId
@@ -1028,7 +1030,7 @@ public class InvTasks {
     }
 
     public static void fastAsyncUpdateRevision(Event<ScreenHandlerSlotUpdateS2CPacket> eventUpdate) {
-        if (mc.player == null) return;
+        if (mc.player == null || mc.world == null) return;
         int syncId = eventUpdate.context.getSyncId();
         if (mc.interactionManager.getCurrentGameMode().isSurvivalLike()) {
             if (syncId == 0) {
