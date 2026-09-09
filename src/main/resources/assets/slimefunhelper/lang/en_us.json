@@ -3167,6 +3167,8 @@
 	"combat-bot.elytra-bot.fly-anti-spear-disable-when-using-spear": "鞘翅追人: 使用矛时禁用反矛",
 	"combat-bot.elytra-bot.fly-anti-spear-use-spear-reset-when-follow": "鞘翅追人: 进攻时自动请求矛重置",
 	"elytra.simple-flight-control.use-auto-rescale-best-climbing-speed": "简易鞘翅控制: 自动优化飞行角度",
+	"elytra.simple-flight-control.rotate-when-void-motion": "简易鞘翅控制: 虚空动力时转头",
+	"elytra.simple-flight-control.firework-rotation-last-ticks": "简易鞘翅控制: 烟花模式转头额外持续刻",
 	"elytra.custom-fireworks.switch-auto-rescale-firework-al-key": "烟花: 快捷切换烟花压缩算法",
 	"module-settings.module-log-message-format": "模块设置: 日志消息格式",
 	"module-settings.module-command-prefix": "模块设置: 命令前缀",
