@@ -291,9 +291,12 @@ public class XaeroHelper extends BaseModule {
                     access.requestRefresh();
                 }
                 access.update(travelPoint, (acc) -> {
-                    acc.setX(pos.getX());
-                    acc.setY(pos.getY());
-                    acc.setZ(pos.getZ());
+                    if (acc.getX() != pos.getX() || acc.getY() != pos.getY() || acc.getZ() != pos.getZ()) {
+                        acc.setX(pos.getX());
+                        acc.setY(pos.getY());
+                        acc.setZ(pos.getZ());
+                        access.requestRefresh();
+                    }
                 });
             }
         }

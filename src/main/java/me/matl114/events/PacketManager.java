@@ -156,53 +156,63 @@ public class PacketManager {
     }
 
     public static void flushInBound() {
-        try {
-            if (mc.getNetworkHandler() != null
-                    && mc.getNetworkHandler().getConnection().isOpen()) {
-                // flush
-                mc.getNetworkHandler().getConnection().channel.eventLoop().execute(() -> {
-                    startFlushIn = true;
-                    try {
-                        for (var packet : packetQueueIn) {
-                            packet.handle();
+        if (mc.getNetworkHandler() != null) {
+            mc.getNetworkHandler().getConnection().channel.eventLoop().execute(() -> {
+                try {
+                    if (mc.getNetworkHandler() != null
+                            && mc.getNetworkHandler().getConnection().isOpen()) {
+                        // flush
+                        startFlushIn = true;
+                        try {
+                            for (var packet : packetQueueIn) {
+                                packet.handle();
+                            }
+                        } finally {
+                            startFlushIn = false;
+                            // clear async
+                            packetQueueIn.clear();
                         }
-                    } finally {
-                        startFlushIn = false;
-                        // clear async
+                    } else {
                         packetQueueIn.clear();
                     }
-                });
-            }
-        } catch (Throwable e) {
+                } catch (Throwable e) {
+                    packetQueueIn.clear();
+                }
+            });
+        } else {
             packetQueueIn.clear();
         }
     }
 
     public static void flushInBound(Function<PacketStorage, FlushAction> pdd) {
-        if (mc.getNetworkHandler() != null
-                && mc.getNetworkHandler().getConnection().isOpen()) {
-            // flush
+
+        // flush
+        if (mc.getNetworkHandler() != null) {
             mc.getNetworkHandler().getConnection().channel.eventLoop().execute(() -> {
-                startFlushIn = true;
-                var iter = packetQueueIn.iterator();
-                try {
-                    while (iter.hasNext()) {
-                        var packet = iter.next();
-                        switch (pdd.apply(packet)) {
-                            case FLUSH -> {
-                                packet.handle();
-                                iter.remove();
-                            }
-                            case DROP -> {
-                                iter.remove();
+                if (mc.getNetworkHandler() != null
+                        && mc.getNetworkHandler().getConnection().isOpen()) {
+                    startFlushIn = true;
+                    var iter = packetQueueIn.iterator();
+                    try {
+                        while (iter.hasNext()) {
+                            var packet = iter.next();
+                            switch (pdd.apply(packet)) {
+                                case FLUSH -> {
+                                    packet.handle();
+                                    iter.remove();
+                                }
+                                case DROP -> {
+                                    iter.remove();
+                                }
                             }
                         }
+                    } finally {
+                        startFlushIn = false;
                     }
-                } finally {
-                    startFlushIn = false;
+                } else {
+                    packetQueueIn.removeIf((v) -> pdd.apply(v) != FlushAction.QUEUE);
                 }
             });
-
         } else {
             packetQueueIn.removeIf((v) -> pdd.apply(v) != FlushAction.QUEUE);
         }
