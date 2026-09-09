@@ -1,8 +1,7 @@
 package me.matl114.utils;
 
-import javax.annotation.Nullable;
 import java.util.*;
-
+import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.ComponentType;
 import net.minecraft.component.DataComponentTypes;
@@ -38,8 +37,6 @@ import net.minecraft.util.math.random.LocalRandom;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.World;
-
-import javax.annotation.Nullable;
 
 public class DamageUtils {
     public static final MinecraftClient mc = MinecraftClient.getInstance();
@@ -257,7 +254,9 @@ public class DamageUtils {
     public static DamageSource createDamageSource(Entity source, PlayerEntity attacker, ItemStack weapon) {
         DamageSource newSource;
         try {
-            newSource = (DamageSource) Optional.ofNullable(weapon.getItem().getDamageSource(attacker)).orElse(attacker.getDamageSources().playerAttack(attacker));;
+            newSource = (DamageSource) Optional.ofNullable(weapon.getItem().getDamageSource(attacker))
+                    .orElse(attacker.getDamageSources().playerAttack(attacker));
+            ;
         } catch (Throwable e) {
             newSource = createDamageSource(DamageTypes.PLAYER_ATTACK, source, attacker);
         }

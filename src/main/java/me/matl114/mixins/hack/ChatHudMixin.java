@@ -64,7 +64,13 @@ public abstract class ChatHudMixin {
 
     @Inject(method = "render", at = @At("HEAD"))
     private void onRenderChatScreen(
-        DrawContext context, int currentTick, int mouseX, int mouseY, boolean focused, CallbackInfo ci, @Local(argsOnly = true) LocalBooleanRef expanding) {
+            DrawContext context,
+            int currentTick,
+            int mouseX,
+            int mouseY,
+            boolean focused,
+            CallbackInfo ci,
+            @Local(argsOnly = true) LocalBooleanRef expanding) {
         if (XaeroHelper.INSTANCE.transparentGuiMapFix.get()
                 && XaeroHooks.getInstance().isXaeroWorldMapEnable()
                 && XaeroHooks.getInstance().isGuiMap(client.currentScreen)) {

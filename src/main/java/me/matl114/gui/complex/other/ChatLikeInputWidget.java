@@ -47,7 +47,7 @@ public class ChatLikeInputWidget extends TextFieldWidget {
     }
 
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if(super.keyPressed(keyCode, scanCode, modifiers))return true;
+        if (super.keyPressed(keyCode, scanCode, modifiers)) return true;
         if (this.isFocused()) {
             if (keyCode != 257 && keyCode != 335) {
                 if (keyCode == 265) {
