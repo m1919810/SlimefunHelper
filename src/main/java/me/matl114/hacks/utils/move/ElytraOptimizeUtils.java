@@ -256,6 +256,59 @@ public class ElytraOptimizeUtils {
         return applyAxisLimit30(currentMotion, pitch, yaw, autoRescaleAmount, apply);
     }
 
+    public static Vec3d calculateTowardsTargetV3Direction(Vec3d targetPosition, double speed) {
+        Vec3d targetDirection = targetPosition.normalize();
+        Vec2f pitchYaw = EntityUtils.rotationToPitchYaw(targetDirection);
+        float p = pitchYaw.x;
+        float y = pitchYaw.y;
+        float startPitch;
+        float endPitch;
+        float minDelta = 1;
+        float minDot = 3.0F;
+        // todo: add up direction, add down direction
+        if (pitchYaw.x > 0) {
+            // downwards
+            startPitch = 1.14F;
+            endPitch = 85.8F;
+        } else {
+            startPitch = -85.6F;
+            endPitch = -1.14F;
+        }
+        if (p < startPitch || p > endPitch) {
+            return targetDirection;
+        }
+        float startDot;
+        float endDot;
+
+        Function<Float, Float> dotFunction = (pitch) -> {
+            Vec3d simulateVec3d = EntityUtils.pitchYawToRotation(pitch, y).normalize();
+            Vec3d tickSpeed = simulateAxisLimitSpeed(simulateVec3d.multiply(speed), pitch, y);
+            float movingPitch = EntityUtils.rotationToPitch(tickSpeed.normalize());
+            return movingPitch - p;
+        };
+        startDot = dotFunction.apply(startPitch);
+        endDot = dotFunction.apply(endPitch);
+        if (startDot * endDot >= 0) {
+            // No Idea
+            return targetDirection;
+        }
+        float midPitch = p;
+        float midDot = dotFunction.apply(midPitch);
+        while (!(Math.abs(midDot) < minDot || Math.abs(startPitch - endPitch) < minDelta)) {
+            if (midDot == 0) break;
+            if (midDot * startDot < 0) {
+                endPitch = midPitch;
+                endDot = midDot;
+            } else {
+                startPitch = midPitch;
+                startDot = midDot;
+            }
+            midPitch = (startPitch + endPitch) / 2;
+            midDot = dotFunction.apply(midPitch);
+        }
+        return EntityUtils.pitchYawToRotation(midPitch, y);
+    }
+
     public static Vec3d calculateLookTowardsTargetV3Direction(Vec3d targetPosition, double speed) {
         Vec3d targetDirection = targetPosition.normalize();
         Vec2f pitchYaw = EntityUtils.rotationToPitchYaw(targetDirection);
