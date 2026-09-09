@@ -1,5 +1,6 @@
 package me.matl114.hacks.utils.move;
 
+import java.util.function.Function;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.modules.move.ElytraExtra;
@@ -100,6 +101,19 @@ public class ElytraOptimizeUtils {
         return vec3d;
     }
 
+    public static Vec3d calculateBestDownwardSpeed(Vec3d vec3d) {
+        Vec3d result = calculateBestDownForwardSpeed(vec3d, false);
+        if (result.y >= -1E-6) {
+            double horizontal = result.horizontalLength();
+            if (horizontal < 1E-6) {
+                result = result.withAxis(Direction.Axis.X, 5.0D);
+                horizontal = result.horizontalLength();
+            }
+            result = result.withAxis(Direction.Axis.Y, -horizontal * Math.tan(Math.toRadians(30.5D)));
+        }
+        return result;
+    }
+
     public static Vec3d calculateBestV3DownForwardSpeed(Vec3d vec3d, boolean natural) {
         double horizontal = vec3d.horizontalLength();
         if (horizontal < 1E-6) {
@@ -144,7 +158,8 @@ public class ElytraOptimizeUtils {
         ElytraExtra.INSTANCE.setOverridingFireworkVelocity(vec3d);
     }
 
-    public static Vec3d applyAxisLimit30(Vec3d currentMotion, float pitch, float yaw, double autoRescaleAmount) {
+    public static Vec3d applyAxisLimit30(
+            Vec3d currentMotion, float pitch, float yaw, double autoRescaleAmount, boolean realApply) {
         Vec3d currentRotation = EntityUtils.pitchYawToRotation(pitch, yaw);
         Vec3d lastTickVelocity = PlayerStateManager.INSTANCE.lastKnownClientVelocity;
         Vec3d thisTickSimulationVelocity =
@@ -192,7 +207,7 @@ public class ElytraOptimizeUtils {
         double eMinZ = Math.min(0, minZ - v1.z);
         double eMaxZ = Math.max(0, maxZ - v1.z);
         double zeroPointThreeTest = 0.0;
-        double thresoldLeft = 0.002;
+        double thresoldLeft = ElytraExtra.INSTANCE.autoRescaleThreshold.get();
         double uMinX = v3.x + eMinX - zeroPointThreeTest + thresoldLeft;
         double uMaxX = v3.x + eMaxX + zeroPointThreeTest - thresoldLeft;
         double uMinY = v3.y + eMinY + thresoldLeft;
@@ -232,7 +247,7 @@ public class ElytraOptimizeUtils {
 
         // 退化情况：所有 scale 为 0
         if (maxScale < 1E-6) {
-            setOverridingFireworkVelocity(null);
+            if (realApply) setOverridingFireworkVelocity(null);
             return currentMotion;
         }
         Vec3d predictedMotion = EntityUtils.calculateGlidingVelocity(mc.player, currentMotion, currentRotation, true);
@@ -245,39 +260,108 @@ public class ElytraOptimizeUtils {
         }
         // 已在盒内，无需缩放
         if (clampedMotion.lengthSquared() < predictedMotion.lengthSquared()) {
-            setOverridingFireworkVelocity(null);
+            if (realApply) setOverridingFireworkVelocity(null);
             return currentMotion;
         }
 
         // 需要缩小至盒子边界
-
-        setOverridingFireworkVelocity(clampedMotion); // <-- 保存边界值
-        return currentMotion;
+        if (realApply) setOverridingFireworkVelocity(clampedMotion); // <-- 保存边界值
+        return clampedMotion;
     }
 
     public static Vec3d applyAxisLimit3(Vec3d currentMotion, float pitch, float yaw, double autoRescaleAmount) {
+        return applyAxisLimit3_0(currentMotion, pitch, yaw, autoRescaleAmount, true);
+    }
+
+    private static Vec3d applyAxisLimit3_0(
+            Vec3d currentMotion, float pitch, float yaw, double autoRescaleAmount, boolean apply) {
         if (currentMotion.lengthSquared() < 1E-6) {
-            setOverridingFireworkVelocity(null);
+            if (apply) setOverridingFireworkVelocity(null);
             return currentMotion;
         }
         if (shouldAbortV3Optimize) {
-            return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw);
+            return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw, apply);
         }
         ;
         if (pitch > 0) {
             if (pitch > 60) {
-                return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw);
-            } else if (pitch < 6) {
-                return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw);
+                return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw, apply);
+            } else if (pitch < 1) {
+                return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw, apply);
             }
         } else {
             if (pitch < -70) {
-                return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw);
-            } else if (pitch > -7) {
-                return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw);
+                return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw, apply);
+            } else if (pitch > -1) {
+                return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw, apply);
             }
         }
-        return applyAxisLimit30(currentMotion, pitch, yaw, autoRescaleAmount);
+        return applyAxisLimit30(currentMotion, pitch, yaw, autoRescaleAmount, apply);
+    }
+
+    public static Vec3d calculateLookTowardsTargetV3Direction(Vec3d targetPosition, double speed) {
+        Vec3d targetDirection = targetPosition.normalize();
+        Vec2f pitchYaw = EntityUtils.rotationToPitchYaw(targetDirection);
+        float p = pitchYaw.x;
+        float y = pitchYaw.y;
+        float startPitch;
+        float endPitch;
+        float minDelta = 1;
+        float minDot = 3.0F;
+        // todo: add up direction, add down direction
+        if (pitchYaw.x > 0) {
+            // downwards
+            startPitch = 1.14F;
+            endPitch = 85.8F;
+        } else {
+            startPitch = -85.6F;
+            endPitch = -1.14F;
+        }
+        if (p < startPitch || p > endPitch) {
+            return targetDirection;
+        }
+        float startDot;
+        float endDot;
+
+        Function<Float, Float> dotFunction = (pitch) -> {
+            Vec3d simulateVec3d = EntityUtils.pitchYawToRotation(pitch, y).normalize();
+            Vec3d tickSpeed = simulateAxisLimitSpeed(simulateVec3d.multiply(speed), pitch, y);
+            Vec3d predictLook = targetPosition.subtract(tickSpeed);
+            float realNeedPitch = EntityUtils.rotationToPitch(predictLook.normalize());
+            return realNeedPitch - pitch;
+        };
+        startDot = dotFunction.apply(startPitch);
+        endDot = dotFunction.apply(endPitch);
+        if (startDot * endDot >= 0) {
+            // No Idea
+            return targetDirection;
+        }
+        float midPitch = p;
+        float midDot = dotFunction.apply(midPitch);
+        while (!(Math.abs(midDot) < minDot || Math.abs(startPitch - endPitch) < minDelta)) {
+            if (midDot == 0) break;
+            if (midDot * startDot < 0) {
+                endPitch = midPitch;
+                endDot = midDot;
+            } else {
+                startPitch = midPitch;
+                startDot = midDot;
+            }
+            midPitch = (startPitch + endPitch) / 2;
+            midDot = dotFunction.apply(midPitch);
+        }
+        return EntityUtils.pitchYawToRotation(midPitch, y);
+    }
+
+    private static Vec3d simulateAxisLimitSpeed(Vec3d currentMotion, float pitch, float yaw) {
+        return switch (ElytraExtra.INSTANCE.autoRescaleAl.get()) {
+            case V1 -> ElytraExtra.INSTANCE.applyAxisLimit1(currentMotion, pitch, yaw, true);
+            case V2 -> ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw, false);
+            case V3 -> applyAxisLimit3_0(
+                    currentMotion, pitch, yaw, ElytraExtra.INSTANCE.autoRescaleAmount.get(), false);
+            case V4 -> applyAxisLimit4_0(
+                    currentMotion, pitch, yaw, ElytraExtra.INSTANCE.autoRescaleAmount.get(), false);
+        };
     }
 
     public void onPreTravel() {}
@@ -292,21 +376,26 @@ public class ElytraOptimizeUtils {
     private static PlayerMoveC2SPacket packetToSend;
 
     public static Vec3d applyAxisLimit4(Vec3d currentMotion, float pitch, float yaw, double autoRescaleAmount) {
+        return applyAxisLimit4_0(currentMotion, pitch, yaw, autoRescaleAmount, true);
+    }
+
+    public static Vec3d applyAxisLimit4_0(
+            Vec3d currentMotion, float pitch, float yaw, double autoRescaleAmount, boolean apply) {
         if (currentMotion.lengthSquared() < 1E-6) {
-            setOverridingFireworkVelocity(null);
+            if (apply) setOverridingFireworkVelocity(null);
             return currentMotion;
         }
         Vec3d currentRotation = EntityUtils.pitchYawToRotation(pitch, yaw);
         if (shouldAbortV3Optimize) {
-            return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw);
+            return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw, apply);
         }
         if (!ViaFabricPlusHooks.isSupportDupRot()) {
-            return applyAxisLimit3(currentMotion, pitch, yaw, autoRescaleAmount);
+            return applyAxisLimit3_0(currentMotion, pitch, yaw, autoRescaleAmount, apply);
         }
         Vec3d extraTargeting = null;
         if (pitch > 0) {
             if (pitch > 60) {
-                return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw);
+                return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw, apply);
             } else {
                 double len = 1.01 - Math.abs(currentRotation.y);
                 Vec3d targetTo = new Vec3d(0, -len, 0);
@@ -321,7 +410,7 @@ public class ElytraOptimizeUtils {
             }
         } else {
             if (pitch > -7) {
-                return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw);
+                return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw, apply);
             } else {
                 //
                 Vec3d horizontal = new Vec3d(currentRotation.x, 0, currentRotation.z);
@@ -340,10 +429,10 @@ public class ElytraOptimizeUtils {
         float lastPitch = PlayerStateManager.INSTANCE.lastPitch;
         if (extraTargeting != null) {
             float extraPitch = EntityUtils.rotationToPitch(extraTargeting);
-            packetToSend = LegacySnapRotManager.INSTANCE.createSnapAt(extraPitch, yaw);
+            if (apply) packetToSend = LegacySnapRotManager.INSTANCE.createSnapAt(extraPitch, yaw);
             PlayerStateManager.INSTANCE.lastPitch = extraPitch;
         }
-        Vec3d result = applyAxisLimit30(currentMotion, pitch, yaw, autoRescaleAmount);
+        Vec3d result = applyAxisLimit30(currentMotion, pitch, yaw, autoRescaleAmount, apply);
         PlayerStateManager.INSTANCE.lastPitch = lastPitch;
         return result;
     }
