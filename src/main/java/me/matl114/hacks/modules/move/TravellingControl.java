@@ -116,7 +116,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
     public IntRef pitch40Pitch = builder(travellingControl.add("pitch-40-pitch-positive"), IntRef.TYPE)
             .defaultValue(15)
             .validator(Configs.INT_POSITIVE)
-            .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40, Type.ELYTRA_GRIM_FLY40))
+            .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40))
             .build();
     public IntRef pitch40Negative = builder(travellingControl.add("pitch-40-pitch-negative"), IntRef.TYPE)
             .defaultValue(60)
