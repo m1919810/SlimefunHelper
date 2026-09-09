@@ -60,6 +60,9 @@ public class Hud extends IRender2DColoredModule {
         if (set.getState(HudElement.POSITION)) {
             handlePosition(vdraw);
         }
+        if (set.getState(HudElement.HEIGHT)) {
+            handleHeight(vdraw);
+        }
         if (set.getState(HudElement.DIRECTION)) {
             handleDirection(vdraw);
         }
@@ -137,6 +140,12 @@ public class Hud extends IRender2DColoredModule {
         int chunkZ = ((int) manager.lastZ) >> 4;
         drawText(vdraw, chunk.formatted(chunkX, chunkZ));
         drawText(vdraw, template.formatted(manager.lastX, manager.lastY, manager.lastZ));
+    }
+
+    public void handleHeight(VDrawContext vdraw) {
+        String template = "Height: %.2f";
+        PlayerStateManager manager = PlayerStateManager.INSTANCE;
+        drawText(vdraw, template.formatted(PlayerStateManager.INSTANCE.lastY));
     }
 
     public void handleDirection(VDrawContext vdraw) {
@@ -217,6 +226,7 @@ public class Hud extends IRender2DColoredModule {
         COMMON_INFO,
         CONNECTION_INFO,
         POSITION,
+        HEIGHT,
         DIRECTION,
         ROTATION,
         FALL_DISTANCE,

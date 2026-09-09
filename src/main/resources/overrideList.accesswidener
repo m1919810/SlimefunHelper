@@ -101,3 +101,8 @@ accessible field net/minecraft/component/type/ContainerComponent stacks Lnet/min
 accessible method net/minecraft/client/option/GameOptions setPlayerModelPart (Lnet/minecraft/entity/player/PlayerModelPart;Z)V
 accessible method net/minecraft/client/MinecraftClient openChatScreen (Ljava/lang/String;)V
 accessible field net/minecraft/potion/Potion baseName Ljava/lang/String;
+accessible field net/minecraft/loot/condition/AlternativeLootCondition terms Ljava/util/List;
+accessible method net/minecraft/entity/LivingEntity tryUseDeathProtector (Lnet/minecraft/entity/damage/DamageSource;)Z
+accessible method net/minecraft/entity/player/PlayerEntity getDamageSource (Lnet/minecraft/item/ItemStack;)Lnet/minecraft/entity/damage/DamageSource;
+accessible field net/minecraft/entity/Entity movementMultiplier Lnet/minecraft/util/math/Vec3d;
+accessible method net/minecraft/block/vault/VaultSharedData getConnectedPlayers ()Ljava/util/Set;

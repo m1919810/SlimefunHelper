@@ -1,12 +1,15 @@
 package me.matl114.hacks.modules.interact;
 
 import java.awt.*;
+import java.util.function.Consumer;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.events.impl.EventContainer;
 import me.matl114.events.impl.UseItemOnBlock;
+import me.matl114.gui.WidgetUtils;
+import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -104,6 +107,14 @@ public class NoInteract extends BaseModule {
         registerListener(Listener.getPrePlayerUseItemAtBlock(), this::onPreInteractBlock);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
         registerListener(RenderListener.getRender3DEvent(), this::onRender3d);
+    }
+
+    @Override
+    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
+        super.addCustomWidgets(acceptor, dx, dy, dblank);
+        acceptor.accept(WidgetUtils.withCondition(
+                createTitleLabel("widget.block-rotate.yaw-deceive.use-argument", 0, dblank, dx, dy),
+                correctState::get));
     }
 
     int lastCancelMainHandVanillaInputTick = 0;

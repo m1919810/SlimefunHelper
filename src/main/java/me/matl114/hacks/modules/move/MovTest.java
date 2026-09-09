@@ -34,8 +34,6 @@ public class MovTest extends BaseModule implements LegalMovementManager.Movement
     @Override
     public void registerAll() {
         super.registerAll();
-        // registerListener(Listener.getPlayerNotFlyJumpPoint(), this::onJump);
-        registerListener(Listener.getTeleportConfirmResponsePoint(), this::onSetback);
         registerListener(Listener.getPacketPoint().getChannel(CommonPingS2CPacket.class), this::onTransaction);
         registerListener(
                 Listener.getPacketPoint().getChannel(EntityVelocityUpdateS2CPacket.class), this::onVelocityPacket);
@@ -69,15 +67,6 @@ public class MovTest extends BaseModule implements LegalMovementManager.Movement
 
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {}
-
-    public void onSetback(Event<MovTasks.MovInfo> setBack) {
-        //            if(Tasks.getTick() < lastOnGround + 5){
-        //                MovTasks.MovInfo set = setBack.context();
-        //                setBack.context(set.withOGroundOverride(Boolean.TRUE));
-        //                Debug.chat("OnGround");
-        //                lastOnGround = 0;
-        //            }
-    }
 
     @Override
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {

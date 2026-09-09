@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Streams;
 import java.util.*;
 import java.util.List;
+import lombok.NonNull;
 import lombok.With;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.hacks.EntityInternalAccess;
@@ -50,6 +51,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 
 public class Attack extends BaseModule {
     public static Attack INSTANCE;
@@ -238,11 +240,14 @@ public class Attack extends BaseModule {
         return CombatTasks.getTargetSelector().getAttackableEntities(getTpSelectRange());
     }
 
+    public Entity getCurrentSelectTarget(boolean auto) {
+        return CombatTasks.getTargetSelector().searchAttackEntity(getTpSelectRange(), auto, getModePredictTicks());
+    }
+
     // the attack return value of whether it needs cooldown, for delayMovement attacking
     public boolean tryAttack(boolean auto) {
         if (mc.player == null) return false;
-        Entity entity =
-                CombatTasks.getTargetSelector().searchAttackEntity(getTpSelectRange(), auto, getModePredictTicks());
+        Entity entity = getCurrentSelectTarget(auto);
         if (entity != null) {
             return attackEntity(entity, createAttackSettings());
         }
@@ -303,24 +308,13 @@ public class Attack extends BaseModule {
                 && findAntiShieldWeapon() != null;
     }
 
-    public static void attackWithSettings(PlayerEntity player, Entity target, AttackSettings attackSettings) {
-        PlayerInputUtils.Input input = null;
-        if (player.hasVehicle()) {
-            input = PlayerInputUtils.of(mc.player);
-            if (input.hasWASDMovement()) {
-                var re =
-                        input.clone().forward(false).backward(false).left(false).right(false);
-                re.sendPlayerInputAsRiding();
-            } else {
-                input = null;
-            }
-        }
-        Runnable callback = null;
+    @NonNull
+    public static IndexEntry<ItemStack> selectBestWeapon(AttackSettings attackSettings, @Nullable Entity target) {
         IndexEntry<ItemStack> invResult;
         if (attackSettings.antiShieldSwap()
                 && shouldUseAntiShield(target)
                 && (invResult = findAntiShieldWeapon()) != null) {
-            callback = InvExtra.INSTANCE.swapInventoryIndexToHand(invResult.index());
+            return invResult;
         } else if (attackSettings.invSwap()
                 && !VItem.getInstance().isWeapon(mc.player.getStackInHand(Hand.MAIN_HAND))
                 && target instanceof LivingEntity lv
@@ -331,15 +325,15 @@ public class Attack extends BaseModule {
                                         return damageCost == null
                                                 ? null
                                                 : -((double) damageCost * 1E8)
-                                                        + DamageUtils.getAttackDamage(player, lv, ex)
-                                                                * DamageUtils.getAttackSpeed(player, ex);
+                                                        + DamageUtils.getAttackDamage(mc.player, lv, ex)
+                                                                * DamageUtils.getAttackSpeed(mc.player, ex);
                                     }
                                     return null;
                                 },
                                 false,
                                 false))
                         != null) {
-            callback = InvExtra.INSTANCE.swapInventoryIndexToHand(invResult.index());
+            return invResult;
         } else if (attackSettings.maceSwap()
                 && target instanceof LivingEntity lv
                 && (invResult = InventoryUtils.findBestPlayerItem(
@@ -352,7 +346,7 @@ public class Attack extends BaseModule {
                                 false,
                                 false))
                         != null) {
-            callback = InvExtra.INSTANCE.swapInventoryIndexToHand(invResult.index());
+            return invResult;
         } else if (attackSettings.selectWeapon()
                 && !mc.player.getStackInHand(Hand.MAIN_HAND).isEmpty()
                 && target instanceof LivingEntity
@@ -361,16 +355,33 @@ public class Attack extends BaseModule {
                                     if (ex.isOf(mc.player
                                             .getStackInHand(Hand.MAIN_HAND)
                                             .getItem())) {
-                                        return DamageUtils.getAttackDamage(player, target, ex)
-                                                * DamageUtils.getAttackSpeed(player, ex);
+                                        return DamageUtils.getAttackDamage(mc.player, target, ex)
+                                                * DamageUtils.getAttackSpeed(mc.player, ex);
                                     }
                                     return null;
                                 },
                                 false,
                                 false))
                         != null) {
-            callback = InvExtra.INSTANCE.swapInventoryIndexToHand(invResult.index());
+            return invResult;
         }
+        return InventoryUtils.getSelectedItem();
+    }
+
+    public static void attackWithSettings(PlayerEntity player, Entity target, AttackSettings attackSettings) {
+        PlayerInputUtils.Input input = null;
+        if (player.hasVehicle()) {
+            input = PlayerInputUtils.of(mc.player);
+            if (input.hasWASDMovement()) {
+                var re =
+                        input.clone().forward(false).backward(false).left(false).right(false);
+                re.sendPlayerInputAsRiding();
+            } else {
+                input = null;
+            }
+        }
+        IndexEntry<ItemStack> invResult = selectBestWeapon(attackSettings, target);
+        Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(invResult.index());
         attackWithCritic(player, target, attackSettings.criticalSprint(), attackSettings.swingHand());
         if (callback != null) {
             callback.run();

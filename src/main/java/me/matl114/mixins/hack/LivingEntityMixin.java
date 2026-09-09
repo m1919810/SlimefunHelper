@@ -12,6 +12,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.*;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -51,6 +52,9 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
 
     @Shadow
     public abstract void equipStack(EquipmentSlot slot, ItemStack stack);
+
+    @Shadow
+    protected abstract boolean isTravellingInFluid(FluidState state);
 
     @Shadow
     public abstract void updateLimbs(boolean flutter);
@@ -104,15 +108,23 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
         }
     }
 
-    @Inject(method = "travel", at = @At("HEAD"), cancellable = true)
+    @Inject(
+            method = "travel",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/entity/LivingEntity;travelInFluid(Lnet/minecraft/util/math/Vec3d;)V",
+                            shift = At.Shift.BEFORE),
+            cancellable = true)
     private void onWaterGlide(Vec3d movementInput, CallbackInfo ci) {
         if (checkClientPlayer()) {
-            Vec3d overriding = ElytraExtra.INSTANCE.requestNextOverrideVelocity();
             if (isFallFlying()
-                    && ((ElytraExtra.INSTANCE.fireworksLiquidFly.get()
-                                    && ElytraExtra.INSTANCE.canFireworkControlMotion())
-                            || overriding != null)) {
+                    && ((ElytraExtra.INSTANCE.canFireworkControlMotion()))
+                    && (ElytraExtra.INSTANCE.fireworksLiquidFly.get()
+                            || ElytraExtra.INSTANCE.hasFireworkVelocityOverrides())) {
                 ci.cancel();
+                Vec3d overriding = ElytraExtra.INSTANCE.requestNextOverrideVelocity();
                 Vec3d vec3d = this.getVelocity();
                 if (overriding != null) {
                     this.setVelocity(overriding);
@@ -136,11 +148,13 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
                             ordinal = 6))
     private void travelGliding(LivingEntity instance, Vec3d oldVelocity, Operation<Vec3d> original) {
         if (checkClientPlayer()) {
-            Vec3d overriding = ElytraExtra.INSTANCE.requestNextOverrideVelocity();
-            if (overriding != null) {
-                original.call(instance, overriding);
-                return;
+            Vec3d velocity = ElytraExtra.INSTANCE.requestNextOverrideVelocity();
+            if (velocity == null) {
+                velocity = oldVelocity;
             }
+            velocity = ElytraExtra.INSTANCE.clampFireworkSpeedInWeb(velocity);
+            original.call(instance, velocity);
+            return;
         }
         original.call(instance, oldVelocity);
     }

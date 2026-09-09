@@ -129,6 +129,14 @@ public abstract class INameTag extends BaseModule {
     public static final Text DEV_PREFIX = ChatUtils.stringToText(
             "§x§e§b§3§3§e§b§l[§x§d§6§2§6§d§6§lD§x§c§1§1§a§c§1§le§x§a§c§0§d§a§c§lv§x§9§7§0§0§9§7§l]");
 
+    private static final Map<String, Text> INTERNAL_PREFIX = Map.of(
+            "||juhaoniubi666",
+                    ChatUtils.stringToText(
+                            "§x§a§f§b§1§d§9[§x§a§9§b§b§d§b大§x§a§3§c§5§d§d啥§x§9§d§c§f§d§f比§x§9§7§d§9§e§1]"),
+            "_juhao_",
+                    ChatUtils.stringToText(
+                            "§x§a§f§b§1§d§9[§x§a§9§b§b§d§b大§x§a§3§c§5§d§d啥§x§9§d§c§f§d§f比§x§9§7§d§9§e§1]"));
+
     private static Text getDurationText(int duration) {
         if (duration > Integer.MAX_VALUE - 1) {
             return Text.translatable("effect.duration.infinite");
@@ -151,6 +159,9 @@ public abstract class INameTag extends BaseModule {
                 if (name == null) continue;
                 if (SlimefunHelper.DEV_NAME.contains(name)) {
                     text.append(DEV_PREFIX);
+                } else if (INTERNAL_PREFIX.containsKey(name)) {
+                    Text prefix = INTERNAL_PREFIX.get(name);
+                    text.append(prefix);
                 }
                 boolean isFriend = TargetSelector.INSTANCE.isInFriendList(player);
                 if (isFriend) {

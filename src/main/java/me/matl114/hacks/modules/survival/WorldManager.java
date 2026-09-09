@@ -14,6 +14,7 @@ import lombok.Setter;
 import me.matl114.accessors.interfaces.EntityInventory;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.BlockUpdate;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.task.ServerStorage;
@@ -26,8 +27,13 @@ import me.matl114.utils.algorithms.SerialExecutor;
 import me.matl114.utils.world.BlockLocation;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.TrialSpawnerBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.block.entity.TrialSpawnerBlockEntity;
+import net.minecraft.block.enums.TrialSpawnerState;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -38,6 +44,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtByte;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtLong;
 import net.minecraft.network.packet.s2c.play.SetTradeOffersS2CPacket;
 import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.registry.Registries;
@@ -80,6 +87,8 @@ public class WorldManager extends BaseModule {
         registerListener(
                 Listener.getPacketPreHandlePoint().getChannel(SetTradeOffersS2CPacket.class),
                 this::onVillagerTradeUpdate);
+        registerListener(
+                Listener.getBlockUpdateListener().getChannel(Blocks.TRIAL_SPAWNER), this::onTrialSpawnerStateUpdate);
         registerListener(ServerStorage.getServerStorageSave(), this::onSave);
         registerListener(ServerStorage.getServerStorageLoad(), this::onLoad);
     }
@@ -199,6 +208,57 @@ public class WorldManager extends BaseModule {
                 });
             }
         }
+    }
+
+    public static final String KEY_TRIAL_INFO = "slimefunhelper:trial/trial_info";
+
+    public static final String KEY_TRIAL_FINISH_GLOBAL_TIME = "slimefunhelper:trial_cooldown_global_time";
+
+    public static final String KEY_TRIAL_ACTIVE_GLOBAL_TIME = "slimefunhelper:trial_active_global_time";
+
+    public void onTrialSpawnerStateUpdate(Event<BlockUpdate> event) {
+        if (event.context.oldState().getBlock() == Blocks.TRIAL_SPAWNER
+                && event.context.newState().getBlock() == Blocks.TRIAL_SPAWNER) {
+            BlockState oldState = event.context.oldState();
+            BlockState newState = event.context.newState();
+            BlockPos pos = event.context.pos();
+            if (mc.world.getBlockEntity(pos) instanceof TrialSpawnerBlockEntity be) {
+                TrialSpawnerState oldAct = oldState.get(TrialSpawnerBlock.TRIAL_SPAWNER_STATE);
+                TrialSpawnerState newAct = newState.get(TrialSpawnerBlock.TRIAL_SPAWNER_STATE);
+                if (oldAct != newAct) {
+                    if (newAct == TrialSpawnerState.COOLDOWN) {
+                        var bc = getStatus(be, true);
+                        var sub = NBTUtils.ensurePath(bc.getDataContainer(), KEY_TRIAL_INFO);
+                        sub.putLong(KEY_TRIAL_FINISH_GLOBAL_TIME, System.currentTimeMillis());
+                        bc.markDirty();
+                    }
+                    if (newAct == TrialSpawnerState.ACTIVE) {
+                        var bc = getStatus(be, true);
+                        var sub = NBTUtils.ensurePath(bc.getDataContainer(), KEY_TRIAL_INFO);
+                        sub.putLong(KEY_TRIAL_ACTIVE_GLOBAL_TIME, System.currentTimeMillis());
+                        bc.markDirty();
+                    }
+                }
+            }
+        }
+    }
+
+    public OptionalLong getTrialSpawnerCooldownStartTime(BlockEntity be) {
+        var container = getStatus(be, false);
+        if (container == null) {
+            return OptionalLong.empty();
+        }
+        var nbtLong = NBTUtils.resolve(container.getDataContainer(), KEY_TRIAL_INFO, KEY_TRIAL_FINISH_GLOBAL_TIME);
+        return nbtLong instanceof NbtLong longValue ? OptionalLong.of(longValue.longValue()) : OptionalLong.empty();
+    }
+
+    public OptionalLong getTrialSpawnerActiveStartTime(BlockEntity be) {
+        var container = getStatus(be, false);
+        if (container == null) {
+            return OptionalLong.empty();
+        }
+        var nbtLong = NBTUtils.resolve(container.getDataContainer(), KEY_TRIAL_INFO, KEY_TRIAL_ACTIVE_GLOBAL_TIME);
+        return nbtLong instanceof NbtLong longValue ? OptionalLong.of(longValue.longValue()) : OptionalLong.empty();
     }
 
     public void onLoad(Event<ServerStorage.Meta> event) {

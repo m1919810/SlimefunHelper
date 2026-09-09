@@ -109,6 +109,13 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             .show(() -> this.controlMode.get().isIn(Mode.CONTROL))
             .build();
 
+    public final NBTRef<OptionalPrimitive<Double>> overrideHorizontalFlyAngle = builder(
+                    simpleFlightControl.add("override-horizontal-fly-angle"), OptionalPrimitive.DOUBLE_TYPE)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 0.1))
+            .validator(s -> s.getValue() > -90 && s.getValue() < 90)
+            .show(() -> this.controlMode.get().isIn(Mode.CONTROL))
+            .build();
+
     @ApiStatus.Experimental
     public final FlagRef autoRescaleBestClimbingSpeed = flagBuilder(
                     simpleFlightControl.add("use-auto-rescale-best-climbing-speed"))
@@ -227,13 +234,22 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                             if (movementInput.y > 0) {
                                 if (overridePullupAngle.get().isPresent()) {
                                     double angle = overridePullupAngle.get().getValue();
-                                    double yLevel = Math.tan(Math.abs(angle)) * velocity.horizontalLength();
+                                    double yLevel =
+                                            Math.tan(Math.abs(Math.toRadians(angle))) * velocity.horizontalLength();
                                     velocity = velocity.withAxis(Direction.Axis.Y, yLevel);
                                 }
                             } else if (movementInput.y < 0) {
                                 if (overrideDownwardAngle.get().isPresent()) {
                                     double angle = overrideDownwardAngle.get().getValue();
-                                    double yLevel = Math.tan(Math.abs(angle)) * velocity.horizontalLength();
+                                    double yLevel =
+                                            Math.tan(Math.abs(Math.toRadians(angle))) * velocity.horizontalLength();
+                                    velocity = velocity.withAxis(Direction.Axis.Y, -yLevel);
+                                }
+                            } else {
+                                if (overrideHorizontalFlyAngle.get().isPresent()) {
+                                    double angle =
+                                            overrideHorizontalFlyAngle.get().getValue();
+                                    double yLevel = Math.tan(Math.toRadians(angle)) * velocity.horizontalLength();
                                     velocity = velocity.withAxis(Direction.Axis.Y, -yLevel);
                                 }
                             }
@@ -362,11 +378,10 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     // pitch reset to trigger grim lastPitch lastYaw update
                     if (useAutoRescale.get()) {
                         float yaw = mc.player.getYaw();
-                        if (Tasks.getTick() % 2 == 0) {
-                            PlayerStateManager.setPlayerYawSafe(mc.player, yaw + 0.01F);
-                        } else {
-                            PlayerStateManager.setPlayerYawSafe(mc.player, yaw - 0.01F);
-                        }
+                        float newYaw = (Tasks.getTick() % 2 == 0) ? yaw + 0.01F : yaw - 0.01F;
+                        PlayerStateManager.setPlayerYawSafe(mc.player, newYaw);
+                        Vec3d newVectorRot = EntityUtils.pitchYawToRotation(mc.player.getPitch(), newYaw);
+                        realVector = newVectorRot.normalize().multiply(realVector.length());
                     }
                 }
                 if (shouldControl) {

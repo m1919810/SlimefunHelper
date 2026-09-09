@@ -108,8 +108,7 @@ public class AutoCity extends BaseModule {
         Set<BlockPos> outerPoses = new LinkedHashSet<>();
         Set<BlockPos> selfPoses = new LinkedHashSet<>();
         Vec3d pos = mc.player.getEyePos();
-        double range = InteractExtra.INSTANCE.getBlockReachDistance();
-        Predicate<BlockPos> filter = (np) -> MathUtils.getBlockBox(np).squaredMagnitude(pos) <= MathUtils.s2(range);
+        Predicate<BlockPos> filter = (np) -> InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), np);
         selfPoses.addAll(MathUtils.getOccupiedBlockPositions(box).stream()
                 .sorted(Comparator.comparingInt(Vec3i::getY))
                 .toList());
@@ -173,7 +172,7 @@ public class AutoCity extends BaseModule {
             switchPosition = !outerPoses.contains(currentPos);
         }
         if (switchPosition) {
-            if (MineExtra.INSTANCE.isVanillaMineCooldownComplete(1)) {
+            if (MineExtra.INSTANCE.isVanillaMineCooldownComplete(0)) {
                 pendingSwitchPos = false;
                 Set<BlockPos> surroundPos = new HashSet<>();
                 if (InteractionTasks.getAutoSurround().enable.get()) {

@@ -2,18 +2,21 @@ package me.matl114.hacks.modules.render;
 
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.events.impl.EventContainer;
+import me.matl114.events.impl.MouseScrollAction;
+import me.matl114.events.impl.Teleportation;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.config.NBTTypes;
+import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.entity.CameraEntity;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
-import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.EntityUtils;
@@ -23,7 +26,6 @@ import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
-import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
@@ -54,23 +56,30 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
     public final DoubleRef speed = builder(freecam.add("speed"), DoubleRef.TYPE)
             .defaultValue(1.0D)
             .validator(Configs.doubleRange(0.0, 100000))
+            .updateListener(s -> currentSpeed = s)
+            .build();
+
+    public final NBTRef<OptionalPrimitive<Double>> speedAdjust = builder(
+                    freecam.add("speed-adjust"), OptionalPrimitive.DOUBLE_TYPE)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 0.05))
             .build();
 
     @Override
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
-        registerListener(Listener.getTeleportConfirmResponsePoint(), this::onPosResync);
+        registerListener(Listener.getTeleportationConfirm(), this::onPosResync);
         registerListener(Listener.getPostGameTick(), this::onTick);
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class),
                 this::onStopInteractWithSelf);
         registerListener(Listener.getPlayerChangeLook(), this::onPlayerChangeLook);
-        registerListener(Listener.getCustomListener().getChannel(FlightVelocity.class), this::onElytraControl);
+        registerListener(Listener.getMouseScroll(), this::onScrollSpeedAdjust);
     }
 
     CameraEntity camera;
     CameraEntity displayEntity;
+    double currentSpeed = 0.0D;
 
     @Override
     public void onEnableModule() {
@@ -99,6 +108,7 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
         removeCamera();
         if (mc.player == null) return;
         camera = new CameraEntity(mc.world, mc.player, GameMode.SPECTATOR, true);
+        currentSpeed = speed.get();
         displayEntity = new CameraEntity(mc.world, mc.player, GameMode.CREATIVE, false);
         mc.world.addEntity(camera);
         mc.world.addEntity(displayEntity);
@@ -117,6 +127,7 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
             mc.setCameraEntity(mc.player);
         }
         camera = null;
+        currentSpeed = 0.0D;
         displayEntity = null;
     }
 
@@ -126,13 +137,12 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
         // mc.world.tickEntity(camera);
     }
 
-    public void onPosResync(Event<MovTasks.MovInfo> resync) {
+    public void onPosResync(Event<Teleportation> resync) {
         if (camera == null) return;
-        MovTasks.MovInfo info = resync.context();
+        Teleportation info = resync.context();
         Vec3d vec3d = info.vec3d();
-        Vec2f vec2f = info.rotationOverride();
         // may be a tp
-        if (vec3d != null && camera.getPos().squaredDistanceTo(vec3d) > MathUtils.s2(100)) {
+        if (camera.getPos().squaredDistanceTo(vec3d) > MathUtils.s2(100)) {
             camera.setPosition(vec3d);
         }
     }
@@ -157,28 +167,24 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
         event.cancel();
     }
 
-    public void onElytraControl(Event<EventContainer<FlightVelocity>> event) {
-        if (true || camera == null) return;
-        // fuck, this module directly reed mc.options,
-        FlightVelocity velocity = event.context().value;
-        velocity.x(0).y(0).z(0);
+    public void onScrollSpeedAdjust(Event<MouseScrollAction> event) {
+        if (enable.get() && camera != null && speedAdjust.get().isPresent()) {
+            currentSpeed = Math.clamp(
+                    currentSpeed + event.context.vertical() * speedAdjust.get().getValue(), 0.0D, 1000.0D);
+            event.cancel();
+        }
     }
 
     PlayerInputUtils.Input cachedInput;
 
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
-
-        //    }
-        //
-        //    @Override
-        //    public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
         if (camera == null) return;
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
         PlayerInputUtils.Input i0 = PlayerInputUtils.of(mc.options);
         cachedInput = i0;
         Vec3d movement = new Vec3d(i0.sidewaysSpeed(), i0.upwardSpeed(), i0.forwardSpeed());
-        Vec3d vec3d = EntityUtils.movementInputToVelocity(movement, (float) speed.get(), camera.getYaw());
+        Vec3d vec3d = EntityUtils.movementInputToVelocity(movement, (float) currentSpeed, camera.getYaw());
         camera.setVelocity(vec3d);
         // reset player input, keep sneak for interacting
         // apply sneak

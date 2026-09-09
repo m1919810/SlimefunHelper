@@ -11,6 +11,7 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.modules.mine.FakeBlockManager;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hooks.ViaFabricPlusHooks;
@@ -49,6 +50,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
 
     public NoSlowDown() {
         super("NoSlowDown");
+        // 哎我操GrimAC别修了，真没辙了，再修我还怎么打啊。。。
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
             // register at here for the first time
@@ -73,11 +75,6 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         registerListener(Listener.getEntityTrackDataUpdate().getChannel(EntityType.PLAYER), this::onEntityDataUpdate);
         registerListener(Listener.getPacketPostHandlePoint().getChannel(EntityStatusS2CPacket.class), this::onConsume);
         registerListener(Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class), this::onSendStartUse);
-        //        registerListener(Listener.getPacketPoint().getChannel(SupportVersion.CURRENT.isHigherOrEqualTo(21,2) ?
-        // ClientTickEndC2SPacket.class : PlayerMoveC2SPacket.class), this::onSendMovePreNoSlowUse);
-        //
-        // registerListener(Listener.getPacketPostSendPoint().getChannel(SupportVersion.CURRENT.isHigherOrEqualTo(21,2)
-        // ? ClientTickEndC2SPacket.class : PlayerMoveC2SPacket.class), this::onSendMovePostNoSlowUse);
     }
 
     public final FlagRef sneak = flagBuilder(noSlowdown.add("when-sneak")).build();
@@ -115,17 +112,16 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             .show(() -> useItemBypass.get().isIn(UseBypassMode.BYPASS_GRIM_LAZY_V3))
             .build();
 
-    public final EnumRef<Configs.BypassMode> blockInBypass = builder(
-                    noSlowdown.add("block-in-bypass"), Configs.BypassMode.class)
-            .defaultValue(Configs.BypassMode.NO_BYPASS)
+    public final EnumRef<NoWebMode> blockInBypass = builder(noSlowdown.add("block-in-bypass"), NoWebMode.class)
+            .defaultValue(NoWebMode.NO_BYPASS)
             .build();
 
     public final FlagRef blockInKeepYVelocity = flagBuilder(noSlowdown.add("block-in-keep-y"))
-            .show(() -> blockInBypass.get().isIn(Configs.BypassMode.BYPASS_GRIM))
+            .show(() -> blockInBypass.get().isIn(NoWebMode.GRIM_SPEED))
             .build();
 
     public final FlagRef blockInMineWhenJump = flagBuilder(noSlowdown.add("block-in-mine-when-jump"))
-            .show(() -> blockInBypass.get().isIn(Configs.BypassMode.BYPASS_GRIM))
+            .show(() -> blockInBypass.get().isIn(NoWebMode.GRIM_SPEED))
             .build();
 
     public final EnumRef<Configs.BypassMode> fakeSneakBypass = builder(
@@ -176,11 +172,11 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         switch (preset) {
             case HACKING, VANILLA -> {
                 blockIn.set(true);
-                blockInBypass.set(Configs.BypassMode.NO_BYPASS);
+                blockInBypass.set(NoWebMode.NO_BYPASS);
             }
             case AC_GRIM, AC_GRIM_LEGACY, AC_VULCAN, AC_MATRIX, AC_COMMON -> {
                 blockIn.set(true);
-                blockInBypass.set(Configs.BypassMode.BYPASS_GRIM);
+                blockInBypass.set(NoWebMode.GRIM_SPEED);
             }
             default -> {
                 blockIn.set(false);
@@ -190,9 +186,15 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
 
     public void onWeb(Event<Vec3d> slowMovement) {
         if (blockIn.get()) {
+            Vec3d currentMovementSpeed = mc.player.getVelocity();
+            Vec3d stuckSimulation = currentMovementSpeed.multiply(slowMovement.context);
+            double delta = stuckSimulation.subtract(currentMovementSpeed).horizontalLengthSquared();
+            if (delta > 0.0625) {
+                return;
+            }
             BlockPos pos = slowMovement.getArgs(0);
             switch (blockInBypass.get()) {
-                case BYPASS_GRIM -> {
+                case GRIM_SPEED -> {
                     if (blockInKeepYVelocity.get()) {
                         slowMovement.context(slowMovement.context().withAxis(Direction.Axis.Y, 1.0F));
                     }
@@ -204,15 +206,12 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                             && input.jump()) {
                         // todo: can we fix it, it may destroy the fucking packetMine
                         // todo: add check if blocks above is solid
-                        mc.interactionManager.sendSequencedPacket(
-                                mc.world,
-                                (seq) -> new PlayerActionC2SPacket(
-                                        PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, Direction.UP, seq));
-                        mc.interactionManager.sendSequencedPacket(
-                                mc.world,
-                                (seq) -> new PlayerActionC2SPacket(
-                                        PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, Direction.UP, seq));
-                        // mc.world.setBlockState(pos, Blocks.AIR.getDefaultState());
+                        //                        mc.interactionManager.sendSequencedPacket(
+                        //                                mc.world,
+                        //                                (seq) -> new PlayerActionC2SPacket(
+                        //                                        PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos,
+                        // Direction.UP, seq));
+                        FakeBlockManager.INSTANCE.addFakeCompensateState(pos);
                         slowMovement.cancel();
                         return;
                     }
@@ -228,6 +227,14 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                         // Debug.chat("Magic", magicVec.length(), magicVec2.length());
                     }
                     return;
+                }
+                case GRIM_FAKE_MINE -> {
+                    var input = PlayerInputUtils.of(mc.player);
+                    if (mc.player.isFallFlying() || input.hasWASDMovement() || input.jump()) {
+                        FakeBlockManager.INSTANCE.addFakeCompensateState(pos.toImmutable());
+                        slowMovement.cancel();
+                        return;
+                    }
                 }
                 case NO_BYPASS -> {
                     slowMovement.cancel();
@@ -877,6 +884,17 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         @Override
         public String getConfigEnumType() {
             return "use_item_noslow_bypass";
+        }
+    }
+
+    public static enum NoWebMode implements ConfigEnum {
+        NO_BYPASS,
+        GRIM_SPEED,
+        GRIM_FAKE_MINE;
+
+        @Override
+        public String getConfigEnumType() {
+            return "no_web_slow_bypass";
         }
     }
 }

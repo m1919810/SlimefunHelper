@@ -208,7 +208,7 @@ public class EncryptChat extends BaseModule {
                                     List::of,
                                     createChatKeyEntryAccessors(entry),
                                     WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT,
-                                    ClickGui.CONFIG_PALETTE);
+                                    WidgetUtils.DEFAULT_PALETTE);
                             new CenterScreen(screen).access().openFromCurrent();
                         })))
                 .addToSub(subScreen);

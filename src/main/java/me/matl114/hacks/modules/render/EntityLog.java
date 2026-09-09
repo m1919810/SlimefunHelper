@@ -157,14 +157,13 @@ public class EntityLog extends BaseModule {
                 EntityType<?> type = packet.getEntityType();
                 if (type == EntityType.PLAYER) {
                     if (chatLog.get()) {
-                        Text text = null;
+                        String name = null;
                         if (MinecraftClient.getInstance().world != null) {
                             PlayerListEntry entry = MinecraftClient.getInstance()
                                     .getNetworkHandler()
                                     .getPlayerListEntry(packet.getUuid());
                             if (entry != null) {
-                                text = Text.literal(VRecord.getName(entry.getProfile()))
-                                        .formatted(Formatting.GREEN);
+                                name = VRecord.getName(entry.getProfile());
                             }
                         }
                         logSub(
@@ -173,7 +172,7 @@ public class EntityLog extends BaseModule {
                                         .get()
                                         .formatText(
                                                 "Player",
-                                                text == null ? Text.empty() : text,
+                                                name == null ? "" : name,
                                                 ChatUtils.getDisplayedLocation(
                                                         packet.getX(), packet.getY(), packet.getZ()),
                                                 formatDistance(packet.getX(), packet.getY(), packet.getZ())));
@@ -248,7 +247,7 @@ public class EntityLog extends BaseModule {
                                     logDisappearFormat
                                             .get()
                                             .formatText(
-                                                    "Player",
+                                                    "Entity",
                                                     createEntityDisplayName(entity),
                                                     ChatUtils.getDisplayedLocation(
                                                             entity.getX(), entity.getY(), entity.getZ()),

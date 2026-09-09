@@ -10,4 +10,12 @@ import lombok.Setter;
 public class FPoint {
     public double x;
     public double y;
+
+    public double x() {
+        return x;
+    }
+
+    public double y() {
+        return y;
+    }
 }

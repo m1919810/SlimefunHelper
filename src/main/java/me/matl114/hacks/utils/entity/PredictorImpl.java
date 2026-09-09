@@ -181,6 +181,11 @@ public class PredictorImpl implements Predictor {
                 int currentIdx = history.length - 1;
                 return new MathUtils.RotationalPredictor(ring, () -> currentIdx).compute(futureSteps);
             }
+            case 5 -> {
+                Vec3d[] ring = Arrays.copyOf(history, history.length);
+                int currentIdx = history.length - 1;
+                return new MathUtils.AcceleratePredictor(ring, () -> currentIdx).compute(futureSteps);
+            }
 
             default -> {
                 return currentPos;

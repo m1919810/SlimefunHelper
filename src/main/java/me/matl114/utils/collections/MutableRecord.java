@@ -15,7 +15,7 @@ import java.util.function.UnaryOperator;
 public class MutableRecord {
     public final List<String> fields;
 
-    public final Map<String, Object> values;
+    private final Map<String, Object> values;
 
     public MutableRecord(List<String> fields, Map<String, Object> values) {
         this.fields = fields;
@@ -132,6 +132,14 @@ public class MutableRecord {
         }
         Map<String, Object> map = (Map<String, Object>) obj;
         return new MutableRecord(keys, map);
+    }
+
+    public Map<String, Object> toOrderedMap() {
+        Map<String, Object> objects = new LinkedHashMap<>();
+        for (var re : fields) {
+            objects.put(re, this.values.get(re));
+        }
+        return objects;
     }
 
     /**

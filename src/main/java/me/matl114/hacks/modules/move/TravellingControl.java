@@ -1,14 +1,11 @@
 package me.matl114.hacks.modules.move;
 
-import com.google.common.util.concurrent.AtomicDouble;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.events.catchers.TimedPacketCatcherImpl;
 import me.matl114.events.impl.EventContainer;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.MainTasks;
@@ -26,6 +23,7 @@ import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.EntityUtils;
+import me.matl114.utils.algorithms.StateMachine;
 import me.matl114.utils.commands.commandGroup.CommandContext;
 import me.matl114.utils.commands.commandGroup.SubCommand;
 import me.matl114.utils.commands.commandGroup.TreeSubCommand;
@@ -34,12 +32,10 @@ import me.matl114.utils.commands.params.ArgumentReader;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.commands.params.types.ExecutePos;
-import me.matl114.versioned.api.VPacket;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.s2c.play.EnterReconfigurationS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -125,13 +121,36 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
     public IntRef pitch40Negative = builder(travellingControl.add("pitch-40-pitch-negative"), IntRef.TYPE)
             .defaultValue(60)
             .validator(Configs.INT_POSITIVE)
-            .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40, Type.ELYTRA_GRIM_FLY40))
+            .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40))
             .build();
 
     public DoubleRef negativeArgument = builder(travellingControl.add("pitch-40-negative-delta"), DoubleRef.TYPE)
             .defaultValue(0.0)
             .validator(Configs.doubleRange(0, 90))
-            .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40, Type.ELYTRA_GRIM_FLY40))
+            .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40))
+            .build();
+
+    public IntRef pitch40GrimPitch = builder(travellingControl.add("pitch-40-grim-pitch-positive"), IntRef.TYPE)
+            .defaultValue(15)
+            .validator(Configs.INT_POSITIVE)
+            .show(() -> controlType.get().isIn(Type.ELYTRA_GRIM_FLY40))
+            .build();
+    public IntRef pitch40GrimNegative = builder(travellingControl.add("pitch-40-grim-pitch-negative"), IntRef.TYPE)
+            .defaultValue(60)
+            .validator(Configs.INT_POSITIVE)
+            .show(() -> controlType.get().isIn(Type.ELYTRA_GRIM_FLY40))
+            .build();
+
+    public DoubleRef negativeArgumentGrim = builder(
+                    travellingControl.add("pitch-40-negative-delta-grim"), DoubleRef.TYPE)
+            .defaultValue(0.0)
+            .validator(Configs.doubleRange(0, 90))
+            .show(() -> controlType.get().isIn(Type.ELYTRA_GRIM_FLY40))
+            .build();
+
+    public final FlagRef limitSpeedForDangerousSpeed = flagBuilder(
+                    travellingControl.add("limit-speed-for-dangerous-speed"))
+            .show(() -> controlType.get().isIn(Type.ELYTRA_GRIM_FLY40))
             .build();
 
     public NBTRef<OptionalPrimitive<Double>> pitch40HeightLimit = builder(
@@ -637,6 +656,13 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
 
         public AbstractPitch40(TravellingControl control) {
             this.control = control;
+            this.machine = new StateMachine(
+                    0,
+                    this::onStateUpdate,
+                    this::onStateNone,
+                    this::onStatePullup,
+                    this::onStateGlide,
+                    this::onStateEmergency);
         }
 
         TravelInfo ti = null;
@@ -646,6 +672,37 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
         int dangerousNoFallFlyingTick = 0;
         double[] last3Y = {-999, -999, -999, -999, -999};
         int last3YIndex = 0;
+        static final int STATE_NONE = 0;
+        static final int STATE_PULL_UP = 1;
+        static final int STATE_GLIDE = 2;
+        static final int STATE_EMERGENCY = 3;
+        StateMachine machine;
+
+        public int onStateUpdate(StateMachine machine, int state) {
+            counter2 += 1;
+            Vec3d currentPos = mc.player.getPos();
+            Vec3d towards = ti.getCurrentFlyingTarget().subtract(currentPos);
+            // anti afk
+
+            float yaw = EntityUtils.rotationToPitchYaw(towards.normalize()).y;
+            PlayerStateManager.setPlayerYawSafe(mc.player, yaw);
+
+            if (control.pitch40SafeHeightAutoPullup.get() && mc.player.getY() < control.minHeight.get() - 16) {
+                return STATE_EMERGENCY;
+            }
+            if (mc.player.getY() < control.minHeight.get()) {
+                return STATE_PULL_UP;
+            }
+            return state;
+        }
+
+        public int onStateNone(StateMachine machine) {
+            return STATE_GLIDE;
+        }
+
+        public abstract int onStatePullup(StateMachine machine);
+
+        public abstract int onStateGlide(StateMachine machine);
 
         @Override
         public void onStart(TravelInfo state) {
@@ -681,13 +738,28 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             }
         }
 
+        public int onStateEmergency(StateMachine machine) {
+            handlePullUp();
+            if (mc.player.getY() > control.maxHeight.get() && !ElytraExtra.INSTANCE.canFireworkControlMotion()) {
+                machine.markForEndState();
+                return STATE_PULL_UP;
+            }
+            if (ElytraExtra.INSTANCE.canFireworkControlMotion()) {
+                EntityUtils.setEntityPitchSafe(mc.player, -45);
+            }
+            machine.markForEndState();
+            return STATE_EMERGENCY;
+        }
+
         protected void handlePullUp() {
-            EntityUtils.setEntityPitchSafe(mc.player, -control.pitch40Negative.get());
+            EntityUtils.setEntityPitchSafe(mc.player, -45);
             // fire only when down wards, make full use of travel
-            if (!ElytraExtra.INSTANCE.canFireworkControlMotion()
-                    && Tasks.getTick() % 5 == 0
-                    && mc.player.getVelocity().y < 0) {
-                ElytraExtra.INSTANCE.sendCustomUseFireworkPacket();
+            if (PlayerStateManager.INSTANCE.lastKnownRealMovementSpeed.y < 0) {
+                if (!ElytraExtra.INSTANCE.canFireworkControlMotion() && Tasks.getTick() % 5 == 0) {
+                    ElytraExtra.INSTANCE.sendCustomUseFireworkPacket();
+                } else {
+                    FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                }
             }
         }
 
@@ -709,14 +781,11 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
 
                 // start counting down, if not startflying in 20 tick(1sec), auto logout
                 dangerousNoFallFlyingTick = 1;
-                MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
             }
         }
 
         protected boolean handlePostHeight() {
-            if (control.pitch40SafeHeightAutoPullup.get() && mc.player.getY() < control.minHeight.get() - 16) {
-                handlePullUp();
-            }
+
             if (control.pitch40SafeHeight.get() && mc.player.getY() < control.minHeight.get() - 32) {
                 // emergency
                 Debug.chat("[Pitch40] 滑翔失控了");
@@ -819,6 +888,37 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
         }
 
         @Override
+        public int onStateGlide(StateMachine machine) {
+            if (counter2 > 1) {
+                Debug.chat("[Pitch40] Current Height", mc.player.getY());
+            }
+            counter2 = 0;
+            EntityUtils.setEntityPitchSafe(mc.player, control.pitch40Pitch.get());
+            machine.markForEndState();
+            return STATE_GLIDE;
+        }
+
+        @Override
+        public int onStatePullup(StateMachine machine) {
+            double y = mc.player.getY();
+            if (control.pitch40HeightLimit.get().test(s -> y > s)) {
+                return STATE_GLIDE;
+            }
+            double last3YY = this.last3Y[last3YIndex];
+            boolean goingDown = (y < last3YY);
+            if (goingDown && counter2 > 10 && mc.player.getY() > control.minHeight.get()) {
+                return STATE_GLIDE;
+            }
+            EntityUtils.setEntityPitchSafe(
+                    mc.player,
+                    Math.min(
+                            -control.pitch40Negative.get() + counter2 * (float) control.negativeArgument.get(),
+                            control.pitch40Pitch.get()));
+            machine.markForEndState();
+            return STATE_PULL_UP;
+        }
+
+        @Override
         public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
             if (ti == null || ti.shouldNotRun()) return;
             ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
@@ -827,55 +927,12 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             if (startWork) {
                 if (mc.player.isFallFlying()) {
                     movementManagerEvent.context.pushImportantRotation(true, true);
-                    Vec3d currentPos = mc.player.getPos();
-                    Vec3d towards = ti.getCurrentFlyingTarget().subtract(currentPos);
-                    // anti afk
-
-                    float yaw = EntityUtils.rotationToPitchYaw(towards.normalize()).y;
-                    counter2 += 1;
-
-                    switch (ti.state) {
-                        case STABLE, TOO_HIGH -> {
-                            PlayerStateManager.setPlayerYawSafe(player, yaw);
-                            double y = mc.player.getY();
-                            double last3YY = this.last3Y[last3YIndex];
-                            boolean goingDown = (y < last3YY);
-                            // height limit,
-                            if (control.pitch40HeightLimit.get().test(s -> y > s)) {
-                                goingDown = true;
-                            }
-                            if (goingDown) {
-                                if (counter2 > 1) {
-                                    Debug.chat("[Pitch40] Current Height", player.getY());
-                                }
-                                counter2 = 0;
-                                EntityUtils.setEntityPitchSafe(player, control.pitch40Pitch.get());
-                            } else {
-                                // fly higher..
-                                EntityUtils.setEntityPitchSafe(
-                                        player,
-                                        Math.min(
-                                                -control.pitch40Negative.get()
-                                                        + counter2 * (float) control.negativeArgument.get(),
-                                                control.pitch40Pitch.get()));
-                            }
-                        }
-                        case TOO_LOW -> {
-                            PlayerStateManager.setPlayerYawSafe(player, yaw);
-                            EntityUtils.setEntityPitchSafe(
-                                    player,
-                                    Math.min(
-                                            -control.pitch40Negative.get()
-                                                    + counter2 * (float) control.negativeArgument.get(),
-                                            control.pitch40Pitch.get()));
-                        }
-                    }
-                    if (AntiChunkLag.INSTANCE.currentMayFaceLagChunk) {
-                        FloatingUtils.INSTANCE.setGrimFloatingTick(true);
-                    }
+                    machine.step();
                 } else {
                     handleReFly();
                 }
+            } else {
+                machine.setState(STATE_NONE);
             }
         }
     }
@@ -891,14 +948,73 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             return Type.ELYTRA_GRIM_FLY40;
         }
 
-        boolean currentFlyingHigh = false;
         boolean useGrimPacketFly = false;
+        boolean currentDangerousVelocity = false;
 
         @Override
         public void onStart(TravelInfo state) {
             super.onStart(state);
-            currentFlyingHigh = false;
             useGrimPacketFly = false;
+        }
+
+        @Override
+        public int onStateUpdate(StateMachine machine, int state) {
+            Vec3d velocity = PlayerStateManager.INSTANCE.lastKnownChangePosMovementSpeed;
+
+            currentDangerousVelocity = ElytraGrimAccelerate.INSTANCE.fixOldVersionVelocityShit.get()
+                    && (Math.abs(velocity.x) >= 3.8 || Math.abs(velocity.y) >= 3.8 || Math.abs(velocity.z) >= 3.8);
+            return super.onStateUpdate(machine, state);
+        }
+
+        @Override
+        public int onStateGlide(StateMachine machine) {
+            if (counter2 > 1) {
+                Debug.chat("[Pitch40] Current Height", mc.player.getY());
+            }
+            counter2 = 0;
+            EntityUtils.setEntityPitchSafe(mc.player, control.pitch40GrimPitch.get());
+            if (control.limitSpeedForDangerousSpeed.get() && currentDangerousVelocity) {
+                useGrimPacketFly = true;
+            } else {
+                if (mc.player.getY() > control.minHeight.get() || currentDangerousVelocity) {
+                    useGrimPacketFly = true;
+                } else {
+                    useGrimPacketFly = false;
+                }
+            }
+            machine.markForEndState();
+            return STATE_GLIDE;
+        }
+
+        @Override
+        public int onStatePullup(StateMachine machine) {
+            if (useGrimPacketFly) {
+                if (!currentDangerousVelocity) {
+                    useGrimPacketFly = false;
+                }
+            }
+            double y = mc.player.getY();
+            if (control.pitch40HeightLimit.get().test(s -> y > s)) {
+                return STATE_GLIDE;
+            }
+            double last3YY = this.last3Y[last3YIndex];
+            boolean goingDown = (y < last3YY);
+            if (!useGrimPacketFly && goingDown && counter2 > 10 && mc.player.getY() > control.minHeight.get()) {
+                return STATE_GLIDE;
+            }
+            EntityUtils.setEntityPitchSafe(
+                    mc.player,
+                    Math.min(
+                            -control.pitch40GrimNegative.get() + counter2 * (float) control.negativeArgumentGrim.get(),
+                            control.pitch40GrimPitch.get()));
+            machine.markForEndState();
+            return STATE_PULL_UP;
+        }
+
+        @Override
+        public int onStateEmergency(StateMachine machine) {
+            useGrimPacketFly = false;
+            return super.onStateEmergency(machine);
         }
 
         @Override
@@ -907,81 +1023,19 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
             control.updateState(ti, player.getY());
             checkNotStart();
-            final int pitch40 = control.pitch40Pitch.get();
             if (startWork) {
                 if (mc.player.isFallFlying()) {
                     movementManagerEvent.context.pushImportantRotation(true, true);
-                    Vec3d currentPos = mc.player.getPos();
-                    Vec3d towards = ti.getCurrentFlyingTarget().subtract(currentPos);
-                    // anti afk
-                    float yaw = EntityUtils.rotationToPitchYaw(towards.normalize()).y;
-                    counter2 += 1;
-
-                    switch (ti.state) {
-                        case STABLE, TOO_HIGH -> {
-                            PlayerStateManager.setPlayerYawSafe(player, yaw);
-                            double y = mc.player.getY();
-                            double last3YY = this.last3Y[last3YIndex];
-                            boolean goingDown = (y < last3YY);
-                            // height limit,
-                            if (control.pitch40HeightLimit.get().test(s -> y > s)) {
-                                goingDown = true;
-                            }
-                            if (currentFlyingHigh && goingDown) {
-                                currentFlyingHigh = false;
-                                Debug.chat("[Pitch40] Current Height", last3YY);
-                            }
-                            if (!currentFlyingHigh) {
-                                counter2 = 0;
-                                useGrimPacketFly = true;
-                                EntityUtils.setEntityPitchSafe(player, pitch40);
-                            } else {
-                                EntityUtils.setEntityPitchSafe(
-                                        player,
-                                        Math.min(
-                                                -control.pitch40Negative.get()
-                                                        + counter2 * (float) control.negativeArgument.get(),
-                                                control.pitch40Pitch.get()));
-                            }
-                        }
-                        case TOO_LOW -> {
-                            if (!currentFlyingHigh) {
-                                // at this tick, we launch a PacketCatcher
-                                AtomicInteger counter = new AtomicInteger(20);
-                                AtomicDouble max = new AtomicDouble(-999);
-                                Listener.addPostPacketCatcher(new TimedPacketCatcherImpl<>(
-                                        EntityVelocityUpdateS2CPacket.class, 200, (event) -> {
-                                            Vec3d velocity = VPacket.getVelocity(event.context);
-                                            //  Debug.chat("check velocity", velocity);
-                                            if (velocity.y <= max.get()
-                                                    || velocity.y > 3.0F
-                                                    || counter.getAndDecrement() < 0) {
-                                                Tasks.scheduleDelayed(() -> useGrimPacketFly = false, 0);
-                                                // useGrimPacketFly = false;
-
-                                                return true;
-                                            }
-                                            max.set(velocity.y);
-                                            return false;
-                                        }));
-                            }
-                            currentFlyingHigh = true;
-                            PlayerStateManager.setPlayerYawSafe(player, yaw);
-                            EntityUtils.setEntityPitchSafe(
-                                    player,
-                                    Math.min(
-                                            -control.pitch40Negative.get()
-                                                    + counter2 * (float) control.negativeArgument.get(),
-                                            control.pitch40Pitch.get()));
-                        }
-                    }
-                    if (AntiChunkLag.INSTANCE.currentMayFaceLagChunk) {
-                        FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                    machine.step();
+                    if (AntiChunkLag.INSTANCE.currentMayFaceLagChunk && !currentDangerousVelocity) {
                         useGrimPacketFly = false;
                     }
                 } else {
+                    useGrimPacketFly = false;
                     handleReFly();
                 }
+            } else {
+                machine.setState(STATE_NONE);
             }
             if (useGrimPacketFly) {
                 MovTasks.getElytraGrimAccelerate().setTryWorkingTick();

@@ -1,6 +1,7 @@
 package me.matl114.gui.complex.config;
 
 import java.util.List;
+import me.matl114.gui.Constants;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.IconElement;
 import me.matl114.gui.presets.lists.ListEntryWidgetController;
@@ -48,10 +49,10 @@ public class ListModifyWidget extends ScrollableListWidget {
         super.render0(context, mouseX, mouseY, delta, disableSelect);
     }
 
-    private static final Identifier SHIFT_UP_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/move_up");
-    private static final Identifier SHIFT_DOWN_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/move_down");
-    private static final Identifier DEL_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/remove");
-    private static final Identifier NEW_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/add");
+    private static final Identifier SHIFT_UP_TEXTURE_SPRITE = Constants.SHIFT_UP_SPRITE;
+    private static final Identifier SHIFT_DOWN_TEXTURE_SPRITE = Constants.SHIFT_DOWN_SPRITE;
+    private static final Identifier DEL_TEXTURE_SPRITE = Constants.REMOVE_SPRITE;
+    private static final Identifier NEW_TEXTURE_SPRITE = Constants.ADD_SPRITE;
 
     private static List<Text> insertTooltips() {
         return ChatUtils.parseTooltipsTranslation("widget.gui.list-modify-widget.insert.tooltips", "");
