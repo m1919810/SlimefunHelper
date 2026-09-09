@@ -33,7 +33,7 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
         return titleLabel;
     }
 
-    protected GenericScreen(Text title, int backgroundWidth, int backgroundDefaultHeight) {
+    public GenericScreen(Text title, int backgroundWidth, int backgroundDefaultHeight) {
         super(title);
         setTitleLabel(title);
         this.backgroundDefaultHeight = backgroundDefaultHeight;
