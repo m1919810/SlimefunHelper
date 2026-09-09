@@ -269,11 +269,7 @@ public class FakePlayer extends BaseModule {
             return;
         }
         Map<BlockPos, BlockState> stateMap = new LinkedHashMap<>();
-        Vec3d center = new Vec3d(
-            event.context.getX(),
-            event.context.getY(),
-            event.context.getZ()
-        );
+        Vec3d center = new Vec3d(event.context.getX(), event.context.getY(), event.context.getZ());
         BlockPos explodeCenter = BlockPos.ofFloored(center);
         float radius = 0;
         if (Objects.equals(center, explodeCenter.toCenterPos())

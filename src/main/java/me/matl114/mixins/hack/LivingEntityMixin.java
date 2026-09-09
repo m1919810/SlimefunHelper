@@ -52,7 +52,8 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
     @Shadow
     public abstract void equipStack(EquipmentSlot slot, ItemStack stack);
 
-    @Shadow public abstract void updateLimbs(boolean flutter);
+    @Shadow
+    public abstract void updateLimbs(boolean flutter);
 
     @Unique
     @Override
