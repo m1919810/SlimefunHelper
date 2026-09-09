@@ -1,12 +1,9 @@
 package me.matl114.hacks.modules.move;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.OptionalInt;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Predicate;
 import me.matl114.accessors.access.ClientPlayerAccess;
-import me.matl114.accessors.access.FireworkRocketEntityAccess;
 import me.matl114.accessors.access.PlayerInteractItemC2SPacketAccess;
 import me.matl114.accessors.hacks.EntityInternalAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
@@ -1359,7 +1356,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         }
         if (player.isFallFlying()
                 && rocketBoost.get()
-                && canFireworkControlMotion(0)
+                && canFireworkControlMotion()
                 && !BaritoneHooks.getInstance().isBaritoneElytraProcessing()) {
             // Vec3d vec3d = player.getVelocity();
             Vec3d modifiedVelocity = EntityUtils.pitchYawToRotation(player.getPitch(), player.getYaw())
@@ -1411,7 +1408,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
         executeNoKineticAfterTravel = false;
         if (noKineticMode.get().isPresent() && thisFallFlyingIsArmorFly == -1 && player.isFallFlying()) {
-            boolean canControl = EntityUtils.isEntityValid(lastRecordedWorldFireworkRocket);
+            boolean canControl = anyAliveRocket();
             if (noKineticMode.get().getValue().get().hasAc()) {
                 // control by rotation and velocity
                 // simulation
@@ -1459,7 +1456,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             //                Vec3d simu = MovTasks.simulateMovement(player, mc.player.getPos(), vec3d, false);
             //                Vec3d predictedPos = mc.player.getPos().add(simu);
             boolean controlled = false;
-            boolean canControl = EntityUtils.isEntityValid(lastRecordedWorldFireworkRocket);
+            boolean canControl = anyAliveRocket();
             if (true) {
                 // use firework to control server motion
                 Vec3d vec3d = mc.player.getRotationVector().multiply(0.85 * 6);
@@ -1512,9 +1509,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         }
     }
 
-    FireworkRocketEntity lastRecordedWorldFireworkRocket;
-    int lastFireworkRocketTick = 0;
-    int lastFireworkThresholdTime = 0;
+    //    FireworkRocketEntity lastRecordedWorldFireworkRocket;
+    Set<FireworkRocketEntity> recordedWorldFireworkRockets = new HashSet<>();
+    int lastFireworkRemovalTime = 0;
+    int lastFireworkSpawnTime = 0;
     // boolean lastFireworkIsDeadSignal = false;
 
     public void onFireworkOwner(Event<DataTracker.SerializedEntry<?>> firework) {
@@ -1525,77 +1523,61 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 && firework.context().value() instanceof OptionalInt opint
                 && opint.isPresent()
                 && opint.getAsInt() == mc.player.getId()) {
-            lastRecordedWorldFireworkRocket = fireworkEntity;
-            lastFireworkRocketTick = Tasks.getTick();
-            // lastFireworkIsDeadSignal = false;
-            lastFireworkThresholdTime = 0;
+            recordedWorldFireworkRockets.add(fireworkEntity);
+            lastFireworkSpawnTime = Tasks.getTick();
         }
     }
 
     public void onFireworkRemove(Event<Entity> entityRemoveEvent) {
-        if (entityRemoveEvent.context() instanceof FireworkRocketEntity fire
-                && fire == lastRecordedWorldFireworkRocket) {
-            onRemoveFirework(lastRecordedWorldFireworkRocket);
+        if (entityRemoveEvent.context() instanceof FireworkRocketEntity fire) {
+            onRemoveFirework(fire);
         }
     }
 
     public void onWorldSwitch(Event<World> event) {
-        if (EntityUtils.isEntityValid(lastRecordedWorldFireworkRocket)) {
-            onRemoveFirework(lastRecordedWorldFireworkRocket);
-        }
-        lastRecordedWorldFireworkRocket = null;
+        recordedWorldFireworkRockets.clear();
+        lastFireworkRemovalTime = 0;
         delayQueue.clear();
     }
 
     private void onRemoveFirework(FireworkRocketEntity rocket) {
-        lastFireworkThresholdTime = FireworkRocketEntityAccess.of(rocket).getLiveTicks();
-        // lastFireworkIsDeadSignal = true;
+        lastFireworkRemovalTime = Tasks.getTick();
         if (autoRocket.get()) {
             // mark next time must be auto, pass timer check
             timerVanilla.markOff();
         }
+        recordedWorldFireworkRockets.remove(rocket);
     }
 
     public boolean canFireworkControlMotion() {
-        return canFireworkControlMotion(rocketExtraEffectiveTicks.get());
+        return canFireworkControlMotion(Math.max(1, rocketExtraEffectiveTicks.get()));
     }
 
     public boolean canFireworkControlMotion(int extraTicks) {
-        if (lastRecordedWorldFireworkRocket != null) {
-            if (EntityUtils.isEntityValid(lastRecordedWorldFireworkRocket)) {
-                return true;
-            } else if (getTickSinceLastFirework() < extraTicks) {
-                return true;
-            } else {
-                return false;
-            }
+        extraTicks = Math.max(1, extraTicks);
+        if (anyAliveRocket()) {
+            return true;
+
+        } else if (getTickSinceLastFirework() <= extraTicks) {
+            return true;
         }
         return false;
     }
 
     public int getTickSinceLastFirework() {
-        return (EntityUtils.isEntityValid(lastRecordedWorldFireworkRocket))
-                ? 0
-                : (Tasks.getTick() - lastFireworkRocketTick - lastFireworkThresholdTime);
+        return anyAliveRocket() ? 0 : (Tasks.getTick() - lastFireworkRemovalTime);
     }
 
     public int getTicksSinceLastFireworkSpawn() {
-        return (lastRecordedWorldFireworkRocket != null && lastRecordedWorldFireworkRocket.isAlive())
-                ? (Tasks.getTick() - lastFireworkRocketTick)
-                : -1;
+        return anyAliveRocket() ? (Tasks.getTick() - lastFireworkSpawnTime) : -1;
+    }
+
+    private boolean anyAliveRocket() {
+        return (recordedWorldFireworkRockets.stream().anyMatch(EntityUtils::isEntityValid));
     }
 
     public boolean shouldLaunchNextFirework() {
-        if (lastRecordedWorldFireworkRocket != null) {
-            if (EntityUtils.isEntityValid(lastRecordedWorldFireworkRocket)) {
-                return false;
-            } else if (getTickSinceLastFirework() < 1) {
-                return false;
-            } else {
-                return true;
-            }
-        }
-        return true;
+        return !anyAliveRocket();
     }
 
     int cnt = 0;
@@ -1617,7 +1599,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     public boolean checkFireworkUseCondition(boolean vanillaCd) {
-        boolean autoFirework = autoRocket.get() && lastRecordedWorldFireworkRocket != null;
+        boolean autoFirework = autoRocket.get() && lastFireworkRemovalTime > 0;
         var rocket = findRocket();
         if (rocket != null) {
             int level = getRocketLevel(rocket);
@@ -1625,9 +1607,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             if (timer.canFire()) {
                 boolean use = false;
                 if (autoFirework) {
-                    if (EntityUtils.isEntityValid(lastRecordedWorldFireworkRocket)) {
+                    if (anyAliveRocket()) {
                         return false;
-                    } else if (Tasks.getTick() > lastFireworkRocketTick + lastFireworkThresholdTime + 1) {
+                    } else if (getTickSinceLastFirework() >= 1) {
                         // time limit, do not double
                         use = true;
                         // use = true;
@@ -1820,7 +1802,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 boolean shouldHandle = player.isOnGround() && !movementManagerEvent.context.playerStatus.onGround;
                 if (shouldHandle) {
                     // use direct judgement, do not use rocketBuffer
-                    if (EntityUtils.isEntityValid(lastRecordedWorldFireworkRocket)) {
+                    if (anyAliveRocket()) {
                         // controlling tick
                         //  must send a PosOnly
                         // otherwise it will be recognized as a duplicateFull

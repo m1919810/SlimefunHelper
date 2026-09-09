@@ -55,6 +55,17 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             .defaultValue(ElytraExtra.MotionMode.VOID)
             .build();
 
+    public final IntRef fireworksRotationLastingTicks = builder(
+                    simpleFlightControl.add("firework-rotation-last-ticks"), Integer.class)
+            .defaultValue(3)
+            .show(() -> motionMode.get().isIn(ElytraExtra.MotionMode.FIRE_WORKS))
+            .build();
+
+    public final FlagRef rotateWhenVoid = builder(simpleFlightControl.add("rotate-when-void-motion"), Boolean.class)
+            .defaultValue(true)
+            .show(() -> motionMode.get().isIn(ElytraExtra.MotionMode.VOID))
+            .build();
+
     public final EnumRef<Mode> controlMode = builder(simpleFlightControl.add("flight-mode"), Mode.class)
             .defaultValue(Mode.CONTROL)
             .build();
@@ -222,6 +233,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                 boolean shouldControl = false;
                 double motionAmount = this.packetMotion.get();
                 boolean shouldCheckRocket = false;
+                boolean shouldControlRotation = false;
                 PlayerInputUtils.Input input = PlayerInputUtils.of(mc.options);
                 switch (controlMode.get()) {
                     case CONTROL -> {
@@ -271,6 +283,13 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                             if (MovTasks.getElytraExtra().canFireworkControlMotion()) {
                                 packetMotion = true;
                             }
+                            if (ElytraExtra.INSTANCE.canFireworkControlMotion(fireworksRotationLastingTicks.get())) {
+                                shouldControlRotation = true;
+                            }
+                        } else if (motionMode.get() == ElytraExtra.MotionMode.VOID) {
+                            if (rotateWhenVoid.get()) {
+                                shouldControlRotation = true;
+                            }
                         }
                         controlMotion = velocity;
                         if (packetMotion) {
@@ -297,6 +316,13 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                             shouldCheckRocket = true;
                             if (MovTasks.getElytraExtra().canFireworkControlMotion()) {
                                 packetMotion = true;
+                            }
+                            if (ElytraExtra.INSTANCE.canFireworkControlMotion(fireworksRotationLastingTicks.get())) {
+                                shouldControlRotation = true;
+                            }
+                        } else if (motionMode.get() == ElytraExtra.MotionMode.VOID) {
+                            if (rotateWhenVoid.get()) {
+                                shouldControlRotation = true;
                             }
                         }
                         controlMotion = velocity;
@@ -336,6 +362,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     realVector = Vec3d.ZERO;
                     shouldControl = true;
                     shouldCheckRocket = false;
+                    shouldControlRotation = false;
                 } else if (useFloatingUtils.get() && realVector.lengthSquared() < 1e-4) {
                     if (!MovTasks.getElytraExtra().canFireworkControlMotion()) {
                         if (ElytraExtra.INSTANCE.shouldApplyOnGroundFly()
@@ -347,6 +374,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                             FloatingUtils.INSTANCE.setGrimFloatingTick(true);
                             shouldControl = true;
                             shouldCheckRocket = false;
+                            shouldControlRotation = false;
                         }
                     } else {
                         shouldControl = true;
@@ -359,7 +387,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                         && realVector.y < 0) {
                     realVector = realVector.withAxis(Direction.Axis.Y, 0);
                 }
-                if (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS && realVector.lengthSquared() > 5e-3) {
+                if (shouldControlRotation && realVector.lengthSquared() > 5e-3) {
                     // fliter zero control
                     if (!movementManagerEvent.context.hasImportantRotation()) {
                         if (realVector.horizontalLengthSquared() > 5E-3) {
@@ -397,6 +425,16 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                                             mc.player.getYaw(),
                                             !mc.player.hasNoGravity())
                                     : realVector);
+                } else if (realVector.length() > 0) {
+                    Debug.info(
+                            "Lost Control",
+                            PlayerStateManager.INSTANCE.lastKnownClientVelocity,
+                            EntityUtils.calculateGlidingVelocity(
+                                    mc.player,
+                                    PlayerStateManager.INSTANCE.lastKnownClientVelocity,
+                                    mc.player.getRotationVector(),
+                                    true),
+                            mc.player.getVelocity());
                 }
 
                 if (shouldCheckRocket) {
