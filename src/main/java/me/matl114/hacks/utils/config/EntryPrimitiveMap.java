@@ -6,6 +6,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -30,20 +31,19 @@ public class EntryPrimitiveMap<T, W> extends PrimitiveMap<Holder<T>, W> {
     }
 
     public EntryPrimitiveMap(Registry<T> registry, NBTType<W> type, Map<T, W> map, W defaultValue) {
-        this(registry, type, map, Optional.ofNullable(defaultValue).map(value -> Primitive.of(type, value)));
+        this(registry, type, map, Optional.ofNullable(defaultValue));
+    }
+
+    public EntryPrimitiveMap(Registry<T> registry, NBTType<W> type, Map<T, W> map, Optional<W> defaultValue) {
+        this(registry, type, Optional.empty(), valueMapToHolderMap(registry, map, defaultValue));
     }
 
     public EntryPrimitiveMap(
-            Registry<T> registry, NBTType<W> type, Map<T, W> map, Optional<Primitive<W>> defaultPrimitive) {
-        this(registry, type, defaultPrimitive, valueMapToHolderMap(registry, map));
-    }
-
-    protected EntryPrimitiveMap(
             Registry<T> registry, NBTType<W> type, Optional<Primitive<W>> defaultPrimitive, Map<Holder<T>, W> map) {
         super(Holder.TYPE.<Holder<T>>cast(), type, map, createDefaultKeyPrimitive(registry), defaultPrimitive);
     }
 
-    public EntryPrimitiveMap(
+    private EntryPrimitiveMap(
             Map<Holder<T>, Primitive<W>> map,
             Registry<T> registry,
             NBTType<W> type,
@@ -51,19 +51,23 @@ public class EntryPrimitiveMap<T, W> extends PrimitiveMap<Holder<T>, W> {
         this(
                 registry,
                 type,
-                holderMapToValueMap(map, registry, type),
-                resolveDefaultPrimitive(map, registry, type, defaultPrimitive));
+                defaultPrimitive,
+                map.entrySet().stream()
+                        .map(s -> Map.entry(s.getKey(), s.getValue().value()))
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
 
     private static <T> Optional<Primitive<Holder<T>>> createDefaultKeyPrimitive(Registry<T> registry) {
         return Optional.of(Primitive.of(Holder.TYPE.<Holder<T>>cast(), Holder.of(registry, null)));
     }
 
-    private static <T, W> Map<Holder<T>, W> valueMapToHolderMap(Registry<T> registry, Map<T, W> map) {
+    private static <T, W> Map<Holder<T>, W> valueMapToHolderMap(
+            Registry<T> registry, Map<T, W> map, Optional<W> defaultMapValue) {
         Map<Holder<T>, W> result = new LinkedHashMap<>(map.size());
         for (var entry : map.entrySet()) {
             result.put(Holder.of(registry, entry.getKey()), entry.getValue());
         }
+        defaultMapValue.ifPresent(s -> result.put(Holder.of(registry, null), s));
         return result;
     }
 
@@ -123,8 +127,8 @@ public class EntryPrimitiveMap<T, W> extends PrimitiveMap<Holder<T>, W> {
     }
 
     private static <T, W> EntryPrimitiveMap<T, W> fromPrimitiveMap(PrimitiveMap<Holder<T>, W> map) {
-        return new EntryPrimitiveMap<>(
-                toLegacyMap(map), resolveRegistry(map), map.valueType(), map.defaultValuePrimitive());
+        Registry<T> registry = map.defaultKeyPrimitive().orElseThrow().value().registry();
+        return new EntryPrimitiveMap<>(registry, map.valueType(), map.defaultValuePrimitive(), map.map());
     }
 
     private static <T, W> WrapperFactory<PrimitiveMap<Holder<T>, W>, EntryPrimitiveMap<T, W>> wrapperFactory() {

@@ -454,6 +454,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
 
             if (shouldApplyFreeze) {
                 FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                FloatingUtils.INSTANCE.setForceSilent(true);
                 mc.player.setOnGround(false);
                 mc.player.setSprinting(false);
             }

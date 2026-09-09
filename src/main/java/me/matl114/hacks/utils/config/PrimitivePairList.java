@@ -43,6 +43,24 @@ public class PrimitivePairList<T, W> implements NBTParsable<PrimitivePairList<T,
             String secondName,
             NBTType<T> firstType,
             NBTType<W> secondType,
+            Optional<T> defaultFirstPrimitive,
+            Optional<W> defaultSecondPrimitive,
+            List<Pair<T, W>> list) {
+        this(
+                firstName,
+                secondName,
+                firstType,
+                secondType,
+                list,
+                defaultFirstPrimitive.map(s -> Primitive.of(firstType, s)),
+                defaultSecondPrimitive.map(s -> Primitive.of(secondType, s)));
+    }
+
+    public PrimitivePairList(
+            String firstName,
+            String secondName,
+            NBTType<T> firstType,
+            NBTType<W> secondType,
             List<Pair<T, W>> list,
             Optional<Primitive<T>> defaultFirstPrimitive,
             Optional<Primitive<W>> defaultSecondPrimitive) {
@@ -247,7 +265,9 @@ public class PrimitivePairList<T, W> implements NBTParsable<PrimitivePairList<T,
                 && pairList.firstType == firstType
                 && pairList.secondType == secondType
                 && Objects.equals(pairList.firstName, firstName)
-                && Objects.equals(pairList.secondName, secondName);
+                && Objects.equals(pairList.secondName, secondName)
+                && Objects.equals(pairList.defaultFirstPrimitive, defaultFirstPrimitive)
+                && Objects.equals(pairList.defaultSecondPrimitive, defaultSecondPrimitive);
     }
 
     @Override

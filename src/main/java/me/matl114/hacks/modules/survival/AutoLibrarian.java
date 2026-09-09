@@ -42,6 +42,7 @@ import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
@@ -92,6 +93,8 @@ public class AutoLibrarian extends BaseModule {
     public final FlagRef autoLockTrade =
             flagBuilder(root.add("auto-lock-trade")).build();
 
+    public final FlagRef autoRemoval = flagBuilder(root.add("auto-removal")).build();
+
     public final FlagRef baritoneControl =
             flagBuilder(root.add("baritone-control")).build();
 
@@ -126,6 +129,13 @@ public class AutoLibrarian extends BaseModule {
                     dblank,
                     dx,
                     dy));
+            acceptor.accept(createExecuteButton(
+                    "widget.auto-librarian.fill-all-enchantment",
+                    ButtonAction.run(this::setAllEnchantments),
+                    0,
+                    dblank,
+                    dx,
+                    dy));
         }
     }
 
@@ -151,6 +161,27 @@ public class AutoLibrarian extends BaseModule {
                     }
                     map2.put(re.getKey(), minLevel);
                 }
+            }
+        }
+        enchantments.set(new WeakEntryPrimitiveMap<>(RegistryKeys.ENCHANTMENT, NBTTypes.INT_TYPE, map2));
+    }
+
+    public void setAllEnchantments() {
+        var handler = mc.getNetworkHandler();
+        if (handler == null) return;
+        Map<Identifier, Integer> map = enchantments.get().idMap();
+        Map<Identifier, Integer> map2 = new LinkedHashMap<>(map);
+        Registry<Enchantment> enchantment =
+                RegistryUtils.getRegistry(handler.getRegistryManager(), RegistryKeys.ENCHANTMENT);
+        for (var re : enchantment.getEntrySet()) {
+            Identifier id = re.getKey().getValue();
+            if (!map2.containsKey(id)) {
+                var ench = re.getValue();
+                int minLevel = 2 + 3 * ench.getMaxLevel();
+                if (enchantment.getEntry(ench).isIn(EnchantmentTags.DOUBLE_TRADE_PRICE)) {
+                    minLevel *= 2;
+                }
+                map2.put(id, minLevel);
             }
         }
         enchantments.set(new WeakEntryPrimitiveMap<>(RegistryKeys.ENCHANTMENT, NBTTypes.INT_TYPE, map2));
@@ -343,7 +374,7 @@ public class AutoLibrarian extends BaseModule {
                         return;
                     }
                     mc.player.swingHand(Hand.MAIN_HAND);
-                    access.sendBreakPacket();
+                    access.sendBreakPacket(true);
                 } else if (!WorldManager.canVillagerResetTrade(merchantScreen.getScreenHandler())) {
                     WorldManager.INSTANCE.setVillagerTradeLock(targetVillager, true);
                 }
@@ -351,6 +382,25 @@ public class AutoLibrarian extends BaseModule {
                 if (!hasOpened && lastInteractTick + 5 < Tasks.getTick()) {
                     Interact.INSTANCE.interactEntity(targetVillager);
                     lastInteractTick = Tasks.getTick();
+                }
+            }
+        }
+    }
+
+    private void setAccepted(RegistryEntry<Enchantment> remove, int level, int price) {
+        if (autoRemoval.get()) {
+            Map<Identifier, Integer> map =
+                    new LinkedHashMap<>(enchantments.get().idMap());
+            Integer val = map.remove(remove.getKey().get().getValue());
+            if (val != null && val >= price) {
+                if (!onlyMaxLeve.get() && level >= remove.value().getMaxLevel()) {
+                    map.remove(remove.getKey().get().getValue());
+                    if (log.get()) {
+                        logI18N(
+                                "message.module.auto-librarian.enchantment-auto-remove",
+                                remove.value().description());
+                    }
+                    enchantments.set(new WeakEntryPrimitiveMap<>(RegistryKeys.ENCHANTMENT, NBTTypes.INT_TYPE, map));
                 }
             }
         }
@@ -429,6 +479,13 @@ public class AutoLibrarian extends BaseModule {
         } else {
             WorldManager.INSTANCE.setVillagerTradeLock(targetVillager, true);
             currentAccepted = true;
+            IndexEntry<Pair<Integer, RegistryEntry<Enchantment>>> findIndex = checkTradingIndex(handler);
+            if (findIndex != null) {
+                setAccepted(
+                        findIndex.val().getSecond(),
+                        findIndex.val().getFirst(),
+                        getPriceAt(handler, findIndex.index()));
+            }
         }
     }
 

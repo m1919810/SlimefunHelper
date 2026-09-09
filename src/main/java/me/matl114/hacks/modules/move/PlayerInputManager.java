@@ -111,6 +111,11 @@ public class PlayerInputManager extends BaseModule implements LegalMovementManag
     }
 
     @Override
+    public int priority() {
+        return Integer.MIN_VALUE + 1;
+    }
+
+    @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         LegalMovementManager.MovementModifier.super.applyPreTickModify(movementManagerEvent);
         if (priorityQueue.isEmpty() || mc.player == null) {

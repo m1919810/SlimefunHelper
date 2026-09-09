@@ -52,6 +52,12 @@ public class ExtraTasks {
     @Getter
     public static EventNotify eventNotify;
 
+    @Getter
+    public static FakePlayer fakePlayer;
+
+    @Getter
+    public static FakeLag fakeLag;
+
     private static void initModules(ModuleManager m) {
         clientExtra = new ClientExtra().register(m);
         packetDebugger = new PacketDebugger().register(m);
@@ -69,6 +75,8 @@ public class ExtraTasks {
 
         skinBlink = new SkinBlink().register(m);
         eventNotify = new EventNotify().register(m);
+        fakePlayer = new FakePlayer().register(m);
+        fakeLag = new FakeLag().register(m);
     }
 
     static {

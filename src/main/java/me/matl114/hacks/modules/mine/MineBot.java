@@ -151,7 +151,7 @@ public class MineBot extends BaseModule {
         if (item.isEmpty()) return true;
         int durabilityLimit;
         if (item.get(DataComponentTypes.UNBREAKABLE) != null) {
-            durabilityLimit = 0;
+            return true;
         } else if (item.get(DataComponentTypes.MAX_DAMAGE) != null) {
             RegistryEntry<Enchantment> unbreaking =
                     RegistryUtils.getRegistryEntry(ItemStackUtils.registry(), Enchantments.UNBREAKING);
@@ -184,7 +184,7 @@ public class MineBot extends BaseModule {
                 break;
             }
             if (considerCooldown.get()) {
-                if (MineExtra.INSTANCE.getMiningPacketCooldown() > 0) {
+                if (MineExtra.INSTANCE.getMiningPacketCooldown(1) > 0) {
                     break;
                 }
             }

@@ -24,13 +24,7 @@ public class AttributeUtils {
 
     public static AttributeContainer getAttributeWith(
             LivingEntity living, Map<EquipmentSlot, ItemStack> equipmentOverrides) {
-        Map<EquipmentSlot, ItemStack> filterMap = new LinkedHashMap<>();
-        for (var re : equipmentOverrides.entrySet()) {
-            ItemStack current = living.getEquippedStack(re.getKey());
-            if (!ItemStack.areItemsAndComponentsEqual(re.getValue(), current)) {
-                filterMap.put(re.getKey(), re.getValue());
-            }
-        }
+        Map<EquipmentSlot, ItemStack> filterMap = new LinkedHashMap<>(equipmentOverrides);
         AttributeContainer attributeContainer = new AttributeContainer(
                 DefaultAttributeRegistry.get((EntityType<? extends LivingEntity>) living.getType()));
         attributeContainer.setFrom(living.getAttributes());

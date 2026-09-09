@@ -10,6 +10,8 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.ElytraExtra;
 import me.matl114.hacks.modules.move.FloatingUtils;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
+import me.matl114.hacks.utils.tasks.TimerExecutor;
 import me.matl114.hooks.BaritoneHooks;
 import me.matl114.hooks.impl.baritone.BaritoneFuture;
 import me.matl114.hooks.impl.baritone.BaritoneLanding;
@@ -20,18 +22,25 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.config.ValueAccessor;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec2f;
 
-public class BaritoneFix extends BaseModule {
+public class BaritoneFix extends BaseModule implements LegalMovementManager.MovementModifier {
     public static BaritoneFix INSTANCE;
+
+    static LegalMovementManager.DelegateMovementModifier instance;
 
     public BaritoneFix() {
         super("BaritoneFix");
         INSTANCE = this;
+        if (instance == null) {
+            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
+            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
+        }
+        instance.setDelegate(this::cast);
     }
 
     public final ModulePath fix = makePath(Configs.SURVIVAL_CONFIG, "baritone.fix");
@@ -103,7 +112,7 @@ public class BaritoneFix extends BaseModule {
         super.registerAll();
         registerListener(Listener.getChatSend(), this::onChat);
         registerListener(Listener.getChatSend(), this::onChatCommand);
-        registerListener(Listener.getEntityPostTickListener().getChannel(EntityType.PLAYER), this::onPostTick);
+        registerListener(BaritoneHooks.getMoveRotEvent(), this::onBaritoneMoveRot);
         registerListener(BaritoneHooks.getLandingEvent(), this::onBaritoneComplete);
     }
 
@@ -193,10 +202,14 @@ public class BaritoneFix extends BaseModule {
         return false;
     }
 
+    TimerExecutor lastAutoJumpExecutor = new TimerExecutor();
+
     public boolean handleAutoJump() {
         if (this.autoJumpFix.get() && !mc.player.isFallFlying()) {
-            logI18N("message.module.baritone-fix.autojump-takeoff");
-            ElytraExtra.INSTANCE.autoTakeoff();
+            if (lastAutoJumpExecutor.run(20)) {
+                logI18N("message.module.baritone-fix.autojump-takeoff");
+                ElytraExtra.INSTANCE.autoTakeoff();
+            }
             return true;
         }
         return false;
@@ -218,20 +231,34 @@ public class BaritoneFix extends BaseModule {
         return false;
     }
 
-    public void onPostTick(Event<Entity> event) {
-        if (event.context == mc.player) {
-            if (this.baritoneExperimental2.get()
-                    && mc.player.isFallFlying()
-                    && BaritoneHooks.getInstance().isBaritoneElytraProcessing()
-                    && ElytraExtra.INSTANCE.armorFly.get()) {
-                boolean usingArmorFly = ElytraExtra.INSTANCE.isCurrentArmorGliding();
-                if (usingArmorFly && mc.player.getY() < exp2Min.get()) {
-                    ElytraExtra.INSTANCE.endArmorFlyTransaction(true);
-                } else if (!usingArmorFly && mc.player.getY() > exp2Max.get()) {
-                    ElytraExtra.INSTANCE.startArmorFlyTransaction(-1);
-                }
+    @Override
+    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+        if (!lastAutoJumpExecutor.canRun(20) && mc.player.isFallFlying()) {
+            Box blockCheckBox = mc.player.getBoundingBox().stretch(0, -1, 0).expand(2, 0, 2);
+            Box checkHeadBox = mc.player.getBoundingBox().stretch(0, 1, 0);
+            if (CollisionUtil.isBoxCollided(mc.world, mc.player, blockCheckBox)
+                    && !CollisionUtil.isBoxCollided(mc.world, mc.player, checkHeadBox)) {
+                BaritoneHooks.getInstance().updateBaritoneLookTarget(-89.0F, mc.player.getYaw());
             }
         }
+    }
+
+    public void onBaritoneMoveRot(Event<Vec2f> vec2fEvent) {}
+
+    @Override
+    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+        if (this.baritoneExperimental2.get()
+                && mc.player.isFallFlying()
+                && BaritoneHooks.getInstance().isBaritoneElytraProcessing()
+                && ElytraExtra.INSTANCE.armorFly.get()) {
+            boolean usingArmorFly = ElytraExtra.INSTANCE.isCurrentArmorGliding();
+            if (usingArmorFly && mc.player.getY() < exp2Min.get()) {
+                ElytraExtra.INSTANCE.endArmorFlyTransaction(true);
+            } else if (!usingArmorFly && mc.player.getY() > exp2Max.get()) {
+                ElytraExtra.INSTANCE.startArmorFlyTransaction(-1);
+            }
+        }
+        return true;
     }
 
     public void onBaritoneComplete(Event<BaritoneFuture> event) {

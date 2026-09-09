@@ -129,6 +129,10 @@ public class ServerStorage extends BaseModule {
         return getBlockStorage(pos, (Function<BlockPos, BlockStorage>) null);
     }
 
+    public static BlockStorage getOrCreateBlockStorage(BlockPos pos) {
+        return getBlockStorage(pos, () -> new BlockStorage(mc.world.getRegistryKey(), pos));
+    }
+
     public static BlockStorage getBlockStorage(BlockPos pos, Supplier<BlockStorage> supplier) {
         return getBlockStorage(pos, supplier == null ? null : (v) -> supplier.get());
     }
@@ -163,6 +167,14 @@ public class ServerStorage extends BaseModule {
                     mc.world.getRegistryKey(), k -> new ConcurrentHashMap<>());
             _putToSSSSMap(pos, blockStorage, blockMap);
         }
+    }
+
+    public static ChunkStorage getOrCreateChunkStorage(ChunkPos pos) {
+        return getChunkStorage(pos, () -> new ChunkStorage(mc.world.getRegistryKey(), pos));
+    }
+
+    public static ChunkStorage getChunkStorage(ChunkPos pos) {
+        return getChunkStorage(pos, (Function<ChunkPos, ChunkStorage>) null);
     }
 
     public static ChunkStorage getChunkStorage(ChunkPos pos, Supplier<ChunkStorage> supplier) {
@@ -348,6 +360,12 @@ public class ServerStorage extends BaseModule {
                 },
                 15 * 1000,
                 15 * 1000);
+        // hot load
+        if (!checkNull()) {
+            if (updateServerName()) {
+                onLoadStorage();
+            }
+        }
     }
 
     @Override
@@ -355,6 +373,10 @@ public class ServerStorage extends BaseModule {
         super.unregisterAll();
         if (saveTask != null) {
             ScheduleService.stopAsyncTask(saveTask);
+        }
+        // hot unload
+        if (!checkNull()) {
+            onSave(mc.getNetworkHandler().getRegistryManager());
         }
     }
 

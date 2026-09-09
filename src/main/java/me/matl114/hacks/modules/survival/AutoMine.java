@@ -531,7 +531,7 @@ public class AutoMine extends BaseModule {
             if (lastMinePos == null) {
                 break;
             }
-            if (considerCooldown.get() && MineExtra.INSTANCE.getMiningPacketCooldown() > 0) {
+            if (considerCooldown.get() && MineExtra.INSTANCE.getMiningPacketCooldown(1) > 0) {
                 break;
             }
             PlayerInteractionAccess.of(mc.interactionManager).setMiningCooldown(0);

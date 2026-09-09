@@ -454,6 +454,7 @@ public class SpearEnhance extends BaseModule {
                             if (mutableInt.getAndIncrement() > 20) {
                                 return true;
                             }
+                            if (checkNull()) return true;
                             if (mc.player.isUsingItem()) {
                                 if (mc.player.getActiveHand() == hand
                                         && ItemStack.areItemsAndComponentsEqual(stack, mc.player.getActiveItem())) {

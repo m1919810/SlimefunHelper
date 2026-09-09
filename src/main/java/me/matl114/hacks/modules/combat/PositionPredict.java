@@ -290,7 +290,9 @@ public class PositionPredict extends BaseModule {
         QUADRATIC,
         PREDICTOR_NV,
         @ApiStatus.Experimental
-        PREDICTOR_ROTATION;
+        PREDICTOR_ROTATION,
+        @ApiStatus.Experimental
+        PREDICTOR_ACCELERATE;
 
         @Override
         public String getConfigEnumType() {

@@ -149,6 +149,10 @@ public interface NBTTypes {
 
     public NBTType<PrimitiveList<?>> PRIMITIVE_LIST_TYPE = PrimitiveList.TYPE.cast();
 
+    public NBTType<RecordData> RECORD_DATA_TYPE = RecordData.TYPE.cast();
+
+    public NBTType<DispatchData<?>> DISPATCH_DATA_TYPE = DispatchData.TYPE.cast();
+
     public static DrawableWidget generateColorInputWidget(
             AttrKeyValue<TextColor> keyValue, int x, int y, int dx, int dy) {
         SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, dx, dy);

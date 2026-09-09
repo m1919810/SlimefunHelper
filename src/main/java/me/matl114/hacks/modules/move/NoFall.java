@@ -7,6 +7,7 @@ import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.impl.EventContainer;
+import me.matl114.events.impl.Teleportation;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -108,7 +109,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         lastHeight = 0;
     }
 
-    protected void onSetback(Event<MovTasks.MovInfo> setBackEvent) {
+    protected void onSetback(Event<Teleportation> setBackEvent) {
         getDelegate().onSetback(setBackEvent);
     }
 
@@ -123,7 +124,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getTeleportConfirmResponsePoint(), this::onSetback);
+        registerListener(Listener.getTeleportationConfirm(), this::onSetback);
         registerListener(Listener.getEntityClientVelocityUpdate().getChannel(EntityType.PLAYER), this::onVcUpdate);
         registerListener(Listener.getPlayerInitConfiguration(), this::onPlayerInit);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetLoad);
@@ -221,7 +222,8 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
 
         if (args.getAbilities().invulnerable
                 || (disableFlyNoFall.get() && MovTasks.getFlight().serverSideCanFly)
-                || checkInvulnerableEquipment()) {
+                || checkInvulnerableEquipment()
+                || NoGround.INSTANCE.isActive()) {
             entityStage = ENTITY_STAGE_INVULNERABLE;
             return;
         }
@@ -290,7 +292,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             this.module = module;
         }
 
-        public void onSetback(Event<MovTasks.MovInfo> setBack) {
+        public void onSetback(Event<Teleportation> setBack) {
             noFallSetbackResponse = false;
         }
 
@@ -303,18 +305,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
 
         public NoFallNoBypass(NoFall module) {
             super(module);
-        }
-
-        @Override
-        public void onSetback(Event<MovTasks.MovInfo> event) {
-            if (module.isActive()
-                    && (event.context.oGroundOverride() == null
-                            || noFallSetbackResponse != (boolean) event.context.oGroundOverride())) {
-                var info = event.context();
-                event.context(
-                        new MovTasks.MovInfo(info.vec3d(), noFallSetbackResponse, false, info.rotationOverride()));
-            }
-            super.onSetback(event);
         }
 
         @Override
@@ -376,7 +366,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         }
 
         @Override
-        public void onSetback(Event<MovTasks.MovInfo> setBack) {
+        public void onSetback(Event<Teleportation> setBack) {
             afterSetbackFlag = true;
             super.onSetback(setBack);
         }
@@ -470,7 +460,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         }
 
         @Override
-        public void onSetback(Event<MovTasks.MovInfo> event) {
+        public void onSetback(Event<Teleportation> event) {
             nofallWaitSetbackFlag = false;
             super.onSetback(event);
         }
@@ -628,7 +618,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         }
 
         @Override
-        public void onSetback(Event<MovTasks.MovInfo> setBack) {
+        public void onSetback(Event<Teleportation> setBack) {
             afterSetbackFlag = true;
             lastResyncTime = Tasks.getTick();
             Vec3d vc3d = setBack.context.vec3d();
@@ -831,13 +821,9 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         Vec3d lastNoFallPos = null;
         Boolean shouldApplyOnGroundReverseNextTick;
         int duplicateCount = 0;
-        // left for usage
-        boolean flag1;
-        boolean flag2;
-        int cnt1;
-        int cnt2;
         Vec3d lastSetBackPos;
         int duplicateSetback = 0;
+        int waitResyncTicks = 0;
         private static final int latency = 3;
 
         public NoFallGrimLazyPlus(NoFall module) {
@@ -847,7 +833,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         }
 
         @Override
-        public void onSetback(Event<MovTasks.MovInfo> setBack) {
+        public void onSetback(Event<Teleportation> setBack) {
             afterSetbackFlag = true;
             lastResyncTime = Tasks.getTick();
             Vec3d vc3d = setBack.context.vec3d();
@@ -939,9 +925,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                         input = input.jump(true);
                     }
                 }
-                if (!entity.isFallFlying()) {
-                    input.applyInput(entity);
-                }
+                input.applyInput(entity);
                 //                else {
                 //                    input.sendPlayerInputPacket();
                 //                }
@@ -1128,7 +1112,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         }
 
         @Override
-        public void onSetback(Event<MovTasks.MovInfo> setBack) {
+        public void onSetback(Event<Teleportation> setBack) {
             afterSetbackFlag = true;
             Vec3d nowV3d = setBack.context.vec3d();
             if (lastStartWaitPos != null
@@ -1140,14 +1124,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 lastStartWaitAcceptTick = Tasks.getTick();
                 step = Step.WAIT_FOR_RESYNC;
             }
-            //            if(lastRotTick + 2 >= Tasks.getTick()){
-            //                var ctx = setBack.context();
-            //                setBack.context(new MovTasks.MovInfo(ctx.vec3d(), ctx.oGroundOverride(),
-            // ctx.updatePlayer(), new Vec2f(ctx.rotationOverride().x, modifyYaw)));
-            //            }
-            //            else {
-            //                // die
-            //            }
             super.onSetback(setBack);
         }
 
@@ -1293,14 +1269,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         int lastFixTick = 0;
 
         @Override
-        public void onPlayerVelocity(Event<Vec3d> playerVec) {
-            //            if(lastFixTick + 10 > Tasks.getTick()){
-            //                Vec3d vc3d = playerVec.context();
-            //                if(vc3d.y < 0){
-            //                    playerVec.context(new Vec3d(vc3d.x, 0.0D, vc3d.z));
-            //                }
-            //            }
-        }
+        public void onPlayerVelocity(Event<Vec3d> playerVec) {}
 
         @Override
         public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
@@ -1384,14 +1353,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                             module.lastOnGroundHeight = entity.pos.getY();
                             // ClientTickEndC2SPacket());
                             Vec3d lastPosPos = movementManagerEvent.context.playerStatus.pos;
-                            //                            // try use simple nofall to bypass other ac
-                            //                            storedPacketMove = VPacket.newPositionAndOnGround(
-                            //                                    lastPosPos.x,
-                            //                                    module.lastServerY + 9E-8,
-                            //                                    lastPosPos.z,
-                            //                                    // mc.player.getYaw()+ 180, mc.player.getPitch(),
-                            //                                    false,
-                            //                                    entity.horizontalCollision);
                             // can not use simple noFall , I dont know why, fuck grimac mother fucker
                             storedPacketMove = VPacket.newOnGroundOnly(true, entity.horizontalCollision);
 
@@ -1488,11 +1449,10 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         }
 
         @Override
-        public void onSetback(Event<MovTasks.MovInfo> setBack) {
+        public void onSetback(Event<Teleportation> setBack) {
             super.onSetback(setBack);
             if (nextTickReset) {
                 nextTickReset = false;
-                // setBack.context(setBack.context().withOGroundOverride(Boolean.TRUE));
                 last = true;
             }
         }
@@ -1553,7 +1513,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         }
 
         @Override
-        public void onSetback(Event<MovTasks.MovInfo> setBack) {
+        public void onSetback(Event<Teleportation> setBack) {
             afterSetbackFlag = true;
             Vec3d nowV3d = setBack.context.vec3d();
             if (lastStartWaitPos != null
@@ -1565,14 +1525,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 lastStartWaitAcceptTick = Tasks.getTick();
                 step = Step.WAIT_FOR_RESYNC;
             }
-            //            if(lastRotTick + 2 >= Tasks.getTick()){
-            //                var ctx = setBack.context();
-            //                setBack.context(new MovTasks.MovInfo(ctx.vec3d(), ctx.oGroundOverride(),
-            // ctx.updatePlayer(), new Vec2f(ctx.rotationOverride().x, modifyYaw)));
-            //            }
-            //            else {
-            //                // die
-            //            }
             super.onSetback(setBack);
         }
 
@@ -1719,14 +1671,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         int lastFixTick = 0;
 
         @Override
-        public void onPlayerVelocity(Event<Vec3d> playerVec) {
-            //            if(lastFixTick + 10 > Tasks.getTick()){
-            //                Vec3d vc3d = playerVec.context();
-            //                if(vc3d.y < 0){
-            //                    playerVec.context(new Vec3d(vc3d.x, 0.0D, vc3d.z));
-            //                }
-            //            }
-        }
+        public void onPlayerVelocity(Event<Vec3d> playerVec) {}
 
         @Override
         public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
@@ -1903,7 +1848,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         }
 
         @Override
-        public void onSetback(Event<MovTasks.MovInfo> setBack) {
+        public void onSetback(Event<Teleportation> setBack) {
             super.onSetback(setBack);
             noFallSetbackResponse = true;
         }

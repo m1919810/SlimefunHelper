@@ -57,84 +57,89 @@ public class AntiChunkLag extends BaseModule implements LegalMovementManager.Mov
 
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
-        int chunkSize = 1 + (velocity.get() / 16);
-        boolean hasUnloadedChunk = false;
-        ChunkPos playerChunkPos = mc.player.getChunkPos();
-        Vec3d playerHorizontalPos = mc.player.getPos().withAxis(Direction.Axis.Y, 0);
-        double distanceS2 = MathUtils.s2(velocity.get());
-        search:
-        for (var x = -chunkSize; x <= chunkSize; x++) {
-            for (var z = -chunkSize; z <= chunkSize; z++) {
-                ChunkPos chunkPos = new ChunkPos(x + playerChunkPos.x, z + playerChunkPos.z);
-                if (WorldUtils.isChunkLoaded(chunkPos.x, chunkPos.z)) {
-                    continue;
-                }
-                Vec3d startPos = new Vec3d(chunkPos.getStartX(), 0, chunkPos.getStartZ());
-                Box chunkBox = new Box(startPos, startPos.add(16, 0, 16));
-                double distance = Math.max(
-                        MathUtils.getBoxDistance(playerHorizontalPos.x, chunkBox.minX, chunkBox.maxX),
-                        MathUtils.getBoxDistance(playerHorizontalPos.z, chunkBox.minZ, chunkBox.maxZ));
-                if (distance < distanceS2) {
-                    hasUnloadedChunk = true;
-                    break search;
-                }
-            }
-        }
-        boolean val = hasUnloadedChunk;
-        if (val && !currentMayFaceLagChunk) {
-            currentMayFaceLagChunk = true;
-            if (enable.get() && log.get()) {
-                logI18N("message.module.anti-chunk-lag.facing-lag");
-            }
-        } else if (!val && currentMayFaceLagChunk) {
-            currentMayFaceLagChunk = false;
-        }
-        if (currentMayFaceLagChunk && enable.get() && freeze.get()) {
-            Vec3d currentPos = mc.player.getPos();
-            Vec3d oldPos = movementManagerEvent.context.playerStatus.pos;
-            Vec3d movement = currentPos.subtract(oldPos);
-            int movementSgnX = (int) MathUtils.sgn(movement.x);
-            int movementSgnZ = (int) MathUtils.sgn(movement.z);
-            if (movementSgnZ != 0 || movementSgnX != 0) {
-                boolean hasUnloaded = false;
-                search:
-                for (var x = 0; x <= chunkSize; x++) {
-                    for (var z = 0; z <= chunkSize; z++) {
-                        ChunkPos chunkPos =
-                                new ChunkPos(x * movementSgnX + playerChunkPos.x, z * movementSgnZ + playerChunkPos.z);
-                        if (WorldUtils.isChunkLoaded(chunkPos.x, chunkPos.z)) {
-                            continue;
-                        }
-                        Vec3d startPos = new Vec3d(chunkPos.getStartX(), 0, chunkPos.getStartZ());
-                        Box chunkBox = new Box(startPos, startPos.add(16, 0, 16));
-                        double distance = Math.max(
-                                MathUtils.getBoxDistance(playerHorizontalPos.x, chunkBox.minX, chunkBox.maxX),
-                                MathUtils.getBoxDistance(playerHorizontalPos.z, chunkBox.minZ, chunkBox.maxZ));
-                        if (distance < distanceS2) {
-                            hasUnloaded = true;
-                            break search;
-                        }
+        if (enable.get()) {
+            int chunkSize = 1 + (velocity.get() / 16);
+            boolean hasUnloadedChunk = false;
+            ChunkPos playerChunkPos = mc.player.getChunkPos();
+            Vec3d playerHorizontalPos = mc.player.getPos().withAxis(Direction.Axis.Y, 0);
+            double distanceS2 = MathUtils.s2(velocity.get());
+            search:
+            for (var x = -chunkSize; x <= chunkSize; x++) {
+                for (var z = -chunkSize; z <= chunkSize; z++) {
+                    ChunkPos chunkPos = new ChunkPos(x + playerChunkPos.x, z + playerChunkPos.z);
+                    if (WorldUtils.isChunkLoaded(chunkPos.x, chunkPos.z)) {
+                        continue;
+                    }
+                    Vec3d startPos = new Vec3d(chunkPos.getStartX(), 0, chunkPos.getStartZ());
+                    Box chunkBox = new Box(startPos, startPos.add(16, 0, 16));
+                    double distance = Math.max(
+                            MathUtils.getBoxDistance(playerHorizontalPos.x, chunkBox.minX, chunkBox.maxX),
+                            MathUtils.getBoxDistance(playerHorizontalPos.z, chunkBox.minZ, chunkBox.maxZ));
+                    if (distance < distanceS2) {
+                        hasUnloadedChunk = true;
+                        break search;
                     }
                 }
-                if (hasUnloaded) {
-                    movementManagerEvent.context.playerStatus.restorePos();
-                    FloatingUtils.INSTANCE.setGrimFloatingTick(true);
-                    // fix armorGlide
-                    if (mc.player.isFallFlying()) {
-                        if (ElytraExtra.INSTANCE.isCurrentArmorGliding()) {
-                            if (ElytraExtra.INSTANCE.isThisTickArmoGlideMovementServerSideGlide()) {
-                                FloatingUtils.INSTANCE.setForceSilent(false);
+            }
+            boolean val = hasUnloadedChunk;
+            if (val && !currentMayFaceLagChunk) {
+                currentMayFaceLagChunk = true;
+                if (log.get()) {
+                    logI18N("message.module.anti-chunk-lag.facing-lag");
+                }
+            } else if (!val && currentMayFaceLagChunk) {
+                currentMayFaceLagChunk = false;
+            }
+
+            if (currentMayFaceLagChunk && freeze.get()) {
+                Vec3d currentPos = mc.player.getPos();
+                Vec3d oldPos = movementManagerEvent.context.playerStatus.pos;
+                Vec3d movement = currentPos.subtract(oldPos);
+                int movementSgnX = (int) MathUtils.sgn(movement.x);
+                int movementSgnZ = (int) MathUtils.sgn(movement.z);
+                if (movementSgnZ != 0 || movementSgnX != 0) {
+                    boolean hasUnloaded = false;
+                    search:
+                    for (var x = 0; x <= chunkSize; x++) {
+                        for (var z = 0; z <= chunkSize; z++) {
+                            ChunkPos chunkPos = new ChunkPos(
+                                    x * movementSgnX + playerChunkPos.x, z * movementSgnZ + playerChunkPos.z);
+                            if (WorldUtils.isChunkLoaded(chunkPos.x, chunkPos.z)) {
+                                continue;
+                            }
+                            Vec3d startPos = new Vec3d(chunkPos.getStartX(), 0, chunkPos.getStartZ());
+                            Box chunkBox = new Box(startPos, startPos.add(16, 0, 16));
+                            double distance = Math.max(
+                                    MathUtils.getBoxDistance(playerHorizontalPos.x, chunkBox.minX, chunkBox.maxX),
+                                    MathUtils.getBoxDistance(playerHorizontalPos.z, chunkBox.minZ, chunkBox.maxZ));
+                            if (distance < distanceS2) {
+                                hasUnloaded = true;
+                                break search;
+                            }
+                        }
+                    }
+                    if (hasUnloaded) {
+                        movementManagerEvent.context.playerStatus.restorePos();
+                        FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                        // fix armorGlide
+                        if (mc.player.isFallFlying()) {
+                            if (ElytraExtra.INSTANCE.isCurrentArmorGliding()) {
+                                if (ElytraExtra.INSTANCE.isThisTickArmoGlideMovementServerSideGlide()) {
+                                    FloatingUtils.INSTANCE.setForceSilent(false);
+                                } else {
+                                    FloatingUtils.INSTANCE.setForceSilent(true);
+                                }
                             } else {
-                                FloatingUtils.INSTANCE.setForceSilent(true);
+                                FloatingUtils.INSTANCE.setForceSilent(false);
                             }
                         } else {
-                            FloatingUtils.INSTANCE.setForceSilent(false);
+                            FloatingUtils.INSTANCE.setForceSilent(true);
                         }
-                    } else {
-                        FloatingUtils.INSTANCE.setForceSilent(true);
                     }
                 }
             }
+        } else {
+            currentMayFaceLagChunk = false;
         }
     }
 

@@ -50,7 +50,7 @@ public class NameList extends INameTag {
         if (checkNull()) {
             return;
         }
-        if (enable.get() && nameTagInfos != null) {
+        if (enable.get() && !event.<Boolean>getArgs(1) && nameTagInfos != null) {
             var stack = event.context;
             stack.getMatrices().pushMatrix();
             handleRenderPosition(stack);

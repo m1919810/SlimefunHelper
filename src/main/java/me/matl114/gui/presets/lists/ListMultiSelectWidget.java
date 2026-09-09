@@ -11,7 +11,6 @@ import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.IconElement;
 import me.matl114.utils.ChatUtils;
-import me.matl114.utils.Debug;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.util.Colors;
@@ -53,9 +52,6 @@ public class ListMultiSelectWidget<W> extends ScrollableListWidget {
             this.list.put(
                     shit,
                     AttrKeyValue.bool("widget.gui.list-multi-select-widget.selected", currentSelection.contains(shit)));
-            if (currentSelection.contains(shit)) {
-                Debug.info("contains", shit);
-            }
         }
         this.entryHeight = height;
         this.filter = filter;

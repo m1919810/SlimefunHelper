@@ -154,7 +154,7 @@ public class AutoPlate extends BaseModule {
     public void onInput(Event<Void> event) {
         if (checkNull()) return;
         if (enable.get()) {
-            if (++timer > delay.get()) {
+            if (++timer >= delay.get()) {
                 timer = 0;
                 refreshState();
                 if (!placeList.isEmpty()) {
