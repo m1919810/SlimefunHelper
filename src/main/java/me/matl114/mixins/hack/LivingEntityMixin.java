@@ -53,12 +53,6 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
     @Shadow
     public abstract void equipStack(EquipmentSlot slot, ItemStack stack);
 
-    @Shadow
-    protected abstract boolean isTravellingInFluid(FluidState state);
-
-    @Shadow
-    public abstract void updateLimbs(boolean flutter);
-
     @Unique
     @Override
     public float getJumpUpwardSpeed(float strength) {
