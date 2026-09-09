@@ -645,32 +645,34 @@ public class MovTasks {
     public static boolean isCollidingWithEnvironment(Entity entity) {
         final List<Box> collisionsBB = new java.util.ArrayList<>();
         final List<VoxelShape> collisionsVoxel = new java.util.ArrayList<>();
-        CollisionUtil.getCollisionsForBlocksOrWorldBorder(
+        return CollisionUtil.getCollisionsForBlocksOrWorldBorder(
                 entity.getEntityWorld(),
                 entity,
                 entity.getBoundingBox(),
                 collisionsVoxel,
                 collisionsBB,
+                null,
                 CollisionUtil.COLLISION_FLAG_CHECK_BORDER,
                 null,
-                null);
-        return !collisionsVoxel.isEmpty() || !collisionsBB.isEmpty();
+                null,
+                true);
     }
 
     @ApiMethod
     public static boolean isCollidingWithEnvironment(Entity entity, Box box) {
         final List<Box> collisionsBB = new java.util.ArrayList<>();
         final List<VoxelShape> collisionsVoxel = new java.util.ArrayList<>();
-        CollisionUtil.getCollisionsForBlocksOrWorldBorder(
+        return CollisionUtil.getCollisionsForBlocksOrWorldBorder(
                 mc.world,
                 entity,
                 box,
                 collisionsVoxel,
                 collisionsBB,
+                null,
                 CollisionUtil.COLLISION_FLAG_CHECK_BORDER,
                 null,
-                null);
-        return !collisionsVoxel.isEmpty() || !collisionsBB.isEmpty();
+                null,
+                true);
     }
 
     @ApiMethod
@@ -2208,6 +2210,9 @@ public class MovTasks {
     private static NoFall noFall;
 
     @Getter
+    private static NoGround noGround;
+
+    @Getter
     private static SetBackLog setBackLog;
 
     @Getter
@@ -2221,6 +2226,9 @@ public class MovTasks {
 
     @Getter
     private static Sprint sprint;
+
+    @Getter
+    private static SwimControl swimControl;
 
     @Getter
     private static MoveTimer moveTimer;
@@ -2253,9 +2261,6 @@ public class MovTasks {
     private static FloatingUtils floatingUtils;
 
     @Getter
-    private static ElytraSlowFall elytraSlowFall;
-
-    @Getter
     private static MovTest movTest;
 
     @Getter
@@ -2277,12 +2282,13 @@ public class MovTasks {
         forwardTp = new ForwardTp().register(m);
         noSlowDown = new NoSlowDown().register(m);
         noFall = new NoFall().register(m);
-
+        noGround = new NoGround().register(m);
         setBackLog = new SetBackLog().register(m);
         autoResync = new AutoResync().register(m);
         antiChunkLag = new AntiChunkLag().register(m);
         flight = new Flight().register(m);
         sprint = new Sprint().register(m);
+        swimControl = new SwimControl().register(m);
         moveTimer = new MoveTimer().register(m);
         stepHeight = new StepHeight().register(m);
         elytraExtra = new ElytraExtra().register(m);
@@ -2293,7 +2299,6 @@ public class MovTasks {
         // elytraFlightLegit = new ElytraFlightLegit().register(m);
         velocity = new Velocity().register(m);
         floatingUtils = new FloatingUtils().register(m);
-        elytraSlowFall = new ElytraSlowFall().register(m);
         movTest = new MovTest().register(m);
         tpaCommand = new TpaCommand().register(m);
         targetCommand = new TargetCommand().register(m);
@@ -2319,7 +2324,7 @@ public class MovTasks {
         // teleport management
 
         // nofall
-        // Listener.getTeleportConfirmResponsePoint().registerHandler(MovTasks::onSetBackResponseAction);
+        // Listener.getTeleportationConfirm().registerHandler(MovTasks::onSetBackResponseAction);
         // PLAYER_PIPELINE_POS.addMovementModifierFactory(MovTasks::configureNoFall);
         // sprint
         // PLAYER_PIPELINE_ROT.addMovementModifierFactory(MovTasks::configureLegalDirectionalSprint);

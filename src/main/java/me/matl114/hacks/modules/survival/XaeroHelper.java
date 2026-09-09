@@ -5,12 +5,14 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import java.util.*;
 import java.util.function.Consumer;
+import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.chat.InGuiChatBox;
 import me.matl114.hacks.modules.move.TravellingControl;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.hooks.XaeroHooks;
@@ -27,6 +29,7 @@ import me.matl114.utils.ChatUtils;
 import me.matl114.utils.CommonUtils;
 import me.matl114.utils.MathUtils;
 import me.matl114.utils.ScreenUtils;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.text.Text;
@@ -59,8 +62,7 @@ public class XaeroHelper extends BaseModule {
 
     public final FlagRef xaeroCommandInsert =
             flagBuilder(root.add("enable-xaero-right-click-command")).build();
-    private static final List<String> LIST_FORMATS =
-            List.of("world", "world_path", "pos", "pos_str", "pos_x", "pos_y", "pos_z");
+    private static final List<String> LIST_FORMATS = List.of("world", "pos", "pos_str", "x", "y", "z");
     public final NBTRef<PrimitiveList<StringFormat>> xaeroRightClickCommand = builder(
                     root.add("xaero-right-click-command-list"), PrimitiveList.type(StringFormat.class))
             .defaultValue(new PrimitiveList<>(
@@ -80,12 +82,19 @@ public class XaeroHelper extends BaseModule {
     public final FlagRef travelGoalSync =
             flagBuilder(root.add("travel-goal-sync")).build();
 
+    public final FlagRef transparentGuiMapFix =
+            flagBuilder(root.add("transparent-gui-map-fix")).build();
+
+    public final FlagRef addChatInGuiMap =
+            flagBuilder(root.add("add-chat-input-in-gui-map")).build();
+
     @Override
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPostGameTick(), this::onTickMapRender);
         registerListener(XaeroHooks.getWorldMapRightClickOption(), this::onXaeroWorldMapClick);
         registerListener(Listener.getPostGameTick(), this::onXaeroTempWaypointSync);
+        registerListener(Listener.getPostInitializeScreen(), this::onGuiSetup);
     }
 
     @Override
@@ -189,9 +198,9 @@ public class XaeroHelper extends BaseModule {
     private static final Map<String, Object> formatMap = ImmutableMap.<String, Object>builder()
             .put("pos", Text.translatable("message.module.xaero-helper.right-click-command.pos"))
             .put("pos_str", Text.translatable("message.module.xaero-helper.right-click-command.pos_str"))
-            .put("pos_x", Text.translatable("message.module.xaero-helper.right-click-command.pos_x"))
-            .put("pos_y", Text.translatable("message.module.xaero-helper.right-click-command.pos_y"))
-            .put("pos_z", Text.translatable("message.module.xaero-helper.right-click-command.pos_z"))
+            .put("x", Text.translatable("message.module.xaero-helper.right-click-command.pos_x"))
+            .put("y", Text.translatable("message.module.xaero-helper.right-click-command.pos_y"))
+            .put("z", Text.translatable("message.module.xaero-helper.right-click-command.pos_z"))
             .build();
 
     public void onXaeroWorldMapClick(Event<ArrayList<MapClickContext>> event) {
@@ -199,13 +208,12 @@ public class XaeroHelper extends BaseModule {
             RegistryKey<World> worldKey = event.getArgs(0);
             BlockPos pos = event.getArgs(1);
             Map<String, String> map = ImmutableMap.<String, String>builder()
-                    .put("world", worldKey.getValue().toString())
-                    .put("world_path", worldKey.getValue().getPath())
+                    .put("world", worldKey.getValue().getPath())
                     .put("pos", "%d %d %d".formatted(pos.getX(), pos.getY(), pos.getZ()))
                     .put("pos_str", "%d,%d,%d".formatted(pos.getX(), pos.getY(), pos.getZ()))
-                    .put("pos_x", String.valueOf(pos.getX()))
-                    .put("pos_y", String.valueOf(pos.getY()))
-                    .put("pos_z", String.valueOf(pos.getZ()))
+                    .put("x", String.valueOf(pos.getX()))
+                    .put("y", String.valueOf(pos.getY()))
+                    .put("z", String.valueOf(pos.getZ()))
                     .build();
             for (var format : xaeroRightClickCommand.get().list()) {
                 String name = ChatUtils.textToPlainString(Text.translatable(
@@ -288,6 +296,14 @@ public class XaeroHelper extends BaseModule {
                     acc.setZ(pos.getZ());
                 });
             }
+        }
+    }
+
+    public void onGuiSetup(Event<Screen> screenEvent) {
+        if (XaeroHooks.getInstance().isGuiMap(screenEvent.context)
+                && addChatInGuiMap.get()
+                && !InGuiChatBox.INSTANCE.enableOther.get()) {
+            ScreenAccess.of(screenEvent.context).addDrawableChildTo(InGuiChatBox.INSTANCE.createDefaultInputWidget());
         }
     }
 

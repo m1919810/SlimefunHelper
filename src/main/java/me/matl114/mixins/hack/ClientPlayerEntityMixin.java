@@ -7,9 +7,12 @@ import com.mojang.authlib.GameProfile;
 import java.util.Objects;
 import lombok.Getter;
 import me.matl114.accessors.access.ClientPlayerAccess;
+import me.matl114.events.Event;
 import me.matl114.hacks.*;
+import me.matl114.hacks.modules.extra.BadPacketsFix;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.MoveTimer;
+import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.modules.move.Sprint;
 import me.matl114.hacks.modules.render.NoRender;
 import net.fabricmc.api.EnvType;
@@ -19,6 +22,7 @@ import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.input.Input;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
+import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.command.permission.PermissionPredicate;
@@ -29,6 +33,8 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.screen.ScreenHandler;
@@ -45,7 +51,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ClientPlayerEntity.class)
-public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity implements ClientPlayerAccess {
+public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity implements ClientPlayerAccess {
     @Unique
     private boolean forceNoFall;
 
@@ -57,7 +63,7 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
         this.forceNoFall = fall;
     }
 
-    public ClientPlayerMixin(ClientWorld world, GameProfile profile) {
+    public ClientPlayerEntityMixin(ClientWorld world, GameProfile profile) {
         super(world, profile);
     }
 
@@ -96,6 +102,12 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
 
     @Shadow
     private boolean usingItem;
+
+    @Shadow
+    public abstract void init();
+
+    @Shadow
+    private boolean inSneakingPose;
 
     @Getter
     @Unique
@@ -421,6 +433,24 @@ public abstract class ClientPlayerMixin extends AbstractClientPlayerEntity imple
     public void onBlockVelocity(double x, double z, CallbackInfo ci) {
         if (MovTasks.getVelocity().noBlock.get()) {
             ci.cancel();
+        }
+    }
+
+    @WrapOperation(
+            method = "tick",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/network/ClientPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V",
+                            ordinal = 0))
+    private void captureInputPacketSendToAvoidIdiotViaFabricPlus(
+            ClientPlayNetworkHandler instance, Packet packet, Operation<Void> original) {
+        original.call(instance, packet);
+        if (packet instanceof PlayerInputC2SPacket inputShit) {
+            Event<PlayerInputC2SPacket> fakeEvent = new Event<>(inputShit, true, true);
+            PlayerStateManager.INSTANCE.onPlayerInput(fakeEvent);
+            BadPacketsFix.INSTANCE.onSendInput(fakeEvent);
         }
     }
 }

@@ -17,6 +17,7 @@
 		"viaversion.PacketWrapperSendEvents",
 		"xaero.XaeroGuiMapMixin",
 		"xaero.XaeroGuiRightClickMenuMixin",
+		"xaero.XaeroInGameHudMixin",
 		"xaero.XaeroMapProcessorMixin",
 		"xaero.XaeroMinimapSaveMixin",
 		"xaero.XaeroPlusBaritonePathHelperMixin"

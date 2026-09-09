@@ -195,13 +195,13 @@ public class PacketHelper {
 
     public static void sendStopMining() {
         var access = PlayerInteractionAccess.of(mc.interactionManager); // .sendStopBreakPacket();
-        access.sendBreakPacket();
+        access.sendBreakPacket(true);
     }
 
     public static void sendStopMining(Object pos, Object direction) {
         Direction dir = JsHelper.toEnum(direction, Direction.class);
         BlockPos blockPos = DataHelper.createBlockPos(pos);
-        PlayerInteractionAccess.of(mc.interactionManager).sendBreakPacket(blockPos, dir);
+        PlayerInteractionAccess.of(mc.interactionManager).sendBreakPacket(blockPos, dir, true);
     }
 
     public static void sendStopMining(int x, int y, int z, Object direction) {}

@@ -10,6 +10,7 @@ import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
@@ -19,7 +20,6 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.MathUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.BlockState;
@@ -49,6 +49,9 @@ public class QueueMine extends BaseModule {
 
     public final FlagRef useDoubleBreak =
             flagBuilder(packetMine.add("double-break")).build();
+
+    public final FlagRef ignoreCooldown =
+            flagBuilder(packetMine.add("ignore-cooldown")).build();
 
     public final FlagRef supportDoubleBreakGhostHand =
             flagBuilder(packetMine.add("double-break-ghost-hand")).build();
@@ -91,62 +94,59 @@ public class QueueMine extends BaseModule {
     }
 
     public void tickQueue() {
-
-        if (MineExtra.INSTANCE.getMiningPacketCooldown() > 0) {
-            return;
+        boolean shouldTryStartBreak = true;
+        if (!ignoreCooldown.get() && MineExtra.INSTANCE.getMiningPacketCooldown(1) > 0) {
+            shouldTryStartBreak = false;
         }
         var access = PlayerInteractionAccess.of(mc.interactionManager);
         if (access == null) return;
-        if (useDoubleBreak.get()
-                && !MineExtra.INSTANCE.isVanillaDoubleMineCooldownComplete(5)
-                && !MineExtra.INSTANCE.isVanillaMineCooldownComplete(1)) {
-            return;
-        }
 
-        boolean currentCanDoubleBreak = access.getCurrentFailBreakPos() == null && useDoubleBreak.get();
-        while (!breakRequest.isEmpty()) {
-            BlockPos posLatest = breakRequest.peek();
-            if (new Box(posLatest).squaredMagnitude(mc.player.getEyePos())
-                    > MathUtils.s2(mc.player.getBlockInteractionRange() + 1)) {
-                breakRequest.poll();
-                continue;
-            }
-            BlockState state = mc.world.getBlockState(posLatest);
-            if (state.getBlock().getHardness() < 0.0F || state.isLiquid() || state.isAir()) {
-                breakRequest.poll();
-                continue;
-            }
-            BlockPos currentMiningPos = access.getCurrentMiningPos();
-            if (!Objects.equals(currentMiningPos, posLatest)) {
-                // change
-                //                if(rotate.get()){
-                //
-                //                }
-                access.sendStartBreakPacket(posLatest);
-                if (currentCanDoubleBreak) {
+        if (shouldTryStartBreak) {
+            boolean currentCanDoubleBreak = access.getCurrentFailBreakPos() == null && useDoubleBreak.get();
+            while (!breakRequest.isEmpty()) {
+                BlockPos posLatest = breakRequest.peek();
+                if (!InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), posLatest)) {
+                    breakRequest.poll();
+                    continue;
+                }
+                BlockState state = mc.world.getBlockState(posLatest);
+                if (state.getBlock().getHardness() < 0.0F || state.isLiquid() || state.isAir()) {
+                    breakRequest.poll();
+                    continue;
+                }
+                BlockPos currentMiningPos = access.getCurrentMiningPos();
+                if (!Objects.equals(currentMiningPos, posLatest)) {
+                    // change
+                    //                if(rotate.get()){
+                    //
+                    //                }
+                    access.sendStartBreakPacket(posLatest);
+                    if (currentCanDoubleBreak) {
+                        access.sendFailBreakCurrentPos(null);
+                        currentCanDoubleBreak = false;
+                        breakRequest.poll();
+                    } else {
+                        if (Objects.equals(access.getCurrentMiningPos(), posLatest)) {
+                            access.sendAbortBreakPacket();
+                            break;
+                        } else {
+                            // instant break, next block
+                            breakRequest.poll();
+                        }
+                    }
+                } else if (currentCanDoubleBreak) {
                     access.sendFailBreakCurrentPos(null);
                     currentCanDoubleBreak = false;
                     breakRequest.poll();
                 } else {
-                    if (Objects.equals(access.getCurrentMiningPos(), posLatest)) {
-                        access.sendAbortBreakPacket();
-                        break;
-                    } else {
-                        // instant break, next block
-                        breakRequest.poll();
-                    }
+                    break;
                 }
-            } else if (currentCanDoubleBreak) {
-                access.sendFailBreakCurrentPos(null);
-                currentCanDoubleBreak = false;
-                breakRequest.poll();
-            } else {
-                break;
             }
         }
         if (!breakRequest.isEmpty()) {
             BlockPos posLatest = breakRequest.peek();
-            if (Objects.equals(posLatest, access.getCurrentMiningPos())) {
+            if (Objects.equals(posLatest, access.getCurrentMiningPos())
+                    && InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), posLatest)) {
                 if (access.breakIfComplete()) {
                     breakRequest.poll();
                 }

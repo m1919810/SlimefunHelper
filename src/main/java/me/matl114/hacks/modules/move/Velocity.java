@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.move;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Objects;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -10,6 +11,7 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.modules.mine.FakeBlockManager;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -21,12 +23,11 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.network.OffThreadException;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
 import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.registry.tag.DamageTypeTags;
-import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
 public class Velocity extends BaseModule implements LegalMovementManager.MovementModifier {
@@ -58,7 +59,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
             .show(() -> mode.get().isIn(Mode.GRIM_LEGACY_GROUND))
             .build();
 
-    public final IntRef resetKBTick = intBuilder(antiKb.add("grim-reset-kb-tick"))
+    public final IntRef maxResetKBTick = intBuilder(antiKb.add("grim-reset-kb-tick"))
             .defaultValue(3)
             .show(() -> mode.get().isIn(Mode.GRIM_LEGACY_GROUND))
             .build();
@@ -116,7 +117,6 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         // 在此处注册事件监听器（当前为空）
         registerListener(Listener.getEntityClientVelocityUpdate().getChannel(EntityType.PLAYER), this::onVelocity);
         registerListener(Listener.getPlayerExplosionVelocity(), this::onExplosion);
-        registerListener(Listener.getTeleportConfirmResponsePoint(), this::onPlayerSetBack);
         registerListener(Listener.getPacketPoint().getChannel(EntityDamageS2CPacket.class), this::onEntityDamage);
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onSendMove);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
@@ -285,31 +285,32 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
 
     public void handleVelocityGrimNew(Event<Vec3d> eventVc) {}
 
+    private BlockPos lastBlockPos;
+
     public void onPreTick(Event<ClientPlayerEntity> eventPreTick) {
         if (!enable.get()) {
             return;
         }
         if (flagLegacy) {
-            mc.interactionManager.sendSequencedPacket(
-                    mc.world,
-                    (seq) -> new PlayerActionC2SPacket(
-                            PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK,
-                            mc.player.isCrawling()
-                                    ? mc.player.getBlockPos()
-                                    : mc.player.getBlockPos().up(),
-                            Direction.DOWN,
-                            seq));
-            //            BlockPos pos = (mc.player.isCrawling() ? mc.player.getBlockPos() :
-            // mc.player.getBlockPos().up()).down();
-            //            mc.interactionManager.sendSequencedPacket(mc.world, (seq)-> new
-            // PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, new BlockHitResult(pos.toBottomCenterPos(), Direction.DOWN,
-            // pos, false ), seq));
-            if (lastCancelVelocityTick + resetKBTick.get() <= Tasks.getTick()) {
+            BlockPos pos = mc.player.isCrawling()
+                    ? mc.player.getBlockPos()
+                    : mc.player.getBlockPos().up();
+            if (Objects.equals(lastBlockPos, pos)) {
+                if (!FakeBlockManager.INSTANCE.isCurrentlyFakeState(pos)) {
+                    flagLegacy = false;
+                    return;
+                }
+            } else {
+                FakeBlockManager.INSTANCE.addFakeCompensateState(pos);
+                lastBlockPos = pos;
+            }
+            if (lastCancelVelocityTick + maxResetKBTick.get() <= Tasks.getTick()) {
                 flagLegacy = false;
                 // mc.player.setVelocity(Vec3d.ZERO);
             } else {
                 if (freezeIfWalk.get() || !PlayerInputUtils.of(mc.options).hasMovementControl()) {
                     FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                    FloatingUtils.INSTANCE.setSendPacketIgnoreRotation(true);
                     mc.player.setOnGround(true);
                 } else {
                     ClientPlayerAccess.of(mc.player).resyncPos();
@@ -318,11 +319,14 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
                 // FloatingUtils.INSTANCE.setGrimFloatingTick(true);
                 // mc.player.setOnGround(true);
             }
+        } else {
+            lastBlockPos = null;
         }
         // hyw
         if (mode.get() == Mode.FREEZE && lastFreezeTick + freezeTime.get() > Tasks.getTick()) {
             if (!pauseWhenWASD.get() || !PlayerInputUtils.of(mc.options).hasMovementControl()) {
                 FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                FloatingUtils.INSTANCE.setSendPacketIgnoreRotation(true);
             }
         }
     }
@@ -366,8 +370,6 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
     //    }
 
     public void onSendMove(Event<PlayerMoveC2SPacket> event) {}
-
-    public void onPlayerSetBack(Event<MovTasks.MovInfo> event) {}
 
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {}

@@ -114,3 +114,8 @@ accessible field net/minecraft/client/MinecraftClient particleSpriteManager Lnet
 accessible field net/minecraft/client/particle/ParticleSpriteManager spriteAwareParticleFactories Ljava/util/Map;
 accessible class net/minecraft/client/particle/ParticleSpriteManager$SimpleSpriteProvider
 accessible field net/minecraft/component/type/ContainerComponent stacks Lnet/minecraft/util/collection/DefaultedList;
+accessible field net/minecraft/loot/condition/AlternativeLootCondition terms Ljava/util/List;
+accessible method net/minecraft/entity/LivingEntity tryUseDeathProtector (Lnet/minecraft/entity/damage/DamageSource;)Z
+accessible method net/minecraft/entity/player/PlayerEntity getDamageSource (Lnet/minecraft/item/ItemStack;)Lnet/minecraft/entity/damage/DamageSource;
+accessible field net/minecraft/entity/Entity movementMultiplier Lnet/minecraft/util/math/Vec3d;
+accessible method net/minecraft/block/vault/VaultSharedData getConnectedPlayers ()Ljava/util/Set;

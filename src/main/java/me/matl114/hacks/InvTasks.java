@@ -307,7 +307,7 @@ public class InvTasks {
     }
 
     public static void setCreativeInventory(ItemStack itemStack, int slot) {
-        if (slot < 36) {
+        if (slot < InventoryUtils.getPlayerInvSize()) {
             mc.player.getInventory().setStack(slot, itemStack.copy());
             mc.interactionManager.clickCreativeStack(itemStack, INVENTORY_INDEX_TO_SCREEN_SLOT[slot]);
         }

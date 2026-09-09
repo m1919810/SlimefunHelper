@@ -1,15 +1,15 @@
 package me.matl114.hacks.modules.combat;
 
 import java.util.List;
+import me.matl114.events.CombatListener;
 import me.matl114.events.Event;
+import me.matl114.events.impl.CombatPlayer;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
-import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.config.StringFormat;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
-import net.minecraft.entity.player.PlayerEntity;
 
 public class TotemLog extends BaseModule {
     public final ModulePath totem = makePath(Configs.COMBAT_CONFIG, "totem");
@@ -39,25 +39,28 @@ public class TotemLog extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(PlayerStateManager.getPlayerPopTotem(), this::onTotemPop);
+        registerListener(CombatListener.getPlayerPopTotem(), this::onTotemPop);
 
-        registerListener(PlayerStateManager.getPlayerDeathInfo(), this::onDeath);
+        registerListener(CombatListener.getPlayerDeathInfo(), this::onDeath);
     }
 
-    public void onTotemPop(Event<PlayerEntity> event) {
+    public void onTotemPop(Event<CombatPlayer> event) {
         if (enable.get() && logTotalCount.get()) {
-            PlayerEntity pl = event.context;
-            int popCount = event.getArgs(0);
-            logSub("Totem", logPopCountFormat.get().formatText(pl.getNameForScoreboard(), popCount));
+            logSub(
+                    "Totem",
+                    logPopCountFormat
+                            .get()
+                            .formatText(event.context.player().getNameForScoreboard(), event.context.popCnt()));
         }
     }
 
-    public void onDeath(Event<PlayerEntity> event) {
+    public void onDeath(Event<CombatPlayer> event) {
         if (enable.get() && logDeath.get()) {
-            Integer popCount = event.getArgs(1);
-            if (popCount != null) {
-                int val = popCount;
-                logSub("Totem", logDeathFormat.get().formatText(event.context.getNameForScoreboard(), val));
+            int popCount = event.context.popCnt();
+            if (popCount > 0) {
+                logSub(
+                        "Totem",
+                        logDeathFormat.get().formatText(event.context.player().getNameForScoreboard(), popCount));
             }
         }
     }

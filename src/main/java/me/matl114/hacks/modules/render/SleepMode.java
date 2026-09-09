@@ -28,6 +28,7 @@ import me.matl114.utils.commands.commandGroup.CommandContext;
 import me.matl114.utils.commands.commandGroup.SubCommand;
 import me.matl114.utils.commands.params.ArgumentInputStream;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
+import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ChatScreen;
@@ -254,14 +255,29 @@ public class SleepMode extends BaseModule {
             this.displayMessage = displayMessage;
         }
 
+        private static final int SIZE = 150;
+
         @Override
         protected void init() {
             super.init();
             sleepingScreenInstance = this;
-            DisplayWidget.instance(40, 40, this.width - 80, this.height - 80)
-                    .setRenderHandler(LabelElement.instance(displayMessage))
+            var widget = DisplayWidget.instance(0, 0, this.width - SIZE, this.height - SIZE)
+                    .setRenderHandler(LabelElement.instance(displayMessage));
+            new DynamicContentWidget<>(
+                            () -> widget,
+                            ValueAccessor.ofIgnore(() -> revert(Tasks.getTick())),
+                            ValueAccessor.ofIgnore(() -> revert(1.618 * Tasks.getTick())))
                     .addTo(this);
             shouldFreshSleepScreen = true;
+        }
+
+        private int revert(double v) {
+            int val = (int) (v % (2 * SIZE));
+            if (val > SIZE) {
+                return 2 * SIZE - val;
+            } else {
+                return val;
+            }
         }
 
         public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {}

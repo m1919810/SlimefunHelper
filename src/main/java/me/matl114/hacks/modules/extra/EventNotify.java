@@ -27,9 +27,11 @@ import net.minecraft.network.packet.s2c.play.SubtitleS2CPacket;
 
 public class EventNotify extends BaseModule {
     public final ModulePath path = makePath(Configs.EXTRA_CONFIG, "other.queue-notify");
+    public static EventNotify INSTANCE;
 
     public EventNotify() {
         super("EventNotify");
+        INSTANCE = this;
         bindFlag(enable);
     }
 
@@ -150,7 +152,6 @@ public class EventNotify extends BaseModule {
     }
 
     public void notify(String title, String message) {
-
         switch (mode.get()) {
             case TRAY -> {
                 WindowUtils.createNotificationTrayWindow(title, message);

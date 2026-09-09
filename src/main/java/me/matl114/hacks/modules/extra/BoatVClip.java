@@ -7,6 +7,7 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.combat.CombatExtra;
+import me.matl114.hacks.modules.mine.FakeBlockManager;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
@@ -15,17 +16,14 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.CollisionUtil;
 import me.matl114.utils.EntityUtils;
 import me.matl114.utils.InteractUtils;
-import me.matl114.utils.NetworkUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.vehicle.VehicleEntity;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
 public class BoatVClip extends BaseModule implements LegalMovementManager.MovementModifier {
@@ -79,7 +77,7 @@ public class BoatVClip extends BaseModule implements LegalMovementManager.Moveme
                 // NetworkUtils.generateNextSequence()));
                 //                    }, 0);
                 //                }
-                update.cancel();
+                //                update.cancel();
             }
         }
     }
@@ -129,12 +127,7 @@ public class BoatVClip extends BaseModule implements LegalMovementManager.Moveme
                             //                                    pos,
                             //                                    Direction.UP,
                             //                                    NetworkUtils.generateNextSequence()));
-                            Listener.sendPacketNoEvents(new PlayerActionC2SPacket(
-                                    PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK,
-                                    pos,
-                                    Direction.UP,
-                                    NetworkUtils.generateNextSequence()));
-                            //                    }
+                            FakeBlockManager.INSTANCE.addFakeCompensateState(pos);
                             cd = 0;
                         }
                     }

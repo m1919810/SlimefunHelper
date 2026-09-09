@@ -138,7 +138,8 @@ public class PrimitiveList<W> implements NBTParsable<PrimitiveList<W>> {
     public <R> Optional<PrimitiveList<W>> tryTypeConvert(Ref<R> ref) {
         if (ref instanceof NBTRef<?> nbt
                 && nbt.get() instanceof PrimitiveList<?> primitiveList
-                && primitiveList.elementType == elementType) {
+                && primitiveList.elementType == elementType
+                && primitiveList.defaultPrimitive.isEmpty()) {
             return Optional.of(withDefault((List<W>) primitiveList.list(), defaultPrimitive));
         }
         return Optional.empty();

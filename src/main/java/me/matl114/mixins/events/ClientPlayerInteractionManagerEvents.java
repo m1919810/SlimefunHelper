@@ -1,5 +1,7 @@
 package me.matl114.mixins.events;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import java.util.ArrayDeque;
@@ -36,7 +38,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -90,7 +91,7 @@ public abstract class ClientPlayerInteractionManagerEvents {
             CallbackInfoReturnable<ActionResult> cir,
             @Local(argsOnly = true) LocalRef<BlockHitResult> hand2) {
         Event<UseItemOnBlock> blockHitResultEvent =
-                new Event<>(new UseItemOnBlock(hitResult, ActionResult.SUCCESS, hand), true, true);
+                new Event<>(new UseItemOnBlock(hitResult, ActionResult.SUCCESS, false, hand), true, true);
         Listener.getPrePlayerUseItemAtBlock().handleValue(blockHitResultEvent);
         if (blockHitResultEvent.isCancelled()) {
             cir.setReturnValue(blockHitResultEvent.context.actionResult());
@@ -102,59 +103,46 @@ public abstract class ClientPlayerInteractionManagerEvents {
         }
     }
 
-    @Inject(
-            method = "interactBlock",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target =
-                                    "Lnet/minecraft/client/network/ClientPlayerInteractionManager;sendSequencedPacket(Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/client/network/SequencedPacketCreator;)V",
-                            shift = At.Shift.AFTER))
-    public void onPostInteractBlock(
-            ClientPlayerEntity player,
-            Hand hand,
-            BlockHitResult hitResult,
-            CallbackInfoReturnable<ActionResult> cir,
-            @Local MutableObject<ActionResult> mutableObject) {
-        ActionResult acc = mutableObject.getValue();
-        Event<UseItemOnBlock> eventResult = new Event<>(new UseItemOnBlock(hitResult, acc, hand), false, true);
-        Listener.getPostPlayerUseItemAtBlock().handleValue(eventResult);
-        mutableObject.setValue(eventResult.context.actionResult());
-    }
-
+    @Final
     @Unique
-    private ArrayDeque<MutableBoolean> lastInteractCaptureBlockPlace = new ArrayDeque<>(4);
+    private final ArrayDeque<MutableBoolean> lastInteractCaptureBlockPlace = new ArrayDeque<>(4);
 
-    @ModifyArg(
+    @WrapOperation(
             method = "interactBlock",
             at =
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/client/network/ClientPlayerInteractionManager;sendSequencedPacket(Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/client/network/SequencedPacketCreator;)V"),
-            index = 1)
-    public SequencedPacketCreator onModifyArgument(
+                                    "Lnet/minecraft/client/network/ClientPlayerInteractionManager;sendSequencedPacket(Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/client/network/SequencedPacketCreator;)V"))
+    private void onInteractBlockAction(
+            ClientPlayerInteractionManager instance,
+            ClientWorld world,
             SequencedPacketCreator packetCreator,
+            Operation<Void> original,
             @Local(argsOnly = true) Hand hand,
             @Local(argsOnly = true) BlockHitResult hitResult,
             @Local MutableObject<ActionResult> actionResult) {
         ItemStack stackCopy = client.player.getStackInHand(hand).copy();
         BlockState state = client.world.getBlockState(hitResult.getBlockPos());
-
-        return (seq) -> {
-            MutableBoolean captureBlockPlace = new MutableBoolean(false);
-            lastInteractCaptureBlockPlace.addLast(captureBlockPlace);
+        MutableBoolean placeBlock = new MutableBoolean(false);
+        original.call(instance, world, (SequencedPacketCreator) (seq) -> {
+            lastInteractCaptureBlockPlace.addLast(placeBlock);
             try {
                 var packet = packetCreator.predict(seq);
                 if (packet instanceof PlayerInteractBlockC2SPacketAccess access) {
                     access.setUseContext(new PlayerInteractBlockC2SPacketAccess.UseContext(
-                            stackCopy, state, actionResult.getValue(), captureBlockPlace.booleanValue()));
+                            stackCopy, state, actionResult.getValue(), placeBlock.booleanValue()));
                 }
                 return packet;
             } finally {
                 lastInteractCaptureBlockPlace.removeLast();
             }
-        };
+        });
+        ActionResult acc = actionResult.getValue();
+        Event<UseItemOnBlock> eventResult =
+                new Event<>(new UseItemOnBlock(hitResult, acc, placeBlock.getValue(), hand), false, true);
+        Listener.getPostPlayerUseItemAtBlock().handleValue(eventResult);
+        actionResult.setValue(eventResult.context.actionResult());
     }
 
     @Inject(

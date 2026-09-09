@@ -18,7 +18,6 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.*;
-import me.matl114.hacks.utils.entity.CameraEntity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.FileManager;
 import me.matl114.managers.config.*;
@@ -30,6 +29,8 @@ import me.matl114.utils.commands.commandGroup.SubCommand;
 import me.matl114.utils.commands.commandGroup.TreeSubCommand;
 import me.matl114.utils.commands.params.ArgumentInputStream;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
+import net.minecraft.client.network.AbstractClientPlayerEntity;
+import net.minecraft.client.network.OtherClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
@@ -274,7 +275,10 @@ public class TargetSelector extends BaseModule {
 
     public boolean canAttack(Entity target) {
         if (mc.player == null) return false;
-        if (target == null || target == mc.player || target instanceof CameraEntity) {
+        // filter not vanilla targets
+        if (target == null
+                || target == mc.player
+                || (target instanceof AbstractClientPlayerEntity && !(target instanceof OtherClientPlayerEntity))) {
             return false;
         }
         if (target instanceof LivingEntity lv && lv.getHealth() <= 0) {

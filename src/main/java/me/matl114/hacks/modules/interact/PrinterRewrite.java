@@ -10,8 +10,8 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.events.impl.EventContainer;
+import me.matl114.gui.WidgetUtils;
 import me.matl114.gui.basic.DrawableWidget;
-import me.matl114.gui.basic.DynamicContentWidget;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -81,6 +81,9 @@ public class PrinterRewrite extends BaseModule {
             .defaultValue(1)
             .validator(Configs.INT_POSITIVE)
             .build();
+
+    public final FlagRef returnBlock =
+            flagBuilder(litematicaPrinterRewrite.add("ghost-hand-swap-back")).build();
 
     public final FlagRef autoSneak = builder(litematicaPrinterRewrite.add("auto-sneak"), Boolean.class)
             .defaultValue(true)
@@ -153,13 +156,13 @@ public class PrinterRewrite extends BaseModule {
     @Override
     public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
         super.addCustomWidgets(acceptor, dx, dy, dblank);
-        var re = createTitleLabel("widget.queue-mine.mine.use-argument", 0, dblank, dx, dy);
-        acceptor.accept(new DynamicContentWidget<>(() -> supportWater.get() && useIce.get() ? re : null, 0, 0));
+        acceptor.accept(WidgetUtils.withCondition(
+                createTitleLabel("widget.queue-mine.mine.use-argument", 0, dblank, dx, dy),
+                () -> supportWater.get() && useIce.get()));
+        acceptor.accept(createTitleLabel("widget.block-rotate.yaw-deceive.use-argument", 0, dblank, dx, dy));
     }
 
     int countDown;
-    //    final Set<BlockPos> placeFailureBlocks = new HashSet<>();
-    //    final Set<BlockPos> placeSuccessBlocks = new HashSet<>();
     final RenderCollector<Box> drawOutlines = RenderCollectors.createBoxCollector(true, false, false);
     boolean needSneak = false;
     boolean drainWater = false;
@@ -180,7 +183,7 @@ public class PrinterRewrite extends BaseModule {
     }
 
     public void onPreInputEvent(Event<Void> event) {
-        if (++countDown > delay.get()) {
+        if (++countDown >= delay.get()) {
             countDown = 0;
         } else {
             return;
@@ -342,7 +345,9 @@ public class PrinterRewrite extends BaseModule {
                 }
                 handlePlace(result.val());
                 // sb grimac
-                // callback.run()
+                if (returnBlock.get()) {
+                    callback.run();
+                }
                 putSuccessPlace(pos);
                 return true;
             } finally {
@@ -414,6 +419,9 @@ public class PrinterRewrite extends BaseModule {
                     playerStatus.restoreRotation();
                     suc = true;
                     desyncWaitBlocks.put(pos, Tasks.getTick() + 20);
+                    if (returnBlock.get()) {
+                        callback.run();
+                    }
                 }
             }
             if (suc) {
@@ -564,13 +572,19 @@ public class PrinterRewrite extends BaseModule {
                     hitResult = new FlagEntry<>(false, RaycastUtils.createHitResult(pos, mc.player.getEyePos()));
                 }
                 if (InteractUtils.canInteractAndPlace(mc.player, hitResult)) {
-                    InvExtra.INSTANCE.swapInventoryIndexToHand(re.index());
-                    InteractionTasks.handlePlaceMode(mode.get(), hitResult.val(), Hand.MAIN_HAND);
-                    putSuccessPlace(pos);
-                    if (isDesyncStateInteractTransition(currentState, targetState)) {
-                        desyncWaitBlocks.put(pos, Tasks.getTick() + 20);
+                    Runnable runnable = InvExtra.INSTANCE.swapInventoryIndexToHand(re.index());
+                    if (runnable != null) {
+                        InteractionTasks.handlePlaceMode(mode.get(), hitResult.val(), Hand.MAIN_HAND);
+                        putSuccessPlace(pos);
+                        if (isDesyncStateInteractTransition(currentState, targetState)) {
+                            desyncWaitBlocks.put(pos, Tasks.getTick() + 20);
+                        }
+                        if (returnBlock.get()) {
+                            runnable.run();
+                        }
+                        return true;
                     }
-                    return true;
+                    putCanNotPlace(pos);
                 } else {
                     putCanNotPlace(pos);
                 }
