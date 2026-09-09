@@ -21,7 +21,7 @@ import org.apache.commons.lang3.mutable.MutableFloat;
 public class EnchantmentUtils {
     public static float calculate(ItemStack stack, Calculator<Float> consumer, float baseValue) {
         MutableFloat mutableFloat = new MutableFloat(baseValue);
-        EnchantmentHelper.forEachEnchantment(stack, (enchantment,  level, slot) -> {
+        EnchantmentHelper.forEachEnchantment(stack, (EnchantmentHelper.Consumer) (enchantment, level) -> {
             mutableFloat.setValue(consumer.calculate(mutableFloat.getValue(), enchantment, level));
         });
         return mutableFloat.getValue();
@@ -29,10 +29,11 @@ public class EnchantmentUtils {
 
     public static float calculate(LivingEntity stack, ContextAwareCalculator<Float> consumer, float baseValue) {
         MutableFloat mutableFloat = new MutableFloat(baseValue);
-        EnchantmentHelper.forEachEnchantment(stack, (enchantment, level, context) -> {
-            mutableFloat.setValue(
-                    consumer.calculate(mutableFloat.getValue(), enchantment, level, context.stack(), context.slot()));
-        });
+        EnchantmentHelper.forEachEnchantment(
+                stack, (EnchantmentHelper.ContextAwareConsumer) (enchantment, level, context) -> {
+                    mutableFloat.setValue(consumer.calculate(
+                            mutableFloat.getValue(), enchantment, level, context.stack(), context.slot()));
+                });
         return mutableFloat.getValue();
     }
 

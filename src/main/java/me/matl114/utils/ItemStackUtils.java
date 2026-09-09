@@ -526,10 +526,12 @@ public class ItemStackUtils {
             var n2 = map2.remove(CUSTOM_DATA);
             // both having or not having lore
             if (map1.equals(map2)) {
-                NbtElement nbt1 =
-                        (n1 == null || n1.isEmpty()) ? null : ((NbtComponent) n1.get()).getNbt().get(BUKKIT_NAMESPACE);
-                NbtElement nbt2 =
-                        (n2 == null || n2.isEmpty()) ? null : ((NbtComponent) n2.get()).getNbt().get(BUKKIT_NAMESPACE);
+                NbtElement nbt1 = (n1 == null || n1.isEmpty())
+                        ? null
+                        : ((NbtComponent) n1.get()).getNbt().get(BUKKIT_NAMESPACE);
+                NbtElement nbt2 = (n2 == null || n2.isEmpty())
+                        ? null
+                        : ((NbtComponent) n2.get()).getNbt().get(BUKKIT_NAMESPACE);
                 return Objects.equals(nbt1, nbt2);
             } else {
                 return false;
