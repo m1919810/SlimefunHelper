@@ -44,7 +44,7 @@ public class FakePlayerEntity extends OtherClientPlayerEntity {
     }
 
     public float damage(float rawDamage, DamageSource damageSource) {
-        if (this.isAlwaysInvulnerableTo(damageSource)) {
+        if (this.isInvulnerableTo(damageSource)) {
             return 0.0F;
         }
         DamageUtils.DamageContext context = DamageUtils.fromPlayer(this).build();
@@ -66,7 +66,7 @@ public class FakePlayerEntity extends OtherClientPlayerEntity {
         }
         DamageUtils.damageOrAbsorption(this, damageSource, rawDamage);
         if (this.isDead()) {
-            if (!this.tryUseDeathProtector(damageSource)) {
+            if (!this.tryUseTotem(damageSource)) {
                 this.onDeath(damageSource);
             } else {
                 ClientConnectionAccess.of(MinecraftClient.getInstance()

@@ -1538,7 +1538,7 @@ public class KitReplenish extends BaseModule {
             DataComponentTypes.UNBREAKABLE,
             DataComponentTypes.FIREWORKS,
             DataComponentTypes.FIREWORK_EXPLOSION,
-            DataComponentTypes.CONSUMABLE,
+            DataComponentTypes.FOOD,
             DataComponentTypes.CUSTOM_NAME,
             DataComponentTypes.LORE,
             DataComponentTypes.ATTRIBUTE_MODIFIERS);
