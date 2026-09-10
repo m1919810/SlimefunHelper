@@ -233,7 +233,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     @ApiStatus.Experimental
     public final DoubleRef autoRescaleThreshold = doubleBuilder(
                     customFireworksPath.add("auto-rescale-firework-anti-lag-threshold"))
-            .show(() -> autoRescaleAl.get().isIn(Al.V3, Al.V4))
+            .show(() -> autoRescaleAl.get().isIn(Al.V3))
             .defaultValue(0.002)
             .experimental()
             .build();
