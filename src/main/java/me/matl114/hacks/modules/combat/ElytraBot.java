@@ -29,6 +29,7 @@ import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.entity.PredictorImpl;
+import me.matl114.hacks.utils.move.ElytraOptimizeUtils;
 import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -53,6 +54,7 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
+import org.jetbrains.annotations.ApiStatus;
 
 public class ElytraBot extends BaseModule {
     public final ModulePath combatBot = makePath(Configs.COMBAT_CONFIG, "combat-bot");
@@ -130,19 +132,8 @@ public class ElytraBot extends BaseModule {
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
-    public final DoubleRef minimalAttackHeight = builder(elytraBot.add("min-attack-height"), Double.class)
-            .defaultValue(4.0D)
-            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
-            .build();
-
     public final IntRef maceRemainPullUpTick = builder(elytraBot.add("mace-max-extra-pull-up-tick"), IntRef.TYPE)
             .defaultValue(20)
-            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
-            .build();
-
-    public final NBTRef<OptionalPrimitive<Double>> maceAttackFallDistanceRequire = builder(
-                    elytraBot.add("mace-min-fall-distance"), OptionalPrimitive.DOUBLE_TYPE)
-            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 1.5D))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
@@ -153,6 +144,13 @@ public class ElytraBot extends BaseModule {
 
     public final FlagRef maceUsePredictor = flagBuilder(elytraBot.add("mace-pull-up-use-predictor"))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .build();
+
+    @ApiStatus.Experimental
+    public final DoubleRef maceYLevelWeight = doubleBuilder(elytraBot.add("mace-y-level-lerp"))
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .defaultValue(0.0)
+            .experimental()
             .build();
 
     public final FlagRef combatSmoothFlight1 = flagBuilder(elytraBot.add("combat-smooth-flight"))
@@ -178,13 +176,38 @@ public class ElytraBot extends BaseModule {
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
-    public final FlagRef combatSmoothFlight3 = flagBuilder(elytraBot.add("combat-smooth-flight-3"))
+    @ApiStatus.Experimental
+    public final FlagRef combatSmoothFlag2 = flagBuilder(elytraBot.add("combat-smooth-flight-argument-1-2"))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .experimental()
             .build();
 
-    public final DoubleRef combatSmoothArg2 = doubleBuilder(elytraBot.add("combat-smooth-flight-argument-2"))
+    @ApiStatus.Experimental
+    public final NBTRef<OptionalPrimitive<Vec3>> combatSmoothArg14 = builder(
+                    elytraBot.add("combat-smooth-flight-argument-1-4"), OptionalPrimitive.type(Vec3.class))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
-            .defaultValue(1.5D)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.VEC3_TYPE, new Vec3(10, 0.3, 20)))
+            .experimental()
+            .build();
+
+    @ApiStatus.Experimental
+    public final FlagRef combatSmoothFlight2 = flagBuilder(elytraBot.add("combat-smooth-flight-2"))
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .experimental()
+            .build();
+
+    @ApiStatus.Experimental
+    public final DoubleRef combatSmoothArg21 = doubleBuilder(elytraBot.add("combat-smooth-flight-argument-2-1"))
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .defaultValue(10.0D)
+            .experimental()
+            .build();
+
+    @ApiStatus.Experimental
+    public final DoubleRef combatSmoothArg22 = doubleBuilder(elytraBot.add("combat-smooth-flight-argument-2-2"))
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .defaultValue(10.0D)
+            .experimental()
             .build();
 
     public final FlagRef angleOptimizePullUp = builder(elytraBot.add("combat-angle-optimize"), Boolean.class)
@@ -212,6 +235,27 @@ public class ElytraBot extends BaseModule {
                     && ElytraFlight.INSTANCE.useAutoRescale.get())
             .build();
 
+    // 这个傻逼玩意， 代表的是 激进的拉升优化
+    @ApiStatus.Experimental
+    public final FlagRef angleOptimizeRadicalPullup = flagBuilder(elytraBot.add("combat-angle-optimize-radical"))
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA)
+                    && ElytraExtra.INSTANCE.autoRescale.get()
+                    && ElytraFlight.INSTANCE.useAutoRescale.get()
+                    && ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V2, ElytraExtra.Al.V3))
+            .experimental()
+            .build();
+    // 直接往外拉
+    @ApiStatus.Experimental
+    public final NBTRef<OptionalPrimitive<Double>> angleOptimizePullRange = builder(
+                    elytraBot.add("combat-angle-optimize-radical-pull-up-optimize-range"),
+                    OptionalPrimitive.DOUBLE_TYPE)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 20.0D))
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA)
+                    && ElytraExtra.INSTANCE.autoRescale.get()
+                    && ElytraFlight.INSTANCE.useAutoRescale.get()
+                    && ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V2, ElytraExtra.Al.V3))
+            .experimental()
+            .build();
     // 这个傻逼玩意 代表的是激进的追击角度优化是否有角度限制（在垂直向下的时候禁用角度优化）
     public final NBTRef<OptionalPrimitive<Double>> angleOptimizeRadicalFollow = builder(
                     elytraBot.add("combat-angle-optimize-radical-follow"), OptionalPrimitive.DOUBLE_TYPE)
@@ -222,39 +266,84 @@ public class ElytraBot extends BaseModule {
                     && ElytraFlight.INSTANCE.useAutoRescale.get())
             .build();
 
+    // 这个傻逼玩意。在拉高的时候会来回摆。非常的炫酷(何意味
+    @ApiStatus.Experimental
+    public final NBTRef<OptionalPrimitive<Double>> pullUpAngleOptimize = builder(
+                    elytraBot.add("combat-pull-up-angle-optimize"), OptionalPrimitive.DOUBLE_TYPE)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 6.0D))
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA)
+                    && ElytraExtra.INSTANCE.autoRescale.get()
+                    && ElytraFlight.INSTANCE.useAutoRescale.get())
+            .experimental()
+            .build();
+
     public final NBTRef<OptionalPrimitive<Double>> maceChaseFollowYBias = builder(
                     elytraBot.add("combat-mace-chase-follow-y-bias"), OptionalPrimitive.DOUBLE_TYPE)
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 3.0D))
             .build();
 
-    public final NBTRef<OptionalPrimitive<Double>> flyAntiSpear = builder(
-                    elytraBot.add("fly-anti-spear"), OptionalPrimitive.DOUBLE_TYPE)
-            .defaultValue(new OptionalPrimitive<>(true, NBTTypes.DOUBLE_TYPE, 1.0D))
-            .show(() -> mode.get().isNotIn(Mode.SPEAR_ARUA))
-            .build();
-
     public final FlagRef logSpearHit = flagBuilder(elytraBot.add("log-spear-hit"))
             .show(() -> mode.get().isIn(Mode.SPEAR_ARUA))
             .build();
 
+    @ApiStatus.Experimental
+    public final FlagRef spearTestV2 = builder(elytraBot.add("spear-v2"), Boolean.class)
+            .defaultValue(false)
+            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA)
+                    && ElytraExtra.INSTANCE.autoRescale.get()
+                    && ElytraFlight.INSTANCE.useAutoRescale.get())
+            .experimental()
+            .build();
+
+    @ApiStatus.Experimental
+    public final FlagRef spearAngleOptimize = builder(elytraBot.add("spear-angle-optimize"), Boolean.class)
+            .defaultValue(false)
+            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA)
+                    && ElytraExtra.INSTANCE.autoRescale.get()
+                    && ElytraFlight.INSTANCE.useAutoRescale.get()
+                    && spearTestV2.get())
+            .experimental()
+            .build();
+
     public final FlagRef spearAntiSpear = flagBuilder(elytraBot.add("spear-anti-spear"))
-            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA))
+            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA) && !this.spearTestV2.get())
             .build();
 
     public final DoubleRef spearAntiSpearExtraDistance = doubleBuilder(elytraBot.add("spear-anti-spear-extra-distance"))
             .defaultValue(0.0D)
-            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA))
+            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA) && !this.spearTestV2.get())
             .build();
 
     public final FlagRef spearUsePredictor = flagBuilder(elytraBot.add("spear-use-predictor"))
             .show(() -> mode.get().isIn(Mode.SPEAR_ARUA))
             .build();
 
+    public final NBTRef<OptionalPrimitive<Double>> flyAntiSpear = builder(
+                    elytraBot.add("fly-anti-spear"), OptionalPrimitive.DOUBLE_TYPE)
+            .defaultValue(new OptionalPrimitive<>(true, NBTTypes.DOUBLE_TYPE, 1.0D))
+            .show(() ->
+                    mode.get().isNotIn(Mode.SPEAR_ARUA) || (mode.get().isIn(Mode.SPEAR_ARUA) && this.spearTestV2.get()))
+            .build();
+
     public final NBTRef<OptionalPrimitive<Double>> flyAntiSpearWhenPullup = builder(
                     elytraBot.add("fly-anti-spear-when-pull-up"), OptionalPrimitive.DOUBLE_TYPE)
             .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 1.0D))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .build();
+
+    @ApiStatus.Experimental
+    public final FlagRef flyAntiSpearDisableWhenSpear = flagBuilder(
+                    elytraBot.add("fly-anti-spear-disable-when-using-spear"))
+            .show(() -> (mode.get().isNotIn(Mode.SPEAR_ARUA)
+                    || (mode.get().isIn(Mode.SPEAR_ARUA) && this.spearTestV2.get())))
+            .experimental()
+            .build();
+
+    public final FlagRef flyAntiSpearAfterAngle = builder(elytraBot.add("fly-anti-spear-after-angle"), Boolean.class)
+            .defaultValue(true)
+            .show(() -> (mode.get().isNotIn(Mode.SPEAR_ARUA)
+                    || (mode.get().isIn(Mode.SPEAR_ARUA) && this.spearTestV2.get())))
             .build();
 
     public final FlagRef flyAntiSpearUseSpearResetWhenFollow = flagBuilder(
@@ -642,6 +731,7 @@ public class ElytraBot extends BaseModule {
 
         protected boolean willUseAntiSpear(OptionalPrimitive<Double> op, Vec3d predictorPos) {
             return (op.isPresent()
+                    && (!(base.flyAntiSpearDisableWhenSpear.get() && SpearEnhance.isUsingSpear(mc.player)))
                     && Math.abs(op.getValue()) > 1E-6
                     && base.isTargetUsingSpear()
                     && mc.player.getPos().squaredDistanceTo(predictorPos) < MathUtils.s2(base.combatSpearRange.get()));
@@ -784,7 +874,9 @@ public class ElytraBot extends BaseModule {
                             .predict(base.target)
                             .withAxis(Direction.Axis.Y, base.target.getY())
                     : base.target.getPos();
-            targetPos = targetPos.withAxis(Direction.Axis.Y, base.target.getY());
+            double lerpY = base.maceYLevelWeight.get();
+            double yLerp = targetPos.y * lerpY + base.target.getY() * (1.0D - lerpY);
+            targetPos = targetPos.withAxis(Direction.Axis.Y, yLerp);
             setTargetToPlayer(targetPos);
             return STATE_WAIT_ATTACK;
         }
@@ -792,6 +884,35 @@ public class ElytraBot extends BaseModule {
         protected abstract void setTargetToPlayerUpper(Vec3d predictor);
 
         protected abstract void setTargetToPlayer(Vec3d targetPos);
+
+        protected Vec3d calculateTargetDirection(Vec3d predictorPos) {
+            if (!ElytraExtra.INSTANCE.autoRescale.get()
+                    || ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V1, ElytraExtra.Al.V2)) {
+                //
+                if (SpearEnhance.isUsingSpear(mc.player)) {
+                    return (predictorPos
+                                    .add(0, base.target.getEyeHeight(base.target.getPose()), 0)
+                                    .subtract(mc.player.getEyePos()))
+                            .normalize();
+                } else {
+                    return predictorPos.subtract(mc.player.getPos()).normalize();
+                }
+            } else {
+                if (SpearEnhance.isUsingSpear(mc.player)) {
+
+                    Vec3d targetPos = predictorPos.add(0, base.target.getEyeHeight(base.target.getPose()), 0);
+                    Vec3d legacy = targetPos.subtract(mc.player.getEyePos());
+                    Vec3d forward = ElytraOptimizeUtils.calculateLookTowardsTargetV3Direction(legacy, 1.7);
+                    if (legacy.dotProduct(forward) < 0) {
+                        return legacy;
+                    } else {
+                        return forward;
+                    }
+                } else {
+                    return predictorPos.subtract(mc.player.getPos()).normalize();
+                }
+            }
+        }
 
         @Override
         public synchronized void onUpdate() {
@@ -865,6 +986,7 @@ public class ElytraBot extends BaseModule {
         public boolean shouldAttackSimple() {
             boolean useAntiShield = shouldUseAntiShield();
             if (useAntiShield) return true;
+            if (VItem.getInstance().isSpear(mc.player.getActiveItem())) return false;
             if (!base.maceAttackUseSimple.get()) return false;
             if ((mc.player.getAttackCooldownProgress(0.5F) > 0.95F)) {
                 if (base.maceAttackConsiderUse.get()
@@ -883,15 +1005,13 @@ public class ElytraBot extends BaseModule {
         public boolean shouldAttackMace() {
             boolean cooldown =
                     (lastMaceAttackSuccessTick < Tasks.getTick()) || Attack.INSTANCE.willUseMaceAttack(false);
-            return cooldown
-                    && PlayerStateManager.INSTANCE.fallDistance
-                            > base.maceAttackFallDistanceRequire.get().orElse(1.5D);
+            return cooldown && PlayerStateManager.INSTANCE.fallDistance > 1.5D;
         }
 
         public boolean canAttackMace() {
-            boolean cooldown =
-                    (lastMaceAttackSuccessTick < Tasks.getTick()) || Attack.INSTANCE.willUseMaceAttack(false);
-            return cooldown || PlayerStateManager.INSTANCE.fallDistance > 1.5;
+            boolean cooldown = (lastMaceAttackSuccessTick < Tasks.getTick());
+            return Attack.INSTANCE.willUseMaceAttack(true)
+                    && (cooldown || PlayerStateManager.INSTANCE.fallDistance > 1.5);
         }
 
         public synchronized void onPauseControl() {
@@ -997,9 +1117,10 @@ public class ElytraBot extends BaseModule {
             Vec3d targetPos = base.maceUsePredictor.get()
                     ? PositionPredict.INSTANCE.attackPredictArgument.get().predict(base.target)
                     : base.target.getPos();
+            double lerpY = base.maceYLevelWeight.get();
             double baseY = base.target.getY();
             currentTargetUpFly = baseY + 0.5 < targetPos.y;
-            double yLerp = currentTargetUpFly ? baseY : targetPos.y;
+            double yLerp = currentTargetUpFly ? (targetPos.y * lerpY + baseY * (1.0D - lerpY)) : targetPos.y;
             targetPos = targetPos.withAxis(Direction.Axis.Y, yLerp);
             boolean mayAttack = shouldAttackSimple() || shouldAttackMace();
             boolean targetInRange = TargetSelector.INSTANCE.isWithinAttackRange(
@@ -1007,9 +1128,7 @@ public class ElytraBot extends BaseModule {
                     base.target.getBoundingBox(),
                     CombatTasks.getCombatExtra().getAttackAtTargetRange(base.target));
             // 限制高度 但是对面是往上飞的 不需要
-            if (mayAttack
-                    && (base.currentOnGround || mc.player.getY() < targetPos.getY() + base.minimalAttackHeight.get())
-                    && targetInRange) {
+            if (mayAttack && targetInRange) {
                 setTargetToPlayer(targetPos);
                 scheduleAttack();
                 machine.markForEndState();
@@ -1073,7 +1192,18 @@ public class ElytraBot extends BaseModule {
             boolean yLow = predictor.getY() >= mc.player.getY();
             if (base.combatSmoothFlight1.get() && !onGroundSupport) {
                 double combatRange = base.combatMaceRange.get();
-                if (yLow) {
+                if (base.combatSmoothArg14.get().isPresent()) {
+                    Vec3 arguments = base.combatSmoothArg14.get().getValue();
+                    double predictorYL = predictor.y - mc.player.getY();
+                    if (predictorYL > arguments.x()) {
+                        combatRange += Math.min(predictorYL - arguments.x(), arguments.z()) * arguments.y();
+                    }
+                }
+                boolean mayCombatFlight = !base.combatSmoothFlag2.get()
+                        || (base.currentAction == TargetAction.CIRCLING
+                                || base.currentAction == TargetAction.TOWARDS
+                                || base.currentAction == TargetAction.SLOW_SPEED);
+                if (mayCombatFlight && yLow) {
                     Vec3d center = base.target.dimensions.getBoxAt(predictor).getCenter();
                     {
                         double radius = combatRange + base.combatSmoothArg1.get();
@@ -1105,6 +1235,23 @@ public class ElytraBot extends BaseModule {
                     }
                 }
             }
+            if (movement == null
+                    && base.combatSmoothFlight2.get()
+                    && base.currentAction != TargetAction.ESCAPING
+                    && !onGroundSupport) {
+                if (predictor.getY() < mc.player.getY()
+                        && predictor.getY() + base.combatSmoothArg22.get() > mc.player.getY()
+                        && predictor.subtract(mc.player.getPos()).horizontalLength() < base.combatSmoothArg21.get()) {
+                    movement = new Vec3d(0, 10, 0);
+                    if (base.angleOptimizePullUp.get() && base.angleOptimizeRadicalPullup.get()) {
+                        Vec3d direction = predictor
+                                .subtract(mc.player.getPos())
+                                .normalize()
+                                .multiply(10);
+                        movement = new Vec3d(direction.x, 10, direction.z);
+                    }
+                }
+            }
             if (movement == null) {
                 // normal pull up
                 movement = predictor
@@ -1114,10 +1261,49 @@ public class ElytraBot extends BaseModule {
                     movement = movement.normalize().multiply(5);
                 }
             }
+            if (base.pullUpAngleOptimize.get().isPresent() && !onGroundSupport && !executeSmoothHideFlight) {
+                double horizontalDistance = movement.horizontalLength();
+                if (horizontalDistance > 1E-1) {
+                    Vec3d lastMovement = PlayerStateManager.INSTANCE.lastKnownRealMovementSpeed;
+                    Vec3d lastHorizontal = lastMovement.withAxis(Direction.Axis.Y, 0);
+                    double distance = base.pullUpAngleOptimize.get().getValue();
+                    if (distance > horizontalDistance) {
+                        if (lastHorizontal.dotProduct(movement) < 0) {
+                            movement = movement.multiply(-1, 1, -1);
+                        }
+                    }
+                }
+            }
             movementDirection = movement;
+
+            if (!base.flyAntiSpearAfterAngle.get() && antiSpear) {
+                antiSpear(base.flyAntiSpearWhenPullup.get());
+            }
             if (base.angleOptimizePullUp.get()) {
                 if (movementDirection.y > 1E-6) {
-                    {
+                    double horizontal = mc.player.getPos().subtract(predictor).horizontalLength();
+                    if (base.angleOptimizeRadicalPullup.get()) {
+                        if (executeSmoothHideFlight) {
+                            double horizontal2 = Math.max(Math.abs(movementDirection.x), Math.abs(movementDirection.z));
+                            double sgnX = MathUtils.sgn(movementDirection.x);
+                            double sgnZ = MathUtils.sgn(movementDirection.z);
+                            movementDirection = new Vec3d(sgnX * horizontal2, movementDirection.y, sgnZ * horizontal2);
+                        }
+                        if (!executeSmoothHideFlight
+                                && yLow
+                                && base.angleOptimizePullRange.get().isPresent()) {
+                            var range = base.angleOptimizePullRange.get().getValue();
+                            if (horizontal < range) {
+                                Vec3d horizontalDelta = mc.player
+                                        .getPos()
+                                        .subtract(predictor)
+                                        .withAxis(Direction.Axis.Y, 0)
+                                        .normalize()
+                                        .multiply(6);
+                                movementDirection = horizontalDelta.withAxis(Direction.Axis.Y, movementDirection.y);
+                            }
+                        }
+                    } else {
                         double horizontal2 = Math.max(Math.abs(movementDirection.x), Math.abs(movementDirection.z));
                         if (horizontal2 > 0.1) {
                             if (executeSmoothHideFlight) {
@@ -1129,19 +1315,20 @@ public class ElytraBot extends BaseModule {
                             }
                         }
                     }
+                    movementDirection = ElytraOptimizeUtils.calculateBestPullupSpeed(movementDirection);
                 }
             }
             double len = movementDirection.length();
             if (len < 5) {
                 movementDirection = movementDirection.normalize().multiply(5);
             }
-            if (antiSpear) {
+            if (base.flyAntiSpearAfterAngle.get() && antiSpear) {
                 antiSpear(base.flyAntiSpearWhenPullup.get());
             }
         }
 
         protected void setTargetToPlayer(Vec3d targetPos) {
-            movementDirection = targetPos.subtract(mc.player.getPos());
+            movementDirection = calculateTargetDirection(targetPos);
             boolean onGroundSupport = base.currentOnGround;
             if (onGroundSupport) {
                 // handle on ground target\
@@ -1155,24 +1342,13 @@ public class ElytraBot extends BaseModule {
                     // to nothing modify
                     movementDirection = movementDirection.withAxis(Direction.Axis.Y, 0);
                     // 我没招了。这还是尽快重开吧
-                } else if (!base.angleOptimizeFollow.get() && base.combatSmoothFlight3.get()) {
-                    if (targetPos.y <= mc.player.getY()) {
-                        Vec3d center =
-                                base.target.dimensions.getBoxAt(targetPos).getCenter();
-                        double radius = base.combatSmoothArg2.get();
-                        Pair<Vec3d, Vec3d> tangents =
-                                MathUtils.getTangentWithSameXZ(center, radius, mc.player.getEyePos());
-                        Vec3d vec3d = tangents.getFirst();
-                        Vec3d vec3d2 = tangents.getSecond();
-                        Vec3d vec3d3 = vec3d.y < vec3d2.y ? vec3d : vec3d2;
-                        if (vec3d3.y < 0) {
-                            movementDirection = vec3d3.multiply(10);
-                        }
-                    }
                 }
             }
             boolean antiSpear = willUseAntiSpear(base.flyAntiSpear.get(), targetPos);
             // only optimize when target offground
+            if (!base.flyAntiSpearAfterAngle.get() && antiSpear) {
+                antiSpear(base.flyAntiSpear.get());
+            }
             if (!onGroundSupport && base.angleOptimizeFollow.get()) {
                 if (movementDirection.y < -1E-6) {
                     var distancePair = base.angleOptimizeFollowRange.get();
@@ -1184,7 +1360,7 @@ public class ElytraBot extends BaseModule {
                     } else {
                         distance = distancePair.x();
                     }
-                    double horizontal = mc.player.getPos().subtract(targetPos).horizontalLength();
+                    double horizontal = mc.player.getPos().subtract(targetPos).length();
                     if (horizontal > distance) {
                         double horizontal2 = Math.max(Math.abs(movementDirection.x), Math.abs(movementDirection.z));
                         if (horizontal2 > 0.1) {
@@ -1198,6 +1374,8 @@ public class ElytraBot extends BaseModule {
                                 if (Math.abs(movementDirection.y) > horizontal2) {
                                     movementDirection = movementDirection.withAxis(Direction.Axis.Y, -horizontal2);
                                 }
+                                movementDirection =
+                                        ElytraOptimizeUtils.calculateBestDownForwardSpeed(movementDirection, true);
                             }
                         }
                     }
@@ -1207,7 +1385,7 @@ public class ElytraBot extends BaseModule {
             if (len < 5) {
                 movementDirection = movementDirection.normalize().multiply(5);
             }
-            if (antiSpear) {
+            if (base.flyAntiSpearAfterAngle.get() && antiSpear) {
                 antiSpear(base.flyAntiSpear.get());
             }
         }
@@ -1392,8 +1570,19 @@ public class ElytraBot extends BaseModule {
                     boolean yLow = predictor.getY() >= mc.player.getY();
                     if (base.combatSmoothFlight1.get()) {
                         double combatRange = base.combatMaceRange.get();
+                        if (base.combatSmoothArg14.get().isPresent()) {
+                            Vec3 arguments = base.combatSmoothArg14.get().getValue();
+                            double predictorYL = predictor.y - mc.player.getY();
+                            if (predictorYL > arguments.x()) {
+                                combatRange += Math.min(predictorYL - arguments.x(), arguments.z()) * arguments.y();
+                            }
+                        }
                         combatRange = combatRange / 2;
-                        if (yLow) {
+                        boolean mayCombatFlight = !base.combatSmoothFlag2.get()
+                                || (base.currentAction == TargetAction.CIRCLING
+                                        || base.currentAction == TargetAction.TOWARDS
+                                        || base.currentAction == TargetAction.SLOW_SPEED);
+                        if (mayCombatFlight && yLow) {
                             Vec3d center =
                                     base.target.dimensions.getBoxAt(predictor).getCenter();
                             double radius = combatRange + base.combatSmoothArg1.get();
@@ -1505,7 +1694,8 @@ public class ElytraBot extends BaseModule {
                 }
             }
             if (!found) {
-                movementDirection = fallbackTargetPos.subtract(playerPos);
+                movementDirection =
+                        calculateTargetDirection(fallbackTargetPos); // fallbackTargetPos.subtract(playerPos);
             }
             if (movementDirection.length() < 5 && movementDirection.length() > 1E-6) {
                 movementDirection = movementDirection.normalize().multiply(5);
