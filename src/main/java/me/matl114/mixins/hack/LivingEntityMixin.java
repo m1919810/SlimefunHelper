@@ -109,11 +109,42 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
             at =
                     @At(
                             value = "INVOKE",
-                            target =
-                                    "Lnet/minecraft/entity/LivingEntity;travelInFluid(Lnet/minecraft/util/math/Vec3d;)V",
+                            target = "Lnet/minecraft/entity/LivingEntity;getY()D",
+                            ordinal = 0,
                             shift = At.Shift.BEFORE),
             cancellable = true)
     private void onWaterGlide(Vec3d movementInput, CallbackInfo ci) {
+        if (checkClientPlayer()) {
+            if (isFallFlying()
+                    && ((ElytraExtra.INSTANCE.canFireworkControlMotion()))
+                    && (ElytraExtra.INSTANCE.fireworksLiquidFly.get()
+                            || ElytraExtra.INSTANCE.hasFireworkVelocityOverrides())) {
+                ci.cancel();
+                Vec3d overriding = ElytraExtra.INSTANCE.requestNextOverrideVelocity();
+                Vec3d vec3d = this.getVelocity();
+                if (overriding != null) {
+                    this.setVelocity(overriding);
+                } else {
+                    this.setVelocity(EntityUtils.calculateGlidingVelocity(
+                            (ClientPlayerEntity) (Entity) this, vec3d, this.getRotationVector(), !this.hasNoGravity()));
+                }
+                ;
+                this.move(MovementType.SELF, this.getVelocity());
+                this.updateLimbs(this instanceof Flutterer);
+            }
+        }
+    }
+
+    @Inject(
+            method = "travel",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/entity/LivingEntity;getY()D",
+                            ordinal = 2,
+                            shift = At.Shift.BEFORE),
+            cancellable = true)
+    private void onLavaGlide(Vec3d movementInput, CallbackInfo ci) {
         if (checkClientPlayer()) {
             if (isFallFlying()
                     && ((ElytraExtra.INSTANCE.canFireworkControlMotion()))
