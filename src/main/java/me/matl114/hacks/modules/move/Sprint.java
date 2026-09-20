@@ -8,6 +8,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
+import me.matl114.hacks.utils.enums.BypassMode;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
@@ -44,17 +45,15 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     // todo: attack entity cause fake sprint, keep the state, do not send any other packets, try later
     public final FlagRef fakeSprint = flagBuilder(sprint.add("fake-sprint")).build();
 
-    public final EnumRef<Configs.BypassMode> fakeSprintMode = builder(
-                    sprint.add("fake-sprint-mode"), Configs.BypassMode.class)
-            .defaultValue(Configs.BypassMode.NO_BYPASS)
+    public final EnumRef<BypassMode> fakeSprintMode = builder(sprint.add("fake-sprint-mode"), BypassMode.class)
+            .defaultValue(BypassMode.NO_BYPASS)
             .build();
 
     public final FlagRef directionalSprint =
             flagBuilder(sprint.add("all-direction-sprint")).build();
 
-    public final EnumRef<Configs.BypassMode> directionalSprintMode = builder(
-                    sprint.add("bypass-mode"), Configs.BypassMode.class)
-            .defaultValue(Configs.BypassMode.NO_BYPASS)
+    public final EnumRef<BypassMode> directionalSprintMode = builder(sprint.add("bypass-mode"), BypassMode.class)
+            .defaultValue(BypassMode.NO_BYPASS)
             .build();
 
     @Override
@@ -140,7 +139,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
             }
             input.applyInput(player);
         }
-        if (directionalSprint.get() && directionalSprintMode.getValue() == Configs.BypassMode.NO_BYPASS) {
+        if (directionalSprint.get() && directionalSprintMode.getValue() == BypassMode.NO_BYPASS) {
             PlayerInputUtils.Input input = PlayerInputUtils.of(player);
             if (mayWorkSprint() && input.backward() && !input.forward()) {
                 // there is no rotation here
@@ -228,18 +227,18 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
         ModulePreset preset = event.context().getValue();
         switch (preset) {
             case HACKING, VANILLA -> {
-                directionalSprintMode.set(Configs.BypassMode.NO_BYPASS);
+                directionalSprintMode.set(BypassMode.NO_BYPASS);
             }
             default -> {
-                directionalSprintMode.set(Configs.BypassMode.BYPASS_GRIM);
+                directionalSprintMode.set(BypassMode.BYPASS_GRIM);
             }
         }
         switch (preset) {
             case AC_GRIM, AC_GRIM_LEGACY -> {
-                fakeSprintMode.set(Configs.BypassMode.BYPASS_GRIM);
+                fakeSprintMode.set(BypassMode.BYPASS_GRIM);
             }
             default -> {
-                fakeSprintMode.set(Configs.BypassMode.NO_BYPASS);
+                fakeSprintMode.set(BypassMode.NO_BYPASS);
             }
         }
     }

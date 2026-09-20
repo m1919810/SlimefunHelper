@@ -5,10 +5,12 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
 import me.matl114.events.impl.EventContainer;
+import me.matl114.events.impl.SlotClickAction;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
+import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.ConfigEnum;
@@ -16,7 +18,6 @@ import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.NetworkUtils;
 import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
@@ -92,6 +93,11 @@ public class DisablerManager extends BaseModule {
                 Integer.MAX_VALUE - 1);
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onFlying);
         registerListener(Listener.getPacketPoint().getChannel(CommonPongC2SPacket.class), this::onPingPong);
+        registerListener(Listener.getPreClickSlot(), this::onGhostHandSwapBack);
+        registerListener(
+                Listener.getPacketPoint().getChannel(UpdateSelectedSlotC2SPacket.class),
+                this::onGhostHandSwap,
+                Integer.MAX_VALUE - 1);
     }
 
     public void onRespawn(Event<PlayerRespawnS2CPacket> respawn) {
@@ -161,7 +167,7 @@ public class DisablerManager extends BaseModule {
                     if (ViaFabricPlusHooks.isSupportDupRot()) {
                         LegacySnapRotManager.INSTANCE.snapAt(mc.player.getPitch(), mc.player.getYaw(), true);
                     } else {
-                        int selected = InventoryUtils.getSelectedSlot();
+                        int selected = PlayerStateManager.INSTANCE.lastSelectedSlot;
                         int next = selected == 8 ? 7 : 8;
                         Listener.sendPacketNoEvents(new UpdateSelectedSlotC2SPacket(next));
                         Listener.sendPacketNoEvents(new UpdateSelectedSlotC2SPacket(selected));
@@ -179,6 +185,22 @@ public class DisablerManager extends BaseModule {
             return flushACPlaceQueue0();
         }
         return false;
+    }
+
+    public void onGhostHandSwapBack(Event<SlotClickAction> eventSlot) {
+        if (eventSlot.isCancelled()) return;
+        // do not flush on high version because they need to pass the post-flying rotation check
+        if (enable.get()
+                && hasAnyPlaceActionGrimQueue
+                && autoFlushPlaceQueue.get()
+                && ViaFabricPlusHooks.isSupportDupRot()) {
+            flushACPlaceQueue0();
+        }
+    }
+
+    public void onGhostHandSwap(Event<UpdateSelectedSlotC2SPacket> event) {
+        if (event.isCancelled()) return;
+        hasAnyPlaceActionGrimQueue = false;
     }
 
     public void onPlace(Event<PlayerInteractBlockC2SPacket> blockPlace) {

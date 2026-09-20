@@ -14,12 +14,13 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.hooks.ViaProtocols;
 import me.matl114.managers.Configs;
 import me.matl114.managers.TaskManagers;
+import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
@@ -32,7 +33,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
@@ -50,9 +50,9 @@ public class InvExtra extends BaseModule {
         INSTANCE = this;
     }
 
-    public final IntRef inventoryClickLimit = intBuilder(inventory.add("packet-limit"))
-            .defaultValue(40)
-            .validator(Configs.INT_POSITIVE)
+    public final DoubleRef inventoryClickLimit = doubleBuilder(inventory.add("packet-limit"))
+            .defaultValue(40.0D)
+            .validator(Configs.doubleRange(0.0, 1000.0))
             .build();
 
     public final FlagRef invGrimFix =
@@ -164,7 +164,20 @@ public class InvExtra extends BaseModule {
         return Runnables.doNothing();
     }
 
-    public Runnable swapInventoryIndexToHand(int hand) {
+    public Runnable swapItemToHand(int hand, boolean offhand, GhostHandMode mode) {
+        if (offhand) {
+            return swapInventoryIndexToOffhand(hand);
+        }
+        if (hand == 40) {
+            return swapInventoryIndexToHand(40);
+        }
+        return switch (mode) {
+            case INV_SWAP, INV_CLICK -> swapInventoryIndexToHand(hand);
+            case HOT_BAR_ONLY -> swapInventoryHotBar(hand);
+        };
+    }
+
+    private Runnable swapInventoryIndexToHand(int hand) {
         int selected = InventoryUtils.getSelectedSlot();
         if (selected != hand) {
             //            if (hand < 9) {
@@ -202,7 +215,7 @@ public class InvExtra extends BaseModule {
         return Runnables.doNothing();
     }
 
-    public Runnable swapInventoryIndexToOffhand(int hand) {
+    private Runnable swapInventoryIndexToOffhand(int hand) {
         if (hand == 40) return Runnables.doNothing();
         OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), hand);
         if (slotIndex.isPresent()) {
@@ -225,6 +238,20 @@ public class InvExtra extends BaseModule {
         } else {
             return null;
         }
+    }
+
+    private Runnable swapInventoryHotBar(int hand) {
+        if (hand < 0 || hand >= 9) return null;
+        int selected = InventoryUtils.getSelectedSlot();
+        if (selected == hand) {
+            return Runnables.doNothing();
+        }
+        PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(hand);
+        syncAttr();
+        return () -> {
+            PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(selected);
+            syncAttr();
+        };
     }
 
     //    public Runnable swapInventoryIndex(int a, int b){
@@ -332,6 +359,7 @@ public class InvExtra extends BaseModule {
             ItemStack toStack = toSlotInstance.getStack();
             int maxSize = toStack.getMaxCount();
             boolean overStack = fromStack.getCount() + toStack.getCount() > maxSize;
+            ItemStack stackInCursor = handler.getCursorStack();
             mc.interactionManager.clickSlot(handler.syncId, from, 0, SlotActionType.PICKUP, mc.player);
             mc.interactionManager.clickSlot(handler.syncId, to, 0, SlotActionType.PICKUP, mc.player);
             if (overStack) {
@@ -353,10 +381,10 @@ public class InvExtra extends BaseModule {
     }
 
     public boolean onPickItem() {
-        PlayerEntity player = mc.player;
-        if (player == null) return false;
-        Screen nowScreen = InvTasks.getCurrentServerScreen(player);
-        if (!player.isCreative() && nowScreen instanceof HandledScreen<?> handled) {
+
+        if (mc.player == null) return false;
+        Screen nowScreen = InvTasks.getCurrentServerScreen(mc.player);
+        if (!mc.player.isCreative() && nowScreen instanceof HandledScreen<?> handled) {
             Point mouseCoord = ScreenUtils.getMouseCoord(mc);
             Slot slot = HandledScreenAccess.of(handled).reallyGetSlotAt(mouseCoord.x, mouseCoord.y);
             if (slot != null) {

@@ -713,7 +713,7 @@ public class Listener {
 
     @Getter
     @Broadcast
-    private static final EventChannel<UseItemOnBlock> postPlayerUseItemAtBlock = new EventChannel<>();
+    private static final EventChannel<UseItemOnBlock> postPlayerUseItemOnBlock = new EventChannel<>();
 
     @Getter // player attack at block
     @Cancelable

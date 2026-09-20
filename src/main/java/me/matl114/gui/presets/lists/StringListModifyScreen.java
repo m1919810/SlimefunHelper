@@ -36,8 +36,8 @@ public class StringListModifyScreen<T> extends ConfirmingBigScreen {
                         1,
                         WIDTH,
                         18,
-                        stringAttrKeyValue,
-                        stringAttrKeyValue.getValue(),
+                        stringAttrKeyValue::setInput,
+                        stringAttrKeyValue.getInput(),
                         McWidgetHelpers.getWrongRedTextBoxColorProvider(stringAttrKeyValue::isValidate)),
                 20,
                 WIDTH);
@@ -50,8 +50,7 @@ public class StringListModifyScreen<T> extends ConfirmingBigScreen {
 
     @Override
     protected void onConfirmButton() {
-        this.listAttrKeyValue.valueChangeInternal(
-                this, this.list.stream().map(AttrKeyValue::getOriginValue).toList());
+        this.listAttrKeyValue.accept(this.list.stream().map(AttrKeyValue::get).toList());
         if (this.listAttrKeyValue.isValidate()) {
             consumer.accept(this.listAttrKeyValue);
         }
@@ -61,8 +60,7 @@ public class StringListModifyScreen<T> extends ConfirmingBigScreen {
     @Override
     public void tick() {
         super.tick();
-        this.listAttrKeyValue.valueChangeInternal(
-                this, this.list.stream().map(AttrKeyValue::getOriginValue).toList());
+        this.listAttrKeyValue.accept(this.list.stream().map(AttrKeyValue::get).toList());
     }
 
     @Override
@@ -75,7 +73,7 @@ public class StringListModifyScreen<T> extends ConfirmingBigScreen {
                         this.x + (this.backgroundWidth - listWidth) / 2,
                         this.y + CONTENT_START_Y,
                         listWidth,
-                        content_end_y - CONTENT_START_Y)
+                        getContentHeight())
                 .addTo(this);
     }
 }

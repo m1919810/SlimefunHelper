@@ -10,19 +10,21 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 import lombok.Getter;
-import lombok.val;
+import lombok.Setter;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.DrawableWidget;
 import org.jetbrains.annotations.Nullable;
 
 public class BaseAttrKeyValue<T> implements AttrKeyValue<T>, Cloneable {
-    public static CustomWidgetFactory<?> WIDGET_FACTORY = BaseAttrKeyValue::generateTextInputValueWidget;
+    public static CustomWidgetGenerator<?> WIDGET_FACTORY = BaseAttrKeyValue::generateTextInputValueWidget;
 
-    public static <T> CustomWidgetFactory<T> getWidgetFactory() {
-        return (CustomWidgetFactory<T>) WIDGET_FACTORY;
+    public static <T> CustomWidgetGenerator<T> getWidgetFactory() {
+        return (CustomWidgetGenerator<T>) WIDGET_FACTORY;
     }
 
-    protected CustomWidgetFactory<T> widgetFactory;
+    @Setter
+    protected CustomWidgetGenerator<T> widgetFactory;
+
     protected final WrapperFactory<String, T> stringifyFactory;
 
     public BaseAttrKeyValue(String key, @Nonnull T value, WrapperFactory<String, T> stringifyFactory) {
@@ -32,12 +34,12 @@ public class BaseAttrKeyValue<T> implements AttrKeyValue<T>, Cloneable {
     public BaseAttrKeyValue(
             String key,
             @Nonnull T value,
-            CustomWidgetFactory<T> widgetFactory,
+            CustomWidgetGenerator<T> widgetFactory,
             WrapperFactory<String, T> stringifyFactory) {
         this.keyName = key;
         this.originValue = value;
         this.stringifyFactory = stringifyFactory;
-        this.value = updateValue(value);
+        this.value = toInput(value);
         this.widgetFactory = widgetFactory;
         this.validate = true;
     }
@@ -45,12 +47,12 @@ public class BaseAttrKeyValue<T> implements AttrKeyValue<T>, Cloneable {
     public <R extends BaseAttrKeyValue<T>> BaseAttrKeyValue(
             String key,
             @Nonnull T value,
-            CustomWidgetFactory<T> widgetFactory,
+            CustomWidgetGenerator<T> widgetFactory,
             Function<R, WrapperFactory<String, T>> lateInitialization) {
         this.keyName = key;
         this.originValue = value;
         this.stringifyFactory = lateInitialization.apply((R) this);
-        this.value = updateValue(value);
+        this.value = toInput(value);
         this.widgetFactory = widgetFactory;
         this.validate = true;
     }
@@ -58,12 +60,12 @@ public class BaseAttrKeyValue<T> implements AttrKeyValue<T>, Cloneable {
     public <R extends BaseAttrKeyValue<T>> BaseAttrKeyValue(
             String key,
             Optional<T> value,
-            CustomWidgetFactory<T> widgetFactory,
+            CustomWidgetGenerator<T> widgetFactory,
             WrapperFactory<String, T> lateInitialization) {
         this.keyName = key;
         this.originValue = value.orElse(null);
         this.stringifyFactory = lateInitialization;
-        this.value = originValue == null ? null : updateValue(originValue);
+        this.value = originValue == null ? null : toInput(originValue);
         this.widgetFactory = widgetFactory;
         this.validate = value.isPresent();
     }
@@ -78,14 +80,14 @@ public class BaseAttrKeyValue<T> implements AttrKeyValue<T>, Cloneable {
         return stringifyFactory;
     }
 
-    public final String getValue() {
+    public final String getInput() {
         checkUpdate();
         return value;
     }
 
     @Override
     @Nullable
-    public final T getOriginValue() {
+    public final T get() {
         checkUpdate();
         return originValue;
     }
@@ -103,7 +105,7 @@ public class BaseAttrKeyValue<T> implements AttrKeyValue<T>, Cloneable {
         T updated = updater.get();
         if (!Objects.equals(updated, originValue)) {
             originValue = updated;
-            value = updated == null ? null : updateValue(updated);
+            value = updated == null ? null : toInput(updated);
             validate = true;
         }
     }
@@ -128,7 +130,7 @@ public class BaseAttrKeyValue<T> implements AttrKeyValue<T>, Cloneable {
     }
 
     public final boolean setOriginValue(T value) {
-        valueChange(null, updateValue(value));
+        setInput(toInput(value));
         return isValidate();
     }
 
@@ -155,7 +157,7 @@ public class BaseAttrKeyValue<T> implements AttrKeyValue<T>, Cloneable {
 
     public final boolean validateAndUpdate() {
         try {
-            var re = getStringifyFactory().create(getValue());
+            var re = getStringifyFactory().create(getInput());
             return (validate = setOriginValue0(re));
         } catch (Throwable e) {
             return (validate = false);
@@ -163,7 +165,7 @@ public class BaseAttrKeyValue<T> implements AttrKeyValue<T>, Cloneable {
     }
 
     @Override
-    public final void valueChange(Object selectable, String string) {
+    public final void setInput(String string) {
         // do not update if there is not change
         if (Objects.equals(string, value)) {
             return;
@@ -172,12 +174,8 @@ public class BaseAttrKeyValue<T> implements AttrKeyValue<T>, Cloneable {
         this.validate = validateAndUpdate();
     }
 
-    public final String updateValue(T val) {
+    public final String toInput(T val) {
         return stringifyFactory.get(val);
-    }
-
-    public final void valueChangeInternal(Object selectable, T val) {
-        valueChange(selectable, updateValue(val));
     }
 
     public final void addListener(Consumer<T> li) {
@@ -194,7 +192,7 @@ public class BaseAttrKeyValue<T> implements AttrKeyValue<T>, Cloneable {
     }
 
     @Override
-    public final CustomWidgetFactory<T> getCustomWidgetFactory() {
+    public final CustomWidgetGenerator<T> getCustomWidgetFactory() {
         return widgetFactory;
     }
 

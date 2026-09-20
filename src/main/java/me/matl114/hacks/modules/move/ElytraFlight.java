@@ -8,6 +8,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.combat.ElytraBot;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.OptionalPrimitive;
@@ -20,7 +21,6 @@ import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
-import me.matl114.utils.EntityUtils;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
@@ -426,15 +426,15 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                                             !mc.player.hasNoGravity())
                                     : realVector);
                 } else if (realVector.length() > 0) {
-                    Debug.info(
-                            "Lost Control",
-                            PlayerStateManager.INSTANCE.lastKnownClientVelocity,
-                            EntityUtils.calculateGlidingVelocity(
-                                    mc.player,
-                                    PlayerStateManager.INSTANCE.lastKnownClientVelocity,
-                                    mc.player.getRotationVector(),
-                                    true),
-                            mc.player.getVelocity());
+                    //                    Debug.info(
+                    //                            "Lost Control",
+                    //                            PlayerStateManager.INSTANCE.lastKnownClientVelocity,
+                    //                            EntityUtils.calculateGlidingVelocity(
+                    //                                    mc.player,
+                    //                                    PlayerStateManager.INSTANCE.lastKnownClientVelocity,
+                    //                                    mc.player.getRotationVector(),
+                    //                                    true),
+                    //                            mc.player.getVelocity());
                 }
 
                 if (shouldCheckRocket) {
@@ -501,6 +501,4 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             return "elytramode";
         }
     }
-
-    public enum GravityMode implements ConfigEnum {}
 }

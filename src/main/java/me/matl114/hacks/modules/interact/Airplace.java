@@ -7,13 +7,11 @@ import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
 import me.matl114.events.RenderListener;
 import me.matl114.events.catchers.PacketCatcherImpl;
-import me.matl114.events.packets.PacketStorage;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.ac.DisablerManager;
-import me.matl114.hacks.modules.move.FloatingUtils;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
@@ -22,14 +20,12 @@ import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.MathUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.algorithms.StateMachine;
-import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.network.NetworkSide;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.s2c.play.InventoryS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
@@ -59,6 +55,10 @@ public class Airplace extends BaseModule {
             .validator(Configs.doubleRange(0, 10000))
             .build();
 
+    public final FlagRef onlyBlocks = builder(airPlace.add("only-blocks"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     public final FlagRef render = flagBuilder(airPlace.add("render")).build();
     // todo: add to switch mode
     public final EnumRef<Mode> enableAirWall = builder(airPlace.add("mode"), Mode.class)
@@ -86,9 +86,6 @@ public class Airplace extends BaseModule {
         registerListener(Listener.getItemUseAction(), this::onInteract);
         registerListener(Listener.getPreHandleInputEvents(), this::onInput);
         registerListener(RenderListener.getRender3DEvent(), this::onRenderPos);
-        registerListener(
-                PacketManager.getPacketQueueEvent().getChannel(NetworkSide.CLIENTBOUND), this::onPacketAcceptQueue);
-        registerListener(Listener.getPostTick(), this::onPostTick);
         registerListener(PacketManager.getQueueShutdownEvent(), this::onShutdownQueue);
     }
 
@@ -102,7 +99,7 @@ public class Airplace extends BaseModule {
         if (!event.isCancelled() && enable.get()) {
             Hand hand = event.getArgs(0);
             ItemStack stack = mc.player.getStackInHand(hand);
-            if (!stack.isEmpty() && stack.getItem() instanceof BlockItem) {
+            if (!onlyBlocks.get() || (!stack.isEmpty() && stack.getItem() instanceof BlockItem)) {
                 HitResult hitResult = event.context();
                 if (hitResult.getType() == HitResult.Type.MISS) {
                     HitResult result = getCameraEntity().raycast(range.get(), 0, false);
@@ -139,7 +136,6 @@ public class Airplace extends BaseModule {
 
     public void clearCurrentAirWall() {
         targetPos = null;
-        lastDelayTick = 0;
     }
 
     public void onGrimAirWall(BlockHitResult hitResult) {
@@ -152,42 +148,6 @@ public class Airplace extends BaseModule {
     }
 
     BlockPos targetPos = null;
-    int lastDelayTick = 0;
-
-    public void flush() {
-        lastDelayTick--;
-        if (targetPos == null && lastDelayTick == 0) {
-            PacketManager.flushInBound();
-        } else {
-            if (lastDelayTick > 3) lastDelayTick = 3;
-            PacketManager.flushInBound((packetStorage -> {
-                long timeMS = packetStorage.timestampMS();
-                long currentMs = System.currentTimeMillis();
-                if (currentMs > timeMS + 50L) {
-                    return PacketManager.FlushAction.FLUSH;
-                }
-                return PacketManager.FlushAction.QUEUE;
-            }));
-        }
-    }
-
-    public void onPacketAcceptQueue(Event<PacketStorage> packet) {
-        if (enable.get() && targetPos != null) {
-            var pkt = packet.context;
-
-            if (PacketManager.isAsyncOrNotTransactionS2CPacket(pkt.packetType())) {
-                return;
-            }
-            lastDelayTick += 1;
-            packet.cancel();
-        }
-    }
-
-    public void onPostTick(Event<Void> event) {
-        if ((lastDelayTick > 0)) {
-            flush();
-        }
-    }
 
     public void onInput(Event<Void> event) {
         onInputGrimWall();
@@ -215,9 +175,7 @@ public class Airplace extends BaseModule {
                     mc.player.swingHand(Hand.MAIN_HAND);
                     // work by magic
                     // work by placeAfterPlace bypass
-                    if (!PlayerInputUtils.of(mc.options).hasWASDMovement()) {
-                        FloatingUtils.INSTANCE.setGrimFloatingTick(true);
-                    }
+                    DisablerManager.INSTANCE.flushACPlaceQueue();
                     return;
                 }
             }

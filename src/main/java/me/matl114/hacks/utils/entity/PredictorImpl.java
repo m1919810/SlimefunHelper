@@ -184,6 +184,11 @@ public class PredictorImpl implements Predictor {
             case 5 -> {
                 Vec3d[] ring = Arrays.copyOf(history, history.length);
                 int currentIdx = history.length - 1;
+                return new MathUtils.AcceleratePredictor2(ring, () -> currentIdx).compute(futureSteps);
+            }
+            case 6 -> {
+                Vec3d[] ring = Arrays.copyOf(history, history.length);
+                int currentIdx = history.length - 1;
                 return new MathUtils.AcceleratePredictor(ring, () -> currentIdx).compute(futureSteps);
             }
 

@@ -142,8 +142,8 @@ public class PrimitiveMap<T, W> implements NBTParsable<PrimitiveMap<T, W>> {
                         w::createNewValuePrimitive,
                         "value",
                         WrapperFactory.identity(),
-                        AttrKeyValue.CustomWidgetFactory.cutSizeXLeft(0.5),
-                        AttrKeyValue.CustomWidgetFactory.cutSizeXRight(0.5),
+                        AttrKeyValue.CustomWidgetGenerator.cutSizeXLeft(0.5),
+                        AttrKeyValue.CustomWidgetGenerator.cutSizeXRight(0.5),
                         300,
                         20);
             }
@@ -164,7 +164,7 @@ public class PrimitiveMap<T, W> implements NBTParsable<PrimitiveMap<T, W>> {
                                         .forGetter(PrimitiveMap::defaultValuePrimitive))
                         .apply(instance, PrimitiveMap::new)),
                 (attr, x, y, dx, dy) -> {
-                    PrimitiveMap<T, W> map = attr.getOriginValue();
+                    PrimitiveMap<T, W> map = attr.get();
                     WrapperFactory<Map<Primitive<T>, Primitive<W>>, PrimitiveMap<T, W>> wrapperFactory =
                             WrapperFactory.of(
                                     mp -> new PrimitiveMap<>(
@@ -196,7 +196,7 @@ public class PrimitiveMap<T, W> implements NBTParsable<PrimitiveMap<T, W>> {
         return Codec.withAlternative(inheritedCodec(wrapper), legacyCodec);
     }
 
-    public static <T, W, R extends PrimitiveMap<T, W>> AttrKeyValue.CustomWidgetFactory<R> inheritedWidgetFactory(
+    public static <T, W, R extends PrimitiveMap<T, W>> AttrKeyValue.CustomWidgetGenerator<R> inheritedWidgetFactory(
             Function<PrimitiveMap<T, W>, R> wrapper) {
         NBTType<PrimitiveMap<T, W>> delegateType = PrimitiveMap.TYPE.cast();
         WrapperFactory<PrimitiveMap<T, W>, R> wrapperFactory = WrapperFactory.of(wrapper, map -> map);

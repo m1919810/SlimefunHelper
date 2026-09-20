@@ -16,7 +16,7 @@ public class IntListAttrKeyValue extends ListAttrKeyValue<Integer> {
 
     @Override
     public List<AttrKeyValue<Integer>> createAttrKeyValueForElements() {
-        var list = getOriginValue();
+        var list = get();
         var size = list.size();
         List<AttrKeyValue<Integer>> res = new ArrayList<>();
         for (int i = 0; i < size; ++i) {
@@ -34,7 +34,7 @@ public class IntListAttrKeyValue extends ListAttrKeyValue<Integer> {
         return str;
     }
 
-    public static final CustomWidgetFactory<List<Integer>> LIST_WIDGET_FACTORY = (s, x, y, inputDx, dy) -> {
+    public static final CustomWidgetGenerator<List<Integer>> LIST_WIDGET_FACTORY = (s, x, y, inputDx, dy) -> {
         return new SubScreenWidget(x, y, inputDx, dy)
                 .addDrawableChild(McWidgetHelpers.createAttrValueEditBox(s, 0, 0, inputDx - dy, dy))
                 .addDrawableChild(WidgetUtils.createOpenListModifyScreenButton(

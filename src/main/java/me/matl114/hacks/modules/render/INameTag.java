@@ -9,6 +9,7 @@ import me.matl114.SlimefunHelper;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.gui.presets.single.IIcon;
 import me.matl114.gui.presets.single.RegistryDisplays;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -56,6 +57,8 @@ public abstract class INameTag extends BaseModule {
     {
         initializeModuleSettings();
     }
+
+    public final FlagRef hideSelf = flagBuilder(nameTag.add("hide-self")).build();
 
     public final FlagRef showHealth = flagBuilder(nameTag.add("health")).build();
 
@@ -274,8 +277,7 @@ public abstract class INameTag extends BaseModule {
 
     public abstract void onRender(Event<VDrawContext> event);
 
-    protected static final RegistryDisplays.IIcon<StatusEffect> statusEffectRenderer =
-            RegistryDisplays.getIcon(StatusEffect.class);
+    protected static final IIcon<StatusEffect> statusEffectRenderer = RegistryDisplays.getIcon(StatusEffect.class);
 
     public static class PlayerNameTagInfo {
         PlayerEntity player;

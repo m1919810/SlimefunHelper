@@ -8,6 +8,7 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
+import me.matl114.hacks.utils.enums.SetBackTriggerType;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -44,9 +45,9 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
                     grimAccelerate.add("hotkey"), new MultiKeyBind(), grimAccelerate.add("enable"))
             .build();
 
-    public final EnumRef<Configs.SetBackTriggerType> mode = builder(
-                    grimAccelerate.add("set-back-mode"), Configs.SetBackTriggerType.class)
-            .defaultValue(Configs.SetBackTriggerType.SIMULATION)
+    public final EnumRef<SetBackTriggerType> mode = builder(
+                    grimAccelerate.add("set-back-mode"), SetBackTriggerType.class)
+            .defaultValue(SetBackTriggerType.SIMULATION)
             .build();
 
     public final DoubleRef maxVelocityAccept = builder(grimAccelerate.add("max-accelerate-velocity"), Double.class)

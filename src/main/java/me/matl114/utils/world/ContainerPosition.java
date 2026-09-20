@@ -21,7 +21,7 @@ public record ContainerPosition(RegistryKey<World> world, int doubleX, int y, in
             .apply(obj, ContainerPosition::new));
 
     public Vec3d getCenterPosition() {
-        return new Vec3d((doubleX + 1) / 2.0F, y + 0.5, (doubleZ + 1) / 2.0F);
+        return new Vec3d((doubleX + 1) / 2.0D, y + 0.5, (doubleZ + 1) / 2.0D);
     }
 
     public Box getBoundingBox() {

@@ -6,8 +6,8 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.modules.move.ElytraExtra;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hooks.ViaFabricPlusHooks;
-import me.matl114.utils.EntityUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.util.math.Direction;
@@ -31,6 +31,7 @@ public class ElytraOptimizeUtils {
     }
 
     public static Vec3d calculateBestPullupSpeed(Vec3d vec3d) {
+
         if (ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V3)) {
             return calculateBestV3ClimbingSpeed(vec3d);
         }
@@ -406,9 +407,9 @@ public class ElytraOptimizeUtils {
         return EntityUtils.pitchYawToRotation(midPitch, y);
     }
 
-    private static Vec3d simulateAxisLimitSpeed(Vec3d currentMotion, float pitch, float yaw) {
+    public static Vec3d simulateAxisLimitSpeed(Vec3d currentMotion, float pitch, float yaw) {
         return switch (ElytraExtra.INSTANCE.autoRescaleAl.get()) {
-            case V1 -> ElytraExtra.INSTANCE.applyAxisLimit1(currentMotion, pitch, yaw, true);
+            case V1 -> ElytraExtra.INSTANCE.applyAxisLimit1(currentMotion, pitch, yaw, false);
             case V2 -> ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw, false);
             case V3 -> applyAxisLimit3_0(
                     currentMotion, pitch, yaw, ElytraExtra.INSTANCE.autoRescaleAmount.get(), false);

@@ -12,6 +12,7 @@ import net.minecraft.util.Formatting;
 public class RegistryChooseScreen<T> extends ConfirmingBigScreen {
     Registry<T> registry;
     Consumer<T> callback;
+    ValueAccessor<String> filterInput;
     protected static final int WIDTH = 240;
 
     public RegistryChooseScreen(Registry<T> registry, Consumer<T> callback) {
@@ -24,12 +25,10 @@ public class RegistryChooseScreen<T> extends ConfirmingBigScreen {
         this.callback = callback;
         setTitleLabel(
                 Text.translatable("widget.gui.registry-choose-screen.title").formatted(Formatting.AQUA));
-        this.selectSubScreen = ListRegistrySelectWidget.registry(
-                this.registry, ValueAccessor.holder(filterInput), 0, CONTENT_START_Y + 20, WIDTH, 240, 20);
+        this.filterInput = ValueAccessor.holder(filterInput);
     }
 
     protected ListRegistrySelectWidget<T> selectSubScreen;
-    protected ContentDelegateWidget<ListRegistrySelectWidget<T>> delegate;
 
     @Override
     protected boolean canConfirm(ElementHandler elementHandler) {
@@ -49,8 +48,11 @@ public class RegistryChooseScreen<T> extends ConfirmingBigScreen {
     @Override
     protected void init() {
         super.init();
-        this.delegate = new ContentDelegateWidget<>(this.x + this.backgroundWidth / 2 - WIDTH / 2, this.y, WIDTH, 240)
-                .setContentDelegate(this.selectSubScreen)
+        var selectSubScreen = ListRegistrySelectWidget.registry(
+                this.registry, this.filterInput, 0, CONTENT_START_Y + 20, WIDTH, getContentHeight() - 20, 20);
+        this.selectSubScreen = selectSubScreen;
+        new ContentDelegateWidget<>(this.x + this.backgroundWidth / 2 - WIDTH / 2, this.y, WIDTH, getContentHeight())
+                .setContentDelegate(selectSubScreen)
                 .addTo(this);
     }
 }

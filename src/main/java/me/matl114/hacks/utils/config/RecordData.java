@@ -58,7 +58,7 @@ public class RecordData implements NBTParsable<RecordData> {
     }
 
     private static void openEditorScreen(AttrKeyValue<RecordData> keyValue) {
-        MutableRecord record = keyValue.getOriginValue().toMutable();
+        MutableRecord record = keyValue.get().toMutable();
         DrawableWidget widget = WidgetUtils.createMutableRecordEditScreen(
                 Text.translatable("widget.nbt-parsable.record-data.edit-screen.title"),
                 List::of,
@@ -68,7 +68,7 @@ public class RecordData implements NBTParsable<RecordData> {
                 WidgetUtils.DEFAULT_PALETTE);
         CenterScreen newScreen = new CenterScreen(widget);
         newScreen.access().addCloseFuture(() -> {
-            keyValue.valueChangeInternal(null, new RecordData(record.toOrderedMap()));
+            keyValue.accept(new RecordData(record.toOrderedMap()));
         });
         newScreen.access().openFromCurrent();
     }
@@ -83,7 +83,7 @@ public class RecordData implements NBTParsable<RecordData> {
                     .<RecordData>xmap(RecordData::fromRefs, RecordData::toRefs),
             (custom, x, y, dx, dy) -> {
                 SubScreenWidget widget = new SubScreenWidget(x, y, dx, dy);
-                int size = custom.getOriginValue().map().size();
+                int size = custom.get().map().size();
                 if (size > 0) {
                     int dxx = dx > 2 * dy ? dx - dy : dx;
                     widget.addDrawableChild(ExecutableWidget.instance(0, 0, dxx, dy)

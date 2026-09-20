@@ -20,10 +20,13 @@ import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.ElytraExtra;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
+import me.matl114.hacks.utils.enums.GhostHandMode;
+import me.matl114.hacks.utils.enums.LegalTargetingMode;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -70,9 +73,9 @@ public class Attack extends BaseModule {
             .build();
 
     //    public final FlagRef legalMode = flagBuilder(attack.add("legal-mode")).build();
-    public final EnumRef<Configs.LegalTargetingMode> legalTargetingMode = builder(
-                    attack.add("legal-targeting"), Configs.LegalTargetingMode.class)
-            .defaultValue(Configs.LegalTargetingMode.DELAY_MOVEMENT)
+    public final EnumRef<LegalTargetingMode> legalTargetingMode = builder(
+                    attack.add("legal-targeting"), LegalTargetingMode.class)
+            .defaultValue(LegalTargetingMode.DELAY_MOVEMENT)
             .build();
 
     public final NBTRef<OptionalPrimitive<Double>> tpRange = builder(
@@ -92,13 +95,13 @@ public class Attack extends BaseModule {
 
     public final FlagRef targetPredict = flagBuilder(attack.add("use-delay-movement-pos-predict"))
             .show(() -> !legalTargetingMode.get().isLegal()
-                    && legalTargetingMode.get().isIn(Configs.LegalTargetingMode.DELAY_MOVEMENT))
+                    && legalTargetingMode.get().isIn(LegalTargetingMode.DELAY_MOVEMENT))
             .build();
 
     public final FlagRef postFix = builder(attack.add("attack-post-fix"), Boolean.class)
             .defaultValue(true)
             .show(() -> !legalTargetingMode.get().isLegal()
-                    && legalTargetingMode.get().isIn(Configs.LegalTargetingMode.DELAY_MOVEMENT))
+                    && legalTargetingMode.get().isIn(LegalTargetingMode.DELAY_MOVEMENT))
             .build();
 
     public final FlagRef autoAntiShield =
@@ -119,6 +122,10 @@ public class Attack extends BaseModule {
             .build();
 
     // todo: ghosthand mace enchantment
+
+    public final EnumRef<GhostHandMode> ghostHand = builder(attack.add("ghost-hand-mode"), GhostHandMode.class)
+            .defaultValue(GhostHandMode.INV_SWAP)
+            .build();
 
     public final FlagRef swingHand =
             builder(attack.add("swing-hand"), Boolean.class).defaultValue(true).build();
@@ -263,8 +270,9 @@ public class Attack extends BaseModule {
         return true; // player.getEyePos().subtract(target.getEyePos()).dotProduct(target.getRotationVector()) > 0;
     }
 
-    private static IndexEntry<ItemStack> findAntiShieldWeapon() {
-        return InventoryUtils.findPlayerItem((ex) -> VItem.getInstance().isAxe(ex), false, false);
+    private static IndexEntry<ItemStack> findAntiShieldWeapon(AttackSettings settings) {
+        return InventoryUtils.findPlayerItem(
+                (ex) -> VItem.getInstance().isAxe(ex), settings.ghostHandMode().getSearchSize(false), false, false);
     }
 
     public AttackSettings createAttackSettings() {
@@ -297,15 +305,20 @@ public class Attack extends BaseModule {
                 elytraSwitch,
                 criticalSprint,
                 maceVClip,
-                swingHand.get());
+                swingHand.get(),
+                ghostHand.get());
     }
 
     public static boolean shouldUseAntiShield(Entity target) {
+        return shouldUseAntiShield(target, INSTANCE.createAttackSettings());
+    }
+
+    private static boolean shouldUseAntiShield(Entity target, AttackSettings settings) {
         return target instanceof LivingEntity lv
                 && lv.isUsingItem()
                 && lv.getActiveItem().getItem() instanceof ShieldItem sh
                 && canEntityUseShieldBlockMe(lv, mc.player)
-                && findAntiShieldWeapon() != null;
+                && findAntiShieldWeapon(settings) != null;
     }
 
     @NonNull
@@ -313,13 +326,14 @@ public class Attack extends BaseModule {
         IndexEntry<ItemStack> invResult;
         if (attackSettings.antiShieldSwap()
                 && shouldUseAntiShield(target)
-                && (invResult = findAntiShieldWeapon()) != null) {
+                && (invResult = findAntiShieldWeapon(attackSettings)) != null) {
             return invResult;
         } else if (attackSettings.invSwap()
                 && !VItem.getInstance().isWeapon(mc.player.getStackInHand(Hand.MAIN_HAND))
                 && target instanceof LivingEntity lv
                 && (invResult = InventoryUtils.findBestPlayerItem(
                                 (ex) -> {
+                                    if (VItem.getInstance().isSpear(ex)) return null;
                                     if (VItem.getInstance().isWeapon(ex)) {
                                         Integer damageCost = VItem.getInstance().getAttackDurabilityCost(ex);
                                         return damageCost == null
@@ -330,6 +344,7 @@ public class Attack extends BaseModule {
                                     }
                                     return null;
                                 },
+                                attackSettings.ghostHandMode().getSearchSize(false),
                                 false,
                                 false))
                         != null) {
@@ -343,6 +358,7 @@ public class Attack extends BaseModule {
                                     }
                                     return null;
                                 },
+                                attackSettings.ghostHandMode().getSearchSize(false),
                                 false,
                                 false))
                         != null) {
@@ -352,6 +368,7 @@ public class Attack extends BaseModule {
                 && target instanceof LivingEntity
                 && (invResult = InventoryUtils.findBestPlayerItem(
                                 (ex) -> {
+                                    if (VItem.getInstance().isSpear(ex)) return null;
                                     if (ex.isOf(mc.player
                                             .getStackInHand(Hand.MAIN_HAND)
                                             .getItem())) {
@@ -360,6 +377,7 @@ public class Attack extends BaseModule {
                                     }
                                     return null;
                                 },
+                                attackSettings.ghostHandMode().getSearchSize(false),
                                 false,
                                 false))
                         != null) {
@@ -381,7 +399,7 @@ public class Attack extends BaseModule {
             }
         }
         IndexEntry<ItemStack> invResult = selectBestWeapon(attackSettings, target);
-        Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(invResult.index());
+        Runnable callback = InvExtra.INSTANCE.swapItemToHand(invResult.index(), false, attackSettings.ghostHandMode());
         attackWithCritic(player, target, attackSettings.criticalSprint(), attackSettings.swingHand());
         if (callback != null) {
             callback.run();
@@ -431,7 +449,12 @@ public class Attack extends BaseModule {
     public boolean willUseMaceAttack(boolean autoMace) {
         return mc.player.getMainHandStack().getItem() instanceof MaceItem mace
                 || (autoMace
-                        && InventoryUtils.findPlayerItem((ex) -> ex.getItem() == Items.MACE, false, false) != null);
+                        && InventoryUtils.findPlayerItem(
+                                        (ex) -> ex.getItem() == Items.MACE,
+                                        ghostHand.get().getSearchSize(false),
+                                        false,
+                                        false)
+                                != null);
     }
 
     private boolean processLegalAttack(Entity target, AttackSettings settings) {
@@ -644,7 +667,7 @@ public class Attack extends BaseModule {
                                                     .sendPacket(new ClientCommandC2SPacket(
                                                             mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
                                             elytraExtra.switchSlotToArmor(elytraExtra.thisFallFlyingIsArmorFly);
-                                            elytraExtra.thisTickSwitchingIndex = -1;
+                                            elytraExtra.thisTickArmorFlySwitchBackIndex = -1;
                                             EntityInternalAccess.of(mc.player)
                                                     .setDataFlag(VDataFlag.FALL_FLYING_FLAG_INDEX, true);
                                         }
@@ -1143,7 +1166,7 @@ public class Attack extends BaseModule {
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
         ModulePreset preset = event.context().getValue();
-        legalTargetingMode.set(Configs.LegalTargetingMode.getFromPreset(preset));
+        legalTargetingMode.set(LegalTargetingMode.getFromPreset(preset));
         switch (preset) {
             case HACKING, VANILLA -> {
                 if (tpRange.get().getValue() < 0) {
@@ -1169,7 +1192,8 @@ public class Attack extends BaseModule {
             boolean elytraDelaySwitch,
             boolean criticalSprint,
             boolean maceVClip,
-            boolean swingHand) {
+            boolean swingHand,
+            GhostHandMode ghostHandMode) {
         public boolean isVanilla() {
             return !useTp && !elytraDelaySwitch && !maceVClip && !useAttack;
         }

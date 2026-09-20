@@ -19,7 +19,9 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
+import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.hacks.utils.multiblock.BlockMatcher;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -27,7 +29,6 @@ import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.utils.Debug;
-import me.matl114.utils.EntityUtils;
 import me.matl114.utils.RaycastUtils;
 import me.matl114.utils.containers.MetaData;
 import net.minecraft.block.Block;
@@ -66,15 +67,15 @@ public class MultiBlockHelper extends BaseModule {
             .validator(Configs.INT_POSITIVE)
             .build();
 
-    public final EnumRef<Configs.LegalInteractMode> legalMode = builder(
-                    multiblock.add("bypass-targeting-mode"), Configs.LegalInteractMode.class)
-            .defaultValue(Configs.LegalInteractMode.USEITEM_PACKET)
+    public final EnumRef<LegalInteractMode> legalMode = builder(
+                    multiblock.add("bypass-targeting-mode"), LegalInteractMode.class)
+            .defaultValue(LegalInteractMode.USEITEM_PACKET)
             .build();
 
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostPlayerUseItemAtBlock(), this::onBlockClick);
+        registerListener(Listener.getPostPlayerUseItemOnBlock(), this::onBlockClick);
         registerListener(Listener.getPreGameTick(), this::onTick);
         registerListener(Listener.getServerLeavePoint(), this::onExit);
         registerListener(Listener.getPostInitializeScreen().getChannel(HandledScreen.class), this::onScreenInit);

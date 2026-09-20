@@ -36,7 +36,7 @@ public class RegistryAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                 RegistryAttrKeyValue::generateRegistryValueWidget,
                 stringifyFactory(registry));
         this.registry = registry;
-        valueChange(null, value);
+        setInput(value);
     }
 
     public static <T> WrapperFactory<String, T> stringifyFactory(Registry<T> registry) {
@@ -70,8 +70,8 @@ public class RegistryAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                 0,
                 inputDx - 2 * dy,
                 dy,
-                attr,
-                attr.getValue(),
+                attr::setInput,
+                attr.getInput(),
                 McWidgetHelpers.getWrongRedTextBoxColorProvider(attr::isValidate));
         TextFieldWidget widget = interactPlace.getDelegate();
         var icon = RegistryDisplays.getIcon(registry);
@@ -87,13 +87,13 @@ public class RegistryAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                     boolean shouldHighlight) {
                 if (attr.isValidate()) {
                     try {
-                        String input = attr.getValue();
+                        String input = attr.getInput();
                         if (Objects.equals(input, "minecraft:default")) {
                             int startIndexX = (element.getTextureHeight() - 16) / 2;
                             int startIndexY = startIndexX;
                             icon.render(startIndexX, startIndexY, context, null);
                         } else {
-                            Identifier identifier = Identifier.tryParse(attr.getValue());
+                            Identifier identifier = Identifier.tryParse(attr.getInput());
                             T value = registry.get(identifier);
                             int startIndexX = (element.getTextureHeight() - 16) / 2;
                             int startIndexY = startIndexX;

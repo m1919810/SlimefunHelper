@@ -108,10 +108,10 @@ public class EntrySet<T> implements NBTParsable<EntrySet<T>>, Predicate<T> {
     }
 
     private static <T> void openRegistrySelectScreen(me.matl114.utils.config.AttrKeyValue<EntrySet<T>> attr) {
-        EntrySet<T> current = attr.getOriginValue();
+        EntrySet<T> current = attr.get();
         ScreenAccess.of(new RegistrySelectScreen<>(current.registry, current.set, selected -> {
                     if (selected != null) {
-                        attr.valueChangeInternal(null, new EntrySet<>(current.registry, selected));
+                        attr.accept(new EntrySet<>(current.registry, selected));
                     }
                 }))
                 .openFromCurrent();

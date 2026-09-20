@@ -1,6 +1,7 @@
 package me.matl114.mixins.hack;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.matl114.accessors.access.ClientAccess;
@@ -9,6 +10,7 @@ import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.modules.combat.CombatExtra;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.modules.mine.MineExtra;
 import me.matl114.hacks.modules.render.RenderExtra;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -24,6 +26,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -34,7 +38,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
 @Mixin(MinecraftClient.class)
-public abstract class ClientMixin implements Cloneable, ClientAccess {
+public abstract class MinecraftClientMixin implements Cloneable, ClientAccess {
 
     @Shadow
     @Nullable
@@ -101,6 +105,21 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
             return false;
         }
         return original;
+    }
+
+    @WrapOperation(
+            method = "doAttack",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/network/ClientPlayerInteractionManager;attackBlock(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/Direction;)Z"))
+    private boolean onVanillaAttackBlockFixCooldown(
+            ClientPlayerInteractionManager instance, BlockPos pos, Direction direction, Operation<Boolean> original) {
+        if (MineExtra.INSTANCE.vanillaFastBreakFix.get() && MineExtra.INSTANCE.getMiningPacketCooldown(1) > 0) {
+            return false;
+        }
+        return original.call(instance, pos, direction);
     }
 
     boolean lastUse = false;
@@ -221,7 +240,7 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
     @Override
     public ClientAccess clone() {
         try {
-            ClientAccess clone = (ClientMixin) super.clone();
+            ClientAccess clone = (MinecraftClientMixin) super.clone();
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new AssertionError();
@@ -258,5 +277,50 @@ public abstract class ClientMixin implements Cloneable, ClientAccess {
             return actionResult3;
         }
         return ActionResult.FAIL;
+    }
+
+    @WrapWithCondition(
+            method = "handleBlockBreaking",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/network/ClientPlayerEntity;swingHand(Lnet/minecraft/util/Hand;)V"))
+    private boolean handleBlockBreakingNoSwing(ClientPlayerEntity instance, Hand hand) {
+        if (MineExtra.INSTANCE.noSwing.get()) {
+            return false;
+        }
+        return true;
+    }
+
+    @Unique
+    boolean blockAttack = false;
+
+    @Inject(
+            method = "doAttack",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/network/ClientPlayerInteractionManager;attackBlock(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/Direction;)Z"))
+    private void onCaptureAttackBlock(CallbackInfoReturnable<Boolean> cir) {
+        blockAttack = true;
+    }
+
+    @WrapWithCondition(
+            method = "doAttack",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/network/ClientPlayerEntity;swingHand(Lnet/minecraft/util/Hand;)V"))
+    private boolean handleBlockAttackNoSwing(ClientPlayerEntity instance, Hand hand) {
+        if (blockAttack) {
+            blockAttack = false;
+            if (MineExtra.INSTANCE.noSwing.get()) {
+                return false;
+            }
+        }
+        return true;
     }
 }

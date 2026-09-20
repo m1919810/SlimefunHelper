@@ -76,22 +76,22 @@ public class OptionalPrimitive<T> implements NBTParsable<OptionalPrimitive<T>> {
                             Primitive.TYPE.typeCodec().fieldOf("value").forGetter(OptionalPrimitive::getPrimitive))
                     .apply(oInstance, OptionalPrimitive::new)),
             (s, x, y, dx, dy) -> {
-                NBTType type = s.getOriginValue().getType();
+                NBTType type = s.get().getType();
                 PairLikeFactory<Boolean, ?, OptionalPrimitive> factory = PairLikeFactory.of(
                         (bool, val) -> new OptionalPrimitive(bool, type, val),
                         OptionalPrimitive::isPresent,
                         OptionalPrimitive::getValue);
                 SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, dx, dy);
-                subScreenWidget.addDrawableChild(new TypeConvertAttrKeyValue<>(
-                                s, factory.asFirstWrapper(s::getOriginValue), NBTTypes.BOOLEAN_TYPE)
-                        .generateValueWidget(0, 0, dy, dy));
+                subScreenWidget.addDrawableChild(
+                        new TypeConvertAttrKeyValue<>(s, factory.asFirstWrapper(s::get), NBTTypes.BOOLEAN_TYPE)
+                                .generateValueWidget(0, 0, dy, dy));
 
                 TypeConvertAttrKeyValue<OptionalPrimitive, ?> valueWidget =
-                        new TypeConvertAttrKeyValue<>(s, factory.asSecondWrapper(s::getOriginValue), type);
+                        new TypeConvertAttrKeyValue<>(s, factory.asSecondWrapper(s::get), type);
                 var widget = valueWidget.generateValueWidget(dy + 2, 0, dx - dy - 2, dy);
                 DynamicContentWidget<?> widget2 = new DynamicContentWidget<>(
                         () -> {
-                            if (s.getOriginValue().isPresent()) {
+                            if (s.get().isPresent()) {
                                 return widget;
                             } else {
                                 return null;

@@ -34,7 +34,7 @@ public record WeakHolder<T>(Identifier registry, Identifier location) implements
             "weakholder",
             Codec.STRING.comapFlatMap(WeakHolder::parse, WeakHolder::asString),
             (w, x, y, dx, dy) -> {
-                Identifier registry = w.getOriginValue().registry();
+                Identifier registry = w.get().registry();
                 var handler = mc.getNetworkHandler();
                 Optional<Registry<Object>> optionalLookup;
                 if (handler != null && handler.getRegistryManager() != null) {

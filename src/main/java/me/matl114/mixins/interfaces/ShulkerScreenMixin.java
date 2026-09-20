@@ -1,7 +1,7 @@
 package me.matl114.mixins.interfaces;
 
 import me.matl114.accessors.interfaces.TileInventory;
-import me.matl114.hacks.InvTasks;
+import me.matl114.hacks.InteractionTasks;
 import me.matl114.utils.world.ContainerPosition;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -79,7 +79,7 @@ public abstract class ShulkerScreenMixin extends HandledScreen<ShulkerBoxScreenH
             ShulkerBoxScreenHandler handler, PlayerInventory inventory, Text title, CallbackInfo ci) {
         this.world = MinecraftClient.getInstance().world;
         // everything
-        this.pos = InvTasks.predictScreenFrom((b) -> b instanceof ShulkerBoxBlock);
+        this.pos = InteractionTasks.predictBlockScreenFrom((b) -> b instanceof ShulkerBoxBlock);
         if (this.pos != null && this.world != null) {
             var state = this.world.getBlockState(this.pos);
             cacheBlockType = state.getBlock();

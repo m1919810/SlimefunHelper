@@ -21,4 +21,9 @@ public enum Direction2d implements ConfigEnum {
     public int getY() {
         return y;
     }
+
+    @Override
+    public String getConfigEnumType() {
+        return "direction2d";
+    }
 }

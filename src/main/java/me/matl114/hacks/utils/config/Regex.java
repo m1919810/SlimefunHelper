@@ -30,8 +30,8 @@ public class Regex implements NBTParsable<Regex>, Predicate<String> {
             NBTTypes.createComapFlatMap("regex", NBTTypes.STRING_TYPE, WrapperFactory.of(Regex::new, Regex::regex));
 
     static {
-        AttrKeyValue.CustomWidgetFactory<Regex> regexWidget = TYPE.customWidgetFactory();
-        AttrKeyValue.CustomWidgetFactory<Regex> newWidget = (s, x, y, dx, dy) -> {
+        AttrKeyValue.CustomWidgetGenerator<Regex> regexWidget = TYPE.customWidgetFactory();
+        AttrKeyValue.CustomWidgetGenerator<Regex> newWidget = (s, x, y, dx, dy) -> {
             SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, dx, dy);
             subScreenWidget.addDrawableChild(regexWidget.generateWidget(s, 0, 0, dx - dy, dy));
             subScreenWidget.addDrawableChild(ExecutableWidget.instance(dx - dy, 0, dy, dy)

@@ -18,6 +18,7 @@ import me.matl114.events.impl.SlotClickAction;
 import me.matl114.hacks.ACTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.*;
@@ -53,6 +54,7 @@ import net.minecraft.particle.EntityEffectParticleEffect;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.text.Text;
@@ -97,6 +99,7 @@ public class PlayerStateManager extends BaseModule {
     public boolean lastInWall;
     public boolean lastUnderBlock;
     public boolean lastHasGroundSupport;
+    public int lastSelectedSlot = 0;
     public PlayerInputUtils.Input lastInput = PlayerInputUtils.EMPTY.clone();
     public boolean serverSideCanFly;
     public Deque<Vec3d> last40Positions = new ArrayDeque<>();
@@ -104,12 +107,17 @@ public class PlayerStateManager extends BaseModule {
     public Map<ItemStackSample, Integer> inventorySummary;
     public Map<ItemStackSample, Integer> inventoryTotalSummary;
     public int glidingTicks;
+    public int lastActiveTicks;
     private static final int MAX_SIZE = 20;
 
     {
         for (int i = 0; i < MAX_SIZE; ++i) {
             last40Positions.add(Vec3d.ZERO);
         }
+    }
+
+    private void updateAFK() {
+        lastActiveTicks = Tasks.getTick();
     }
 
     public PlayerStateManager() {
@@ -188,6 +196,14 @@ public class PlayerStateManager extends BaseModule {
         registerListener(Listener.getOtherPlayerExitPoint(), this::onPlayerLeave);
         registerListener(Listener.getPacketPoint().getChannel(HandSwingC2SPacket.class), this::onSwingHand);
         registerListener(Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class), this::onAttack);
+        registerListener(Listener.getPacketPoint().getChannel(EntityDamageS2CPacket.class), this::onPlayerDamage);
+        registerListener(
+                Listener.getPacketPoint().getChannel(UpdateSelectedSlotC2SPacket.class),
+                this::onSelectedSlot,
+                Integer.MAX_VALUE);
+        registerListener(
+                Listener.getPacketPoint().getChannel(PlayerInteractBlockC2SPacket.class), this::onInteractBlock);
+        registerListener(Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class), this::onInteract);
     }
 
     public void onMove(Event<PlayerMoveC2SPacket> event) {
@@ -216,10 +232,12 @@ public class PlayerStateManager extends BaseModule {
             if (packet.changesLook()) {
                 lastPitch = packet.getPitch(lastPitch);
                 lastYaw = packet.getYaw(lastYaw);
+                updateAFK();
             }
             lastKnownMovementSpeed = new Vec3d(lastX - oldMove.x, lastY - oldMove.y, lastZ - oldMove.z);
             if (lastKnownMovementSpeed.lengthSquared() > 1E-7) {
                 lastKnownChangePosMovementSpeed = lastKnownMovementSpeed;
+                updateAFK();
             }
             if (PlayerMoveC2SPacketAccess.of(packet).getCause() != PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP) {
                 if (PlayerMoveC2SPacketAccess.of(packet).getCause() == PlayerMoveC2SPacketAccess.Cause.SET_BACK) {
@@ -234,11 +252,15 @@ public class PlayerStateManager extends BaseModule {
             if (packet.changesLook()) {
                 lastPitch = packet.getPitch(lastPitch);
                 lastYaw = packet.getYaw(lastYaw);
+                updateAFK();
             }
         }
         // update input here , low version
         if (!ViaFabricPlusHooks.isSupportEndTick()) {
             lastInput = PlayerInputUtils.of(mc.player);
+            if (lastInput.hasMovementControl()) {
+                updateAFK();
+            }
         }
     }
 
@@ -272,12 +294,35 @@ public class PlayerStateManager extends BaseModule {
                 //                        : deltaMovement.z;
                 //                lastKnownClientVelocity = new Vec3d(lastClientVX, lastClientVY, lastClientVZ);
             }
+        } else {
+            isGrimResyncPacket = true;
+        }
+    }
+
+    boolean isGrimResyncPacket = false;
+    boolean lastHit = false;
+
+    public void onPlayerDamage(Event<EntityDamageS2CPacket> damage) {
+        if (checkNull()) return;
+        if (mc.player != null
+                && damage.context.entityId() == mc.player.getId()
+                && damage.context.sourceType().isIn(DamageTypeTags.NO_KNOCKBACK)) {
+            lastHit = true;
         }
     }
 
     public void onPostPlayerVelocityUpdate(Event<EntityVelocityUpdateS2CPacket> eventVC) {
         if (checkNull()) return;
         if (eventVC.context.getEntityId() != mc.player.getId()) return;
+        // filter fireDamage or something
+        if (lastHit) {
+            lastHit = false;
+        }
+        if (isGrimResyncPacket) {
+            isGrimResyncPacket = false;
+        } else {
+            return;
+        }
         Vec3d velocity = VPacket.getVelocity(eventVC.context);
         ACTasks.addPostTransactionAction(s -> lastKnownClientVelocity = velocity);
     }
@@ -296,6 +341,9 @@ public class PlayerStateManager extends BaseModule {
         if (eventInput.isCancelled()) return;
         if (ViaFabricPlusHooks.isSupportEndTick()) {
             lastInput = PlayerInputUtils.of(eventInput.context);
+            if (lastInput.hasMovementControl()) {
+                updateAFK();
+            }
         }
     }
 
@@ -492,6 +540,7 @@ public class PlayerStateManager extends BaseModule {
         Box box = mc.player.getBoundingBox();
         lastUnderBlock = MovTasks.isCollidingWithEnvironment(
                 mc.player, box.withMinY(box.maxY).withMaxY(box.maxY + 0.42));
+        // todo: maybe buggy
         lastHasGroundSupport = CollisionUtil.isEntitySupported(mc.player, 1E-3);
         lastVelocityAffectingPos = calculateVelocityAffectingPos();
         if (++cooldownInvSummary > 10 || inventorySummary == null || inventoryTotalSummary == null) {
@@ -577,19 +626,37 @@ public class PlayerStateManager extends BaseModule {
 
     public void onSwingHand(Event<HandSwingC2SPacket> event) {
         lastAttackStrengthResetTick = Tasks.getTick();
+        updateAFK();
     }
 
     public void onAttack(Event<PlayerInteractEntityC2SPacket> event) {
         if (PlayerInteractEntityC2SPacketAccess.of(event.context).isAttack()
                 && mc.world.getEntityById(event.context.entityId) instanceof LivingEntity living) {
             lastAttackStrengthResetTick = Tasks.getTick();
+            updateAFK();
         }
+    }
+
+    public void onInteractBlock(Event<PlayerInteractBlockC2SPacket> event) {
+        updateAFK();
+    }
+
+    public void onInteract(Event<PlayerInteractItemC2SPacket> event) {
+        updateAFK();
     }
 
     public void handleMaceSmash() {
         if (fallDistance > 1.5) {
             fallDistance = 0;
         }
+    }
+
+    public void onSelectedSlot(Event<UpdateSelectedSlotC2SPacket> event) {
+        if (event.isCancelled()) {
+            return;
+        }
+        lastSelectedSlot = event.context.getSelectedSlot();
+        updateAFK();
     }
 
     public void onClickSlot(Event<SlotClickAction> eventClick) {
@@ -635,6 +702,8 @@ public class PlayerStateManager extends BaseModule {
         inventoryTotalSummary = null;
         inventorySummary = null;
         glidingTicks = 0;
+        lastSelectedSlot = 0;
+        updateAFK();
     }
 
     public void onTickEnd(Event<ClientPlayerEntity> tickEndPacket) {

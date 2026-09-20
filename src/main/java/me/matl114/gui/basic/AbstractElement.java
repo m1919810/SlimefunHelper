@@ -55,6 +55,10 @@ public class AbstractElement implements ElementHandler {
         return this;
     }
 
+    public AbstractElement withElement(ElementHandler handler) {
+        return withInputHandler(handler).combineRender(handler);
+    }
+
     public final void renderAtCentered(
             DrawableWidget element,
             VDrawContext context,

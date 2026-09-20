@@ -65,7 +65,7 @@ public class PageSwitchSubScreen extends SubScreenWidget {
 
     protected void hoverInputCallback(AttrKeyValue<Integer> val) {
         hovering.setContentDelegate(null);
-        setPage(val.getOriginValue());
+        setPage(val.get());
     }
 
     protected void initPageButton() {

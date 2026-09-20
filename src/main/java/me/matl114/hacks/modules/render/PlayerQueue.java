@@ -71,7 +71,7 @@ public class PlayerQueue extends BaseModule {
     @Override
     public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
         super.addCustomWidgets(acceptor, dx, dy, dblank);
-        acceptor.accept(createTitleLabel("widget.player-queue.command", 0, dblank, dx, dy));
+        acceptor.accept(createTitle("widget.player-queue.command", 0, dblank, dx, dy));
     }
 
     public Set<String> trackedPlayers = new LinkedHashSet<>();

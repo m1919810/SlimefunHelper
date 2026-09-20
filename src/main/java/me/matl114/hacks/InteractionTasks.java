@@ -10,6 +10,7 @@ import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.catchers.PacketCatcherImpl;
+import me.matl114.events.impl.UseItemOnBlock;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
@@ -17,8 +18,10 @@ import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.interact.*;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
-import me.matl114.managers.Configs;
+import me.matl114.hacks.utils.enums.LegalInteractMode;
+import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.*;
 import me.matl114.utils.collections.FlagEntry;
@@ -54,6 +57,26 @@ public class InteractionTasks {
     //    public static void placeBlock(int idx, BlockHitResult result){
     //
     //    }
+
+    public static void interactItem(Hand hand, Vec3d rot, boolean realInteract, boolean swingHand) {
+        interactItem(hand, EntityUtils.rotationToPitch(rot), EntityUtils.rotationToYaw(rot), realInteract, swingHand);
+    }
+
+    public static void interactItem(Hand hand, float pitch, float yaw, boolean realInteract, boolean swingHand) {
+        if (realInteract || !ViaFabricPlusHooks.isSupportDupRot()) {
+            Vec2f storePY = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
+            EntityUtils.setEntityPitchSafe(mc.player, pitch);
+            PlayerStateManager.setPlayerYawSafe(mc.player, yaw);
+            var actionResult = mc.interactionManager.interactItem(mc.player, hand);
+            if (swingHand) {
+                InteractUtils.swingHandIfSuccess(actionResult, hand);
+            }
+            mc.player.setPitch(storePY.x);
+            mc.player.setYaw(storePY.y);
+        } else {
+            LegacySnapRotManager.INSTANCE.snapAt(pitch, yaw, false);
+        }
+    }
 
     public static void interactBlock(Hand hand, BlockHitResult result, boolean swing) {
         Vec2f storePY = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
@@ -131,12 +154,11 @@ public class InteractionTasks {
         }
     }
 
-    public static void handlePlaceMode(Configs.LegalInteractMode mode, BlockHitResult result, Hand hand) {
+    public static void handlePlaceMode(LegalInteractMode mode, BlockHitResult result, Hand hand) {
         handlePlaceMode(mode, result, hand, true);
     }
 
-    public static void handlePlaceMode(
-            Configs.LegalInteractMode mode, BlockHitResult result, Hand hand, boolean swingHand) {
+    public static void handlePlaceMode(LegalInteractMode mode, BlockHitResult result, Hand hand, boolean swingHand) {
         Vec3d bestEyePos = InteractExtra.INSTANCE.getBestInteractEyePos(mc.player.getPos(), result);
         switch (mode) {
             case USEITEM_PACKET -> {
@@ -185,7 +207,7 @@ public class InteractionTasks {
     }
 
     public static void handlePlaceModeMulti(
-            Configs.LegalInteractMode mode,
+            LegalInteractMode mode,
             Vec3d targetCenter,
             List<Pair<BlockHitResult, Hand>> resultList,
             boolean swingHand) {
@@ -269,6 +291,46 @@ public class InteractionTasks {
 
     public static boolean checkInteractRange(BlockPos interactBlockPos, Vec3d playerPos, double range) {
         return interactExtra.isWithinInteractRange(playerPos, interactBlockPos, range);
+    }
+
+    public static boolean checkPositionPlace(BlockHitResult hitResult) {
+        if (hitResult.isInsideBlock()) {
+            return checkInHead(hitResult.getBlockPos(), mc.player.getPos());
+        } else {
+            return checkPositionPlace(hitResult.getBlockPos(), hitResult.getSide(), hitResult.getPos());
+        }
+    }
+
+    public static BlockHitResult createHitResult(BlockPos pos, Vec3d playerPos) {
+        Direction dir = Direction.getFacing(
+                        pos.toCenterPos().subtract(playerPos.add(0, mc.player.dimensions.eyeHeight(), 0)))
+                .getOpposite();
+        List<Direction> list = new ArrayList<>();
+        list.add(dir);
+        for (var direction : new Direction[] {
+            Direction.DOWN, Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST
+        }) {
+            if (direction != dir) {
+                list.add(direction);
+            }
+        }
+        for (var direction : list) {
+            if (checkInHead(pos, playerPos) || checkPositionPlace(pos, dir, playerPos)) {
+                return new BlockHitResult(pos.toCenterPos().offset(direction, 0.5), direction, pos, true);
+            }
+        }
+        return RaycastUtils.createHitResult(pos, dir);
+    }
+
+    public static BlockHitResult createHitResult(BlockPos pos, Direction blockFace) {
+        Vec3d endVec = pos.toCenterPos().offset(blockFace, 0.5);
+        return new BlockHitResult(endVec, blockFace, pos, checkInHead(pos, mc.player.getPos()));
+    }
+
+    public static FlagEntry<BlockHitResult> getInteractEntry(BlockHitResult result) {
+        boolean mayInteract = InteractUtils.isInteractAcceptable(
+                mc.world, mc.player, result.getBlockPos(), mc.world.getBlockState(result.getBlockPos()));
+        return new FlagEntry<>(mayInteract, result);
     }
 
     public static FlagEntry<BlockHitResult> getPlaceSupportingResult(
@@ -1191,7 +1253,26 @@ public class InteractionTasks {
         }
     }
 
-    public static Entity predictScreenFrom(Predicate<Entity> targetBlock) {
+    public static BlockPos predictBlockScreenFrom(Predicate<Block> targetBlock) {
+        int timeStamp = Tasks.getTick();
+        // 在一秒内反应的 可以考虑
+        List<UseItemOnBlock> potentialHit = getSequencedActionManager()
+                .getCurrentPendingBlockPlace()
+                .filter(s -> {
+                    var lastInteact = s.hitResult();
+                    return targetBlock.test(
+                            mc.world.getBlockState(lastInteact.getBlockPos()).getBlock());
+                })
+                .toList();
+        Optional<UseItemOnBlock> lastInteract =
+                potentialHit.isEmpty() ? Optional.empty() : Optional.of(potentialHit.getLast());
+        return lastInteract
+                .map(UseItemOnBlock::hitResult)
+                .map(BlockHitResult::getBlockPos)
+                .orElseGet(() -> RaycastUtils.rayTraceSpecificBlock(targetBlock).orElse(null));
+    }
+
+    public static Entity predictEntityScreenFrom(Predicate<Entity> targetBlock) {
         int timeStamp = Tasks.getTick();
         // 在一秒内反应的 可以考虑
         if (timeStamp < lastInteractTimestamp + 20
@@ -1210,6 +1291,9 @@ public class InteractionTasks {
 
     @Getter
     private static InteractExtra interactExtra;
+
+    @Getter
+    private static SequencedActionManager sequencedActionManager;
 
     @Getter
     private static GuiInteract guiInteract;
@@ -1261,6 +1345,7 @@ public class InteractionTasks {
 
     private static void initModules(ModuleManager m) {
         interactExtra = new InteractExtra().register(m);
+        sequencedActionManager = new SequencedActionManager().register(m);
         guiInteract = new GuiInteract().register(m);
         autoClick = new AutoClick().register(m);
         interact = new Interact().register(m);

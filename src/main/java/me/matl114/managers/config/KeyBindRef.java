@@ -52,7 +52,7 @@ public class KeyBindRef extends ObjectRef<MultiKeyBind> {
         return null;
     }
 
-    public static final AttrKeyValue.CustomWidgetFactory<MultiKeyBind> WIDGET_FACTORY = (s, x, y, dx, dy) -> {
+    public static final AttrKeyValue.CustomWidgetGenerator<MultiKeyBind> WIDGET_FACTORY = (s, x, y, dx, dy) -> {
         return new KeyBindConfigurateWidget(x, y, dx, dy, s);
     };
 

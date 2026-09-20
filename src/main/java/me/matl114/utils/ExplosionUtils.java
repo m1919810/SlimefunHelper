@@ -217,7 +217,7 @@ public final class ExplosionUtils {
         double yStep = 1 / (yDiff * 2 + 1);
         double zStep = 1 / (zDiff * 2 + 1);
 
-        if (xStep > 0 && yStep > 0 && zStep > 0) {
+        if (xStep > 0 && yStep > 0 && zStep > 0 && xDiff > 0 && yDiff > 0 && zDiff > 0) {
             int misses = 0;
             int hits = 0;
 

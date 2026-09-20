@@ -21,8 +21,12 @@ import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.mine.QueueMine;
 import me.matl114.hacks.modules.move.PlayerInputManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.entity.EntityMovementStatus;
+import me.matl114.hacks.utils.enums.BypassMode;
+import me.matl114.hacks.utils.enums.GhostHandMode;
+import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hooks.LitematicaHooks;
 import me.matl114.managers.Configs;
@@ -64,9 +68,9 @@ public class PrinterRewrite extends BaseModule {
                     litematicaPrinterRewrite.add("hotkey"), new MultiKeyBind(), litematicaPrinterRewrite.add("enable"))
             .build();
 
-    public final EnumRef<Configs.LegalInteractMode> mode = builder(
-                    litematicaPrinterRewrite.add("mode"), Configs.LegalInteractMode.class)
-            .defaultValue(Configs.LegalInteractMode.DELAY_MOVEMENT)
+    public final EnumRef<LegalInteractMode> mode = builder(
+                    litematicaPrinterRewrite.add("mode"), LegalInteractMode.class)
+            .defaultValue(LegalInteractMode.DELAY_MOVEMENT)
             .build();
 
     public final FlagRef airplace =
@@ -157,9 +161,9 @@ public class PrinterRewrite extends BaseModule {
     public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
         super.addCustomWidgets(acceptor, dx, dy, dblank);
         acceptor.accept(WidgetUtils.withCondition(
-                createTitleLabel("widget.queue-mine.mine.use-argument", 0, dblank, dx, dy),
+                createTitle("widget.queue-mine.mine.use-argument", 0, dblank, dx, dy),
                 () -> supportWater.get() && useIce.get()));
-        acceptor.accept(createTitleLabel("widget.block-rotate.yaw-deceive.use-argument", 0, dblank, dx, dy));
+        acceptor.accept(createTitle("widget.block-rotate.yaw-deceive.use-argument", 0, dblank, dx, dy));
     }
 
     int countDown;
@@ -325,10 +329,10 @@ public class PrinterRewrite extends BaseModule {
             }
             FlagRef enableRotateFix = InteractionTasks.getBlockRotate().enable2;
             FlagRef enableLegalLook = InteractionTasks.getBlockRotate().legal;
-            EnumRef<Configs.BypassMode> enableRot = InteractionTasks.getBlockRotate().bypassMode2;
+            EnumRef<BypassMode> enableRot = InteractionTasks.getBlockRotate().bypassMode2;
             boolean state = enableRotateFix.get();
             boolean state2 = enableLegalLook.get();
-            Configs.BypassMode bypassMode = enableRot.get();
+            BypassMode bypassMode = enableRot.get();
             if (!state) {
                 enableRotateFix.set(true);
             }
@@ -336,9 +340,9 @@ public class PrinterRewrite extends BaseModule {
                 // cancel legal look fix because we here handle the look, do not duplicate
                 enableLegalLook.set(true);
             }
-            enableRot.set(Configs.BypassMode.NO_BYPASS);
+            enableRot.set(BypassMode.NO_BYPASS);
             try {
-                Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(idx);
+                Runnable callback = InvExtra.INSTANCE.swapItemToHand(idx, false, GhostHandMode.INV_SWAP);
                 if (callback == null) {
                     putCanNotPlace(pos);
                     return false;
@@ -410,7 +414,7 @@ public class PrinterRewrite extends BaseModule {
             if (rotation.flag() == mc.player.isSneaking()) {
                 var rot = rotation.val();
 
-                Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(item);
+                Runnable callback = InvExtra.INSTANCE.swapItemToHand(item, false, GhostHandMode.INV_SWAP);
                 if (callback != null) {
                     EntityMovementStatus<PlayerEntity> playerStatus = new EntityMovementStatus<>(mc.player);
                     EntityUtils.setEntityPitchSafe(mc.player, rot.x);
@@ -570,10 +574,10 @@ public class PrinterRewrite extends BaseModule {
                     hitResult = InteractionTasks.createSpecificStateHitResult(
                             pos, targetState, airplace.get(), !mode.get().isLegal());
                 } else {
-                    hitResult = new FlagEntry<>(false, RaycastUtils.createHitResult(pos, mc.player.getEyePos()));
+                    hitResult = new FlagEntry<>(false, InteractionTasks.createHitResult(pos, mc.player.getPos()));
                 }
                 if (InteractUtils.canInteractAndPlace(mc.player, hitResult)) {
-                    Runnable runnable = InvExtra.INSTANCE.swapInventoryIndexToHand(re.index());
+                    Runnable runnable = InvExtra.INSTANCE.swapItemToHand(re.index(), false, GhostHandMode.INV_SWAP);
                     if (runnable != null) {
                         InteractionTasks.handlePlaceMode(mode.get(), hitResult.val(), Hand.MAIN_HAND);
                         putSuccessPlace(pos);
@@ -629,7 +633,7 @@ public class PrinterRewrite extends BaseModule {
     }
 
     public void onPresetReload(Event<EventContainer<ModulePreset>> event) {
-        mode.set(Configs.LegalInteractMode.getFromPreset(event.context.getValue()));
+        mode.set(LegalInteractMode.getFromPreset(event.context.getValue()));
         airplace.set(!event.context.getValue().hasAC());
     }
 }

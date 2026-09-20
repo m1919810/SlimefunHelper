@@ -13,7 +13,6 @@ import me.matl114.gui.basic.ColorProvider;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.ExecutableWidget;
 import me.matl114.utils.ScreenUtils;
-import me.matl114.utils.config.PropertyTracker;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -45,10 +44,6 @@ public class TextFieldElement extends AbstractElement {
 
     private final TextRenderer textRenderer;
     private final TextFieldAccess accessBridge = new TextFieldAccess() {
-        @Override
-        public void setListener(PropertyTracker<TextFieldAccess, String> tracker) {
-            TextFieldElement.this.setListener(tracker);
-        }
 
         @Override
         public void setBorderColorProvider(ColorProvider provider) {
@@ -88,7 +83,7 @@ public class TextFieldElement extends AbstractElement {
     private int uneditableColor = DEFAULT_UNEDITABLE_COLOR;
     private String suggestion;
     private Consumer<String> changedListener;
-    private PropertyTracker<TextFieldAccess, String> tracker;
+    private Consumer<String> tracker;
     private Predicate<String> textPredicate = Objects::nonNull;
     private final List<Formatter> formatters = new ArrayList<>();
     private Text placeholder;
@@ -183,11 +178,6 @@ public class TextFieldElement extends AbstractElement {
 
     public TextFieldElement setChangedListener(Consumer<String> listener) {
         this.changedListener = listener;
-        return this;
-    }
-
-    public TextFieldElement setListener(PropertyTracker<TextFieldAccess, String> tracker) {
-        this.tracker = tracker;
         return this;
     }
 
@@ -468,7 +458,7 @@ public class TextFieldElement extends AbstractElement {
             this.changedListener.accept(newText);
         }
         if (this.tracker != null) {
-            this.tracker.valueChange(this.accessBridge, newText);
+            this.tracker.accept(newText);
         }
         this.updateTextPosition();
     }

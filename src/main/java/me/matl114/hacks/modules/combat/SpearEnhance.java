@@ -135,7 +135,12 @@ public class SpearEnhance extends BaseModule {
 
     public static boolean isUsingSpear(PlayerEntity player) {
         // todo consider viaversion
-        return player != null && player.isUsingItem() && VItem.getInstance().isSpear(player.getActiveItem());
+        if (mc.player == player) {
+            return player.isUsingItem() && VItem.getInstance().isSpear(player.getActiveItem());
+        }
+        return player != null
+                && (VItem.getInstance().isSpear(player.getMainHandStack())
+                        || VItem.getInstance().isSpear(player.getOffHandStack()));
     }
 
     public static ItemStack getSpear() {
@@ -311,15 +316,20 @@ public class SpearEnhance extends BaseModule {
     @Setter
     boolean forceSpearReset = false;
 
+    @Setter
+    boolean ignoreSpear = false;
+
     public void onPostTick(Event<ClientPlayerEntity> eventPostTick) {
         if (checkNull()) return;
         if (eventPostTick.context == mc.player
                 && (spearSpeedReset.get() || forceSpearReset)
                 && ViaFabricPlusHooks.isSupportDupRot()) {
+            boolean force = ignoreSpear;
             forceSpearReset = false;
+            ignoreSpear = false;
             boolean autoCondition = true;
 
-            if (spearSpeedResetAuto.get()) {
+            if (spearSpeedResetAuto.get() && !force) {
                 // 长矛使用时自动关闭啥比玩意免得我忘了
                 if (isUsingSpear(mc.player)) {
                     autoCondition = false;

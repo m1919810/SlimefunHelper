@@ -693,6 +693,7 @@ public class ItemStackUtils {
     }
 
     public static int getEnchantmentLevel(ItemEnchantmentsComponent component, RegistryKey<Enchantment> key) {
+        if (component == null) return 0;
         var enchantmentRegistry = ItemStackUtils.registry().getWrapperOrThrow(RegistryKeys.ENCHANTMENT);
         return component.getLevel(enchantmentRegistry.getOrThrow(key));
     }

@@ -14,7 +14,7 @@ import me.matl114.gui.basic.SubScreenWidget;
 import me.matl114.gui.presets.choices.ConfirmingBigScreen;
 import me.matl114.managers.config.NBTType;
 import me.matl114.utils.config.AttrKeyValue;
-import me.matl114.utils.config.WidgetFactory;
+import me.matl114.utils.config.WidgetGenerator;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
@@ -31,13 +31,13 @@ public class NBTBoundedListScreen<W, T> extends ConfirmingBigScreen {
     public NBTBoundedListScreen(
             AttrKeyValue<Map<W, T>> attrKeyValue,
             NBTType<T> type,
-            WidgetFactory<W> keyWidgetFactory,
+            WidgetGenerator<W> keyWidgetFactory,
             Consumer<Map<W, T>> callback,
             int dkey,
             int dx,
             int dy) {
         this(
-                attrKeyValue.getOriginValue(),
+                attrKeyValue.get(),
                 attrKeyValue::isValueValid,
                 type::createAttrKeyValue,
                 keyWidgetFactory,
@@ -53,8 +53,8 @@ public class NBTBoundedListScreen<W, T> extends ConfirmingBigScreen {
             Map<W, T> list,
             Predicate<Map<W, T>> listValidator,
             BiFunction<String, T, AttrKeyValue<T>> attrElementFactory,
-            WidgetFactory<W> keyWidgetFactory,
-            WidgetFactory<AttrKeyValue<T>> valueWidgetFactory,
+            WidgetGenerator<W> keyWidgetFactory,
+            WidgetGenerator<AttrKeyValue<T>> valueWidgetFactory,
             Consumer<Map<W, T>> callback,
             int dkey,
             int dx,
@@ -91,14 +91,14 @@ public class NBTBoundedListScreen<W, T> extends ConfirmingBigScreen {
                         this.x + (this.backgroundWidth - listWidth) / 2,
                         this.y + CONTENT_START_Y,
                         listWidth,
-                        content_end_y - CONTENT_START_Y)
+                        getContentHeight())
                 .addTo(this);
     }
 
     private Map<W, T> listMap() {
         LinkedHashMap<W, T> map = new LinkedHashMap<>();
         for (var re : this.list) {
-            map.put(re.getFirst(), re.getSecond().getOriginValue());
+            map.put(re.getFirst(), re.getSecond().get());
         }
         return map;
         // return list.stream().map(Pair::getSecond).map(AttrKeyValue::getOriginValue).collect(Collectors.toList());
@@ -109,7 +109,7 @@ public class NBTBoundedListScreen<W, T> extends ConfirmingBigScreen {
         Map<W, T> lst = new LinkedHashMap<>();
         for (var re : list) {
             if (re.getSecond().isValidate()) {
-                lst.put(re.getFirst(), re.getSecond().getOriginValue());
+                lst.put(re.getFirst(), re.getSecond().get());
             } else return false;
         }
         return validator.test(lst);

@@ -325,7 +325,7 @@ public class WidgetUtils {
         return ExecutableWidget.instance(x, y, dx, dy)
                 .setElementHandler(IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.run(() -> {
                             ScreenAccess.of(new StringListModifyScreen<>(s, listAttrKeyValue -> {
-                                        s.setOriginValue(listAttrKeyValue.getOriginValue());
+                                        s.setOriginValue(listAttrKeyValue.get());
                                     }))
                                     .openFromCurrent();
                         }))
@@ -338,7 +338,7 @@ public class WidgetUtils {
                 .setElementHandler(IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.run(() -> {
                             var s = attrCreator.get();
                             ScreenAccess.of(new StringListModifyScreen<>(s, listAttrKeyValue -> {
-                                        listConsumer.accept(listAttrKeyValue.getOriginValue());
+                                        listConsumer.accept(listAttrKeyValue.get());
                                     }))
                                     .openFromCurrent();
                         }))

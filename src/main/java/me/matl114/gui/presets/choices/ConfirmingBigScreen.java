@@ -29,6 +29,10 @@ public abstract class ConfirmingBigScreen extends GenericBackGroundScreen {
     private static final Text CONFIRM =
             Text.translatable("widget.gui.confirming-big-screen.confirm").formatted(Formatting.GREEN);
 
+    public int getContentHeight() {
+        return content_end_y - CONTENT_START_Y;
+    }
+
     @Override
     protected void init() {
         super.init();

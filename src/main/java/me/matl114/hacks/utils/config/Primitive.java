@@ -42,8 +42,8 @@ public record Primitive<T>(NBTType<T> valueType, @Nonnull T value, String valueS
         return new NBTType(
                 "primitive",
                 Codec.STRING.<Primitive<T>>comapFlatMap(Primitive::<T>parse, Primitive::asString),
-                (AttrKeyValue.CustomWidgetFactory<Primitive<T>>) (w, x, y, dx, dy) -> {
-                    Primitive<T> primitive = w.getOriginValue();
+                (AttrKeyValue.CustomWidgetGenerator<Primitive<T>>) (w, x, y, dx, dy) -> {
+                    Primitive<T> primitive = w.get();
                     NBTType<T> typeT = primitive.valueType;
                     return new TypeConvertAttrKeyValue<>(
                                     w,

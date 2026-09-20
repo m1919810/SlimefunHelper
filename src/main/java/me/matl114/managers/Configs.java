@@ -7,9 +7,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-import me.matl114.hacks.api.ModulePreset;
 import me.matl114.managers.config.Config;
-import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.ConfigLoader;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.util.Identifier;
@@ -43,131 +41,6 @@ public class Configs {
         } else {
             init = true;
         }
-    }
-
-    public enum LegalTargetingMode implements ConfigEnum {
-        NONE,
-        DELAY_MOVEMENT,
-        // PRE_MOVEMENT,
-        // USEITEM_PACKET,
-        LEGACY_SLIENT_ROT;
-
-        public boolean isMovement() {
-            return this == LegalTargetingMode.DELAY_MOVEMENT; // || this == LegalTargetingMode.PRE_MOVEMENT;
-        }
-
-        public boolean isLegal() {
-            return this != NONE;
-        }
-
-        public boolean isLegacy() {
-            return this == LegalTargetingMode.LEGACY_SLIENT_ROT;
-        }
-
-        public static LegalTargetingMode getFromPreset(ModulePreset preset) {
-            return switch (preset) {
-                case HACKING, VANILLA -> NONE;
-                case AC_GRIM_LEGACY -> LEGACY_SLIENT_ROT;
-                default -> DELAY_MOVEMENT;
-            };
-        }
-
-        @Override
-        public String getConfigEnumType() {
-            return "legal_targeting_mode";
-        }
-    }
-
-    public enum LegalInteractMode implements ConfigEnum {
-        NONE,
-        MOVEMENT_POST,
-        DELAY_MOVEMENT,
-        USEITEM_PACKET,
-        LEGACY_SLIENT_ROT;
-        ;
-
-        public static LegalInteractMode getFromPreset(ModulePreset preset) {
-            return switch (preset) {
-                case HACKING, VANILLA -> Configs.LegalInteractMode.NONE;
-                case AC_GRIM_LEGACY -> Configs.LegalInteractMode.LEGACY_SLIENT_ROT;
-                default -> Configs.LegalInteractMode.DELAY_MOVEMENT;
-            };
-        }
-
-        @Override
-        public String getConfigEnumType() {
-            return "legal_interact_mode";
-        }
-
-        public boolean isLegal() {
-            return this != NONE;
-        }
-
-        public boolean canMultiRotPlace() {
-            return this == NONE || this == LEGACY_SLIENT_ROT;
-        }
-    }
-
-    public enum BypassMode implements ConfigEnum {
-        NO_BYPASS,
-        BYPASS_GRIM;
-
-        public static BypassMode getFromPreset(ModulePreset preset) {
-            return switch (preset) {
-                case AC_GRIM_LEGACY, AC_GRIM -> BYPASS_GRIM;
-                default -> NO_BYPASS;
-            };
-        }
-
-        public boolean hasAc() {
-            return this != NO_BYPASS;
-        }
-
-        @Override
-        public String getConfigEnumType() {
-            return "bypass_mode";
-        }
-    }
-
-    public enum MineTargetingMode implements ConfigEnum {
-        NO_BYPASS,
-        SWING_HAND,
-        SWING_HAND_AND_ROT,
-        SWING_HAND_AND_TARGET;
-
-        public boolean hasSwing() {
-            return this != NO_BYPASS;
-        }
-
-        @Override
-        public String getConfigEnumType() {
-            return "mine_targeting_mode";
-        }
-    }
-
-    public enum AutoInvMode implements ConfigEnum {
-        LAZY,
-        TICK;
-
-        @Override
-        public String getConfigEnumType() {
-            return "auto_inv_mode";
-        }
-    }
-
-    public enum SetBackTriggerType implements ConfigEnum {
-        SIMULATION,
-        CRASH_PACKETS;
-
-        @Override
-        public String getConfigEnumType() {
-            return "setback_trigger_type";
-        }
-    }
-
-    static {
-        // load Enums
-
     }
 
     public static final Predicate<String> REGEX_VALIDATOR = x -> {

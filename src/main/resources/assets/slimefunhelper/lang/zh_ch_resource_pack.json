@@ -213,8 +213,8 @@
 	"widget.click-gui.module-name.Combat.AnchorAura": "重生锚光环",
 	"module-toggle.interaction-tweaks.auto-click.enable": "自动点击",
 	"widget.click-gui.module-name.Interaction.AutoClick": "自动点击",
-	"module-toggle.interact-arua.interact.enable": "交互光环",
-	"widget.click-gui.module-name.Interaction.Interact": "交互光环",
+	"module-toggle.interact-arua.interact.enable": "交互增强",
+	"widget.click-gui.module-name.Interaction.Interact": "交互增强",
 	"render-utils.villager-esp.color": "村民ESP: 颜色",
 	"widget.click-gui.module-name.Survival.VillagerEsp": "村民ESP",
 	

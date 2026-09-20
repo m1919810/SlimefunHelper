@@ -1,9 +1,7 @@
 package me.matl114.hacks.modules.task;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import com.mojang.datafixers.util.Pair;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import me.matl114.events.CombatListener;
@@ -77,6 +75,7 @@ public class EventCommand extends BaseModule {
 
     private static final String KEY_TARGET_HEALTH_MIN = "widget.event-command.key.target-health-min";
     private static final String KEY_TARGET_HEALTH_MAX = "widget.event-command.key.target-health-max";
+    private static final String KEY_TARGET_ATTACK_ABLE = "widget.event-command.key.target-only-enemy";
     private static final String KEY_DELAY = "widget.event-command.key.delay";
 
     private DispatchData<EventType> createTemplate() {
@@ -91,10 +90,16 @@ public class EventCommand extends BaseModule {
                                         KEY_POP_TOTEM_MAX, 999)),
                         EventType.OTHER_TRIGGER_TOTEM,
                                 new RecordData(CollectionUtils.ofOrdered(
-                                        KEY_TOTEM_MIN, 0,
-                                        KEY_TOTEM_MAX, 999,
-                                        KEY_POP_TOTEM_MIN, 0,
-                                        KEY_POP_TOTEM_MAX, 999)),
+                                        KEY_TOTEM_MIN,
+                                        0,
+                                        KEY_TOTEM_MAX,
+                                        999,
+                                        KEY_POP_TOTEM_MIN,
+                                        0,
+                                        KEY_POP_TOTEM_MAX,
+                                        999,
+                                        KEY_TARGET_ATTACK_ABLE,
+                                        false)),
                         EventType.SELF_DEATH,
                                 new RecordData(CollectionUtils.ofOrdered(
                                         KEY_TOTEM_MIN, 0,
@@ -103,10 +108,16 @@ public class EventCommand extends BaseModule {
                                         KEY_POP_TOTEM_MAX, 999)),
                         EventType.OTHER_DEATH,
                                 new RecordData(CollectionUtils.ofOrdered(
-                                        KEY_TOTEM_MIN, 0,
-                                        KEY_TOTEM_MAX, 999,
-                                        KEY_POP_TOTEM_MIN, 0,
-                                        KEY_POP_TOTEM_MAX, 999)),
+                                        KEY_TOTEM_MIN,
+                                        0,
+                                        KEY_TOTEM_MAX,
+                                        999,
+                                        KEY_POP_TOTEM_MIN,
+                                        0,
+                                        KEY_POP_TOTEM_MAX,
+                                        999,
+                                        KEY_TARGET_ATTACK_ABLE,
+                                        false)),
                         EventType.OTHER_ENTER_VISUAL_RANGE,
                                 new RecordData(CollectionUtils.ofOrdered(
                                         KEY_TOTEM_MIN,
@@ -124,7 +135,9 @@ public class EventCommand extends BaseModule {
                                         KEY_TARGET_HEALTH_MIN,
                                         0.0D,
                                         KEY_TARGET_HEALTH_MAX,
-                                        999.0D)),
+                                        999.0D,
+                                        KEY_TARGET_ATTACK_ABLE,
+                                        false)),
                         EventType.OTHER_LEAVE_VISUAL_RANGE,
                                 new RecordData(CollectionUtils.ofOrdered(
                                         KEY_TOTEM_MIN,
@@ -142,7 +155,9 @@ public class EventCommand extends BaseModule {
                                         KEY_TARGET_HEALTH_MIN,
                                         0.0D,
                                         KEY_TARGET_HEALTH_MAX,
-                                        999.0D)),
+                                        999.0D,
+                                        KEY_TARGET_ATTACK_ABLE,
+                                        false)),
                         EventType.TICK,
                                 new RecordData(CollectionUtils.ofOrdered(
                                         KEY_DELAY, 40,
@@ -152,6 +167,22 @@ public class EventCommand extends BaseModule {
                                         KEY_POP_TOTEM_MAX, 999,
                                         KEY_SELF_HEALTH_MIN, 0.0D,
                                         KEY_SELF_HEALTH_MAX, 999.0D)),
+                        EventType.ONCE,
+                                new RecordData(CollectionUtils.ofOrdered(
+                                        KEY_DELAY,
+                                        40,
+                                        KEY_TOTEM_MIN,
+                                        0,
+                                        KEY_TOTEM_MAX,
+                                        999,
+                                        KEY_POP_TOTEM_MIN,
+                                        0,
+                                        KEY_POP_TOTEM_MAX,
+                                        999,
+                                        KEY_SELF_HEALTH_MIN,
+                                        0.0D,
+                                        KEY_SELF_HEALTH_MAX,
+                                        999.0D)),
                         EventType.WORLD_CHANGE,
                                 new RecordData(CollectionUtils.ofOrdered(
                                         KEY_TOTEM_MIN, 0,
@@ -170,6 +201,8 @@ public class EventCommand extends BaseModule {
         registerListener(CombatListener.getPlayerLeaveVisualRange(), this::onLeftVisualRange);
         registerListener(Listener.getPostGameTick(), this::onPostTick);
     }
+
+    private final List<Pair<DispatchData<EventType>, StringFormat>> conditionCommand = new ArrayList<>();
 
     private boolean testTotem(RecordData data) {
         double cnt = InventoryUtils.computePlayerInventory(
@@ -200,7 +233,7 @@ public class EventCommand extends BaseModule {
         if (intValue == null) {
             return true;
         } else {
-            return Tasks.getTick() % intValue == 0;
+            return intValue <= 0 || Tasks.getTick() % intValue == 0;
         }
     }
 
@@ -293,6 +326,41 @@ public class EventCommand extends BaseModule {
     public void onPostTick(Event<ClientPlayerEntity> eventPost) {
         if (enable.get()) {
             onEvent(EventType.TICK, null);
+            conditionCommand.removeIf(pair -> {
+                var record = pair.getFirst();
+                if (record.getType() != EventType.ONCE) {
+                    return true;
+                }
+                var recordData = record.getDispatch();
+                if (testTotem(recordData) && testPopTotem(recordData, mc.player) && testSelfHealth(recordData)) {
+                    return true;
+                }
+                return false;
+            });
+            eventMap.get().list().forEach((s) -> {
+                if (s.getFirst().getType() == EventType.ONCE) {
+                    if (conditionCommand.contains(s)) {
+                        return;
+                    }
+                    var recordData = s.getFirst().getDispatch();
+                    if (testDelay(recordData)
+                            && testTotem(recordData)
+                            && testPopTotem(recordData, mc.player)
+                            && testSelfHealth(recordData)) {
+                        executeDelayed(s.getSecond());
+                        conditionCommand.add(s);
+                    }
+                }
+            });
+            onEventType(
+                    EventType.ONCE,
+                    (recordData) -> {
+                        return testDelay(recordData)
+                                && testTotem(recordData)
+                                && testPopTotem(recordData, mc.player)
+                                && testSelfHealth(recordData);
+                    },
+                    (s) -> {});
         }
     }
 
@@ -352,7 +420,8 @@ public class EventCommand extends BaseModule {
         SELF_DEATH,
         OTHER_DEATH,
         OTHER_ENTER_VISUAL_RANGE,
-        OTHER_LEAVE_VISUAL_RANGE;
+        OTHER_LEAVE_VISUAL_RANGE,
+        ONCE;
 
         @Override
         public String getConfigEnumType() {

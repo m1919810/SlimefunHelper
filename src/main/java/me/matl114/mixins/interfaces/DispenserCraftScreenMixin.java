@@ -1,7 +1,7 @@
 package me.matl114.mixins.interfaces;
 
 import me.matl114.accessors.interfaces.TileInventory;
-import me.matl114.hacks.InvTasks;
+import me.matl114.hacks.InteractionTasks;
 import me.matl114.utils.world.ContainerPosition;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
@@ -80,7 +80,7 @@ public abstract class DispenserCraftScreenMixin extends HandledScreen<Generic3x3
     protected void tryInitBlockPos(
             Generic3x3ContainerScreenHandler handler, PlayerInventory inventory, Text title, CallbackInfo ci) {
         this.world = MinecraftClient.getInstance().world;
-        this.pos = InvTasks.predictScreenFrom((b) -> b == Blocks.DISPENSER || b == Blocks.DROPPER);
+        this.pos = InteractionTasks.predictBlockScreenFrom((b) -> b == Blocks.DISPENSER || b == Blocks.DROPPER);
         if (this.pos != null && this.world != null) {
             cacheBlockType = this.world.getBlockState(this.pos).getBlock();
             containerPosition = ContainerPosition.ofSingle(world, pos);
