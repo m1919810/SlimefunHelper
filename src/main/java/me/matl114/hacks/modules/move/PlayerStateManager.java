@@ -87,6 +87,7 @@ public class PlayerStateManager extends BaseModule {
     public Vec3d lastAverageMovementSpeed = Vec3d.ZERO;
     public Vec3d lastSetBackPosition = Vec3d.ZERO;
     public int lastAttackStrengthResetTick = 0;
+    public int lastStartGlidingTick = 0;
     public boolean lastMovementContainsPosition = false;
     boolean lastTickHasMovement = false;
     public boolean lastClimbing;
@@ -616,6 +617,7 @@ public class PlayerStateManager extends BaseModule {
     public void onPlayerCommand(Event<ClientCommandC2SPacket> event) {
         if (event.isCancelled()) return;
         switch (event.context.getMode()) {
+            case START_FALL_FLYING -> lastStartGlidingTick = Tasks.getTick();
             case START_SPRINTING -> {
                 lastSprint = true;
             }
@@ -703,6 +705,7 @@ public class PlayerStateManager extends BaseModule {
         inventoryTotalSummary = null;
         inventorySummary = null;
         glidingTicks = 0;
+        lastStartGlidingTick = 0;
         lastSelectedSlot = 0;
         updateAFK();
     }
