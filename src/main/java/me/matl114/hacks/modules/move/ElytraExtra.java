@@ -685,20 +685,36 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 && mc.player.isFallFlying()
                 && shouldUseMaceFix()
                 && !shouldUseDelayMovementAttackMaceFix()) {
-            // try stop
-            mc.getNetworkHandler()
-                    .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-            // current not armor flying
-            if (!isCurrentArmorGliding()) {
-                // not armor fly, do reset fly
-                PacketManager.schedulePostScheduleCallback(interactPacket.context, () -> {
-                    nextPacketResetFallFlying.add(Tasks.getTick() + 20);
-                });
-            }
+            PacketManager.schedulePostScheduleCallback(
+                    interactPacket.context, () -> requestManualArmorSwapAndResetFallFlying());
         }
     }
 
-    Deque<Integer> nextPacketResetFallFlying = new ArrayDeque<>();
+    private final Deque<Integer> nextPacketResetFallFlying = new ArrayDeque<>();
+
+    /**
+     * Requests one manual chest-slot swap and keeps the next server-side fall-flying reset
+     * from leaving the player grounded.
+     */
+    public boolean requestManualArmorSwapAndResetFallFlying() {
+        if (checkNull() || !mc.player.isFallFlying() || isCurrentArmorGliding() || hasPendingFallFlyingReset()) {
+            return false;
+        }
+        int elytraSlot = findEmptyPlaceForElytra();
+        if (elytraSlot == -1) {
+            return false;
+        }
+        switchSlotToArmor(elytraSlot);
+        nextPacketResetFallFlying.add(Tasks.getTick() + 20);
+        return true;
+    }
+
+    public boolean hasPendingFallFlyingReset() {
+        while (!nextPacketResetFallFlying.isEmpty() && nextPacketResetFallFlying.peekFirst() <= Tasks.getTick()) {
+            nextPacketResetFallFlying.pollFirst();
+        }
+        return !nextPacketResetFallFlying.isEmpty();
+    }
 
     //    public void attackPost(Event<PlayerInteractEntityC2SPacket> packet) {
     //        if (packet.context() == lastHandledPacket) {

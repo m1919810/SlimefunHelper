@@ -162,6 +162,27 @@ public class ElytraBot extends BaseModule {
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
+    public final FlagRef maceFix = flagBuilder(attackMace.add("mace-fix"))
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .build();
+
+    public final IntRef macePreSwapDelay = intBuilder(attackMace.add("mace-pre-swap-delay"))
+            .defaultValue(2)
+            .validator(Configs.INT_NONNEGATIVE)
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .build();
+
+    public final DoubleRef macePreSwapDistancePerTick = doubleBuilder(attackMace.add("mace-pre-swap-distance-per-tick"))
+            .defaultValue(0.0D)
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .build();
+
+    public final IntRef maceSwapMinDelay = intBuilder(attackMace.add("mace-swap-min-delay"))
+            .defaultValue(2)
+            .validator(Configs.INT_NONNEGATIVE)
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .build();
+
     private final ModulePath maceHeightAndChase = elytraBot.add("mace-height-and-pull-up");
 
     {
@@ -1364,6 +1385,28 @@ public class ElytraBot extends BaseModule {
         int lastMaceAttackSuccessTick;
         double lastFallDistance;
 
+        public boolean tryPreSwapArmorForAttack() {
+            if (shouldAttackMace()
+                    && base.maceFix.get()
+                    && mc.player.isFallFlying()
+                    && !base.currentArmorGliding
+                    && !ElytraExtra.INSTANCE.hasPendingFallFlyingReset()
+                    && Tasks.getTick() - PlayerStateManager.INSTANCE.lastStartGlidingTick
+                            >= base.maceSwapMinDelay.get()) {
+                Vec3d predictedPosition = PositionPredict.INSTANCE
+                        .attackPredictArgument
+                        .get()
+                        .predictWithExtraTicks(base.target, base.macePreSwapDelay.get());
+                double range = CombatTasks.getCombatExtra().getAttackAtTargetRange(base.target)
+                        + base.macePreSwapDistancePerTick.get() * base.macePreSwapDelay.get();
+                if (TargetSelector.INSTANCE.isWithinAttackRange(
+                        mc.player.getPos(), base.target.dimensions.getBoxAt(predictedPosition), range)) {
+                    return ElytraExtra.INSTANCE.requestManualArmorSwapAndResetFallFlying();
+                }
+            }
+            return false;
+        }
+
         public void scheduleAttack() {
             attackFlag = true;
         }
@@ -1451,6 +1494,7 @@ public class ElytraBot extends BaseModule {
             if (shouldPullUpEating()) {
                 return STATE_PULL_UP;
             }
+            tryPreSwapArmorForAttack();
             Vec3d targetPos = base.maceUsePredictor.get()
                     ? PositionPredict.INSTANCE.attackPredictArgument.get().predict(base.target)
                     : base.target.getPos();
@@ -1884,6 +1928,7 @@ public class ElytraBot extends BaseModule {
 
         @Override
         public int onStateFollow(StateMachine machine) {
+            tryPreSwapArmorForAttack();
             if (PlayerStateManager.INSTANCE.fallDistance < 1E-6 && lastFallDistance > 1E-6) {
                 // we trigger falldistance reset during chase
                 return STATE_PULL_UP;
