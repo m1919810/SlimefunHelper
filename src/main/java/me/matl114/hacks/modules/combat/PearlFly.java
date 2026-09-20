@@ -1,28 +1,37 @@
 package me.matl114.hacks.modules.combat;
 
+import java.awt.*;
+import java.util.List;
 import java.util.Objects;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.RenderListener;
+import me.matl114.hacks.CombatTasks;
+import me.matl114.hacks.InteractionTasks;
+import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.inv.InvExtra;
-import me.matl114.hacks.modules.move.PlayerStateManager;
-import me.matl114.hacks.utils.entity.EntityMovementStatus;
+import me.matl114.hacks.modules.render.ProjectileESP;
+import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.config.WrapColor;
+import me.matl114.hacks.utils.enums.GhostHandMode;
+import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
-import me.matl114.managers.config.DoubleRef;
-import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.entity.PlayerInputUtils;
+import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.*;
 
 public class PearlFly extends BaseModule {
     public PearlFly() {
@@ -57,13 +66,45 @@ public class PearlFly extends BaseModule {
             .defaultValue(true)
             .build();
 
+    public final ModulePath pearlThrow = combatUtils.add("pearl-throw");
+
+    public final KeyBindRef executePearlThrow = hotkey(pearlThrow.add("execute-throw"))
+            .defaultValue(new MultiKeyBind())
+            .registerHotkey(HotKeyUtils.wrapAsHandler(this::doPearlThrow))
+            .build();
+
+    public final FlagRef pearlAimRender =
+            flagBuilder(pearlThrow.add("pearl-trace-render")).build();
+
+    public final KeyBindRef executePearlHelper = toggleHotkey(
+                    pearlThrow.add("pearl-trace-render-hotkey"),
+                    new MultiKeyBind(),
+                    pearlThrow.add("pearl-trace-render"))
+            .build();
+
+    public final NBTRef<WrapColor> color = builder(pearlThrow.add("color"), WrapColor.class)
+            .defaultValue(new WrapColor((Color.ORANGE)))
+            .build();
+
+    public final FlagRef exactDirection = flagBuilder(pearlThrow.add("exact")).build();
+
+    public final EnumRef<GhostHandMode> ghostHand = builder(pearl.add("ghost-hand-mode"), GhostHandMode.class)
+            .defaultValue(GhostHandMode.INV_SWAP)
+            .build();
+
     public final FlagRef offhand = flagBuilder(pearl.add("offhand")).build();
+
+    public final FlagRef swingHand =
+            builder(pearl.add("swing-hand"), Boolean.class).defaultValue(true).build();
 
     @Override
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreHandleInputEvents(), this::onInputEvent);
+        registerListener(RenderListener.getRender3DEvent(), this::onRender3D);
     }
+
+    Vec2f pearlThrowRotation = null;
 
     public void onInputEvent(Event<Void> event) {
         if (checkNull()) return;
@@ -144,6 +185,78 @@ public class PearlFly extends BaseModule {
                 }
             }
         }
+        if (pearlThrowRotation != null
+                && !mc.player.getItemCooldownManager().isCoolingDown(new ItemStack(Items.ENDER_PEARL))) {
+            usePearl(EntityUtils.pitchYawToRotation(pearlThrowRotation.x, pearlThrowRotation.y));
+            pearlThrowRotation = null;
+        }
+        lineCollector.clear();
+        hitBoxCollector.clear();
+        if (pearlAimRender.get()) {
+            Vec2f direction;
+            Vec3d eye = mc.player.getEyePos();
+            if (exactDirection.get()) {
+                Vec3d rayCastStart = RenderUtils.getCameraPos();
+                Vec3d look = RenderUtils.getCameraLookVec(0.0F);
+                var hit = RaycastUtils.raycastOnlyBlockCollisions(rayCastStart, rayCastStart.add(look.multiply(128)));
+                if (hit != null && hit.getType() == HitResult.Type.BLOCK) {
+                    Vec3d hitPoint = hit.getPos();
+                    var red = CombatTasks.calculatePitchYawPredict(1.48F, Vec3d.ZERO, hitPoint.subtract(eye));
+                    if (Float.isNaN(red.x)
+                            || Float.isInfinite(red.x)
+                            || Float.isNaN(red.y)
+                            || Float.isInfinite(red.y)) {
+                        return;
+                    } else {
+                        direction = red;
+                    }
+                } else {
+                    return;
+                }
+            } else {
+                direction = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
+            }
+            Vec3d rot = EntityUtils.pitchYawToRotation(direction.x, direction.y);
+            var predictor = new ProjectileESP.ArrowPredictor(
+                    eye.subtract(0, 0.11, 0), rot.normalize().multiply(1.48F), mc.player);
+            var result = predictor.predictLineWithHitResult(400);
+            if (result != null) {
+                lineCollector.submit(result.getFirst(), color.get().withAlpha(255));
+                HitResult hitPose = result.getSecond();
+                if (hitPose != null) {
+                    var hitPos = hitPose.getPos();
+                    hitBoxCollector.submit(
+                            new Box(hitPos.add(RenderTasks.SMALL_FROM), hitPos.add(RenderTasks.SMALL_TO)),
+                            color.get().withAlpha(64));
+                }
+            }
+        }
+    }
+
+    RenderCollector<List<Vec3d>> lineCollector = RenderCollectors.createLinesCollector();
+    RenderCollector<Box> hitBoxCollector = RenderCollectors.createBoxCollector(true, true, false);
+
+    public void doPearlThrow() {
+        if (checkNull()) return;
+        if (exactDirection.get()) {
+            Vec3d rayCastStart = RenderUtils.getCameraPos();
+            Vec3d look = RenderUtils.getCameraLookVec(0.0F);
+            var hit = RaycastUtils.raycastOnlyBlockCollisions(rayCastStart, rayCastStart.add(look.multiply(128)));
+            if (hit != null && hit.getType() == HitResult.Type.BLOCK) {
+                Vec3d hitPoint = hit.getPos();
+                var red = CombatTasks.calculatePitchYawPredict(
+                        1.48F, Vec3d.ZERO, hitPoint.subtract(mc.player.getEyePos()));
+                if (Float.isNaN(red.x) || Float.isInfinite(red.x) || Float.isNaN(red.y) || Float.isInfinite(red.y)) {
+                    logI18NSub("Pearl", "message.module.pearl-fly.can-not-reach-target");
+                } else {
+                    pearlThrowRotation = red;
+                }
+            } else {
+                logI18NSub("Pearl", "message.module.pearl-fly.no-target");
+            }
+        } else {
+            pearlThrowRotation = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
+        }
     }
 
     public boolean doPearlUse(BlockPos originPos, BlockPos pos) {
@@ -166,17 +279,24 @@ public class PearlFly extends BaseModule {
         }
 
         boolean offHand = offhand.get() || re.index() == 40;
-        Runnable runnable = offHand
-                ? InvExtra.INSTANCE.swapInventoryIndexToOffhand(re.index())
-                : InvExtra.INSTANCE.swapInventoryIndexToHand(re.index());
+        Runnable runnable = InvExtra.INSTANCE.swapItemToHand(re.index(), offHand, ghostHand.get());
         if (runnable == null) return false;
-        var status = new EntityMovementStatus<>(mc.player);
-
-        PlayerStateManager.setPlayerRotationSafe(mc.player, look);
-        Hand hand = offHand ? Hand.OFF_HAND : Hand.MAIN_HAND;
-        mc.interactionManager.interactItem(mc.player, hand);
-        status.restoreRotation();
+        InteractionTasks.interactItem(offHand ? Hand.OFF_HAND : Hand.MAIN_HAND, look, true, swingHand.get());
         runnable.run();
         return true;
+    }
+
+    public void onRender3D(Event<MatrixStack> event) {
+        if (checkNull())
+            ;
+        if (pearlAimRender.get()) {
+            RenderUtils.startDrawVirtual(event.context);
+            try {
+                lineCollector.render3D(event.context);
+                hitBoxCollector.render3D(event.context);
+            } finally {
+                RenderUtils.stopDrawVirtual(event.context);
+            }
+        }
     }
 }

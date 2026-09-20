@@ -45,3 +45,5 @@ run*.bat
 scripts/
 
 .cursor/
+
+lang_scripts/

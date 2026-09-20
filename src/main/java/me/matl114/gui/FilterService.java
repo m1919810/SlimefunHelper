@@ -34,7 +34,7 @@ public class FilterService {
         return nameMatch(i.getName().getString().replaceAll("§.", ""), str);
     };
 
-    public static Filter<String> RTYPE_ID_FILTER = (str, i, bl) -> {
+    public static Filter<String> STRING_FILTER = (str, i, bl) -> {
         if (bl) {
             try {
                 return Pattern.matches(str, i);
@@ -76,7 +76,7 @@ public class FilterService {
                 0,
                 dx - dy,
                 dy,
-                (t, r) -> {
+                (r) -> {
                     if (!Objects.equals(accessor.getValue(), r)) {
                         accessor.setValue(r);
                         updateListener.accept(r);
@@ -126,7 +126,7 @@ public class FilterService {
                 0,
                 dx - 2 * dy,
                 dy,
-                (t, r) -> {
+                (r) -> {
                     if (!Objects.equals(accessor.getValue(), r)) {
                         accessor.setValue(r);
                         acceptor.accept(r, useRegex.getValue());

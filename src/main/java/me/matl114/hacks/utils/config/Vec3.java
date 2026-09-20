@@ -22,11 +22,11 @@ public record Vec3(double x, double y, double z) implements NBTParsable<Vec3> {
                 SubScreenWidget subScreenWidget = SubScreenWidget.instance(x, y, dx, dy);
                 int half = dx / 3;
                 WrapperFactory<Double, Vec3> firstWrapper =
-                        WrapperFactory.of((d) -> s.getOriginValue().withX(d), Vec3::x);
+                        WrapperFactory.of((d) -> s.get().withX(d), Vec3::x);
                 WrapperFactory<Double, Vec3> secondWrapper =
-                        WrapperFactory.of((d) -> s.getOriginValue().withY(d), Vec3::y);
+                        WrapperFactory.of((d) -> s.get().withY(d), Vec3::y);
                 WrapperFactory<Double, Vec3> thirdWrapper =
-                        WrapperFactory.of((d) -> s.getOriginValue().withZ(d), Vec3::z);
+                        WrapperFactory.of((d) -> s.get().withZ(d), Vec3::z);
 
                 return subScreenWidget
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(s, firstWrapper, NBTTypes.DOUBLE_TYPE)

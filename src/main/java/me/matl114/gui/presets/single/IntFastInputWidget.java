@@ -90,7 +90,7 @@ public class IntFastInputWidget extends SubScreenWidget {
     }
 
     protected void addValue(int val) {
-        Integer int0 = keyValue.getOriginValue();
+        Integer int0 = keyValue.get();
         int val0 = int0 == null ? val : int0 + val;
         if (keyValue instanceof AttrKeyValues.ClampedIntAttrKeyValue clamp) {
             val0 = clamp.clampInput(val0);

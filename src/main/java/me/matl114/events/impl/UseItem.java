@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 
@@ -17,4 +18,6 @@ public class UseItem {
     ActionResult actionResult;
 
     final Hand hand;
+
+    ItemStack handItem;
 }

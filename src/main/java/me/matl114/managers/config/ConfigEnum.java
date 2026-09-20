@@ -43,9 +43,7 @@ public interface ConfigEnum extends StringIdentifiable, Displayable, AutoRegiste
         return (Enum) this;
     }
 
-    default String getConfigEnumType() {
-        return this.getClass().getSimpleName().toLowerCase(Locale.ROOT);
-    }
+    public String getConfigEnumType();
 
     default String asString() {
         return "enum:" + getConfigEnumType() + ":" + cast().name();

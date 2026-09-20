@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.IntSupplier;
 import lombok.AllArgsConstructor;
+import me.matl114.hacks.utils.EntityUtils;
 import net.minecraft.util.math.*;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix3d;
@@ -97,6 +98,10 @@ public class MathUtils {
 
     public static boolean isInXZRange(Vec3d a, Vec3d b, double range) {
         return isInBox(a.subtract(b), range);
+    }
+
+    public static boolean isInXZBox(Box box, Vec3d vec) {
+        return vec.x >= box.minX && vec.x < box.maxX && vec.z >= box.minZ && vec.z < box.maxZ;
     }
 
     public static boolean isInXZRange(Vec3d a, double range) {
@@ -572,6 +577,94 @@ public class MathUtils {
         private final IntSupplier supplier;
 
         public AcceleratePredictor(Vec3d[] historyStack, IntSupplier currentIndex) {
+            pointList = historyStack;
+            supplier = currentIndex;
+        }
+
+        public Vec3d compute(int ticksLater) {
+            int idx = supplier.getAsInt();
+            Vec3d currentPos = pointList[idx];
+            if (currentPos == null) return null;
+            int len = pointList.length;
+            int i = 1;
+            List<Vec3d> points = new ArrayList<>();
+            points.add(currentPos);
+            for (; i < len; i++) {
+                Vec3d v3d = pointList[(idx - i + len) % len];
+                if (v3d != null) {
+                    points.add(0, v3d);
+                } else {
+                    break;
+                }
+            }
+            Vec3d result = null;
+            if (!points.isEmpty()) {
+                result = currentPos;
+            }
+            if (points.size() < 2) return result;
+            List<Vec3d> diff = new ArrayList<>();
+            Vec3d oldV = null;
+            for (Vec3d v : points) {
+                if (oldV == null) {
+                    oldV = v;
+                    continue;
+                }
+
+                diff.add(v.subtract(oldV));
+
+                oldV = v;
+            }
+            Vec3d lastDirectionVec = null;
+            for (int start = diff.size() - 1; start >= 0; --start) {
+                if (lastDirectionVec == null) {
+                    lastDirectionVec = diff.get(start);
+                } else {
+                    Vec3d v = points.get(start);
+                    if (lastDirectionVec.normalize().dotProduct(v.normalize()) < 0.25 || lastDirectionVec.y * v.y < 0) {
+                        diff = diff.subList(start, diff.size());
+                        break;
+                    }
+                }
+            }
+            if (diff.size() >= 3) {
+                Vec3d d = new Vec3d(0, 0, 0);
+                for (Vec3d v : diff) {
+                    d = d.add(v).multiply(0.5);
+                }
+                List<Vec3d> dvs = new ArrayList<>();
+                Vec3d oldDelta = null;
+                for (Vec3d v : diff) {
+                    if (oldDelta == null) {
+                        oldDelta = v;
+                        continue;
+                    }
+                    dvs.add(v.subtract(oldDelta));
+                    oldDelta = v;
+                }
+                Vec3d nextDv = new Vec3d(0, 0, 0);
+                for (Vec3d v : dvs) {
+                    nextDv = nextDv.add(v).multiply(0.5);
+                }
+                Vec3d finalSpeed = result;
+                for (var newTick = 0; newTick < ticksLater; ++newTick) {
+                    d = d.add(nextDv);
+                    finalSpeed = finalSpeed.add(d);
+                }
+
+                return finalSpeed;
+            } else if (diff.size() > 0) {
+                return currentPos.add(diff.get(0).multiply(ticksLater));
+            }
+
+            return result;
+        }
+    }
+
+    public static class AcceleratePredictor2 {
+        private final Vec3d[] pointList;
+        private final IntSupplier supplier;
+
+        public AcceleratePredictor2(Vec3d[] historyStack, IntSupplier currentIndex) {
             pointList = historyStack;
             supplier = currentIndex;
         }

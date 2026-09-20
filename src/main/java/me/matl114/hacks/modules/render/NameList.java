@@ -8,6 +8,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.WidgetPos;
 import me.matl114.hacks.utils.render.ItemStackDisplayUtils;
 import me.matl114.managers.Configs;
+import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.NBTRef;
@@ -35,6 +36,7 @@ public class NameList extends INameTag {
                 .defaultValue(20)
                 .build();
         right = flagBuilder(nameTag.add("list-right")).build();
+        scale = doubleBuilder(nameTag.add("scale")).defaultValue(1.0D).build();
         pos = builder(nameTag.add("list-pos"), WidgetPos.class)
                 .defaultValue(new WidgetPos(0, 0.02D, 0.02D, 5, 5))
                 .build();
@@ -43,6 +45,7 @@ public class NameList extends INameTag {
     public IntRef playerListMaxLength;
 
     public FlagRef right;
+    public DoubleRef scale;
     public NBTRef<WidgetPos> pos;
 
     @Override
@@ -77,6 +80,7 @@ public class NameList extends INameTag {
         double xPer = pp.getWindowX(mc.getWindow());
         double yPer = pp.getWindowY(mc.getWindow());
         vdraw.getMatrices().translate((float) xPer, (float) yPer);
+        vdraw.getMatrices().scale((float) scale.get(), (float) scale.get());
     }
 
     public void onRenderList(PlayerNameTagInfo player, VDrawContext vdraw, float tick) {

@@ -41,7 +41,7 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
                                     "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;<init>(Lnet/minecraft/screen/ScreenHandler;Lnet/minecraft/entity/player/PlayerInventory;Lnet/minecraft/text/Text;)V",
                             shift = At.Shift.AFTER))
     private void onInit(MerchantScreenHandler handler, PlayerInventory inventory, Text title, CallbackInfo ci) {
-        owner = (VillagerEntity) InteractionTasks.predictScreenFrom(e -> e instanceof VillagerEntity);
+        owner = (VillagerEntity) InteractionTasks.predictEntityScreenFrom(e -> e instanceof VillagerEntity);
         if (this.handler instanceof EntityInventory.Handler handler1) {
             handler1.sync(this);
         }

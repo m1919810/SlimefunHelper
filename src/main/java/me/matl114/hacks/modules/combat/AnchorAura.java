@@ -14,6 +14,9 @@ import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.mine.PacketMine;
+import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.enums.GhostHandMode;
+import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.hacks.utils.tasks.TimerExecutor;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
@@ -55,8 +58,8 @@ public class AnchorAura extends BaseModule {
     public final KeyBindRef hotkey =
             moduleEntry(root.addHotkey(), new MultiKeyBind(), root.addEnable()).build();
 
-    public final EnumRef<Configs.LegalInteractMode> mode = builder(root.add("mode"), Configs.LegalInteractMode.class)
-            .defaultValue(Configs.LegalInteractMode.NONE)
+    public final EnumRef<LegalInteractMode> mode = builder(root.add("mode"), LegalInteractMode.class)
+            .defaultValue(LegalInteractMode.NONE)
             .build();
 
     public final FlagRef airplace =
@@ -77,6 +80,10 @@ public class AnchorAura extends BaseModule {
     public final IntRef mul = intBuilder(root.add("multiply"))
             .defaultValue(1)
             .validator(Configs.INT_POSITIVE)
+            .build();
+
+    public final FlagRef eatingAbort = builder(root.add("using-item-abort"), Boolean.class)
+            .defaultValue(false)
             .build();
 
     public final DoubleRef selfFinalDamageThreshold = doubleBuilder(root.add("self-final-damage-threshold"))
@@ -103,6 +110,12 @@ public class AnchorAura extends BaseModule {
             flagBuilder(root.add("zero-tick-place-supply")).build();
 
     public final FlagRef use0TickSupply = flagBuilder(root.add("zero-tick-use")).build();
+
+    public final EnumRef<GhostHandMode> ghostHand = builder(root.add("ghost-hand-mode"), GhostHandMode.class)
+            .defaultValue(GhostHandMode.INV_SWAP)
+            .build();
+
+    public final FlagRef logSupply = flagBuilder(root.add("notify-supply")).build();
 
     public final FlagRef swingHand =
             builder(root.add("swing-hand"), Boolean.class).defaultValue(true).build();
@@ -140,18 +153,21 @@ public class AnchorAura extends BaseModule {
         boolean hasAnchor = supplyItem(Items.RESPAWN_ANCHOR) != null;
         boolean hasGlowStone = supplyItem(Items.GLOWSTONE) != null;
         if (!hasAnchor || !hasGlowStone) {
-            noSupplyExecutor.run(100, () -> {
-                if (!hasAnchor && !hasGlowStone) {
-                    logI18N(
-                            "message.module.anchor-arua.no-item.double",
-                            Items.RESPAWN_ANCHOR.getName(),
-                            Items.GLOWSTONE.getName());
-                } else if (!hasAnchor) {
-                    logI18N("message.module.anchor-arua.no-item", Items.RESPAWN_ANCHOR.getName());
-                } else {
-                    logI18N("message.module.anchor-arua.no-item", Items.GLOWSTONE.getName());
-                }
-            });
+            if (logSupply.get()) {
+                noSupplyExecutor.run(100, () -> {
+                    if (!hasAnchor && !hasGlowStone) {
+                        logI18N(
+                                "message.module.anchor-arua.no-item.double",
+                                Items.RESPAWN_ANCHOR.getName(),
+                                Items.GLOWSTONE.getName());
+                    } else if (!hasAnchor) {
+                        logI18N("message.module.anchor-arua.no-item", Items.RESPAWN_ANCHOR.getName());
+                    } else {
+                        logI18N("message.module.anchor-arua.no-item", Items.GLOWSTONE.getName());
+                    }
+                });
+            }
+
             return false;
         }
         return true;
@@ -269,6 +285,9 @@ public class AnchorAura extends BaseModule {
                 return;
             }
             refreshTarget();
+            if (eatingAbort.get() && mc.player.isUsingItem()) {
+                return;
+            }
             tickAnchorPosition();
             if (++timer >= delay.get() && !targetEntity.isEmpty()) {
                 timer = 0;
@@ -298,11 +317,12 @@ public class AnchorAura extends BaseModule {
     }
 
     public IndexEntry<ItemStack> supplyItem(Item item) {
-        return InventoryUtils.findPlayerItem(s -> s.isOf(item), true, false);
+        return InventoryUtils.findPlayerItem(s -> s.isOf(item), ghostHand.get().getSearchSize(false), true, false);
     }
 
     public IndexEntry<ItemStack> supplyNoItem(Item item) {
-        var re = InventoryUtils.findPlayerItem(s -> !s.isOf(item), true, true);
+        var re = InventoryUtils.findPlayerItem(
+                s -> !s.isOf(item), ghostHand.get().getSearchSize(false), true, true);
         return re == null ? InventoryUtils.getSelectedItem() : re;
     }
 
@@ -317,7 +337,7 @@ public class AnchorAura extends BaseModule {
                 if (glowstone == null) {
                     return interactCount;
                 }
-                var callback = InvExtra.INSTANCE.swapInventoryIndexToHand(glowstone.index());
+                var callback = InvExtra.INSTANCE.swapItemToHand(glowstone.index(), false, ghostHand.get());
                 if (callback == null) {
                     return interactCount;
                 }
@@ -332,7 +352,7 @@ public class AnchorAura extends BaseModule {
             }
             if (level > 0) {
                 var noGlowStone = supplyNoItem(Items.GLOWSTONE);
-                var callback = InvExtra.INSTANCE.swapInventoryIndexToHand(noGlowStone.index());
+                var callback = InvExtra.INSTANCE.swapItemToHand(noGlowStone.index(), false, ghostHand.get());
                 if (callback == null) {
                     return interactCount;
                 }
@@ -346,7 +366,7 @@ public class AnchorAura extends BaseModule {
                     if (anchor == null) {
                         return interactCount;
                     }
-                    var callback2 = InvExtra.INSTANCE.swapInventoryIndexToHand(anchor.index());
+                    var callback2 = InvExtra.INSTANCE.swapItemToHand(anchor.index(), false, ghostHand.get());
                     if (callback2 == null) {
                         return interactCount;
                     }
@@ -428,7 +448,7 @@ public class AnchorAura extends BaseModule {
     public boolean placeAnchor(BlockPos pos, BlockHitResult hitResult) {
         var entry = supplyItem(Items.RESPAWN_ANCHOR);
         if (entry == null) return false;
-        var runnable = InvExtra.INSTANCE.swapInventoryIndexToHand(entry.index());
+        var runnable = InvExtra.INSTANCE.swapItemToHand(entry.index(), false, ghostHand.get());
         if (runnable == null) return false;
         InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
         runnable.run();
@@ -522,7 +542,7 @@ public class AnchorAura extends BaseModule {
     }
 
     public void onPreset(Event<EventContainer<ModulePreset>> event) {
-        mode.set(Configs.LegalInteractMode.getFromPreset(event.context.getValue()));
+        mode.set(LegalInteractMode.getFromPreset(event.context.getValue()));
         airplace.set(!event.context.getValue().hasAC());
     }
 

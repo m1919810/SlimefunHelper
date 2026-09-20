@@ -228,7 +228,7 @@ public class PathManager extends BaseModule {
     @Override
     public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
         super.addCustomWidgets(acceptor, dx, dy, dblank);
-        acceptor.accept(createTitleLabel("widget.path-manager.command", 0, dblank, dx, dy));
+        acceptor.accept(createTitle("widget.path-manager.command", 0, dblank, dx, dy));
     }
 
     boolean pauseRecord = false;

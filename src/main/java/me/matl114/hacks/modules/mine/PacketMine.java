@@ -1,6 +1,5 @@
 package me.matl114.hacks.modules.mine;
 
-import com.google.common.util.concurrent.Runnables;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import lombok.Getter;
@@ -20,6 +19,7 @@ import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
+import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.managers.*;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
@@ -65,8 +65,6 @@ public class PacketMine extends BaseModule {
     public final FlagRef airBreak =
             flagBuilder(packetMine.add("consider-air-break")).build();
 
-    public final FlagRef swingHand = flagBuilder(packetMine.add("swing-hand")).build();
-
     public final DoubleRef mineThreshold = builder(packetMine.add("mine-threshold"), DoubleRef.TYPE)
             .defaultValue(0.7)
             .validator(Configs.doubleRange(-0.0001F, 1.0001F))
@@ -93,6 +91,16 @@ public class PacketMine extends BaseModule {
                     packetMine.add("mine-white-list"), EntrySet.<Block>parameter())
             .defaultValue(new EntrySet<>(new Regex("^()$"), Registries.BLOCK))
             .build();
+
+    public final FlagRef eatingAbort = builder(packetMine.add("using-item-abort"), Boolean.class)
+            .defaultValue(false)
+            .build();
+
+    public final EnumRef<GhostHandMode> ghostHand = builder(packetMine.add("ghost-hand-mode"), GhostHandMode.class)
+            .defaultValue(GhostHandMode.INV_SWAP)
+            .build();
+
+    public final FlagRef swingHand = flagBuilder(packetMine.add("swing-hand")).build();
 
     BlockPos lastMinePos;
 
@@ -130,12 +138,11 @@ public class PacketMine extends BaseModule {
     }
 
     public void onTick(Event<ClientPlayerEntity> tickEvent) {
-        if (switchCallback != null) {
-            switchCallback.run();
-            switchCallback = null;
-        }
         if (isActive()) {
             if (checkNull()) return;
+            if (eatingAbort.get() && mc.player.isUsingItem()) {
+                return;
+            }
             BlockPos pos = PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
             if (mineOnce.get() && Objects.equals(pos, lastMinePos)) {
                 return;
@@ -144,14 +151,8 @@ public class PacketMine extends BaseModule {
         }
     }
 
-    public Runnable switchCallback = null;
-
     public void tickMine() {
         if (mc.interactionManager != null && mc.player != null) {
-            if (switchCallback != null) {
-                switchCallback.run();
-                switchCallback = null;
-            }
             BlockPos pos = PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
             if (pos == null) return;
 
@@ -184,7 +185,8 @@ public class PacketMine extends BaseModule {
                                 FloatingUtils.INSTANCE.setForceOnGroundVia(true);
                             }
                         }
-                        Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(currentItemSlot.index());
+                        Runnable callback =
+                                InvExtra.INSTANCE.swapItemToHand(currentItemSlot.index(), false, ghostHand.get());
 
                         progress = PlayerInteractionAccess.of(mc.interactionManager)
                                 .predictCurrentMiningProgressWithTool(currentTool);
@@ -202,7 +204,7 @@ public class PacketMine extends BaseModule {
             }
             if (autoToolDoubleBreak.get()
                     && PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos() != null) {
-                tickGhostHandDoubleBreak(currentTickCallback, groundDeceive.get());
+                MineExtra.INSTANCE.tickGhostHandDoubleBreak(currentTickCallback, groundDeceive.get());
             } else {
                 if (currentTickCallback != null) {
                     currentTickCallback.run();
@@ -215,34 +217,6 @@ public class PacketMine extends BaseModule {
                 if (state.isAir() || state.isLiquid()) {
                     lastMinePos = pos;
                 }
-            }
-        }
-    }
-
-    public void tickGhostHandDoubleBreak(Runnable currentTickCallback, boolean groundDeceive) {
-        if (switchCallback != null) {
-            return;
-        }
-        BlockPos failPos = PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos();
-        if (failPos == null) {
-            if (currentTickCallback != null) {
-                currentTickCallback.run();
-            }
-            return;
-        }
-        BlockState blockState = mc.world.getBlockState(failPos);
-        IndexEntry<ItemStack> currentItemSlot = getCurrentUsableTool(blockState);
-        ItemStack currentTool = currentItemSlot.val();
-        if (canMineFailBreak(blockState, currentTool, groundDeceive)) {
-            Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(currentItemSlot.index());
-            Runnable currentCallback = currentTickCallback == null ? Runnables.doNothing() : currentTickCallback;
-            switchCallback = () -> {
-                callback.run();
-                currentCallback.run();
-            };
-        } else {
-            if (currentTickCallback != null) {
-                currentTickCallback.run();
             }
         }
     }
@@ -267,6 +241,7 @@ public class PacketMine extends BaseModule {
                         return (double)
                                 WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(mc.player, calS, item);
                     },
+                    ghostHand.get().getSearchSize(false),
                     true,
                     true);
             if (re != null) {
@@ -296,21 +271,6 @@ public class PacketMine extends BaseModule {
                 return speed > Math.min(0.98, mineThreshold.get());
             }
             return true;
-        } else {
-            return false;
-        }
-    }
-
-    public boolean canMineFailBreak(BlockState state, ItemStack tool, boolean groundDeceive) {
-        // do not mine liquid, that's a disaster
-        // do not mine air, shit
-        if (isMineable(state)) {
-            var access = PlayerInteractionAccess.of(mc.interactionManager);
-            var speed = access.predictFailMiningProgressWithTool(tool, 0);
-            if (groundDeceive && !mc.player.isOnGround()) {
-                speed *= 5;
-            }
-            return speed > 0.99;
         } else {
             return false;
         }

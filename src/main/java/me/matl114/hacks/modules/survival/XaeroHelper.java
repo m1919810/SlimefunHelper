@@ -313,7 +313,7 @@ public class XaeroHelper extends BaseModule {
     @Override
     public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
         super.addCustomWidgets(acceptor, dx, dy, dblank);
-        acceptor.accept(createTitleLabel(
+        acceptor.accept(createTitle(
                 XaeroHooks.getInstance().isXaeroWorldMapEnable()
                         ? "widget.xaero-helper.xaero-worldmap-enable"
                         : "widget.xaero-helper.xaero-worldmap-not-support",
@@ -321,7 +321,7 @@ public class XaeroHelper extends BaseModule {
                 dblank,
                 dx,
                 dy));
-        acceptor.accept(createTitleLabel(
+        acceptor.accept(createTitle(
                 XaeroHooks.getInstance().isXaeroMiniMapEnable()
                         ? "widget.xaero-helper.xaero-minimap-enable"
                         : "widget.xaero-helper.xaero-minimap-not-support",
@@ -329,7 +329,7 @@ public class XaeroHelper extends BaseModule {
                 dblank,
                 dx,
                 dy));
-        acceptor.accept(createTitleLabel(
+        acceptor.accept(createTitle(
                 XaeroHooks.getInstance().isXaeroPlusEnable()
                         ? "widget.xaero-helper.xaero-plus-enable"
                         : "widget.xaero-helper.xaero-plus-not-support",

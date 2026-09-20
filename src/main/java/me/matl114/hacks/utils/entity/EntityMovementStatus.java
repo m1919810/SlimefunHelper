@@ -1,7 +1,7 @@
 package me.matl114.hacks.utils.entity;
 
 import me.matl114.hacks.modules.move.PlayerStateManager;
-import me.matl114.utils.EntityUtils;
+import me.matl114.hacks.utils.EntityUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;

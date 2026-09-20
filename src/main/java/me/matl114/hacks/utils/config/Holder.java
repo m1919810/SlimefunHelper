@@ -81,7 +81,7 @@ public record Holder<T>(Registry<T> registry, @Nullable T entry, String asString
                 "holder",
                 Codec.STRING.comapFlatMap(Holder::parse, Holder::asString),
                 (w, x, y, dx, dy) -> {
-                    Holder<T> holder = w.getOriginValue();
+                    Holder<T> holder = w.get();
                     Registry<T> registry = holder.registry;
                     WrapperFactory<Optional<T>, Holder<T>> wrapperFactory = WrapperFactory.of(
                             s -> {
@@ -98,7 +98,7 @@ public record Holder<T>(Registry<T> registry, @Nullable T entry, String asString
                                 }
                             },
                             t -> t.map(stringifyFactory::get).orElse(DEFAULT_EMPTY_STRING));
-                    AttrKeyValue.CustomWidgetFactory<Optional<T>> widgetFactory = (s, x1, y1, dx1, dy1) -> {
+                    AttrKeyValue.CustomWidgetGenerator<Optional<T>> widgetFactory = (s, x1, y1, dx1, dy1) -> {
                         return RegistryAttrKeyValue.generateTextInputWithRegistrySearch(registry, s, x1, y1, dx1, dy1);
                     };
                     return new TypeConvertAttrKeyValue<>(w, wrapperFactory, widgetFactory, stringifyFactoryWithDefault)

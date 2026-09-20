@@ -29,7 +29,6 @@ import me.matl114.utils.commands.params.ArgumentReader;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.utils.commands.params.api.TabResult;
 import me.matl114.utils.config.AttrKeyValue;
-import net.minecraft.loot.entry.LeafEntry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
@@ -244,7 +243,7 @@ public class ConfigManager extends BaseModule {
     @Override
     public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
         super.addCustomWidgets(acceptor, dx, dy, dblank);
-        acceptor.accept(createTitleLabel("widget.config-manager.command", 0, dblank, dx, dy));
+        acceptor.accept(createTitle("widget.config-manager.command", 0, dblank, dx, dy));
     }
 
     public void onOpen() {
@@ -280,7 +279,7 @@ public class ConfigManager extends BaseModule {
         }
 
         AttrKeyValue<?> keyValue = ref.createKeyValue(rawPath);
-        keyValue.valueChange(this, value);
+        keyValue.setInput(value);
         if (!keyValue.isValidate()) {
             Debug.chat(Text.literal("配置项格式不正确: " + configName + "." + rawPath).formatted(Formatting.RED));
             return;

@@ -161,10 +161,9 @@ public class EncryptChat extends BaseModule {
                 (indexList >= 0 && indexList < currentList.size()) ? currentList.get(indexList) : null);
         ListEntryWidgetController controller = ListEntryWidgetController.mutable(
                 currentList, ChatKeyEntry::empty, value -> createEditRenderHandler(value, index), 30, 220);
-        ListModifyWidget listWidget = new ListModifyWidget(controller, 0, 0, 320, 260);
         ConfirmingWidgetScreen confirmScreen = new ConfirmingWidgetScreen(
                 Text.translatable("widget.encrypt-chat.key-list-editor.title"),
-                listWidget,
+                (screen) -> new ListModifyWidget(controller, 0, 0, 330, screen.getContentHeight()),
                 () -> true,
                 () -> setKeyList(new KeyList(
                         index.getValue() == null ? -1 : currentList.indexOf(index.getValue()),

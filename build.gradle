@@ -184,12 +184,6 @@ tasks.named("runClient", JavaExec) {
 			, "-Dmixin.debug.export=true"
 			, "-Xmx6G", "-Xms3G"
 	)
-	systemProperties = [
-			"https.proxyHost": "127.0.0.1",
-			"https.proxyPort": "7890",
-			"http.proxyHost": "127.0.0.1",
-			"http.proxyPort": "7890"
-	]
 }
 //
 //tasks.named('downloadAssets', JavaExec) {

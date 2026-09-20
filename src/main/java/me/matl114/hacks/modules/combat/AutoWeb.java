@@ -14,6 +14,9 @@ import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.enums.GhostHandMode;
+import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.hacks.utils.tasks.TimerExecutor;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
@@ -21,7 +24,6 @@ import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.EntityUtils;
 import me.matl114.utils.InteractUtils;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.MathUtils;
@@ -56,8 +58,8 @@ public class AutoWeb extends BaseModule {
     public final DoubleRef interactRange =
             doubleBuilder(root.add("interact-range")).defaultValue(4.5).build();
 
-    public final EnumRef<Configs.LegalInteractMode> mode = builder(root.add("mode"), Configs.LegalInteractMode.class)
-            .defaultValue(Configs.LegalInteractMode.NONE)
+    public final EnumRef<LegalInteractMode> mode = builder(root.add("mode"), LegalInteractMode.class)
+            .defaultValue(LegalInteractMode.NONE)
             .build();
 
     public final FlagRef airplace = flagBuilder(root.add("air-place")).build();
@@ -71,8 +73,18 @@ public class AutoWeb extends BaseModule {
     // 当对方不在地面 是否考虑它的头部（player.getBlockPos.up
     public final FlagRef ceiling = flagBuilder(root.add("ceiling")).build();
 
+    public final FlagRef offhand = flagBuilder(root.add("offhand")).build();
+
     public final FlagRef notifySupply =
             builder(root.add("notify-supply"), Boolean.class).defaultValue(true).build();
+
+    public final FlagRef eatingAbort = builder(root.add("using-item-abort"), Boolean.class)
+            .defaultValue(false)
+            .build();
+
+    public final EnumRef<GhostHandMode> ghostHand = builder(root.add("ghost-hand-mode"), GhostHandMode.class)
+            .defaultValue(GhostHandMode.INV_SWAP)
+            .build();
 
     public final FlagRef swingHand =
             builder(root.add("swing-hand"), Boolean.class).defaultValue(true).build();
@@ -100,6 +112,7 @@ public class AutoWeb extends BaseModule {
         if (checkNull() || !enable.get()) {
             return;
         }
+        if (eatingAbort.get() && mc.player.isUsingItem()) return;
         BlockHitResult option = searchPlaceOption();
         if (option == null) {
             return;
@@ -117,19 +130,21 @@ public class AutoWeb extends BaseModule {
     }
 
     private void onPreset(Event<EventContainer<ModulePreset>> event) {
-        mode.set(Configs.LegalInteractMode.getFromPreset(event.context.getValue()));
+        mode.set(LegalInteractMode.getFromPreset(event.context.getValue()));
     }
 
     private IndexEntry<ItemStack> supplyWeb() {
-        return InventoryUtils.findPlayerItem(stack -> stack.isOf(Items.COBWEB), true, false);
+        return InventoryUtils.findPlayerItem(
+                stack -> stack.isOf(Items.COBWEB), ghostHand.get().getSearchSize(offhand.get()), true, false);
     }
 
     private boolean placeWeb(IndexEntry<ItemStack> web, BlockHitResult hitResult) {
-        Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(web.index());
+        Runnable callback = InvExtra.INSTANCE.swapItemToHand(web.index(), offhand.get(), ghostHand.get());
         if (callback == null) {
             return false;
         }
-        InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
+        InteractionTasks.handlePlaceMode(
+                mode.get(), hitResult, offhand.get() ? Hand.OFF_HAND : Hand.MAIN_HAND, swingHand.get());
         callback.run();
         return true;
     }

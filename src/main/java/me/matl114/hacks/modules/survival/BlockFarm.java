@@ -13,6 +13,7 @@ import me.matl114.hacks.modules.interact.Interact;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.config.EntrySet;
+import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hacks.utils.render.RenderElements;
 import me.matl114.managers.Configs;
@@ -78,7 +79,7 @@ public class BlockFarm extends BaseModule {
     @Override
     public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
         super.addCustomWidgets(acceptor, dx, dy, dblank);
-        acceptor.accept(createTitleLabel("widget.interact.interact-block.use-argument", 0, dblank, dx, dy));
+        acceptor.accept(createTitle("widget.interact.interact-block.use-argument", 0, dblank, dx, dy));
     }
 
     BlockItem currentPlacingItem;
@@ -162,7 +163,7 @@ public class BlockFarm extends BaseModule {
                     }
                     var entry = supplyItems(blockItem);
                     if (entry != null) {
-                        callback = InvExtra.INSTANCE.swapInventoryIndexToHand(entry.index());
+                        callback = InvExtra.INSTANCE.swapItemToHand(entry.index(), false, GhostHandMode.INV_SWAP);
                     } else {
                         break;
                     }

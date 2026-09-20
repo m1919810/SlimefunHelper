@@ -17,7 +17,8 @@ import net.minecraft.nbt.NbtOps;
 @Getter
 @Accessors(fluent = true)
 public class NBTType<T> implements WrapperFactory<NbtElement, T> {
-    public NBTType(String typeName, Codec<T> codec, AttrKeyValue.CustomWidgetFactory<T> customWidgetFactory, T empty) {
+    public NBTType(
+            String typeName, Codec<T> codec, AttrKeyValue.CustomWidgetGenerator<T> customWidgetFactory, T empty) {
         this(typeName, codec, null, customWidgetFactory, empty);
         this.stringifyFactory = createDefaultFactory(this);
     }
@@ -25,7 +26,7 @@ public class NBTType<T> implements WrapperFactory<NbtElement, T> {
     public NBTType(
             String typeName,
             Codec<T> codec,
-            AttrKeyValue.CustomWidgetFactory<T> customWidgetFactory,
+            AttrKeyValue.CustomWidgetGenerator<T> customWidgetFactory,
             WrapperFactory<String, T> stringifyFactory,
             T empty) {
         this(typeName, codec, Objects.requireNonNull(stringifyFactory), customWidgetFactory, empty);
@@ -35,7 +36,7 @@ public class NBTType<T> implements WrapperFactory<NbtElement, T> {
             String typeName,
             Codec<T> codec,
             WrapperFactory<String, T> stringifyFactory,
-            AttrKeyValue.CustomWidgetFactory<T> customWidgetFactory,
+            AttrKeyValue.CustomWidgetGenerator<T> customWidgetFactory,
             T empty) {
         this.typeName = typeName.toLowerCase(Locale.ROOT);
         this.typeCodec = codec;
@@ -48,7 +49,7 @@ public class NBTType<T> implements WrapperFactory<NbtElement, T> {
     final Codec<T> typeCodec;
 
     @Setter
-    AttrKeyValue.CustomWidgetFactory<T> customWidgetFactory;
+    AttrKeyValue.CustomWidgetGenerator<T> customWidgetFactory;
 
     @Setter
     WrapperFactory<String, T> stringifyFactory;

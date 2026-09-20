@@ -262,8 +262,8 @@ public interface NBTTypes {
             NBTType<K2> k2Type,
             String name2,
             PairLikeFactory<K1, K2, T> pairFactory,
-            UnaryOperator<AttrKeyValue.CustomWidgetFactory<K1>> k1Resize,
-            UnaryOperator<AttrKeyValue.CustomWidgetFactory<K2>> k2Resize) {
+            UnaryOperator<CustomWidgetGenerator<K1>> k1Resize,
+            UnaryOperator<CustomWidgetGenerator<K2>> k2Resize) {
 
         return new NBTType<>(
                 targetClass,
@@ -274,9 +274,9 @@ public interface NBTTypes {
                 (s, x, y, dx, dy) -> {
                     AttrKeyValue<T> sourceAttr = s;
                     AttrKeyValue<K1> key1Attr =
-                            new TypeConvertAttrKeyValue<>(s, pairFactory.asFirstWrapper(s::getOriginValue), k1Type);
+                            new TypeConvertAttrKeyValue<>(s, pairFactory.asFirstWrapper(s::get), k1Type);
                     AttrKeyValue<K2> key2Attr =
-                            new TypeConvertAttrKeyValue<>(s, pairFactory.asSecondWrapper(s::getOriginValue), k2Type);
+                            new TypeConvertAttrKeyValue<>(s, pairFactory.asSecondWrapper(s::get), k2Type);
                     SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, dx, dy);
                     subScreenWidget
                             .addDrawableChild(
@@ -308,8 +308,8 @@ public interface NBTTypes {
             NBTType<K2> k2Type,
             String name2,
             PairLikeFactory<K1, K2, T> pairFactory,
-            WidgetFactory<K1> k1Factory,
-            UnaryOperator<AttrKeyValue.CustomWidgetFactory<K2>> k2Resize) {
+            WidgetGenerator<K1> k1Factory,
+            UnaryOperator<CustomWidgetGenerator<K2>> k2Resize) {
 
         return new NBTType<>(
                 targetClass,
@@ -319,9 +319,9 @@ public interface NBTTypes {
                         .apply(instance, pairFactory::create)),
                 (s, x, y, dx, dy) -> {
                     AttrKeyValue<T> sourceAttr = s;
-                    K1 k1Value = pairFactory.getFirst(sourceAttr.getOriginValue());
+                    K1 k1Value = pairFactory.getFirst(sourceAttr.get());
                     AttrKeyValue<K2> key2Attr =
-                            new TypeConvertAttrKeyValue<>(s, pairFactory.asSecondWrapper(s::getOriginValue), k2Type);
+                            new TypeConvertAttrKeyValue<>(s, pairFactory.asSecondWrapper(s::get), k2Type);
                     SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, dx, dy);
                     subScreenWidget
                             .addDrawableChild(k1Factory.generateWidget(k1Value, 0, 0, dx, dy))
@@ -339,8 +339,8 @@ public interface NBTTypes {
             NBTType<K2> k2Type,
             String name2,
             WrapperFactory<Map<K1, K2>, T> mapLike,
-            UnaryOperator<AttrKeyValue.CustomWidgetFactory<K1>> k1Resize,
-            UnaryOperator<AttrKeyValue.CustomWidgetFactory<K2>> k2Resize,
+            UnaryOperator<CustomWidgetGenerator<K1>> k1Resize,
+            UnaryOperator<CustomWidgetGenerator<K2>> k2Resize,
             int width,
             int height) {
         return createArrayMapLike(
@@ -367,8 +367,8 @@ public interface NBTTypes {
             Supplier<K2> k2Supplier,
             String name2,
             WrapperFactory<Map<K1, K2>, T> mapLike,
-            UnaryOperator<AttrKeyValue.CustomWidgetFactory<K1>> k1Resize,
-            UnaryOperator<AttrKeyValue.CustomWidgetFactory<K2>> k2Resize,
+            UnaryOperator<CustomWidgetGenerator<K1>> k1Resize,
+            UnaryOperator<CustomWidgetGenerator<K2>> k2Resize,
             int width,
             int height) {
         PairLikeFactory<K1, K2, Pair<K1, K2>> pairFactory =
@@ -472,7 +472,7 @@ public interface NBTTypes {
             AttrKeyValue<Map<T, W>> keyValue,
             List<T> keyBound,
             NBTType<W> valueType,
-            WidgetFactory<T> keyWidget,
+            WidgetGenerator<T> keyWidget,
             int x,
             int y,
             int dx,
@@ -501,12 +501,7 @@ public interface NBTTypes {
     public static <W> void openListModifyScreen(
             AttrKeyValue<List<W>> keyValue, NBTType<W> type, Supplier<W> supplier, int listWidth, int listHeight) {
         ScreenAccess.of(new NBTListModifyScreen<>(
-                        keyValue,
-                        type,
-                        supplier,
-                        (lst) -> keyValue.valueChangeInternal(null, lst),
-                        listWidth,
-                        listHeight))
+                        keyValue, type, supplier, (lst) -> keyValue.accept(lst), listWidth, listHeight))
                 .openFromCurrent();
     }
 
@@ -514,11 +509,11 @@ public interface NBTTypes {
             AttrKeyValue<Map<T, W>> keyValue,
             List<T> bound,
             NBTType<W> type,
-            WidgetFactory<T> keyWidget,
+            WidgetGenerator<T> keyWidget,
             int keyLabelWidth,
             int listWidth,
             int listHeight) {
-        Map<T, W> twMap = keyValue.getOriginValue();
+        Map<T, W> twMap = keyValue.get();
         boolean add = false;
         for (var re : bound) {
             if (!twMap.containsKey(re)) {
@@ -528,16 +523,10 @@ public interface NBTTypes {
             }
         }
         if (add) {
-            keyValue.valueChangeInternal(null, twMap);
+            keyValue.accept(twMap);
         }
         NBTBoundedListScreen<T, W> listModifyScreenImmutable = new NBTBoundedListScreen<>(
-                keyValue,
-                type,
-                keyWidget,
-                (map) -> keyValue.valueChangeInternal(null, map),
-                keyLabelWidth,
-                listWidth,
-                listHeight);
+                keyValue, type, keyWidget, (map) -> keyValue.accept(map), keyLabelWidth, listWidth, listHeight);
         ScreenAccess.of(listModifyScreenImmutable).openFromCurrent();
     }
 

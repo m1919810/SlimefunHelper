@@ -15,7 +15,9 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.combat.TargetSelector;
 import me.matl114.hacks.modules.interact.Interact;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.config.*;
+import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.move.AdjustmentSchedular;
 import me.matl114.hacks.utils.move.PathingSchedular;
 import me.matl114.hacks.utils.move.goal.*;
@@ -120,7 +122,7 @@ public class AutoLibrarian extends BaseModule {
     @Override
     public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
         super.addCustomWidgets(acceptor, dx, dy, dblank);
-        acceptor.accept(createTitleLabel("widget.interact.interact-all.use-argument", 0, dblank, dx, dy));
+        acceptor.accept(createTitle("widget.interact.interact-all.use-argument", 0, dblank, dx, dy));
         if (mc.getNetworkHandler() != null) {
             acceptor.accept(createExecuteButton(
                     "widget.auto-librarian.set-min-price",
@@ -332,7 +334,8 @@ public class AutoLibrarian extends BaseModule {
                         InventoryUtils.findPlayerItem(s -> s.isOf(Items.LECTERN), true, false);
                 if (findStack != null) {
                     noLecternNotify = false;
-                    Runnable callback = InvExtra.INSTANCE.swapInventoryIndexToHand(findStack.index());
+                    Runnable callback =
+                            InvExtra.INSTANCE.swapItemToHand(findStack.index(), false, GhostHandMode.INV_SWAP);
                     if (callback != null) {
                         Direction direction = MathUtils.getHorizontalFacing(
                                 targetWorkspace.toCenterPos().subtract(targetVillager.getPos()));

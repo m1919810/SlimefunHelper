@@ -22,13 +22,13 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 public interface AttrKeyValues {
-    public static final AttrKeyValue.CustomWidgetFactory<Boolean> BOOLEAN_WIDGET_FACTORY = (s, x, y, inputDx, dy) -> {
+    public static final AttrKeyValue.CustomWidgetGenerator<Boolean> BOOLEAN_WIDGET_FACTORY = (s, x, y, inputDx, dy) -> {
         return ExecutableWidget.instance(x, y, dy, dy)
                 .setElementHandler(IconElement.statedGuiPredicate(
                         ButtonElement.BUTTON,
                         ButtonElement.BUTTON_INACTIVE,
-                        ButtonAction.run(() -> s.valueChange(s, String.valueOf(!s.getOriginValue()))),
-                        (bl) -> s.getOriginValue()));
+                        ButtonAction.run(() -> s.setInput(String.valueOf(!s.get()))),
+                        (bl) -> s.get()));
     };
     public static WrapperFactory<String, Boolean> BOOL_FACTORY = WrapperFactory.of(
             (s) -> {

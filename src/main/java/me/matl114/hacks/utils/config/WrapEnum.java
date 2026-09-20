@@ -99,7 +99,7 @@ public class WrapEnum<T extends ConfigEnum> implements NBTParsable<WrapEnum<T>> 
                 "wrapenum",
                 (Codec) Codec.STRING.comapFlatMap(WrapEnum::fromString, WrapEnum::asString),
                 (s, x, y, dx, dy) -> {
-                    WrapEnum<T> wrapEnum = s.getOriginValue();
+                    WrapEnum<T> wrapEnum = s.get();
                     if (!wrapEnum.resolved) {
                         wrapEnum.tryResolve();
                     }

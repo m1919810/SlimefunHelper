@@ -42,9 +42,9 @@ public class DefaultedKeyValueInputWidget<W> extends KeyValueInputWidget<W> {
         ExecutableWidget.instance(this.dkey + this.dblank + this.dvalue + 1, 1, dy - 2, dy - 2)
                 .setElementHandler(new ResetButtonElement(
                         () -> this.reference.isPresent()
-                                && !Objects.equals(this.keyValueHolder.getOriginValue(), this.reference.get()),
+                                && !Objects.equals(this.keyValueHolder.get(), this.reference.get()),
                         () -> {
-                            this.reference.ifPresent(w -> this.keyValueHolder.valueChangeInternal(null, w));
+                            this.reference.ifPresent(w -> this.keyValueHolder.accept(w));
                         }))
                 .addToSub(this);
     }

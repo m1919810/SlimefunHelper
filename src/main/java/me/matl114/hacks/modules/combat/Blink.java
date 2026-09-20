@@ -29,7 +29,6 @@ import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.projectile.FireworkRocketEntity;
-import net.minecraft.network.NetworkSide;
 import net.minecraft.network.packet.PacketType;
 import net.minecraft.network.packet.PlayPackets;
 import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
@@ -108,7 +107,7 @@ public class Blink extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(PacketManager.getPacketQueueEvent().getChannel(NetworkSide.SERVERBOUND), this::onPacketQueue);
+        registerListener(PacketManager.getPacketQueueOutEvent(), this::onPacketQueue);
         registerListener(PacketManager.getQueueShutdownEvent(), this::onShutdown);
         registerListener(Listener.getPostTick(), this::onTick);
         registerListener(Listener.getServerLeavePoint(), this::onDisconnect);

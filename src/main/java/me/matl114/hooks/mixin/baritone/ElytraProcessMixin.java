@@ -138,7 +138,16 @@ public abstract class ElytraProcessMixin {
         return true;
     }
 
-    @Inject(method = "onTick", at = @At("HEAD"), cancellable = true, require = 0, remap = false)
+    @Inject(
+            method = "onTick",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/client/network/ClientPlayerEntity;isFallFlying()Z",
+                            ordinal = 1),
+            cancellable = true,
+            require = 0,
+            remap = false)
     private void hookPauseElytraProcess(boolean par1, boolean par2, CallbackInfoReturnable<PathingCommand> cir) {
         if (BaritoneFix.INSTANCE.shouldPauseBaritoneElytra()) {
             cir.setReturnValue(new PathingCommand(null, PathingCommandType.REQUEST_PAUSE));

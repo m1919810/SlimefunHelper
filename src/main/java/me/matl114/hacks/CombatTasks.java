@@ -6,6 +6,7 @@ import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.combat.*;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.utils.*;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.MinecraftClient;
@@ -244,6 +245,9 @@ public class CombatTasks {
     private static BackTrack backTrack;
 
     @Getter
+    private static AutoThrow autoThrow;
+
+    @Getter
     private static PearlFly pearlFly;
 
     @Getter
@@ -257,6 +261,12 @@ public class CombatTasks {
 
     @Getter
     private static AnchorAura anchorAura;
+
+    @Getter
+    private static AntiReplenish antiReplenish;
+
+    @Getter
+    private static AntiCrystal antiCrystal;
 
     @Getter
     private static ElytraBot elytraBot;
@@ -294,11 +304,14 @@ public class CombatTasks {
         spearAttack = new SpearAttack().register(m);
         blink = new Blink().register(m);
         backTrack = new BackTrack().register(m);
+        autoThrow = new AutoThrow().register(m);
         pearlFly = new PearlFly().register(m);
         autoCity = new AutoCity().register(m);
         crystalAura = new CrystalAura().register(m);
         autoWeb = new AutoWeb().register(m);
         anchorAura = new AnchorAura().register(m);
+        antiReplenish = new AntiReplenish().register(m);
+        antiCrystal = new AntiCrystal().register(m);
         elytraBot = new ElytraBot().register(m);
         // transactionBlocker = new TransactionBlocker().register(m);
     }

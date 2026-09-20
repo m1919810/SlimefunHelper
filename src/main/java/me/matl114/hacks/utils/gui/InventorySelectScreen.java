@@ -3,9 +3,9 @@ package me.matl114.hacks.utils.gui;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 import me.matl114.accessors.gui.ScreenAccess;
-import me.matl114.accessors.interfaces.TileInventory;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.GenericBackGroundScreen;
 import me.matl114.gui.basic.*;
@@ -16,7 +16,6 @@ import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.modules.inv.ChestHistory;
 import me.matl114.utils.InventoryUtils;
-import me.matl114.utils.WorldUtils;
 import me.matl114.utils.config.ValueAccessor;
 import me.matl114.utils.world.ContainerPosition;
 import net.minecraft.client.MinecraftClient;
@@ -93,11 +92,12 @@ public class InventorySelectScreen extends GenericBackGroundScreen {
                         .withInputHandler(InputHandler.isLeft((l) -> {
                             if (l) {
                                 openInventoryViewScreen(screen);
-                            } else if (screen instanceof TileInventory tile
-                                    && !tile.isVirtual()
-                                    && WorldUtils.areWorldEquals(
-                                            MinecraftClient.getInstance().world, tile.getWorld())) {
-                                ContainerPosition pos = tile.getContainerPosition();
+                            } else if (screen.getContainerPosition().isPresent()
+                                    && Objects.equals(
+                                            MinecraftClient.getInstance().world.getRegistryKey(),
+                                            screen.getContainerPosition().get().world())) {
+                                ContainerPosition pos =
+                                        screen.getContainerPosition().get();
                                 RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
                                         120,
                                         new RenderTasks.BoxObject(pos.getBoundingBox(), Color.GREEN),

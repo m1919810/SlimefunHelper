@@ -20,6 +20,8 @@ import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.config.WrapColor;
+import me.matl114.hacks.utils.enums.GhostHandMode;
+import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
@@ -59,9 +61,8 @@ public class AutoSlab extends BaseModule {
             .build();
 
     public List<Vec3i> blocksSeq = new ArrayList<>();
-    public final EnumRef<Configs.LegalInteractMode> mode = builder(
-                    autoPlate.add("mode"), Configs.LegalInteractMode.class)
-            .defaultValue(Configs.LegalInteractMode.NONE)
+    public final EnumRef<LegalInteractMode> mode = builder(autoPlate.add("mode"), LegalInteractMode.class)
+            .defaultValue(LegalInteractMode.NONE)
             .build();
 
     public final FlagRef airplace = flagBuilder(autoPlate.add("air-place")).build();
@@ -140,8 +141,7 @@ public class AutoSlab extends BaseModule {
     public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
         super.addCustomWidgets(acceptor, dx, dy, dblank);
         acceptor.accept(WidgetUtils.withCondition(
-                createTitleLabel("widget.block-rotate.yaw-deceive.use-argument", 0, dblank, dx, dy),
-                useBlockRotate::get));
+                createTitle("widget.block-rotate.yaw-deceive.use-argument", 0, dblank, dx, dy), useBlockRotate::get));
     }
 
     public void initializeMap() {
@@ -250,7 +250,7 @@ public class AutoSlab extends BaseModule {
                         && InteractExtra.INSTANCE.isWithinInteractRange(
                                 mc.player.getPos(), hitResult.val().getBlockPos(), range.get())
                         && InteractUtils.getBlockPlacement(bl, mc.player, mc.world, hitResult.val()) != null) {
-                    Runnable runnable = InvExtra.INSTANCE.swapInventoryIndexToHand(entry.index());
+                    Runnable runnable = InvExtra.INSTANCE.swapItemToHand(entry.index(), false, GhostHandMode.INV_SWAP);
                     if (runnable == null) break;
                     stack.add(runnable);
                     if (useBlockRotate.get()) {
@@ -277,7 +277,7 @@ public class AutoSlab extends BaseModule {
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
-        mode.set(Configs.LegalInteractMode.getFromPreset(event.context.getValue()));
+        mode.set(LegalInteractMode.getFromPreset(event.context.getValue()));
         airplace.set(!event.context.getValue().hasAC());
     }
 }

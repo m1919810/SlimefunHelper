@@ -18,7 +18,7 @@ import net.minecraft.registry.Registry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-public interface AttrKeyValue<T> extends KeyValue<T>, PropertyTracker<Object, String> {
+public interface AttrKeyValue<T> extends KeyValue<T> {
 
     /**
      * get the stringify factory,
@@ -31,20 +31,11 @@ public interface AttrKeyValue<T> extends KeyValue<T>, PropertyTracker<Object, St
      * @return
      */
     public WrapperFactory<String, T> getStringifyFactory();
-    /**
-     * get the string value
-     * @return
-     */
-    public String getValue();
 
     public boolean validateAndUpdate();
 
-    default String updateValue(T val) {
+    default String toInput(T val) {
         return getStringifyFactory().get(val);
-    }
-
-    default void valueChangeInternal(Object selectable, T val) {
-        valueChange(selectable, updateValue(val));
     }
 
     /**
@@ -71,7 +62,7 @@ public interface AttrKeyValue<T> extends KeyValue<T>, PropertyTracker<Object, St
      * create the input widget to modify the Attr
      * @return
      */
-    public CustomWidgetFactory<T> getCustomWidgetFactory();
+    public CustomWidgetGenerator<T> getCustomWidgetFactory();
 
     public <W extends AttrKeyValue<T>> W copy();
 
@@ -134,31 +125,31 @@ public interface AttrKeyValue<T> extends KeyValue<T>, PropertyTracker<Object, St
         return new BaseAttrKeyValue<>(key, id, IDENTIFIER_FACTORY);
     }
 
-    public static interface CustomWidgetFactory<T> extends WidgetFactory<AttrKeyValue<T>> {
+    public static interface CustomWidgetGenerator<T> extends WidgetGenerator<AttrKeyValue<T>> {
         // public DrawableWidget generateWidget(AttrKeyValue<T> kv, int x, int y, int dx, int dy);
 
-        public static <T> CustomWidgetFactory<T> cutSizeXLeft(CustomWidgetFactory<T> factory, double portion) {
+        public static <T> CustomWidgetGenerator<T> cutSizeXLeft(CustomWidgetGenerator<T> factory, double portion) {
             return (s1, x, y, dx, dy) -> {
                 return factory.generateWidget(s1, x, y, (int) (dx * portion), dy);
             };
         }
 
-        public static <T> UnaryOperator<CustomWidgetFactory<T>> cutSizeXLeft(double portion) {
+        public static <T> UnaryOperator<CustomWidgetGenerator<T>> cutSizeXLeft(double portion) {
             return (w) -> cutSizeXLeft(w, portion);
         }
 
-        public static <T> CustomWidgetFactory<T> cutSizeXRight(CustomWidgetFactory<T> factory, double portion) {
+        public static <T> CustomWidgetGenerator<T> cutSizeXRight(CustomWidgetGenerator<T> factory, double portion) {
             return (s1, x, y, dx, dy) -> {
                 int val = (int) (dx * portion) + 1;
                 return factory.generateWidget(s1, x + val, y, dx - val, dy);
             };
         }
 
-        public static <T> UnaryOperator<CustomWidgetFactory<T>> cutSizeXRight(double portion) {
+        public static <T> UnaryOperator<CustomWidgetGenerator<T>> cutSizeXRight(double portion) {
             return (w) -> cutSizeXRight(w, portion);
         }
 
-        public static <T> UnaryOperator<CustomWidgetFactory<T>> withLabel(Text label) {
+        public static <T> UnaryOperator<CustomWidgetGenerator<T>> withLabel(Text label) {
             return (w) -> {
                 return (s111, x, y, dx, dy) -> {
                     SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, dx, dy);

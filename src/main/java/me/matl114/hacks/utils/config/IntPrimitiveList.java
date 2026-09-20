@@ -45,8 +45,8 @@ public class IntPrimitiveList extends PrimitiveList<Integer> {
                                 .generateValueWidget(0, 0, dx - dy, dy))
                         .addDrawableChild(WidgetUtils.createOpenListModifyScreenButton(
                                 () -> new IntListAttrKeyValue(
-                                        s.getKeyName(), s.getOriginValue().list(), SIMPLIFIED_STRINGIFY_FACTORY),
-                                (lst) -> s.valueChangeInternal(null, new IntPrimitiveList(lst)),
+                                        s.getKeyName(), s.get().list(), SIMPLIFIED_STRINGIFY_FACTORY),
+                                (lst) -> s.accept(new IntPrimitiveList(lst)),
                                 dx - dy,
                                 0,
                                 dy,

@@ -5,7 +5,7 @@ import java.util.*;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import me.matl114.utils.EntityUtils;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.utils.commands.interruption.*;
 import me.matl114.utils.commands.params.ArgumentInputStream;
 import me.matl114.utils.commands.params.ArgumentReader;

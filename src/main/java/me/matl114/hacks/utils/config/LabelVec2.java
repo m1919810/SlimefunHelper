@@ -32,7 +32,7 @@ public record LabelVec2(String xLabel, String yLabel, Vec2 data) implements NBTP
                             Vec2.TYPE.typeCodec().fieldOf("data").forGetter(LabelVec2::data))
                     .apply(s, LabelVec2::new)),
             (s, x, y, dx, dy) -> {
-                LabelVec2 originalLabel = s.getOriginValue();
+                LabelVec2 originalLabel = s.get();
                 SubScreenWidget subScreenWidget = SubScreenWidget.instance(x, y, dx, dy);
                 int half = dx / 2;
                 WrapperFactory<Vec2, LabelVec2> wrapper = WrapperFactory.of(originalLabel::withData, LabelVec2::data);
@@ -46,7 +46,7 @@ public record LabelVec2(String xLabel, String yLabel, Vec2 data) implements NBTP
                                         .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
                                                 originalLabel.xLabel() + ".tooltips", "")))))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(
-                                        s, pairFactory.asFirstWrapper(s::getOriginValue), NBTTypes.DOUBLE_TYPE)
+                                        s, pairFactory.asFirstWrapper(s::get), NBTTypes.DOUBLE_TYPE)
                                 .generateValueWidget(2 * dy, 0, half - 2 * dy, dy))
                         .addDrawableChild(DisplayWidget.instance(half, 0, 2 * dy, dy)
                                 .setRenderHandler(new ButtonElement(
@@ -56,7 +56,7 @@ public record LabelVec2(String xLabel, String yLabel, Vec2 data) implements NBTP
                                         .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
                                                 originalLabel.yLabel() + ".tooltips", "")))))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(
-                                        s, pairFactory.asSecondWrapper(s::getOriginValue), NBTTypes.DOUBLE_TYPE)
+                                        s, pairFactory.asSecondWrapper(s::get), NBTTypes.DOUBLE_TYPE)
                                 .generateValueWidget(half + 2 * dy, 0, half - 2 * dy, dy));
             },
             new LabelVec2("", "", new Vec2(0, 0)));

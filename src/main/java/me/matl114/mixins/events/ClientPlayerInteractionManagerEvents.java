@@ -22,7 +22,6 @@ import net.minecraft.client.recipebook.ClientRecipeBook;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.Packet;
 import net.minecraft.recipe.NetworkRecipeId;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.stat.StatHandler;
@@ -62,24 +61,37 @@ public abstract class ClientPlayerInteractionManagerEvents {
                             shift = At.Shift.BEFORE),
             cancellable = true)
     private void onCancelSend(PlayerEntity player, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
-        Event<UseItem> handEvent = new Event<>(new UseItem(ActionResult.PASS, hand), true, true);
+        Event<UseItem> handEvent =
+                new Event<>(new UseItem(ActionResult.PASS, hand, player.getStackInHand(hand)), true, true);
         Listener.getPrePlayerUseItem().handleValue(handEvent);
         if (handEvent.isCancelled()) {
             cir.setReturnValue(handEvent.context.actionResult());
         }
     }
 
-    @Inject(method = "method_41929", at = @At("RETURN"))
-    public void onInteractItem(
-            Hand hand,
-            PlayerEntity playerEntity,
-            MutableObject<ActionResult> mutableObject,
-            int sequence,
-            CallbackInfoReturnable<Packet> cir) {
-        ActionResult acc = mutableObject.getValue();
-        Event<UseItem> eventResult = new Event<>(new UseItem(acc, hand), false, true);
-        Listener.getPostPlayerUseItem().handleValue(eventResult);
-        mutableObject.setValue(eventResult.context.actionResult());
+    @WrapOperation(
+            method = "interactItem",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/network/ClientPlayerInteractionManager;sendSequencedPacket(Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/client/network/SequencedPacketCreator;)V"))
+    private void onInteractItemCapture(
+            ClientPlayerInteractionManager instance,
+            ClientWorld world,
+            SequencedPacketCreator packetCreator,
+            Operation<Void> original,
+            @Local(argsOnly = true) Hand hand,
+            @Local MutableObject<ActionResult> mutableObject) {
+        ItemStack stackCopy = client.player.getStackInHand(hand).copy();
+        original.call(instance, world, (SequencedPacketCreator) (seq) -> {
+            var packet = packetCreator.predict(seq);
+            ActionResult acc = mutableObject.getValue();
+            Event<UseItem> eventResult = new Event<>(new UseItem(acc, hand, stackCopy), false, true);
+            Listener.getPostPlayerUseItem().handleValue(eventResult);
+            mutableObject.setValue(eventResult.context.actionResult());
+            return packet;
+        });
     }
 
     @Inject(method = "interactBlock", at = @At(value = "HEAD"), cancellable = true)
@@ -89,8 +101,9 @@ public abstract class ClientPlayerInteractionManagerEvents {
             BlockHitResult hitResult,
             CallbackInfoReturnable<ActionResult> cir,
             @Local(argsOnly = true) LocalRef<BlockHitResult> hand2) {
+        ItemStack currentStack = player.getStackInHand(hand);
         Event<UseItemOnBlock> blockHitResultEvent =
-                new Event<>(new UseItemOnBlock(hitResult, ActionResult.SUCCESS, false, hand), true, true);
+                new Event<>(new UseItemOnBlock(hitResult, ActionResult.SUCCESS, false, hand, currentStack), true, true);
         Listener.getPrePlayerUseItemAtBlock().handleValue(blockHitResultEvent);
         if (blockHitResultEvent.isCancelled()) {
             cir.setReturnValue(blockHitResultEvent.context.actionResult());
@@ -139,8 +152,8 @@ public abstract class ClientPlayerInteractionManagerEvents {
         });
         ActionResult acc = actionResult.getValue();
         Event<UseItemOnBlock> eventResult =
-                new Event<>(new UseItemOnBlock(hitResult, acc, placeBlock.getValue(), hand), false, true);
-        Listener.getPostPlayerUseItemAtBlock().handleValue(eventResult);
+                new Event<>(new UseItemOnBlock(hitResult, acc, placeBlock.getValue(), hand, stackCopy), false, true);
+        Listener.getPostPlayerUseItemOnBlock().handleValue(eventResult);
         actionResult.setValue(eventResult.context.actionResult());
     }
 

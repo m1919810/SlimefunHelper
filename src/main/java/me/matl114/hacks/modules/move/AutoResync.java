@@ -11,13 +11,13 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.utils.Debug;
-import me.matl114.utils.EntityUtils;
 import me.matl114.utils.MathUtils;
 import net.minecraft.entity.player.PlayerPosition;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
@@ -105,6 +105,7 @@ public class AutoResync extends BaseModule {
     public Vec2f restoreRot = null;
 
     public void onSetBack(Event<PlayerPositionLookS2CPacket> event) {
+        if (checkNull()) return;
         if (event.isCancelled()) return;
         if (mc.player == null) return;
         // just switch world for no more than 10 second, it is a game join, do not apply any resync
@@ -188,6 +189,7 @@ public class AutoResync extends BaseModule {
     }
 
     public void onPreSetBack(Event<PlayerPositionLookS2CPacket> event) {
+        if (checkNull()) return;
         if (autoResyncRot.get() && !modifyPacketRot.get()) {
             restoreRot = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
             mc.player.setPitch(PlayerStateManager.INSTANCE.lastPitch);
@@ -196,6 +198,7 @@ public class AutoResync extends BaseModule {
     }
 
     public void onPreRotate(Event<PlayerRotationS2CPacket> eventRotate) {
+        if (checkNull()) return;
         if (autoResyncRot.get()) {
             if (modifyPacketRot.get()) {
                 eventRotate.cancel();
@@ -208,6 +211,8 @@ public class AutoResync extends BaseModule {
     }
 
     public void onPostSetBack(Event<PlayerPositionLookS2CPacket> event) {
+        if (checkNull()) return;
+        if (checkNull()) return;
         if (restoreRot != null) {
             EntityUtils.setEntityPitchSafe(mc.player, restoreRot.x);
             PlayerStateManager.setPlayerYawSafe(mc.player, restoreRot.y);
@@ -218,6 +223,7 @@ public class AutoResync extends BaseModule {
     }
 
     public void onPostRotate(Event<PlayerRotationS2CPacket> eventRotate) {
+        if (checkNull()) return;
         if (restoreRot != null) {
             EntityUtils.setEntityPitchSafe(mc.player, restoreRot.x);
             PlayerStateManager.setPlayerYawSafe(mc.player, restoreRot.y);

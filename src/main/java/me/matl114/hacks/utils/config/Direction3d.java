@@ -26,4 +26,9 @@ public enum Direction3d implements ConfigEnum {
     public static Direction3d from(Direction delegate) {
         return ALL[delegate.ordinal()];
     }
+
+    @Override
+    public String getConfigEnumType() {
+        return "direction3d";
+    }
 }

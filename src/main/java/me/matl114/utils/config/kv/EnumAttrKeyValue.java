@@ -53,12 +53,12 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
     Class<T> identifier;
 
     public EnumAttrKeyValue(String key, T value, Class<T> clazz, Map<String, T> finiteValueMap) {
-        super(key, value, (CustomWidgetFactory<T>) ENUM_WIDGET_FACTORY, createFiniteMapLookup(finiteValueMap));
+        super(key, value, (CustomWidgetGenerator<T>) ENUM_WIDGET_FACTORY, createFiniteMapLookup(finiteValueMap));
         this.finiteValueMap = finiteValueMap;
         this.identifier = clazz;
     }
 
-    public static final CustomWidgetFactory<?> ENUM_WIDGET_FACTORY = (s, x, y, dx, dy) -> {
+    public static final CustomWidgetGenerator<?> ENUM_WIDGET_FACTORY = (s, x, y, dx, dy) -> {
         if (s instanceof EnumAttrKeyValue attrKeyValue) {
             return attrKeyValue.generateSwitchingButton(x, y, dx, dy, Consumers.nop());
         } else {
@@ -66,7 +66,7 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
         }
     };
 
-    public static <T extends Enum<T>> CustomWidgetFactory<T> createEnumWidgetFactory(Class<T> enumClass) {
+    public static <T extends Enum<T>> CustomWidgetGenerator<T> createEnumWidgetFactory(Class<T> enumClass) {
 
         Map<String, T> map;
         if (ConfigEnum.class.isAssignableFrom(enumClass)) {
@@ -78,7 +78,7 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
         return createFiniteLookupWidgetFactory(map);
     }
 
-    public static <T> CustomWidgetFactory<T> createFiniteLookupWidgetFactory(Map<String, T> map) {
+    public static <T> CustomWidgetGenerator<T> createFiniteLookupWidgetFactory(Map<String, T> map) {
         Preconditions.checkArgument(!map.isEmpty());
         Class<?> enumClass = map.values().iterator().next().getClass();
         List<Pair<String, Supplier<Text>>> flattenMap;
@@ -129,7 +129,7 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
         if (choices > 0) {
             AtomicInteger integer = new AtomicInteger();
             Runnable kvUpdater = () -> {
-                String val = ex.getValue();
+                String val = ex.getInput();
                 int index = -1;
                 for (int i = 0; i < choices; ++i) {
                     if (Objects.equals(val, flattenMap.get(i).getFirst())) {
@@ -138,17 +138,17 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                     }
                 }
                 if (index == -1) {
-                    ex.valueChange(ex, flattenMap.get(0).getFirst());
+                    ex.setInput(flattenMap.get(0).getFirst());
                     index = 0;
                 } else {
-                    ex.valueChange(ex, flattenMap.get(index).getFirst());
+                    ex.setInput(flattenMap.get(index).getFirst());
                 }
                 integer.set(index);
             };
             kvUpdater.run();
             SubScreenWidget subScreen = new SubScreenWidget(x, y, dx, dy);
             Runnable indexUpdater = () -> {
-                ex.valueChange(ex, flattenMap.get(integer.get()).getFirst());
+                ex.setInput(flattenMap.get(integer.get()).getFirst());
                 runnable.run();
             };
             boolean needSwitch = dx > 2 * dy;

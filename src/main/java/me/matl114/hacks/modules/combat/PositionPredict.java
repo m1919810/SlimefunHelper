@@ -21,6 +21,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.entity.EntityMovementStatus;
 import me.matl114.hacks.utils.entity.Predictor;
+import me.matl114.hacks.utils.enums.PredictionMode;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
@@ -46,7 +47,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
-import org.jetbrains.annotations.ApiStatus;
 
 public class PositionPredict extends BaseModule {
     public static PositionPredict INSTANCE;
@@ -57,23 +57,20 @@ public class PositionPredict extends BaseModule {
         super("PositionPredict");
         INSTANCE = this;
     }
-    //
-    //    public final FlagRef render = flagBuilder(attack.add("render-predict-pos"))
-    //        .build();
 
     public final NBTRef<PredictArgument> attackPredictArgument = builder(
                     attack.add("attack-predict-argument"), PredictArgument.class)
-            .defaultValue(new PredictArgument(2, 5, Mode.NO_PREDICT))
+            .defaultValue(new PredictArgument(2, 5, PredictionMode.NO_PREDICT))
             .build();
 
     public final NBTRef<PredictArgument> flyPredictArgument = builder(
                     attack.add("fly-predict-argument"), PredictArgument.class)
-            .defaultValue(new PredictArgument(2, 5, Mode.PREDICTOR_NV))
+            .defaultValue(new PredictArgument(2, 5, PredictionMode.PREDICTOR_NV))
             .build();
 
     public final NBTRef<PredictArgument> spearPredictArgument = builder(
                     attack.add("spear-predict-argument"), PredictArgument.class)
-            .defaultValue(new PredictArgument(2, 5, Mode.PREDICTOR_NV))
+            .defaultValue(new PredictArgument(2, 5, PredictionMode.PREDICTOR_NV))
             .build();
 
     public final FlagRef enableNoShield = builder(attBot.add("exact-tp-anti-shield"), Boolean.class)
@@ -284,24 +281,8 @@ public class PositionPredict extends BaseModule {
         }
     }
 
-    public enum Mode implements ConfigEnum {
-        NO_PREDICT,
-        LINEAR,
-        QUADRATIC,
-        PREDICTOR_NV,
-        @ApiStatus.Experimental
-        PREDICTOR_ROTATION,
-        @ApiStatus.Experimental
-        PREDICTOR_ACCELERATE;
-
-        @Override
-        public String getConfigEnumType() {
-            return "predict_mode";
-        }
-    }
-
     @With
-    public static record PredictArgument(double ticksLater, int ticksHistory, Mode mode)
+    public static record PredictArgument(double ticksLater, int ticksHistory, PredictionMode mode)
             implements NBTParsable<PredictArgument> {
         public static NBTType<PredictArgument> TYPE = new NBTType<>(
                 "predictargument",
@@ -311,17 +292,19 @@ public class PositionPredict extends BaseModule {
                                         .fieldOf("ticks")
                                         .forGetter(PredictArgument::ticksLater),
                                 Codec.INT.fieldOf("history").forGetter(PredictArgument::ticksHistory),
-                                CodecUtils.enumCodec(Mode.class).fieldOf("mode").forGetter(PredictArgument::mode))
+                                CodecUtils.enumCodec(PredictionMode.class)
+                                        .fieldOf("mode")
+                                        .forGetter(PredictArgument::mode))
                         .apply(s, PredictArgument::new)),
                 (s, x, y, dx, dy) -> {
                     SubScreenWidget subScreenWidget = SubScreenWidget.instance(x, y, dx, dy);
                     int half = dx / 4;
                     WrapperFactory<Double, PredictArgument> firstWrapper =
-                            WrapperFactory.of((d) -> s.getOriginValue().withTicksLater(d), PredictArgument::ticksLater);
-                    WrapperFactory<Integer, PredictArgument> secondWrapper = WrapperFactory.of(
-                            (d) -> s.getOriginValue().withTicksHistory(d), PredictArgument::ticksHistory);
-                    WrapperFactory<Mode, PredictArgument> thirdWrapper =
-                            WrapperFactory.of((d) -> s.getOriginValue().withMode(d), PredictArgument::mode);
+                            WrapperFactory.of((d) -> s.get().withTicksLater(d), PredictArgument::ticksLater);
+                    WrapperFactory<Integer, PredictArgument> secondWrapper =
+                            WrapperFactory.of((d) -> s.get().withTicksHistory(d), PredictArgument::ticksHistory);
+                    WrapperFactory<PredictionMode, PredictArgument> thirdWrapper =
+                            WrapperFactory.of((d) -> s.get().withMode(d), PredictArgument::mode);
 
                     return subScreenWidget
                             .addDrawableChild(DisplayWidget.instance(0, 0, dy, dy)
@@ -352,11 +335,11 @@ public class PositionPredict extends BaseModule {
                             .addDrawableChild(new TypeConvertAttrKeyValue<>(
                                             s,
                                             thirdWrapper,
-                                            EnumAttrKeyValue.createEnumWidgetFactory(Mode.class),
-                                            WrapperFactory.of(Mode::valueOf, Mode::name))
+                                            EnumAttrKeyValue.createEnumWidgetFactory(PredictionMode.class),
+                                            WrapperFactory.of(PredictionMode::valueOf, PredictionMode::name))
                                     .generateValueWidget(2 * half + dy, 0, 2 * half - dy, dy));
                 },
-                new PredictArgument(2, 5, Mode.NO_PREDICT));
+                new PredictArgument(2, 5, PredictionMode.NO_PREDICT));
 
         @Override
         public NBTType<PredictArgument> type() {
@@ -380,7 +363,7 @@ public class PositionPredict extends BaseModule {
             return floorPos.multiply(floor + 1 - ticksLater).add(roofPos.multiply(ticksLater - floor));
         }
 
-        public Vec3d predictWithExtraTicks(Entity entity, int ticks) {
+        public Vec3d predictWithExtraTicks(Entity entity, double ticks) {
             return predict0(entity, ticksLater + ticks);
         }
     }

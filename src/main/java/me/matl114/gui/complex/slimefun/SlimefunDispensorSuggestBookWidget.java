@@ -423,7 +423,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
             DrawableWidget widget = IntFastInputWidget.instance(
                             integerAttrKeyValue,
                             (attr) -> {
-                                intCallback.accept((int) attr.getOriginValue());
+                                intCallback.accept((int) attr.get());
                                 // cancel
 
                             },
