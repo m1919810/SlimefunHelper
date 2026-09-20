@@ -99,6 +99,10 @@ public class InteractExtra extends BaseModule {
     public final IntRef holdUseStartTick =
             intBuilder(interactFix.add("hold-use-start-tick")).defaultValue(4).build();
 
+    public final FlagRef clientUsingStateFix = builder(interactFix.add("client-using-state-fix"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     @Override
     public void registerAll() {
         super.registerAll();

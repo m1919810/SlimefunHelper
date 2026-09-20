@@ -18,6 +18,7 @@ import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.inventory.*;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.component.DataComponentTypes;
@@ -29,7 +30,9 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.AbstractNbtNumber;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.screen.CraftingScreenHandler;
 import net.minecraft.screen.GenericContainerScreenHandler;
+import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Hand;
@@ -115,6 +118,12 @@ public class InventoryUtils {
     public static Stream<ItemStack> streamInventory(Inventory inv) {
         return IntStream.range(0, inv instanceof PlayerInventory pinv ? getPlayerInvSize() : inv.size())
                 .mapToObj(inv::getStack);
+    }
+
+    public static boolean isContainer(ScreenHandler handler) {
+        return !(handler instanceof CreativeInventoryScreen.CreativeScreenHandler)
+                && !(handler instanceof PlayerScreenHandler)
+                && !(handler instanceof CraftingScreenHandler);
     }
 
     public static Inventory getTopInventory(HandledScreen<?> screen) {
@@ -206,11 +215,32 @@ public class InventoryUtils {
     }
 
     public static IndexEntry<ItemStack> findPlayerItem(
+            Predicate<ItemStack> predicate, int size, boolean doNotFSearchWhenOpenOtherScreen, boolean acceptEmpty) {
+        return findPlayerItem(predicate, size, doNotFSearchWhenOpenOtherScreen, acceptEmpty, true, false);
+    }
+
+    public static IndexEntry<ItemStack> findPlayerItem(
             Predicate<ItemStack> predicate,
             boolean doNotFSearchWhenOpenOtherScreen,
             boolean acceptEmpty,
             boolean handPriority) {
         return findPlayerItem(predicate, doNotFSearchWhenOpenOtherScreen, acceptEmpty, handPriority, false);
+    }
+
+    public static IndexEntry<ItemStack> findPlayerItem(
+            Predicate<ItemStack> predicate,
+            int size,
+            boolean doNotFSearchWhenOpenOtherScreen,
+            boolean acceptEmpty,
+            boolean handPriority,
+            boolean offHandPriority) {
+        return findPlayerInventory(
+                (val) -> predicate.test(val.val()),
+                size,
+                doNotFSearchWhenOpenOtherScreen,
+                acceptEmpty,
+                handPriority,
+                offHandPriority);
     }
 
     public static IndexEntry<ItemStack> findPlayerItem(
@@ -221,6 +251,7 @@ public class InventoryUtils {
             boolean offHandPriority) {
         return findPlayerInventory(
                 (val) -> predicate.test(val.val()),
+                getPlayerInvSize(),
                 doNotFSearchWhenOpenOtherScreen,
                 acceptEmpty,
                 handPriority,
@@ -229,11 +260,13 @@ public class InventoryUtils {
 
     public static IndexEntry<ItemStack> findPlayerInventory(
             Predicate<IndexEntry<ItemStack>> predicate, boolean doNotFSearchWhenOpenOtherScreen, boolean acceptEmpty) {
-        return findPlayerInventory(predicate, doNotFSearchWhenOpenOtherScreen, acceptEmpty, true, false);
+        return findPlayerInventory(
+                predicate, getPlayerInvSize(), doNotFSearchWhenOpenOtherScreen, acceptEmpty, true, false);
     }
 
     public static IndexEntry<ItemStack> findPlayerInventory(
             Predicate<IndexEntry<ItemStack>> predicate,
+            int searchTo,
             boolean doNotFSearchWhenOpenOtherScreen,
             boolean acceptEmpty,
             boolean handPriority,
@@ -266,7 +299,7 @@ public class InventoryUtils {
                         != mc.player.playerScreenHandler.syncId) {
             return result;
         }
-        for (var i = 0; i < getPlayerInvSize(); ++i) {
+        for (var i = 0; i < searchTo; ++i) {
             ItemStack stack = pinv.getStack(i);
             test = new IndexEntry<>(i, stack);
             if ((acceptEmpty || !stack.isEmpty()) && predicate.test(test)) {
@@ -331,8 +364,30 @@ public class InventoryUtils {
                 acceptEmpty);
     }
 
+    public static IndexEntry<ItemStack> findBestPlayerItem(
+            Function<ItemStack, Double> maxFunction,
+            int size,
+            boolean doNotFSearchWhenOpenOtherScreen,
+            boolean acceptEmpty) {
+        return findBestPlayerInventory(
+                s -> {
+                    return maxFunction.apply(s.val());
+                },
+                size,
+                doNotFSearchWhenOpenOtherScreen,
+                acceptEmpty);
+    }
+
     public static IndexEntry<ItemStack> findBestPlayerInventory(
             Function<IndexEntry<ItemStack>, Double> maxFunction,
+            boolean doNotFSearchWhenOpenOtherScreen,
+            boolean acceptEmpty) {
+        return findBestPlayerInventory(maxFunction, getPlayerInvSize(), doNotFSearchWhenOpenOtherScreen, acceptEmpty);
+    }
+
+    public static IndexEntry<ItemStack> findBestPlayerInventory(
+            Function<IndexEntry<ItemStack>, Double> maxFunction,
+            int searchTo,
             boolean doNotFSearchWhenOpenOtherScreen,
             boolean acceptEmpty) {
         // while player is open Screen
@@ -358,7 +413,7 @@ public class InventoryUtils {
         }
 
         Double currentValue;
-        for (var i = 0; i < getPlayerInvSize(); ++i) {
+        for (var i = 0; i < searchTo; ++i) {
             ItemStack stack = pinv.getStack(i);
             test = new IndexEntry<>(i, stack);
             if ((acceptEmpty || !stack.isEmpty()) && (currentValue = maxFunction.apply(test)) != null) {

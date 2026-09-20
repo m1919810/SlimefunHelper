@@ -2,6 +2,7 @@ package me.matl114.gui.complex.other;
 
 import java.util.function.Consumer;
 import me.matl114.gui.basic.RenderHandler;
+import me.matl114.utils.config.ValueAccessor;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -16,12 +17,36 @@ public class ChatLikeInputWidget extends TextFieldWidget {
     Consumer<String> callback;
     int messageHistoryIndex;
     String chatLastMessage = "";
+    ValueAccessor<Integer> xValue;
+    ValueAccessor<Integer> yValue;
 
     public ChatLikeInputWidget(
-            TextRenderer textRenderer, int x, int y, int width, int height, Consumer<String> enterCallback) {
-        super(textRenderer, x, y, width, height, Text.empty());
+            TextRenderer textRenderer,
+            ValueAccessor<Integer> xv,
+            ValueAccessor<Integer> yv,
+            int width,
+            int height,
+            Consumer<String> enterCallback) {
+        super(textRenderer, xv.getValue(), yv.getValue(), width, height, Text.empty());
+        this.xValue = xv;
+        this.yValue = yv;
         this.callback = enterCallback;
         this.setDrawsBackground(false);
+    }
+
+    @Override
+    public int getX() {
+        if (xValue == null) {
+            return super.getX();
+        }
+        return xValue.getValue();
+    }
+
+    public int getY() {
+        if (yValue == null) {
+            return super.getY();
+        }
+        return yValue.getValue();
     }
 
     private static final MinecraftClient mc = MinecraftClient.getInstance();

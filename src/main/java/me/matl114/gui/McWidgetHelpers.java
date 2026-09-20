@@ -1,14 +1,13 @@
 package me.matl114.gui;
 
-import java.util.Objects;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.basic.ColorProvider;
 import me.matl114.gui.basic.ContentDelegateWidget;
-import me.matl114.utils.config.AttrKeyValue;
-import me.matl114.utils.config.PropertyTracker;
+import me.matl114.gui.complex.other.ValueSyncTextFieldWidget;
+import me.matl114.utils.config.Value;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.screen.Screen;
@@ -22,11 +21,11 @@ public class McWidgetHelpers {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
 
     public static ContentDelegateWidget<EditBoxWidget> createMultiLineEditBox(
-            int x, int y, int dx, int dy, PropertyTracker<EditBoxWidget, String> valueTracker, String origin) {
+            int x, int y, int dx, int dy, Consumer<String> valueTracker, String origin) {
         return createEnhancedMultiLine(x, y, dx, dy, valueTracker, origin, null);
         //        EditBoxWidget widget = new EditBoxWidget(mc.textRenderer, x,y, dx, dy, Text.empty(), Text.empty());
         //        widget.setText(origin);
-        //        widget.setChangeListener((str)-> valueTracker.valueChange(widget, str));
+        //        widget.setChangeListener((str)-> valueTracker.valueChange(str));
         //        return new ContentDelegateWidget<>(0,0, 0,0)
         //            .setContentDelegate(widget);
     }
@@ -36,24 +35,24 @@ public class McWidgetHelpers {
             int y,
             int dx,
             int dy,
-            PropertyTracker<EditBoxWidget, String> valueTracker,
+            Consumer<String> valueTracker,
             String origin,
             ColorProvider boxColorProvider) {
         return createEnhancedMultiLine(x, y, dx, dy, valueTracker, origin, boxColorProvider);
         //        EditBoxWidget widget = new EditBoxWidget(mc.textRenderer, x,y, dx, dy, Text.empty(), Text.empty());
         //        widget.setText(origin);
-        //        widget.setChangeListener((str)-> valueTracker.valueChange(widget, str));
+        //        widget.setChangeListener((str)-> valueTracker.valueChange(str));
         //        return new ContentDelegateWidget<>(0,0, 0,0)
         //            .setContentDelegate(widget);
     }
 
     public static <T> ContentDelegateWidget<TextFieldWidget> createTextFieldEditBox(
-            int x, int y, int dx, int dy, PropertyTracker<T, String> valueTracker, String origin) {
+            int x, int y, int dx, int dy, Consumer<String> valueTracker, String origin) {
         if (true) return createEnhancedTextBox(x, y, dx, dy, valueTracker, origin, null);
         TextFieldWidget textFieldWidget = new TextFieldWidget(mc.textRenderer, 0, 0, dx, dy, Text.empty());
         textFieldWidget.setMaxLength(32768);
         textFieldWidget.setText(origin);
-        textFieldWidget.setChangedListener((str) -> valueTracker.valueChange((T) textFieldWidget, str));
+        textFieldWidget.setChangedListener((str) -> valueTracker.accept(str));
         return new ContentDelegateWidget<TextFieldWidget>(x, y, 0, 0).setContentDelegate(textFieldWidget);
     }
 
@@ -62,22 +61,22 @@ public class McWidgetHelpers {
             int y,
             int dx,
             int dy,
-            PropertyTracker<T, String> valueTracker,
+            Consumer<String> valueTracker,
             String origin,
             ColorProvider boxColorProvider) {
         if (true) return createEnhancedTextBox(x, y, dx, dy, valueTracker, origin, boxColorProvider);
         TextFieldWidget textFieldWidget = new TextFieldWidget(mc.textRenderer, 0, 0, dx, dy, Text.empty());
         textFieldWidget.setMaxLength(32768);
         textFieldWidget.setText(origin);
-        textFieldWidget.setChangedListener((str) -> valueTracker.valueChange((T) textFieldWidget, str));
+        textFieldWidget.setChangedListener((str) -> valueTracker.accept(str));
         TextFieldAccess.of(textFieldWidget).setBorderColorProvider(boxColorProvider);
         return new ContentDelegateWidget<TextFieldWidget>(x, y, 0, 0).setContentDelegate(textFieldWidget);
     }
 
     public static <T> ContentDelegateWidget<TextFieldWidget> createAttrValueEditBox(
-            AttrKeyValue<T> attrKeyValue, int x, int y, int dx, int dy) {
+            Value<T> attrKeyValue, int x, int y, int dx, int dy) {
         return new TextContentDelegateWidget<>(
-                x, y, new AttrKeyValueTextFieldWidget<>(attrKeyValue, mc.textRenderer, 0, 0, dx, dy));
+                x, y, new ValueSyncTextFieldWidget<>(attrKeyValue, mc.textRenderer, 0, 0, dx, dy));
     }
 
     private static final ColorProvider TEXT_DEFAULT = (el, fo) -> fo ? -1 : -6250336;
@@ -113,13 +112,13 @@ public class McWidgetHelpers {
             int y,
             int dx,
             int dy,
-            PropertyTracker<T, String> valueTracker,
+            Consumer<String> valueTracker,
             String origin,
             ColorProvider boxColorProvider) {
         TextFieldWidget textFieldWidget = new TextFieldWidget(mc.textRenderer, 0, 0, dx, dy, Text.empty());
         textFieldWidget.setMaxLength(32768);
         textFieldWidget.setText(origin);
-        textFieldWidget.setChangedListener((str) -> valueTracker.valueChange((T) textFieldWidget, str));
+        textFieldWidget.setChangedListener(valueTracker);
         if (boxColorProvider != null) TextFieldAccess.of(textFieldWidget).setBorderColorProvider(boxColorProvider);
         return new TextContentDelegateWidget<>(x, y, textFieldWidget);
     }
@@ -129,7 +128,7 @@ public class McWidgetHelpers {
             int y,
             int dx,
             int dy,
-            PropertyTracker<EditBoxWidget, String> valueTracker,
+            Consumer<String> valueTracker,
             String origin,
             ColorProvider boxColorProvider) {
         EditBoxWidget widget = EditBoxWidget.builder()
@@ -138,7 +137,7 @@ public class McWidgetHelpers {
                 .placeholder(Text.empty())
                 .build(mc.textRenderer, dx, dy, Text.empty());
         widget.setText(origin);
-        widget.setChangeListener((str) -> valueTracker.valueChange(widget, str));
+        widget.setChangeListener(valueTracker);
         if (boxColorProvider != null) {
             TextFieldAccess.of(widget).setBorderColorProvider(boxColorProvider);
         }
@@ -188,52 +187,6 @@ public class McWidgetHelpers {
         public void releaseDrag(Screen screen, double mouseX, double mouseY) {
             this.startDrag = false;
             //
-        }
-    }
-
-    public static class AttrKeyValueTextFieldWidget<T> extends TextFieldWidget {
-        AttrKeyValue<T> attrKeyValue;
-        String lastStoredAttrKeyValue;
-
-        public AttrKeyValueTextFieldWidget(
-                AttrKeyValue<T> attrKeyValue, TextRenderer textRenderer, int x, int y, int width, int height) {
-            super(textRenderer, x, y, width, height, Text.empty());
-            setMaxLength(32768);
-            setText(attrKeyValue.getValue());
-            this.attrKeyValue = attrKeyValue;
-            setChangedListener(this::syncChanges);
-            TextFieldAccess.of(this)
-                    .setBorderColorProvider(getWrongRedTextBoxColorProvider(this.attrKeyValue::isValidate));
-        }
-
-        public void syncChanges(String valueUpdate) {
-            if (Objects.equals(lastStoredAttrKeyValue, attrKeyValue.getValue())) {
-                this.attrKeyValue.valueChange(this, valueUpdate);
-                String updateValue = attrKeyValue.getValue();
-                lastStoredAttrKeyValue = updateValue;
-            } else {
-                // internal change, update from internal
-                lastStoredAttrKeyValue = attrKeyValue.getValue();
-                setText(lastStoredAttrKeyValue);
-            }
-        }
-
-        private void checkAttrKeyValueUpdate() {
-            if (!Objects.equals(lastStoredAttrKeyValue, attrKeyValue.getValue())) {
-                lastStoredAttrKeyValue = attrKeyValue.getValue();
-                setText(lastStoredAttrKeyValue);
-            }
-        }
-
-        public String getText() {
-            checkAttrKeyValueUpdate();
-            return super.getText();
-        }
-
-        @Override
-        public void renderWidget(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
-            checkAttrKeyValueUpdate();
-            super.renderWidget(context, mouseX, mouseY, deltaTicks);
         }
     }
 }

@@ -22,7 +22,7 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
     public KeyBindConfigurateWidget(int x, int y, int dx, int dy, AttrKeyValue<MultiKeyBind> config) {
         super(x, y, dx, dy);
         multiKeyBind = config;
-        keyBind = multiKeyBind.getOriginValue();
+        keyBind = multiKeyBind.get();
         init();
     }
 
@@ -56,24 +56,24 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
                                 "widget.gui.key-bind-configurate-widget.keycode-configure.tooltips", ""))))
                 .addToSub(this);
         ExecutableWidget.instance(dx - 3 * dy - 1, 1, dy - 2, dy - 2)
-                .setElementHandler(new ButtonElement(
-                                TextProvider.of(Text.literal("T")), ((element, widget, mouseButton) -> {
+                .setElementHandler(
+                        new ButtonElement(TextProvider.of(Text.literal("T")), ((element, widget, mouseButton) -> {
                                     onSwitchToggleOnRelease();
                                     return false;
                                 }))
-                        .setActivePredicate((v) -> multiKeyBind.getOriginValue().isToggleOnRelease())
-                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                "widget.gui.key-bind-configurate-widget.keycode-t.tooltips", ""))))
+                                .setActivePredicate((v) -> multiKeyBind.get().isToggleOnRelease())
+                                .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                        "widget.gui.key-bind-configurate-widget.keycode-t.tooltips", ""))))
                 .addToSub(this);
         ExecutableWidget.instance(dx - 2 * dy - 1, 1, dy - 2, dy - 2)
-                .setElementHandler(new ButtonElement(
-                                TextProvider.of(Text.literal("V")), ((element, widget, mouseButton) -> {
+                .setElementHandler(
+                        new ButtonElement(TextProvider.of(Text.literal("V")), ((element, widget, mouseButton) -> {
                                     onSwitchAllowVanilla();
                                     return false;
                                 }))
-                        .setActivePredicate((v) -> multiKeyBind.getOriginValue().isAllowVanilla())
-                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                "widget.gui.key-bind-configurate-widget.keycode-v.tooltips", ""))))
+                                .setActivePredicate((v) -> multiKeyBind.get().isAllowVanilla())
+                                .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                        "widget.gui.key-bind-configurate-widget.keycode-v.tooltips", ""))))
                 .addToSub(this);
         deleteKeyInputWidget = ExecutableWidget.instance(dx - dy - 1, 1, dy - 2, dy - 2)
                 .setElementHandler(
@@ -94,7 +94,7 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
     }
 
     private List<String> getKeys() {
-        var re = multiKeyBind.getOriginValue().getKeys();
+        var re = multiKeyBind.get().getKeys();
         return new ArrayList<>(Arrays.asList(re));
     }
 
@@ -114,19 +114,19 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
             keyCodes.add(keyName);
             ackChange(
                     keyCodes,
-                    multiKeyBind.getOriginValue().isToggleOnRelease(),
-                    multiKeyBind.getOriginValue().isAllowVanilla());
+                    multiKeyBind.get().isToggleOnRelease(),
+                    multiKeyBind.get().isAllowVanilla());
         }
     }
 
     private void onSwitchToggleOnRelease() {
-        var multi = multiKeyBind.getOriginValue();
-        multiKeyBind.valueChangeInternal(this, multi.withToggleOnRelease(!multi.isToggleOnRelease()));
+        var multi = multiKeyBind.get();
+        multiKeyBind.accept(multi.withToggleOnRelease(!multi.isToggleOnRelease()));
     }
 
     private void onSwitchAllowVanilla() {
-        var multi = multiKeyBind.getOriginValue();
-        multiKeyBind.valueChangeInternal(this, multi.withAllowVanilla(!multi.isAllowVanilla()));
+        var multi = multiKeyBind.get();
+        multiKeyBind.accept(multi.withAllowVanilla(!multi.isAllowVanilla()));
     }
 
     private void clear() {
@@ -137,8 +137,8 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
         keyCodes.remove(keyCodes.size() - 1);
         ackChange(
                 keyCodes,
-                multiKeyBind.getOriginValue().isToggleOnRelease(),
-                multiKeyBind.getOriginValue().isAllowVanilla());
+                multiKeyBind.get().isToggleOnRelease(),
+                multiKeyBind.get().isAllowVanilla());
     }
 
     private void undo() {
@@ -149,6 +149,6 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
     }
 
     private void ackChange(List<String> keyCodes, boolean toggleOnBindRelease, boolean vanilla) {
-        multiKeyBind.valueChangeInternal(this, new MultiKeyBind(keyCodes, toggleOnBindRelease, vanilla));
+        multiKeyBind.accept(new MultiKeyBind(keyCodes, toggleOnBindRelease, vanilla));
     }
 }

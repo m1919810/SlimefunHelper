@@ -21,6 +21,7 @@ import me.matl114.hacks.modules.chat.*;
 import me.matl114.hacks.modules.inv.ChestHistory;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.modules.survival.SeedOre;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -127,7 +128,7 @@ public class ChatTasks {
     }
 
     @Getter
-    private static final LimitedSpeedExecutor chatExecutor = new LimitedSpeedExecutor(new IntRef(5));
+    private static final LimitedSpeedExecutor chatExecutor = new LimitedSpeedExecutor(new DoubleRef(5));
 
     public static void sendDelayChatMessage(Text text) {
         chatExecutor.addDelayedExecuteTask(() -> mc.inGameHud.getChatHud().addMessage(text));

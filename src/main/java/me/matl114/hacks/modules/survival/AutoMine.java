@@ -21,8 +21,11 @@ import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.mine.MineExtra;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
+import me.matl114.hacks.utils.enums.GhostHandMode;
+import me.matl114.hacks.utils.enums.MineTargetingMode;
 import me.matl114.hacks.utils.move.PathingSchedular;
 import me.matl114.hacks.utils.move.goal.GoalNear;
 import me.matl114.hacks.utils.move.goal.IPathGoal;
@@ -36,7 +39,6 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.AttributeUtils;
-import me.matl114.utils.EntityUtils;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.MathUtils;
@@ -141,9 +143,8 @@ public class AutoMine extends BaseModule {
             .validator(Configs.INT_NONNEGATIVE)
             .build();
 
-    public final EnumRef<Configs.MineTargetingMode> legalMode = builder(
-                    root.add("legal-mode"), Configs.MineTargetingMode.class)
-            .defaultValue(Configs.MineTargetingMode.NO_BYPASS)
+    public final EnumRef<MineTargetingMode> legalMode = builder(root.add("legal-mode"), MineTargetingMode.class)
+            .defaultValue(MineTargetingMode.NO_BYPASS)
             .build();
 
     public final FlagRef considerCooldown = builder(root.add("consider-cooldown"), Boolean.class)
@@ -557,7 +558,7 @@ public class AutoMine extends BaseModule {
                     bestStack = InventoryUtils.getSelectedItem();
                 }
             }
-            InvExtra.INSTANCE.swapInventoryIndexToHand(bestStack.index());
+            InvExtra.INSTANCE.swapItemToHand(bestStack.index(), false, GhostHandMode.INV_SWAP);
             AttributeUtils.updateAttribute(mc.player);
             float speed = MineExtra.INSTANCE.predictBlockBreakingSpeedAt(lastMinePos);
             tryMine += 1;

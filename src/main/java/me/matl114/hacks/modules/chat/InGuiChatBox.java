@@ -14,6 +14,7 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
+import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
@@ -49,7 +50,7 @@ public class InGuiChatBox extends BaseModule {
         registerListener(Listener.getPostInitializeScreen(), this::onScreenInitialize);
     }
 
-    public ClickableWidget createInputWidget(int x, int y, int width) {
+    public ClickableWidget createInputWidget(ValueAccessor<Integer> x, ValueAccessor<Integer> y, int width) {
         return new ChatLikeInputWidget(mc.textRenderer, x, y, width, 12, (str) -> {
             if (str != null && !str.isEmpty() && !Objects.equals(str, "/")) {
                 // do not let blanks or / shits into it
@@ -60,19 +61,20 @@ public class InGuiChatBox extends BaseModule {
 
     public ClickableWidget createDefaultInputWidget() {
         WidgetPos pos = otherScreenInputPos.get();
-        double x = pos.getWindowX(mc.getWindow());
-        double y = pos.getWindowY(mc.getWindow());
         return createInputWidget(
-                (int) (x - otherScreenInputLength.get() / 2.0), (int) y - 12, (int) otherScreenInputLength.get());
+                ValueAccessor.ofIgnore(
+                        () -> (int) (pos.getWindowX(mc.getWindow()) - otherScreenInputLength.get() / 2.0)),
+                ValueAccessor.ofIgnore(() -> (int) (pos.getWindowY(mc.getWindow()) - 12)),
+                (int) otherScreenInputLength.get());
     }
 
     public void onScreenInitialize(Event<Screen> event) {
         if (event.context instanceof HandledScreenAccess access && enableGui.get()) {
             ClickableWidget newChat = createInputWidget(
-                    access.getScreenX() + 2,
-                    access.getScreenY()
+                    ValueAccessor.ofIgnore(() -> access.getScreenX() + 2),
+                    ValueAccessor.ofIgnore(access.getScreenY()
                             + access.getScreenBackgroundY()
-                            + (access instanceof CreativeInventoryScreen ? 40 : 10),
+                            + (access instanceof CreativeInventoryScreen ? 40 : 10)),
                     access.getScreenBackgroundX() - 4);
             access.addDrawableChildTo(newChat);
         } else if (!(event.context instanceof HandledScreen<?>)) {

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import me.matl114.events.Event;
+import me.matl114.gui.presets.single.IIcon;
 import me.matl114.gui.presets.single.RegistryDisplays;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.PlayerStateManager;
@@ -126,8 +127,12 @@ public class PlayerStatistic extends IRender2DColoredModule {
             if (Objects.equals(po, potionType)) {
                 return true;
             }
-            var re = potionType.getEffects().stream().map(StatusEffectInstance::getEffectType);
-            var re2 = po.value().getEffects().stream().map(StatusEffectInstance::getEffectType);
+            var re = potionType.getEffects().stream()
+                    .map(StatusEffectInstance::getEffectType)
+                    .toList();
+            var re2 = po.value().getEffects().stream()
+                    .map(StatusEffectInstance::getEffectType)
+                    .toList();
             return Objects.equals(re, re2);
         }
         return false;
@@ -148,8 +153,7 @@ public class PlayerStatistic extends IRender2DColoredModule {
                 vdraw, PotionContentsComponent.createStack(Items.POTION, Registries.POTION.getEntry(potionType)), cnt);
     }
 
-    private static final RegistryDisplays.IIcon<StatusEffect> statusEffectRenderer =
-            RegistryDisplays.getIcon(StatusEffect.class);
+    private static final IIcon<StatusEffect> statusEffectRenderer = RegistryDisplays.getIcon(StatusEffect.class);
 
     public void handleEffects(VDrawContext vdraw) {
         for (var re : mc.player.getStatusEffects()) {

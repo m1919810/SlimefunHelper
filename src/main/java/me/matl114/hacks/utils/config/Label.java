@@ -17,7 +17,7 @@ public record Label(String label) implements NBTParsable<Label> {
             "label",
             Codec.STRING.xmap(Label::new, Label::label),
             (w, x, y, dx, dy) -> {
-                String label = w.getOriginValue().label();
+                String label = w.get().label();
                 return DisplayWidget.instance(x, y, dx, dy)
                         .setRenderHandler(new RawTextElement(Text.translatableWithFallback(label, label), -1)
                                 .withTooltips(TooltipHandler.of(

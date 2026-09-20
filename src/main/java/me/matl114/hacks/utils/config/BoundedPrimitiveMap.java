@@ -2,14 +2,13 @@ package me.matl114.hacks.utils.config;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JavaOps;
-import java.awt.*;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import me.matl114.managers.config.NBTType;
 import me.matl114.utils.CodecUtils;
-import me.matl114.utils.config.WidgetFactory;
+import me.matl114.utils.config.WidgetGenerator;
 import me.matl114.utils.config.WrapperFactory;
 import me.matl114.utils.config.kv.AttrKeyValues;
 import me.matl114.utils.config.kv.WrapperAttrKeyValue;
@@ -39,7 +38,7 @@ public abstract class BoundedPrimitiveMap<W, T> {
             TriFunction<List<S>, Map<S, T>, NBTType<T>, W> creator,
             List<S> baseLookup,
             Codec<S> keyCodec,
-            WidgetFactory<S> keyWidget,
+            WidgetGenerator<S> keyWidget,
             NBTType<T> ptype,
             int keyLabelWidth,
             int listWidth,

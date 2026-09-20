@@ -2,9 +2,9 @@ package me.matl114.utils.entity;
 
 import lombok.*;
 import lombok.experimental.Accessors;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.hooks.ViaProtocols;
-import me.matl114.utils.EntityUtils;
 import me.matl114.versioned.SupportVersion;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;

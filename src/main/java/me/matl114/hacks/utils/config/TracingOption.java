@@ -32,7 +32,7 @@ public record TracingOption(boolean box, boolean line) implements NBTParsable<Tr
                                         .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
                                                 "widget.nbt-parsable.tracing-option.box.tooltips", "")))))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(
-                                        s, PAIR_FACTORY.asFirstWrapper(s::getOriginValue), NBTTypes.BOOLEAN_TYPE)
+                                        s, PAIR_FACTORY.asFirstWrapper(s::get), NBTTypes.BOOLEAN_TYPE)
                                 .generateValueWidget(2 * dy, 0, dy, dy))
                         .addDrawableChild(DisplayWidget.instance(3 * dy, 0, 2 * dy, dy)
                                 .setRenderHandler(new ButtonElement(
@@ -42,7 +42,7 @@ public record TracingOption(boolean box, boolean line) implements NBTParsable<Tr
                                         .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
                                                 "widget.nbt-parsable.tracing-option.line.tooltips", "")))))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(
-                                        s, PAIR_FACTORY.asSecondWrapper(s::getOriginValue), NBTTypes.BOOLEAN_TYPE)
+                                        s, PAIR_FACTORY.asSecondWrapper(s::get), NBTTypes.BOOLEAN_TYPE)
                                 .generateValueWidget(5 * dy, 0, dy, dy));
             },
             new TracingOption(false, false));

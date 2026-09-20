@@ -565,15 +565,15 @@ public class ItemEditScreen extends ConfirmingBigScreen {
 
             @Override
             protected void saveChanges() {
-                if (stackTemplate.getItem() != this.item.getOriginValue()) {
-                    stackTemplate = ItemStackUtils.withTypeChange(stackTemplate, this.item.getOriginValue());
+                if (stackTemplate.getItem() != this.item.get()) {
+                    stackTemplate = ItemStackUtils.withTypeChange(stackTemplate, this.item.get());
                 }
-                stackTemplate.setCount(count.getOriginValue());
-                ItemStackUtils.setDamage(stackTemplate, damage.getOriginValue());
-                ItemStackUtils.setSfId(stackTemplate, sfid.getOriginValue());
-                ItemStackUtils.setUnbreakable(stackTemplate, this.unbreakable.getOriginValue());
+                stackTemplate.setCount(count.get());
+                ItemStackUtils.setDamage(stackTemplate, damage.get());
+                ItemStackUtils.setSfId(stackTemplate, sfid.get());
+                ItemStackUtils.setUnbreakable(stackTemplate, this.unbreakable.get());
                 this.flags.applyChange(stackTemplate);
-                String hash = this.skullHashProfile.getOriginValue();
+                String hash = this.skullHashProfile.get();
                 if (hash != null && !hash.isEmpty()) {
                     if (lastComponent != null) {
                         PropertyMap map = BukkitItemStackUtils.buildPropertyMap(
@@ -638,13 +638,13 @@ public class ItemEditScreen extends ConfirmingBigScreen {
 
             @Override
             protected void saveChanges() {
-                String displayName0 = displayName.getOriginValue();
+                String displayName0 = displayName.get();
                 Text customName =
                         (displayName0 == null || displayName0.isEmpty()) ? null : ChatUtils.stringToText(displayName0);
                 ItemStackUtils.setCustomName(stackTemplate, customName);
                 List<Text> texts = new ArrayList<>();
                 for (var s : this.lores) {
-                    String displayName1 = s.getOriginValue();
+                    String displayName1 = s.get();
                     Text customName1 = (displayName1 == null || displayName1.isEmpty())
                             ? null
                             : ChatUtils.stringToText(displayName1);
@@ -681,15 +681,15 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 }
 
                 public Pair<String, Integer> value() {
-                    return new Pair<>(this.id.getValue(), this.lvl.getOriginValue());
+                    return new Pair<>(this.id.getInput(), this.lvl.get());
                 }
 
                 public Pair<RegistryEntry<Enchantment>, Integer> entryValue() {
                     try {
-                        Enchantment enchantment = this.id.getOriginValue();
+                        Enchantment enchantment = this.id.get();
                         RegistryEntry<Enchantment> ench = RegistryUtils.getRegistryEntry(
                                 ItemStackUtils.registry(), RegistryKeys.ENCHANTMENT, enchantment);
-                        return new Pair<>(ench, lvl.getOriginValue());
+                        return new Pair<>(ench, lvl.get());
                     } catch (Throwable e) {
                         return new Pair<>(null, 0);
                     }
@@ -797,19 +797,16 @@ public class ItemEditScreen extends ConfirmingBigScreen {
 
                 public AttributeModifiersComponent.Entry value() {
                     try {
-                        EntityAttribute attribute = this.attr.getOriginValue();
+                        EntityAttribute attribute = this.attr.get();
                         if (attribute != null) {
-                            RegistryEntry<EntityAttribute> attribute0 =
-                                    Registries.ATTRIBUTE.getEntry(this.attr.getOriginValue());
+                            RegistryEntry<EntityAttribute> attribute0 = Registries.ATTRIBUTE.getEntry(this.attr.get());
                             if (attribute0 != null && attribute0.value() != null) {
                                 EntityAttributeModifier modifier = new EntityAttributeModifier(
-                                        identifier.getOriginValue(),
-                                        modifierValue.getOriginValue(),
-                                        modifierOperation.getOriginValue());
-                                AttributeModifierSlot slot = this.optionalSlot.getOriginValue();
+                                        identifier.get(), modifierValue.get(), modifierOperation.get());
+                                AttributeModifierSlot slot = this.optionalSlot.get();
                                 return new AttributeModifiersComponent.Entry(attribute0, modifier, slot);
                             } else {
-                                Debug.info("Attribute null? ", this.attr.getOriginValue(), this.attr.getValue());
+                                Debug.info("Attribute null? ", this.attr.get(), this.attr.getInput());
                             }
                         }
                     } catch (Throwable e) {
@@ -983,7 +980,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
 
                 @Override
                 protected void onConfirmButton() {
-                    callback.accept(this.element.getOriginValue());
+                    callback.accept(this.element.get());
                     this.close();
                 }
             }
@@ -1017,7 +1014,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 }
 
                 protected void openThisEditScreen() {
-                    ComponentType type = typeId.getOriginValue();
+                    ComponentType type = typeId.get();
                     if (type != null) {
                         ScreenAccess.of(new ItemComponentModifyConfirmScreen<>(
                                         type,
@@ -1055,7 +1052,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
 
                 public void applyChanges(Map<ComponentType<?>, Optional<?>> map0) {
                     try {
-                        ComponentType type = this.typeId.getOriginValue();
+                        ComponentType type = this.typeId.get();
                         if (type != null) {
                             if (optionalComponentData == null) {
                                 map0.put(type, Optional.empty());

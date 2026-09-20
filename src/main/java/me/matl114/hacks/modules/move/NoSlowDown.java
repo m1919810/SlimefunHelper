@@ -12,8 +12,10 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.mine.FakeBlockManager;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
+import me.matl114.hacks.utils.enums.BypassMode;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -126,9 +128,8 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             .show(() -> blockInBypass.get().isIn(NoWebMode.GRIM_SPEED))
             .build();
 
-    public final EnumRef<Configs.BypassMode> fakeSneakBypass = builder(
-                    noSlowdown.add("fake-sneak-mode"), Configs.BypassMode.class)
-            .defaultValue(Configs.BypassMode.NO_BYPASS)
+    public final EnumRef<BypassMode> fakeSneakBypass = builder(noSlowdown.add("fake-sneak-mode"), BypassMode.class)
+            .defaultValue(BypassMode.NO_BYPASS)
             .build();
 
     public final KeyBindRef fakeStatus = hotkey(fakeSneakStatusPath)
@@ -165,7 +166,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             }
             case AC_GRIM, AC_GRIM_LEGACY -> {
                 useItem.set(true);
-                useItemBypass.set(UseBypassMode.BYPASS_GRIM_LAZY_V3);
+                useItemBypass.set(UseBypassMode.BYPASS_GRIM_50);
             }
             default -> {
                 useItem.set(false);
@@ -178,7 +179,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             }
             case AC_GRIM, AC_GRIM_LEGACY, AC_VULCAN, AC_MATRIX, AC_COMMON -> {
                 blockIn.set(true);
-                blockInBypass.set(NoWebMode.GRIM_SPEED);
+                blockInBypass.set(NoWebMode.GRIM_FAKE_MINE);
             }
             default -> {
                 blockIn.set(false);

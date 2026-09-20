@@ -103,7 +103,7 @@ public class WeakRegistryRegex<T> implements NBTParsable<WeakRegistryRegex<T>>, 
     public static <T, W extends WeakRegistryRegex<T>> DrawableWidget createTextEditWidget(
             AttrKeyValue<W> attr, int x, int y, int width, int height) {
         SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, width, height);
-        W originValue = attr.getOriginValue();
+        W originValue = attr.get();
         AttrKeyValue<Regex> attrKeyValue = new TypeConvertAttrKeyValue<>(
                 attr, WrapperFactory.<Regex, W>of(originValue::withParent, WeakRegistryRegex::parent), Regex.TYPE);
         var registry = originValue.resolveRegistry();
@@ -127,19 +127,19 @@ public class WeakRegistryRegex<T> implements NBTParsable<WeakRegistryRegex<T>>, 
     private static <T, W extends WeakRegistryRegex<T>> void openRegexListView(
             Registry<T> registry, AttrKeyValue<W> original) {
         AttrKeyValue<W> originalCopy = original.copy();
-        var originalValue = originalCopy.getOriginValue();
+        var originalValue = originalCopy.get();
         AttrKeyValue<Regex> regexWrapper = new TypeConvertAttrKeyValue<>(
                 originalCopy,
                 WrapperFactory.<Regex, W>of(originalValue::withParent, WeakRegistryRegex::parent),
                 Regex.TYPE);
         ScreenAccess.of(
                         new RegistryChooseScreen<T>(registry, (v) -> {
-                            original.valueChange(null, originalCopy.getValue());
+                            original.setInput(originalCopy.getInput());
                         }) {
                             {
                                 selectSubScreen.modifiable(false);
                                 selectSubScreen.filter((v) -> originalCopy.isValidate()
-                                        && originalCopy.getOriginValue().test(v.getC()));
+                                        && originalCopy.get().test(v.getC()));
                                 originalCopy.addListener(s -> selectSubScreen.updateFilterList());
                                 SubScreenWidget subScreenWidget = selectSubScreen.getScrollableBorder();
                                 subScreenWidget.clearChildren();
@@ -152,8 +152,8 @@ public class WeakRegistryRegex<T> implements NBTParsable<WeakRegistryRegex<T>>, 
                                 return ExecutableWidget.instance(subScreenWidget.getWidth(), -20, 20, 20)
                                         .setElementHandler(IconElement.fixedGui(
                                                         Constants.EDITOR_SPRITE, ButtonAction.run(() -> {}))
-                                                .withTooltips(TooltipHandler.of(original.getOriginValue()
-                                                        .getRules())));
+                                                .withTooltips(TooltipHandler.of(
+                                                        original.get().getRules())));
                             }
 
                             @Override

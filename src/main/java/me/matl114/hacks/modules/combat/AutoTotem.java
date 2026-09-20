@@ -1,7 +1,5 @@
 package me.matl114.hacks.modules.combat;
 
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntList;
 import java.util.List;
 import java.util.Random;
 import me.matl114.accessors.access.ClientPlayerAccess;
@@ -56,8 +54,6 @@ public class AutoTotem extends BaseModule {
     public final IntRef cooldown = builder(totem.add("totem-swap-cooldown"), IntRef.TYPE)
             .defaultValue(1)
             .build();
-
-    public final FlagRef smartTotem = flagBuilder(totem.add("smart-auto-totem")).build();
 
     public final NBTRef<EntrySet<Item>> enableHandItems = builder(
                     totem.add("enable-hand-items"), EntrySet.<Item>parameter())
@@ -118,54 +114,32 @@ public class AutoTotem extends BaseModule {
             return;
         }
         if (!canBeAccepted(mc.player.getOffHandStack())) {
-            if (smartTotem.get() && mc.player.getMainHandStack().getItem() == Items.TOTEM_OF_UNDYING) {
-                return;
-            }
             // well looks
-            int toSlot = (smartTotem.get()
-                            && mc.player.getMainHandStack().isEmpty()
-                            && !mc.player.getOffHandStack().isEmpty())
-                    ? InventoryUtils.getSelectedSlot()
-                    : 40;
-            ScreenHandler handled = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
-            List<Slot> slots = handled.slots;
-            for (var i = 0; i < slots.size(); ++i) {
-                if ((slots.get(i).inventory instanceof PlayerInventory || handled == mc.player.playerScreenHandler)
-                        && slots.get(i).getStack().getItem() == Items.TOTEM_OF_UNDYING) {
-                    MovTasks.getMovExtra().sendPacketsForInventoryAction();
-                    InvTasks.clickSlotAsync(i, toSlot, SlotActionType.SWAP);
-                    Debug.debug("handle swap success");
-                    handleTotemSwapSuccess();
-                    return;
-                }
+            int toSlot = 40;
+            swapTo(toSlot);
+        } else {
+            if (mc.player.getMainHandStack().getItem() != Items.TOTEM_OF_UNDYING
+                    && mc.player.getOffHandStack().getItem() != Items.TOTEM_OF_UNDYING) {
+                int toSlot = InventoryUtils.getSelectedSlot();
+                swapTo(toSlot);
             }
-            handleTotemSwapFailure();
         }
     }
 
-    public void onTotemTick() {
-        if (!canBeAccepted(mc.player.getOffHandStack())) {
-            onTotemLazy();
-        } else {
-            IntList totemList = new IntArrayList();
-            ScreenHandler handled = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
-            List<Slot> slots = handled.slots;
-            for (var i = 0; i < slots.size(); ++i) {
-                if ((slots.get(i).inventory instanceof PlayerInventory || handled == mc.player.playerScreenHandler)
-                        && slots.get(i).getStack().getItem() == Items.TOTEM_OF_UNDYING
-                        && i != 40) {
-                    totemList.add(i);
-                }
-            }
-            if (!totemList.isEmpty()) {
-                int random = totemList.getInt(inventorRandom.nextInt(totemList.size()));
+    private void swapTo(int toSlot) {
+        ScreenHandler handled = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
+        List<Slot> slots = handled.slots;
+        for (var i = 0; i < slots.size(); ++i) {
+            if ((slots.get(i).inventory instanceof PlayerInventory || handled == mc.player.playerScreenHandler)
+                    && slots.get(i).getStack().getItem() == Items.TOTEM_OF_UNDYING) {
                 MovTasks.getMovExtra().sendPacketsForInventoryAction();
-                InvTasks.clickSlotAsync(random, 40, SlotActionType.SWAP);
+                InvTasks.clickSlotAsync(i, toSlot, SlotActionType.SWAP);
+                Debug.debug("handle swap success");
                 handleTotemSwapSuccess();
-            } else {
-                handleTotemSwapFailure();
+                return;
             }
         }
+        handleTotemSwapFailure();
     }
 
     TimerExecutor swap = new TimerExecutor();

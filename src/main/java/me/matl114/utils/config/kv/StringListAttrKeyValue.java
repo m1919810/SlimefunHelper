@@ -11,7 +11,7 @@ import me.matl114.utils.config.BaseAttrKeyValue;
 public class StringListAttrKeyValue extends ListAttrKeyValue<String> {
 
     public List<AttrKeyValue<String>> createAttrKeyValueForElements() {
-        var list = getOriginValue();
+        var list = get();
         var size = list.size();
         List<AttrKeyValue<String>> res = new ArrayList<>();
         for (int i = 0; i < size; ++i) {
@@ -32,7 +32,7 @@ public class StringListAttrKeyValue extends ListAttrKeyValue<String> {
         super(key, value, LIST_WIDGET_FACTORY, AttrKeyValues.STR_LIST_FACTORY);
     }
 
-    public static final CustomWidgetFactory<List<String>> LIST_WIDGET_FACTORY = (s, x, y, inputDx, dy) -> {
+    public static final CustomWidgetGenerator<List<String>> LIST_WIDGET_FACTORY = (s, x, y, inputDx, dy) -> {
         return new SubScreenWidget(x, y, inputDx, dy)
                 .addDrawableChild(McWidgetHelpers.createAttrValueEditBox(s, 0, 0, inputDx - dy, dy))
                 .addDrawableChild(WidgetUtils.createOpenListModifyScreenButton(

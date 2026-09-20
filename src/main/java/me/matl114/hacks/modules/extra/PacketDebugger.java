@@ -20,7 +20,6 @@ import me.matl114.managers.config.StringRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.entity.PlayerInputUtils;
-import net.minecraft.network.NetworkSide;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.PacketType;
 import net.minecraft.network.packet.c2s.play.*;
@@ -95,10 +94,7 @@ public class PacketDebugger extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPacketPreHandlePoint(), this::onPacketHandle, Integer.MIN_VALUE);
         registerListener(Listener.getPacketPostScheduleSendPoint(), this::onPacketSend, Integer.MIN_VALUE);
-        registerListener(
-                PacketManager.getPacketQueueEvent().getChannel(NetworkSide.SERVERBOUND),
-                this::onViaSend,
-                Integer.MIN_VALUE);
+        registerListener(PacketManager.getPacketQueueOutEvent(), this::onViaSend, Integer.MIN_VALUE);
         registerListener(Listener.getPacketPoint(), this::onPacket);
         registerListener(Listener.getPreClickSlot(), this::onClick);
     }

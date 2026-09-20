@@ -16,7 +16,6 @@ import me.matl114.utils.ChatUtils;
 import me.matl114.utils.CollectionUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.config.AttrKeyValue;
-import me.matl114.utils.config.PropertyTracker;
 import me.matl114.utils.containers.ArgsMap;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
@@ -185,7 +184,7 @@ public class ConfigureListWidget
                         1,
                         this.inputDx + this.blankDx + this.buttonDx + 20,
                         this.buttonDy - 2,
-                        PropertyTracker.event(this::refreshFilter),
+                        this::refreshFilter,
                         filterWidget.get())
                 .addToSub(this);
         ;
@@ -233,7 +232,7 @@ public class ConfigureListWidget
 
     public record Entry<T>(Ref<T> ref, AttrKeyValue<T> keyValue) {
         public void save() {
-            ref.setValue(keyValue.getOriginValue());
+            ref.setValue(keyValue.get());
         }
     }
 }

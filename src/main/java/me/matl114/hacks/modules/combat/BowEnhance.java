@@ -17,7 +17,9 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
+import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.EnumRef;
@@ -26,7 +28,6 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.Debug;
-import me.matl114.utils.EntityUtils;
 import me.matl114.utils.RenderUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
@@ -64,9 +65,8 @@ public class BowEnhance extends BaseModule {
 
     public FlagRef enableTp = flagBuilder(bowAtt.add("tp-enable")).build();
 
-    public EnumRef<Configs.LegalInteractMode> mode = builder(
-                    bowAtt.add("targeting-mode"), Configs.LegalInteractMode.class)
-            .defaultValue(Configs.LegalInteractMode.USEITEM_PACKET)
+    public EnumRef<LegalInteractMode> mode = builder(bowAtt.add("targeting-mode"), LegalInteractMode.class)
+            .defaultValue(LegalInteractMode.USEITEM_PACKET)
             .build();
 
     public DoubleRef tpDistance = builder(bowAtt.add("tp-accelerate"), DoubleRef.TYPE)
@@ -531,28 +531,28 @@ public class BowEnhance extends BaseModule {
                 if (tpDistance.get() < 0) {
                     tpDistance.set(-tpDistance.get());
                 }
-                if (mode.get() == Configs.LegalInteractMode.DELAY_MOVEMENT) {
-                    mode.set(Configs.LegalInteractMode.LEGACY_SLIENT_ROT);
+                if (mode.get() == LegalInteractMode.DELAY_MOVEMENT) {
+                    mode.set(LegalInteractMode.LEGACY_SLIENT_ROT);
                 }
             }
             default -> {
                 if (tpDistance.get() > 0) {
                     tpDistance.set(-tpDistance.get());
                 }
-                if (mode.get() == Configs.LegalInteractMode.LEGACY_SLIENT_ROT) {
-                    mode.set(Configs.LegalInteractMode.DELAY_MOVEMENT);
+                if (mode.get() == LegalInteractMode.LEGACY_SLIENT_ROT) {
+                    mode.set(LegalInteractMode.DELAY_MOVEMENT);
                 }
             }
         }
         switch (preset) {
             case HACKING, VANILLA -> {
-                mode.set(Configs.LegalInteractMode.NONE);
+                mode.set(LegalInteractMode.NONE);
             }
             case AC_GRIM_LEGACY -> {
-                mode.set(Configs.LegalInteractMode.LEGACY_SLIENT_ROT);
+                mode.set(LegalInteractMode.LEGACY_SLIENT_ROT);
             }
             default -> {
-                mode.set(Configs.LegalInteractMode.USEITEM_PACKET);
+                mode.set(LegalInteractMode.USEITEM_PACKET);
             }
         }
     }

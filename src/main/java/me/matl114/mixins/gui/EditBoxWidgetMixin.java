@@ -6,7 +6,6 @@ import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.ColorProvider;
 import me.matl114.utils.ScreenUtils;
-import me.matl114.utils.config.PropertyTracker;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -48,11 +47,6 @@ public abstract class EditBoxWidgetMixin extends ScrollableTextFieldWidget imple
 
     @Shadow
     protected abstract double getDeltaYPerScroll();
-
-    @Unique
-    public void setListener(PropertyTracker<TextFieldAccess, String> tracker) {
-        setChangeListener((str) -> tracker.valueChange(this, str));
-    }
 
     @Unique
     @Nonnull

@@ -49,6 +49,12 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
         portConfigs(makePath(Configs.MOV_CONFIG, "baritone.fix"), fix);
     }
 
+    public final FlagRef enableMiningCooldown =
+            flagBuilder(fix.add("add-baritone-mine-cooldown-override")).build();
+
+    public final FlagRef applyMineSettingsToBaritone =
+            flagBuilder(fix.add("apply-mine-settings-to-baritone")).build();
+
     public final FlagRef enableDimensionFix =
             flagBuilder(fix.add("dimension-fix")).build();
 
@@ -80,6 +86,13 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
 
     public final FlagRef pauseElytraProcess =
             flagBuilder(fix.add("baritone-conditional-pause")).build();
+
+    public final FlagRef forcePauseElytraProcess =
+            flagBuilder(fix.add("baritone-force-pause")).build();
+
+    public final KeyBindRef togglePauseElytraProcess = toggleHotkey(
+                    fix.add("baritone-pause-hotkey"), new MultiKeyBind(), fix.add("baritone-force-pause"))
+            .build();
 
     public final KeyBindRef pauseKey = builder(fix.add("baritone-pause-hotkey"), KeyBindRef.TYPE)
             .defaultValue(new MultiKeyBind())
@@ -216,6 +229,9 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
     }
 
     public boolean shouldPauseBaritoneElytra() {
+        if (forcePauseElytraProcess.get()) {
+            return true;
+        }
         if (pauseElytraProcess.get()) {
             // DO NOT use other modules judgement
             if (FloatingUtils.INSTANCE.enableGrim.get()) {
@@ -291,7 +307,7 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
 
     @Override
     public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
-        acceptor.accept(createTitleLabel(
+        acceptor.accept(createTitle(
                 BaritoneHooks.getInstance().isBaritoneAPISupported()
                         ? "widget.baritone-fix.baritone-api-support"
                         : "widget.baritone-fix.baritone-api-not-support",
@@ -299,7 +315,7 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
                 dblank,
                 dx,
                 dy));
-        acceptor.accept(createTitleLabel(
+        acceptor.accept(createTitle(
                 BaritoneHooks.getInstance().isBaritoneVersionSupported()
                         ? "widget.baritone-fix.baritone-support"
                         : "widget.baritone-fix.baritone-not-support",

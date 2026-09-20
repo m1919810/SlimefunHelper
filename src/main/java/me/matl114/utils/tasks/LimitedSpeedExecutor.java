@@ -3,48 +3,66 @@ package me.matl114.utils.tasks;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicInteger;
-import me.matl114.managers.config.IntRef;
+import java.util.function.BooleanSupplier;
+import me.matl114.managers.config.DoubleRef;
 import org.jetbrains.annotations.NotNull;
 
 public class LimitedSpeedExecutor implements Executor {
-    private Deque<Runnable> queue;
-    private AtomicInteger size;
-    private IntRef count;
+    private Deque<BooleanSupplier> queue;
+    private double counter;
+    private final DoubleRef count;
 
-    public LimitedSpeedExecutor(IntRef count) {
+    public LimitedSpeedExecutor(DoubleRef count) {
         this.count = count;
 
-        this.size = new AtomicInteger(0);
+        this.counter = count.get();
         this.queue = new ArrayDeque<>();
     }
     // execute when next "execute" or "reset" method is called
     public void addDelayedExecuteTask(Runnable runnable) {
+        queue.add(() -> {
+            runnable.run();
+            return true;
+        });
+    }
+
+    public void addDelayedExecuteTask(BooleanSupplier runnable) {
         queue.add(runnable);
+    }
+
+    public void execute(@NotNull BooleanSupplier runnable) {
+
+        while (!queue.isEmpty() && counter >= 1) {
+            BooleanSupplier r = queue.poll();
+            executeInternal(r);
+        }
+        if (counter < 1) {
+            queue.add(runnable);
+            return;
+        } else {
+            executeInternal(runnable);
+        }
     }
 
     @Override
     public void execute(@NotNull Runnable runnable) {
-        if (size.get() > count.get()) {
-            queue.add(runnable);
-            return;
-        }
-        while (!queue.isEmpty() && size.getAndIncrement() <= count.get()) {
-            Runnable r = queue.poll();
-            executeInternal(r);
-        }
-        size.incrementAndGet();
-        executeInternal(runnable);
+        execute(() -> {
+            runnable.run();
+            return true;
+        });
     }
 
-    private void executeInternal(Runnable runnable) {
-        runnable.run();
+    private void executeInternal(BooleanSupplier runnable) {
+        if (runnable.getAsBoolean()) {
+            counter -= 1.0D;
+        }
     }
 
     public void reset() {
-        size.set(0);
-        while (!queue.isEmpty() && size.getAndIncrement() < count.get()) {
-            Runnable r = queue.poll();
+        counter = Math.clamp(counter, 0.0D, 0.99D);
+        counter += count.get();
+        while (!queue.isEmpty() && counter >= 1) {
+            BooleanSupplier r = queue.poll();
             executeInternal(r);
         }
     }

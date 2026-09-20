@@ -85,7 +85,7 @@ public class SleepMode extends BaseModule {
     @Override
     public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
         super.addCustomWidgets(acceptor, dx, dy, dblank);
-        acceptor.accept(createTitleLabel("widget.sleep-mode.command", 0, dblank, dx, dy));
+        acceptor.accept(createTitle("widget.sleep-mode.command", 0, dblank, dx, dy));
     }
 
     boolean runnerOptimizeStart = false;
@@ -463,10 +463,10 @@ public class SleepMode extends BaseModule {
             if (sleepingScreenInstance != null) {
                 ScreenUtils.simulateKeyAction(
                         sleepingScreenInstance,
-                        (Integer) event.extraArgs[0],
-                        (Integer) event.extraArgs[1],
-                        (Integer) event.extraArgs[2],
-                        (Integer) event.extraArgs[3]);
+                        event.context.keyCode(),
+                        event.context.scannCode(),
+                        event.context.action(),
+                        event.context.modifier());
             }
         }
     }

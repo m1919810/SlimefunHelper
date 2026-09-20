@@ -109,9 +109,11 @@ public class ConnectionProxy extends BaseModule {
                 (v) -> createEditRenderHandler(v, index),
                 30,
                 220);
-        ListModifyWidget listSelect = new ListModifyWidget(controller, 0, 0, 320, 260);
         ConfirmingWidgetScreen confirmScreen = new ConfirmingWidgetScreen(
-                Text.translatable("widget.connection-proxy.proxy-list-editor.title"), listSelect, () -> true, () -> {
+                Text.translatable("widget.connection-proxy.proxy-list-editor.title"),
+                (screen) -> new ListModifyWidget(controller, 0, 0, 330, screen.getContentHeight()),
+                () -> true,
+                () -> {
                     List<ProxyEntry> newProxies = currentList.stream()
                             .map(s -> s.toRecord(ProxyEntry.class))
                             .toList();
@@ -258,6 +260,11 @@ public class ConnectionProxy extends BaseModule {
         HTTP,
         @ApiStatus.Experimental
         HTTPS;
+
+        @Override
+        public String getConfigEnumType() {
+            return "connection_proxy_type";
+        }
 
         public Text getDisplay() {
             return Text.literal(name().toLowerCase(Locale.ROOT));

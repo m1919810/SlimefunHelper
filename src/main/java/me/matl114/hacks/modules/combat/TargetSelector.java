@@ -659,7 +659,7 @@ public class TargetSelector extends BaseModule {
                 dblank,
                 dx,
                 dy));
-        acceptor.accept(createTitleLabel("widget.friend-list.command", 0, dblank, dx, dy));
+        acceptor.accept(createTitle("widget.friend-list.command", 0, dblank, dx, dy));
     }
 
     public static record FriendListStorage(List<String> friends, Map<String, String> alias) {

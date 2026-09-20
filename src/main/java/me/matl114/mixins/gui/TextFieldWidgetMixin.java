@@ -7,7 +7,6 @@ import java.util.function.Consumer;
 import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.ColorProvider;
-import me.matl114.utils.config.PropertyTracker;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -66,11 +65,6 @@ public abstract class TextFieldWidgetMixin extends ClickableWidget implements Te
 
     @Shadow
     protected abstract void onChanged(String newText);
-
-    @Unique
-    public void setListener(PropertyTracker<TextFieldAccess, String> tracker) {
-        setChangedListener((str) -> tracker.valueChange(this, str));
-    }
 
     @Unique
     private ColorProvider boxColorProvider = null;

@@ -28,10 +28,10 @@ public record Vec2(double x, double y) implements NBTParsable<Vec2> {
                 int half = dx / 2;
                 return subScreenWidget
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(
-                                        s, PAIR_FACTORY.asFirstWrapper(s::getOriginValue), NBTTypes.DOUBLE_TYPE)
+                                        s, PAIR_FACTORY.asFirstWrapper(s::get), NBTTypes.DOUBLE_TYPE)
                                 .generateValueWidget(0, 0, half, dy))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(
-                                        s, PAIR_FACTORY.asSecondWrapper(s::getOriginValue), NBTTypes.DOUBLE_TYPE)
+                                        s, PAIR_FACTORY.asSecondWrapper(s::get), NBTTypes.DOUBLE_TYPE)
                                 .generateValueWidget(half, 0, half, dy));
             },
             new Vec2(0, 0));

@@ -13,6 +13,7 @@ import me.matl114.accessors.interfaces.TileInventory;
 import me.matl114.events.Event;
 import me.matl114.hacks.modules.interact.Interact;
 import me.matl114.hacks.modules.interact.InteractExtra;
+import me.matl114.hacks.modules.interact.SequencedActionManager;
 import me.matl114.hacks.modules.inv.ChestHistory;
 import me.matl114.hacks.modules.inv.KitReplenish;
 import me.matl114.hacks.modules.survival.SchedularSettings;
@@ -21,7 +22,6 @@ import me.matl114.hacks.utils.move.goal.GoalDirection;
 import me.matl114.hacks.utils.move.goal.GoalNear;
 import me.matl114.hacks.utils.move.goal.IPathGoal;
 import me.matl114.hacks.utils.render.RenderCollectors;
-import me.matl114.hacks.utils.tasks.TimerExecutor;
 import me.matl114.hooks.BaritoneHooks;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.InventoryUtils;
@@ -205,7 +205,6 @@ public class PathingSchedular {
         return State.NONE.ordinal();
     }
 
-    final TimerExecutor slowInteract = new TimerExecutor();
     HashSet<ContainerPosition> pendingExploreBlocks;
     ContainerPosition exploreChestBlock;
 
@@ -272,10 +271,10 @@ public class PathingSchedular {
         pathToOrNearStop(exploreChestBlock.getFirst().getPos(), 1.5);
         if (InteractExtra.INSTANCE.isWithinInteractRange(
                 mc.player.getPos(), exploreChestBlock.getFirst().getPos())) {
-            slowInteract.run(
-                    5,
-                    () -> Interact.INSTANCE.interactBlock(
-                            exploreChestBlock.getFirst().getPos()));
+            BlockPos pos = exploreChestBlock.getFirst().getPos();
+            if (!SequencedActionManager.INSTANCE.isWaitingResponse(pos)) {
+                Interact.INSTANCE.interactBlock(pos);
+            }
         }
     }
 
@@ -407,7 +406,10 @@ public class PathingSchedular {
             } else {
                 pathToOrNearStop(leftPos, 1.5);
                 if (InteractExtra.INSTANCE.isWithinInteractRange(player.getPos(), leftPos)) {
-                    slowInteract.run(5, () -> Interact.INSTANCE.interactBlock(leftPos));
+                    BlockPos pos = leftPos;
+                    if (!SequencedActionManager.INSTANCE.isWaitingResponse(pos)) {
+                        Interact.INSTANCE.interactBlock(pos);
+                    }
                 }
             }
             machine.markForEndState();
@@ -550,7 +552,10 @@ public class PathingSchedular {
                 } else {
                     pathToOrNearStop(leftPos, 1.5);
                     if (InteractExtra.INSTANCE.isWithinInteractRange(player.getPos(), leftPos)) {
-                        slowInteract.run(5, () -> Interact.INSTANCE.interactBlock(leftPos));
+                        BlockPos pos = leftPos;
+                        if (!SequencedActionManager.INSTANCE.isWaitingResponse(pos)) {
+                            Interact.INSTANCE.interactBlock(pos);
+                        }
                     }
                 }
                 return State.DISCHARGE.ordinal();
@@ -602,7 +607,10 @@ public class PathingSchedular {
                     machine.markForEndState();
                     return State.DISCHARGE.ordinal();
                 } else {
-                    slowInteract.run(5, () -> Interact.INSTANCE.interactBlock(currentWaitingOpenContainer));
+                    BlockPos pos = currentWaitingOpenContainer;
+                    if (!SequencedActionManager.INSTANCE.isWaitingResponse(pos)) {
+                        Interact.INSTANCE.interactBlock(pos);
+                    }
                 }
                 return State.REPLENISH_CHEST_OR_SHULKER.ordinal();
             } else {
@@ -661,7 +669,10 @@ public class PathingSchedular {
                     BlockPos leftPos = currentExpansionActionTarget.getFirst().getPos();
                     pathToOrNearStop(leftPos, 1.5);
                     if (InteractExtra.INSTANCE.isWithinInteractRange(player.getPos(), leftPos)) {
-                        slowInteract.run(5, () -> Interact.INSTANCE.interactBlock(leftPos));
+                        BlockPos pos = leftPos;
+                        if (!SequencedActionManager.INSTANCE.isWaitingResponse(pos)) {
+                            Interact.INSTANCE.interactBlock(pos);
+                        }
                     }
                 }
                 machine.markForEndState();

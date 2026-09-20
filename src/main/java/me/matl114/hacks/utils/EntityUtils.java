@@ -1,10 +1,11 @@
-package me.matl114.utils;
+package me.matl114.hacks.utils;
 
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.SpawnerBlock;
 import net.minecraft.client.MinecraftClient;
@@ -554,8 +555,8 @@ public class EntityUtils {
     }
 
     public static double getEffectiveGravity(ClientPlayerEntity player) {
-        boolean bl = player.getVelocity().y <= 0.0;
-        return bl && player.hasStatusEffect(StatusEffects.SLOW_FALLING)
+        boolean bl = PlayerStateManager.INSTANCE.lastKnownClientVelocity.y <= 0.0;
+        return (bl && player.hasStatusEffect(StatusEffects.SLOW_FALLING))
                 ? Math.min(player.getFinalGravity(), 0.01)
                 : player.getFinalGravity();
     }

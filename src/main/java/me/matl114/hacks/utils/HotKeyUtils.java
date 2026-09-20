@@ -22,6 +22,17 @@ public class HotKeyUtils {
         return true;
     }
 
+    public static boolean isValidNonInputState() {
+        if (mc.currentScreen == null) {
+            return true;
+        }
+        if (!ModuleSettings.INSTANCE.hotkeyPolicy.get().isIn(ModuleSettings.HotkeyPolicy.RUN_IN_ALL_SCREEN)
+                && ModuleSettings.INSTANCE.shouldNotExecuteInInput()) {
+            return false;
+        }
+        return true;
+    }
+
     public static SimpleHotKey.InputHandler wrapAsHandler(Runnable task) {
         return (ih, in) -> {
             if (isValidState()) {
@@ -36,6 +47,16 @@ public class HotKeyUtils {
         return (ih, in) -> {
             if (isValidState()) {
                 return task.getAsBoolean();
+            }
+            return false;
+        };
+    }
+
+    public static SimpleHotKey.InputHandler asNoneInputHandler(Runnable task) {
+        return (ih, in) -> {
+            if (isValidNonInputState()) {
+                task.run();
+                return true;
             }
             return false;
         };

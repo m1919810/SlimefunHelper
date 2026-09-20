@@ -58,7 +58,7 @@ public class WidgetPos implements NBTParsable<WidgetPos> {
                 widget.addDrawableChild(ExecutableWidget.instance(0, 0, 2 * dy, dy)
                         .setElementHandler(new ButtonElement(
                                 (el) -> {
-                                    return switch (w.getOriginValue().getType()) {
+                                    return switch (w.get().getType()) {
                                         case 0 -> Text.translatableWithFallback(
                                                 "widget.nbt-parsable.widget-pos.percentage", "Per");
                                         case 1 -> Text.translatableWithFallback(
@@ -68,20 +68,19 @@ public class WidgetPos implements NBTParsable<WidgetPos> {
                                 },
                                 ButtonAction.run(() -> {
                                     int total = 2;
-                                    int type = w.getOriginValue().getType();
-                                    w.valueChangeInternal(
-                                            null, w.getOriginValue().withType((type + 1) % total));
+                                    int type = w.get().getType();
+                                    w.accept(w.get().withType((type + 1) % total));
                                 }))));
 
                 TypeConvertAttrKeyValue<WidgetPos, Vec2> percentageSel = new TypeConvertAttrKeyValue<>(
                         w,
-                        WrapperFactory.of(s -> w.getOriginValue().withPercentage(s), WidgetPos::toPercentage),
+                        WrapperFactory.of(s -> w.get().withPercentage(s), WidgetPos::toPercentage),
                         NBTTypes.VEC2_TYPE);
 
                 SubScreenWidget percentage1 = new SubScreenWidget(0, 0, dx - 2 * dy, dy);
                 percentage1.addDrawableChild(percentageSel.generateValueWidget(0, 0, dx - 3 * dy, dy));
                 percentage1.addDrawableChild(generateWidgetPosSelectScreenButton(
-                        dx - 3 * dy, 0, dy, dy, () -> w.getOriginValue().getFPoint(), (el) -> {
+                        dx - 3 * dy, 0, dy, dy, () -> w.get().getFPoint(), (el) -> {
                             int width = mc.getWindow().getScaledWidth();
                             int height = mc.getWindow().getScaledHeight();
                             double mulWidth = (el.x * 100) / width;
@@ -89,22 +88,20 @@ public class WidgetPos implements NBTParsable<WidgetPos> {
                             Vec2 percentage2 = new Vec2(
                                     MathHelper.clamp(Math.round(mulWidth) / 100.0D, 0, 1),
                                     MathHelper.clamp(Math.round(mulHeight) / 100.0D, 0, 1));
-                            percentageSel.valueChangeInternal(null, percentage2);
+                            percentageSel.accept(percentage2);
                         }));
                 TypeConvertAttrKeyValue<WidgetPos, Vec2> absoluteSel = new TypeConvertAttrKeyValue<>(
-                        w,
-                        WrapperFactory.of(s -> w.getOriginValue().withLength(s), WidgetPos::toLength),
-                        NBTTypes.VEC2_TYPE);
+                        w, WrapperFactory.of(s -> w.get().withLength(s), WidgetPos::toLength), NBTTypes.VEC2_TYPE);
                 SubScreenWidget percentage2 = new SubScreenWidget(0, 0, dx - 2 * dy, dy);
                 percentage2.addDrawableChild(absoluteSel.generateValueWidget(0, 0, dx - 3 * dy, dy));
                 percentage2.addDrawableChild(generateWidgetPosSelectScreenButton(
-                        dx - 3 * dy, 0, dy, dy, () -> w.getOriginValue().getFPoint(), (el) -> {
-                            absoluteSel.valueChangeInternal(null, new Vec2(el.x, el.y));
+                        dx - 3 * dy, 0, dy, dy, () -> w.get().getFPoint(), (el) -> {
+                            absoluteSel.accept(new Vec2(el.x, el.y));
                         }));
 
                 DynamicContentWidget<DrawableWidget> showWidget = new DynamicContentWidget<>(
                         () -> {
-                            return switch (w.getOriginValue().getType()) {
+                            return switch (w.get().getType()) {
                                 case 0 -> percentage1;
                                 case 1 -> percentage2;
                                 default -> null;

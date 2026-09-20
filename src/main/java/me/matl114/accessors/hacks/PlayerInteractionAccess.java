@@ -102,6 +102,10 @@ public interface PlayerInteractionAccess {
      * 理论上已经累计了多少进度。它服务于切工具收益估算，而不是本地动画显示。
      */
     default float predictCurrentMiningProgressWithTool(ItemStack tool) {
+        return predictCurrentMiningProgressWithTool(tool, 0);
+    }
+
+    default float predictCurrentMiningProgressWithTool(ItemStack tool, int extraTicks) {
         BlockPos currentBreakingPos = getCurrentMiningPos();
         BlockState block = MinecraftClient.getInstance().world.getBlockState(currentBreakingPos);
         if (block.isAir()) {
@@ -111,7 +115,7 @@ public interface PlayerInteractionAccess {
                 MinecraftClient.getInstance().player, block, tool);
         float speed = WorldUtils.calcBlockBreakingDelta(
                 block, MinecraftClient.getInstance().world, currentBreakingPos, miningSpeed);
-        int ticksSinceLastStart = getCurrentMiningTicks();
+        int ticksSinceLastStart = getCurrentMiningTicks() + extraTicks;
         return speed * ticksSinceLastStart;
     }
 

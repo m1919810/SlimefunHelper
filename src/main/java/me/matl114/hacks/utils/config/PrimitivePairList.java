@@ -164,8 +164,8 @@ public class PrimitivePairList<T, W> implements NBTParsable<PrimitivePairList<T,
                         Primitive.TYPE.cast(),
                         "second",
                         PairLikeFactory.of(Pair::of, Pair::getFirst, Pair::getSecond),
-                        AttrKeyValue.CustomWidgetFactory.cutSizeXLeft(0.5),
-                        AttrKeyValue.CustomWidgetFactory.cutSizeXRight(0.5));
+                        AttrKeyValue.CustomWidgetGenerator.cutSizeXLeft(0.5),
+                        AttrKeyValue.CustomWidgetGenerator.cutSizeXRight(0.5));
         Codec<Pair<Primitive<T>, Primitive<W>>> pairCodec = pairCodecType.typeCodec();
         Codec<Primitive<T>> firstPrimitiveCodec =
                 Primitive.TYPE.<Primitive<T>>cast().typeCodec();
@@ -188,8 +188,8 @@ public class PrimitivePairList<T, W> implements NBTParsable<PrimitivePairList<T,
                                         .optionalFieldOf("default_second_primitive")
                                         .forGetter(PrimitivePairList::defaultSecondPrimitive))
                         .apply(instance, PrimitivePairList::new)),
-                (AttrKeyValue.CustomWidgetFactory<PrimitivePairList<T, W>>) (attr, x, y, dx, dy) -> {
-                    PrimitivePairList<T, W> pairList = attr.getOriginValue();
+                (AttrKeyValue.CustomWidgetGenerator<PrimitivePairList<T, W>>) (attr, x, y, dx, dy) -> {
+                    PrimitivePairList<T, W> pairList = attr.get();
                     String firstName = pairList.firstName();
                     String secondName = pairList.secondName();
                     NBTType<Pair<Primitive<T>, Primitive<W>>> pairType =
@@ -200,15 +200,15 @@ public class PrimitivePairList<T, W> implements NBTParsable<PrimitivePairList<T,
                                     Primitive.TYPE.cast(),
                                     "second",
                                     PairLikeFactory.of(Pair::of, Pair::getFirst, Pair::getSecond),
-                                    (w) -> AttrKeyValue.CustomWidgetFactory.cutSizeXLeft(0.5)
-                                            .apply(AttrKeyValue.CustomWidgetFactory.withLabel(
+                                    (w) -> AttrKeyValue.CustomWidgetGenerator.cutSizeXLeft(0.5)
+                                            .apply(AttrKeyValue.CustomWidgetGenerator.withLabel(
                                                             Text.translatableWithFallback(firstName, firstName))
-                                                    .apply((AttrKeyValue.CustomWidgetFactory) w)),
-                                    (w) -> AttrKeyValue.CustomWidgetFactory.cutSizeXRight(0.5)
-                                            .apply(AttrKeyValue.CustomWidgetFactory.withLabel(
+                                                    .apply((AttrKeyValue.CustomWidgetGenerator) w)),
+                                    (w) -> AttrKeyValue.CustomWidgetGenerator.cutSizeXRight(0.5)
+                                            .apply(AttrKeyValue.CustomWidgetGenerator.withLabel(
                                                             Text.translatableWithFallback(secondName, secondName))
-                                                    .apply((AttrKeyValue.CustomWidgetFactory) w)));
-                    AttrKeyValue.CustomWidgetFactory<List<Pair<Primitive<T>, Primitive<W>>>> widgetFactory =
+                                                    .apply((AttrKeyValue.CustomWidgetGenerator) w)));
+                    AttrKeyValue.CustomWidgetGenerator<List<Pair<Primitive<T>, Primitive<W>>>> widgetFactory =
                             (w1, x1, y1, dx1, dy1) -> NBTTypes.generateListModifyButton(
                                     w1, pairType, pairList::createNewPrimitivePair, x1, y1, dx1, dy1, 300, 20);
                     WrapperFactory<String, List<Pair<Primitive<T>, Primitive<W>>>> stringListWrapperFactory =

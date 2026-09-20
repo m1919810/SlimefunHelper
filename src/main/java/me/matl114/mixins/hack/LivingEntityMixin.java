@@ -6,16 +6,19 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.accessors.access.LivingEntityAccess;
 import me.matl114.hacks.MovTasks;
+import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.move.ElytraExtra;
-import me.matl114.utils.EntityUtils;
+import me.matl114.hacks.utils.EntityUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.*;
+import net.minecraft.entity.data.TrackedData;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -55,6 +58,19 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
 
     @Shadow
     protected abstract boolean isTravellingInFluid(FluidState state);
+
+    @Shadow
+    protected ItemStack activeItemStack;
+
+    @Shadow
+    protected int itemUseTimeLeft;
+
+    @Shadow
+    public abstract boolean isUsingItem();
+
+    @Shadow
+    @Final
+    public static TrackedData<Byte> LIVING_FLAGS;
 
     @Unique
     @Override
@@ -152,5 +168,22 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
             return velocity;
         }
         return original.call(instance, oldVelocity);
+    }
+
+    @WrapOperation(
+            method = "tickActiveItemStack",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;clearActiveItem()V"))
+    private void tickActiveItemStack(LivingEntity instance, Operation<Void> original) {
+        if (checkClientPlayer() && InteractExtra.INSTANCE.clientUsingStateFix.get()) {
+            // do not reset ClientPlayerEntity using flag here
+            if (((Byte) this.dataTracker.get(LIVING_FLAGS) & 1) <= 0) {
+                original.call(instance);
+            } else {
+                this.activeItemStack = ItemStack.EMPTY;
+                this.itemUseTimeLeft = 0;
+            }
+        } else {
+            original.call(instance);
+        }
     }
 }

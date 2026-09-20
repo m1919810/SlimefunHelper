@@ -13,11 +13,11 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.mine.MineExtra;
 import me.matl114.hacks.modules.mine.PacketMine;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.EntityUtils;
 import me.matl114.utils.MathUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
@@ -54,14 +54,21 @@ public class AutoCity extends BaseModule {
     // 是否启用周围一圈的 surround 位置搜索。
     public final FlagRef surround =
             builder(autoCity.add("surround"), Boolean.class).defaultValue(true).build();
+    public final FlagRef doubleMineAll =
+            flagBuilder(autoCity.add("double-mine-all")).build();
 
-    public final FlagRef doubleMineFace =
+    public final FlagRef doubleMineFaceOnly =
             flagBuilder(autoCity.add("double-mine-face")).build();
+
+    public final FlagRef eatingAbort = builder(autoCity.add("using-item-abort"), Boolean.class)
+            .defaultValue(false)
+            .build();
 
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPreHandleInputEvents(), this::onInputEvent);
+        // add prio so that it works before place modules and crystal modules
+        registerListener(Listener.getPreHandleInputEvents(), this::onInputEvent, -33550336);
         registerListener(PacketMine.getPrePacketMine(), this::onPrePacketMine);
     }
 
@@ -89,9 +96,11 @@ public class AutoCity extends BaseModule {
         if (enable.get()) {
             pendingSwitchPos = false;
             refreshTarget();
+            if (eatingAbort.get() && mc.player.isUsingItem()) {
+                return;
+            }
             if (targetEntity != null) {
                 // consider cooldown
-
                 onMine();
             }
         }
@@ -108,13 +117,16 @@ public class AutoCity extends BaseModule {
         Set<BlockPos> outerPoses = new LinkedHashSet<>();
         Set<BlockPos> selfPoses = new LinkedHashSet<>();
         Vec3d pos = mc.player.getEyePos();
+        BlockPos targetEntityPos = targetEntity.getBlockPos();
         Predicate<BlockPos> filter = (np) -> InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), np);
         selfPoses.addAll(MathUtils.getOccupiedBlockPositions(box).stream()
                 .sorted(Comparator.comparingInt(Vec3i::getY))
                 .toList());
 
-        Comparator<BlockPos> blockPosComparator =
-                Comparator.comparingDouble(v -> MathUtils.getBlockBox(v).squaredMagnitude(pos));
+        Comparator<BlockPos> blockPosComparator = Comparator.comparingInt(BlockPos::getY)
+                .thenComparingDouble(v -> v.getSquaredDistance(targetEntityPos))
+                .thenComparingDouble(v -> MathUtils.getBlockBox(v).squaredMagnitude(pos));
+
         Box heightTest = box;
         if (head.get()) {
             heightTest = box.stretch(0, 0.75, 0);
@@ -197,7 +209,10 @@ public class AutoCity extends BaseModule {
                             if (Objects.equals(bp, nowCurrentFailMinePos)) {
                                 continue;
                             }
-                            if (currentFailMinePos == null && canFailMine && doubleMineFace.get()) {
+                            if (currentFailMinePos == null
+                                    && canFailMine
+                                    && doubleMineAll.get()
+                                    && doubleMineFaceOnly.get()) {
                                 currentFailMinePos = bp;
                                 continue;
                             }
@@ -208,6 +223,16 @@ public class AutoCity extends BaseModule {
                     for (var bp : outerPosList) {
                         BlockState bs = mc.world.getBlockState(bp);
                         if (!bs.isAir() && !bs.isLiquid() && PacketMine.INSTANCE.isMineable(bs)) {
+                            if (Objects.equals(bp, nowCurrentFailMinePos)) {
+                                continue;
+                            }
+                            if (currentFailMinePos == null
+                                    && canFailMine
+                                    && doubleMineAll.get()
+                                    && !doubleMineFaceOnly.get()) {
+                                currentFailMinePos = bp;
+                                continue;
+                            }
                             currentMinePos = bp;
                             break find_mine_schedule;
                         }

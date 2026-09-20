@@ -1,4 +1,4 @@
-package me.matl114.gui;
+package me.matl114.gui.interfaces;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -8,7 +8,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.basic.ButtonAction;
 import me.matl114.gui.basic.ColorProvider;
 import me.matl114.gui.basic.ColorSampler;
@@ -19,13 +18,12 @@ import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.basic.TooltipHandler;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.IconElement;
-import me.matl114.utils.config.PropertyTracker;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-public interface WidgetSupplier {
-    WidgetSupplier DEFAULT = DefaultWidgetSupplier.INSTANCE;
+public interface ElementSupplier {
+    ElementSupplier DEFAULT = DefaultElementSupplier.INSTANCE;
 
     static ButtonBuilder button() {
         return ButtonBuilder.builder();
@@ -54,7 +52,7 @@ public interface WidgetSupplier {
     @Setter
     @Accessors(chain = true, fluent = true)
     abstract class AbstractElementBuilder<B extends AbstractElementBuilder<B>> {
-        public WidgetSupplier factory = DEFAULT;
+        public ElementSupplier factory = DEFAULT;
         public boolean showTooltips = true;
         public TooltipHandler tooltipHandler;
         public List<RenderHandler> extraRenders = new ArrayList<>();
@@ -63,7 +61,7 @@ public interface WidgetSupplier {
         public Predicate<ElementHandler> presentCondition;
         public Predicate<ElementHandler> activeActionCondition;
 
-        protected final WidgetSupplier resolveFactory() {
+        protected final ElementSupplier resolveFactory() {
             return factory == null ? DEFAULT : factory;
         }
 
@@ -76,7 +74,7 @@ public interface WidgetSupplier {
             return build(resolveFactory());
         }
 
-        public abstract ElementHandler build(WidgetSupplier factory);
+        public abstract ElementHandler build(ElementSupplier factory);
 
         public B tooltips(List<Text> tooltips) {
             this.tooltipHandler = tooltips == null ? null : TooltipHandler.of(tooltips);
@@ -171,7 +169,7 @@ public interface WidgetSupplier {
         }
 
         @Override
-        public ElementHandler build(WidgetSupplier factory) {
+        public ElementHandler build(ElementSupplier factory) {
             return factory.create(this);
         }
     }
@@ -197,7 +195,7 @@ public interface WidgetSupplier {
         }
 
         @Override
-        public ElementHandler build(WidgetSupplier factory) {
+        public ElementHandler build(ElementSupplier factory) {
             return factory.create(this);
         }
     }
@@ -224,7 +222,7 @@ public interface WidgetSupplier {
         }
 
         @Override
-        public ElementHandler build(WidgetSupplier factory) {
+        public ElementHandler build(ElementSupplier factory) {
             return factory.create(this);
         }
     }
@@ -237,7 +235,7 @@ public interface WidgetSupplier {
         public String text = "";
         public int maxLength = 32768;
         public Consumer<String> changedListener;
-        public PropertyTracker<TextFieldAccess, String> listener;
+        public Consumer<String> listener;
         public ColorProvider borderColorProvider;
         public Boolean drawsBackground;
         public Boolean focusUnlocked;
@@ -254,7 +252,7 @@ public interface WidgetSupplier {
         }
 
         @Override
-        public ElementHandler build(WidgetSupplier factory) {
+        public ElementHandler build(ElementSupplier factory) {
             return factory.create(this);
         }
     }

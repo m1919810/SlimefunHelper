@@ -35,13 +35,13 @@ public record LabelVec3(String xLabel, String yLabel, String zLabel, Vec3 data) 
                 SubScreenWidget subScreenWidget = SubScreenWidget.instance(x, y, dx, dy);
                 int half = dx / 3;
                 int label = Math.min(dy, (int) half / 2);
-                var original = s.getOriginValue();
+                var original = s.get();
                 WrapperFactory<Double, LabelVec3> firstWrapper =
-                        WrapperFactory.of((d) -> s.getOriginValue().withX(d), LabelVec3::x);
+                        WrapperFactory.of((d) -> s.get().withX(d), LabelVec3::x);
                 WrapperFactory<Double, LabelVec3> secondWrapper =
-                        WrapperFactory.of((d) -> s.getOriginValue().withY(d), LabelVec3::y);
+                        WrapperFactory.of((d) -> s.get().withY(d), LabelVec3::y);
                 WrapperFactory<Double, LabelVec3> thirdWrapper =
-                        WrapperFactory.of((d) -> s.getOriginValue().withZ(d), LabelVec3::z);
+                        WrapperFactory.of((d) -> s.get().withZ(d), LabelVec3::z);
 
                 return subScreenWidget
                         .addDrawableChild(DisplayWidget.instance(0, 0, label, dy)

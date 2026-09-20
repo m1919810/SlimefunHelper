@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.mine;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -7,11 +8,17 @@ import lombok.Getter;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.modules.interact.InteractExtra;
+import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.managers.Tasks;
+import me.matl114.utils.WorldUtils;
+import me.matl114.utils.inventory.ItemStackSample;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.s2c.play.BlockBreakingProgressS2CPacket;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -133,6 +140,38 @@ public class MiningProgressManager extends BaseModule {
                 potentialDoubleBreak = null;
                 doubleBreakProgress = -1;
             }
+        }
+
+        public boolean canMine() {
+            return canMine(1.0);
+        }
+
+        public boolean canMine(double extra) {
+            return InteractExtra.INSTANCE.isWithinInteractRange(
+                    this.player.getPos(), this.blockPos, InteractExtra.INSTANCE.getBlockReachDistance() + extra);
+        }
+
+        public float predictBreakingProgress() {
+            return predictGhostHandBreakSpeed(this.player, this.blockPos) * (Tasks.getTick() - breakingStartTick + 1);
+        }
+
+        public float predictDoubleBreakProgress() {
+            return predictGhostHandBreakSpeed(this.player, this.potentialDoubleBreak)
+                    * (Tasks.getTick() - potentialDoubleBreakStartTick + 1);
+        }
+
+        private static float predictGhostHandBreakSpeed(PlayerEntity player, BlockPos pos) {
+            PlayerStateManager.PlayerStatus status = PlayerStateManager.INSTANCE.getPlayerStatus(player);
+            BlockState blockState = mc.world.getBlockState(pos);
+            ItemStack bestTool = status.trackedInventoryItems.stream()
+                    .max(Comparator.comparingDouble(s -> {
+                        return WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
+                                player, blockState, s.sample());
+                    }))
+                    .map(ItemStackSample::sample)
+                    .orElse(ItemStack.EMPTY);
+            float speed = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(player, blockState, bestTool);
+            return WorldUtils.calcBlockBreakingDelta(blockState, mc.world, pos, speed);
         }
     }
 }

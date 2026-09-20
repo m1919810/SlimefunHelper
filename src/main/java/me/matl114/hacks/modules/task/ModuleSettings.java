@@ -74,21 +74,7 @@ public class ModuleSettings extends BaseModule {
                     return true;
                 }
                 case WHEN_NO_INPUT_SCREEN: {
-                    var focused = mc.currentScreen.getFocused();
-                    if (focused instanceof TextFieldAccess) {
-                        return true;
-                    }
-                    if (focused instanceof DrawableWidget widget) {
-                        var focus = WidgetUtils.getFocusedWidget(widget);
-                        if (WidgetUtils.isInputWidget(WidgetUtils.getFocusedWidget(focus))) {
-                            return true;
-                        }
-                        var list = WidgetUtils.getWidgetHierarchy(widget);
-                        if (list.stream().anyMatch(s -> s instanceof KeyBindConfigurateWidget)) {
-                            return true;
-                        }
-                    }
-                    return false;
+                    return shouldNotExecuteInInput();
                 }
                 default:
                     return false;
@@ -96,6 +82,28 @@ public class ModuleSettings extends BaseModule {
         } else {
             return false;
         }
+    }
+
+    public boolean shouldNotExecuteInInput() {
+        if (mc.currentScreen instanceof ClickGui.ClickGuiMainScreen clickGui) {
+            return false;
+        }
+        var focused = mc.currentScreen.getFocused();
+
+        if (focused instanceof TextFieldAccess) {
+            return true;
+        }
+        if (focused instanceof DrawableWidget widget) {
+            var focus = WidgetUtils.getFocusedWidget(widget);
+            if (WidgetUtils.isInputWidget(WidgetUtils.getFocusedWidget(focus))) {
+                return true;
+            }
+            var list = WidgetUtils.getWidgetHierarchy(widget);
+            if (list.stream().anyMatch(s -> s instanceof KeyBindConfigurateWidget)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static final String TOGGLE_UNIQUE_ID = "slimefunhelper:module_toggle/";

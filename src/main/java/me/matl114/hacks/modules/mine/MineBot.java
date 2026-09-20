@@ -15,8 +15,11 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
+import me.matl114.hacks.utils.enums.GhostHandMode;
+import me.matl114.hacks.utils.enums.MineTargetingMode;
 import me.matl114.hacks.utils.tasks.TimerExecutor;
 import me.matl114.managers.*;
 import me.matl114.managers.config.*;
@@ -64,9 +67,8 @@ public class MineBot extends BaseModule {
             .defaultValue(MineBotMode.SPHERICAL)
             .build();
 
-    public final EnumRef<Configs.MineTargetingMode> legalMode = builder(
-                    mineBot.add("legal-mode"), Configs.MineTargetingMode.class)
-            .defaultValue(Configs.MineTargetingMode.NO_BYPASS)
+    public final EnumRef<MineTargetingMode> legalMode = builder(mineBot.add("legal-mode"), MineTargetingMode.class)
+            .defaultValue(MineTargetingMode.NO_BYPASS)
             .show(() -> this.mineBotMode.get().isNotIn(MineBotMode.AUTO_TOOL))
             .build();
 
@@ -98,6 +100,12 @@ public class MineBot extends BaseModule {
 
     public final FlagRef autoSwap =
             flagBuilder(mineBot.add("auto-swap")).defaultValue(true).build();
+
+    public final FlagRef swing = flagBuilder(mineBot.add("swing-hand")).build();
+
+    public final EnumRef<GhostHandMode> ghostHand = builder(mineBot.add("ghost-hand-mode"), GhostHandMode.class)
+            .defaultValue(GhostHandMode.INV_SWAP)
+            .build();
 
     public final FlagRef toolProtect = builder(mineBot.add("durability-protect"), Boolean.class)
             .defaultValue(true)
@@ -199,6 +207,7 @@ public class MineBot extends BaseModule {
                                             mc.player, mineState, s);
                                 } else return null;
                             },
+                            ghostHand.get().getSearchSize(false),
                             true,
                             true)
                     : InventoryUtils.getSelectedItem();
@@ -211,7 +220,7 @@ public class MineBot extends BaseModule {
                     bestStack = InventoryUtils.getSelectedItem();
                 }
             }
-            InvExtra.INSTANCE.swapInventoryIndexToHand(bestStack.index());
+            InvExtra.INSTANCE.swapItemToHand(bestStack.index(), false, ghostHand.get());
             AttributeUtils.updateAttribute(mc.player);
             float speed = MineExtra.INSTANCE.predictBlockBreakingSpeedAt(lastMinePos);
             tryMine += 1;
@@ -251,7 +260,7 @@ public class MineBot extends BaseModule {
             mc.interactionManager.updateBlockBreakingProgress(lastMinePos, dir);
             // fake a swing packet , so that we can bypass some packet check
 
-            if (legalMode.get().hasSwing()) {
+            if (swing.get()) {
                 mc.player.swingHand(Hand.MAIN_HAND);
             }
 

@@ -41,6 +41,9 @@ public class ExtraTasks {
     private static AutoLogout autoLogout;
 
     @Getter
+    private static AntiAFK antiAFK;
+
+    @Getter
     public static Warps warps;
 
     @Getter
@@ -70,6 +73,7 @@ public class ExtraTasks {
         serverScanner = new ServerScanner().register(m);
         autoReconnect = new AutoReconnect().register(m);
         autoLogout = new AutoLogout().register(m);
+        antiAFK = new AntiAFK().register(m);
         warps = new Warps().register(m);
         boatVClip = new BoatVClip().register(m);
 

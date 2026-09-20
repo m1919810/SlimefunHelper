@@ -4,11 +4,13 @@ import com.google.common.base.Preconditions;
 import com.mojang.datafixers.util.Pair;
 import java.util.*;
 import java.util.function.Predicate;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.utils.world.AlignedFace;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.OtherClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileUtil;
@@ -16,7 +18,9 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.RaycastContext;
+import org.jetbrains.annotations.Nullable;
 
 @ApiMethod
 public class RaycastUtils {
@@ -44,7 +48,16 @@ public class RaycastUtils {
 
     public static EntityHitResult raycastHitEntityExceptPlayerResult(Entity e, Vec3d from, Vec3d to) {
         return ProjectileUtil.raycast(
-                e, from, to, new Box(from, to), es -> !es.isSpectator() && es.canHit() && es != mc.player, 16384);
+                e,
+                from,
+                to,
+                new Box(from, to),
+                es -> !es.isSpectator() && es.canHit() && es != mc.player && es instanceof OtherClientPlayerEntity,
+                16384);
+    }
+
+    public static boolean raycastHitAnyBlockOrEntity(Entity owner, Vec3d from, Vec3d to) {
+        return raycastAnySolidBlock(owner, from, to) || raycastHitAnyEntity(owner, from, to);
     }
 
     public static BlockHitResult createRealHitResult(BlockPos pos) {
@@ -63,12 +76,6 @@ public class RaycastUtils {
                 }
                 : endVec.offset(dir, 0.5);
         return new BlockHitResult(crossTargetPose, dir, pos, false);
-    }
-
-    public static BlockHitResult createHitResult(BlockPos pos, Vec3d playerEyePos) {
-        Direction direction =
-                Direction.getFacing(pos.toCenterPos().subtract(playerEyePos)).getOpposite();
-        return createHitResult(pos, direction);
     }
 
     public static BlockHitResult createHitResult(BlockPos pos, Direction blockFace) {
@@ -365,6 +372,20 @@ public class RaycastUtils {
                 return nextPos;
             }
         };
+    }
+
+    @Nullable
+    public static HitResult raycastOnlyBlockCollisions(Vec3d start, Vec3d end) {
+        for (var block : createRaycastBlockPoses(start, end, true)) {
+            BlockState state = mc.world.getBlockState(block);
+            VoxelShape shape2 = state.getCollisionShape(mc.world, block);
+            if (shape2.isEmpty()) continue;
+            BlockHitResult result = shape2.raycast(start, end, block);
+            if (result != null && result.getType() == HitResult.Type.BLOCK) {
+                return result;
+            }
+        }
+        return null;
     }
 
     public static double getFirstIntersection(double start, double dir, double step) {

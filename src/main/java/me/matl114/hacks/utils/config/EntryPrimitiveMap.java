@@ -176,7 +176,7 @@ public class EntryPrimitiveMap<T, W> extends PrimitiveMap<Holder<T>, W> {
     public static <T, W> NBTType<EntryPrimitiveMap<T, W>> createEntry() {
         WrapperFactory<PrimitiveMap<Holder<T>, W>, EntryPrimitiveMap<T, W>> factory = wrapperFactory();
         NBTType<PrimitiveMap<Holder<T>, W>> parentType = PrimitiveMap.TYPE.cast();
-        AttrKeyValue.CustomWidgetFactory<EntryPrimitiveMap<T, W>> widgetFactory = (attr, x, y, dx, dy) -> parentType
+        AttrKeyValue.CustomWidgetGenerator<EntryPrimitiveMap<T, W>> widgetFactory = (attr, x, y, dx, dy) -> parentType
                 .customWidgetFactory()
                 .generateWidget(new TypeConvertAttrKeyValue<>(attr, factory, parentType), x, y, dx, dy);
         return new NBTType<>(

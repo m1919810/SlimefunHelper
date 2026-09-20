@@ -12,7 +12,7 @@ import me.matl114.gui.complex.config.ListModifyWidget;
 import me.matl114.gui.presets.choices.ConfirmingBigScreen;
 import me.matl114.managers.config.NBTType;
 import me.matl114.utils.config.AttrKeyValue;
-import me.matl114.utils.config.WidgetFactory;
+import me.matl114.utils.config.WidgetGenerator;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
@@ -33,7 +33,7 @@ public class NBTListModifyScreen<T> extends ConfirmingBigScreen {
             int dx,
             int dy) {
         this(
-                attrKeyValue.getOriginValue(),
+                attrKeyValue.get(),
                 attrKeyValue::isValueValid,
                 type::createAttrKeyValue,
                 type::generateValueWidget,
@@ -47,7 +47,7 @@ public class NBTListModifyScreen<T> extends ConfirmingBigScreen {
             List<T> list,
             Predicate<List<T>> listValidator,
             BiFunction<String, T, AttrKeyValue<T>> attrElementFactory,
-            WidgetFactory<AttrKeyValue<T>> customWidgetFactory,
+            WidgetGenerator<AttrKeyValue<T>> customWidgetFactory,
             Supplier<T> newElement,
             Consumer<List<T>> callback,
             int dx,
@@ -101,12 +101,12 @@ public class NBTListModifyScreen<T> extends ConfirmingBigScreen {
                         this.x + (this.backgroundWidth - listWidth) / 2,
                         this.y + CONTENT_START_Y,
                         listWidth,
-                        content_end_y - CONTENT_START_Y)
+                        getContentHeight())
                 .addTo(this);
     }
 
     private List<T> list() {
-        return list.stream().map(AttrKeyValue::getOriginValue).collect(Collectors.toList());
+        return list.stream().map(AttrKeyValue::get).collect(Collectors.toList());
     }
 
     @Override
@@ -114,7 +114,7 @@ public class NBTListModifyScreen<T> extends ConfirmingBigScreen {
         var lst = new ArrayList<T>();
         for (var re : list) {
             if (re.isValidate()) {
-                lst.add(re.getOriginValue());
+                lst.add(re.get());
             } else return false;
         }
         return validator.test(lst);

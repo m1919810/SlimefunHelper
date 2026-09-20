@@ -1,12 +1,9 @@
 package me.matl114.accessors.gui;
 
 import me.matl114.gui.basic.ColorProvider;
-import me.matl114.utils.config.PropertyTracker;
 import net.minecraft.client.gui.widget.ClickableWidget;
 
 public interface TextFieldAccess {
-    void setListener(PropertyTracker<TextFieldAccess, String> tracker);
-
     public void setBorderColorProvider(ColorProvider provider);
 
     public boolean canStartDrag(double mouseX, double mouseY);

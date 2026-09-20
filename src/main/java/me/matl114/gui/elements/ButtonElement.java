@@ -12,9 +12,9 @@ import net.minecraft.util.math.MathHelper;
 public class ButtonElement extends IconElement.SimpleIconElement {
     private final TextProvider provider;
 
-    public static final Identifier BUTTON = new Identifier("minecraft", "widget/button");
-    public static final Identifier BUTTON_HIGHLIGHT = new Identifier("minecraft", "widget/button_highlighted");
-    public static final Identifier BUTTON_INACTIVE = new Identifier("minecraft", "widget/button_disabled");
+    public static final Identifier BUTTON = new Identifier("slimefunhelper", "gui/button");
+    public static final Identifier BUTTON_HIGHLIGHT = new Identifier("slimefunhelper", "gui/button_highlighted");
+    public static final Identifier BUTTON_INACTIVE = new Identifier("slimefunhelper", "gui/button_disabled");
 
     public ButtonElement(TextProvider provider, ButtonAction action) {
         super(BUTTON_INACTIVE, BUTTON, true, action);

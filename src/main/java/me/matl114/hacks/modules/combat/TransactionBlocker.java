@@ -11,7 +11,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
-import net.minecraft.network.NetworkSide;
 import net.minecraft.network.packet.CommonPackets;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.PacketType;
@@ -42,7 +41,7 @@ public class TransactionBlocker extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(PacketManager.getPacketQueueEvent().getChannel(NetworkSide.SERVERBOUND), this::onPacketQueue);
+        registerListener(PacketManager.getPacketQueueOutEvent(), this::onPacketQueue);
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerPositionLookS2CPacket.class), this::onPlayerRespawnLook);
         registerListener(Listener.getPacketPoint().getChannel(EntityPassengersSetS2CPacket.class), this::onDismount);

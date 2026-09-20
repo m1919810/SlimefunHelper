@@ -101,10 +101,10 @@ public class PrimitiveList<W> implements NBTParsable<PrimitiveList<W>> {
                                         .optionalFieldOf("default_primitive")
                                         .<PrimitiveList<W>>forGetter(PrimitiveList::defaultPrimitive))
                         .apply(oInstance, PrimitiveList::new)),
-                (AttrKeyValue.CustomWidgetFactory<PrimitiveList<W>>) (w, x, y, dx, dy) -> {
-                    PrimitiveList<W> map = w.getOriginValue();
+                (AttrKeyValue.CustomWidgetGenerator<PrimitiveList<W>>) (w, x, y, dx, dy) -> {
+                    PrimitiveList<W> map = w.get();
                     NBTType<W> type = map.elementType();
-                    AttrKeyValue.CustomWidgetFactory<List<W>> widgetFactory = (w1, x1, y1, dx1, dy1) -> {
+                    AttrKeyValue.CustomWidgetGenerator<List<W>> widgetFactory = (w1, x1, y1, dx1, dy1) -> {
                         return NBTTypes.generateListModifyButton(
                                 w1, type, map::createNewElement, x1, y1, dx1, dy1, 300, 20);
                     };

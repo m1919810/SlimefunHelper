@@ -1,6 +1,6 @@
 package me.matl114.hacks.utils.move.goal;
 
-import me.matl114.utils.EntityUtils;
+import me.matl114.hacks.utils.EntityUtils;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 

@@ -12,7 +12,6 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.Constants;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.IconElement;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -106,10 +105,10 @@ public class FakePlayer extends BaseModule {
     public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
         super.addCustomWidgets(acceptor, dx, dy, dblank);
         if (mc.world == null) {
-            acceptor.accept(createTitleLabel("widget.fake-player.fake-player-list.enter-world", 0, dblank, dx, dy));
+            acceptor.accept(createTitle("widget.fake-player.fake-player-list.enter-world", 0, dblank, dx, dy));
             return;
         }
-        acceptor.accept(createTitleLabel("widget.fake-player.fake-player-list.title", 0, dblank, dx, dy));
+        acceptor.accept(createTitle("widget.fake-player.fake-player-list.title", 0, dblank, dx, dy));
         DynamicListWidget list = new DynamicListWidget(0, dblank, dx);
         for (var re : mc.world.getEntities()) {
             if (re instanceof FakePlayerEntity fakePlayer) {
@@ -131,16 +130,20 @@ public class FakePlayer extends BaseModule {
             FakePlayerEntity fakePlayer, @Nullable DynamicListWidget list, int dx, int dy, int dblank) {
         DynamicContentWidget<DrawableWidget> widget = new DynamicContentWidget<>(() -> null, 0, 0);
         SubScreenWidget subScreenWidget = new SubScreenWidget(0, 0, dx, dy + dblank);
-        subScreenWidget.addDrawableChild(DisplayWidget.instance(0, dblank, dx - dy, dy)
-                .setRenderHandler(new ButtonElement(
-                        TextProvider.of(Text.translatable(
-                                "widget.fake-player.fake-player-list.info",
-                                fakePlayer.getDisplayName(),
-                                "%.2f".formatted(fakePlayer.getX()),
-                                "%.2f".formatted(fakePlayer.getY()),
-                                "%.2f".formatted(fakePlayer.getZ()),
-                                fakePlayer.getHealth())),
-                        ButtonAction.empty())));
+        subScreenWidget.addDrawableChild(createExecuteButton(
+                () -> Text.translatable(
+                        "widget.fake-player.fake-player-list.info",
+                        fakePlayer.getDisplayName(),
+                        "%.2f".formatted(fakePlayer.getX()),
+                        "%.2f".formatted(fakePlayer.getY()),
+                        "%.2f".formatted(fakePlayer.getZ()),
+                        fakePlayer.getHealth()),
+                List::of,
+                ButtonAction.empty(),
+                0,
+                dblank,
+                dx - dy,
+                dy));
         subScreenWidget.addDrawableChild(ExecutableWidget.instance(dx - dy, dblank, dy, dy)
                 .setElementHandler(IconElement.fixedGui(Constants.REMOVE_SPRITE, ButtonAction.run(() -> {
                             if (list != null) list.remove(widget);
