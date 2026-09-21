@@ -333,9 +333,9 @@ public class EventCommand extends BaseModule {
                 }
                 var recordData = record.getDispatch();
                 if (testTotem(recordData) && testPopTotem(recordData, mc.player) && testSelfHealth(recordData)) {
-                    return true;
+                    return false;
                 }
-                return false;
+                return true;
             });
             eventMap.get().list().forEach((s) -> {
                 if (s.getFirst().getType() == EventType.ONCE) {
