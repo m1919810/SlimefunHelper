@@ -274,6 +274,7 @@ public class ElytraOptimizeUtils {
         } else if (clampedMotion.y < 0) {
             clampedMotion = clampedMotion.withAxis(Direction.Axis.Y, uMinY);
         }
+        clampedMotion = ElytraExtra.INSTANCE.applySpeedLimit(clampedMotion);
         // 已在盒内，无需缩放
         if (clampedMotion.lengthSquared() < predictedMotion.lengthSquared()) {
             if (realApply) setOverridingFireworkVelocity(null);
