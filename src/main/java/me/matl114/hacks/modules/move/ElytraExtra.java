@@ -61,6 +61,7 @@ import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.BundleS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntitiesDestroyS2CPacket;
+import net.minecraft.network.packet.s2c.play.EntityTrackerUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Hand;
@@ -156,6 +157,12 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public final FlagRef armorFly = flagBuilder(armorFlyPath.add("enable"))
             .updateListener(this::onToggleArmorFly)
+            .build();
+
+    public final NBTRef<OptionalPrimitive<Integer>> armorGlideMaxDelayTicks = builder(
+                    armorFlyPath.add("max-delay-ticks"), OptionalPrimitive.INT_TYPE)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.INT_TYPE, 5))
+            .validator(value -> value.getValue() >= 0)
             .build();
 
     public final KeyBindRef keyBind = moduleEntry(
@@ -339,6 +346,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 Listener.getPacketPoint().getChannel(TeleportConfirmC2SPacket.class), this::onAcceptTeleportation);
         registerListener(Listener.getPostGameTick(), this::onArmorStateTick);
         registerListener(PacketManager.getPacketQueueInEvent(), this::onFireworkRemoval);
+        registerListener(PacketManager.getPacketQueueInEvent(), this::onArmorGlideDelay);
         registerListener(PacketManager.getQueueShutdownEvent(), this::onPacketQueueFlush);
     }
 
@@ -1727,6 +1735,22 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             ACTasks.addPostTransactionAction((s) -> {
                 sendCustomUseFireworkPacket(pitch, yaw);
             });
+        }
+    }
+
+    public void onArmorGlideDelay(Event<PacketStorage> event) {
+        if (checkNull()
+                || event.isCancelled()
+                || !armorFly.get()
+                || !armorGlideMaxDelayTicks.get().isPresent()
+                || !(event.context instanceof PacketManager.PacketStorageImpl impl)
+                || !(impl.packet() instanceof EntityTrackerUpdateS2CPacket trackerUpdate)
+                || trackerUpdate.id() != mc.player.getId()) {
+            return;
+        }
+        if (Tasks.getTick() - PlayerStateManager.INSTANCE.lastStartGlidingTick
+                < armorGlideMaxDelayTicks.get().getValue()) {
+            event.cancel();
         }
     }
 

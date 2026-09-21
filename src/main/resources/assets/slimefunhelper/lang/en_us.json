@@ -884,6 +884,7 @@
 	"elytra.armor-fly.enable.tooltips": "该功能可以让你在穿护甲的时候进行鞘翅滑翔\n需要背包中存在鞘翅\n注:1.21.2GrimAC以上需要打开\n移动安全性模块.兼容1.21.2GrimAC输入检测\n并且可能会产生一些无关紧要的反作弊警报\n注:鞘翅建议放置在快捷栏或者副手,以减少发包开销",
 	"elytra.armor-fly.armor-mode": "鞘翅甲飞:装甲模式",
 	"elytra.armor-fly.armor-mode.tooltips": "用于决定换上护甲的逻辑\n懒惰模式中,仅在服务器同步玩家鞘翅状态时切换鞘翅\nTick模式(旧)已过时\nTick模式(新)中,每次玩家运动的时候都会切换鞘翅",
+	"elytra.armor-fly.max-delay-ticks": "鞘翅甲飞:最大状态同步延迟刻",
 	"elytra.armor-fly.antikick": "鞘翅甲飞:飞行防踢出",
 	"elytra.armor-fly.pose-fix": "鞘翅甲飞:位姿修复",
 	"elytra.armor-fly.pose-fix.tooltips": "修正你的碰撞箱和眼睛高度",
