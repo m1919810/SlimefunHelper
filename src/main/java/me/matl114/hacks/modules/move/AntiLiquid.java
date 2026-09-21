@@ -75,17 +75,11 @@ public class AntiLiquid extends BaseModule implements LegalMovementManager.Movem
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         if (currentArmorGlidingSaveState) {
-            if (!ElytraExtra.INSTANCE.nextPacketResetFallFlying.isEmpty()) {
-                if (Tasks.getTick() >= switchElytraGt.get() + taskLast) {
-                    ElytraExtra.INSTANCE.nextPacketResetFallFlying.clear();
-                } else {
-                    movementManagerEvent.cancel();
-                    movementManagerEvent.context.markForResetPos();
-                    FloatingUtils.INSTANCE.setGrimFloatingTick(true);
-                    return;
-                }
-            } else {
-                taskLast = 0;
+            if (!ElytraExtra.INSTANCE.hasPendingFallFlyingReset()) {
+                movementManagerEvent.cancel();
+                movementManagerEvent.context.markForResetPos();
+                FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                return;
             }
         }
 
@@ -114,7 +108,6 @@ public class AntiLiquid extends BaseModule implements LegalMovementManager.Movem
         }
     }
 
-    int taskLast = 0;
     int taskSwitch = 0;
 
     private void handleMayFlyIntoFluid(Event<LegalMovementManager> eventMove, boolean isLava, boolean isWater) {
@@ -136,9 +129,6 @@ public class AntiLiquid extends BaseModule implements LegalMovementManager.Movem
                     ElytraExtra.INSTANCE.endArmorFlyTransaction(true);
                     currentArmorGlidingSaveState = true;
                     taskSwitch = Tasks.getTick();
-                    if (!ElytraExtra.INSTANCE.nextPacketResetFallFlying.isEmpty()) {
-                        taskLast = Tasks.getTick();
-                    }
                     FloatingUtils.INSTANCE.setGrimFloatingTick(true);
                     return;
                 }

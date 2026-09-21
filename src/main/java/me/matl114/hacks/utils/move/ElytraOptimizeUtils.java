@@ -43,7 +43,7 @@ public class ElytraOptimizeUtils {
             vec3d = vec3d.withAxis(Direction.Axis.X, 5);
             horizontal = vec3d.horizontalLength();
         }
-        double pitchDeg = -54.5;
+        double pitchDeg = ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V1) ? -36 : -54.5;
         double pitchRad = Math.toRadians(pitchDeg);
         // 使用 -tan(pitch) 来抵消符号，或者直接用 tan(54.5)
         double newY = -horizontal * Math.tan(pitchRad);
@@ -98,6 +98,21 @@ public class ElytraOptimizeUtils {
         }
         if (ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V4)) {
             return calculateBestV4DownForwardSpeed(vec3d, natural);
+        }
+        if (ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V1)) {
+            double horizontal = vec3d.horizontalLength();
+            if (horizontal < 1E-6) {
+                vec3d = vec3d.withAxis(Direction.Axis.X, 5);
+                horizontal = vec3d.horizontalLength();
+            }
+            double pitchDeg = 36;
+            double pitchRad = Math.toRadians(pitchDeg);
+            // 使用 -tan(pitch) 来抵消符号，或者直接用 tan(54.5)
+            double newY = -horizontal * Math.tan(pitchRad);
+            // 等价写法：double newY = horizontal * Math.tan(Math.toRadians(54.5));
+
+            // 4. 返回新的向量（保持 x 和 z 不变，仅替换 y）
+            return vec3d.withAxis(Direction.Axis.Y, newY);
         }
         return vec3d;
     }
