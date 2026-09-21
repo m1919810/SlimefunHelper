@@ -166,19 +166,19 @@ public class ElytraBot extends BaseModule {
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
-    public final IntRef macePreSwapDelay = intBuilder(attackMace.add("mace-pre-swap-delay"))
-            .defaultValue(2)
-            .validator(Configs.INT_NONNEGATIVE)
+    public final DoubleRef macePreSwapDelay = doubleBuilder(attackMace.add("mace-pre-swap-delay"))
+            .defaultValue(2.0D)
+            .validator(Configs.doubleRange(0, 10))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
     public final DoubleRef macePreSwapDistancePerTick = doubleBuilder(attackMace.add("mace-pre-swap-distance-per-tick"))
-            .defaultValue(0.0D)
+            .defaultValue(2.0D)
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
     public final IntRef maceSwapMinDelay = intBuilder(attackMace.add("mace-swap-min-delay"))
-            .defaultValue(2)
+            .defaultValue(6)
             .validator(Configs.INT_NONNEGATIVE)
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
@@ -1396,12 +1396,12 @@ public class ElytraBot extends BaseModule {
                 Vec3d predictedPosition = PositionPredict.INSTANCE
                         .attackPredictArgument
                         .get()
-                        .predictWithExtraTicks(base.target, base.macePreSwapDelay.get());
+                        .predict0(base.target, base.macePreSwapDelay.get());
                 double range = CombatTasks.getCombatExtra().getAttackAtTargetRange(base.target)
                         + base.macePreSwapDistancePerTick.get() * base.macePreSwapDelay.get();
                 if (TargetSelector.INSTANCE.isWithinAttackRange(
                         mc.player.getPos(), base.target.dimensions.getBoxAt(predictedPosition), range)) {
-                    return ElytraExtra.INSTANCE.requestManualArmorSwapAndResetFallFlying();
+                    return ElytraExtra.INSTANCE.requestManualArmorSwapAndResetFallFlying(10);
                 }
             }
             return false;

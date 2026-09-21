@@ -22,7 +22,9 @@ import me.matl114.utils.Debug;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.PacketType;
+import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
 import net.minecraft.network.packet.c2s.play.*;
+import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
@@ -127,6 +129,8 @@ public class PacketDebugger extends BaseModule {
                             ", Id:",
                             positionLookS2CPacket.getTeleportId(),
                             timeStr);
+                } else if (type instanceof CommonPingS2CPacket ping) {
+                    debug("Send", simplifyId(type.getPacketId().id()), ", Id:", ping.getParameter(), timeStr);
                 } else {
                     debug("Accept", simplifyId(type.getPacketId().id()), timeStr);
                 }
@@ -180,6 +184,8 @@ public class PacketDebugger extends BaseModule {
                             timeStr);
                 } else if (type instanceof TeleportConfirmC2SPacket confirm) {
                     debug("Send", simplifyId(type.getPacketId().id()), ", Id:", confirm.getTeleportId(), timeStr);
+                } else if (type instanceof CommonPongC2SPacket pong) {
+                    debug("Send", simplifyId(type.getPacketId().id()), ", Id:", pong.getParameter(), timeStr);
                 } else {
                     debug("Send", simplifyId(type.getPacketId().id()), timeStr);
                 }

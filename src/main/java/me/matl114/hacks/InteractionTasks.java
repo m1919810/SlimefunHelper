@@ -1269,7 +1269,7 @@ public class InteractionTasks {
         return lastInteract
                 .map(UseItemOnBlock::hitResult)
                 .map(BlockHitResult::getBlockPos)
-                .orElseGet(() -> RaycastUtils.rayTraceSpecificBlock(targetBlock).orElse(null));
+                .orElse(null);
     }
 
     public static Entity predictEntityScreenFrom(Predicate<Entity> targetBlock) {
