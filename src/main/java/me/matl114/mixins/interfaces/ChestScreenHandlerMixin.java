@@ -85,7 +85,10 @@ public abstract class ChestScreenHandlerMixin extends ScreenHandler
     public void sync(TileInventory tileInventory) {
         this.world = tileInventory.getWorld();
         this.containerPosition = tileInventory.getContainerPosition();
-        this.pos = this.containerPosition.getFirst().getPos();
-        this.cacheBlockType = this.world.getBlockState(this.pos).getBlock();
+        this.pos = this.containerPosition == null
+                ? null
+                : this.containerPosition.getFirst().getPos();
+        if (this.pos != null)
+            this.cacheBlockType = this.world.getBlockState(this.pos).getBlock();
     }
 }
