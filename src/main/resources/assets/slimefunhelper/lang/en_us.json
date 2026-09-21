@@ -913,6 +913,8 @@
 	"elytra.custom-fireworks.auto-rescale-firework-box": "烟花: 速率自动缩放",
 	"elytra.custom-fireworks.auto-rescale-firework-box.tooltips": "自动调节烟花速度",
 	"elytra.custom-fireworks.auto-rescale-firework-amount": "烟花: 自动缩放限制",
+	"elytra.custom-fireworks.firework-speed-limit-up": "烟花: 上升总速度限制",
+	"elytra.custom-fireworks.firework-speed-limit-down": "烟花: 下降总速度限制",
 	"elytra.custom-fireworks.auto-rescale-firework-al": "烟花: 自动缩放模式",
 	"elytra.custom-fireworks.auto-rescale-axis-zero-point-three": "烟花: 自动缩放Y+增益",
 	"elytra.custom-fireworks.auto-rescale-xz-zero-point-three": "烟花: 自动缩放XZ+增益",

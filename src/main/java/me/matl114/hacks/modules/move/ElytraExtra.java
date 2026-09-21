@@ -241,6 +241,20 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             .show(this.autoRescale::get)
             .build();
 
+    public final DoubleRef fireworkSpeedLimitUp =
+            doubleBuilder(customFireworksPath.add("firework-speed-limit-up"))
+                    .defaultValue(1.7D)
+                    .validator(Configs.doubleRange(0.0D, 10000.0D))
+                    .show(this.autoRescale::get)
+                    .build();
+
+    public final DoubleRef fireworkSpeedLimitDown =
+            doubleBuilder(customFireworksPath.add("firework-speed-limit-down"))
+                    .defaultValue(1.7D)
+                    .validator(Configs.doubleRange(0.0D, 10000.0D))
+                    .show(this.autoRescale::get)
+                    .build();
+
     public final EnumRef<Al> autoRescaleAl = builder(customFireworksPath.add("auto-rescale-firework-al"), Al.class)
             .defaultValue(Al.V1)
             .show(this.autoRescale::get)
@@ -2199,6 +2213,23 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         };
     }
 
+    public Vec3d applySpeedLimit(Vec3d vec3d){
+        double speedLimit = vec3d.y > 0 ? fireworkSpeedLimitUp.get() : fireworkSpeedLimitDown.get();
+        if(vec3d.length() > speedLimit){
+            if(vec3d.y > 0){
+                double horizontal = vec3d.horizontalLengthSquared();
+                double newY = Math.sqrt( Math.min(0, MathUtils.s2(speedLimit) - horizontal));
+                return vec3d.withAxis(Direction.Axis.Y, newY);
+            }else{
+                double vertical = Math.abs(vec3d.y);
+                double newXZ = Math.sqrt( Math.min(0, MathUtils.s2(speedLimit) - MathUtils.s2(vertical)));
+                double horizontal = vec3d.horizontalLength();
+                double percentage = newXZ / horizontal;
+                return vec3d.multiply(percentage, 1, percentage);
+            }
+        }
+    }
+
     public Vec3d applyAxisLimit1(Vec3d currentMotion, float pitch, float yaw, boolean realApply) {
         if (!autoRescale.get()) {
             if (realApply) setOverridingFireworkVelocity(null);
@@ -2304,6 +2335,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         } else if (clampedMotion.y < 0) {
             clampedMotion = clampedMotion.withAxis(Direction.Axis.Y, uMinY);
         }
+        clampedMotion = applySpeedLimit(clampedMotion);
         // 已在盒内，无需缩放
         if (clampedMotion.lengthSquared() < predictedMotion.lengthSquared()) {
             if (realApply) setOverridingFireworkVelocity(null);
@@ -2426,6 +2458,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         // 需要缩小至盒子边界
 
         Vec3d clampedMotion = currentMotion.multiply(1 / maxScale);
+        clampedMotion = applySpeedLimit(clampedMotion);
         if (apply) setOverridingFireworkVelocity(clampedMotion); // <-- 保存边界值
         return clampedMotion;
     }
