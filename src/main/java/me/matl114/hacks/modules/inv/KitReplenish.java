@@ -29,6 +29,7 @@ import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.interact.Interact;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.interact.SequencedActionManager;
@@ -515,7 +516,7 @@ public class KitReplenish extends BaseModule {
                             shulkerBoxRequest = null;
                             break shulker_place;
                         }
-                        if (!shulkerBoxRequest.useZeroTick()) {
+                        if (!shulkerBoxRequest.useZeroTick() && !DisablerManager.INSTANCE.isMultiPlaceCheckDisabled()) {
                             break shulker_place;
                         }
                     } else {

@@ -99,7 +99,7 @@ public class DisablerManager extends BaseModule {
                 this::onGhostHandSwap,
                 Integer.MAX_VALUE - 1);
     }
-
+    // already fixed ,
     public void onRespawn(Event<PlayerRespawnS2CPacket> respawn) {
         if (!grimSelfCheckDisabler) {
             grimSelfCheckDisabler = true;
@@ -186,7 +186,7 @@ public class DisablerManager extends BaseModule {
         }
         return false;
     }
-
+    // flush delayPlaceQueue when use Inv_Swap ghost hand
     public void onGhostHandSwapBack(Event<SlotClickAction> eventSlot) {
         if (eventSlot.isCancelled()) return;
         // do not flush on high version because they need to pass the post-flying rotation check
@@ -198,11 +198,12 @@ public class DisablerManager extends BaseModule {
         }
     }
 
+    // grim flush its delayPlaceQueue when swap
     public void onGhostHandSwap(Event<UpdateSelectedSlotC2SPacket> event) {
         if (event.isCancelled()) return;
         hasAnyPlaceActionGrimQueue = false;
     }
-
+    // MultiPlace bypass, fix place before delayQueuePlace flush -> grim flag AirLiquidPlace
     public void onPlace(Event<PlayerInteractBlockC2SPacket> blockPlace) {
         if (blockPlace.isCancelled()) return;
         BlockHitResult hitResult = blockPlace.context.getBlockHitResult();
@@ -232,7 +233,7 @@ public class DisablerManager extends BaseModule {
         lastCursor = cursor;
         lastPos = blockPos;
     }
-
+    // fix break before delayQueuePlace flush -> grim flag AirLiquidBreak
     public void onBreakAction(Event<PlayerActionC2SPacket> eventBreak) {
         if (eventBreak.isCancelled()) return;
         switch (eventBreak.context.getAction()) {

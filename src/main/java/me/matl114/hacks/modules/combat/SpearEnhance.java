@@ -131,6 +131,10 @@ public class SpearEnhance extends BaseModule {
         if (mc.player == player) {
             return player.isUsingItem() && VItem.getInstance().isSpear(player.getActiveItem());
         }
+        return isHoldingSpear(player);
+    }
+
+    public static boolean isHoldingSpear(PlayerEntity player) {
         return player != null
                 && (VItem.getInstance().isSpear(player.getMainHandStack())
                         || VItem.getInstance().isSpear(player.getOffHandStack()));
