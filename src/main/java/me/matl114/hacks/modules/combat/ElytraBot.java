@@ -46,6 +46,7 @@ import me.matl114.versioned.api.VDrawContext;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
@@ -1022,10 +1023,9 @@ public class ElytraBot extends BaseModule {
         }
 
         protected Vec3d calculateTargetDirection(Vec3d predictorPos) {
-            if (!ElytraExtra.INSTANCE.autoRescale.get()
-                    || ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V1, ElytraExtra.Al.V2)) {
+            if (!ElytraExtra.INSTANCE.autoRescale.get()) {
                 //
-                if (SpearEnhance.isUsingSpear(mc.player)) {
+                if (SpearEnhance.isHoldingSpear(mc.player)) {
                     return (predictorPos
                                     .add(0, base.target.getEyeHeight(base.target.getPose()), 0)
                                     .subtract(mc.player.getEyePos()))
@@ -1036,8 +1036,8 @@ public class ElytraBot extends BaseModule {
             } else {
                 Vec3d legacy;
                 Vec3d forward;
-                if (SpearEnhance.isUsingSpear(mc.player)) {
-                    Vec3d targetPos = predictorPos.add(0, base.target.getEyeHeight(base.target.getPose()), 0);
+                if (SpearEnhance.isHoldingSpear(mc.player)) {
+                    Vec3d targetPos = predictorPos.add(0, base.target.getHeight(), 0);
                     legacy = targetPos.subtract(mc.player.getEyePos());
                     forward = ElytraOptimizeUtils.calculateLookTowardsTargetV3Direction(legacy, 1.7);
                 } else {
@@ -1251,6 +1251,9 @@ public class ElytraBot extends BaseModule {
             double yLerp = targetPos.y * lerpY + base.target.getY() * (1.0D - lerpY);
             targetPos = targetPos.withAxis(Direction.Axis.Y, yLerp);
             setTargetToPlayer(targetPos);
+            if (movementDirection.y >= 0) {
+                return STATE_PULL_UP;
+            }
             return STATE_WAIT_ATTACK;
         }
 
@@ -1385,6 +1388,43 @@ public class ElytraBot extends BaseModule {
         int lastMaceAttackSuccessTick;
         double lastFallDistance;
 
+        protected Vec3d calculateTargetDirection(Vec3d predictorPos) {
+            if (base.maceFix.get()) {
+                if (!ElytraExtra.INSTANCE.autoRescale.get()) {
+                    //
+                    if (SpearEnhance.isHoldingSpear(mc.player)) {
+                        return (predictorPos
+                                        .add(0, base.target.getEyeHeight(base.target.getPose()), 0)
+                                        .subtract(mc.player
+                                                .getPos()
+                                                .add(0, mc.player.getEyeHeight(EntityPose.STANDING), 0)))
+                                .normalize();
+                    } else {
+                        return predictorPos.subtract(mc.player.getPos()).normalize();
+                    }
+                } else {
+                    Vec3d legacy;
+                    Vec3d forward;
+                    if (SpearEnhance.isHoldingSpear(mc.player)) {
+                        Vec3d targetPos = predictorPos.add(0, base.target.getEyeHeight(base.target.getPose()), 0);
+                        legacy = targetPos.subtract(
+                                mc.player.getPos().add(0, mc.player.getEyeHeight(EntityPose.STANDING), 0));
+                        forward = ElytraOptimizeUtils.calculateLookTowardsTargetV3Direction(legacy, 1.7);
+                    } else {
+                        legacy = predictorPos.subtract(mc.player.getPos());
+                        forward = ElytraOptimizeUtils.calculateTowardsTargetV3Direction(legacy, 1.7);
+                    }
+                    if (legacy.dotProduct(forward) < 0) {
+                        return legacy;
+                    } else {
+                        return forward;
+                    }
+                }
+            } else {
+                return super.calculateTargetDirection(predictorPos);
+            }
+        }
+
         public boolean tryPreSwapArmorForAttack() {
             if (shouldAttackMace()
                     && base.maceFix.get()
@@ -1401,7 +1441,7 @@ public class ElytraBot extends BaseModule {
                         + base.macePreSwapDistancePerTick.get() * base.macePreSwapDelay.get();
                 if (TargetSelector.INSTANCE.isWithinAttackRange(
                         mc.player.getPos(), base.target.dimensions.getBoxAt(predictedPosition), range)) {
-                    return ElytraExtra.INSTANCE.requestManualArmorSwapAndResetFallFlying(10);
+                    return ElytraExtra.INSTANCE.requestManualArmorSwapAndResetFallFlying(50);
                 }
             }
             return false;
@@ -1803,7 +1843,7 @@ public class ElytraBot extends BaseModule {
                 if (movementDirection.y < -1E-6) {
                     var distancePair = base.angleOptimizeFollowRange.get();
                     double distance;
-                    if (SpearEnhance.isUsingSpear(mc.player)) {
+                    if (SpearEnhance.isHoldingSpear(mc.player)) {
                         distance = distancePair.y();
                     } else if (antiSpear) {
                         distance = distancePair.z();
@@ -2246,7 +2286,7 @@ public class ElytraBot extends BaseModule {
             }
             machine.markForEndState();
             /// compute their
-            Vec3d originalLook = targetPos.subtract(mc.player.getEyePos());
+            Vec3d originalLook = calculateTargetDirection(targetPos);
             if (originalLook.length() < 6) {
                 originalLook = originalLook.normalize().multiply(6);
             }
