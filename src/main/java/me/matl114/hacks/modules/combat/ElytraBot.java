@@ -506,12 +506,10 @@ public class ElytraBot extends BaseModule {
             .defaultValue(9.0D)
             .build();
 
-    @ApiStatus.Experimental
     public final FlagRef flyAntiSpearDisableWhenSpear = flagBuilder(
                     antiSpear.add("fly-anti-spear-disable-when-using-spear"))
             .show(() -> (mode.get().isNotIn(Mode.SPEAR_ARUA)
                     || (mode.get().isIn(Mode.SPEAR_ARUA) && this.spearTestV2.get())))
-            .experimental()
             .build();
 
     public final FlagRef flyAntiSpearOnlyWhenPredictedHit = flagBuilder(

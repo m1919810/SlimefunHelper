@@ -242,6 +242,16 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                         Vec3d movementInput =
                                 new Vec3d(input.sidewaysSpeed(), input.upwardSpeed(), input.forwardSpeed());
                         Vec3d velocity = EntityUtils.movementInputToVelocity(movementInput, 1.0F, player.getYaw());
+                        if (useAutoRescale.get()
+                                && autoRescaleBestClimbingSpeed.get()
+                                && movementInput.horizontalLength() > 0) {
+                            if (movementInput.y > 0 && velocity.y > 0) {
+
+                                velocity = ElytraOptimizeUtils.calculateBestPullupSpeed(velocity);
+                            } else if (movementInput.y < 0 && velocity.y < 0) {
+                                velocity = ElytraOptimizeUtils.calculateBestDownForwardSpeed(velocity, false);
+                            }
+                        }
                         if (movementInput.horizontalLengthSquared() > 0.0D) {
                             if (movementInput.y > 0) {
                                 if (overridePullupAngle.get().isPresent()) {
@@ -264,16 +274,6 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                                     double yLevel = Math.tan(Math.toRadians(angle)) * velocity.horizontalLength();
                                     velocity = velocity.withAxis(Direction.Axis.Y, -yLevel);
                                 }
-                            }
-                        }
-                        if (useAutoRescale.get()
-                                && autoRescaleBestClimbingSpeed.get()
-                                && movementInput.horizontalLength() > 0) {
-                            if (movementInput.y > 0 && velocity.y > 0) {
-
-                                velocity = ElytraOptimizeUtils.calculateBestPullupSpeed(velocity);
-                            } else if (movementInput.y < 0 && velocity.y < 0) {
-                                velocity = ElytraOptimizeUtils.calculateBestDownForwardSpeed(velocity, false);
                             }
                         }
 

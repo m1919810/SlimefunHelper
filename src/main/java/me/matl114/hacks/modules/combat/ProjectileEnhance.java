@@ -132,7 +132,7 @@ public class ProjectileEnhance extends BaseModule {
             ItemStack stack = PlayerInteractItemC2SPacketAccess.of(packetMutableObject.context)
                     .getItemStack();
             // access to the item before it is used up to 0 count
-            if (stack != null && !stack.isEmpty()) {
+            if (!stack.isEmpty()) {
                 // make a stackCopy of origin item with 1 count
                 if (enableAim.get()) {
                     // pass check, autoaim

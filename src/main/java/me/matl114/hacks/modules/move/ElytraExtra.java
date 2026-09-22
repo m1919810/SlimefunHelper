@@ -845,7 +845,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         if (!flushing && shouldBlockFireworkAction()) {
             ItemStack stack =
                     PlayerInteractItemC2SPacketAccess.of(packet.context).getItemStack();
-            if (stack != null && !stack.isEmpty()) {
+            if (!stack.isEmpty()) {
                 // make a stackCopy of origin item with 1 count
                 if (canBeUsedAsFireworks(stack)) {
                     // 40-> offhand
@@ -1866,6 +1866,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public void onPacketPing(Event<CommonPingS2CPacket> event) {
         if (checkNull()) return;
         if (currentDelayingLastTransaction != null && event.context.getParameter() == currentDelayingLastTransaction) {
+            currentDelayingLastTransaction = null;
             event.cancel();
         }
     }

@@ -7,6 +7,7 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.modules.render.NoRender;
 import me.matl114.hacks.utils.entity.Predictor;
 import me.matl114.hacks.utils.entity.SimpleEntityPredictor;
+import me.matl114.managers.Tasks;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.entity.Entity;
@@ -14,11 +15,26 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
 @Mixin(Entity.class)
 public abstract class EntityMixin<T extends Entity> implements EntityAccess<T>, EntityInternalAccess<T> {
+    @Unique
+    int spawnTicks = Tasks.getTick();
+
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void onInit(CallbackInfo ci) {
+        spawnTicks = Tasks.getTick();
+    }
+
+    @Unique
+    @Override
+    public int getLivingTicks() {
+        return Tasks.getTick() - spawnTicks;
+    }
+
     @Unique
     byte renderTracked = 0;
 

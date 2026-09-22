@@ -1,5 +1,6 @@
 package me.matl114.accessors.access;
 
+import javax.annotation.Nonnull;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
@@ -14,6 +15,7 @@ public interface PlayerInteractItemC2SPacketAccess {
 
     void setItemStack(ItemStack stack);
 
+    @Nonnull
     ItemStack getItemStack();
 
     static PlayerInteractItemC2SPacketAccess of(PlayerInteractItemC2SPacket packet) {
