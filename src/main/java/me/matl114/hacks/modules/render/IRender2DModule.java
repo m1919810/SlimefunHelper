@@ -3,6 +3,7 @@ package me.matl114.hacks.modules.render;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render2D;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.WidgetPos;
@@ -57,14 +58,14 @@ public abstract class IRender2DModule extends BaseModule {
 
     public abstract void onUpdate(Event<Void> event);
 
-    public void onRender(Event<VDrawContext> event) {
+    public void onRender(Event<Render2D> event) {
         if (checkNull()) return;
-        if (enable.get() && !event.<Boolean>getArgs(1)) {
-            VDrawContext vdraw = event.context;
+        if (enable.get() && !event.context.hudHidden()) {
+            VDrawContext vdraw = event.context.drawContext();
             vdraw.pushMatrix();
             try {
                 handleRenderPosition(vdraw);
-                render2D(vdraw, event.getArgs(0));
+                render2D(vdraw, event.context.partialTicks());
             } finally {
                 vdraw.popMatrix();
             }

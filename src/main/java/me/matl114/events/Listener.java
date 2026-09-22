@@ -43,7 +43,6 @@ import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.sound.SoundInstance;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.data.DataTracker;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkSide;
 import net.minecraft.network.OffThreadException;
@@ -499,9 +498,8 @@ public class Listener {
     @Modifiable
     @ApiStatus.Experimental
     @Dispatch(by = "Entity.getType")
-    @ExtraArgs({Entity.class})
-    private static final EventChannelDispatcher<DataTracker.SerializedEntry<?>> entityTrackDataUpdate =
-            new EventChannelDispatcher<>(e -> e.<Entity>getArgs(0).getType(), true);
+    private static final EventChannelDispatcher<MetadataUpdate> entityTrackDataUpdate =
+            new EventChannelDispatcher<>(e -> e.context.entity().getType(), true);
 
     @Getter
     @Broadcast
@@ -614,14 +612,6 @@ public class Listener {
             new EventChannelDispatcher<>(Entity::getType);
 
     @Getter
-    @Broadcast
-    @ExtraArgs(
-            value = {List.class},
-            names = {"updatedEntry"})
-    private static final EventChannelDispatcher<Entity> entityDataListener =
-            new EventChannelDispatcher<>(Entity::getType);
-
-    @Getter
     @Cancelable
     @Modifiable
     @ExtraArgs(value = {EntityType.class})
@@ -698,12 +688,10 @@ public class Listener {
     @Getter
     @Cancelable
     @Modifiable
-    @ExtraArgs({Hand.class})
     private static final EventChannel<UseItem> prePlayerUseItem = new EventChannel<>();
 
     @Getter
     @Modifiable
-    @ExtraArgs({Hand.class})
     private static final EventChannel<UseItem> postPlayerUseItem = new EventChannel<>();
 
     @Getter // player interact at block

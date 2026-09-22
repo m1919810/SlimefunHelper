@@ -24,7 +24,8 @@ public abstract class BaritoneMiningHelperMixin {
             method = "Lbaritone/utils/BlockBreakHelper;tick(Z)V",
             at = @At(value = "FIELD", target = "Lbaritone/api/Settings$Setting;value:Ljava/lang/Object;"),
             require = 0,
-            expect = 0)
+            expect = 0,
+            remap = false)
     private Object onOverrideMiningCooldownBaritone(Settings.Setting instance, Operation<Object> original) {
         if (instance == BaritoneAPI.getSettings().blockBreakSpeed) {
             if (BaritoneFix.INSTANCE.enableMiningCooldown.get()) {
@@ -43,7 +44,8 @@ public abstract class BaritoneMiningHelperMixin {
                                     "Lnet/minecraft/client/network/ClientPlayerEntity;swingHand(Lnet/minecraft/util/Hand;)V",
                             ordinal = 0),
             require = 0,
-            expect = 0)
+            expect = 0,
+            remap = false)
     private boolean onStopSwingHand1(ClientPlayerEntity instance, Hand hand) {
         if (BaritoneFix.INSTANCE.applyMineSettingsToBaritone.get() && MineExtra.INSTANCE.noSwing.get()) {
             return false;
@@ -60,7 +62,8 @@ public abstract class BaritoneMiningHelperMixin {
                                     "Lnet/minecraft/client/network/ClientPlayerEntity;swingHand(Lnet/minecraft/util/Hand;)V",
                             ordinal = 1),
             require = 0,
-            expect = 0)
+            expect = 0,
+            remap = false)
     private boolean onStopSwingHand2(ClientPlayerEntity instance, Hand hand) {
         if (BaritoneFix.INSTANCE.applyMineSettingsToBaritone.get() && MineExtra.INSTANCE.noSwing.get()) {
             return false;

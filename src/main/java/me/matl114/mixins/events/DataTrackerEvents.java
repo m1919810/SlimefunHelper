@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.MetadataUpdate;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.entity.Entity;
@@ -37,14 +38,15 @@ public abstract class DataTrackerEvents {
             var iterator = entries.iterator();
             while (iterator.hasNext()) {
                 DataTracker.SerializedEntry<?> serializedEntry = iterator.next();
-                Event<DataTracker.SerializedEntry<?>> serializedEntryMutableObject =
-                        new Event<>(serializedEntry, true, true, this.trackedEntity);
+                Event<MetadataUpdate> serializedEntryMutableObject =
+                        new Event<>(new MetadataUpdate(entity, serializedEntry), true, false);
                 Listener.getEntityTrackDataUpdate().handleValue(serializedEntryMutableObject);
-                if (serializedEntryMutableObject.isCancelled() || serializedEntryMutableObject.context() == null) {
+                if (serializedEntryMutableObject.isCancelled()
+                        || serializedEntryMutableObject.context().metadata() == null) {
                     // skip current serializedEntry
                     continue;
                 } else {
-                    entryList.add(serializedEntryMutableObject.context());
+                    entryList.add(serializedEntryMutableObject.context().metadata());
                 }
             }
             entryRef.set(entryList);

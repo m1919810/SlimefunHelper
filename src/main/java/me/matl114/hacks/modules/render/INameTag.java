@@ -9,6 +9,7 @@ import me.matl114.SlimefunHelper;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render2D;
 import me.matl114.gui.presets.single.IIcon;
 import me.matl114.gui.presets.single.RegistryDisplays;
 import me.matl114.hacks.api.BaseModule;
@@ -21,7 +22,6 @@ import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.utils.ChatUtils;
-import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.OtherClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
@@ -275,7 +275,7 @@ public abstract class INameTag extends BaseModule {
         }
     }
 
-    public abstract void onRender(Event<VDrawContext> event);
+    public abstract void onRender(Event<Render2D> event);
 
     protected static final IIcon<StatusEffect> statusEffectRenderer = RegistryDisplays.getIcon(StatusEffect.class);
 

@@ -9,6 +9,7 @@ import lombok.Setter;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render3D;
 import me.matl114.events.impl.UseItem;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -30,7 +31,6 @@ import me.matl114.versioned.SupportVersion;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.KineticWeaponComponent;
 import net.minecraft.entity.Entity;
@@ -131,6 +131,10 @@ public class SpearEnhance extends BaseModule {
         if (mc.player == player) {
             return player.isUsingItem() && VItem.getInstance().isSpear(player.getActiveItem());
         }
+        return isHoldingSpear(player);
+    }
+
+    public static boolean isHoldingSpear(PlayerEntity player) {
         return player != null
                 && (VItem.getInstance().isSpear(player.getMainHandStack())
                         || VItem.getInstance().isSpear(player.getOffHandStack()));
@@ -152,9 +156,9 @@ public class SpearEnhance extends BaseModule {
         }
     }
 
-    public void onRender(Event<MatrixStack> event) {
+    public void onRender(Event<Render3D> event) {
         if (renderKineticPlayers.get()) {
-            RenderUtils.startDrawVirtual(event.context);
+            RenderUtils.startDrawVirtual(event.context.stack());
             try {
                 int color = renderColor.get().withAlpha(64);
                 var render = RenderCollectors.createBoxCollector(false, true, false);
@@ -165,10 +169,10 @@ public class SpearEnhance extends BaseModule {
                         }
                     }
                 }
-                render.render3D(event.context);
+                render.render3D(event.context.stack());
                 render.clear();
             } finally {
-                RenderUtils.stopDrawVirtual(event.context);
+                RenderUtils.stopDrawVirtual(event.context.stack());
             }
         }
     }

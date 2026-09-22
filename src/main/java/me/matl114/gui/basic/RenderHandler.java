@@ -14,7 +14,7 @@ import net.minecraft.util.math.MathHelper;
 
 public interface RenderHandler {
     /**
-     * the matrix stack of context is changed into element's coord, you can draw TEXTURE with coord 0,0 , they will be scaled and translated to the element's position
+     * the matrix stack of drawContext is changed into element's coord, you can draw TEXTURE with coord 0,0 , they will be scaled and translated to the element's position
      * @param element
      * @param context
      * @param mouseX
@@ -37,7 +37,7 @@ public interface RenderHandler {
     }
 
     /**
-     * the matrix stack of context is poped here , you can draw tooltips or something without scaling by element
+     * the matrix stack of drawContext is poped here , you can draw tooltips or something without scaling by element
      * @param element
      * @param context
      * @param mouseX

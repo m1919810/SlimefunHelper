@@ -35,7 +35,7 @@ import net.minecraft.world.World;
 
 public class PacketManager {
     // this queue should be accessed only in event loop
-    public static final ConcurrentLinkedQueue<PacketStorage> packetQueueIn = Queues.newConcurrentLinkedQueue();
+    public static ConcurrentLinkedQueue<PacketStorage> packetQueueIn = Queues.newConcurrentLinkedQueue();
     // this queue can be accessed async
     public static final ConcurrentLinkedQueue<PacketStorage> packetQueueOut = Queues.newConcurrentLinkedQueue();
 
@@ -158,12 +158,6 @@ public class PacketManager {
         return false;
     }
 
-    private static boolean currentFlushing = false;
-
-    public static boolean isCurrentFlushing() {
-        return currentFlushing;
-    }
-
     private static void flushInBoundInternal(boolean escapePipeline) {
         if (mc.getNetworkHandler() != null) {
             mc.getNetworkHandler().getConnection().channel.eventLoop().execute(() -> {
@@ -175,13 +169,11 @@ public class PacketManager {
                             && mc.getNetworkHandler().getConnection().isOpen()) {
                         // flush
                         // do not trigger recursive call
-                        currentFlushing = true;
                         startFlushIn = true;
                         try {
-                            PacketStorage packet;
-                            var iter = packetQueueIn.iterator();
-                            while (iter.hasNext()) {
-                                packet = iter.next();
+                            var oldQueue = packetQueueIn;
+                            packetQueueIn = new ConcurrentLinkedQueue<>();
+                            for (var packet : oldQueue) {
                                 if (!escapePipeline) {
                                     Event<PacketStorage> queueEvent = new Event<>(
                                             packet,
@@ -191,14 +183,13 @@ public class PacketManager {
                                             false);
                                     packetQueueInEvent.handleValue(queueEvent);
                                     if (queueEvent.isCancelled()) {
+                                        packetQueueIn.add(packet);
                                         continue;
                                     }
                                 }
-                                iter.remove();
                                 packet.handle();
                             }
                         } finally {
-                            currentFlushing = false;
                             startFlushIn = false;
                             // clear async
                         }

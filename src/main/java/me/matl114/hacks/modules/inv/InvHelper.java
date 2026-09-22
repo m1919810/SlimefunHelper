@@ -264,7 +264,7 @@ public class InvHelper extends BaseModule {
             ItemStack currentHandItem = mc.player.getStackInHand(hand);
             if (currentHandItem.getCount() != stack.getCount()
                     || !ItemStack.areItemsAndComponentsEqual(stack, currentHandItem)) {
-                int slot = hand == Hand.MAIN_HAND ? mc.player.getInventory().getSelectedSlot() : 40;
+                int slot = hand == Hand.MAIN_HAND ? InventoryUtils.getSelectedSlot() : 40;
                 if (currentHandItem.isEmpty()
                         || !currentHandItem.isOf(stack.getItem())
                         || (currentHandItem.getCount() < (resupplyPercentage.get() * stack.getMaxCount()))) {
@@ -300,7 +300,7 @@ public class InvHelper extends BaseModule {
             ItemStack currentHandItem = mc.player.getStackInHand(hand);
             if (currentHandItem.getCount() != stack.getCount()
                     || !ItemStack.areItemsAndComponentsEqual(stack, currentHandItem)) {
-                int slot = hand == Hand.MAIN_HAND ? mc.player.getInventory().getSelectedSlot() : 40;
+                int slot = hand == Hand.MAIN_HAND ? InventoryUtils.getSelectedSlot() : 40;
                 if (currentHandItem.isEmpty()
                         || !currentHandItem.isOf(stack.getItem())
                         || (currentHandItem.getCount() < (resupplyPercentage.get() * stack.getMaxCount()))) {

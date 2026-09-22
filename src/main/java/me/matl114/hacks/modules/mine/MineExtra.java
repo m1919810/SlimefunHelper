@@ -9,6 +9,7 @@ import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.*;
 import me.matl114.events.Event;
 import me.matl114.events.impl.EventContainer;
+import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
@@ -31,7 +32,6 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
@@ -710,10 +710,10 @@ public class MineExtra extends BaseModule {
         return true;
     }
 
-    public void onRender(Event<MatrixStack> renderEvent) {
+    public void onRender(Event<Render3D> renderEvent) {
         if (mineRender.get()) {
 
-            RenderUtils.startDrawVirtual(renderEvent.context);
+            RenderUtils.startDrawVirtual(renderEvent.context.stack());
             try {
                 if (mc.interactionManager != null && mc.player != null && mc.world != null) {
                     BlockPos blockPos =
@@ -722,7 +722,7 @@ public class MineExtra extends BaseModule {
                     // 超过200格的不渲染
                     if (mc.player.getPos().squaredDistanceTo(pos) < 40000 && shouldRenderMine()) {
                         RenderUtils.drawOutlinedBox(
-                                renderEvent.context,
+                                renderEvent.context.stack(),
                                 pos,
                                 pos.add(1.0, 1.0, 1.0),
                                 ColorUtils.withAlpha(frameColor.get().color(), 1.0F));
@@ -747,7 +747,7 @@ public class MineExtra extends BaseModule {
                             Vec3d vec3d = pos.add(box.getCenter());
                             float clamped = MathHelper.clamp(progress, 0.0F, 1.0F);
                             RenderUtils.drawSolidBox(
-                                    renderEvent.context,
+                                    renderEvent.context.stack(),
                                     vec3d.add(vec3.multiply(-clamped)),
                                     vec3d.add(vec3.multiply(clamped)),
                                     ColorUtils.withAlpha(progressColor.get().color(), 0.25F));
@@ -773,7 +773,7 @@ public class MineExtra extends BaseModule {
                             }
 
                             RenderUtils.drawOutlinedBox(
-                                    renderEvent.context,
+                                    renderEvent.context.stack(),
                                     doubleMineVec,
                                     doubleMineVec.add(1.0, 1.0, 1.0),
                                     ColorUtils.withAlpha(doubleBreakColor.get().color(), 1.0F));
@@ -795,7 +795,7 @@ public class MineExtra extends BaseModule {
                                 Vec3d vec3d = doubleMineVec.add(box.getCenter());
                                 float clamped = MathHelper.clamp(progressFail, 0.0F, 1.0F);
                                 RenderUtils.drawSolidBox(
-                                        renderEvent.context,
+                                        renderEvent.context.stack(),
                                         vec3d.add(vec3.multiply(-clamped)),
                                         vec3d.add(vec3.multiply(clamped)),
                                         ColorUtils.withAlpha(progressColor.get().color(), 0.25F));
@@ -804,7 +804,7 @@ public class MineExtra extends BaseModule {
                     }
                 }
             } finally {
-                RenderUtils.stopDrawVirtual(renderEvent.context);
+                RenderUtils.stopDrawVirtual(renderEvent.context.stack());
             }
         }
     }

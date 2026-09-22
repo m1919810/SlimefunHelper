@@ -7,6 +7,7 @@ import java.util.stream.Stream;
 import me.matl114.accessors.access.ClientAccess;
 import me.matl114.accessors.access.FireworkRocketEntityAccess;
 import me.matl114.accessors.access.HitResultAccess;
+import me.matl114.accessors.events.EntityAccess;
 import me.matl114.accessors.hacks.KeyBindAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -37,8 +38,10 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.ChargedProjectilesComponent;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
 import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.entity.projectile.FireworkRocketEntity;
 import net.minecraft.item.*;
 import net.minecraft.registry.Registries;
@@ -121,6 +124,9 @@ public class AntiCrystal extends BaseModule {
             .defaultValue(4)
             .build();
 
+    public final IntRef arrowEffectiveTicks =
+            intBuilder(bows.add("arrow-effective-ticks")).defaultValue(1150).build();
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -151,6 +157,8 @@ public class AntiCrystal extends BaseModule {
                 } else {
                     return true;
                 }
+            } else if (en instanceof ArrowEntity arrow) {
+                return EntityAccess.of(arrow).getLivingTicks() < arrowEffectiveTicks.get();
             } else {
                 return true;
             }
@@ -173,6 +181,18 @@ public class AntiCrystal extends BaseModule {
                 s -> s.getItem() instanceof BowItem
                         && s.get(DataComponentTypes.ENCHANTMENTS) instanceof ItemEnchantmentsComponent ench
                         && ItemStackUtils.getEnchantmentLevel(ench, Enchantments.INFINITY) > 0,
+                ghostHand.get().getSearchSize(false),
+                true,
+                false);
+    }
+
+    private IndexEntry<ItemStack> findMultiCrossBow() {
+        return InventoryUtils.findPlayerItem(
+                s -> s.getItem() instanceof CrossbowItem
+                        && s.get(DataComponentTypes.ENCHANTMENTS) instanceof ItemEnchantmentsComponent ench
+                        && ItemStackUtils.getEnchantmentLevel(ench, Enchantments.MULTISHOT) > 0
+                        && s.get(DataComponentTypes.CHARGED_PROJECTILES) instanceof ChargedProjectilesComponent charged
+                        && !charged.getProjectiles().isEmpty(),
                 ghostHand.get().getSearchSize(false),
                 true,
                 false);
@@ -370,8 +390,13 @@ public class AntiCrystal extends BaseModule {
             }
             shoot:
             if (bow.get() && bowCallback == null && useTimer.canRun(6)) {
+                if (SequencedActionManager.INSTANCE.isWaitingResponse(s -> s.isOf(Items.CROSSBOW))) {
+                    return;
+                }
+
+                var crossbowFirst = findMultiCrossBow();
                 var supply = findInfBow();
-                if (supply != null && hasAnyArrow()) {
+                if (crossbowFirst != null || (supply != null && hasAnyArrow())) {
                     Set<BlockPos> pendingMinesEarly = MiningProgressManager.INSTANCE.getBreakingMap().values().stream()
                             .filter(s -> TargetSelector.INSTANCE.canAttack(s.player))
                             .filter(s -> s.predictBreakingProgress() > Math.min(0.35, progressPercentage.get()))
@@ -406,20 +431,36 @@ public class AntiCrystal extends BaseModule {
                                             mc.player,
                                             eyePos.add(targetDirection.multiply(0.9)),
                                             eyePos.add(targetDirection.multiply(1.1)))) {
-                                Runnable cbb = InvExtra.INSTANCE.swapItemToHand(supply.index(), false, ghostHand.get());
-                                if (cbb != null) {
-                                    ClientAccess.of(mc).simulateUseItem(Hand.MAIN_HAND);
-                                    if (mc.player.isUsingItem()
-                                            && mc.player.getActiveItem().isOf(Items.BOW)
-                                            && mc.player.getActiveHand() == Hand.MAIN_HAND) {
-                                        mc.options.useKey.setPressed(true);
-                                        bowCallback = cbb;
-                                        targetPoint = hitPoint;
-                                    } else {
-                                        KeyBindAccess.of(mc.options.useKey).resetKeyState();
-                                        cbb.run();
+                                if (crossbowFirst != null) {
+                                    Runnable cbb = InvExtra.INSTANCE.swapItemToHand(
+                                            crossbowFirst.index(), false, ghostHand.get());
+                                    if (cbb != null) {
+                                        InteractionTasks.interactItem(
+                                                Hand.MAIN_HAND,
+                                                hitPoint.subtract(mc.player.getEyePos())
+                                                        .normalize(),
+                                                true,
+                                                Interact.INSTANCE.swingHand.get());
+                                        break shoot;
                                     }
-                                    break shoot;
+                                }
+                                if (supply != null) {
+                                    Runnable cbb =
+                                            InvExtra.INSTANCE.swapItemToHand(supply.index(), false, ghostHand.get());
+                                    if (cbb != null) {
+                                        ClientAccess.of(mc).simulateUseItem(Hand.MAIN_HAND);
+                                        if (mc.player.isUsingItem()
+                                                && mc.player.getActiveItem().isOf(Items.BOW)
+                                                && mc.player.getActiveHand() == Hand.MAIN_HAND) {
+                                            mc.options.useKey.setPressed(true);
+                                            bowCallback = cbb;
+                                            targetPoint = hitPoint;
+                                        } else {
+                                            KeyBindAccess.of(mc.options.useKey).resetKeyState();
+                                            cbb.run();
+                                        }
+                                        break shoot;
+                                    }
                                 }
                             }
                         }

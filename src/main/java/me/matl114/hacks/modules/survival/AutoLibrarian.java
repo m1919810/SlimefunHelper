@@ -8,6 +8,7 @@ import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render3D;
 import me.matl114.gui.basic.ButtonAction;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.api.BaseModule;
@@ -34,7 +35,6 @@ import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.*;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.screen.ingame.MerchantScreen;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
@@ -274,11 +274,11 @@ public class AutoLibrarian extends BaseModule {
         }
     }
 
-    public void onRender(Event<MatrixStack> event) {
+    public void onRender(Event<Render3D> event) {
         if (enable.get() && render.get()) {
             if (targetVillager != null && targetWorkStationBase != null) {
-                float partialTicks = event.getArgs(0);
-                RenderUtils.startDrawVirtual(event.context);
+                float partialTicks = event.context.partialTicks();
+                RenderUtils.startDrawVirtual(event.context.stack());
                 try {
                     RenderCollector<Box> collector = RenderCollectors.createBoxCollector(true, false, false);
                     collector.submit(
@@ -287,9 +287,9 @@ public class AutoLibrarian extends BaseModule {
                     collector.submit(
                             new Box(targetWorkStationBase.add(0, 1, 0)),
                             renderColor.get().withAlpha(255));
-                    collector.render3D(event.context);
+                    collector.render3D(event.context.stack());
                 } finally {
-                    RenderUtils.stopDrawVirtual(event.context);
+                    RenderUtils.stopDrawVirtual(event.context.stack());
                 }
                 if (baritoneControl.get()) {
                     pathingSchedular.renderPathing(event);

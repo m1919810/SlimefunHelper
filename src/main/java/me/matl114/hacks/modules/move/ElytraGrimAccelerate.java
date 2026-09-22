@@ -91,10 +91,10 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
             if (lastWorkingTick + 10 > Tasks.getTick()) {}
         }
 
-        //        if(enable.get() && mc.player != null && event.context.getEntityId() == mc.player.getId() &&
+        //        if(enable.get() && mc.player != null && event.drawContext.getEntityId() == mc.player.getId() &&
         // mc.player.isFallFlying()){
-        //            Debug.chat("VC update" + event.context.getVelocity().length());
-        //            Vec3d vec3d = event.context.getVelocity();
+        //            Debug.chat("VC update" + event.drawContext.getVelocity().length());
+        //            Vec3d vec3d = event.drawContext.getVelocity();
         //            if(vec3d.lengthSquared() < 1E-6){
         //                event.cancel();
         //                return;

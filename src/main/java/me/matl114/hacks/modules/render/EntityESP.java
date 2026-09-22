@@ -7,6 +7,8 @@ import me.matl114.accessors.hacks.EntityInternalAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render2D;
+import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.*;
@@ -162,12 +164,12 @@ public class EntityESP extends BaseModule {
         }
     }
 
-    public void onRender3D(Event<MatrixStack> stackE) {
+    public void onRender3D(Event<Render3D> stackE) {
         if (checkNull()) return;
 
         if (enable.get() && renderMode.get().isIn(RenderMode.RENDER_3D)) {
-            var stack = stackE.context;
-            float tickDelta = stackE.getArgs(0);
+            var stack = stackE.context.stack();
+            float tickDelta = stackE.context.partialTicks();
 
             RenderUtils.startDrawVirtual(stack);
             try {
@@ -178,11 +180,11 @@ public class EntityESP extends BaseModule {
         }
     }
 
-    public void onRender2D(Event<VDrawContext> event) {
+    public void onRender2D(Event<Render2D> event) {
         if (checkNull()) return;
         if (enable.get() && renderMode.get().isIn(RenderMode.RENDER_2D)) {
-            float tickDelta = event.getArgs(0);
-            render(event.context, tickDelta);
+            float tickDelta = event.context.partialTicks();
+            render(event.context.drawContext(), tickDelta);
         }
     }
 

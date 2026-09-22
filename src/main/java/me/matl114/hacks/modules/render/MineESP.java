@@ -4,6 +4,8 @@ import java.awt.Color;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render2D;
+import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -26,7 +28,6 @@ import me.matl114.utils.render.RenderCollector;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 import net.minecraft.util.Formatting;
@@ -192,23 +193,23 @@ public class MineESP extends BaseModule {
         }
     }
 
-    public void onRender3D(Event<MatrixStack> event) {
+    public void onRender3D(Event<Render3D> event) {
         if (checkNull()) return;
         if (enable.get()) {
-            RenderUtils.startDrawVirtual(event.context);
+            RenderUtils.startDrawVirtual(event.context.stack());
             try {
-                frameRenderer.render3D(event.context);
-                progressRenderer.render3D(event.context);
-                textRenderer.render3D(event.context);
+                frameRenderer.render3D(event.context.stack());
+                progressRenderer.render3D(event.context.stack());
+                textRenderer.render3D(event.context.stack());
             } finally {
-                RenderUtils.stopDrawVirtual(event.context);
+                RenderUtils.stopDrawVirtual(event.context.stack());
             }
         }
     }
 
-    public void onRender2D(Event<VDrawContext> event) {
+    public void onRender2D(Event<Render2D> event) {
         if (checkNull()) return;
-        if (!enable.get() || !renderGrid2D.get() || event.<Boolean>getArgs(1)) {
+        if (!enable.get() || !renderGrid2D.get() || event.context.hudHidden()) {
             return;
         }
 
@@ -224,7 +225,7 @@ public class MineESP extends BaseModule {
         float playerOffsetX = getPlayerCellOffsetX(player);
         float playerOffsetY = getPlayerCellOffsetY(player);
 
-        VDrawContext vdraw = event.context;
+        VDrawContext vdraw = event.context.drawContext();
         vdraw.pushMatrix();
         try {
             vdraw.getMatrices().translate(startX, startY);

@@ -9,6 +9,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.events.impl.EventContainer;
+import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -39,7 +40,6 @@ import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.damage.DamageTypes;
@@ -276,13 +276,13 @@ public class CrystalAura extends BaseModule {
         }
     }
 
-    public void onRender3D(Event<MatrixStack> event) {
+    public void onRender3D(Event<Render3D> event) {
         if (enable.get()) {
-            RenderUtils.startDrawVirtual(event.context);
+            RenderUtils.startDrawVirtual(event.context.stack());
             try {
-                debugRender.render3D(event.context);
+                debugRender.render3D(event.context.stack());
             } finally {
-                RenderUtils.stopDrawVirtual(event.context);
+                RenderUtils.stopDrawVirtual(event.context.stack());
             }
         }
     }

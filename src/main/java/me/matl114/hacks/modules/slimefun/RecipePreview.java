@@ -6,15 +6,15 @@ public class RecipePreview {
     //    private static final Map<Slot, RenderRecipeRecord> CURRENT = new Reference2ReferenceOpenHashMap<>(4);
     //    private static HandledScreen<?> CURRENT_HANDLING_SCREEN;
     //    private static interface RenderRecipeRecord{
-    //        default boolean render(DrawContext context, HandledScreen<?> screen){
-    //            if(examine(context, screen)){
-    //                startRender(context, screen);
+    //        default boolean render(DrawContext drawContext, HandledScreen<?> screen){
+    //            if(examine(drawContext, screen)){
+    //                startRender(drawContext, screen);
     //            }
     //            return true;
     //        }
     //        public void disableRender(HandledScreen<?> screen);
-    //        public boolean examine(DrawContext context, HandledScreen<?> screen);
-    //        public void startRender(DrawContext context, HandledScreen<?> screen);
+    //        public boolean examine(DrawContext drawContext, HandledScreen<?> screen);
+    //        public void startRender(DrawContext drawContext, HandledScreen<?> screen);
     //    }
     //    private static record RenderRecipeRecordImpl(int textureX, int textureY, int slotDepth, Set<Slot> extraSlots,
     // HolderWithState<ButtonWidget> buttonHolder) implements RenderRecipeRecord{
@@ -25,16 +25,16 @@ public class RecipePreview {
     //                HandledScreenAccess.of(screen).removeChildFrom(buttonHolder.val);
     //            }
     //        }
-    //        public boolean examine(DrawContext context, HandledScreen<?> screen){
+    //        public boolean examine(DrawContext drawContext, HandledScreen<?> screen){
     //            return true;
     //        }
-    //        public void startRender(DrawContext context, HandledScreen<?> screen){
-    //            MatrixStack matrics = context.getMatrices();
+    //        public void startRender(DrawContext drawContext, HandledScreen<?> screen){
+    //            MatrixStack matrics = drawContext.getMatrices();
     //            RenderSystem.enableDepthTest();
     //            matrics.push();
     //            matrics.translate(textureX, textureY ,200 + slotDepth);
     //            matrics.scale(SCALING, SCALING, SCALING);
-    //            context.drawTexture(TEXTURE, 0,0, 0 , 28,15,120, 56,256, 256);
+    //            drawContext.drawTexture(TEXTURE, 0,0, 0 , 28,15,120, 56,256, 256);
     //            matrics.pop();
     //            RenderSystem.disableDepthTest();
     //            HandledScreenAccess.of(screen).getExtraSlots().addAll(extraSlots);
@@ -54,21 +54,21 @@ public class RecipePreview {
     //        }
     //
     //        @Override
-    //        public boolean examine(DrawContext context, HandledScreen<?> screen) {
+    //        public boolean examine(DrawContext drawContext, HandledScreen<?> screen) {
     //            return HandledScreenAccess.of(screen).isSlotPointed(slot);
     //        }
     //
     //        @Override
-    //        public void startRender(DrawContext context, HandledScreen<?> screen) {
+    //        public void startRender(DrawContext drawContext, HandledScreen<?> screen) {
     //            TextRenderer renderer = HandledScreenAccess.of(screen).getTextRenderer();
     //
     //            RenderSystem.enableDepthTest();
-    //            MatrixStack matrics = context.getMatrices();
+    //            MatrixStack matrics = drawContext.getMatrices();
     //            matrics.push();
     //            matrics.translate(0,0f, 500);
     //            var position = matrics.peek().getPositionMatrix();
     //            renderer.draw(data, slot.x + 10 - renderer.getWidth(data), slot.y - 6 - 3, Colors.RED, false,
-    // position, context.getVertexConsumers(), TextRenderer.TextLayerType.POLYGON_OFFSET, 0, 15728880);
+    // position, drawContext.getVertexConsumers(), TextRenderer.TextLayerType.POLYGON_OFFSET, 0, 15728880);
     //            matrics.pop();
     //            RenderSystem.disableDepthTest();
     //        }
@@ -111,7 +111,7 @@ public class RecipePreview {
     //    }
     //
     //    @Deprecated
-    //    public static void renderSpecificRecipeCache(DrawContext context, HandledScreen screen, int mouseX, int
+    //    public static void renderSpecificRecipeCache(DrawContext drawContext, HandledScreen screen, int mouseX, int
     // mouseY, float delta){
     ////        if(!ENABLE_RECIPE.get()){
     ////            releaseAllDisplayRecipe();
@@ -136,7 +136,7 @@ public class RecipePreview {
     //            }
     //
     //            CURRENT.values().removeIf(i -> {
-    //                if(!i.render(context, screen)){
+    //                if(!i.render(drawContext, screen)){
     //                    i.disableRender(screen);
     //
     //

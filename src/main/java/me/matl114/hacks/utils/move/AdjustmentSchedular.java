@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import me.matl114.events.Event;
+import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.modules.move.PlayerInputManager;
 import me.matl114.hacks.modules.survival.SchedularSettings;
 import me.matl114.hacks.utils.EntityUtils;
@@ -15,7 +16,6 @@ import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec2f;
@@ -175,15 +175,15 @@ public class AdjustmentSchedular {
         return modifier;
     }
 
-    public void renderAdjustment(Event<MatrixStack> event) {
+    public void renderAdjustment(Event<Render3D> event) {
         if (!SchedularSettings.INSTANCE.enableRender.get()) {
             return;
         }
-        RenderUtils.startDrawVirtual(event.context);
+        RenderUtils.startDrawVirtual(event.context.stack());
         try {
-            renderCollector.render3D(event.context);
+            renderCollector.render3D(event.context.stack());
         } finally {
-            RenderUtils.stopDrawVirtual(event.context);
+            RenderUtils.stopDrawVirtual(event.context.stack());
         }
     }
 }

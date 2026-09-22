@@ -6,6 +6,7 @@ import java.util.Objects;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.WrapColor;
@@ -20,7 +21,6 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.Entity;
@@ -95,15 +95,15 @@ public class VillagerEsp extends BaseModule {
         }
     }
 
-    public void onRender3D(Event<MatrixStack> event) {
+    public void onRender3D(Event<Render3D> event) {
         if (!enable.get()) {
             return;
         }
-        RenderUtils.startDrawVirtual(event.context());
+        RenderUtils.startDrawVirtual(event.context().stack());
         try {
-            textCollector.render3D(event.context());
+            textCollector.render3D(event.context().stack());
         } finally {
-            RenderUtils.stopDrawVirtual(event.context());
+            RenderUtils.stopDrawVirtual(event.context().stack());
         }
     }
 

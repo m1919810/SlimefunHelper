@@ -42,7 +42,7 @@ public interface ClientPlayerEntityAccess extends LivingEntityAccess<ClientPlaye
 
     public void setLastRot(float pitch, float yaw);
 
-    public void resyncMovementPacket();
+    public void setResyncMovementPacketTicks(int ticks);
 
     public void resyncInput();
 

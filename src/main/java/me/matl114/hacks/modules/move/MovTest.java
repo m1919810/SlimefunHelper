@@ -47,7 +47,7 @@ public class MovTest extends BaseModule implements LegalMovementManager.Movement
 
     public void onTransaction(Event<CommonPingS2CPacket> event) {
         if (enable()) {
-            //            delayedPackets.add(event.context());
+            //            delayedPackets.add(event.drawContext());
             //            event.cancel();
         }
     }
@@ -55,10 +55,10 @@ public class MovTest extends BaseModule implements LegalMovementManager.Movement
     public void onVelocityPacket(Event<EntityVelocityUpdateS2CPacket> event) {
         if (enable() && !checkNull() && event.context.getEntityId() == mc.player.getId()) {
             //            if(veryBigVelocity == null || (veryBigVelocity.getVelocity().lengthSquared() <
-            // event.context.getVelocity().lengthSquared())){
-            //                veryBigVelocity = event.context;
+            // event.drawContext.getVelocity().lengthSquared())){
+            //                veryBigVelocity = event.drawContext;
             //            }
-            //            delayedPackets.add(event.context);
+            //            delayedPackets.add(event.drawContext);
             //            event.cancel();
         }
     }

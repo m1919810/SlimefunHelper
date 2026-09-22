@@ -9,6 +9,8 @@ public interface EntityAccess<T extends Entity> extends MetadataHolder {
 
     public boolean getDataFlag(int index);
 
+    public int getLivingTicks();
+
     static <T extends Entity> EntityAccess<T> of(T entity) {
         return (EntityAccess) entity;
     }

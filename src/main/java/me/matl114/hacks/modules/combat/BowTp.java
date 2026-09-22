@@ -11,6 +11,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.events.impl.EventContainer;
+import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.RenderTasks;
@@ -28,7 +29,6 @@ import me.matl114.utils.ColorUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.RenderUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BowItem;
@@ -249,13 +249,13 @@ public class BowTp extends BaseModule {
         return false;
     }
 
-    public void onRender(Event<MatrixStack> stackE) {
+    public void onRender(Event<Render3D> stackE) {
         var stack = stackE.context;
         if (enable.get() && mc.player != null && render.get()) {
-            float tickDelta = (Float) stackE.extraArgs[0];
+            float tickDelta = stack.partialTicks();
             if (mc.player.isUsingItem() && mc.player.getActiveItem().getItem() instanceof BowItem bow) {
                 // filter bow, but keep shield
-                RenderUtils.startDrawVirtual(stack);
+                RenderUtils.startDrawVirtual(stack.stack());
                 try {
                     var targetSelector = CombatTasks.getTargetSelector();
                     Entity entity = targetSelector.searchAttackEntity(
@@ -265,10 +265,13 @@ public class BowTp extends BaseModule {
                         float opacity = Math.min(0.6F, 0.10F + dist * 0.02F);
                         Box box = RenderUtils.getLerpedBox(entity, tickDelta);
                         RenderUtils.drawSolidBox(
-                                stack, box.getMinPos(), box.getMaxPos(), ColorUtils.withAlpha(Color.GREEN, opacity));
+                                stack.stack(),
+                                box.getMinPos(),
+                                box.getMaxPos(),
+                                ColorUtils.withAlpha(Color.GREEN, opacity));
                     }
                 } finally {
-                    RenderUtils.stopDrawVirtual(stack);
+                    RenderUtils.stopDrawVirtual(stack.stack());
                 }
             }
         }

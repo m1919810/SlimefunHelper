@@ -7,6 +7,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import lombok.Getter;
 import me.matl114.accessors.access.ClientPlayerAccess;
@@ -17,6 +18,7 @@ import me.matl114.accessors.interfaces.TileInventory;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.task.ServerStorage;
@@ -45,7 +47,6 @@ import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.inventory.Inventory;
@@ -68,7 +69,7 @@ public class ChestHistory extends BaseModule {
     public final ModulePath invCache = makePath(Configs.INV_CONFIG, "inv-cache");
 
     private final int AUTO_REFRESH_RANGE = 64;
-    private final LinkedHashMap<ContainerPosition, MutableEntry<Block, Entry>> screens = new LinkedHashMap<>();
+    private final ConcurrentHashMap<ContainerPosition, MutableEntry<Block, Entry>> screens = new ConcurrentHashMap<>();
     private final List<Entry> virtualScreens = new ArrayList<>();
     public static ChestHistory INSTANCE;
 
@@ -370,8 +371,8 @@ public class ChestHistory extends BaseModule {
 
     private static final int POSITION_FLAG = VRender.createTextPositionFlag(0, 1);
 
-    public void onRender(Event<MatrixStack> event) {
-        MatrixStack stack = event.context();
+    public void onRender(Event<Render3D> event) {
+        var stack = event.context().stack();
         // todo: make it a render
         if (enableTitle.get()) {
             if (mc.player != null) {

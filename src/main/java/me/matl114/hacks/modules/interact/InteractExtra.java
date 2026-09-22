@@ -82,6 +82,10 @@ public class InteractExtra extends BaseModule {
             .defaultValue(0.0)
             .build();
 
+    public final DoubleRef ridingReachDistance = builder(interactFix.add("riding-reach-distance"), DoubleRef.TYPE)
+            .defaultValue(1.0D)
+            .build();
+
     public final FlagRef noCooldown =
             flagBuilder(interactFix.add("no-cool-down")).build();
 
@@ -110,7 +114,8 @@ public class InteractExtra extends BaseModule {
     }
 
     public double getBlockReachDistance() {
-        return mc.player.getAttributeValue(EntityAttributes.BLOCK_INTERACTION_RANGE) + reachDistance.get();
+        return mc.player.getAttributeValue(EntityAttributes.BLOCK_INTERACTION_RANGE)
+                + (mc.player.hasVehicle() ? ridingReachDistance.get() : reachDistance.get());
     }
 
     private final double[] FALL_FLYING_EYE_HEIGHTS = {0.4D, 1.62D, 1.27D};

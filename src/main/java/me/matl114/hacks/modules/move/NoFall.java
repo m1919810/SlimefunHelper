@@ -443,7 +443,8 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 shouldApplyOnGroundReverseNextTick = null;
             }
             if (runningThisTick) {
-                // shouldApplyOnGroundReverseNextTick = movementManagerEvent.context.playerStatus.entity.isOnGround();
+                // shouldApplyOnGroundReverseNextTick =
+                // movementManagerEvent.drawContext.playerStatus.entity.isOnGround();
             }
             return true;
         }
@@ -524,7 +525,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             if (module.isActive()) {
                 if (runningThisTick) {
                     //                    movementManagerEvent.cancel();
-                    //                    movementManagerEvent.context().playerStatus.restorePos();
+                    //                    movementManagerEvent.drawContext().playerStatus.restorePos();
                     ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
                     //                    if(waitingForSetback && waitForSetbackId == waitForSetBack){
                     //                        waitTimeout += 1;
@@ -535,7 +536,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                     //                            return;
                     //                        }else{
                     //                            movementManagerEvent.cancel();
-                    //                            movementManagerEvent.context.playerStatus.restorePos();
+                    //                            movementManagerEvent.drawContext.playerStatus.restorePos();
                     //                            return;
                     //                        }
                     //                    }
@@ -782,7 +783,8 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 shouldApplyOnGroundReverseNextTick = null;
             }
             if (runningThisTick) {
-                // shouldApplyOnGroundReverseNextTick = movementManagerEvent.context.playerStatus.entity.isOnGround();
+                // shouldApplyOnGroundReverseNextTick =
+                // movementManagerEvent.drawContext.playerStatus.entity.isOnGround();
             }
             return true;
         }
@@ -1077,7 +1079,8 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 shouldApplyOnGroundReverseNextTick = null;
             }
             if (runningThisTick) {
-                // shouldApplyOnGroundReverseNextTick = movementManagerEvent.context.playerStatus.entity.isOnGround();
+                // shouldApplyOnGroundReverseNextTick =
+                // movementManagerEvent.drawContext.playerStatus.entity.isOnGround();
             }
             return true;
         }
@@ -1290,7 +1293,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 ////                    Debug.chat("Fix tick");
                 ////                    dupResync = 0;
                 ////                    lastFixTick = Tasks.getTick();
-                ////                    var entity = movementManagerEvent.context.playerStatus;
+                ////                    var entity = movementManagerEvent.drawContext.playerStatus;
                 ////
                 ////                    mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(
                 ////                        entity.pos.getX(),
@@ -1390,7 +1393,8 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             }
             storedPacketMove = null;
             if (runningThisTick) {
-                // shouldApplyOnGroundReverseNextTick = movementManagerEvent.context.playerStatus.entity.isOnGround();
+                // shouldApplyOnGroundReverseNextTick =
+                // movementManagerEvent.drawContext.playerStatus.entity.isOnGround();
             }
             return true;
         }
@@ -1691,7 +1695,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 ////                    Debug.chat("Fix tick");
                 ////                    dupResync = 0;
                 ////                    lastFixTick = Tasks.getTick();
-                ////                    var entity = movementManagerEvent.context.playerStatus;
+                ////                    var entity = movementManagerEvent.drawContext.playerStatus;
                 ////
                 ////                    mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(
                 ////                        entity.pos.getX(),
@@ -1799,7 +1803,8 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             }
             storedPacketMove = null;
             if (runningThisTick) {
-                // shouldApplyOnGroundReverseNextTick = movementManagerEvent.context.playerStatus.entity.isOnGround();
+                // shouldApplyOnGroundReverseNextTick =
+                // movementManagerEvent.drawContext.playerStatus.entity.isOnGround();
             }
             return true;
         }

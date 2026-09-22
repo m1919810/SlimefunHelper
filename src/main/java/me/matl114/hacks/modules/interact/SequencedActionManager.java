@@ -33,8 +33,13 @@ public class SequencedActionManager extends BaseModule {
         super.registerAll();
         registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
         registerListener(
-                Listener.getPacketPoint().getChannel(PlayerInteractBlockC2SPacket.class), this::onInteractBlock);
-        registerListener(Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class), this::onInteractItem);
+                Listener.getPacketPoint().getChannel(PlayerInteractBlockC2SPacket.class),
+                this::onInteractBlock,
+                Integer.MAX_VALUE);
+        registerListener(
+                Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class),
+                this::onInteractItem,
+                Integer.MAX_VALUE);
         registerListener(
                 Listener.getPacketPreHandlePoint().getChannel(PlayerActionResponseS2CPacket.class), this::onAck);
     }
@@ -56,8 +61,9 @@ public class SequencedActionManager extends BaseModule {
     }
 
     private void onInteractBlock(Event<PlayerInteractBlockC2SPacket> event) {
+        if (event.isCancelled()) return;
         // ignore fake sequence
-        if (event.context.getSequence() > mc.world.getPendingUpdateManager().sequence + 2) {
+        if (event.context.getSequence() > mc.world.getPendingUpdateManager().sequence + 20) {
             return;
         }
         maxSeq = Math.max(maxSeq, event.context.getSequence());
@@ -78,13 +84,13 @@ public class SequencedActionManager extends BaseModule {
     }
 
     private void onInteractItem(Event<PlayerInteractItemC2SPacket> event) {
+        if (event.isCancelled()) return;
         // ignore fake sequence
-        if (event.context.getSequence() > mc.world.getPendingUpdateManager().sequence + 2) {
+        if (event.context.getSequence() > mc.world.getPendingUpdateManager().sequence + 20) {
             return;
         }
         maxSeq = Math.max(maxSeq, event.context.getSequence());
         ItemStack stack = PlayerInteractItemC2SPacketAccess.of(event.context).getItemStack();
-        stack = stack != null ? stack : mc.player.getStackInHand(event.context.getHand());
         itemUsageSequences.add(
                 lastItemUse = new IndexEntry<>(
                         event.context.getSequence(),

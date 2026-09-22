@@ -3,6 +3,7 @@ package me.matl114.hacks.modules.render;
 import java.util.List;
 import java.util.Map;
 import me.matl114.events.Event;
+import me.matl114.events.impl.Render2D;
 import me.matl114.gui.Constants;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.WidgetPos;
@@ -49,12 +50,12 @@ public class NameList extends INameTag {
     public NBTRef<WidgetPos> pos;
 
     @Override
-    public void onRender(Event<VDrawContext> event) {
+    public void onRender(Event<Render2D> event) {
         if (checkNull()) {
             return;
         }
-        if (enable.get() && !event.<Boolean>getArgs(1) && nameTagInfos != null) {
-            var stack = event.context;
+        if (enable.get() && !event.context.hudHidden() && nameTagInfos != null) {
+            var stack = event.context.drawContext();
             stack.getMatrices().pushMatrix();
             handleRenderPosition(stack);
             int count = 0;
@@ -63,7 +64,7 @@ public class NameList extends INameTag {
                     handleTooManyPlayerList(stack);
                     break;
                 }
-                onRenderList(entry, stack, (event.<Float>getArgs(0)));
+                onRenderList(entry, stack, (event.context.partialTicks()));
                 stack.getMatrices().translate(0, HEIGHT);
                 count += 1;
             }
