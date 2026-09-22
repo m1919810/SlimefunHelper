@@ -8,6 +8,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.events.impl.EventContainer;
+import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -27,7 +28,6 @@ import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -239,13 +239,13 @@ public class AutoPlate extends BaseModule {
         }
     }
 
-    public void onRender3D(Event<MatrixStack> eventVDraw) {
+    public void onRender3D(Event<Render3D> eventVDraw) {
         if (enable.get() && render.get()) {
-            RenderUtils.startDrawVirtual(eventVDraw.context);
+            RenderUtils.startDrawVirtual(eventVDraw.context.stack());
             try {
-                drawOutlines.render3D(eventVDraw.context);
+                drawOutlines.render3D(eventVDraw.context.stack());
             } finally {
-                RenderUtils.stopDrawVirtual(eventVDraw.context);
+                RenderUtils.stopDrawVirtual(eventVDraw.context.stack());
             }
         }
     }

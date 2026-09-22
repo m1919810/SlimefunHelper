@@ -8,6 +8,7 @@ import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.interact.InteractExtra;
@@ -23,7 +24,6 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
@@ -184,13 +184,13 @@ public class QueueMine extends BaseModule {
         return true;
     }
 
-    public void onRender(Event<MatrixStack> eventRender) {
+    public void onRender(Event<Render3D> eventRender) {
         if (render.get()) {
-            RenderUtils.startDrawVirtual(eventRender.context);
+            RenderUtils.startDrawVirtual(eventRender.context.stack());
             try {
-                outline.render3D(eventRender.context);
+                outline.render3D(eventRender.context.stack());
             } finally {
-                RenderUtils.stopDrawVirtual(eventRender.context);
+                RenderUtils.stopDrawVirtual(eventRender.context.stack());
             }
         }
     }

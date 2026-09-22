@@ -8,6 +8,7 @@ import java.util.function.BiPredicate;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.WorldTasks;
@@ -188,10 +189,10 @@ public class ElytraFinder extends BaseModule implements LegalMovementManager.Mov
         offsets.put(new Vec3i(0, 3, 0), Blocks.AIR);
     }
 
-    public void onRender(Event<MatrixStack> event) {
+    public void onRender(Event<Render3D> event) {
         if (enable.get() && render.get()) {
             // render DragonHead
-            MatrixStack stack = event.context();
+            MatrixStack stack = event.context().stack();
             RenderUtils.startDrawVirtual(stack);
             try {
                 if (currentShipStructure != null) {

@@ -11,6 +11,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.events.impl.EventContainer;
+import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.RenderTasks;
@@ -27,7 +28,6 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.*;
 import me.matl114.utils.*;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.text.Text;
@@ -195,12 +195,12 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
         if (listTo.isEmpty()) return null;
         // back movement should be one
 
-        //        var listBack = context.generateTpSequence(tpLocation, playerLocation, false, 320, true);
+        //        var listBack = drawContext.generateTpSequence(tpLocation, playerLocation, false, 320, true);
         return Pair.of(listTo, back);
     }
 
     //    public void onSpearAttackRender(Event<MatrixStack> event) {
-    //        MatrixStack stack = event.context();
+    //        MatrixStack stack = event.drawContext();
     //        {
     //            RenderUtils.startDrawVirtual(stack);
     //            try {
@@ -221,15 +221,15 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
     // == 0 can move, can Start next Spear
     int currentWaitBackTick = 0;
 
-    private void renderPlayerSpearTarget(Event<MatrixStack> event) {
+    private void renderPlayerSpearTarget(Event<Render3D> event) {
         if (!enable.get()) return;
         //        if (RenderTasks.DEBUG_RENDER_SPEAR) {
         //            onSpearAttackRender(event);
         //        }
-        MatrixStack stack = event.context();
-        float tickDelta = event.getArgs(0);
+        var stack = event.context();
+        float tickDelta = stack.partialTicks();
         if (spearRender.get()) {
-            RenderUtils.startDrawVirtual(stack);
+            RenderUtils.startDrawVirtual(stack.stack());
             try {
                 if (canSpearAttack()) {
                     Entity spearEntity = CombatTasks.getTargetSelector()
@@ -239,11 +239,14 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
                         float opacity = Math.min(0.6F, 0.10F + dist * 0.02F);
                         Box box = RenderUtils.getLerpedBox(spearEntity, tickDelta);
                         RenderUtils.drawSolidBox(
-                                stack, box.getMinPos(), box.getMaxPos(), ColorUtils.withAlpha(Color.GREEN, opacity));
+                                stack.stack(),
+                                box.getMinPos(),
+                                box.getMaxPos(),
+                                ColorUtils.withAlpha(Color.GREEN, opacity));
                     }
                 }
             } finally {
-                RenderUtils.stopDrawVirtual(stack);
+                RenderUtils.stopDrawVirtual(stack.stack());
             }
         }
     }
@@ -373,7 +376,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
             }
             if (currentWaitBackTick > 0) {
                 movementManagerEvent.cancel();
-                // movementManagerEvent.context.playerStatus.restorePos();
+                // movementManagerEvent.drawContext.playerStatus.restorePos();
                 movementManagerEvent.context.playerStatus.entity.setOnGround(false);
             }
 

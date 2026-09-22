@@ -10,6 +10,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.events.impl.EventContainer;
+import me.matl114.events.impl.Render3D;
 import me.matl114.gui.WidgetUtils;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.InteractionTasks;
@@ -38,7 +39,6 @@ import me.matl114.utils.collections.FlagEntry;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.*;
 import net.minecraft.block.enums.SlabType;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
@@ -620,14 +620,14 @@ public class PrinterRewrite extends BaseModule {
         }
     }
 
-    public void onRender(Event<MatrixStack> event) {
-        MatrixStack stack = event.context();
+    public void onRender(Event<Render3D> event) {
+        var stack = event.context();
         if (enable.get() && render.get()) {
-            RenderUtils.startDrawVirtual(stack);
+            RenderUtils.startDrawVirtual(stack.stack());
             try {
-                drawOutlines.render3D(stack);
+                drawOutlines.render3D(stack.stack());
             } finally {
-                RenderUtils.stopDrawVirtual(stack);
+                RenderUtils.stopDrawVirtual(stack.stack());
             }
         }
     }

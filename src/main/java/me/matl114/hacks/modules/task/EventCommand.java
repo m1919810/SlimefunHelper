@@ -303,7 +303,7 @@ public class EventCommand extends BaseModule {
 
     //    public void onDeath(Event<CombatPlayer> eventRespawn) {
     //        if (enable.get()) {
-    //            var respawn = eventRespawn.context();
+    //            var respawn = eventRespawn.drawContext();
     //            // death
     //            if (respawn.flag() == 0 || respawn.flag() == 1) {
     //                onEventType(EventType.RESPAWN, this::executeDelayed);
@@ -404,8 +404,8 @@ public class EventCommand extends BaseModule {
     //    public void onTriggerTotem(Event<EntityStatusS2CPacket> event) {
     //        if (checkNull()) return;
     //        if (enable.get()
-    //                && event.context.getStatus() == EntityStatuses.USE_TOTEM_OF_UNDYING
-    //                && event.context.getEntity(mc.world) == mc.player) {
+    //                && event.drawContext.getStatus() == EntityStatuses.USE_TOTEM_OF_UNDYING
+    //                && event.drawContext.getEntity(mc.world) == mc.player) {
     //            onEventType(EventType.TRIGGER_TOTEM, this::executeDelayed);
     //        }
     //    }

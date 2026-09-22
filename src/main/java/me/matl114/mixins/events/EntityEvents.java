@@ -4,7 +4,6 @@ import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
-import java.util.List;
 import me.matl114.accessors.events.EntityAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -12,7 +11,6 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.registry.tag.TagKey;
@@ -74,12 +72,6 @@ public abstract class EntityEvents<T extends Entity> implements EntityAccess<T> 
     public void onEntityTickUpdate(CallbackInfo ci) {
         Entity entity = (Entity) (Object) (this);
         Listener.getEntityMidTickListener().broadcast(entity);
-    }
-
-    @Inject(method = "onDataTrackerUpdate", at = @At("HEAD"))
-    public void onEntityDataUpdate(List<DataTracker.SerializedEntry<?>> dataEntries, CallbackInfo ci) {
-        Entity entity = (Entity) (Object) (this);
-        Listener.getEntityDataListener().broadcast(entity, dataEntries);
     }
 
     @Inject(method = "setRemoved", at = @At("RETURN"))

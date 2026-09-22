@@ -63,7 +63,7 @@ public class BoatVClip extends BaseModule implements LegalMovementManager.Moveme
 
     public void onBlockUpdate(Event<BlockUpdateS2CPacket> update) {
         if (enable.get()) {
-            // minedBlockPos.remove(update.context.getPos());
+            // minedBlockPos.remove(update.drawContext.getPos());
             BlockPos pos = update.context.getPos();
 
             if (blockStateMap.containsKey(pos)) {
