@@ -6,6 +6,7 @@ import java.util.Objects;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.RenderTasks;
@@ -25,7 +26,6 @@ import me.matl114.utils.*;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
@@ -285,16 +285,16 @@ public class PearlFly extends BaseModule {
         return true;
     }
 
-    public void onRender3D(Event<MatrixStack> event) {
+    public void onRender3D(Event<Render3D> event) {
         if (checkNull())
             ;
         if (pearlAimRender.get()) {
-            RenderUtils.startDrawVirtual(event.context);
+            RenderUtils.startDrawVirtual(event.context.stack());
             try {
-                lineCollector.render3D(event.context);
-                hitBoxCollector.render3D(event.context);
+                lineCollector.render3D(event.context.stack());
+                hitBoxCollector.render3D(event.context.stack());
             } finally {
-                RenderUtils.stopDrawVirtual(event.context);
+                RenderUtils.stopDrawVirtual(event.context.stack());
             }
         }
     }

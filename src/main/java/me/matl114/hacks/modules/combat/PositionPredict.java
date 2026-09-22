@@ -13,6 +13,7 @@ import me.matl114.accessors.hacks.PlayerInternalAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render3D;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.hacks.MovTasks;
@@ -34,7 +35,6 @@ import me.matl114.utils.config.kv.EnumAttrKeyValue;
 import me.matl114.utils.config.kv.TypeConvertAttrKeyValue;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VRender;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.ShulkerEntity;
@@ -97,9 +97,9 @@ public class PositionPredict extends BaseModule {
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
     }
 
-    public void onRender(Event<MatrixStack> event) {
+    public void onRender(Event<Render3D> event) {
         if (debugRender.get()) {
-            RenderUtils.startDrawVirtual(event.context);
+            RenderUtils.startDrawVirtual(event.context.stack());
             try {
                 List<Box> boxes = new ArrayList<>();
                 Vec3d camera = RenderUtils.getCameraPos().negate();
@@ -114,7 +114,7 @@ public class PositionPredict extends BaseModule {
                 VRender.getInstance().createLinesLayer(((operation, vertexConsumer) -> {
                     for (Box box : boxes) {
                         operation.drawOutlinedBox(
-                                event.context,
+                                event.context.stack(),
                                 vertexConsumer,
                                 box.getMinPos(),
                                 box.getMaxPos(),
@@ -129,7 +129,7 @@ public class PositionPredict extends BaseModule {
                         for (Vec3d box : lst) {
                             box = box.add(camera);
                             operation.drawOutlinedBox(
-                                    event.context,
+                                    event.context.stack(),
                                     vertexConsumer,
                                     box.add(-0.2, -0.2, -0.2),
                                     box.add(0.2, 0.2, 0.2),
@@ -138,14 +138,14 @@ public class PositionPredict extends BaseModule {
                     }));
                     VRender.getInstance().createLineStripLayer(((operation, vertexConsumer) -> {
                         operation.drawLines(
-                                event.context,
+                                event.context.stack(),
                                 vertexConsumer,
                                 lst.stream().map(s -> s.add(camera)).toList(),
                                 hash);
                     }));
                 }
             } finally {
-                RenderUtils.stopDrawVirtual(event.context);
+                RenderUtils.stopDrawVirtual(event.context.stack());
             }
         }
     }

@@ -6,6 +6,7 @@ import java.util.*;
 import lombok.With;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.MetadataUpdate;
 import me.matl114.gui.presets.single.RegistryDisplays;
 import me.matl114.hacks.WorldTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -32,7 +33,6 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -374,23 +374,23 @@ public class SearchLabel extends BaseModule {
         }
     }
 
-    public void handleItemEntityItemData(Event<DataTracker.SerializedEntry<?>> entryUpdateEvent) {
+    public void handleItemEntityItemData(Event<MetadataUpdate> entryUpdateEvent) {
         if (enable.get() && labelImportantItems.get()) {
-            var entry = entryUpdateEvent.context();
+            var entry = entryUpdateEvent.context().metadata();
             if (entry.id() == VDataFlag.ID_ITEM_ITEMSTACK
                     && (entry.value()) instanceof ItemStack stack
-                    && entryUpdateEvent.getArgs(0) instanceof ItemEntity item) {
+                    && entryUpdateEvent.context.entity() instanceof ItemEntity item) {
                 onItemEntity(item, stack);
             }
         }
     }
 
-    public void handleItemFrameItemData(Event<DataTracker.SerializedEntry<?>> entryUpdateEvent) {
+    public void handleItemFrameItemData(Event<MetadataUpdate> entryUpdateEvent) {
         if (enable.get() && labelImportantItems.get()) {
-            var entry = entryUpdateEvent.context();
+            var entry = entryUpdateEvent.context().metadata();
             if (entry.id() == VDataFlag.ID_ITEM_FRAME_ITEMSTACK
                     && entry.value() instanceof ItemStack stack
-                    && entryUpdateEvent.getArgs(0) instanceof ItemFrameEntity item) {
+                    && entryUpdateEvent.context.entity() instanceof ItemFrameEntity item) {
                 onItemEntity(item, stack);
             }
         }

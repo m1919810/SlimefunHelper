@@ -11,6 +11,7 @@ import lombok.experimental.Accessors;
 import me.matl114.accessors.access.ChunkAccess;
 import me.matl114.accessors.interfaces.TileInventory;
 import me.matl114.events.Event;
+import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.modules.interact.Interact;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.interact.SequencedActionManager;
@@ -43,7 +44,6 @@ import net.minecraft.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.BlockItem;
@@ -860,15 +860,15 @@ public class PathingSchedular {
         }
     }
 
-    public void renderPathing(Event<MatrixStack> event) {
+    public void renderPathing(Event<Render3D> event) {
         if (!SchedularSettings.INSTANCE.enableRender.get()) {
             return;
         }
-        RenderUtils.startDrawVirtual(event.context);
+        RenderUtils.startDrawVirtual(event.context.stack());
         try {
-            renderCollector.render3D(event.context);
+            renderCollector.render3D(event.context.stack());
         } finally {
-            RenderUtils.stopDrawVirtual(event.context);
+            RenderUtils.stopDrawVirtual(event.context.stack());
         }
     }
 

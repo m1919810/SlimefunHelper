@@ -8,6 +8,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.events.impl.EventContainer;
+import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.*;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -34,7 +35,6 @@ import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -768,9 +768,9 @@ public class Interact extends BaseModule {
         }
     }
 
-    public void onRender3D(Event<MatrixStack> event) {
+    public void onRender3D(Event<Render3D> event) {
         if (renderAttackTarget.get() && currentInteractTarget != null) {
-            float tickDelta = (Float) event.extraArgs[0];
+            float tickDelta = event.context.partialTicks();
             Box currentBox;
             if (currentInteractTarget instanceof BlockHitResult hitResult
                     && hitResult.getType() == HitResult.Type.BLOCK) {
@@ -787,18 +787,18 @@ public class Interact extends BaseModule {
             } else {
                 return;
             }
-            RenderUtils.startDrawVirtual(event.context);
+            RenderUtils.startDrawVirtual(event.context.stack());
             try {
                 float dist = (float)
                         currentBox.getCenter().subtract(mc.player.getEyePos()).length();
                 float opacity = Math.min(0.6F, 0.20F + dist * 0.02F);
                 RenderUtils.drawSolidBox(
-                        event.context,
+                        event.context.stack(),
                         currentBox.getMinPos(),
                         currentBox.getMaxPos(),
                         ColorUtils.withAlpha(renderAttackColor.get().color(), opacity));
             } finally {
-                RenderUtils.stopDrawVirtual(event.context);
+                RenderUtils.stopDrawVirtual(event.context.stack());
             }
         }
     }

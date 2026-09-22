@@ -7,6 +7,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render3D;
 import me.matl114.events.packets.PacketStorage;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -16,7 +17,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.RenderUtils;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.LivingEntity;
@@ -231,15 +231,18 @@ public class BackTrack extends BaseModule {
         refreshTarget();
     }
 
-    public void onRender(Event<MatrixStack> eventMatrixStack) {
+    public void onRender(Event<Render3D> eventMatrixStack) {
         if (render.get() && shouldDelay && lastTrackingPosition != null && currentTarget != null) {
             Box boundingBox = currentTarget.dimensions.getBoxAt(lastTrackingPosition);
-            RenderUtils.startDrawVirtual(eventMatrixStack.context);
+            RenderUtils.startDrawVirtual(eventMatrixStack.context.stack());
             try {
                 RenderUtils.drawOutlinedBox(
-                        eventMatrixStack.context, boundingBox.getMinPos(), boundingBox.getMaxPos(), Color.ORANGE);
+                        eventMatrixStack.context.stack(),
+                        boundingBox.getMinPos(),
+                        boundingBox.getMaxPos(),
+                        Color.ORANGE);
             } finally {
-                RenderUtils.stopDrawVirtual(eventMatrixStack.context);
+                RenderUtils.stopDrawVirtual(eventMatrixStack.context.stack());
             }
         }
     }

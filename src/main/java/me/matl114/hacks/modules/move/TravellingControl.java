@@ -869,7 +869,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             if (ti == null || ti.shouldNotRun()) return true;
             if (startWork) {
                 // main logic, just logout for safety
-                // movementManagerEvent.context.playerStatus.restoreRotation();
+                // movementManagerEvent.drawContext.playerStatus.restoreRotation();
                 if (!handlePostHeight()) {
                     return true;
                 }

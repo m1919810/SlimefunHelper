@@ -1,6 +1,7 @@
 package me.matl114.mixins.events;
 
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render2D;
 import me.matl114.versioned.accessors.LayeredDrawerAccess;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.MinecraftClient;
@@ -31,7 +32,7 @@ public abstract class InGameHudEvents {
             VDrawContext vdraw = VDrawContext.of(ctx);
             vdraw.pushMatrix();
             try {
-                RenderListener.getRender2DEvent().broadcast(vdraw, tc.getTickDelta(false), client.options.hudHidden);
+                RenderListener.getRender2DEvent().broadcast(new Render2D(vdraw, tc.getTickDelta(false), client.options.hudHidden));
             } finally {
                 vdraw.popMatrix();
             }

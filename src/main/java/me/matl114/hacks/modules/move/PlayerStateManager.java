@@ -14,6 +14,7 @@ import me.matl114.events.CombatListener;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.impl.CombatPlayer;
+import me.matl114.events.impl.MetadataUpdate;
 import me.matl114.events.impl.SlotClickAction;
 import me.matl114.hacks.ACTasks;
 import me.matl114.hacks.MovTasks;
@@ -38,7 +39,6 @@ import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.*;
 import net.minecraft.entity.attribute.AttributeContainer;
 import net.minecraft.entity.attribute.DefaultAttributeRegistry;
-import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
@@ -886,10 +886,11 @@ public class PlayerStateManager extends BaseModule {
         }
     }
 
-    public void onEntityTrackedDataUpdate(Event<DataTracker.SerializedEntry<?>> eventDataUpdate) {
-        if (eventDataUpdate.getArgs(0) instanceof PlayerEntity pl) {
-            if (eventDataUpdate.context.id() == VDataFlag.ID_POTION_SWIRLS
-                    && eventDataUpdate.context.value() instanceof List<?> lst) {
+    public void onEntityTrackedDataUpdate(Event<MetadataUpdate> event) {
+        var eventDataUpdate = event.context();
+        if (eventDataUpdate.entity() instanceof PlayerEntity pl) {
+            if (eventDataUpdate.metadata().id() == VDataFlag.ID_POTION_SWIRLS
+                    && eventDataUpdate.metadata().value() instanceof List<?> lst) {
                 // update visible effect list
                 List<ParticleEffect> particles = (List<ParticleEffect>) lst;
                 PlayerStatus status = getOrCreateStatus(pl);
@@ -911,8 +912,8 @@ public class PlayerStateManager extends BaseModule {
                 for (var re : keys) {
                     status.visibleStatusEffects.remove(re);
                 }
-            } else if (eventDataUpdate.context.id() == VDataFlag.ID_LIVING_FLAGS
-                    && eventDataUpdate.context.value() instanceof Number lst) {
+            } else if (eventDataUpdate.metadata().id() == VDataFlag.ID_LIVING_FLAGS
+                    && eventDataUpdate.metadata().value() instanceof Number lst) {
                 byte byteValue = lst.byteValue();
                 PlayerStatus status = getOrCreateStatus(pl);
                 boolean useItem = (byteValue & VDataFlag.USING_ITEM_FLAG_INDEX) > 0;

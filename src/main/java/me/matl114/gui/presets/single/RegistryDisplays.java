@@ -14,8 +14,6 @@ import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.particle.ParticleSpriteManager;
-import net.minecraft.client.texture.MissingSprite;
 import net.minecraft.client.particle.ParticleManager;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.component.DataComponentTypes;

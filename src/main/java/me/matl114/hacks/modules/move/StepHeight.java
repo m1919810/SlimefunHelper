@@ -98,11 +98,11 @@ public class StepHeight extends BaseModule implements LegalMovementManager.Movem
                     // In case setback packets set false
                     movementManagerEvent.context.playerStatus.entity.setOnGround(true);
                     //                            Vec3d vec =
-                    // movementManagerEvent.context.playerStatus.entity.getVelocity();
+                    // movementManagerEvent.drawContext.playerStatus.entity.getVelocity();
                     //
-                    // movementManagerEvent.context.playerStatus.entity.addVelocityInternal(new Vec3d(0, 0.4,0));
+                    // movementManagerEvent.drawContext.playerStatus.entity.addVelocityInternal(new Vec3d(0, 0.4,0));
                     //
-                    // LivingEntityAccess.of(movementManagerEvent.context.playerStatus.entity).setJumpingCooldown(0);
+                    // LivingEntityAccess.of(movementManagerEvent.drawContext.playerStatus.entity).setJumpingCooldown(0);
                 }
             }
         }
@@ -110,7 +110,7 @@ public class StepHeight extends BaseModule implements LegalMovementManager.Movem
 
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
-        //                Vec3d vec3 = movementManagerEvent.context.playerStatus.entity.getPos();
+        //                Vec3d vec3 = movementManagerEvent.drawContext.playerStatus.entity.getPos();
         ////                if(vec3.getY() != 0){
         ////                    Debug.info(vec3);
         ////                }
@@ -138,7 +138,7 @@ public class StepHeight extends BaseModule implements LegalMovementManager.Movem
                             // Debug.chat("pass stepheight");
                             runTicks = -200;
                             movementManagerEvent.cancel();
-                            //                        movementManagerEvent.context.playerStatus.restorePos();
+                            //                        movementManagerEvent.drawContext.playerStatus.restorePos();
                             movementManagerEvent.context.playerStatus.entity.setOnGround(true);
                             mc.getNetworkHandler()
                                     .sendPacket(VPacket.newOnGroundOnly(true, player.horizontalCollision));
