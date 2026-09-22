@@ -14,7 +14,6 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.*;
 import net.minecraft.entity.data.TrackedData;
-import net.minecraft.fluid.FluidState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;

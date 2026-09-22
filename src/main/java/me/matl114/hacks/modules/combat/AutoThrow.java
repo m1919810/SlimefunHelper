@@ -234,7 +234,7 @@ public class AutoThrow extends BaseModule {
                     Box checkUpperBox =
                             mc.player.getBoundingBox().expand(3.6, 8.0, 3.6).stretch(0, 5, 0);
                     mc.world
-                            .getEntitiesByType(EntityType.SPLASH_POTION, checkUpperBox, Predicates.alwaysTrue())
+                            .getEntitiesByType(EntityType.POTION, checkUpperBox, Predicates.alwaysTrue())
                             .forEach(potion -> {
                                 var po = potion.getStack().get(DataComponentTypes.POTION_CONTENTS);
                                 if (po != null) {

@@ -284,7 +284,7 @@ public class WorldManager extends BaseModule {
         return status != null
                         && NBTUtils.resolve(status.getDataContainer(), KEY_PEARL_INFO, KEY_PEARL_NAME)
                                 instanceof NbtString str
-                ? str.value()
+                ? str.asString()
                 : null;
     }
 
