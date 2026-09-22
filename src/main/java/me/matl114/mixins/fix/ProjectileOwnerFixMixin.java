@@ -6,11 +6,9 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LazyEntityReference;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.world.World;
-import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -22,11 +20,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ProjectileEntity.class)
 public abstract class ProjectileOwnerFixMixin extends Entity implements ProjectileAccess {
     @Shadow
-    @Nullable
-    protected LazyEntityReference<Entity> owner;
+    protected Entity owner;
 
     @Shadow
-    public abstract void setOwner(@Nullable Entity owner);
+    public abstract void setOwner(Entity owner);
 
     @Unique
     OptionalInt ownerEid = OptionalInt.empty();
