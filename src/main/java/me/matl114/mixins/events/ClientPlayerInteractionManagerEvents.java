@@ -22,7 +22,6 @@ import net.minecraft.client.recipebook.ClientRecipeBook;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.Packet;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.stat.StatHandler;

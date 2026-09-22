@@ -736,8 +736,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public static boolean isValidElytra(ItemStack item) {
         return VItem.getInstance().canGlide(item)
-                && mc.player.canEquip(item, EquipmentSlot.CHEST)
-                && !item.willBreakNextUse();
+                && mc.player.getPreferredEquipmentSlot(item) == EquipmentSlot.CHEST
+                && ElytraItem.isUsable(item);
     }
 
     public static int findElytra() {
@@ -756,7 +756,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     private boolean canUnbreakableFlyItem(ItemStack item) {
-        return item.isEmpty() || (!isValidElytra(item) && mc.player.canEquip(item, EquipmentSlot.CHEST));
+        return item.isEmpty()
+                || (!isValidElytra(item) && mc.player.getPreferredEquipmentSlot(item) == EquipmentSlot.CHEST);
     }
 
     public int findEmptyPlaceForElytra() {
@@ -1109,7 +1110,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                                     var item = entry.val();
                                     if (item.isEmpty()) return -3.0D;
                                     if (!VItem.getInstance().canGlide(item)
-                                        && mc.player.getPreferredEquipmentSlot(item) == EquipmentSlot.CHEST) {
+                                            && mc.player.getPreferredEquipmentSlot(item) == EquipmentSlot.CHEST) {
                                         return DamageUtils.getArmorValue(mc.player, item, EquipmentSlot.CHEST)
                                                 * DamageUtils.getArmorToughnessValue(
                                                         mc.player, item, EquipmentSlot.CHEST);

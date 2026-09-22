@@ -184,8 +184,7 @@ public class PearlFly extends BaseModule {
                 }
             }
         }
-        if (pearlThrowRotation != null
-                && !mc.player.getItemCooldownManager().isCoolingDown(new ItemStack(Items.ENDER_PEARL))) {
+        if (pearlThrowRotation != null && !mc.player.getItemCooldownManager().isCoolingDown(Items.ENDER_PEARL)) {
             usePearl(EntityUtils.pitchYawToRotation(pearlThrowRotation.x, pearlThrowRotation.y));
             pearlThrowRotation = null;
         }
