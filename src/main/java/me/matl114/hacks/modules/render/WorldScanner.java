@@ -9,6 +9,7 @@ import java.util.function.BiPredicate;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.WorldTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -264,10 +265,10 @@ public class WorldScanner extends BaseModule {
         }
     }
 
-    public void onRender(Event<MatrixStack> event) {
+    public void onRender(Event<Render3D> event) {
         if (checkNull()) return;
         if (enable.get()) {
-            MatrixStack stack = event.context();
+            MatrixStack stack = event.context().stack();
             RenderUtils.startDrawVirtual(stack);
             try {
                 boxSolidCollector.render3D(stack);

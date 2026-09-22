@@ -17,6 +17,8 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.events.impl.EventContainer;
+import me.matl114.events.impl.Render2D;
+import me.matl114.events.impl.Render3D;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.DynamicContentWidget;
 import me.matl114.hacks.CombatTasks;
@@ -42,7 +44,6 @@ import me.matl114.utils.*;
 import me.matl114.utils.algorithms.StateMachine;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VDataFlag;
-import me.matl114.versioned.api.VDrawContext;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
@@ -861,11 +862,11 @@ public class ElytraBot extends BaseModule {
         }
     }
 
-    public void onRender(Event<MatrixStack> event) {
+    public void onRender(Event<Render3D> event) {
         if (enable.get() && render.get()) {
-            RenderUtils.startDrawVirtual(event.context);
+            RenderUtils.startDrawVirtual(event.context.stack());
             try {
-                MatrixStack stack = event.context;
+                MatrixStack stack = event.context.stack();
                 if (currentBehaviour != null) {
                     Vec3d targetRender = currentBehaviour.movementDirection.add(mc.player.getPos());
                     if (targetRender != null) {
@@ -878,14 +879,14 @@ public class ElytraBot extends BaseModule {
                 }
 
             } finally {
-                RenderUtils.stopDrawVirtual(event.context);
+                RenderUtils.stopDrawVirtual(event.context.stack());
             }
         }
     }
 
-    public void onDebugRender(Event<VDrawContext> eventVDraw) {
+    public void onDebugRender(Event<Render2D> eventVDraw) {
         if (enable.get() && render.get() && currentBehaviour != null && target != null) {
-            var vdraw = eventVDraw.context;
+            var vdraw = eventVDraw.context.drawContext();
             vdraw.getMatrices().pushMatrix();
             vdraw.getMatrices().translate(200, 200);
             vdraw.drawText(

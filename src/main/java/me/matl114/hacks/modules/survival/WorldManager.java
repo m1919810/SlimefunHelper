@@ -15,6 +15,7 @@ import me.matl114.accessors.interfaces.EntityInventory;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.impl.BlockUpdate;
+import me.matl114.events.impl.MetadataUpdate;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.task.ServerStorage;
@@ -22,6 +23,7 @@ import me.matl114.hacks.utils.world.BlockStorage;
 import me.matl114.hacks.utils.world.EntityStorage;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.utils.MathUtils;
 import me.matl114.utils.NBTUtils;
 import me.matl114.utils.algorithms.SerialExecutor;
 import me.matl114.utils.world.BlockLocation;
@@ -38,13 +40,11 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.passive.VillagerEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtByte;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtLong;
+import net.minecraft.nbt.*;
 import net.minecraft.network.packet.s2c.play.SetTradeOffersS2CPacket;
 import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.registry.Registries;
@@ -89,6 +89,11 @@ public class WorldManager extends BaseModule {
                 this::onVillagerTradeUpdate);
         registerListener(
                 Listener.getBlockUpdateListener().getChannel(Blocks.TRIAL_SPAWNER), this::onTrialSpawnerStateUpdate);
+
+        registerListener(
+                Listener.getServerEntitySpawnListener().getChannel(EntityType.ENDER_PEARL),
+                this::onThrownOwnerDataUpdate);
+
         registerListener(ServerStorage.getServerStorageSave(), this::onSave);
         registerListener(ServerStorage.getServerStorageLoad(), this::onLoad);
     }
@@ -187,10 +192,10 @@ public class WorldManager extends BaseModule {
         }
     }
 
-    public void onVillagerProfessionUpdate(Event<DataTracker.SerializedEntry<?>> eventDataUpdate) {
-        if (eventDataUpdate.getArgs(0) instanceof VillagerEntity villager) {
-            if (eventDataUpdate.context.id() == VDataFlag.ID_VILLAGER_PROFESSION_DATA
-                    && eventDataUpdate.context.value() instanceof VillagerData data) {
+    public void onVillagerProfessionUpdate(Event<MetadataUpdate> eventDataUpdate) {
+        if (eventDataUpdate.context().entity() instanceof VillagerEntity villager) {
+            if (eventDataUpdate.context().metadata().id() == VDataFlag.ID_VILLAGER_PROFESSION_DATA
+                    && eventDataUpdate.context().metadata().value() instanceof VillagerData data) {
                 asyncExecutor.execute(() -> {
                     var profession = data.profession().getKey().orElse(null);
                     if (Objects.equals(profession, VillagerProfession.NONE)
@@ -241,6 +246,46 @@ public class WorldManager extends BaseModule {
                 }
             }
         }
+    }
+
+    public static final String KEY_PEARL_INFO = "slimefunhelper:thrown/owner_info";
+
+    public static final String KEY_PEARL_NAME = "slimefunhelper:owner_info/name";
+
+    public static final String KEY_PEARL_UUID = "slimefunhelper:owner_info/uid";
+
+    public void onThrownOwnerDataUpdate(Event<Entity> data) {
+        if (data.context instanceof ProjectileEntity thrown) {
+            getStatus(thrown, true).setUpdateCallback((lv) -> {
+                if (lv instanceof ProjectileEntity thrown2 && thrown2.getOwner() instanceof PlayerEntity pl) {
+                    var bc = getStatus(lv, true);
+                    var sub = NBTUtils.ensurePath(bc.getDataContainer(), KEY_PEARL_INFO);
+                    sub.put(KEY_PEARL_NAME, NbtString.of(pl.getNameForScoreboard()));
+                    NBTUtils.putValue(sub, KEY_PEARL_UUID, pl.getUuid(), Uuids.CODEC);
+                    bc.markDirty();
+                }
+            });
+        }
+    }
+
+    public UUID getThrownEntityOwner(ProjectileEntity thrown) {
+        var status = getStatus(thrown, false);
+        if (status != null) {
+            var uuid = NBTUtils.resolve(status.getDataContainer(), KEY_PEARL_INFO, KEY_PEARL_UUID);
+            if (uuid != null) {
+                return NBTUtils.toValue(uuid, Uuids.CODEC);
+            }
+        }
+        return null;
+    }
+
+    public String getThrownEntityOwnerName(ProjectileEntity thrown) {
+        var status = getStatus(thrown, false);
+        return status != null
+                        && NBTUtils.resolve(status.getDataContainer(), KEY_PEARL_INFO, KEY_PEARL_NAME)
+                                instanceof NbtString str
+                ? str.value()
+                : null;
     }
 
     public OptionalLong getTrialSpawnerCooldownStartTime(BlockEntity be) {
@@ -310,14 +355,15 @@ public class WorldManager extends BaseModule {
         var iter2 = currentEntities.entrySet().iterator();
         while (iter2.hasNext()) {
             var re = iter2.next();
-            if (mc.world.getEntityLookup().get(re.getKey()) instanceof LivingEntity entity) {
+            var entity = mc.world.getEntityLookup().get(re.getKey());
+            if (isAlive(entity)) {
                 re.getValue().update(entity);
             }
         }
     }
 
-    public EntityStatus getStatus(LivingEntity entity, boolean create) {
-        if (entity.getHealth() > 0) {
+    public EntityStatus getStatus(Entity entity, boolean create) {
+        if (isAlive(entity)) {
             return create
                     ? currentEntities.computeIfAbsent(entity.getUuid(), EntityStatus::new)
                     : currentEntities.get(entity.getUuid());
@@ -337,17 +383,31 @@ public class WorldManager extends BaseModule {
         });
     }
 
+    private boolean isAlive(Entity entity) {
+        return (!(entity instanceof LivingEntity lv) || lv.getHealth() > 0.0);
+    }
+
     public void onEntityDeath(Event<Entity> event) {
         if (checkNull()) return;
         Entity entity = event.context;
-        if (entity instanceof LivingEntity lv && lv.getHealth() <= 0) {
-            currentEntities.remove(entity.getUuid());
-            var meta = ServerStorage.getStorage();
-            if (meta != null) {
-                EntityStorage storage = meta.getEntityStorage(entity.getUuid(), false);
-                if (storage != null) {
-                    storage.put(ENTITY_DATA_KEY, null);
-                }
+        if (entity instanceof LivingEntity lv) {
+            if (lv.getHealth() <= 0) {
+                onConfirmDeathEntities(entity);
+            }
+        } else {
+            if (entity.getPos().squaredDistanceTo(mc.player.getPos()) < MathUtils.s2(60)) {
+                onConfirmDeathEntities(entity);
+            }
+        }
+    }
+
+    private void onConfirmDeathEntities(Entity entity) {
+        currentEntities.remove(entity.getUuid());
+        var meta = ServerStorage.getStorage();
+        if (meta != null) {
+            EntityStorage storage = meta.getEntityStorage(entity.getUuid(), false);
+            if (storage != null) {
+                storage.put(ENTITY_DATA_KEY, null);
             }
         }
     }
@@ -415,7 +475,7 @@ public class WorldManager extends BaseModule {
                 .apply(instance, EntityStatus::new));
 
         @Setter
-        public Consumer<LivingEntity> updateCallback;
+        public Consumer<Entity> updateCallback;
 
         public EntityStatus(UUID self, Optional<UUID> owner, long lastUpdatedMs, NbtCompound dataContainer) {
             this.self = self;
@@ -437,7 +497,7 @@ public class WorldManager extends BaseModule {
             lastUpdatedMs = System.currentTimeMillis();
         }
 
-        public void update(LivingEntity entity) {
+        public void update(Entity entity) {
             updateTime();
             if (updateCallback != null) {
                 updateCallback.accept(entity);

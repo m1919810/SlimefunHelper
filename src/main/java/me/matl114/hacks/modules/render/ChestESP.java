@@ -8,6 +8,7 @@ import me.matl114.accessors.access.ChunkAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.*;
@@ -106,9 +107,9 @@ public class ChestESP extends BaseModule {
         }
     }
 
-    public void onRender(Event<MatrixStack> render) {
+    public void onRender(Event<Render3D> render) {
         if (enable.get()) {
-            MatrixStack stack = render.context();
+            MatrixStack stack = render.context().stack();
             RenderUtils.startDrawVirtual(stack);
             try {
                 boxSolidCollector.render3D(stack);

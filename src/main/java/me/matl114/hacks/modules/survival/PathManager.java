@@ -15,6 +15,7 @@ import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render3D;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -580,7 +581,7 @@ public class PathManager extends BaseModule {
 
     private static final int POSITION_FLAG = VRender.createTextPositionFlag(0, 1);
 
-    private void onRender(Event<MatrixStack> event) {
+    private void onRender(Event<Render3D> event) {
         if (!render.get() || checkNull()) {
             return;
         }
@@ -590,19 +591,19 @@ public class PathManager extends BaseModule {
             return;
         }
         Vec3d feetPos = RenderUtils.getCameraPos();
-        RenderUtils.startDrawVirtual(event.context());
+        RenderUtils.startDrawVirtual(event.context().stack());
         try {
             if (recordingSnapshot != null) {
                 Vec3d snapshotPos = recordingSnapshot.snapshotPos().toCenterPos();
                 RenderUtils.drawOutlinedBox(
-                        event.context(),
+                        event.context().stack(),
                         snapshotPos.add(SNAPSHOT_RENDER_FROM),
                         snapshotPos.add(SNAPSHOT_RENDER_TO),
                         Color.CYAN);
                 Vec3d delta = snapshotPos.subtract(feetPos);
                 RenderUtils.drawLineVirtualCameraCoord(
-                        event.context(), delta, RenderUtils.getTracerOrigin(0.0F), Color.CYAN);
-                var stack = event.context;
+                        event.context().stack(), delta, RenderUtils.getTracerOrigin(0.0F), Color.CYAN);
+                var stack = event.context.stack();
                 stack.push();
                 stack.translate(delta.x, delta.y + 0.25, delta.z);
                 // title的高度是9 我们希望这个9在 0.75 ~ 1.0之间
@@ -629,11 +630,11 @@ public class PathManager extends BaseModule {
 
                         Vec3d ppp = bbb.toCenterPos();
                         RenderUtils.drawOutlinedBox(
-                                event.context(),
+                                event.context().stack(),
                                 ppp.add(SNAPSHOT_RENDER_FROM),
                                 ppp.add(SNAPSHOT_RENDER_TO),
                                 Color.CYAN);
-                        RenderUtils.drawLineVirtual(event.context(), ppp, lastPos, Color.CYAN);
+                        RenderUtils.drawLineVirtual(event.context().stack(), ppp, lastPos, Color.CYAN);
                         lastPos = ppp;
                         if (bbb.getSquaredDistance(feetPos) > MathUtils.s2(autoWriteDistance.get() * 2)) {
                             break;
@@ -642,10 +643,10 @@ public class PathManager extends BaseModule {
                 }
             }
             if (!currentSegSubPath.isEmpty()) {
-                renderPathSegment(event.context(), currentSegSubPath, Color.GREEN);
+                renderPathSegment(event.context().stack(), currentSegSubPath, Color.GREEN);
             }
         } finally {
-            RenderUtils.stopDrawVirtual(event.context());
+            RenderUtils.stopDrawVirtual(event.context().stack());
         }
     }
 

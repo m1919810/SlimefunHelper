@@ -8,6 +8,7 @@ import me.matl114.accessors.interfaces.MetadataHolder;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.combat.TargetSelector;
@@ -35,7 +36,6 @@ import me.matl114.utils.annotations.NeedTest;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.ShapeContext;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Formatting;
@@ -211,12 +211,12 @@ public class AutoBreed extends BaseModule {
         }
     }
 
-    public void onRender(Event<MatrixStack> event) {
+    public void onRender(Event<Render3D> event) {
         if (!enable.get() || !render.get() || targetAnimal == null) {
             return;
         }
-        float partialTicks = event.getArgs(0);
-        RenderUtils.startDrawVirtual(event.context);
+        float partialTicks = event.context.partialTicks();
+        RenderUtils.startDrawVirtual(event.context.stack());
         try {
             RenderCollector<Box> collector = RenderCollectors.createBoxCollector(true, false, false);
             collector.submit(
@@ -232,9 +232,9 @@ public class AutoBreed extends BaseModule {
                     }
                 }
             }
-            collector.render3D(event.context);
+            collector.render3D(event.context.stack());
         } finally {
-            RenderUtils.stopDrawVirtual(event.context);
+            RenderUtils.stopDrawVirtual(event.context.stack());
         }
     }
 

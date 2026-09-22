@@ -7,6 +7,7 @@ import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
 import me.matl114.events.RenderListener;
 import me.matl114.events.catchers.PacketCatcherImpl;
+import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -21,7 +22,6 @@ import me.matl114.utils.MathUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.algorithms.StateMachine;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
@@ -386,22 +386,23 @@ public class Airplace extends BaseModule {
         return FAST_STATE_WAIT_300MS;
     }
 
-    public void onRenderPos(Event<MatrixStack> event) {
+    public void onRenderPos(Event<Render3D> event) {
         if (enable.get()) {
             if (mc.player.getStackInHand(Hand.MAIN_HAND).isEmpty()
                     && mc.player.getStackInHand(Hand.OFF_HAND).isEmpty()) {
                 return;
             }
-            MatrixStack stack = event.context();
+            var stack = event.context();
             if (mc.crosshairTarget.getType() == HitResult.Type.MISS) {
                 HitResult result = getCameraEntity().raycast(range.get(), 0, false);
                 if (result.getType() == HitResult.Type.MISS && result instanceof BlockHitResult block) {
-                    RenderUtils.startDrawVirtual(stack);
+                    RenderUtils.startDrawVirtual(stack.stack());
                     try {
                         BlockPos pos = block.getBlockPos();
-                        RenderUtils.drawOutlinedBox(stack, Vec3d.of(pos), Vec3d.of(pos.add(1, 1, 1)), Color.RED);
+                        RenderUtils.drawOutlinedBox(
+                                stack.stack(), Vec3d.of(pos), Vec3d.of(pos.add(1, 1, 1)), Color.RED);
                     } finally {
-                        RenderUtils.stopDrawVirtual(stack);
+                        RenderUtils.stopDrawVirtual(stack.stack());
                     }
                 }
             }

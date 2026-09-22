@@ -333,7 +333,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
 
     public void onBlockUpdate(Event<BlockUpdateS2CPacket> eventBlockUpdate) {
         //        if(enable.get()){
-        //            BlockPos pos = eventBlockUpdate.context.getPos();
+        //            BlockPos pos = eventBlockUpdate.drawContext.getPos();
         //            if(pos.getSquaredDistance(mc.player.getPos()) < 10){
         //                Debug.chat("Update blockstate", pos);
         //            }
@@ -403,8 +403,8 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         //        if(skipTick){
         //            lastFakeGroundTick = Tasks.getTick();
-        //            mc.player.setPosition(movementManagerEvent.context.playerStatus.pos.withAxis(Direction.Axis.Y,
-        // movementManagerEvent.context.playerStatus.pos.y + 8E-8));
+        //            mc.player.setPosition(movementManagerEvent.drawContext.playerStatus.pos.withAxis(Direction.Axis.Y,
+        // movementManagerEvent.drawContext.playerStatus.pos.y + 8E-8));
         //            skipTick = false;
         //        }
     }

@@ -17,6 +17,7 @@ import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render3D;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -384,8 +385,8 @@ public class SeedOre extends BaseModule {
     }
     // render issues
 
-    public void onRenderOreSimulation(Event<MatrixStack> event) {
-        var stack = event.context;
+    public void onRenderOreSimulation(Event<Render3D> event) {
+        var stack = event.context.stack();
         if (mc.player == null || oreConfig == null) return;
         if (!enable.get()) return;
         if (!enableRender.get()) return;
