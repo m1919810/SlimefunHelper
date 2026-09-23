@@ -761,7 +761,9 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             EntityUtils.setEntityPitchSafe(mc.player, -45);
             // fire only when down wards, make full use of travel
             if (PlayerStateManager.INSTANCE.lastKnownRealMovementSpeed.y < 0) {
-                if (!ElytraExtra.INSTANCE.canFireworkControlMotion() && Tasks.getTick() % 5 == 0) {
+                if (!ElytraExtra.INSTANCE.canFireworkControlMotion()
+                        && Tasks.getTick() % 5 == 0
+                        && !ElytraExtra.INSTANCE.isCurrentWaitingFireworkLaunch()) {
                     ElytraExtra.INSTANCE.sendCustomUseFireworkPacket();
                 } else {
                     FloatingUtils.INSTANCE.setGrimFloatingTick(true);

@@ -63,10 +63,7 @@ import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
-import net.minecraft.network.packet.s2c.play.BundleS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntitiesDestroyS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityTrackerUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
+import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.*;
@@ -370,6 +367,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 Listener.getPacketPreHandlePoint().getChannel(CommonPingS2CPacket.class),
                 this::onPacketPing,
                 Integer.MIN_VALUE);
+        registerListener(
+                Listener.getPacketPoint().getChannel(CommonPongC2SPacket.class), this::onPacketPong, Integer.MIN_VALUE);
         registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvents);
     }
 
@@ -1738,6 +1737,12 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         lastLaunchFindNoFireworks = -1;
     }
 
+    public boolean isCurrentWaitingFireworkLaunch() {
+        return SequencedActionManager.INSTANCE.isWaitingResponse(this::canBeUsedAsFireworks)
+                || !timerVanilla.canFire()
+                || (!delayQueue.isEmpty());
+    }
+
     public boolean checkFireworkUseCondition(boolean vanillaCd) {
         boolean autoFirework = autoRocket.get() && lastOneFireworkRemovalTime > 0;
         var rocket = findRocket();
@@ -1748,9 +1753,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             boolean onFireworkDelay = currentDelayingLock != null;
             boolean onEndFireworkDelay = lastStartDelayOrReleaseMs > 0
                     && (lastStartDelayOrReleaseMs + fireworksDelayMS.get() - 50L) < System.currentTimeMillis();
-            if (!SequencedActionManager.INSTANCE.isWaitingResponse(this::canBeUsedAsFireworks)
-                    && timer.canFire()
-                    && (delayQueue.isEmpty())) {
+            if (!isCurrentWaitingFireworkLaunch()) {
                 boolean use = false;
                 if (autoFirework) {
                     if (anyAliveRocket()) {
@@ -1791,30 +1794,40 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     boolean currentDelaying;
-    int lastTransactionRecv = Integer.MIN_VALUE;
+    Integer lastTransactionRecv = Integer.MIN_VALUE;
     Integer currentDelayingLastTransaction = null;
 
     public void onArmorGlideDelay(Event<PacketStorage> event) {
         if (checkNull()
-                || event.isCancelled()
                 || !isCurrentArmorGliding()
                 || !armorGlideMaxDelayTicks.get().isPresent()) {
             return;
         }
+
         if (event.context instanceof PacketManager.PacketStorageImpl impl
                 && impl.packet() instanceof CommonPingS2CPacket pingPacket) {
             lastTransactionRecv = pingPacket.getParameter();
         }
         if (currentDelaying) {
+            event.cancel();
             if (Tasks.getTick() - PlayerStateManager.INSTANCE.lastStartGlidingTick
-                    < armorGlideMaxDelayTicks.get().getValue()) {
-                event.cancel();
-            } else {
+                            >= armorGlideMaxDelayTicks.get().getValue()
+                    || (event.context.packetType() == PlayPackets.PLAYER_POSITION)
+                    || (event.context instanceof PacketManager.PacketStorageImpl impl
+                            && impl.packet() instanceof EntityStatusS2CPacket status
+                            && status.getEntity(mc.world) == mc.player
+                            && status.getStatus() == EntityStatuses.USE_TOTEM_OF_UNDYING)) {
                 currentDelaying = false;
                 currentDelayingLastTransaction = null;
+                PacketManager.scheduleImmediateFlush();
             }
             return;
-        } else if (Tasks.getTick() - PlayerStateManager.INSTANCE.lastStartGlidingTick
+        }
+        // give enough time to peek the transaction packet before metadata update comes, and 10ms isn't a big deal
+        if (event.context.timestampMS() > System.currentTimeMillis() - 10) {
+            event.cancel();
+        }
+        if (Tasks.getTick() - PlayerStateManager.INSTANCE.lastStartGlidingTick
                         < armorGlideMaxDelayTicks.get().getValue()
                 && event.context instanceof PacketManager.PacketStorageImpl impl) {
             Iterable<EntityTrackerUpdateS2CPacket> list;
@@ -1842,18 +1855,37 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 }
             }
             if (finalGlidingOverrideState == Boolean.FALSE) {
-                currentDelaying = true;
-                PacketManager.handleQueueIn(new PacketManager.PacketStorageImpl(
-                        new CommonPingS2CPacket(lastTransactionRecv), event.context.timestampMS(), impl.connection()));
-                currentDelayingLastTransaction = lastTransactionRecv;
-                event.cancel();
+                if (lastTransactionRecv != null) {
+                    currentDelaying = true;
+                    PacketManager.handleQueueIn(new PacketManager.PacketStorageImpl(
+                            new CommonPingS2CPacket(lastTransactionRecv),
+                            event.context.timestampMS(),
+                            impl.connection()));
+                    currentDelayingLastTransaction = lastTransactionRecv;
+                    event.cancel();
+                } else {
+                    logSub("ArmorGlide", "Debug message: transaction capture failure");
+                }
             }
         }
     }
 
     public void onPacketPing(Event<CommonPingS2CPacket> event) {
         if (checkNull()) return;
+        if (event.isCancelled()) return;
         if (currentDelayingLastTransaction != null && event.context.getParameter() == currentDelayingLastTransaction) {
+            currentDelayingLastTransaction = null;
+            event.cancel();
+        }
+    }
+
+    public void onPacketPong(Event<CommonPongC2SPacket> event) {
+        if (checkNull()) return;
+        if (event.isCancelled()) return;
+        if (lastTransactionRecv != null && lastTransactionRecv == event.context.getParameter()) {
+            lastTransactionRecv = null;
+        }
+        if (currentDelayingLastTransaction != null && currentDelayingLastTransaction == event.context.getParameter()) {
             currentDelayingLastTransaction = null;
             event.cancel();
         }
@@ -1870,18 +1902,19 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         if (PacketManager.isAsyncOrNotTransactionS2CPacket(eventRemoval.context.packetType())) {
             return;
         }
-        var type = eventRemoval.context.packetType();
-        if (type == PlayPackets.PLAYER_POSITION) {
-            currentDelayingLock = null;
-            return;
-        }
-        if (eventRemoval.context.timestampMS() <= lastStartDelayOrReleaseMs + fireworksDelayMS.get()) {
-            if (currentDelayingLock != null) {
-                eventRemoval.cancel();
+        if (currentDelayingLock != null) {
+            eventRemoval.cancel();
+            var type = eventRemoval.context.packetType();
+            if (type == PlayPackets.PLAYER_POSITION) {
+                currentDelayingLock = null;
+                PacketManager.scheduleImmediateFlush();
+                return;
             }
-            return;
-        } else {
-            currentDelayingLock = null;
+            if (eventRemoval.context.timestampMS() > lastStartDelayOrReleaseMs + fireworksDelayMS.get()) {
+                currentDelayingLock = null;
+                PacketManager.scheduleImmediateFlush();
+                return;
+            }
         }
         // restart a lock
         if (eventRemoval.context.timestampMS() > lastStartDelayOrReleaseMs + fireworksDelayMS.get() + 50
@@ -2203,6 +2236,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             case V2 -> applyAxisLimit2(currentMotion, pitch, yaw, true);
             case V3 -> applyAxisLimit3(currentMotion, pitch, yaw);
             case V4 -> applyAxisLimit4(currentMotion, pitch, yaw);
+            case V5 -> applyAxisLimit5(currentMotion, pitch, yaw);
         };
     }
 
@@ -2473,6 +2507,14 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         return ElytraOptimizeUtils.applyAxisLimit4(currentMotion, pitch, yaw, autoRescaleAmount.get());
     }
 
+    public Vec3d applyAxisLimit5(Vec3d currentMotion, float pitch, float yaw) {
+        if (!autoRescale.get()) {
+            setOverridingFireworkVelocity(null);
+            return currentMotion;
+        }
+        return ElytraOptimizeUtils.applyAxisLimit5_0(currentMotion, pitch, yaw, autoRescaleAmount.get(), true);
+    }
+
     public static enum MotionMode implements ConfigEnum {
         VOID,
         FIRE_WORKS;
@@ -2563,7 +2605,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         V1,
         V2,
         V3,
-        V4;
+        V4,
+        V5;
 
         @Override
         public String getConfigEnumType() {

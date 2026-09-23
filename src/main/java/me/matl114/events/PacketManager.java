@@ -108,6 +108,7 @@ public class PacketManager {
         if (startFlushIn) {
             return false;
         }
+        checkImmediatelyFlush();
         // todo: what about BundlePacket
         if (connection.getPacketListener() instanceof ClientPlayPacketListener play) {
             if (packet instanceof DisconnectS2CPacket
@@ -138,6 +139,19 @@ public class PacketManager {
         flushOutBound();
     }
 
+    static boolean immediatelyFlush;
+
+    public static void scheduleImmediateFlush() {
+        immediatelyFlush = true;
+    }
+
+    private static void checkImmediatelyFlush() {
+        if (immediatelyFlush) {
+            immediatelyFlush = false;
+            flushInBoundInternal(false);
+        }
+    }
+
     public static boolean handleQueueOutPacket(Packet<?> packet, ClientConnection connection) {
         if (startFlushOut) {
             return false;
@@ -160,7 +174,7 @@ public class PacketManager {
 
     private static void flushInBoundInternal(boolean escapePipeline) {
         if (mc.getNetworkHandler() != null) {
-            mc.getNetworkHandler().getConnection().channel.eventLoop().execute(() -> {
+            Runnable task = () -> {
                 try {
                     if (startFlushIn) {
                         return;
@@ -170,10 +184,16 @@ public class PacketManager {
                         // flush
                         // do not trigger recursive call
                         startFlushIn = true;
+                        immediatelyFlush = false;
                         try {
                             var oldQueue = packetQueueIn;
                             packetQueueIn = new ConcurrentLinkedQueue<>();
                             for (var packet : oldQueue) {
+                                // abort if need a immediate flush
+                                if (immediatelyFlush) {
+                                    packetQueueIn.add(packet);
+                                    continue;
+                                }
                                 if (!escapePipeline) {
                                     Event<PacketStorage> queueEvent = new Event<>(
                                             packet,
@@ -199,7 +219,12 @@ public class PacketManager {
                 } catch (Throwable e) {
                     packetQueueIn.clear();
                 }
-            });
+            };
+            if (mc.getNetworkHandler().getConnection().channel.eventLoop().isExecutorThread(Thread.currentThread())) {
+                task.run();
+            } else {
+                mc.getNetworkHandler().getConnection().channel.eventLoop().execute(task);
+            }
         } else {
             packetQueueIn.clear();
         }

@@ -94,7 +94,7 @@ public class PacketDebugger extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPacketPreHandlePoint(), this::onPacketHandle, Integer.MIN_VALUE);
+        registerListener(Listener.getPacketPreHandlePoint(), this::onPacketHandle, Integer.MAX_VALUE);
         registerListener(Listener.getPacketPostScheduleSendPoint(), this::onPacketSend, Integer.MIN_VALUE);
         registerListener(PacketManager.getPacketQueueOutEvent(), this::onViaSend, Integer.MIN_VALUE);
         registerListener(Listener.getPacketPoint(), this::onPacket);
@@ -130,7 +130,7 @@ public class PacketDebugger extends BaseModule {
                             positionLookS2CPacket.getTeleportId(),
                             timeStr);
                 } else if (type instanceof CommonPingS2CPacket ping) {
-                    debug("Send", simplifyId(type.getPacketId().id()), ", Id:", ping.getParameter(), timeStr);
+                    debug("Accept", simplifyId(type.getPacketId().id()), ", Id:", ping.getParameter(), timeStr);
                 } else {
                     debug("Accept", simplifyId(type.getPacketId().id()), timeStr);
                 }
