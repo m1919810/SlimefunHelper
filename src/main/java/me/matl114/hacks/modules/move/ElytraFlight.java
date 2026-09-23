@@ -27,7 +27,6 @@ import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
-import org.jetbrains.annotations.ApiStatus;
 
 public class ElytraFlight extends BaseModule implements LegalMovementManager.MovementModifier {
     public static ElytraFlight INSTANCE;
@@ -127,11 +126,9 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             .show(() -> this.controlMode.get().isIn(Mode.CONTROL))
             .build();
 
-    @ApiStatus.Experimental
     public final FlagRef autoRescaleBestClimbingSpeed = flagBuilder(
                     simpleFlightControl.add("use-auto-rescale-best-climbing-speed"))
             .show(() -> ElytraExtra.INSTANCE.autoRescale.get())
-            .experimental()
             .build();
 
     boolean currentTakeOff = false;
@@ -406,7 +403,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     // pitch reset to trigger grim lastPitch lastYaw update
                     if (useAutoRescale.get()) {
                         float yaw = mc.player.getYaw();
-                        float newYaw = (Tasks.getTick() % 2 == 0) ? yaw + 0.01F : yaw - 0.01F;
+                        float newYaw = (Tasks.getTick() % 2 == 0) ? yaw + 0.0001F : yaw - 0.0001F;
                         PlayerStateManager.setPlayerYawSafe(mc.player, newYaw);
                         Vec3d newVectorRot = EntityUtils.pitchYawToRotation(mc.player.getPitch(), newYaw);
                         realVector = newVectorRot.normalize().multiply(realVector.length());

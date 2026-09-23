@@ -1,14 +1,15 @@
 package me.matl114.hacks.utils.entity;
 
 import java.util.*;
-import me.matl114.events.Event;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.MathUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityPosition;
 import net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityPositionSyncS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityS2CPacket;
+import net.minecraft.network.packet.s2c.play.PositionFlag;
 import net.minecraft.util.math.Vec3d;
 
 public class PredictorImpl implements Predictor {
@@ -16,6 +17,7 @@ public class PredictorImpl implements Predictor {
     private final Entity owner;
     private final Deque<KnownPosition> positions = new ArrayDeque<>();
     private static final int MAX_HISTORY = 30;
+    private Vec3d currentPosSynced;
 
     public PredictorImpl(Entity owner) {
         this.owner = owner;
@@ -30,20 +32,42 @@ public class PredictorImpl implements Predictor {
         }
     }
 
-    public void onEntityPositionPost(Event<EntityPositionS2CPacket> event) {
-        EntityPositionS2CPacket packet = event.context();
+    public void onEntityPositionPost(EntityPositionS2CPacket event) {
+        EntityPositionS2CPacket packet = event;
         if (packet.entityId() != owner.getId()) return;
         addRecord(new KnownPosition(owner.getPos(), Tasks.getTick()));
     }
 
-    public void onEntityPositionSyncPost(Event<EntityPositionSyncS2CPacket> event) {
-        EntityPositionSyncS2CPacket packet = event.context();
+    public static boolean setPosition(EntityPosition pos, Set<PositionFlag> flags, Entity entity, boolean bl) {
+        EntityPosition entityPosition = EntityPosition.fromEntity(entity);
+        EntityPosition entityPosition2 = EntityPosition.apply(entityPosition, pos, flags);
+        boolean bl2 = entityPosition.position().squaredDistanceTo(entityPosition2.position()) > 4096.0;
+        if (bl && !bl2) {
+            entity.updateTrackedPositionAndAngles(
+                    entityPosition2.position(), entityPosition2.yaw(), entityPosition2.pitch());
+            entity.setVelocity(entityPosition2.deltaMovement());
+            return true;
+        } else {
+            entity.setPosition(entityPosition2.position());
+            entity.setVelocity(entityPosition2.deltaMovement());
+            entity.setYaw(entityPosition2.yaw());
+            entity.setPitch(entityPosition2.pitch());
+            EntityPosition entityPosition3 =
+                    new EntityPosition(entity.getLastRenderPos(), Vec3d.ZERO, entity.lastYaw, entity.lastPitch);
+            EntityPosition entityPosition4 = EntityPosition.apply(entityPosition3, pos, flags);
+            entity.setLastPositionAndAngles(entityPosition4.position(), entityPosition4.yaw(), entityPosition4.pitch());
+            return false;
+        }
+    }
+
+    public void onEntityPositionSyncPost(EntityPositionSyncS2CPacket event) {
+        EntityPositionSyncS2CPacket packet = event;
         if (packet.id() != owner.getId()) return;
         addRecord(new KnownPosition(owner.getPos(), Tasks.getTick()));
     }
 
-    public void onEntityPositionMove(Event<EntityS2CPacket> event) {
-        EntityS2CPacket packet = event.context();
+    public void onEntityPositionMove(EntityS2CPacket event) {
+        EntityS2CPacket packet = event;
         if (packet.getEntity(mc.world) == owner) {
             addRecord(new KnownPosition(owner.getPos(), Tasks.getTick()));
         }

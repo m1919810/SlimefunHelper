@@ -315,7 +315,7 @@ public class WorldManager extends BaseModule {
             if (storage.contains(ENTITY_DATA_KEY)) {
                 EntityStatus status = storage.get(ENTITY_DATA_KEY, EntityStatus.CODEC, manager);
                 if (status != null) {
-                    currentEntities.put(status.getSelf(), status);
+                    currentEntities.put(storage.getUuid(), status);
                 }
             }
         }
@@ -365,7 +365,7 @@ public class WorldManager extends BaseModule {
     public EntityStatus getStatus(Entity entity, boolean create) {
         if (isAlive(entity)) {
             return create
-                    ? currentEntities.computeIfAbsent(entity.getUuid(), EntityStatus::new)
+                    ? currentEntities.computeIfAbsent(entity.getUuid(), (uv) -> new EntityStatus())
                     : currentEntities.get(entity.getUuid());
         } else {
             return null;
@@ -460,14 +460,10 @@ public class WorldManager extends BaseModule {
 
     @Getter
     public static class EntityStatus {
-        final UUID self;
-        Optional<UUID> owner = Optional.empty();
         long lastUpdatedMs;
         NbtCompound dataContainer = new NbtCompound();
         boolean dirty = false;
         public static final Codec<EntityStatus> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                        Uuids.INT_STREAM_CODEC.fieldOf("uuid").forGetter(EntityStatus::getSelf),
-                        Uuids.INT_STREAM_CODEC.optionalFieldOf("owner").forGetter(EntityStatus::getOwner),
                         Codec.LONG.optionalFieldOf("timestamp", 0L).forGetter(EntityStatus::getLastUpdatedMs),
                         NbtCompound.CODEC
                                 .optionalFieldOf("data", new NbtCompound())
@@ -477,15 +473,12 @@ public class WorldManager extends BaseModule {
         @Setter
         public Consumer<Entity> updateCallback;
 
-        public EntityStatus(UUID self, Optional<UUID> owner, long lastUpdatedMs, NbtCompound dataContainer) {
-            this.self = self;
-            this.owner = owner;
+        public EntityStatus(long lastUpdatedMs, NbtCompound dataContainer) {
             this.lastUpdatedMs = lastUpdatedMs;
             this.dataContainer = dataContainer.copy();
         }
 
-        public EntityStatus(UUID uid) {
-            this.self = uid;
+        public EntityStatus() {
             lastUpdatedMs = System.currentTimeMillis();
         }
 
@@ -505,7 +498,7 @@ public class WorldManager extends BaseModule {
         }
 
         public boolean isEmpty() {
-            return owner.isEmpty() && dataContainer.isEmpty();
+            return dataContainer.isEmpty();
         }
     }
 
