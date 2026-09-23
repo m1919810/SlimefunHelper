@@ -95,7 +95,10 @@ public class BackTrack extends BaseModule {
     }
 
     public void setNoDelay() {
-        shouldDelay = false;
+        if (shouldDelay) {
+            shouldDelay = false;
+            PacketManager.scheduleImmediateFlush();
+        }
     }
 
     public void setDelay() {

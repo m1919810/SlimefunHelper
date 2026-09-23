@@ -46,7 +46,9 @@ public abstract class ElytraBehaviourMixin {
             Hand hand,
             Operation<ActionResult> original) {
         if (BaritoneFix.INSTANCE.enableGhostHandFireworks.get()) {
-            ElytraExtra.INSTANCE.sendCustomUseFireworkPacket();
+            if (!ElytraExtra.INSTANCE.isCurrentWaitingFireworkLaunch()) {
+                ElytraExtra.INSTANCE.sendCustomUseFireworkPacket();
+            }
             return ActionResult.SUCCESS;
         }
         return original.call(instance, player, world, hand);

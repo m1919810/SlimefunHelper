@@ -158,7 +158,7 @@ public class PositionPredict extends BaseModule {
     public void onPostEntity(Event<EntityS2CPacket> event) {
         if (checkNull()) return;
         if (event.context.getEntity(mc.world) instanceof PlayerInternalAccess internal) {
-            internal.getPredictorImpl().onEntityPositionMove(event);
+            internal.getPredictorImpl().onEntityPositionMove(event.context);
             onPlayerEntityUpdate((PlayerEntity) internal);
         }
     }
@@ -166,7 +166,7 @@ public class PositionPredict extends BaseModule {
     public void onPostEntityPos(Event<EntityPositionS2CPacket> event) {
         if (checkNull()) return;
         if (mc.world.getEntityById(event.context.entityId()) instanceof PlayerInternalAccess internal) {
-            internal.getPredictorImpl().onEntityPositionPost(event);
+            internal.getPredictorImpl().onEntityPositionPost(event.context);
             onPlayerEntityUpdate((PlayerEntity) internal);
         }
     }
@@ -174,7 +174,7 @@ public class PositionPredict extends BaseModule {
     public void onPostEntityTeleport(Event<EntityPositionSyncS2CPacket> event) {
         if (checkNull()) return;
         if (mc.world.getEntityById(event.context.id()) instanceof PlayerInternalAccess internal) {
-            internal.getPredictorImpl().onEntityPositionSyncPost(event);
+            internal.getPredictorImpl().onEntityPositionSyncPost(event.context);
             onPlayerEntityUpdate((PlayerEntity) internal);
         }
     }
