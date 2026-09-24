@@ -1,12 +1,7 @@
 package me.matl114.hacks.modules.inv;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.JsonOps;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -16,8 +11,9 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.managers.Configs;
-import me.matl114.managers.config.ConfigLoader;
+import me.matl114.managers.FileManager;
 import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.file.FileStorage;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ScreenUtils;
@@ -63,7 +59,7 @@ public class SaveItem extends BaseModule {
         return true;
     }
 
-    public static final String SAVE_PATH = "sfhelper-configs/recipes/saved-items.json";
+    public static final String SAVE_PATH = "saved-items.nbt";
 
     public Codec<Map<String, ItemStackData>> mapCodec = Codec.list(Codec.STRING)
             .xmap(
@@ -76,16 +72,21 @@ public class SaveItem extends BaseModule {
                     mp -> mp.keySet().stream().toList())
             .optionalFieldOf("saved-ids", Map.of())
             .codec();
-    Gson gson = new GsonBuilder().disableHtmlEscaping().create();
     boolean dirty = false;
+
+    private Map<String, ItemStackData> loadMap() {
+        FileManager fileManager = FileManager.getInstance();
+        FileStorage storage = fileManager.getRecipeDatabaseStorage(SAVE_PATH);
+        if (storage.getFile().exists()) {
+            return storage.readOrThrow(mapCodec);
+        }
+        return Map.of();
+    }
 
     public void onLoad() {
         try {
-            String savedItemIds = ConfigLoader.loadExternalJson(SAVE_PATH);
-            JsonElement json = gson.fromJson(savedItemIds, JsonElement.class);
             savedItemDataMap.clear();
-            Map<String, ItemStackData> itemDataMap =
-                    mapCodec.decode(JsonOps.INSTANCE, json).getOrThrow().getFirst();
+            Map<String, ItemStackData> itemDataMap = loadMap();
             savedItemDataMap.putAll(itemDataMap);
             dirty = false;
         } catch (Throwable e) {
@@ -99,13 +100,13 @@ public class SaveItem extends BaseModule {
         if (dirty) {
             dirty = false;
             try {
-                JsonElement json =
-                        mapCodec.encodeStart(JsonOps.INSTANCE, savedItemDataMap).getOrThrow();
+                Map<String, ItemStackData> snapshot = new LinkedHashMap<>(savedItemDataMap);
                 CompletableFuture.runAsync(() -> {
-                    String jsonStr = gson.toJson(json);
                     try {
-                        ConfigLoader.saveToFile(SAVE_PATH, jsonStr);
-                    } catch (IOException e) {
+                        FileStorage storage = FileManager.getInstance().getRecipeDatabaseStorage(SAVE_PATH);
+                        storage.write(mapCodec, snapshot).getOrThrow();
+                        storage.write();
+                    } catch (Throwable e) {
                         Debug.info(e);
                     }
                 });
