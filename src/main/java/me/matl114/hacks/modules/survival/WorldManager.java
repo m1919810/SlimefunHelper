@@ -18,6 +18,7 @@ import me.matl114.events.impl.BlockUpdate;
 import me.matl114.events.impl.MetadataUpdate;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.interact.SequencedActionManager;
 import me.matl114.hacks.modules.task.ServerStorage;
 import me.matl114.hacks.utils.world.BlockStorage;
 import me.matl114.hacks.utils.world.EntityStorage;
@@ -32,10 +33,13 @@ import me.matl114.versioned.api.VItem;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.TrialSpawnerBlock;
+import net.minecraft.block.VaultBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.entity.TrialSpawnerBlockEntity;
+import net.minecraft.block.entity.VaultBlockEntity;
 import net.minecraft.block.enums.TrialSpawnerState;
+import net.minecraft.block.enums.VaultState;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -44,7 +48,9 @@ import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.*;
+import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.SetTradeOffersS2CPacket;
 import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.registry.Registries;
@@ -89,6 +95,8 @@ public class WorldManager extends BaseModule {
                 this::onVillagerTradeUpdate);
         registerListener(
                 Listener.getBlockUpdateListener().getChannel(Blocks.TRIAL_SPAWNER), this::onTrialSpawnerStateUpdate);
+        registerListener(
+                Listener.getPacketPostHandlePoint().getChannel(BlockUpdateS2CPacket.class), this::onVaultStateUpdate);
 
         registerListener(
                 Listener.getServerEntitySpawnListener().getChannel(EntityType.ENDER_PEARL),
@@ -220,6 +228,61 @@ public class WorldManager extends BaseModule {
     public static final String KEY_TRIAL_FINISH_GLOBAL_TIME = "slimefunhelper:trial_cooldown_global_time";
 
     public static final String KEY_TRIAL_ACTIVE_GLOBAL_TIME = "slimefunhelper:trial_active_global_time";
+
+    public static final String KEY_VAULT_OPEN_PLAYERS = "slimefunhelper:vault_open_players";
+
+    private static final Codec<List<UUID>> VAULT_OPEN_PLAYERS_CODEC = Codec.list(Uuids.INT_STREAM_CODEC);
+
+    public Set<UUID> getVaultOpenPlayers(VaultBlockEntity vault) {
+        BlockStatus status = getStatus(vault, false);
+        if (status == null) {
+            return Set.of();
+        }
+        NbtElement element = NBTUtils.resolve(status.getDataContainer(), KEY_TRIAL_INFO, KEY_VAULT_OPEN_PLAYERS);
+        List<UUID> players = element == null ? null : NBTUtils.toValue(element, VAULT_OPEN_PLAYERS_CODEC);
+        return players == null ? Set.of() : Set.copyOf(players);
+    }
+
+    public boolean hasVaultBeenOpenedBy(VaultBlockEntity vault, UUID player) {
+        return player != null && getVaultOpenPlayers(vault).contains(player);
+    }
+
+    public void recordVaultOpenedBy(VaultBlockEntity vault, Set<UUID> players) {
+        BlockStatus status = getStatus(vault, true);
+        NbtCompound trialInfo = NBTUtils.ensurePath(status.getDataContainer(), KEY_TRIAL_INFO);
+        NBTUtils.putValue(trialInfo, KEY_VAULT_OPEN_PLAYERS, List.copyOf(players), VAULT_OPEN_PLAYERS_CODEC);
+        status.markDirty();
+    }
+
+    public void recordVaultOpenedBy(VaultBlockEntity vault, UUID player) {
+        if (player == null) {
+            return;
+        }
+        BlockStatus status = getStatus(vault, true);
+        NbtCompound trialInfo = NBTUtils.ensurePath(status.getDataContainer(), KEY_TRIAL_INFO);
+        Set<UUID> players = new LinkedHashSet<>(getVaultOpenPlayers(vault));
+        if (players.add(player)) {
+            NBTUtils.putValue(trialInfo, KEY_VAULT_OPEN_PLAYERS, List.copyOf(players), VAULT_OPEN_PLAYERS_CODEC);
+            status.markDirty();
+        }
+    }
+
+    private void onVaultStateUpdate(Event<BlockUpdateS2CPacket> event) {
+        if (checkNull()) {
+            return;
+        }
+        BlockUpdateS2CPacket packet = event.context;
+        BlockPos pos = packet.getPos();
+        BlockState newState = packet.getState();
+        if (newState.getBlock() != Blocks.VAULT
+                || newState.get(VaultBlock.VAULT_STATE) != VaultState.UNLOCKING
+                || !(mc.world.getBlockEntity(pos) instanceof VaultBlockEntity vault)
+                || !SequencedActionManager.INSTANCE.isWaitingResponse(
+                        pos, stack -> stack.isOf(Items.TRIAL_KEY) || stack.isOf(Items.OMINOUS_TRIAL_KEY))) {
+            return;
+        }
+        recordVaultOpenedBy(vault, mc.player.getUuid());
+    }
 
     public void onTrialSpawnerStateUpdate(Event<BlockUpdate> event) {
         if (event.context.oldState().getBlock() == Blocks.TRIAL_SPAWNER
