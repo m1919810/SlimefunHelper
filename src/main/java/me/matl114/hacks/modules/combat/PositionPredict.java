@@ -4,16 +4,18 @@ import com.google.common.hash.Hashing;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.With;
 import me.matl114.accessors.hacks.EntityInternalAccess;
-import me.matl114.accessors.hacks.PlayerInternalAccess;
+import me.matl114.events.*;
 import me.matl114.events.Event;
-import me.matl114.events.Listener;
-import me.matl114.events.RenderListener;
 import me.matl114.events.impl.Render3D;
+import me.matl114.events.packets.PacketStorage;
+import me.matl114.events.packets.PacketStorageImpl;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.hacks.MovTasks;
@@ -21,7 +23,9 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.entity.EntityMovementStatus;
+import me.matl114.hacks.utils.entity.LocalEntityPredictor;
 import me.matl114.hacks.utils.entity.Predictor;
+import me.matl114.hacks.utils.entity.PredictorImpl;
 import me.matl114.hacks.utils.enums.PredictionMode;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
@@ -36,13 +40,13 @@ import me.matl114.utils.config.kv.TypeConvertAttrKeyValue;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VRender;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.ShulkerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ShieldItem;
-import net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityPositionSyncS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityS2CPacket;
+import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -92,13 +96,91 @@ public class PositionPredict extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPacketPostHandlePoint().getChannel(EntityS2CPacket.class), this::onPostEntity);
-        registerListener(
-                Listener.getPacketPostHandlePoint().getChannel(EntityPositionS2CPacket.class), this::onPostEntityPos);
-        registerListener(
-                Listener.getPacketPostHandlePoint().getChannel(EntityPositionSyncS2CPacket.class),
-                this::onPostEntityTeleport);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
+    }
+
+    static {
+        PacketManager.getPacketQueueInEvent().registerHandler(PositionPredict::onInBoundPacket);
+    }
+
+    static final Int2ObjectMap<PredictorImpl> asyncLoadedPlayerPositionTrackers = new Int2ObjectOpenHashMap<>();
+
+    public static void onInBoundPacket(Event<PacketStorage> event) {
+        if (event.<Boolean>getArgs(1) && event.context instanceof PacketStorageImpl impl) {
+            onPacket(impl.packet());
+        }
+    }
+
+    public static Predictor getPlayerPredictor(Entity id) {
+        synchronized (asyncLoadedPlayerPositionTrackers) {
+            var re = asyncLoadedPlayerPositionTrackers.get(id.getId());
+            return re != null ? re : new LocalEntityPredictor(id);
+        }
+    }
+
+    private static void onPacket(Packet<?> ev) {
+        if (ev instanceof BundleS2CPacket bundle) {
+            for (var re : bundle.getPackets()) {
+                onPacket(re);
+            }
+            return;
+        }
+        if (ev instanceof GameJoinS2CPacket joinWorld || ev instanceof PlayerRespawnS2CPacket) {
+            synchronized (asyncLoadedPlayerPositionTrackers) {
+                asyncLoadedPlayerPositionTrackers.clear();
+            }
+            return;
+        }
+        if (ev instanceof EntitySpawnS2CPacket packet && packet.getEntityType() == EntityType.PLAYER) {
+            PredictorImpl newPredictor = new PredictorImpl();
+            newPredictor.initializeTrackedPosition(
+                    packet.getEntityId(),
+                    packet.getX(),
+                    packet.getY(),
+                    packet.getZ(),
+                    packet.getPitch(),
+                    packet.getYaw());
+            synchronized (asyncLoadedPlayerPositionTrackers) {
+                asyncLoadedPlayerPositionTrackers.put(packet.getEntityId(), newPredictor);
+            }
+            return;
+        }
+        if (ev instanceof EntitiesDestroyS2CPacket destroy) {
+            synchronized (asyncLoadedPlayerPositionTrackers) {
+                destroy.getEntityIds().forEach(asyncLoadedPlayerPositionTrackers::remove);
+            }
+        }
+        PredictorImpl impl;
+        if (ev instanceof EntityS2CPacket packet) {
+            synchronized (asyncLoadedPlayerPositionTrackers) {
+                impl = asyncLoadedPlayerPositionTrackers.get(packet.id);
+            }
+
+            if (impl != null) {
+                impl.onEntityPositionMove(packet);
+            }
+            return;
+        }
+        if (ev instanceof EntityPositionS2CPacket packet) {
+            synchronized (asyncLoadedPlayerPositionTrackers) {
+                impl = asyncLoadedPlayerPositionTrackers.get(packet.entityId());
+            }
+
+            if (impl != null) {
+                impl.onEntityPositionPost(packet);
+            }
+            return;
+        }
+        if (ev instanceof EntityPositionSyncS2CPacket sync) {
+            synchronized (asyncLoadedPlayerPositionTrackers) {
+                impl = asyncLoadedPlayerPositionTrackers.get(sync.id());
+            }
+
+            if (impl != null) {
+                impl.onEntityPositionSyncPost(sync);
+            }
+            return;
+        }
     }
 
     public void onRender(Event<Render3D> event) {
@@ -151,31 +233,6 @@ public class PositionPredict extends BaseModule {
             } finally {
                 RenderUtils.stopDrawVirtual(event.context.stack());
             }
-        }
-    }
-
-    // on player update events;
-    public void onPostEntity(Event<EntityS2CPacket> event) {
-        if (checkNull()) return;
-        if (event.context.getEntity(mc.world) instanceof PlayerInternalAccess internal) {
-            internal.getPredictorImpl().onEntityPositionMove(event.context);
-            onPlayerEntityUpdate((PlayerEntity) internal);
-        }
-    }
-
-    public void onPostEntityPos(Event<EntityPositionS2CPacket> event) {
-        if (checkNull()) return;
-        if (mc.world.getEntityById(event.context.entityId()) instanceof PlayerInternalAccess internal) {
-            internal.getPredictorImpl().onEntityPositionPost(event.context);
-            onPlayerEntityUpdate((PlayerEntity) internal);
-        }
-    }
-
-    public void onPostEntityTeleport(Event<EntityPositionSyncS2CPacket> event) {
-        if (checkNull()) return;
-        if (mc.world.getEntityById(event.context.id()) instanceof PlayerInternalAccess internal) {
-            internal.getPredictorImpl().onEntityPositionSyncPost(event.context);
-            onPlayerEntityUpdate((PlayerEntity) internal);
         }
     }
 

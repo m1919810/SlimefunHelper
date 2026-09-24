@@ -10,17 +10,16 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import lombok.Getter;
-import me.matl114.accessors.events.ClientConnectionAccess;
 import me.matl114.events.annotations.Broadcast;
 import me.matl114.events.annotations.Cancelable;
 import me.matl114.events.annotations.ExtraArgs;
 import me.matl114.events.channels.EventChannel;
 import me.matl114.events.channels.ListenerPoint;
 import me.matl114.events.packets.PacketStorage;
+import me.matl114.events.packets.PacketStorageImpl;
 import me.matl114.managers.ScheduleService;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.ClientConnection;
-import net.minecraft.network.NetworkSide;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.CommonPackets;
 import net.minecraft.network.packet.Packet;
@@ -379,34 +378,5 @@ public class PacketManager {
         DROP,
         FLUSH,
         QUEUE;
-    }
-
-    public static record PacketStorageImpl(Packet<?> packet, long timestampMS, ClientConnection connection)
-            implements PacketStorage {
-        @Override
-        public PacketType<?> packetType() {
-            return packet.getPacketId();
-        }
-
-        @Override
-        public NetworkSide side() {
-            return packet.getPacketId().side();
-        }
-
-        @Override
-        public void send() {
-            try {
-                connection.send(packet);
-            } catch (Throwable throwable) {
-            }
-        }
-
-        @Override
-        public void handle() {
-            try {
-                ClientConnectionAccess.of(connection).handlePacket(packet);
-            } catch (Throwable throwable) {
-            }
-        }
     }
 }
