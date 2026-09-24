@@ -12,7 +12,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import me.matl114.SlimefunHelper;
 import me.matl114.accessors.access.PlayerInteractEntityC2SPacketAccess;
-import me.matl114.accessors.hacks.PlayerInternalAccess;
+import me.matl114.accessors.hacks.EntityInternalAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
@@ -796,11 +796,11 @@ public class ElytraBot extends BaseModule {
             currentOnGround = target.isOnGround() || CollisionUtil.isEntitySupported(target);
             if (target instanceof PlayerEntity pl) {
                 // speed < 1, we can easily handle this speed
-                if (currentOnGround) {
+                var predictor = EntityInternalAccess.of(pl).getPositionPredictor();
+                if (currentOnGround || !(predictor instanceof PredictorImpl impl)) {
                     currentAction = TargetAction.SLOW_SPEED;
                 } else {
-                    List<PredictorImpl.KnownPosition> knownPositions =
-                            ((PlayerInternalAccess) target).getPredictorImpl().getLastKnownPositions(3);
+                    List<PredictorImpl.KnownPosition> knownPositions = impl.getLastKnownPositions(3);
                     if (knownPositions.size() < 2) {
                         // 数据不足，默认行为（可改为 TOWARDS 或不做处理）
                         currentAction = TargetAction.CIRCLING;

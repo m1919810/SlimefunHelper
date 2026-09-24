@@ -4,8 +4,8 @@ import java.util.*;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.MathUtils;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityPosition;
+import net.minecraft.entity.TrackedPosition;
 import net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityS2CPacket;
 import net.minecraft.network.packet.s2c.play.PositionFlag;
@@ -13,63 +13,90 @@ import net.minecraft.util.math.Vec3d;
 
 public class PredictorImpl implements Predictor {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
-    private final Entity owner;
+    private int ownerId;
     private final Deque<KnownPosition> positions = new ArrayDeque<>();
-    private static final int MAX_HISTORY = 30;
-    private Vec3d currentPosSynced;
+    private static final int MAX_HISTORY = 80;
+    private final TrackedPosition currentTrackedPosition = new TrackedPosition();
+    private float currentSyncedPitch;
+    private float currentSyncedYaw;
 
-    public PredictorImpl(Entity owner) {
-        this.owner = owner;
+    public PredictorImpl() {}
+
+    public void initializeTrackedPosition(int owner, double x, double y, double z, float pitch, float yaw) {
+        this.ownerId = owner;
+        this.currentTrackedPosition.setPos(new Vec3d(x, y, z));
+        this.currentSyncedPitch = pitch;
+        this.currentSyncedYaw = yaw;
     }
 
     public void tick() {
-        while (positions.size() > MAX_HISTORY) {
-            positions.removeFirst();
-        }
-        if (mc.player == this.owner) {
-            addRecord(new KnownPosition(owner.getPos(), Tasks.getTick()));
+        synchronized (this) {
+            while (positions.size() > MAX_HISTORY) {
+                positions.removeFirst();
+            }
+            if (mc.player.getId() == this.ownerId) {
+                // The local player is moved by client-side input between server packets.
+                // Keep the synchronised position in step with the client entity until a
+                // server position packet supplies a new base position.
+
+                setSyncedPosition(mc.player.getPos());
+                currentSyncedPitch = mc.player.getPitch();
+                currentSyncedYaw = mc.player.getYaw();
+                addRecord(new KnownPosition(currentTrackedPosition.getPos(), Tasks.getTick()));
+            }
         }
     }
 
     public void onEntityPositionPost(EntityPositionS2CPacket event) {
         EntityPositionS2CPacket packet = event;
-        if (packet.entityId() != owner.getId()) return;
-        addRecord(new KnownPosition(owner.getPos(), Tasks.getTick()));
-    }
-
-    public static boolean setPosition(EntityPosition pos, Set<PositionFlag> flags, Entity entity, boolean bl) {
-        EntityPosition entityPosition = EntityPosition.fromEntity(entity);
-        EntityPosition entityPosition2 = EntityPosition.apply(entityPosition, pos, flags);
-        boolean bl2 = entityPosition.position().squaredDistanceTo(entityPosition2.position()) > 4096.0;
-        if (bl && !bl2) {
-            entity.updateTrackedPositionAndAngles(
-                    entityPosition2.position(), entityPosition2.yaw(), entityPosition2.pitch());
-            entity.setVelocity(entityPosition2.deltaMovement());
-            return true;
-        } else {
-            entity.setPosition(entityPosition2.position());
-            entity.setVelocity(entityPosition2.deltaMovement());
-            entity.setYaw(entityPosition2.yaw());
-            entity.setPitch(entityPosition2.pitch());
-            EntityPosition entityPosition3 =
-                    new EntityPosition(entity.getLastRenderPos(), Vec3d.ZERO, entity.lastYaw, entity.lastPitch);
-            EntityPosition entityPosition4 = EntityPosition.apply(entityPosition3, pos, flags);
-            entity.setLastPositionAndAngles(entityPosition4.position(), entityPosition4.yaw(), entityPosition4.pitch());
-            return false;
+        if (packet.entityId() != ownerId) return;
+        synchronized (this) {
+            EntityPosition position = apply(packet.change(), packet.relatives());
+            setSyncedPosition(position.position());
+            currentSyncedPitch = position.pitch();
+            currentSyncedYaw = position.yaw();
+            addRecord(new KnownPosition(currentTrackedPosition.getPos(), Tasks.getTick()));
         }
     }
 
     public void onEntityPositionSyncPost(EntityPositionSyncS2CPacket event) {
         EntityPositionSyncS2CPacket packet = event;
-        if (packet.id() != owner.getId()) return;
-        addRecord(new KnownPosition(owner.getPos(), Tasks.getTick()));
+        if (packet.id() != ownerId) return;
+        synchronized (this) {
+            EntityPosition position = packet.values();
+            setSyncedPosition(position.position());
+            currentSyncedPitch = position.pitch();
+            currentSyncedYaw = position.yaw();
+            addRecord(new KnownPosition(currentTrackedPosition.getPos(), Tasks.getTick()));
+        }
     }
 
     public void onEntityPositionMove(EntityS2CPacket event) {
         EntityS2CPacket packet = event;
-        if (packet.getEntity(mc.world) == owner) {
-            addRecord(new KnownPosition(owner.getPos(), Tasks.getTick()));
+        if (packet.id == ownerId) {
+            synchronized (this) {
+                if (mc.player.getId() == ownerId || packet.isPositionChanged()) {
+                    Vec3d position = currentTrackedPosition.withDelta(
+                            (long) packet.getDeltaX(), (long) packet.getDeltaY(), (long) packet.getDeltaZ());
+                    setSyncedPosition(position);
+                }
+                if (packet.hasRotation()) {
+                    currentSyncedYaw = packet.getYaw();
+                    currentSyncedPitch = packet.getPitch();
+                }
+                addRecord(new KnownPosition(currentTrackedPosition.getPos(), Tasks.getTick()));
+            }
         }
+    }
+
+    private EntityPosition apply(EntityPosition position, Set<PositionFlag> flags) {
+        EntityPosition current =
+                new EntityPosition(currentTrackedPosition.getPos(), Vec3d.ZERO, currentSyncedYaw, currentSyncedPitch);
+        return EntityPosition.apply(current, position, flags);
+    }
+
+    private void setSyncedPosition(Vec3d position) {
+        currentTrackedPosition.setPos(position);
     }
 
     /**
@@ -80,17 +107,19 @@ public class PredictorImpl implements Predictor {
      * @return 速度向量；若 tick 差为 0，则返回零向量（同一时刻无有效速度）
      */
     public Vec3d getKnownDeltaMovement() {
-        if (positions.size() < 2) return Vec3d.ZERO;
-        Iterator<KnownPosition> it = positions.descendingIterator();
-        KnownPosition newest = it.next();
-        KnownPosition second = it.next();
-        int dt = newest.tick() - second.tick();
-        if (dt == 0) {
-            // 同一 tick 内无法计算速度，返回零向量（或根据需求返回位移差）
-            return newest.vec3d().subtract(second.vec3d());
+        synchronized (this) {
+            if (positions.size() < 2) return Vec3d.ZERO;
+            Iterator<KnownPosition> it = positions.descendingIterator();
+            KnownPosition newest = it.next();
+            KnownPosition second = it.next();
+            int dt = newest.tick() - second.tick();
+            if (dt == 0) {
+                // 同一 tick 内无法计算速度，返回零向量（或根据需求返回位移差）
+                return newest.vec3d().subtract(second.vec3d());
+            }
+            Vec3d displacement = newest.vec3d().subtract(second.vec3d());
+            return displacement.multiply(1.0 / dt);
         }
-        Vec3d displacement = newest.vec3d().subtract(second.vec3d());
-        return displacement.multiply(1.0 / dt);
     }
 
     /**
@@ -100,23 +129,26 @@ public class PredictorImpl implements Predictor {
      * @param useTicksBefore 只使用过去 useTicksBefore 刻内的历史记录
      */
     public Vec3d predict(int ticksLater, int method, int useTicksBefore) {
-        if (ticksLater == 0) return owner.getPos();
-        int currentTick = Tasks.getTick();
-        Vec3d currentPos = owner.getPos();
-
+        Vec3d trackedPos;
         List<KnownPosition> histRecords = new ArrayList<>();
         KnownPosition lastKnown = null;
-        // 如果当前在范围内，则将其前一个加入。？
+        int currentTick = Tasks.getTick();
         boolean add = false;
-        for (KnownPosition pos : positions) {
-            if (pos.tick() >= currentTick - useTicksBefore) {
-                add = true;
-                if (lastKnown != null) {
-                    histRecords.add(lastKnown);
+
+        synchronized (this) {
+            trackedPos = currentTrackedPosition.getPos();
+            for (KnownPosition pos : positions) {
+                if (pos.tick() >= currentTick - useTicksBefore) {
+                    add = true;
+                    if (lastKnown != null) {
+                        histRecords.add(lastKnown);
+                    }
                 }
+                lastKnown = pos;
             }
-            lastKnown = pos;
         }
+        if (ticksLater == 0) return trackedPos;
+        Vec3d currentPos = trackedPos;
         // 如果最后一个需要加入。那么add必然为true
         if (lastKnown != null && add) {
             histRecords.add(lastKnown);
@@ -232,8 +264,12 @@ public class PredictorImpl implements Predictor {
         if (lastNumber <= 0) return Collections.emptyList();
 
         // 先收集已有的历史记录（从旧到新）
-        List<KnownPosition> result = new ArrayList<>(positions);
-
+        List<KnownPosition> result;
+        Vec3d currentPos;
+        synchronized (this) {
+            result = new ArrayList<>(positions);
+            currentPos = currentTrackedPosition.getPos();
+        }
         // 如果历史记录超过所需数量，只保留最后 lastNumber 个
         if (result.size() > lastNumber) {
             result = result.subList(result.size() - lastNumber, result.size());
@@ -242,7 +278,6 @@ public class PredictorImpl implements Predictor {
         // 如果不足，用当前实体位置补全（添加在末尾）
         int missing = lastNumber - result.size();
         if (missing > 0) {
-            Vec3d currentPos = owner.getPos();
             int currentTick = Tasks.getTick();
             for (int i = 0; i < missing; i++) {
                 result.add(new KnownPosition(currentPos, currentTick));

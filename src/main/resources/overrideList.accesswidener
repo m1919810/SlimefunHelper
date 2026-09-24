@@ -105,6 +105,7 @@ accessible field net/minecraft/loot/condition/AlternativeLootCondition terms Lja
 accessible method net/minecraft/entity/LivingEntity tryUseTotem (Lnet/minecraft/entity/damage/DamageSource;)Z
 accessible field net/minecraft/entity/Entity movementMultiplier Lnet/minecraft/util/math/Vec3d;
 accessible method net/minecraft/block/vault/VaultSharedData getConnectedPlayers ()Ljava/util/Set;
+accessible field net/minecraft/network/packet/s2c/play/EntityS2CPacket id I
 accessible method net/minecraft/enchantment/EnchantmentHelper$Consumer accept (Lnet/minecraft/registry/entry/RegistryEntry;I)V
 accessible class net/minecraft/enchantment/EnchantmentHelper$Consumer
 accessible method net/minecraft/enchantment/EnchantmentHelper forEachEnchantment (Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/enchantment/EnchantmentHelper$ContextAwareConsumer;)V

@@ -10,6 +10,7 @@ import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
 import me.matl114.events.impl.SlotClickAction;
 import me.matl114.events.packets.PacketStorage;
+import me.matl114.events.packets.PacketStorageImpl;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
@@ -218,9 +219,7 @@ public class PacketDebugger extends BaseModule {
     }
 
     public void onViaSend(Event<PacketStorage> eventPacketStorage) {
-        if (!(eventPacketStorage.context instanceof PacketManager.PacketStorageImpl)
-                && enable.get()
-                && debugViaPackets.get()) {
+        if (!(eventPacketStorage.context instanceof PacketStorageImpl) && enable.get() && debugViaPackets.get()) {
             // via packets
             PacketType<?> type = eventPacketStorage.context.packetType();
             if (type != null && typesDebug.contains(type)) {
