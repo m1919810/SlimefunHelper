@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import me.matl114.SlimefunHelper;
+import me.matl114.managers.FileManager;
 import me.matl114.utils.Debug;
 import net.fabricmc.loader.api.FabricLoader;
 import org.yaml.snakeyaml.Yaml;
@@ -37,7 +38,6 @@ public class ConfigLoader {
     }
 
     public static Config loadInternalConfig(String internalFileName, String customName) {
-
         try {
             return new Config(customName, null, loadYamlConfig((Reader) (new InputStreamReader(
                     SlimefunHelper.getInstance().getClass().getResourceAsStream("/" + internalFileName),
@@ -51,44 +51,17 @@ public class ConfigLoader {
     public static Config loadExternalConfig(String name, String customName) {
         final File cfgFile =
                 FabricLoader.getInstance().getConfigDir().resolve(name).toFile();
+        return loadExternalConfig(cfgFile, customName);
+    }
+
+    public static Config loadExternalConfig(File cfgFile, String customName) {
         String fileName = cfgFile.getName();
         copyFile(cfgFile, fileName);
         return new Config(customName, cfgFile);
     }
 
-    public static String loadExternalJson(String name) {
-        final File cfg = FabricLoader.getInstance().getConfigDir().resolve(name).toFile();
-        if (!cfg.exists()) {
-            try {
-                if (!cfg.getParentFile().exists()) {
-                    Files.createDirectories(cfg.toPath().getParent());
-                }
-                Files.createFile(cfg.toPath());
-                Files.writeString(cfg.toPath(), "{}");
-            } catch (Throwable e) {
-                Debug.info("创建新json文件失败: 文件:", cfg, "错误:");
-                Debug.info(e);
-                return "{}";
-            }
-        }
-        try {
-            return Files.readString(cfg.toPath(), StandardCharsets.UTF_8);
-        } catch (Throwable e) {
-            Debug.info("读取json文件失败: 文件:", cfg, "错误:");
-            Debug.info(e);
-            return "{}";
-        }
-    }
-
-    public static void saveToFile(String name, String data) throws IOException {
-        final File cfg = FabricLoader.getInstance().getConfigDir().resolve(name).toFile();
-        if (!cfg.exists()) {
-            if (!cfg.getParentFile().exists()) {
-                Files.createDirectories(cfg.toPath().getParent());
-            }
-            Files.createFile(cfg.toPath());
-        }
-        Files.writeString(cfg.toPath(), data);
+    public static Config loadRuntimeConfig(String name, String customName) {
+        return loadExternalConfig(FileManager.getInstance().getRuntimeFile(name), customName);
     }
 
     public static HashMap<String, Object> loadYamlConfig(File file) {

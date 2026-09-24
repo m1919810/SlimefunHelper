@@ -1,17 +1,11 @@
 package me.matl114.hacks.modules.slimefun;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ReferenceArraySet;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiPredicate;
@@ -32,10 +26,11 @@ import me.matl114.hacks.utils.multiblock.BlockMatcher;
 import me.matl114.hacks.utils.recipes.RecipeEntry;
 import me.matl114.hacks.utils.recipes.RecipeIngredient;
 import me.matl114.managers.Configs;
-import me.matl114.managers.config.ConfigLoader;
+import me.matl114.managers.FileManager;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.config.StringRef;
+import me.matl114.managers.file.FileStorage;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.collections.Point;
@@ -124,8 +119,8 @@ public class RecipeDatabase extends BaseModule {
         return true;
     }
 
-    private static final String RECIPE_FILE = "sfhelper-configs/recipes/recipe-data.json";
-    private static final String RECIPE_TYPE_FILE = "sfhelper-configs/recipes/craft-types.json";
+    private static final String RECIPE_FILE = "recipe-data.nbt";
+    private static final String RECIPE_TYPE_FILE = "craft-types.nbt";
     private final Map<String, CraftingType> id2CraftType = new LinkedHashMap<>();
     private boolean dirtyCraftType = false;
     private final Map<String, SlimefunRecipeEntry> id2Recipe = new LinkedHashMap<>();
@@ -134,18 +129,12 @@ public class RecipeDatabase extends BaseModule {
             Codec.unboundedMap(Codec.STRING, CraftingType.CODEC);
     private final Codec<Map<String, SlimefunRecipeEntry>> recipeMapCodec =
             Codec.unboundedMap(Codec.STRING, SlimefunRecipeEntry.CODEC);
-    Gson gson = new GsonBuilder().disableHtmlEscaping().create();
 
     public void onLoad() {
         loaded = true;
         try {
             id2CraftType.clear();
-            String craftTypeId = ConfigLoader.loadExternalJson(RECIPE_TYPE_FILE);
-            JsonObject jsonElement = gson.fromJson(craftTypeId, JsonObject.class);
-            Map<String, CraftingType> craftTypeMap = craftTypeMapCodec
-                    .decode(JsonOps.INSTANCE, jsonElement)
-                    .getOrThrow()
-                    .getFirst();
+            Map<String, CraftingType> craftTypeMap = loadMap(craftTypeMapCodec, RECIPE_TYPE_FILE);
             id2CraftType.putAll(craftTypeMap);
             dirtyCraftType = false;
         } catch (Throwable e) {
@@ -154,13 +143,8 @@ public class RecipeDatabase extends BaseModule {
         }
         try {
             id2Recipe.clear();
-            String craftTypeId = ConfigLoader.loadExternalJson(RECIPE_FILE);
-            JsonObject jsonElement = gson.fromJson(craftTypeId, JsonObject.class);
-            Map<String, SlimefunRecipeEntry> craftTypeMap = recipeMapCodec
-                    .decode(JsonOps.INSTANCE, jsonElement)
-                    .getOrThrow()
-                    .getFirst();
-            id2Recipe.putAll(craftTypeMap);
+            Map<String, SlimefunRecipeEntry> recipeMap = loadMap(recipeMapCodec, RECIPE_FILE);
+            id2Recipe.putAll(recipeMap);
             dirtyRecipe = false;
         } catch (Throwable e) {
             Debug.info("反序列化RecipeEntry数据失败, 错误:");
@@ -179,14 +163,13 @@ public class RecipeDatabase extends BaseModule {
             if (dirtyCraftType) {
                 dirtyCraftType = false;
                 try {
-                    JsonElement jsonElement = craftTypeMapCodec
-                            .encodeStart(JsonOps.INSTANCE, id2CraftType)
-                            .getOrThrow();
+                    Map<String, CraftingType> snapshot = new LinkedHashMap<>(id2CraftType);
                     CompletableFuture.runAsync(() -> {
-                        String jsonStr = gson.toJson(jsonElement);
                         try {
-                            ConfigLoader.saveToFile(RECIPE_TYPE_FILE, jsonStr);
-                        } catch (IOException e) {
+                            FileStorage storage = FileManager.getInstance().getRecipeDatabaseStorage(RECIPE_TYPE_FILE);
+                            storage.write(craftTypeMapCodec, snapshot).getOrThrow();
+                            storage.write();
+                        } catch (Throwable e) {
                             Debug.info(e);
                         }
                     });
@@ -198,14 +181,13 @@ public class RecipeDatabase extends BaseModule {
             if (dirtyRecipe) {
                 dirtyRecipe = false;
                 try {
-                    JsonElement jsonElement = recipeMapCodec
-                            .encodeStart(JsonOps.INSTANCE, id2Recipe)
-                            .getOrThrow();
+                    Map<String, SlimefunRecipeEntry> snapshot = new LinkedHashMap<>(id2Recipe);
                     CompletableFuture.runAsync(() -> {
-                        String jsonStr = gson.toJson(jsonElement);
                         try {
-                            ConfigLoader.saveToFile(RECIPE_FILE, jsonStr);
-                        } catch (IOException e) {
+                            FileStorage storage = FileManager.getInstance().getRecipeDatabaseStorage(RECIPE_FILE);
+                            storage.write(recipeMapCodec, snapshot).getOrThrow();
+                            storage.write();
+                        } catch (Throwable e) {
                             Debug.info(e);
                         }
                     });
@@ -215,6 +197,15 @@ public class RecipeDatabase extends BaseModule {
                 }
             }
         }
+    }
+
+    private <T> Map<String, T> loadMap(Codec<Map<String, T>> codec, String fileName) {
+        FileManager fileManager = FileManager.getInstance();
+        FileStorage storage = fileManager.getRecipeDatabaseStorage(fileName);
+        if (storage.getFile().exists()) {
+            return new LinkedHashMap<>(storage.readOrThrow(codec));
+        }
+        return new LinkedHashMap<>();
     }
 
     public void onUnload() {

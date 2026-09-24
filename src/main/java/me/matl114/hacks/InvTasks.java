@@ -992,7 +992,7 @@ public class InvTasks {
 
     @Getter
     //
-    private static final ItemCache customItemDatabase = new ItemCache("sfhelper-configs/recipes/item-database.json");
+    private static final ItemCache customItemDatabase = new ItemCache("item-database.nbt");
 
     public static final Codec<ItemStackData> CUSTOM_ITEM_DATA_CODEC = customItemDatabase.createStackDataCodec();
 
