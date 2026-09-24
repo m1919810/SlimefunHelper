@@ -44,7 +44,7 @@ public interface ItemStackData {
             .name("&c物品索引缺失")
             .lore()
             .append("")
-            .append("&7请修复item-database.json")
+            .append("&7请修复item-database.nbt")
             .endLore()
             .build();
 

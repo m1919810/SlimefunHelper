@@ -4,7 +4,9 @@ import com.google.common.base.Preconditions;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,6 +15,7 @@ import me.matl114.SlimefunHelper;
 import me.matl114.managers.file.FileStorage;
 import me.matl114.managers.file.NBTFileStorageImpl;
 import me.matl114.utils.Debug;
+import me.matl114.utils.FileUtils;
 import net.fabricmc.loader.api.FabricLoader;
 import org.yaml.snakeyaml.Yaml;
 
@@ -24,10 +27,14 @@ public class FileManager {
     public static final String FILE_SAVE_PATH = SlimefunHelper.MOD_ID;
     public static final String INTERNAL_SAVE_PATH = "internal";
     public static final String CONFIG_SAVE_PATH = "config";
+    public static final String RUNTIME_SAVE_PATH = "runtime";
+    public static final String RECIPE_DATABASE_SAVE_PATH = "recipe_db";
     public static final File FOLDER =
             FabricLoader.getInstance().getGameDir().resolve(FILE_SAVE_PATH).toFile();
     public static final File INTERNAL_FOLDER = new File(FOLDER, INTERNAL_SAVE_PATH);
     public static final File CONFIG_SAVE_FOLDER = new File(FOLDER, CONFIG_SAVE_PATH);
+    public static final File RUNTIME_FOLDER = new File(FOLDER, RUNTIME_SAVE_PATH);
+    public static final File RECIPE_DATABASE_FOLDER = new File(FOLDER, RECIPE_DATABASE_SAVE_PATH);
     public static final Map<File, FileStorage> trackedFileStorages = new ConcurrentHashMap<>();
 
     protected static final FileManager INSTANCE = new FileManager();
@@ -39,6 +46,9 @@ public class FileManager {
         }
         checkFolder(INTERNAL_FOLDER);
         checkFolder(CONFIG_SAVE_FOLDER);
+        checkFolder(RUNTIME_FOLDER);
+        checkFolder(RECIPE_DATABASE_FOLDER);
+        migrateLegacyRuntimeConfigs();
 
         ScheduleService.launchAsyncRepeatTask(this::onScheduleSave, 15 * 1000, 15 * 1000);
     }
@@ -61,6 +71,14 @@ public class FileManager {
 
     public File getFile(String path) {
         return new File(FOLDER, path);
+    }
+
+    public File getRuntimeFile(String path) {
+        return new File(RUNTIME_FOLDER, path);
+    }
+
+    public File getRecipeDatabaseFile(String path) {
+        return new File(RECIPE_DATABASE_FOLDER, path);
     }
 
     public void checkFolder(String s) {
@@ -144,6 +162,10 @@ public class FileManager {
         return getStorage(new File(INTERNAL_FOLDER, filePath), false, true);
     }
 
+    public FileStorage getRecipeDatabaseStorage(String filePath) {
+        return getStorage(new File(RECIPE_DATABASE_FOLDER, filePath), false, true);
+    }
+
     public FileStorage getStorage(String file) {
         return getStorage(new File(FOLDER, file), false, true);
     }
@@ -188,6 +210,32 @@ public class FileManager {
         } else {
             throw new UnsupportedOperationException(
                     "Unsupported file type: " + name + " (only .nbt/.dat supported for now)");
+        }
+    }
+
+    private void migrateLegacyRuntimeConfigs() {
+        Path legacyPath = FabricLoader.getInstance().getConfigDir().resolve("sfhelper-configs");
+
+        if (!legacyPath.toFile().isDirectory()) {
+            return;
+        }
+
+        try (var paths = Files.list(legacyPath)) {
+            paths.filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().endsWith(".yml"))
+                    .forEach((s) -> {
+                        try {
+                            FileUtils.saveTempFile(
+                                    s.toFile(),
+                                    new File(
+                                            RUNTIME_FOLDER,
+                                            legacyPath.relativize(s).toString()));
+                        } catch (IOException e) {
+                            Debug.info("Failed to migrate legacy YAML configs", s, e);
+                        }
+                    });
+        } catch (Exception e) {
+            Debug.info("Failed to migrate legacy YAML configs", e);
         }
     }
 
