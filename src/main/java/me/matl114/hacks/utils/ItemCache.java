@@ -1,14 +1,8 @@
 package me.matl114.hacks.utils;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.ReentrantLock;
@@ -18,8 +12,9 @@ import lombok.Getter;
 import me.matl114.events.Listener;
 import me.matl114.events.annotations.Broadcast;
 import me.matl114.events.channels.EventChannel;
+import me.matl114.managers.FileManager;
 import me.matl114.managers.ScheduleService;
-import me.matl114.managers.config.ConfigLoader;
+import me.matl114.managers.file.FileStorage;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.codecs.NullCodec;
@@ -42,8 +37,8 @@ public class ItemCache {
     ReentrantLock lock = new ReentrantLock();
     boolean autoGc = false;
 
-    public ItemCache(String saveJsonFile) {
-        this.fileName = saveJsonFile;
+    public ItemCache(String saveNbtFile) {
+        this.fileName = saveNbtFile;
         // auto save
         ScheduleService.launchAsyncRepeatTask(
                 () -> {
@@ -94,8 +89,6 @@ public class ItemCache {
         }
     }
 
-    Gson gson = new GsonBuilder().disableHtmlEscaping().create();
-
     public static Codec<Map<String, ItemStackData>> MAP_CODEC = Codec.unboundedMap(Codec.STRING, ItemStackData.CODEC);
     public static final String PREFIX = "customitems:";
 
@@ -103,7 +96,6 @@ public class ItemCache {
         loading = true;
         try {
             checkRegistry();
-            JsonObject jsonObject;
             Debug.info("Start loading item cache");
             long startTime = System.currentTimeMillis();
             lock.lock();
@@ -111,20 +103,8 @@ public class ItemCache {
                 if (loaded) {
                     return;
                 }
-                try {
-                    String jsonStr = ConfigLoader.loadExternalJson(this.fileName);
-                    jsonObject = gson.fromJson(jsonStr, JsonObject.class);
-                } catch (Throwable e) {
-                    Debug.info("Error while loading ItemDatabase");
-                    Debug.info(e);
-                    loaded = false;
-                    return;
-                }
                 map = new LinkedHashMap<>();
-                map = new LinkedHashMap<>(MAP_CODEC
-                        .decode(JsonOps.INSTANCE, jsonObject)
-                        .getOrThrow()
-                        .getFirst());
+                map.putAll(loadMap());
                 dirty = false;
                 byItem = new HashMap<>();
                 map.forEach((key, value) -> {
@@ -148,6 +128,15 @@ public class ItemCache {
         } finally {
             loading = false;
         }
+    }
+
+    private Map<String, ItemStackData> loadMap() {
+        FileManager fileManager = FileManager.getInstance();
+        FileStorage storage = fileManager.getRecipeDatabaseStorage(fileName);
+        if (storage.getFile().exists()) {
+            return storage.readOrThrow(MAP_CODEC);
+        }
+        return Map.of();
     }
 
     private void checkRegistry() {
@@ -216,14 +205,14 @@ public class ItemCache {
             }
             if (dirty) {
                 dirty = false;
-                JsonElement jsonElement =
-                        MAP_CODEC.encodeStart(JsonOps.INSTANCE, map).getOrThrow();
+                Map<String, ItemStackData> snapshot = new LinkedHashMap<>(map);
                 // run Async
                 CompletableFuture.runAsync(() -> {
-                    String jsonStr = gson.toJson(jsonElement);
                     try {
-                        ConfigLoader.saveToFile(this.fileName, jsonStr);
-                    } catch (IOException e) {
+                        FileStorage storage = FileManager.getInstance().getRecipeDatabaseStorage(this.fileName);
+                        storage.write(MAP_CODEC, snapshot).getOrThrow();
+                        storage.write();
+                    } catch (Throwable e) {
                         Debug.info(e);
                     }
                 });
