@@ -13,4 +13,7 @@ public record SimpleEntityPredictor(Entity entity) implements Predictor {
     public Vec3d predict(int ticksLater, int method, int a) {
         return entity.getLerpedPos(ticksLater);
     }
+
+    @Override
+    public void tick() {}
 }

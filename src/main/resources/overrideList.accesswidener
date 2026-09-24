@@ -119,3 +119,4 @@ accessible method net/minecraft/entity/LivingEntity tryUseDeathProtector (Lnet/m
 accessible method net/minecraft/entity/player/PlayerEntity getDamageSource (Lnet/minecraft/item/ItemStack;)Lnet/minecraft/entity/damage/DamageSource;
 accessible field net/minecraft/entity/Entity movementMultiplier Lnet/minecraft/util/math/Vec3d;
 accessible method net/minecraft/block/vault/VaultSharedData getConnectedPlayers ()Ljava/util/Set;
+accessible field net/minecraft/network/packet/s2c/play/EntityS2CPacket id I
