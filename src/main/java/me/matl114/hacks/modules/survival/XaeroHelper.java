@@ -3,11 +3,15 @@ package me.matl114.hacks.modules.survival;
 import com.google.common.collect.ImmutableMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
+import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.function.Consumer;
+import lombok.Getter;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.annotations.Broadcast;
+import me.matl114.events.channels.EventChannel;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -41,6 +45,10 @@ import net.minecraft.world.World;
 
 public class XaeroHelper extends BaseModule {
     public static XaeroHelper INSTANCE;
+
+    @Getter
+    @Broadcast
+    private static final EventChannel<World> worldSwitchPoint = new EventChannel<>();
 
     public XaeroHelper() {
         super("XaeroHelper");
@@ -91,6 +99,7 @@ public class XaeroHelper extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
+        registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch, Integer.MIN_VALUE);
         registerListener(Listener.getPostGameTick(), this::onTickMapRender);
         registerListener(XaeroHooks.getWorldMapRightClickOption(), this::onXaeroWorldMapClick);
         registerListener(Listener.getPostGameTick(), this::onXaeroTempWaypointSync);
@@ -101,7 +110,7 @@ public class XaeroHelper extends BaseModule {
     public <W> void unregisterAll() {
         super.unregisterAll();
         toggleLoadedChunk(false);
-        destroyTempWaypoints();
+        clearWaypoints();
     }
 
     public static final String LOADED_CHUNK_RENDER_ID = "slimefun_xaerohelper_loaded_chunk_render";
@@ -234,50 +243,192 @@ public class XaeroHelper extends BaseModule {
         }
     }
 
-    IXWaypointAccess access;
+    public record WaypointBinding(WeakReference<Object> owner, IXWaypoint waypoint) {}
+
+    private IXWaypointAccess access;
+    private final List<WaypointBinding> submittedWaypoints = new ArrayList<>();
     IXWaypoint travelPoint;
 
-    private void destroyTempWaypoints() {
-        if (access != null) {
-            if (travelPoint != null) {
-                access.remove(travelPoint);
-                travelPoint = null;
-            }
+    private void clearWaypoints() {
+        detachWaypoints();
+        submittedWaypoints.clear();
+        travelPoint = null;
+    }
+
+    private void detachWaypoints() {
+        if (access != null && !submittedWaypoints.isEmpty()) {
+            access.removeAll(
+                    submittedWaypoints.stream().map(WaypointBinding::waypoint).toList());
+            access.requestRefresh();
         }
         access = null;
     }
 
-    private void destroyTravelPoint() {
-        if (travelPoint != null) {
-            access.remove(travelPoint);
-            travelPoint = null;
+    private void onWorldSwitch(Event<World> event) {
+        clearWaypoints();
+        worldSwitchPoint.broadcast(event.context);
+    }
+
+    private void attachWaypoints() {
+        if (access != null && !submittedWaypoints.isEmpty()) {
+            access.addAll(
+                    submittedWaypoints.stream().map(WaypointBinding::waypoint).toList());
+            access.requestRefresh();
+        }
+    }
+
+    private void cleanupCollectedWaypoints() {
+        if (submittedWaypoints.isEmpty()) {
+            return;
+        }
+        List<IXWaypoint> removed = new ArrayList<>();
+        submittedWaypoints.removeIf(binding -> {
+            if (binding.owner().get() == null) {
+                removed.add(binding.waypoint());
+                return true;
+            }
+            return false;
+        });
+        if (access != null && !removed.isEmpty()) {
+            access.removeAll(removed);
+            access.requestRefresh();
+        }
+    }
+
+    private void syncWaypointAccess() {
+        IXWaypointFactory factory = XaeroHooks.getInstance().getWaypointFactory();
+        RegistryKey<World> currentWorld = factory == null ? null : factory.getCurrentWorld();
+        IXWaypointAccess currentAccess = factory == null || !Objects.equals(currentWorld, mc.world.getRegistryKey())
+                ? null
+                : factory.getCurrentWaypointSet();
+        if (!Objects.equals(currentAccess, access)) {
+            detachWaypoints();
+            access = currentAccess;
+            attachWaypoints();
+        }
+    }
+
+    public IXWaypoint createWaypoint(
+            int x, int y, int z, String name, String initials, int color, int type, boolean temp, boolean yIncluded) {
+        IXWaypointFactory factory = XaeroHooks.getInstance().getWaypointFactory();
+        if (factory == null) {
+            return null;
+        }
+        return factory.createWaypoint(x, y, z, name, initials, color, type, temp, yIncluded);
+    }
+
+    public IXWaypoint submitWaypoint(
+            Object owner,
+            int x,
+            int y,
+            int z,
+            String name,
+            String initials,
+            int color,
+            int type,
+            boolean temp,
+            boolean yIncluded) {
+        IXWaypoint waypoint = createWaypoint(x, y, z, name, initials, color, type, temp, yIncluded);
+        return waypoint == null ? null : submitWaypoint(owner, waypoint);
+    }
+
+    public IXWaypoint submitWaypoint(Object owner, IXWaypoint waypoint) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(waypoint, "waypoint");
+        cleanupCollectedWaypoints();
+        if (submittedWaypoints.stream().anyMatch(binding -> Objects.equals(binding.waypoint(), waypoint))) {
+            return waypoint;
+        }
+        submittedWaypoints.add(new WaypointBinding(new WeakReference<>(owner), waypoint));
+        if (access != null) {
+            access.add(waypoint);
+            access.requestRefresh();
+        }
+        return waypoint;
+    }
+
+    public void updateWaypoint(IXWaypoint waypoint, Consumer<IXWaypoint> updater) {
+        cleanupCollectedWaypoints();
+        if (submittedWaypoints.stream().noneMatch(binding -> Objects.equals(binding.waypoint(), waypoint))) {
+            return;
+        }
+        if (access == null) {
+            updater.accept(waypoint);
+        } else {
+            access.update(waypoint, updater);
+            access.requestRefresh();
+        }
+    }
+
+    public void removeWaypoint(IXWaypoint waypoint) {
+        if (waypoint == null) {
+            return;
+        }
+        cleanupCollectedWaypoints();
+        boolean removed = submittedWaypoints.removeIf(binding -> Objects.equals(binding.waypoint(), waypoint));
+        if (access != null && removed) {
+            access.remove(waypoint);
+            access.requestRefresh();
+        }
+    }
+
+    public void removeWaypoint(Object owner, BlockPos pos) {
+        cleanupCollectedWaypoints();
+        double scale = mc.world == null ? 1 : mc.world.getDimension().coordinateScale();
+        int x = (int) (pos.getX() * scale);
+        int y = pos.getY();
+        int z = (int) (pos.getZ() * scale);
+        List<IXWaypoint> removed = new ArrayList<>();
+        submittedWaypoints.removeIf(binding -> {
+            IXWaypoint waypoint = binding.waypoint();
+            if (binding.owner().get() == owner
+                    && waypoint.getX() == x
+                    && waypoint.getY() == y
+                    && waypoint.getZ() == z) {
+                removed.add(waypoint);
+                return true;
+            }
+            return false;
+        });
+        if (access != null && !removed.isEmpty()) {
+            access.removeAll(removed);
+            access.requestRefresh();
+        }
+    }
+
+    public void removeSub(Object owner) {
+        Objects.requireNonNull(owner, "owner");
+        List<IXWaypoint> removed = new ArrayList<>();
+        submittedWaypoints.removeIf(binding -> {
+            if (binding.owner().get() == owner) {
+                removed.add(binding.waypoint());
+                return true;
+            }
+            return false;
+        });
+        if (access != null && !removed.isEmpty()) {
+            access.removeAll(removed);
             access.requestRefresh();
         }
     }
 
     public void onXaeroTempWaypointSync(Event<ClientPlayerEntity> eventVoid) {
         if (checkNull()) return;
+        cleanupCollectedWaypoints();
         if (!XaeroHooks.getInstance().isXaeroMiniMapEnable()) {
             return;
         }
-        IXWaypointFactory factory = XaeroHooks.getInstance().getWaypointFactory();
-        if (!Objects.equals(factory.getCurrentWorld(), mc.world.getRegistryKey())) {
-            destroyTempWaypoints();
-            return;
-        }
-        IXWaypointAccess currentSetAccess = factory.getCurrentWaypointSet();
-        if (!Objects.equals(currentSetAccess, access)) {
-            destroyTempWaypoints();
-        }
-        access = currentSetAccess;
+        syncWaypointAccess();
         if (travelGoalSync.get()) {
             if (TravellingControl.travelTask == null) {
-                destroyTravelPoint();
+                removeWaypoint(travelPoint);
+                travelPoint = null;
             } else {
                 Vec3d target = TravellingControl.travelTask.getCurrentFlyingTarget();
                 BlockPos pos = new BlockPos((int) target.x, (int) Math.clamp(target.y, -512, 512), (int) target.z);
                 if (travelPoint == null) {
-                    travelPoint = factory.createWaypoint(
+                    travelPoint = submitWaypoint(
+                            this,
                             pos.getX(),
                             pos.getY(),
                             pos.getZ(),
@@ -287,18 +438,21 @@ public class XaeroHelper extends BaseModule {
                             0,
                             true,
                             true);
-                    access.add(travelPoint);
-                    access.requestRefresh();
                 }
-                access.update(travelPoint, (acc) -> {
-                    if (acc.getX() != pos.getX() || acc.getY() != pos.getY() || acc.getZ() != pos.getZ()) {
+                if (travelPoint != null
+                        && (travelPoint.getX() != pos.getX()
+                                || travelPoint.getY() != pos.getY()
+                                || travelPoint.getZ() != pos.getZ())) {
+                    updateWaypoint(travelPoint, acc -> {
                         acc.setX(pos.getX());
                         acc.setY(pos.getY());
                         acc.setZ(pos.getZ());
-                        access.requestRefresh();
-                    }
-                });
+                    });
+                }
             }
+        } else {
+            removeWaypoint(travelPoint);
+            travelPoint = null;
         }
     }
 
