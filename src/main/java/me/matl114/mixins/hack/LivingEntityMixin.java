@@ -8,6 +8,7 @@ import me.matl114.accessors.access.LivingEntityAccess;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.move.ElytraExtra;
+import me.matl114.hacks.modules.move.Velocity;
 import me.matl114.hacks.utils.EntityUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -217,5 +218,15 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
         } else {
             original.call(instance);
         }
+    }
+
+    @WrapOperation(
+            method = "applyMovementInput",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;isClimbing()Z"))
+    private boolean onApplyMovementInputNoClimb(LivingEntity instance, Operation<Boolean> original) {
+        if (checkClientPlayer() && Velocity.INSTANCE.noClimbing.get()) {
+            return false;
+        }
+        return original.call(instance);
     }
 }

@@ -45,7 +45,6 @@ import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.world.World;
 import org.apache.commons.lang3.stream.Streams;
 
 public class AutoEat extends BaseModule {
@@ -147,7 +146,7 @@ public class AutoEat extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPreHandleInputEvents(), this::onTickPre);
         registerListener(Listener.getPostHandleInputEvents(), this::onTickPost);
-        registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
+        registerListener(Listener.getPlayerRespawnPoint(), this::onWorldSwitch);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(EntityStatusS2CPacket.class), this::onStatusConsumed);
         registerListener(Listener.getPrePlayerUseItem(), this::onRightClick);
@@ -236,7 +235,7 @@ public class AutoEat extends BaseModule {
         }
     }
 
-    private void onWorldSwitch(Event<World> event) {
+    private void onWorldSwitch(Event<ClientPlayerEntity> event) {
         stopEating();
     }
 

@@ -401,7 +401,8 @@ public class ClickGui extends BaseModule {
             for (var entry : groupedConfigs.entrySet()) {
                 String prefix = entry.getKey();
                 if (shouldShowConfigSubGroupHead(prefix)) {
-                    listWidget.addDrawableChild(createConfigSubGroupHead(baseModule, prefix, metaData));
+                    listWidget.addDrawableChild(
+                            createConfigSubGroupHead(baseModule, prefix, metaData, entry.getValue()));
                     BooleanSupplier subGroupEnabled = createSubGroupEnabledPredicate(baseModule, prefix, metaData);
                     for (var configWidget : entry.getValue()) {
                         listWidget.addDrawableChild(createBaseModuleConfigurateRow(configWidget, subGroupEnabled));
@@ -453,7 +454,8 @@ public class ClickGui extends BaseModule {
         return () -> metaData.isSubGroupExpanded(metaKey);
     }
 
-    private DrawableWidget createConfigSubGroupHead(BaseModule baseModule, String prefix, ClickGuiMetaData metaData) {
+    private DrawableWidget createConfigSubGroupHead(
+            BaseModule baseModule, String prefix, ClickGuiMetaData metaData, List<WrapperConfigRef<?>> subs) {
         int width = indexWidth + blankWidth + buttonWidth;
         int buttonHeight = (int) widgetSize.get().y();
         int height = buttonHeight + buttonBlank;
@@ -489,7 +491,12 @@ public class ClickGui extends BaseModule {
                             context.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
                         }))
                 .addToSub(subScreen);
-        return subScreen;
+        return new DynamicContentWidget<>(
+                () -> {
+                    return subs.stream().anyMatch(WrapperConfigRef::shouldShow) ? subScreen : null;
+                },
+                0,
+                0);
     }
 
     private Text getConfigSubGroupTitle(String prefix) {

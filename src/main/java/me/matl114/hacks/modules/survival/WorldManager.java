@@ -277,7 +277,7 @@ public class WorldManager extends BaseModule {
         if (newState.getBlock() != Blocks.VAULT
                 || newState.get(VaultBlock.VAULT_STATE) != VaultState.UNLOCKING
                 || !(mc.world.getBlockEntity(pos) instanceof VaultBlockEntity vault)
-                || !SequencedActionManager.INSTANCE.isWaitingResponse(
+                || !SequencedActionManager.INSTANCE.isWaitingBlockResponse(
                         pos, stack -> stack.isOf(Items.TRIAL_KEY) || stack.isOf(Items.OMINOUS_TRIAL_KEY))) {
             return;
         }

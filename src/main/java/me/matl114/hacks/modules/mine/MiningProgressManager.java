@@ -35,7 +35,7 @@ public class MiningProgressManager extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getEntityRemoveListener().getChannel(EntityType.PLAYER), this::onEntityRemove);
-        registerListener(Listener.getWorldSwitchPoint(), this::onWorldChange);
+        registerListener(Listener.getPlayerRespawnPoint(), this::onWorldChange);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(BlockBreakingProgressS2CPacket.class),
                 this::onBlockProgressUpdate);
@@ -52,7 +52,7 @@ public class MiningProgressManager extends BaseModule {
         trackedMap.remove(event.context.getId());
     }
 
-    public void onWorldChange(Event<World> world) {
+    public void onWorldChange(Event<ClientPlayerEntity> world) {
         trackedMap.clear();
     }
 

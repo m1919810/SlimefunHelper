@@ -28,7 +28,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
-import net.minecraft.world.World;
 
 public class Freecam extends BaseModule implements LegalMovementManager.MovementModifier {
     public final ModulePath freecam = makePath(Configs.RENDER_CONFIG, "freecam");
@@ -67,7 +66,7 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
+        registerListener(Listener.getPlayerRespawnPoint(), this::onWorldSwitch);
         registerListener(Listener.getTeleportationConfirm(), this::onPosResync);
         registerListener(Listener.getPostGameTick(), this::onTick);
         registerListener(
@@ -98,7 +97,7 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
         removeCamera();
     }
 
-    public void onWorldSwitch(Event<World> event) {
+    public void onWorldSwitch(Event<ClientPlayerEntity> event) {
         if (enable.get()) {
             Tasks.scheduleDelayed(this::initializeCamera, 1);
         }

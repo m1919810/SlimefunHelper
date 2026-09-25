@@ -8,6 +8,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.utils.NetworkUtils;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ChunkDeltaUpdateS2CPacket;
@@ -15,7 +16,6 @@ import net.minecraft.network.packet.s2c.play.PlayerActionResponseS2CPacket;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
 
 public class FakeBlockManager extends BaseModule {
     public static FakeBlockManager INSTANCE;
@@ -28,7 +28,7 @@ public class FakeBlockManager extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
+        registerListener(Listener.getPlayerRespawnPoint(), this::onWorldSwitch);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(PlayerActionResponseS2CPacket.class), this::onBlockACK);
         registerListener(
@@ -42,7 +42,7 @@ public class FakeBlockManager extends BaseModule {
     final Int2ObjectOpenHashMap<BlockPos> fakeMiningBlocks = new Int2ObjectOpenHashMap<>(4);
     final Set<BlockPos> permanentFakeMiningBlocks = new HashSet<>();
 
-    public void onWorldSwitch(Event<World> event) {
+    public void onWorldSwitch(Event<ClientPlayerEntity> event) {
         fakeMiningBlocks.clear();
     }
 

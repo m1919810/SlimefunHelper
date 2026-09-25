@@ -272,7 +272,7 @@ public class PathingSchedular {
         if (InteractExtra.INSTANCE.isWithinInteractRange(
                 mc.player.getPos(), exploreChestBlock.getFirst().getPos())) {
             BlockPos pos = exploreChestBlock.getFirst().getPos();
-            if (!SequencedActionManager.INSTANCE.isWaitingResponse(pos)) {
+            if (!SequencedActionManager.INSTANCE.isWaitingBlockResponse(pos)) {
                 Interact.INSTANCE.interactBlock(pos);
             }
         }
@@ -407,7 +407,7 @@ public class PathingSchedular {
                 pathToOrNearStop(leftPos, 1.5);
                 if (InteractExtra.INSTANCE.isWithinInteractRange(player.getPos(), leftPos)) {
                     BlockPos pos = leftPos;
-                    if (!SequencedActionManager.INSTANCE.isWaitingResponse(pos)) {
+                    if (!SequencedActionManager.INSTANCE.isWaitingBlockResponse(pos)) {
                         Interact.INSTANCE.interactBlock(pos);
                     }
                 }
@@ -553,7 +553,7 @@ public class PathingSchedular {
                     pathToOrNearStop(leftPos, 1.5);
                     if (InteractExtra.INSTANCE.isWithinInteractRange(player.getPos(), leftPos)) {
                         BlockPos pos = leftPos;
-                        if (!SequencedActionManager.INSTANCE.isWaitingResponse(pos)) {
+                        if (!SequencedActionManager.INSTANCE.isWaitingBlockResponse(pos)) {
                             Interact.INSTANCE.interactBlock(pos);
                         }
                     }
@@ -608,7 +608,7 @@ public class PathingSchedular {
                     return State.DISCHARGE.ordinal();
                 } else {
                     BlockPos pos = currentWaitingOpenContainer;
-                    if (!SequencedActionManager.INSTANCE.isWaitingResponse(pos)) {
+                    if (!SequencedActionManager.INSTANCE.isWaitingBlockResponse(pos)) {
                         Interact.INSTANCE.interactBlock(pos);
                     }
                 }
@@ -670,7 +670,7 @@ public class PathingSchedular {
                     pathToOrNearStop(leftPos, 1.5);
                     if (InteractExtra.INSTANCE.isWithinInteractRange(player.getPos(), leftPos)) {
                         BlockPos pos = leftPos;
-                        if (!SequencedActionManager.INSTANCE.isWaitingResponse(pos)) {
+                        if (!SequencedActionManager.INSTANCE.isWaitingBlockResponse(pos)) {
                             Interact.INSTANCE.interactBlock(pos);
                         }
                     }

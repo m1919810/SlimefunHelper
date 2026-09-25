@@ -18,7 +18,7 @@ import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.utils.Debug;
-import me.matl114.utils.MathUtils;
+
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
@@ -27,7 +27,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
-import net.minecraft.world.World;
 
 @SuppressWarnings("all")
 public class AutoResync extends BaseModule {
@@ -94,12 +93,12 @@ public class AutoResync extends BaseModule {
         //                Listener.getPacketPostHandlePoint().getChannel(PlayerRotationS2CPacket.class),
         // this::onPostRotate);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
-        registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
+        registerListener(Listener.getPlayerRespawnPoint(), this::onWorldSwitch);
     }
 
     int worldSwitchTick = 0;
 
-    public void onWorldSwitch(Event<World> event) {
+    public void onWorldSwitch(Event<ClientPlayerEntity> event) {
         worldSwitchTick = Tasks.getTick();
     }
 

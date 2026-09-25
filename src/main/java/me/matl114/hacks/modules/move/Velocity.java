@@ -32,6 +32,7 @@ import net.minecraft.util.math.Vec3d;
 
 public class Velocity extends BaseModule implements LegalMovementManager.MovementModifier {
     // 还没想好 先新建文件夹
+    public static Velocity INSTANCE;
     public final ModulePath velocityManagement = makePath(Configs.MOV_CONFIG, "velocity-management");
     public final ModulePath antiKb = velocityManagement.add("antikb");
 
@@ -103,6 +104,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
 
     public Velocity() {
         super("Velocity");
+        INSTANCE = this;
         bindFlag(enable);
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);

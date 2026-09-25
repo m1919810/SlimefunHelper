@@ -23,7 +23,6 @@ import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
 
 public class AntiAXray extends BaseModule {
     public AntiAXray() {
@@ -57,7 +56,7 @@ public class AntiAXray extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
+        registerListener(Listener.getPlayerRespawnPoint(), this::onWorldSwitch);
         registerListener(Listener.getPreGameTick(), this::onTick);
     }
 
@@ -77,7 +76,7 @@ public class AntiAXray extends BaseModule {
         }
     }
 
-    public void onWorldSwitch(Event<World> event) {
+    public void onWorldSwitch(Event<ClientPlayerEntity> event) {
         clearSimpleDetectionCache();
     }
 

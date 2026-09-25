@@ -27,6 +27,7 @@ import me.matl114.utils.collections.IndexEntry;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.RespawnAnchorBlock;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -38,7 +39,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.World;
 
 public class AnchorAura extends BaseModule {
     private static final float ANCHOR_POWER = 5.0F;
@@ -125,7 +125,7 @@ public class AnchorAura extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getWorldSwitchPoint(), this::onSwitchWorld);
+        registerListener(Listener.getPlayerRespawnPoint(), this::onSwitchWorld);
         registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvents);
         registerListener(PacketMine.getPostPacketMine(), this::onPacketMine);
         registerListener(PacketMine.getPrePacketMine(), this::onPrePacketMine);
@@ -135,7 +135,7 @@ public class AnchorAura extends BaseModule {
     public Map<BlockPos, AnchorCache> trackedAnchorPositions = new LinkedHashMap<>();
     public List<PlayerEntity> targetEntity = List.of();
 
-    public void onSwitchWorld(Event<World> event) {
+    public void onSwitchWorld(Event<ClientPlayerEntity> event) {
         trackedAnchorPositions.clear();
         targetEntity = List.of();
     }

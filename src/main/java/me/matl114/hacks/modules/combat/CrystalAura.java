@@ -17,6 +17,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.interact.InteractExtra;
+import me.matl114.hacks.modules.interact.SequencedActionManager;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.mine.PacketMine;
 import me.matl114.hacks.utils.EntityUtils;
@@ -40,6 +41,7 @@ import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.damage.DamageTypes;
@@ -55,7 +57,6 @@ import net.minecraft.registry.Registries;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.*;
-import net.minecraft.world.World;
 
 public class CrystalAura extends BaseModule {
     private static final int CRYSTAL_SEARCH_RADIUS = 5;
@@ -155,7 +156,7 @@ public class CrystalAura extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
+        registerListener(Listener.getPlayerRespawnPoint(), this::onWorldSwitch);
         registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvent);
         registerListener(Listener.getPostHandleInputEvents(), this::onPostInputEvent);
         registerListener(PacketMine.getPrePacketMine(), this::onPrePacketMine);
@@ -176,7 +177,7 @@ public class CrystalAura extends BaseModule {
     RenderCollector<Box> debugRender = RenderCollectors.createBoxCollector(true, false, false);
     boolean nextHitSkipDamageTest;
 
-    public void onWorldSwitch(Event<World> event) {
+    public void onWorldSwitch(Event<ClientPlayerEntity> event) {
         currentTarget = List.of();
         postRemovals.clear();
         trackedGlasses.clear();
@@ -262,8 +263,15 @@ public class CrystalAura extends BaseModule {
                 });
                 return;
             }
+            Map<BlockPos, BlockState> overrideStates = new HashMap<>();
+            overrideStates.put(pos, Blocks.AIR.getDefaultState());
+            BlockPos failBreak =
+                    PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos();
+            if (failBreak != null) {
+                overrideStates.put(failBreak, Blocks.AIR.getDefaultState());
+            }
             if (!fillIgnoreDamage.get()) {
-                Map<PlayerEntity, Double> damageMap = calculateCrystalDamage(pos.toBottomCenterPos(), Map.of());
+                Map<PlayerEntity, Double> damageMap = calculateCrystalDamage(pos.toBottomCenterPos(), overrideStates);
                 if (!isSuitableAttackExplodePos(damageMap)) {
                     return;
                 }
@@ -660,18 +668,17 @@ public class CrystalAura extends BaseModule {
                 stack -> stack.isOf(item), ghostHand.get().getSearchSize(offhand.get()), true, false);
     }
 
+    private boolean isFillBlock(ItemStack stack) {
+        if (!(stack.getItem() instanceof BlockItem blockItem)
+                || !fillWhiteList.get().test(stack.getItem())) {
+            return false;
+        }
+        return true;
+    }
+
     private IndexEntry<ItemStack> supplyFillBlock() {
         return InventoryUtils.findPlayerItem(
-                stack -> {
-                    if (!(stack.getItem() instanceof BlockItem blockItem)
-                            || !fillWhiteList.get().test(stack.getItem())) {
-                        return false;
-                    }
-                    return true;
-                },
-                ghostHand.get().getSearchSize(offhand.get()),
-                true,
-                false);
+                this::isFillBlock, ghostHand.get().getSearchSize(offhand.get()), true, false);
     }
 
     private IndexEntry<ItemStack> supplyCrystalItem() {
@@ -800,12 +807,19 @@ public class CrystalAura extends BaseModule {
         if (placeTick == null) {
             return;
         }
+        // tracked glass
+        if (SequencedActionManager.INSTANCE.isWaitingBlockUseOnResponse(
+                s -> s.placingBlockPos().isPresent()
+                        && Objects.equals(pos, s.placingBlockPos().get())
+                        && isFillBlock(s.handItem()))) {
+            eventPreMine.cancel();
+            return;
+        }
         BlockPos basePos = pos.down();
-        boolean olderThanTwoTick = Tasks.getTick() - placeTick > 2;
+        boolean olderThanTwoTick = Tasks.getTick() - placeTick >= 2;
         Map<BlockPos, BlockState> overrides = Map.of(pos, Blocks.AIR.getDefaultState());
-        if (!olderThanTwoTick
+        if (olderThanTwoTick
                 || !InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), basePos)
-                || !isBasePlacedCrystalInAttackRange(basePos)
                 || !canPlaceCrystalAtPos(pos, overrides)
                 || !isSuitableExplodePos(calculateCrystalDamage(pos.toBottomCenterPos(), overrides))) {
             eventPreMine.cancel();

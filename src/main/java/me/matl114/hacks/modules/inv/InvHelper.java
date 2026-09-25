@@ -20,6 +20,7 @@ import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.InventoryUtils;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
@@ -94,7 +95,7 @@ public class InvHelper extends BaseModule {
 
     public final KeyBindRef mergeKey = hotkey(stacking.add("stack-inventory-key"))
             .defaultValue(new MultiKeyBind())
-            .registerHotkey(HotKeyUtils.asNoneInputHandler(this::onMergeInventory))
+            .registerHotkey(HotKeyUtils.asNonInputHandler(this::onMergeInventory))
             .build();
 
     public final ModulePath drop = root.add("auto-drop");
@@ -429,8 +430,9 @@ public class InvHelper extends BaseModule {
         return false;
     }
 
-    private void onMergeInventory() {
-        if (checkNull()) return;
+    private boolean onMergeInventory() {
+        if (checkNull()) return false;
+        if (!(mc.currentScreen instanceof HandledScreen<?>)) return false;
         var inventory = mc.player.getInventory();
         boolean[] locked = new boolean[InventoryUtils.getPlayerBackpackSize()];
         for (var i = 0; i < InventoryUtils.getPlayerBackpackSize(); ++i) {
@@ -494,5 +496,6 @@ public class InvHelper extends BaseModule {
                 }
             }
         }
+        return true;
     }
 }
