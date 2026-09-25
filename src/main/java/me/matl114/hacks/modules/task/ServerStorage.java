@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.With;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -45,6 +46,7 @@ import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
 public class ServerStorage extends BaseModule {
     public static ServerStorage INSTANCE;
@@ -121,24 +123,29 @@ public class ServerStorage extends BaseModule {
     static Map<BlockPos, BlockStorage> snapshotMap1;
     static Map<ChunkPos, ChunkStorage> snapshotMap2;
 
+    @Nullable
     public static Meta getStorage() {
-        return serverStorage;
+        return serverStorage != null && serverStorage.isLoaded() ? serverStorage : null;
     }
 
+    @Nullable
     public static BlockStorage getBlockStorage(BlockPos pos) {
         return getBlockStorage(pos, (Function<BlockPos, BlockStorage>) null);
     }
 
+    @Nullable
     public static BlockStorage getOrCreateBlockStorage(BlockPos pos) {
         return getBlockStorage(pos, () -> new BlockStorage(mc.world.getRegistryKey(), pos));
     }
 
+    @Nullable
     public static BlockStorage getBlockStorage(BlockPos pos, Supplier<BlockStorage> supplier) {
         return getBlockStorage(pos, supplier == null ? null : (v) -> supplier.get());
     }
 
+    @Nullable
     public static BlockStorage getBlockStorage(BlockPos pos, Function<BlockPos, BlockStorage> supplier) {
-        if (serverStorage == null) {
+        if (getStorage() == null) {
             return null;
         }
         var cacheMap = snapshotMap1;
@@ -155,7 +162,7 @@ public class ServerStorage extends BaseModule {
     }
 
     public static void setBlockStorage(BlockPos pos, BlockStorage blockStorage) {
-        if (serverStorage == null) return;
+        if (getStorage() == null) return;
         var cacheMap = snapshotMap1;
         if (cacheMap == null && mc.world != null) {
             processAsyncUpdateMapSnapshot(mc.world.getRegistryKey());
@@ -169,20 +176,24 @@ public class ServerStorage extends BaseModule {
         }
     }
 
+    @Nullable
     public static ChunkStorage getOrCreateChunkStorage(ChunkPos pos) {
         return getChunkStorage(pos, () -> new ChunkStorage(mc.world.getRegistryKey(), pos));
     }
 
+    @Nullable
     public static ChunkStorage getChunkStorage(ChunkPos pos) {
         return getChunkStorage(pos, (Function<ChunkPos, ChunkStorage>) null);
     }
 
+    @Nullable
     public static ChunkStorage getChunkStorage(ChunkPos pos, Supplier<ChunkStorage> supplier) {
         return getChunkStorage(pos, (v) -> supplier.get());
     }
 
+    @Nullable
     public static ChunkStorage getChunkStorage(ChunkPos pos, Function<ChunkPos, ChunkStorage> supplier) {
-        if (serverStorage == null) {
+        if (getStorage() == null) {
             return null;
         }
         var cacheMap = snapshotMap2;
@@ -199,7 +210,7 @@ public class ServerStorage extends BaseModule {
     }
 
     public static void setChunkStorage(ChunkPos pos, ChunkStorage blockStorage) {
-        if (serverStorage == null) return;
+        if (getStorage() == null) return;
         var cacheMap = snapshotMap2;
         if (cacheMap == null && mc.world != null) {
             processAsyncUpdateMapSnapshot(mc.world.getRegistryKey());
@@ -227,7 +238,9 @@ public class ServerStorage extends BaseModule {
         }
     }
 
+    @Nullable
     public static WorldStorage getWorldStorage(RegistryKey<World> key, Supplier<WorldStorage> supplier) {
+        if (getStorage() == null) return null;
         return serverStorage.worldStorageMap.computeIfAbsent(key, s -> supplier.get());
     }
 
@@ -319,10 +332,12 @@ public class ServerStorage extends BaseModule {
                     })
                     .thenRunAsync(
                             () -> {
+                                loadingStorage.setLoaded(true);
                                 serverStorageLoad.broadcast(loadingStorage, serverName, registry);
                             },
                             mc);
         } else {
+            loadingStorage.setLoaded(true);
             serverStorageLoad.broadcast(loadingStorage, serverName, registry);
         }
         processAsyncUpdateMapSnapshot(null);
@@ -665,6 +680,10 @@ public class ServerStorage extends BaseModule {
         public final Map<UUID, EntityStorage> entityStorageMap;
 
         public final int version;
+
+        @Getter
+        @Setter
+        public boolean loaded;
 
         @Getter
         public final String serverName;

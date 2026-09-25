@@ -265,6 +265,8 @@ public class ChestHistory extends BaseModule {
 
     public void onRemoveEntry(ContainerPosition containerPosition) {
         screens.remove(containerPosition);
+        var storage = ServerStorage.getStorage();
+        if (storage == null) return;
         var blockStorage = ServerStorage.getStorage()
                 .getBlockStorage(
                         containerPosition.world(), containerPosition.getFirst().getPos(), false);
