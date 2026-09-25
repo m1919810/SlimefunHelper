@@ -6,6 +6,7 @@ import me.matl114.managers.config.Config;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.input.SimpleHotKey;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 
 public class HotKeyUtils {
@@ -26,11 +27,10 @@ public class HotKeyUtils {
         if (mc.currentScreen == null) {
             return true;
         }
-        if (!ModuleSettings.INSTANCE.hotkeyPolicy.get().isIn(ModuleSettings.HotkeyPolicy.RUN_IN_ALL_SCREEN)
-                && ModuleSettings.INSTANCE.shouldNotExecuteInInput()) {
-            return false;
+        if (mc.currentScreen instanceof HandledScreen<?>) {
+            return true;
         }
-        return true;
+        return false;
     }
 
     public static SimpleHotKey.InputHandler wrapAsHandler(Runnable task) {
@@ -52,7 +52,7 @@ public class HotKeyUtils {
         };
     }
 
-    public static SimpleHotKey.InputHandler asNoneInputHandler(Runnable task) {
+    public static SimpleHotKey.InputHandler asNonInputHandler(Runnable task) {
         return (ih, in) -> {
             if (isValidNonInputState()) {
                 task.run();

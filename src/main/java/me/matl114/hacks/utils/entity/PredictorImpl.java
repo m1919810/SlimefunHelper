@@ -123,6 +123,13 @@ public class PredictorImpl implements Predictor {
         }
     }
 
+    @Override
+    public Vec3d getCurrentPos() {
+        synchronized (this) {
+            return currentTrackedPosition.getPos();
+        }
+    }
+
     /**
      * 预测未来位置
      * @param ticksLater 未来刻数（>0）

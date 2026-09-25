@@ -291,8 +291,9 @@ public class AntiCrystal extends BaseModule {
                 if (supply != null) {
                     for (var re : needConsider) {
                         if (!checkNoEntity(re)) continue;
-                        if (SequencedActionManager.INSTANCE.isWaitingResponse(re, s -> s.isOf(Items.FIREWORK_ROCKET))
-                                || SequencedActionManager.INSTANCE.isWaitingResponse(
+                        if (SequencedActionManager.INSTANCE.isWaitingBlockResponse(
+                                        re, s -> s.isOf(Items.FIREWORK_ROCKET))
+                                || SequencedActionManager.INSTANCE.isWaitingBlockResponse(
                                         re.down(), s -> s.isOf(Items.FIREWORK_ROCKET))) {
                             continue;
                         }
@@ -369,7 +370,7 @@ public class AntiCrystal extends BaseModule {
                         for (var direction : Direction.values()) {
                             BlockHitResult result =
                                     InteractionTasks.createHitResult(re.offset(direction), direction.getOpposite());
-                            if (!SequencedActionManager.INSTANCE.isWaitingResponse(
+                            if (!SequencedActionManager.INSTANCE.isWaitingBlockResponse(
                                             result.getBlockPos(), (rer) -> rer.isOf(Items.ITEM_FRAME))
                                     && InteractExtra.INSTANCE.isWithinInteractRange(
                                             mc.player.getPos(), result.getBlockPos())
@@ -390,7 +391,7 @@ public class AntiCrystal extends BaseModule {
             }
             shoot:
             if (bow.get() && bowCallback == null && useTimer.canRun(6)) {
-                if (SequencedActionManager.INSTANCE.isWaitingResponse(s -> s.isOf(Items.CROSSBOW))) {
+                if (SequencedActionManager.INSTANCE.isWaitingItemResponse(s -> s.isOf(Items.CROSSBOW))) {
                     return;
                 }
 

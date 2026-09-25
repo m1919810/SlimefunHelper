@@ -47,14 +47,14 @@ public class FastInv extends BaseModule {
                     Configs.INV_CONFIG,
                     fastInv.add("fast-mov").toPath(),
                     new MultiKeyBind(KeyCode.KEY_LEFT_SHIFT, KeyCode.MOUSE_BUTTON_1))
-            .registerHotkey(HotKeyUtils.asNoneInputHandler(this::onShiftAction))
+            .registerHotkey(HotKeyUtils.asNonInputHandler(this::onShiftAction))
             .build();
 
     public final KeyBindRef dropAction = hotkey(
                     Configs.INV_CONFIG,
                     fastInv.add("fast-drop").toPath(),
                     new MultiKeyBind(KeyCode.KEY_LEFT_SHIFT, KeyCode.KEY_Q))
-            .registerHotkey(HotKeyUtils.asNoneInputHandler(this::onDropAction))
+            .registerHotkey(HotKeyUtils.asNonInputHandler(this::onDropAction))
             .build();
 
     public static final String TAKE_ALL = "take-all";

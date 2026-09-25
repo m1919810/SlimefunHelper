@@ -4,6 +4,7 @@ import java.util.function.Function;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.modules.move.ElytraExtra;
+import me.matl114.hacks.modules.move.ElytraFlight;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.EntityUtils;
@@ -19,16 +20,12 @@ import org.jetbrains.annotations.ApiStatus;
 public class ElytraOptimizeUtils {
     public static final MinecraftClient mc = MinecraftClient.getInstance();
     public static boolean shouldAbortV3Optimize = false;
-    public static ElytraExtra.Al lastAl = ElytraExtra.Al.V3;
 
-    public static void toggleElytraAl() {
-        if (ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V3, ElytraExtra.Al.V4)) {
-            lastAl = ElytraExtra.INSTANCE.autoRescaleAl.get();
-            ElytraExtra.INSTANCE.autoRescaleAl.set(ElytraExtra.Al.V2);
-        } else {
-            ElytraExtra.INSTANCE.autoRescaleAl.set(lastAl);
-        }
-    }
+    private static final float V5_PITCH = -89.9F;
+    private static final int V5_YAW_CANDIDATE_COUNT = 360;
+    private static final double[] V5_EXTRA_YAWS = {0.0D, 90.0D, 180.0D, 270.0D};
+    private static final double V5_FALLBACK_REQUEST_SPEED = 1.7D;
+    private static final double V5_EPSILON = 1E-9D;
 
     public static Vec3d calculateBestPullupSpeed(Vec3d vec3d) {
 
@@ -39,6 +36,17 @@ public class ElytraOptimizeUtils {
             return calculateBestV4ClimbingSpeed(vec3d);
         }
         if (ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V5)) {
+            Vec2f py = EntityUtils.rotationToPitchYaw(vec3d.normalize());
+            if (py.x < V5_PITCH) {
+                return vec3d;
+            }
+            double pitchDeg = -5;
+            if (py.x > pitchDeg) {
+                return vec3d;
+            }
+            return EntityUtils.pitchYawToRotation(V5_PITCH, py.y);
+        }
+        if (ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V5_PULLUP_ONLY)) {
             return calculateBestV5ClimbingSpeed(vec3d);
         }
 
@@ -98,7 +106,141 @@ public class ElytraOptimizeUtils {
 
     public static Vec3d calculateBestV5ClimbingSpeed(Vec3d rotation) {
         Vec2f py = EntityUtils.rotationToPitchYaw(rotation);
-        return EntityUtils.pitchYawToRotation(-89.9F, Math.round(py.y / 90.0F) * 90.0F);
+        double requestSpeed = getV5RequestSpeed();
+        double autoRescaleAmount = ElytraExtra.INSTANCE.autoRescaleAmount.get();
+        Vec3d lastVelocity = PlayerStateManager.INSTANCE.lastKnownClientVelocity;
+        float previousYaw = py.y;
+        double anchorYaw = lastVelocity.horizontalLength() > V5_EPSILON
+                ? Math.toDegrees(Math.atan2(-lastVelocity.x, lastVelocity.z))
+                : previousYaw;
+
+        float bestInputYaw = wrapV5Yaw(py.y);
+        double bestScore = Double.NEGATIVE_INFINITY;
+        float bestExtraYaw = 0.0F;
+        for (int index = 0; index < V5_YAW_CANDIDATE_COUNT; index++) {
+            float inputYaw = wrapV5Yaw(anchorYaw + index);
+            for (double extraYaw : V5_EXTRA_YAWS) {
+                double score = scoreV5Candidate(
+                        lastVelocity, inputYaw, (float) extraYaw, V5_PITCH, py.y, requestSpeed, autoRescaleAmount);
+                double yawDelta = absoluteYawDelta(inputYaw, previousYaw);
+                double bestYawDelta = absoluteYawDelta(bestInputYaw, previousYaw);
+                if (score > bestScore + V5_EPSILON
+                        || (Math.abs(score - bestScore) <= V5_EPSILON
+                                && (yawDelta < bestYawDelta - V5_EPSILON
+                                        || (Math.abs(yawDelta - bestYawDelta) <= V5_EPSILON
+                                                && extraYaw < bestExtraYaw)))) {
+                    bestInputYaw = inputYaw;
+                    bestExtraYaw = (float) extraYaw;
+                    bestScore = score;
+                }
+            }
+        }
+        return EntityUtils.pitchYawToRotation(V5_PITCH, bestInputYaw);
+    }
+
+    private record V5Bounds(double uMinX, double uMaxX, double uMinY, double uMaxY, double uMinZ, double uMaxZ) {}
+
+    private static double getV5RequestSpeed() {
+        if (ElytraFlight.INSTANCE != null) {
+            return Math.max(V5_EPSILON, ElytraFlight.INSTANCE.packetMotion.get());
+        }
+        return V5_FALLBACK_REQUEST_SPEED;
+    }
+
+    private static float wrapV5Yaw(double yaw) {
+        double wrapped = yaw % 360.0D;
+        if (wrapped < 0.0D) wrapped += 360.0D;
+        return (float) wrapped;
+    }
+
+    private static double absoluteYawDelta(double left, double right) {
+        double delta = (left - right + 180.0D) % 360.0D - 180.0D;
+        return Math.abs(delta);
+    }
+
+    private static Vec3d simulateV5Velocity(Vec3d velocity, Vec3d rotation) {
+        return PlayerStateManager.INSTANCE.lastInWater || PlayerStateManager.INSTANCE.lastInLava
+                ? EntityUtils.simulateTravelInFluidVelocity(
+                        velocity, PlayerStateManager.INSTANCE.lastInWater, PlayerStateManager.INSTANCE.lastInLava, true)
+                : EntityUtils.calculateGlidingVelocity(mc.player, velocity, rotation, true);
+    }
+
+    private static V5Bounds calculateV5Bounds(
+            Vec3d lastVelocity,
+            Vec3d simulated,
+            Vec3d currentLook,
+            Vec3d extraLook,
+            Vec3d currentMotion,
+            double autoRescaleAmount) {
+        double antiTickSkipping = 0.05D;
+        currentLook = currentLook.normalize();
+        extraLook = extraLook.normalize();
+
+        double minX = Math.min(-antiTickSkipping, currentLook.x) + Math.min(-antiTickSkipping, extraLook.x);
+        double minY = Math.min(-antiTickSkipping, currentLook.y) + Math.min(-antiTickSkipping, extraLook.y);
+        double minZ = Math.min(-antiTickSkipping, currentLook.z) + Math.min(-antiTickSkipping, extraLook.z);
+        double maxX = Math.max(antiTickSkipping, currentLook.x) + Math.max(antiTickSkipping, extraLook.x);
+        double maxY = Math.max(antiTickSkipping, currentLook.y) + Math.max(antiTickSkipping, extraLook.y);
+        double maxZ = Math.max(antiTickSkipping, currentLook.z) + Math.max(antiTickSkipping, extraLook.z);
+
+        double threshold = Math.min(autoRescaleAmount, currentMotion.length());
+        minX = Math.max(-threshold, minX * threshold);
+        maxX = Math.min(threshold, maxX * threshold);
+        minY = Math.max(-threshold, minY * threshold);
+        maxY = Math.min(threshold, maxY * threshold);
+        minZ = Math.max(-threshold, minZ * threshold);
+        maxZ = Math.min(threshold, maxZ * threshold);
+
+        double eMinX = Math.min(0.0D, minX - lastVelocity.x);
+        double eMaxX = Math.max(0.0D, maxX - lastVelocity.x);
+        double eMinY = Math.min(0.0D, minY - lastVelocity.y);
+        double eMaxY = Math.max(0.0D, maxY - lastVelocity.y);
+        double eMinZ = Math.min(0.0D, minZ - lastVelocity.z);
+        double eMaxZ = Math.max(0.0D, maxZ - lastVelocity.z);
+        double thresholdLeft = ElytraExtra.INSTANCE.autoRescaleThreshold.get();
+
+        return new V5Bounds(
+                simulated.x + eMinX + thresholdLeft,
+                simulated.x + eMaxX - thresholdLeft,
+                simulated.y + eMinY + thresholdLeft,
+                simulated.y + eMaxY - thresholdLeft,
+                simulated.z + eMinZ + thresholdLeft,
+                simulated.z + eMaxZ - thresholdLeft);
+    }
+
+    private static double scoreV5Candidate(
+            Vec3d lastVelocity,
+            float inputYaw,
+            float extraYaw,
+            float pitch,
+            float currentInputYaw,
+            double requestSpeed,
+            double autoRescaleAmount) {
+        Vec3d currentLook = EntityUtils.pitchYawToRotation(pitch, inputYaw).normalize();
+        Vec3d extraLook = EntityUtils.pitchYawToRotation(0.0F, extraYaw).normalize();
+        Vec3d request = currentLook.multiply(requestSpeed);
+        Vec3d simulated = simulateV5Velocity(lastVelocity, currentLook);
+        V5Bounds bounds =
+                calculateV5Bounds(lastVelocity, simulated, currentLook, extraLook, request, autoRescaleAmount);
+        return Math.max(bounds.uMinX() * bounds.uMinX(), bounds.uMaxX() * bounds.uMaxX())
+                + Math.max(bounds.uMinZ() * bounds.uMinZ(), bounds.uMaxZ() * bounds.uMaxZ());
+    }
+
+    private static float getV5ExtraYaw(Vec3d currentMotion, float pitch, float yaw, double autoRescaleAmount) {
+        Vec3d lastVelocity = PlayerStateManager.INSTANCE.lastKnownClientVelocity;
+        float inputYaw = yaw;
+        float bestExtraYaw = 0.0F;
+        double bestScore = Double.NEGATIVE_INFINITY;
+        for (double extraYaw : V5_EXTRA_YAWS) {
+            double score = scoreV5Candidate(
+                    lastVelocity, inputYaw, (float) extraYaw, pitch, yaw, currentMotion.length(), autoRescaleAmount);
+            if (score > bestScore + V5_EPSILON
+                    || (Math.abs(score - bestScore) <= V5_EPSILON && extraYaw < bestExtraYaw)) {
+                bestExtraYaw = (float) extraYaw;
+                bestScore = score;
+            }
+        }
+        return bestExtraYaw;
     }
 
     public static Vec3d calculateBestDownForwardSpeed(Vec3d vec3d, boolean natural) {
@@ -424,7 +566,7 @@ public class ElytraOptimizeUtils {
                     currentMotion, pitch, yaw, ElytraExtra.INSTANCE.autoRescaleAmount.get(), false);
             case V4 -> applyAxisLimit4_0(
                     currentMotion, pitch, yaw, ElytraExtra.INSTANCE.autoRescaleAmount.get(), false);
-            case V5 -> applyAxisLimit5_0(
+            case V5, V5_PULLUP_ONLY -> applyAxisLimit5_0(
                     currentMotion, pitch, yaw, ElytraExtra.INSTANCE.autoRescaleAmount.get(), false);
         };
     }
@@ -642,28 +784,8 @@ public class ElytraOptimizeUtils {
             if (pitch > -7) {
                 return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw, apply);
             } else {
-                //
-                Vec3d lastVelocity = PlayerStateManager.INSTANCE.lastKnownClientVelocity;
-                Vec3d toSupplyAxis;
-                Vec3d otherAxis;
-                if (Math.abs(lastVelocity.x) < Math.abs(lastVelocity.z)) {
-                    toSupplyAxis = new Vec3d(1, 0, 0);
-                    otherAxis = new Vec3d(0, 0, 1);
-                } else {
-                    toSupplyAxis = new Vec3d(0, 0, 1);
-                    otherAxis = new Vec3d(1, 0, 0);
-                }
-                double dotValue = toSupplyAxis.dotProduct(currentRotation);
-                if (dotValue < 0) {
-                    toSupplyAxis = toSupplyAxis.multiply(-1);
-                    dotValue = -dotValue;
-                }
-                if (currentRotation.dotProduct(otherAxis) < 0) {
-                    otherAxis = otherAxis.multiply(-1);
-                }
-                Vec3d base = toSupplyAxis.multiply((1 - dotValue));
-                // Vec3d other = otherAxis.multiply(Math.sqrt(Math.max(0, 1 - MathUtils.s2(1-dotValue))));
-                extraTargeting = base.normalize(); // base.add(other).normalize();
+                float extraYaw = getV5ExtraYaw(currentMotion, pitch, yaw, autoRescaleAmount);
+                extraTargeting = EntityUtils.pitchYawToRotation(0.0F, extraYaw);
             }
         }
         float lastPitch = PlayerStateManager.INSTANCE.lastPitch;

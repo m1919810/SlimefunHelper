@@ -139,7 +139,7 @@ public abstract class ClientPlayNetworkHandlerEvents {
         Listener.getWorldSwitchPoint().broadcast(this.world);
         if (playerRecreateOnJoin) {
             playerRecreateOnJoin = false;
-            Listener.getThisPlayerSpawnPoint().broadcast(MinecraftClient.getInstance().player);
+            Listener.getPlayerRespawnPoint().broadcast(MinecraftClient.getInstance().player);
         }
     }
 
@@ -164,7 +164,7 @@ public abstract class ClientPlayNetworkHandlerEvents {
             worldChangeOnRespawn = false;
             Listener.getWorldSwitchPoint().broadcast(this.world);
         }
-        Listener.getThisPlayerSpawnPoint().broadcast(MinecraftClient.getInstance().player);
+        Listener.getPlayerRespawnPoint().broadcast(MinecraftClient.getInstance().player);
     }
 
     @Shadow

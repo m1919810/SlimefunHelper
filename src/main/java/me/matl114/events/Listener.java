@@ -503,7 +503,7 @@ public class Listener {
 
     @Getter
     @Broadcast
-    private static final EventChannel<ClientPlayerEntity> thisPlayerSpawnPoint = new EventChannel<>();
+    private static final EventChannel<ClientPlayerEntity> playerRespawnPoint = new EventChannel<>();
 
     @Getter
     @Cancelable

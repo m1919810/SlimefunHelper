@@ -135,7 +135,7 @@ public class AntiReplenish extends BaseModule {
                                 if (autoClose.get()) mc.player.closeHandledScreen();
                             });
                         } else {
-                            if (!SequencedActionManager.INSTANCE.isWaitingResponse(testPos)) {
+                            if (!SequencedActionManager.INSTANCE.isWaitingBlockResponse(testPos)) {
                                 Interact.INSTANCE.interactBlock(testPos);
                                 pendingWaitingScreen = true;
                                 ScreenUtils.getOpenScreenFuture().thenAccept((handled) -> {

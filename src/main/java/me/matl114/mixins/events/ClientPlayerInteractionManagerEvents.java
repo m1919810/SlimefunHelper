@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import java.util.ArrayDeque;
+import java.util.Optional;
 import me.matl114.accessors.access.PlayerInteractBlockC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -21,6 +22,7 @@ import net.minecraft.client.network.SequencedPacketCreator;
 import net.minecraft.client.recipebook.ClientRecipeBook;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.NetworkRecipeId;
 import net.minecraft.screen.slot.SlotActionType;
@@ -28,6 +30,7 @@ import net.minecraft.stat.StatHandler;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.math.BlockPos;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.spongepowered.asm.mixin.Final;
@@ -102,8 +105,8 @@ public abstract class ClientPlayerInteractionManagerEvents {
             CallbackInfoReturnable<ActionResult> cir,
             @Local(argsOnly = true) LocalRef<BlockHitResult> hand2) {
         ItemStack currentStack = player.getStackInHand(hand);
-        Event<UseItemOnBlock> blockHitResultEvent =
-                new Event<>(new UseItemOnBlock(hitResult, ActionResult.SUCCESS, false, hand, currentStack), true, true);
+        Event<UseItemOnBlock> blockHitResultEvent = new Event<>(
+                new UseItemOnBlock(hitResult, ActionResult.SUCCESS, Optional.empty(), hand, currentStack), true, true);
         Listener.getPrePlayerUseItemAtBlock().handleValue(blockHitResultEvent);
         if (blockHitResultEvent.isCancelled()) {
             cir.setReturnValue(blockHitResultEvent.context.actionResult());
@@ -137,13 +140,17 @@ public abstract class ClientPlayerInteractionManagerEvents {
         ItemStack stackCopy = client.player.getStackInHand(hand).copy();
         BlockState state = client.world.getBlockState(hitResult.getBlockPos());
         MutableBoolean placeBlock = new MutableBoolean(false);
+        BlockPos predictingPlace = new ItemPlacementContext(client.player, hand, stackCopy, hitResult).getBlockPos();
         original.call(instance, world, (SequencedPacketCreator) (seq) -> {
             lastInteractCaptureBlockPlace.addLast(placeBlock);
             try {
                 var packet = packetCreator.predict(seq);
                 if (packet instanceof PlayerInteractBlockC2SPacketAccess access) {
                     access.setUseContext(new PlayerInteractBlockC2SPacketAccess.UseContext(
-                            stackCopy, state, actionResult.getValue(), placeBlock.booleanValue()));
+                            stackCopy,
+                            state,
+                            actionResult.getValue(),
+                            placeBlock.booleanValue() ? Optional.of(predictingPlace) : Optional.empty()));
                 }
                 return packet;
             } finally {
@@ -151,8 +158,15 @@ public abstract class ClientPlayerInteractionManagerEvents {
             }
         });
         ActionResult acc = actionResult.getValue();
-        Event<UseItemOnBlock> eventResult =
-                new Event<>(new UseItemOnBlock(hitResult, acc, placeBlock.getValue(), hand, stackCopy), false, true);
+        Event<UseItemOnBlock> eventResult = new Event<>(
+                new UseItemOnBlock(
+                        hitResult,
+                        acc,
+                        placeBlock.getValue() ? Optional.of(predictingPlace) : Optional.empty(),
+                        hand,
+                        stackCopy),
+                false,
+                true);
         Listener.getPostPlayerUseItemOnBlock().handleValue(eventResult);
         actionResult.setValue(eventResult.context.actionResult());
     }

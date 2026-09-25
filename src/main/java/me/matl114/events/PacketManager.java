@@ -144,6 +144,18 @@ public class PacketManager {
         immediatelyFlush = true;
     }
 
+    public static void scheduleInInBoundThread(Runnable runnable) {
+        if (mc.getNetworkHandler() != null) {
+            if (mc.getNetworkHandler().getConnection().channel.eventLoop().isExecutorThread(Thread.currentThread())) {
+                runnable.run();
+            } else {
+                mc.getNetworkHandler().getConnection().channel.eventLoop().execute(runnable);
+            }
+        } else {
+            runnable.run();
+        }
+    }
+
     private static void checkImmediatelyFlush() {
         if (immediatelyFlush) {
             immediatelyFlush = false;

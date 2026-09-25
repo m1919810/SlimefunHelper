@@ -387,7 +387,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                 if (shouldControlRotation && realVector.lengthSquared() > 5e-3) {
                     // fliter zero control
                     if (!movementManagerEvent.context.hasImportantRotation()) {
-                        if (realVector.horizontalLengthSquared() > 5E-3) {
+                        if (realVector.horizontalLengthSquared() > 1E-7) {
                             movementManagerEvent.context.pushImportantRotation(true, true);
                             Vec2f py = EntityUtils.rotationToPitchYaw(realVector.normalize());
                             movementManagerEvent.context.markForResetRot();
@@ -403,7 +403,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     // pitch reset to trigger grim lastPitch lastYaw update
                     if (useAutoRescale.get()) {
                         float yaw = mc.player.getYaw();
-                        float newYaw = (Tasks.getTick() % 2 == 0) ? yaw + 0.0001F : yaw - 0.0001F;
+                        float newYaw = (Tasks.getTick() % 2 == 0) ? yaw + 0.001F : yaw - 0.001F;
                         PlayerStateManager.setPlayerYawSafe(mc.player, newYaw);
                         Vec3d newVectorRot = EntityUtils.pitchYawToRotation(mc.player.getPitch(), newYaw);
                         realVector = newVectorRot.normalize().multiply(realVector.length());

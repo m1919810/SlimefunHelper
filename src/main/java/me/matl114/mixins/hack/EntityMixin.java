@@ -3,7 +3,7 @@ package me.matl114.mixins.hack;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import me.matl114.accessors.events.EntityAccess;
 import me.matl114.accessors.hacks.EntityInternalAccess;
-import me.matl114.hacks.MovTasks;
+import me.matl114.hacks.modules.move.Velocity;
 import me.matl114.hacks.modules.render.NoRender;
 import me.matl114.hacks.utils.entity.Predictor;
 import me.matl114.hacks.utils.entity.SimpleEntityPredictor;
@@ -78,7 +78,7 @@ public abstract class EntityMixin<T extends Entity> implements EntityAccess<T>, 
             method = "pushAwayFrom",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;addVelocity(DDD)V"))
     public boolean onEntityNoPush(Entity instance, double deltaX, double deltaY, double deltaZ) {
-        if (MovTasks.getVelocity().noEntityPush.get()) {
+        if (Velocity.INSTANCE.noEntityPush.get()) {
             return false;
         }
         return true;

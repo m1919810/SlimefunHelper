@@ -22,6 +22,7 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.NBTTypes;
+import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.entity.EntityMovementStatus;
 import me.matl114.hacks.utils.entity.LocalEntityPredictor;
 import me.matl114.hacks.utils.entity.Predictor;
@@ -81,6 +82,14 @@ public class PositionPredict extends BaseModule {
             .defaultValue(false)
             .build();
 
+    public final FlagRef playerSyncPositionPeek =
+            flagBuilder(attack.add("player-sync-position-peek")).build();
+
+    public final NBTRef<WrapColor> playerSyncPosColor = builder(
+                    attack.add("player-sync-position-render-color"), WrapColor.class)
+            .defaultValue(new WrapColor(Color.GREEN))
+            .build();
+
     public final FlagRef debugRender =
             flagBuilder(attack.add("debug-render-prediction")).build();
     Int2ObjectArrayMap<List<Vec3d>> recordedPoints = new Int2ObjectArrayMap<>();
@@ -100,7 +109,7 @@ public class PositionPredict extends BaseModule {
     }
 
     static {
-        PacketManager.getPacketQueueInEvent().registerHandler(PositionPredict::onInBoundPacket);
+        PacketManager.getPacketQueueInEvent().registerHandler(PositionPredict::onInBoundPacket, Integer.MIN_VALUE);
     }
 
     static final Int2ObjectMap<PredictorImpl> asyncLoadedPlayerPositionTrackers = new Int2ObjectOpenHashMap<>();
@@ -184,6 +193,33 @@ public class PositionPredict extends BaseModule {
     }
 
     public void onRender(Event<Render3D> event) {
+        if (playerSyncPositionPeek.get()) {
+            List<Box> boxes = new ArrayList<>();
+            for (var re : mc.world.getPlayers()) {
+                Vec3d trackedPos = re.getTrackedPosition().getPos();
+                Vec3d currentPos = getPredictor(re).getCurrentPos();
+                if (currentPos.squaredDistanceTo(trackedPos) > 1E-2) {
+                    boxes.add(re.dimensions.getBoxAt(currentPos));
+                }
+            }
+            if (!boxes.isEmpty()) {
+                RenderUtils.startDrawVirtual(event.context.stack());
+                try {
+                    VRender.getInstance().createLinesLayer(((operation, vertexConsumer) -> {
+                        for (Box box : boxes) {
+                            operation.drawOutlinedBox(
+                                    event.context.stack(),
+                                    vertexConsumer,
+                                    box.getMinPos(),
+                                    box.getMaxPos(),
+                                    playerSyncPosColor.get().withAlpha(255));
+                        }
+                    }));
+                } finally {
+                    RenderUtils.stopDrawVirtual(event.context.stack());
+                }
+            }
+        }
         if (debugRender.get()) {
             RenderUtils.startDrawVirtual(event.context.stack());
             try {
@@ -233,14 +269,6 @@ public class PositionPredict extends BaseModule {
             } finally {
                 RenderUtils.stopDrawVirtual(event.context.stack());
             }
-        }
-    }
-
-    public void onPlayerEntityUpdate(PlayerEntity player) {
-        if (placeRecorder.get()) {
-            recordedPoints
-                    .computeIfAbsent(player.getId(), (v) -> new ArrayList<>())
-                    .add(player.getPos());
         }
     }
 
