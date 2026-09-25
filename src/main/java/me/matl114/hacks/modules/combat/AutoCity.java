@@ -6,11 +6,12 @@ import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.CombatTasks;
-import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.interact.AutoSurround;
 import me.matl114.hacks.modules.interact.InteractExtra;
+import me.matl114.hacks.modules.interact.SelfTrap;
 import me.matl114.hacks.modules.mine.MineExtra;
 import me.matl114.hacks.modules.mine.PacketMine;
 import me.matl114.hacks.utils.EntityUtils;
@@ -187,8 +188,11 @@ public class AutoCity extends BaseModule {
             if (MineExtra.INSTANCE.isVanillaMineCooldownComplete(0)) {
                 pendingSwitchPos = false;
                 Set<BlockPos> surroundPos = new HashSet<>();
-                if (InteractionTasks.getAutoSurround().enable.get()) {
-                    surroundPos.addAll(InteractionTasks.getAutoSurround().getTargetingPos());
+                if (AutoSurround.INSTANCE.enable.get()) {
+                    surroundPos.addAll(AutoSurround.INSTANCE.getTargetingPos());
+                }
+                if (SelfTrap.INSTANCE.enable.get()) {
+                    surroundPos.addAll(SelfTrap.INSTANCE.getTargetingPos());
                 }
                 outerPoses.removeAll(surroundPos);
                 List<BlockPos> selfPosList = selfPoses.stream().toList();
