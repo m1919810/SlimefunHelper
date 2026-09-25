@@ -73,6 +73,9 @@ public class AutoEat extends BaseModule {
     public final FlagRef forceEatLeftClick =
             flagBuilder(autoEat.add("left-click-tool-force-eat")).build();
 
+    public final FlagRef forceEatLeftClickHold =
+            flagBuilder(autoEat.add("left-click-tool-force-eat-hold")).build();
+
     public final FlagRef leftClickWeapon = builder(autoEat.add("left-click-weapon"), Boolean.class)
             .defaultValue(true)
             .build();
@@ -138,6 +141,7 @@ public class AutoEat extends BaseModule {
             .build();
 
     private boolean eating;
+    private boolean manualEating;
     private Runnable nextTickCallback = null;
     private Runnable restoreCallback = null;
     private int eatingSlot = -1;
@@ -204,7 +208,7 @@ public class AutoEat extends BaseModule {
                 : findHandStack(healthPriority);
     }
 
-    private void tryStartEating(@Nonnull IndexEntry<ItemStack> re, boolean offHand) {
+    private void tryStartEating(@Nonnull IndexEntry<ItemStack> re, boolean offHand, boolean manual) {
 
         if (log.get()) {
             Text text = VItem.getInstance().getFormattedName(re.val());
@@ -221,6 +225,7 @@ public class AutoEat extends BaseModule {
                     && ItemStack.areItemsAndComponentsEqual(re.val(), mc.player.getActiveItem())) {
                 mc.options.useKey.setPressed(true);
                 eating = true;
+                manualEating = manual;
                 if (nextTick != null) {
                     restoreCallback = () -> {
                         cbb.run();
@@ -251,6 +256,7 @@ public class AutoEat extends BaseModule {
         }
         restoreCallback = null;
         eating = false;
+        manualEating = false;
         eatingSlot = -1;
         eatingCooldownTick = Tasks.getTick() + cooldown.get();
     }
@@ -265,7 +271,12 @@ public class AutoEat extends BaseModule {
             }
         }
         if (eating) {
-            if (canContinueEat()) {
+            if (manualEating && forceEatLeftClickHold.get() && !mc.options.useKey.isPressed()) {
+                if (log.get()) {
+                    logI18N("message.module.auto-eat.stop");
+                }
+                stopEating();
+            } else if (canContinueEat()) {
                 mc.options.useKey.setPressed(true);
             } else {
                 if (log.get()) {
@@ -358,7 +369,7 @@ public class AutoEat extends BaseModule {
                     }
                     if (canStartNow) {
                         lastAutoFireworkIsDone = false;
-                        tryStartEating(re, false);
+                        tryStartEating(re, false, false);
                     }
                 }
             }
@@ -408,7 +419,7 @@ public class AutoEat extends BaseModule {
                 }
                 if (canStartEat) {
                     lastAutoFireworkIsDone = false;
-                    tryStartEating(re, hand == Hand.OFF_HAND);
+                    tryStartEating(re, hand == Hand.OFF_HAND, true);
                     if (eating) {
                         event.cancel();
                         event.context.actionResult(ActionResult.SUCCESS);
