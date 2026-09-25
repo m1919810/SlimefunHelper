@@ -476,7 +476,9 @@ public class WorldManager extends BaseModule {
     }
 
     private void onRemoveBlock(BlockLocation location) {
-        BlockStorage storage = ServerStorage.getStorage().getBlockStorage(location.world(), location.getPos(), false);
+        var meta = ServerStorage.getStorage();
+        if (meta == null) return;
+        BlockStorage storage = meta.getBlockStorage(location.world(), location.getPos(), false);
         if (storage != null) {
             storage.put(BLOCK_DATA_KEY, null);
             ServerStorage.update(storage, true);
