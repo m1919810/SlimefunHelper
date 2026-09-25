@@ -15,10 +15,7 @@ import me.matl114.hacks.modules.extra.EventNotify;
 import me.matl114.hacks.modules.task.ServerStorage;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.world.ChunkStorage;
-import me.matl114.hooks.XaeroHooks;
 import me.matl114.hooks.impl.xaerowaypoints.IXWaypoint;
-import me.matl114.hooks.impl.xaerowaypoints.IXWaypointAccess;
-import me.matl114.hooks.impl.xaerowaypoints.IXWaypointFactory;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -38,11 +35,13 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.BiomeTags;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 
 public class SearchLabel extends BaseModule {
@@ -127,53 +126,29 @@ public class SearchLabel extends BaseModule {
     private static final String KEY_CHUNK_LABEL_RECORD = "slimefunhelper:search_label_chunk_records";
 
     private void updateWorldMapSettings(boolean show) {
-        if (checkNull()) return;
-        if (currentAccess == null) return;
+        if (!enable.get()) {
+            return;
+        }
         if (show) {
-            loadCurrentData(currentAccess);
+            loadCurrentData();
         } else {
-            unloadCurrentData(currentAccess);
+            unloadCurrentData();
+            loadedWorld = null;
         }
     }
 
-    private void setupNewAccess(IXWaypointAccess access) {
-        destroyCurrentAccess();
-        currentWaypoints.clear();
-        currentAccess = access;
-        loadCurrentData(currentAccess);
-    }
-
-    private void destroyCurrentAccess() {
-        if (currentAccess != null) {
-            unloadCurrentData(currentAccess);
-        }
-        currentAccess = null;
-    }
-
-    private void updateCurrentAccess() {
-        var factory = XaeroHooks.getInstance().getWaypointFactory();
-        if (factory == null) {
-            destroyCurrentAccess();
+    private void loadCurrentData() {
+        unloadCurrentData();
+        if (checkNull()) {
             return;
         }
-        var access = factory.getCurrentWaypointSet();
-        if (!Objects.equals(access, currentAccess)) {
-            if (access != null) {
-                setupNewAccess(access);
-            } else {
-                destroyCurrentAccess();
-            }
+        var serverStorage = ServerStorage.getStorage();
+        if (serverStorage == null) {
+            return;
         }
-    }
-
-    private void loadCurrentData(IXWaypointAccess access) {
-        currentWaypoints.clear();
-        var currentWorldMap = ServerStorage.getStorage().chunkStorageMap.get(mc.world.getRegistryKey());
+        var currentWorldMap = serverStorage.chunkStorageMap.get(mc.world.getRegistryKey());
         if (currentWorldMap == null) {
-            return;
-        }
-        IXWaypointFactory factory = XaeroHooks.getInstance().getWaypointFactory();
-        if (factory == null) {
+            loadedWorld = mc.world.getRegistryKey();
             return;
         }
         for (var re : currentWorldMap.entrySet()) {
@@ -184,10 +159,10 @@ public class SearchLabel extends BaseModule {
                 if (removeIfClose.get() && record.reached()) {
                     continue;
                 }
-                IXWaypoint newWaypoint = createWaypoint(pos, record, factory);
-                addTo(newWaypoint, access);
+                addTo(pos, createWaypoint(pos, record));
             }
         }
+        loadedWorld = mc.world.getRegistryKey();
     }
 
     private String createLabel(ChunkRecord record) {
@@ -204,8 +179,7 @@ public class SearchLabel extends BaseModule {
         return name.toString();
     }
 
-    private IXWaypoint createWaypoint(ChunkPos pos, ChunkRecord record, IXWaypointFactory factory) {
-
+    private IXWaypoint createWaypoint(ChunkPos pos, ChunkRecord record) {
         int color;
         if (record.typeEntities.isPresent()) {
             color = Formatting.RED.ordinal();
@@ -216,7 +190,7 @@ public class SearchLabel extends BaseModule {
         }
         double scale = mc.world.getDimension().coordinateScale();
 
-        return factory.createWaypoint(
+        return XaeroHelper.INSTANCE.createWaypoint(
                 (int) (pos.getCenterX() * scale),
                 64,
                 (int) (pos.getCenterZ() * scale),
@@ -228,29 +202,15 @@ public class SearchLabel extends BaseModule {
                 true);
     }
 
-    private void addTo(IXWaypoint newWaypoint, IXWaypointAccess access) {
-        access.removeIf(s -> {
-            return s.getX() == newWaypoint.getX()
-                    && s.getY() == newWaypoint.getY()
-                    && s.getZ() == newWaypoint.getZ()
-                    && s.isTemp() == newWaypoint.isTemp()
-                    && Objects.equals(s.getInitials(), newWaypoint.getInitials());
-        });
-        access.add(newWaypoint);
-        access.requestRefresh();
-        currentWaypoints.add(newWaypoint);
+    private void addTo(ChunkPos pos, IXWaypoint newWaypoint) {
+        remove(pos);
+        if (newWaypoint != null) {
+            XaeroHelper.INSTANCE.submitWaypoint(this, newWaypoint);
+        }
     }
 
-    private void remove(IXWaypointAccess access, ChunkPos pos) {
-        double scale = mc.world.getDimension().coordinateScale();
-        access.removeIf(s -> {
-            return s.getX() == (int) (pos.getCenterX() * scale)
-                    && s.getY() == 64
-                    && s.getZ() == (int) (pos.getCenterZ() * scale)
-                    && s.isTemp()
-                    && Objects.equals(s.getInitials(), "L");
-        });
-        access.requestRefresh();
+    private void remove(ChunkPos pos) {
+        XaeroHelper.INSTANCE.removeWaypoint(this, new BlockPos(pos.getCenterX(), 64, pos.getCenterZ()));
     }
 
     private void update(ChunkPos pos, ChunkRecord record) {
@@ -259,18 +219,13 @@ public class SearchLabel extends BaseModule {
             if (storage != null) {
                 storage.put(KEY_CHUNK_LABEL_RECORD, null);
             }
-            if (currentAccess != null) {
-                remove(currentAccess, pos);
-            }
+            remove(pos);
         } else {
             ChunkStorage storage = ServerStorage.getOrCreateChunkStorage(pos);
+            if (storage == null) return;
             storage.put(KEY_CHUNK_LABEL_RECORD, record, ChunkRecord.CODEC);
-            if (labelInWorldMap.get() && currentAccess != null) {
-                var factory = XaeroHooks.getInstance().getWaypointFactory();
-                if (factory == null) {
-                    return;
-                }
-                addTo(createWaypoint(pos, record, factory), currentAccess);
+            if (labelInWorldMap.get()) {
+                addTo(pos, createWaypoint(pos, record));
             }
             if (notify.get()) {
                 EventNotify.INSTANCE.notify("[SlimefunHelper]自动标点", createLabel(record));
@@ -290,30 +245,23 @@ public class SearchLabel extends BaseModule {
         if (record.reached()) return;
         if (record.isEmpty()) {
             storage.put(KEY_CHUNK_LABEL_RECORD, null);
-            if (currentAccess != null) {
-                remove(currentAccess, pos);
-            }
+            remove(pos);
         } else {
             storage.put(KEY_CHUNK_LABEL_RECORD, record.withReached(true), ChunkRecord.CODEC);
             if (removeIfClose.get()) {
-                remove(currentAccess, pos);
+                remove(pos);
             }
         }
     }
 
-    private void unloadCurrentData(IXWaypointAccess access) {
-        for (var re : currentWaypoints) {
-            access.remove(re);
-        }
-        currentWaypoints.clear();
+    private void unloadCurrentData() {
+        XaeroHelper.INSTANCE.removeSub(this);
     }
-
-    IXWaypointAccess currentAccess;
-    final Set<IXWaypoint> currentWaypoints = new HashSet<>();
 
     @Override
     public void registerAll() {
         super.registerAll();
+        registerListener(XaeroHelper.getWorldSwitchPoint(), this::onWorldSwitch);
         registerListener(Listener.getPostGameTick(), this::onPostTick);
         registerListener(Listener.getServerEntitySpawnListener(), this::onEntitySpawn);
         registerListener(Listener.getChunkUpdateListener(), this::onChunkPostLoad);
@@ -324,12 +272,34 @@ public class SearchLabel extends BaseModule {
     }
 
     ChunkPos lastChunkPos = null;
+    RegistryKey<World> loadedWorld = null;
+
+    @Override
+    public void onEnableModule() {
+        super.onEnableModule();
+        loadedWorld = null;
+        loadCurrentData();
+    }
+
+    @Override
+    public void onDisableModule() {
+        super.onDisableModule();
+        unloadCurrentData();
+        lastChunkPos = null;
+        loadedWorld = null;
+    }
+
+    private void onWorldSwitch(Event<World> event) {
+        lastChunkPos = null;
+        loadedWorld = null;
+        if (enable.get() && labelInWorldMap.get()) {
+            loadCurrentData();
+        }
+    }
 
     public void onPostTick(Event<ClientPlayerEntity> eventUpdate) {
-        if (enable.get() && labelInWorldMap.get() && XaeroHooks.getInstance().getWaypointFactory() != null) {
-            updateCurrentAccess();
-        } else {
-            destroyCurrentAccess();
+        if (enable.get() && labelInWorldMap.get() && !Objects.equals(loadedWorld, mc.world.getRegistryKey())) {
+            loadCurrentData();
         }
         if (enable.get()) {
             if (!Objects.equals(lastChunkPos, mc.player.getChunkPos())) {
