@@ -69,6 +69,8 @@ public class NoRender extends BaseModule {
     public final FlagRef noVignetteOverlay =
             flagBuilder(overlay.add("vignette")).build();
 
+    public final FlagRef noTotemOverlay = flagBuilder(overlay.add("totem")).build();
+
     public final FlagRef noDistanceFog =
             flagBuilder(worldEffect.add("distance-fog")).build();
 
@@ -197,6 +199,10 @@ public class NoRender extends BaseModule {
 
     public boolean noVignetteOverlay() {
         return isActive() && noVignetteOverlay.get();
+    }
+
+    public boolean noTotemOverlay() {
+        return isActive() && noTotemOverlay.get();
     }
 
     // 世界效果禁用判定

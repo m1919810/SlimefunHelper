@@ -10,6 +10,11 @@ public record LocalEntityPredictor(Entity entity) implements Predictor {
     }
 
     @Override
+    public Vec3d getCurrentPos() {
+        return entity.getPos();
+    }
+
+    @Override
     public Vec3d predict(int ticksLater, int method, int useTickBefore) {
         return entity.getPos();
     }

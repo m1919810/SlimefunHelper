@@ -6,9 +6,14 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.InGameOverlayRenderer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.item.ItemStack;
+import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -16,6 +21,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Environment(EnvType.CLIENT)
 @Mixin(InGameOverlayRenderer.class)
 public abstract class InGameOverlayRendererMixin {
+    @Shadow
+    private @Nullable ItemStack floatingItem;
+
     @Inject(method = "renderInWallOverlay", at = @At("HEAD"), cancellable = true)
     private static void onNoRender0(
             Sprite sprite, MatrixStack matrices, VertexConsumerProvider vertexConsumers, CallbackInfo ci) {
@@ -36,6 +44,16 @@ public abstract class InGameOverlayRendererMixin {
     private static void onNoRender2(
             MatrixStack matrices, VertexConsumerProvider vertexConsumers, Sprite sprite, CallbackInfo ci) {
         if (NoRender.INSTANCE.noFireOverlay()) {
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = "renderFloatingItem", at = @At("HEAD"), cancellable = true)
+    private void onNoRender3(
+            MatrixStack matrices, float tickProgress, OrderedRenderCommandQueue queue, CallbackInfo ci) {
+        if (NoRender.INSTANCE.noTotemOverlay()
+                && floatingItem != null
+                && floatingItem.get(DataComponentTypes.DEATH_PROTECTION) != null) {
             ci.cancel();
         }
     }

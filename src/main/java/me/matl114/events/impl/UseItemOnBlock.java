@@ -1,5 +1,6 @@
 package me.matl114.events.impl;
 
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
@@ -9,6 +10,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.math.BlockPos;
 
 @Data
 @AllArgsConstructor
@@ -21,7 +23,7 @@ public class UseItemOnBlock {
     @Setter
     ActionResult actionResult;
 
-    boolean placeBlock;
+    Optional<BlockPos> placingBlockPos;
 
     final Hand hand;
 

@@ -64,6 +64,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.ShulkerBoxBlock;
 import net.minecraft.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.ComponentType;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ContainerComponent;
@@ -85,7 +86,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.World;
 import org.apache.commons.lang3.function.Consumers;
 import org.apache.commons.lang3.mutable.MutableObject;
 
@@ -127,11 +127,11 @@ public class KitReplenish extends BaseModule {
             builder(replenishRoot.add("log"), Boolean.class).defaultValue(true).build();
 
     public final KeyBindRef hotkeyReplenish = hotkey(replenishRoot.add("execute-replenish"), new MultiKeyBind())
-            .registerHotkey(HotKeyUtils.asNoneInputHandler(this::replenishCurrentKit))
+            .registerHotkey(HotKeyUtils.asNonInputHandler(this::replenishCurrentKit))
             .build();
 
     public final KeyBindRef hotkeyInvSort = hotkey(replenishRoot.add("execute-reorder"), new MultiKeyBind())
-            .registerHotkey(HotKeyUtils.asNoneInputHandler(this::reorderCurrentInventory))
+            .registerHotkey(HotKeyUtils.asNonInputHandler(this::reorderCurrentInventory))
             .build();
 
     public final KeyBindRef autoEnderChest = hotkey(replenishRoot.add("auto-ender-chest"), new MultiKeyBind())
@@ -147,7 +147,7 @@ public class KitReplenish extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getWorldSwitchPoint(), this::onSwitchWorld);
+        registerListener(Listener.getPlayerRespawnPoint(), this::onSwitchWorld);
         registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvent);
         registerCommandBootstrap(this::registerReplenishCommand);
     }
@@ -177,7 +177,7 @@ public class KitReplenish extends BaseModule {
         transaction = null;
     }
 
-    public void onSwitchWorld(Event<World> event) {
+    public void onSwitchWorld(Event<ClientPlayerEntity> event) {
         clearReplenishingTask();
         enderChestRequest = false;
         shulkerBoxRequest = null;
@@ -424,7 +424,7 @@ public class KitReplenish extends BaseModule {
                 }
                 BlockPos pos = findCurrentOpenEnderChest();
                 if (pos != null) {
-                    if (!SequencedActionManager.INSTANCE.isWaitingResponse(pos))
+                    if (!SequencedActionManager.INSTANCE.isWaitingBlockResponse(pos))
                         Interact.INSTANCE.interactBlock(InteractionTasks.createHitResult(pos, mc.player.getPos()));
                 } else {
                     IndexEntry<ItemStack> stackEnderChest =
@@ -544,7 +544,7 @@ public class KitReplenish extends BaseModule {
                                         shulkerBoxRequest = null;
                                     });
                         } else {
-                            if (!SequencedActionManager.INSTANCE.isWaitingResponse(pos)) {
+                            if (!SequencedActionManager.INSTANCE.isWaitingBlockResponse(pos)) {
                                 Interact.INSTANCE.interactBlock(pos);
                             }
                             break shulker_place;
@@ -1536,7 +1536,11 @@ public class KitReplenish extends BaseModule {
             this.transaction = new Transaction();
             this.transaction.setKit(kit);
             this.transaction.setUseEnderChest(enableEnder.get());
-            this.transaction.rule = this.transaction.rule.withPostReorder(true);
+            this.transaction.rule = this.transaction
+                    .rule
+                    .withPostReorder(true)
+                    .withAutoClose(false)
+                    .withPostMine(false);
             this.transaction.stage = Transaction.STAGE_POST_REORDER_INVENTORY;
             this.timerPostResortInventory = 0;
         } else {

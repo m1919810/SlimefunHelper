@@ -39,6 +39,7 @@ import me.matl114.utils.commands.params.types.EntitySelector;
 import me.matl114.utils.commands.params.types.ExecutePos;
 import me.matl114.utils.commands.params.types.ExecuteRotation;
 import me.matl114.versioned.api.VItem;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.entity.Entity;
@@ -60,7 +61,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
 import org.apache.commons.lang3.stream.Streams;
 import org.joml.Vector2f;
 import org.joml.Vector3d;
@@ -129,7 +129,7 @@ public class InteractManager extends BaseModule {
         registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEventLow, Integer.MIN_VALUE);
         registerListener(Listener.getPostHandleInputEvents(), this::onPostInputEventMonitor, Integer.MAX_VALUE);
         registerListener(Listener.getServerLeavePoint(), this::onServerLeave);
-        registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
+        registerListener(Listener.getPlayerRespawnPoint(), this::onWorldSwitch);
         registerListener(Listener.getPostHandleInputEvents(), this::onPostInputEvent, Integer.MIN_VALUE);
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onPlayerMoveC2SPacket);
     }
@@ -155,7 +155,7 @@ public class InteractManager extends BaseModule {
         clearRunningRequests(null);
     }
 
-    public void onWorldSwitch(Event<World> event) {
+    public void onWorldSwitch(Event<ClientPlayerEntity> event) {
         clearRunningRequests(null);
     }
 

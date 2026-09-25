@@ -5,6 +5,8 @@ import net.minecraft.util.math.Vec3d;
 public interface Predictor {
     public Vec3d getKnownDeltaMovement();
 
+    public Vec3d getCurrentPos();
+
     public Vec3d predict(int ticksLater, int method, int useTickBefore);
 
     public void tick();

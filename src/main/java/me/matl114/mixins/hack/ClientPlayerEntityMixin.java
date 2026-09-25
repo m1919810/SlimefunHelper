@@ -14,6 +14,7 @@ import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.MoveTimer;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.modules.move.Sprint;
+import me.matl114.hacks.modules.move.Velocity;
 import me.matl114.hacks.modules.render.NoRender;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -431,7 +432,7 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
 
     @Inject(method = "pushOutOfBlocks", at = @At("HEAD"), cancellable = true)
     public void onBlockVelocity(double x, double z, CallbackInfo ci) {
-        if (MovTasks.getVelocity().noBlock.get()) {
+        if (Velocity.INSTANCE.noBlock.get()) {
             ci.cancel();
         }
     }

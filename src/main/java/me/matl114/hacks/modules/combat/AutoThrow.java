@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
-import javax.swing.*;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.InteractionTasks;
@@ -218,7 +217,7 @@ public class AutoThrow extends BaseModule {
                     startMending = false;
                 }
                 if (potionEnable.get() && effectCheck.run(5)) {
-                    if (SequencedActionManager.INSTANCE.isWaitingResponse(s -> s.isOf(Items.SPLASH_POTION))) {
+                    if (SequencedActionManager.INSTANCE.isWaitingItemResponse(s -> s.isOf(Items.SPLASH_POTION))) {
                         return;
                     }
                     // check flying potions
