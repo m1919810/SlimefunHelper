@@ -1317,6 +1317,9 @@ public class InteractionTasks {
     private static AutoSurround autoSurround;
 
     @Getter
+    private static SelfTrap selfTrap;
+
+    @Getter
     private static BlockRotate blockRotate;
 
     @Getter
@@ -1353,6 +1356,7 @@ public class InteractionTasks {
         tpInteract = new TpInteract().register(m);
         airplace = new Airplace().register(m);
         autoSurround = new AutoSurround().register(m);
+        selfTrap = new SelfTrap().register(m);
         blockRotate = new BlockRotate().register(m);
         printerRewrite = new PrinterRewrite().register(m);
         autoPlate = new AutoPlate().register(m);
