@@ -51,6 +51,7 @@ import net.minecraft.world.World;
 public class TrialInfoESP extends BaseModule {
     public TrialInfoESP() {
         super("TrialESP");
+        bindFlag(enable);
     }
 
     public final ModulePath root = makePath(Configs.SURVIVAL_CONFIG, "render-utils.trial-esp");

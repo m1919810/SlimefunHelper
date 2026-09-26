@@ -1,6 +1,7 @@
 package me.matl114.hacks.modules.extra;
 
 import me.matl114.events.Event;
+import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.PlayerInputManager;
@@ -16,6 +17,7 @@ import net.minecraft.util.Hand;
 public class AntiAFK extends BaseModule {
     public AntiAFK() {
         super("AntiAFK");
+        bindFlag(enable);
     }
 
     public final ModulePath root = makePath(Configs.EXTRA_CONFIG, "other.anti-afk");
@@ -41,6 +43,7 @@ public class AntiAFK extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
+        registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvent);
     }
 
     public void onPreInputEvent(Event<Void> event) {
