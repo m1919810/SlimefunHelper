@@ -12,6 +12,7 @@ import me.matl114.hacks.WorldTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.extra.EventNotify;
+import me.matl114.hacks.modules.extra.SoundNotify;
 import me.matl114.hacks.modules.task.ServerStorage;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.world.ChunkStorage;
@@ -113,6 +114,9 @@ public class SearchLabel extends BaseModule {
 
     public final FlagRef notify =
             flagBuilder(searchControl.add("notify-when-update-label")).build();
+
+    public final FlagRef notifySound =
+            flagBuilder(searchControl.add("sound-when-update-label")).build();
 
     public final FlagRef log =
             flagBuilder(searchControl.add("log-when-update-label")).build();
@@ -229,6 +233,9 @@ public class SearchLabel extends BaseModule {
             }
             if (notify.get()) {
                 EventNotify.INSTANCE.notify("[SlimefunHelper]自动标点", createLabel(record));
+            }
+            if (notifySound.get()) {
+                SoundNotify.playSearchLabelSound();
             }
             if (log.get()) {
                 logI18N("message.module.search-label.label-update", createLabel(record));

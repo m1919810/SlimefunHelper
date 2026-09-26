@@ -56,6 +56,9 @@ public class ExtraTasks {
     public static EventNotify eventNotify;
 
     @Getter
+    public static SoundNotify soundNotify;
+
+    @Getter
     public static FakePlayer fakePlayer;
 
     @Getter
@@ -79,6 +82,7 @@ public class ExtraTasks {
 
         skinBlink = new SkinBlink().register(m);
         eventNotify = new EventNotify().register(m);
+        soundNotify = new SoundNotify().register(m);
         fakePlayer = new FakePlayer().register(m);
         fakeLag = new FakeLag().register(m);
     }

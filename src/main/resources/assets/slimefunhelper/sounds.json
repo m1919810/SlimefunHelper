@@ -1,0 +1,154 @@
+{
+  "event.entity-log.notify": {
+    "sounds": [
+      {
+        "name": "slimefunhelper:event/entity-log.ogg",
+        "volume": 0.8
+      }
+    ]
+  },
+  "event.totem.notify": {
+    "sounds": [
+      {
+        "name": "slimefunhelper:event/totem.ogg",
+        "volume": 0.8
+      }
+    ]
+  },
+  "event.effect-warn.notify": {
+    "sounds": [
+      {
+        "name": "slimefunhelper:event/effect-warn.ogg",
+        "volume": 0.8
+      }
+    ]
+  },
+  "event.message-detection.notify": {
+    "sounds": [
+      {
+        "name": "slimefunhelper:event/message-detection.ogg",
+        "volume": 0.8
+      }
+    ]
+  },
+  "event.item-search.notify": {
+    "sounds": [
+      {
+        "name": "slimefunhelper:event/item-search.ogg",
+        "volume": 0.8
+      }
+    ]
+  },
+  "event.durability.notify": {
+    "sounds": [
+      {
+        "name": "slimefunhelper:event/durability.ogg",
+        "volume": 0.8
+      }
+    ]
+  },
+  "event.baritone.notify": {
+    "sounds": [
+      {
+        "name": "slimefunhelper:event/baritone.ogg",
+        "volume": 0.8
+      }
+    ]
+  },
+  "event.attack.notify": {
+    "sounds": [
+      {
+        "name": "slimefunhelper:event/attack.ogg",
+        "volume": 0.8
+      }
+    ]
+  },
+  "event.search-label.notify": {
+    "sounds": [
+      {
+        "name": "slimefunhelper:event/search-label.ogg",
+        "volume": 0.8
+      }
+    ]
+  },
+  "event.test": {
+    "sounds": [
+      {
+        "name": "slimefunhelper:event/test",
+        "volume": 0.8
+      }
+    ]
+  },
+  "custom.ai_you_wo_qu": {
+    "sounds": [
+      {
+        "name": "slimefunhelper:custom/ai_you_wo_qu.ogg",
+        "volume": 0.8
+      }
+    ]
+  },
+  "custom.bing": {
+    "sounds": [
+      {
+        "name": "slimefunhelper:custom/bing.ogg",
+        "volume": 0.8
+      }
+    ]
+  },
+  "custom.eeaa": {
+    "sounds": [
+      {
+        "name": "slimefunhelper:custom/eeaa.ogg",
+        "volume": 0.8
+      }
+    ]
+  },
+  "custom.fen_nu": {
+    "sounds": [
+      {
+        "name": "slimefunhelper:custom/fen_nu.ogg",
+        "volume": 0.8
+      }
+    ]
+  },
+  "custom.lao_mu_shi": {
+    "sounds": [
+      {
+        "name": "slimefunhelper:custom/lao_mu_shi.ogg",
+        "volume": 0.8
+      }
+    ]
+  },
+  "custom.man_bo": {
+    "sounds": [
+      {
+        "name": "slimefunhelper:custom/man_bo.ogg",
+        "volume": 0.8
+      }
+    ]
+  },
+  "custom.nai_long": {
+    "sounds": [
+      {
+        "name": "slimefunhelper:custom/nai_long.ogg",
+        "volume": 0.8
+      }
+    ]
+  },
+  "custom.shi_ba_ma": {
+    "sounds": [
+      {
+        "name": "slimefunhelper:custom/shi_ba_ma.ogg",
+        "volume": 0.8
+      }
+    ]
+  },
+  "custom.xing_fen_de_xiao_qu": {
+    "sounds": [
+      {
+        "name": "slimefunhelper:custom/xing_fen_de_xiao_qu.ogg",
+        "volume": 0.8
+      }
+    ]
+  }
+}
