@@ -33,6 +33,7 @@ public class PlayerQueue extends BaseModule {
 
     public PlayerQueue() {
         super("PlayerQueue");
+        bindFlag(enable);
     }
 
     public final FlagRef enable = flagBuilder(playerIo.addEnable()).build();
