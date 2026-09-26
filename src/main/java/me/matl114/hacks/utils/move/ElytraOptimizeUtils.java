@@ -65,6 +65,11 @@ public class ElytraOptimizeUtils {
         return vec3d.withAxis(Direction.Axis.Y, newY);
     }
 
+    public static float calculateBestPullUpAngle(float yaw) {
+        Vec3d bestRotation = calculateBestPullupSpeed(EntityUtils.pitchYawToRotation(-45, yaw));
+        return EntityUtils.rotationToPitchYaw(bestRotation).x;
+    }
+
     public static Vec3d calculateBestV3ClimbingSpeed(Vec3d rotation) {
         Vec2f py = EntityUtils.rotationToPitchYaw(rotation);
         float pitchDeg = py.x;
