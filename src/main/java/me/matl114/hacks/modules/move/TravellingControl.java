@@ -1535,12 +1535,13 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
     }
 
     public void onTravelCancel() {
-        if (travelTask != null) {
-            travelTask.stop = true;
-            travelTask.stopManually = true;
+        TravelInfo lastInfo = travelTask;
+        if (lastInfo != null) {
+            lastInfo.stop = true;
+            lastInfo.stopManually = true;
         }
         onStop(travelTask);
-        outputTravelStats(travelTask);
+        outputTravelStats(lastInfo);
         travelTask = null;
     }
 
