@@ -1,4 +1,4 @@
-package me.matl114.commands;
+package me.matl114.managers.command;
 
 import com.mojang.brigadier.context.StringRange;
 import com.mojang.brigadier.suggestion.Suggestion;

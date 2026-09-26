@@ -2,11 +2,11 @@ package me.matl114.hacks.modules.move;
 
 import java.awt.*;
 import java.util.List;
-import me.matl114.commands.MainCommand;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.managers.command.MainCommand;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.RenderUtils;

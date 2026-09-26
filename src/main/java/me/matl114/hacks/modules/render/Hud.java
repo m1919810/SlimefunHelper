@@ -1,7 +1,6 @@
 package me.matl114.hacks.modules.render;
 
 import java.util.*;
-import me.matl114.api.Displayable;
 import me.matl114.events.Event;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.PlayerStateManager;
@@ -9,6 +8,7 @@ import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.config.BoundedPrimitiveFlagMap;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
+import me.matl114.managers.api.Displayable;
 import me.matl114.managers.config.*;
 import me.matl114.utils.*;
 import me.matl114.versioned.SupportVersion;
