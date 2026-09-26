@@ -2,7 +2,6 @@ package me.matl114.hacks.modules.render;
 
 import java.util.*;
 import lombok.AllArgsConstructor;
-import me.matl114.commands.MainCommand;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
@@ -15,6 +14,7 @@ import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hacks.utils.render.RenderElements;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
+import me.matl114.managers.command.MainCommand;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;

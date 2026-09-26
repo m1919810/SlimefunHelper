@@ -4,7 +4,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-import me.matl114.api.Displayable;
+import me.matl114.managers.api.AutoRegisterType;
+import me.matl114.managers.api.Displayable;
 import net.minecraft.text.Text;
 import net.minecraft.util.StringIdentifiable;
 

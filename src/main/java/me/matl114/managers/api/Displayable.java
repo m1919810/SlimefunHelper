@@ -1,4 +1,4 @@
-package me.matl114.api;
+package me.matl114.managers.api;
 
 import net.minecraft.text.Text;
 

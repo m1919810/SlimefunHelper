@@ -6,6 +6,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import me.matl114.managers.api.AutoRegisterType;
 import me.matl114.utils.Debug;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;

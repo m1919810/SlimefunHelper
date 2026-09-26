@@ -17,6 +17,7 @@ import lombok.Getter;
 import lombok.Setter;
 import me.matl114.SlimefunHelper;
 import me.matl114.managers.*;
+import me.matl114.managers.api.AutoRegisterType;
 import me.matl114.managers.input.IHotKey;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.managers.input.SimpleHotKey;

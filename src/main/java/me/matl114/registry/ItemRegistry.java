@@ -1,9 +1,9 @@
-package me.matl114.bridge;
+package me.matl114.registry;
 
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 
-public class ItemBridge {
+public class ItemRegistry {
     public static void init() {}
 
     public static Item TESTITEM;
