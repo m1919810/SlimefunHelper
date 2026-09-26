@@ -167,6 +167,9 @@ public class AutoTotem extends BaseModule {
     }
 
     private void restoreHotBar(int forcedSlot) {
+        if (forcedSlot < 0 || forcedSlot >= 9) {
+            return;
+        }
         boolean hasTotem = mc.player.getInventory().getStack(forcedSlot).getItem() == Items.TOTEM_OF_UNDYING;
         if (!hasTotem) {
             if (swap.canRun(cooldown.get())) {
