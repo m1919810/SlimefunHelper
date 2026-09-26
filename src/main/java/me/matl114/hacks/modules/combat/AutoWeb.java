@@ -130,7 +130,9 @@ public class AutoWeb extends BaseModule {
     }
 
     private void onPreset(Event<EventContainer<ModulePreset>> event) {
-        mode.set(LegalInteractMode.getFromPreset(event.context.getValue()));
+        ModulePreset preset = event.context.getValue();
+        mode.set(LegalInteractMode.getFromPreset(preset));
+        airplace.set(!preset.hasAC());
     }
 
     private IndexEntry<ItemStack> supplyWeb() {

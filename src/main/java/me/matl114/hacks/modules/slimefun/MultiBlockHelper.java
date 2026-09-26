@@ -11,12 +11,14 @@ import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.accessors.interfaces.TileInventory;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.events.impl.UseItemOnBlock;
 import me.matl114.gui.basic.ContentDelegateWidget;
 import me.matl114.gui.complex.slimefun.SlimefunDispensorSuggestBookWidget;
 import me.matl114.hacks.SlimefunTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.EntityUtils;
@@ -79,6 +81,11 @@ public class MultiBlockHelper extends BaseModule {
         registerListener(Listener.getPreGameTick(), this::onTick);
         registerListener(Listener.getServerLeavePoint(), this::onExit);
         registerListener(Listener.getPostInitializeScreen().getChannel(HandledScreen.class), this::onScreenInit);
+        registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
+    }
+
+    public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        legalMode.set(LegalInteractMode.getFromPreset(event.context.getValue()));
     }
 
     private int lastChatTimestamp = 0;
