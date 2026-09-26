@@ -885,14 +885,12 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         timerVanilla.fire();
         ItemStack stack = mc.player.getStackInHand(Hand.MAIN_HAND);
         if (canBeUsedAsFireworks(stack)) {
-            mc.interactionManager.sendSequencedPacket(
-                    mc.world, s -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, s, yaw, pitch));
+            sendFirework(Hand.MAIN_HAND, yaw, pitch);
             onHasFirework();
         } else {
             stack = mc.player.getStackInHand(Hand.OFF_HAND);
             if (canBeUsedAsFireworks(stack)) {
-                mc.interactionManager.sendSequencedPacket(
-                        mc.world, s -> new PlayerInteractItemC2SPacket(Hand.OFF_HAND, s, yaw, pitch));
+                sendFirework(Hand.OFF_HAND, yaw, pitch);
                 onHasFirework();
             } else {
                 // check hotbars
@@ -900,8 +898,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 if (findResult != null) {
                     Runnable callback = InvExtra.INSTANCE.swapInventorySlotToOffhand(findResult.index());
                     if (callback != null) {
-                        mc.interactionManager.sendSequencedPacket(
-                                mc.world, s -> new PlayerInteractItemC2SPacket(Hand.OFF_HAND, s, yaw, pitch));
+                        sendFirework(Hand.OFF_HAND, yaw, pitch);
                         callback.run();
                     }
                     onHasFirework();
@@ -1195,6 +1192,12 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         setback = true;
     }
 
+    private void sendFirework(Hand hand, float lastYaw, float lastPitch) {
+        var packet = new PlayerInteractItemC2SPacket(hand, NetworkUtils.generateNextSequence(), lastYaw, lastPitch);
+        InteractUtils.simulateInteractItem(hand);
+        mc.getNetworkHandler().sendPacket(packet);
+    }
+
     public void flushRockets() {
         flushing = true;
         int selected = InventoryUtils.getSelectedSlot();
@@ -1210,20 +1213,13 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                     if (findResult != null) {
                         if (findResult.index() == InventoryUtils.getSelectedSlot()) {
                             timerVanilla.fire();
-                            mc.getNetworkHandler()
-                                    .sendPacket(new PlayerInteractItemC2SPacket(
-                                            Hand.MAIN_HAND, NetworkUtils.generateNextSequence(), lastYaw, lastPitch));
+                            sendFirework(Hand.MAIN_HAND, lastYaw, lastPitch);
                         } else {
                             callback =
                                     InvExtra.INSTANCE.swapItemToHand(findResult.index(), true, GhostHandMode.INV_SWAP);
                             if (callback != null) {
                                 timerVanilla.fire();
-                                mc.getNetworkHandler()
-                                        .sendPacket(new PlayerInteractItemC2SPacket(
-                                                Hand.OFF_HAND,
-                                                NetworkUtils.generateNextSequence(),
-                                                lastYaw,
-                                                lastPitch));
+                                sendFirework(Hand.OFF_HAND, lastYaw, lastPitch);
                                 callback.run();
                             }
                         }

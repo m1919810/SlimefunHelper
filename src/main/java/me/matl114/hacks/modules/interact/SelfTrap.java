@@ -168,17 +168,23 @@ public class SelfTrap extends BaseModule {
         }
 
         Set<BlockPos> result = new LinkedHashSet<>();
+        if (placeLower.get()) {
+            if (!onlyGround.get()
+                    || !CollisionUtil.isBoxCollided(
+                            mc.world,
+                            mc.player,
+                            playerBox.withMinY(playerBox.minY - 1.5).withMaxY(playerBox.minY))) {
+                for (BlockPos occupied : occupiedFeet) {
+                    result.add(occupied.down());
+                }
+            }
+        }
         for (Direction direction : Direction.Type.HORIZONTAL) {
             for (BlockPos occupied : occupiedFeet) {
                 BlockPos candidate = occupied.offset(direction);
                 if (!occupiedFeet.contains(candidate)) {
                     result.add(candidate);
                 }
-            }
-        }
-        if (placeLower.get()) {
-            for (BlockPos occupied : occupiedFeet) {
-                result.add(occupied.down());
             }
         }
         return result;

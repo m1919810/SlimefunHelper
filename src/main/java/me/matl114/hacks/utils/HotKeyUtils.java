@@ -62,6 +62,15 @@ public class HotKeyUtils {
         };
     }
 
+    public static SimpleHotKey.InputHandler asNonInputHandler(BooleanSupplier task) {
+        return (ih, in) -> {
+            if (isValidNonInputState()) {
+                return task.getAsBoolean();
+            }
+            return false;
+        };
+    }
+
     public static SimpleHotKey.InputHandler asHandler(Runnable task) {
         return (ih, in) -> {
             task.run();

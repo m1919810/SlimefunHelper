@@ -328,7 +328,7 @@ public class InteractionTasks {
     }
 
     public static FlagEntry<BlockHitResult> getInteractEntry(BlockHitResult result) {
-        boolean mayInteract = InteractUtils.isInteractAcceptable(
+        boolean mayInteract = InteractUtils.isInteractOnBlockAcceptable(
                 mc.world, mc.player, result.getBlockPos(), mc.world.getBlockState(result.getBlockPos()));
         return new FlagEntry<>(mayInteract, result);
     }
@@ -399,7 +399,7 @@ public class InteractionTasks {
                 for (Direction direction : order) {
                     Vec3d plateCenter = centerPos.offset(direction, 0.5);
                     boolean mayInteract =
-                            InteractUtils.isInteractAcceptable(mc.world, mc.player, blockPos, currentState);
+                            InteractUtils.isInteractOnBlockAcceptable(mc.world, mc.player, blockPos, currentState);
                     if (checkInHead(blockPos, playerPos)) {
                         // ?
                         var re = new FlagEntry<>(
@@ -435,7 +435,8 @@ public class InteractionTasks {
             if ((interactState.isAir() || interactState.isLiquid() || interactState.isReplaceable())) {
                 continue;
             }
-            boolean mayInteract = InteractUtils.isInteractAcceptable(mc.world, mc.player, targetPos, interactState);
+            boolean mayInteract =
+                    InteractUtils.isInteractOnBlockAcceptable(mc.world, mc.player, targetPos, interactState);
 
             if (checkInHead(targetPos, playerPos)) {
                 // ?
@@ -503,7 +504,7 @@ public class InteractionTasks {
                 for (Direction direction : order) {
                     Vec3d plateCenter = centerPos.offset(direction, 0.5);
                     boolean mayInteract =
-                            InteractUtils.isInteractAcceptable(mc.world, mc.player, blockPos, currentState);
+                            InteractUtils.isInteractOnBlockAcceptable(mc.world, mc.player, blockPos, currentState);
                     if (checkInHead(blockPos, playerPos)) {
                         // ?
                         var re = new FlagEntry<>(
@@ -536,7 +537,8 @@ public class InteractionTasks {
             if ((interactState.isAir() || interactState.isLiquid() || interactState.isReplaceable())) {
                 continue;
             }
-            boolean mayInteract = InteractUtils.isInteractAcceptable(mc.world, mc.player, targetPos, interactState);
+            boolean mayInteract =
+                    InteractUtils.isInteractOnBlockAcceptable(mc.world, mc.player, targetPos, interactState);
             if (checkInHead(targetPos, playerPos)) {
                 // ?
                 result.add(new FlagEntry<>(
@@ -599,7 +601,8 @@ public class InteractionTasks {
                 if (interactState.isAir() || interactState.isLiquid() || interactState.isReplaceable()) {
                     continue;
                 }
-                boolean mayInteract = InteractUtils.isInteractAcceptable(mc.world, mc.player, targetPos, interactState);
+                boolean mayInteract =
+                        InteractUtils.isInteractOnBlockAcceptable(mc.world, mc.player, targetPos, interactState);
                 if (checkInHead(targetPos, playerFeetPos)) {
                     // ?
                     var re = new FlagEntry<>(
@@ -665,7 +668,8 @@ public class InteractionTasks {
                 if ((interactState.isAir() || interactState.isLiquid() || interactState.isReplaceable())) {
                     continue;
                 }
-                boolean mayInteract = InteractUtils.isInteractAcceptable(mc.world, mc.player, targetPos, interactState);
+                boolean mayInteract =
+                        InteractUtils.isInteractOnBlockAcceptable(mc.world, mc.player, targetPos, interactState);
                 if (checkInHead(targetPos, playerFeetPos)) {
                     // ?
                     var re = new FlagEntry<>(
@@ -729,7 +733,8 @@ public class InteractionTasks {
                 if ((interactState.isAir() || interactState.isLiquid() || interactState.isReplaceable())) {
                     continue;
                 }
-                boolean mayInteract = InteractUtils.isInteractAcceptable(mc.world, mc.player, targetPos, interactState);
+                boolean mayInteract =
+                        InteractUtils.isInteractOnBlockAcceptable(mc.world, mc.player, targetPos, interactState);
                 if (checkInHead(targetPos, playerFeetPos)) {
                     // ?
                     var re = new FlagEntry<>(
@@ -910,8 +915,8 @@ public class InteractionTasks {
                 if (checkInteractRange(placeTargetBlock, playerFeetPos, interactRange)) {
                     for (Direction direction : order) {
                         Vec3d plateCenter = centerPos.offset(direction, 0.5);
-                        boolean mayInteract =
-                                InteractUtils.isInteractAcceptable(mc.world, mc.player, placeTargetBlock, currentState);
+                        boolean mayInteract = InteractUtils.isInteractOnBlockAcceptable(
+                                mc.world, mc.player, placeTargetBlock, currentState);
                         if (checkInHead(placeTargetBlock, playerFeetPos)) {
                             // ?
                             var re = new FlagEntry<>(
@@ -959,7 +964,8 @@ public class InteractionTasks {
                 if ((interactState.isAir() || interactState.isLiquid() || interactState.isReplaceable())) {
                     continue;
                 }
-                boolean mayInteract = InteractUtils.isInteractAcceptable(mc.world, mc.player, targetPos, interactState);
+                boolean mayInteract =
+                        InteractUtils.isInteractOnBlockAcceptable(mc.world, mc.player, targetPos, interactState);
                 if (checkInHead(targetPos, playerFeetPos)) {
                     // ?
                     var re = new FlagEntry<>(
@@ -1034,7 +1040,7 @@ public class InteractionTasks {
                 continue;
             }
             boolean mayInteract =
-                    InteractUtils.isInteractAcceptable(mc.world, mc.player, placeTargetBlock, currentState);
+                    InteractUtils.isInteractOnBlockAcceptable(mc.world, mc.player, placeTargetBlock, currentState);
             FlagEntry<BlockHitResult> re = new FlagEntry<>(mayInteract, hitResult);
             if (!re.flag()) {
                 return re;

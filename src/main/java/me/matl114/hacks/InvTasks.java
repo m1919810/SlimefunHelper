@@ -826,53 +826,6 @@ public class InvTasks {
         }
     }
 
-    public static int playerInventoryRevisionManage = 0;
-
-    public static void syncPlayerInventoryRevision(int revision) {
-        if (playerInventoryRevisionManage < 0) {
-            playerInventoryRevisionManage = revision;
-        } else {
-            int abs = Math.abs(playerInventoryRevisionManage - revision);
-            if (abs > 20) {
-                playerInventoryRevisionManage = revision;
-            } else {
-                if (playerInventoryRevisionManage < revision) {
-                    playerInventoryRevisionManage = revision;
-                }
-            }
-        }
-    }
-
-    public static void fastAsyncUpdateRevision(Event<ScreenHandlerSlotUpdateS2CPacket> eventUpdate) {
-        if (mc.player == null || mc.world == null) return;
-        int syncId = eventUpdate.context.getSyncId();
-        if (mc.interactionManager.getCurrentGameMode().isSurvivalLike()) {
-            if (syncId == 0) {
-                syncPlayerInventoryRevision(eventUpdate.context.getRevision());
-            } else {
-                ScreenHandler handler = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
-                if (handler.syncId == syncId) {
-                    handler.revision = eventUpdate.context.getRevision();
-                }
-            }
-        }
-    }
-
-    public static void fastAsyncUpdateRevision2(Event<InventoryS2CPacket> eventUpdate) {
-        if (mc.player == null) return;
-        int syncId = eventUpdate.context.syncId();
-        if (mc.interactionManager.getCurrentGameMode().isSurvivalLike()) {
-            if (syncId == 0) {
-                syncPlayerInventoryRevision(eventUpdate.context.revision());
-            } else {
-                ScreenHandler handler = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
-                if (handler.syncId == syncId) {
-                    handler.revision = eventUpdate.context.revision();
-                }
-            }
-        }
-    }
-
     public static void onGameJoin(Event<ClientPlayerEntity> gameJoin) {
         LAST_SYNC_ID = 0;
         historyScreens.clear();
@@ -948,6 +901,9 @@ public class InvTasks {
     private static InvExtra invExtra;
 
     @Getter
+    private static InvDesyncFix invDesyncFix;
+
+    @Getter
     private static GuiMove guiMove;
 
     @Getter
@@ -1007,6 +963,7 @@ public class InvTasks {
 
     private static void initModules(ModuleManager m) {
         invExtra = new InvExtra().register(m);
+        invDesyncFix = new InvDesyncFix().register(m);
         guiMove = new GuiMove().register(m);
         fastInv = new FastInv().register(m);
         fastCraft = new FastCraft().register(m);
@@ -1039,12 +996,6 @@ public class InvTasks {
         Listener.getPacketPostHandlePoint()
                 .getChannel(InventoryS2CPacket.class)
                 .registerHandler(InvTasks::onInventoryOld2);
-        Listener.getPacketPoint()
-                .getChannel(ScreenHandlerSlotUpdateS2CPacket.class)
-                .registerHandler(InvTasks::fastAsyncUpdateRevision);
-        Listener.getPacketPoint()
-                .getChannel(InventoryS2CPacket.class)
-                .registerHandler(InvTasks::fastAsyncUpdateRevision2);
         moduleManager.registerFactories(InvTasks::initModules);
         HackModules.registerModuleGroup(moduleManager);
         clickExecutor = new LimitedSpeedExecutor(invExtra.inventoryClickLimit);

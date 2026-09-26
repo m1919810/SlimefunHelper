@@ -138,7 +138,7 @@ public class BoatVClip extends BaseModule implements LegalMovementManager.Moveme
                         Box boxxx = lastVehicle.getBoundingBox();
                         var re = new EntityHitResult(
                                 lastVehicle, boxxx.getCenter().add(0, boxxx.getLengthY() / 2, 0));
-                        InteractUtils.simulateInteract(re);
+                        InteractUtils.simulateInteractEntity(re);
                     } else {
                         cd += 1;
                     }

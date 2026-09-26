@@ -446,8 +446,8 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
         }
         MineExtra mineExtra = MineExtra.INSTANCE;
         IndexEntry<ItemStack> tool = MineExtra.INSTANCE.getGhostHandMiningTool(blockState);
-        float progress =
-                predictCurrentMiningProgressWithTool(tool.val(), MineExtra.INSTANCE.breakSpeedExtraTicks.get());
+        float progress = predictCurrentMiningProgressWithTool(
+                tool.val(), MineExtra.INSTANCE.quickMine.get() ? MineExtra.INSTANCE.breakSpeedExtraTicks.get() : 0);
         if (mineExtra.shouldExecuteFastBreak(progress)) {
             this.currentBreakingProgress = progress;
             DisablerManager.INSTANCE.flushACPlaceBreakQueue();
