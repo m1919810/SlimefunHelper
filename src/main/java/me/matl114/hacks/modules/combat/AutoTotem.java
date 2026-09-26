@@ -121,33 +121,40 @@ public class AutoTotem extends BaseModule {
 
     public void onTotemLazy() {
         int forcedSlot = getForcedHotbarSlot();
-        if (forcedSlot >= 0) {
-            restoreHotBar(forcedSlot);
-        }
+
         // stop from duplicate swap
+        if (mc.player.getOffHandStack().getItem() == Items.TOTEM_OF_UNDYING) {
+            restoreHotBar(forcedSlot);
+            restoreForcedHotbar();
+            return;
+        }
         if (!canBeAccepted(mc.player.getOffHandStack())) {
             // well looks
             int toSlot = 40;
             if (!swap.canRun(cooldown.get())) {
                 return;
             }
-            restoreForcedHotbar();
             swapTo(toSlot);
+            if (!swap.canRun(cooldown.get())) {
+                return;
+            }
+            if (forcedSlot >= 0) {
+                restoreHotBar(forcedSlot);
+            }
         } else {
-            if (mc.player.getOffHandStack().getItem() != Items.TOTEM_OF_UNDYING) {
-                // not totem
-                if (forcedSlot >= 0) {
-                    if (InventoryUtils.getSelectedSlot() != forcedSlot) {
-                        forcedHotbarPreviousSlot = InventoryUtils.getSelectedSlot();
-                        PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(forcedSlot);
-                    }
-                } else if (mc.player.getMainHandStack().getItem() != Items.TOTEM_OF_UNDYING) {
-                    int toSlot = InventoryUtils.getSelectedSlot();
-                    if (!swap.canRun(cooldown.get())) {
-                        return;
-                    }
-                    swapTo(toSlot);
+            // not totem
+            if (forcedSlot >= 0) {
+                restoreHotBar(forcedSlot);
+                if (InventoryUtils.getSelectedSlot() != forcedSlot) {
+                    forcedHotbarPreviousSlot = InventoryUtils.getSelectedSlot();
+                    PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(forcedSlot);
                 }
+            } else if (mc.player.getMainHandStack().getItem() != Items.TOTEM_OF_UNDYING) {
+                int toSlot = InventoryUtils.getSelectedSlot();
+                if (!swap.canRun(cooldown.get())) {
+                    return;
+                }
+                swapTo(toSlot);
             }
         }
     }
@@ -183,11 +190,15 @@ public class AutoTotem extends BaseModule {
     private void swapTo(int toSlot) {
         ScreenHandler handled = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
         List<Slot> slots = handled.slots;
+        int offHandSlot = 40;
         for (var i = 0; i < slots.size(); ++i) {
             Slot slot = slots.get(i);
             if ((slot.inventory instanceof PlayerInventory || handled == mc.player.playerScreenHandler)
                     && !(slot.inventory instanceof PlayerInventory
-                            && forcedHotbarSlot.get().test(s -> slot.getIndex() == s))
+                            && (slot.getIndex() == offHandSlot
+                                    || slot.getIndex() == toSlot
+                                    || slot.getIndex() < 0
+                                    || slot.getIndex() > InventoryUtils.getPlayerInvSize()))
                     && slot.getStack().getItem() == Items.TOTEM_OF_UNDYING) {
                 MovTasks.getMovExtra().sendPacketsForInventoryAction();
                 InvTasks.clickSlotAsync(i, toSlot, SlotActionType.SWAP);
@@ -219,7 +230,10 @@ public class AutoTotem extends BaseModule {
                 if (i != consumeSlot
                         && (slot.inventory instanceof PlayerInventory || handled == mc.player.playerScreenHandler)
                         && !(slot.inventory instanceof PlayerInventory
-                                && forcedHotbarSlot.get().test(s -> slot.getIndex() == s))
+                                && (slot.getIndex() == 40
+                                        || slot.getIndex() == getForcedHotbarSlot()
+                                        || slot.getIndex() < 0
+                                        || slot.getIndex() > InventoryUtils.getPlayerInvSize()))
                         && slot.getStack().getItem() == Items.TOTEM_OF_UNDYING) {
                     MovTasks.getMovExtra().sendPacketsForInventoryAction();
                     InvTasks.clickSlotAsync(i, consumeSlot, SlotActionType.SWAP);

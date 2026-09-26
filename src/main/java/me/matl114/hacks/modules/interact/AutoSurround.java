@@ -225,32 +225,12 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
         int minY = ((int) playerBox.minY) - 1;
         int maxY = ((int) playerBox.maxY) + 1;
         Set<BlockPos> result = new LinkedHashSet<>();
-        for (int direction = 0; direction < 4; ++direction) {
-            Direction dir = dd[direction];
-            var directionTestPoses = new LinkedHashSet<BlockPos>();
-            for (BlockPos occupiedPos : occupiedBasePoses) {
-                BlockPos expandedPos = occupiedPos.offset(dir);
-                if (!occupiedBasePoses.contains(expandedPos)) {
-                    directionTestPoses.add(expandedPos);
-                }
-            }
-            // do not place under me
-            int coordYMax = dir == Direction.DOWN ? maxY - 2 : maxY;
-            for (BlockPos testPos : directionTestPoses) {
-                for (int y = minY; y <= coordYMax; ++y) {
-                    BlockPos test = testPos.withY(y);
-                    if (occupiedPoses.contains(test)) {
-                        continue;
-                    }
-                    result.add(test);
-                }
-            }
-        }
         if (placeLower.get()) {
-            if (!CollisionUtil.isBoxCollided(
-                    mc.world,
-                    mc.player,
-                    playerBox.withMinY(playerBox.minY - 2.5).withMaxY(playerBox.minY))) {
+            if (!onlyGround.get()
+                    && !CollisionUtil.isBoxCollided(
+                            mc.world,
+                            mc.player,
+                            playerBox.withMinY(playerBox.minY - 1.5).withMaxY(playerBox.minY))) {
                 for (int y = minY; y < maxY - 2; ++y) {
                     for (var re : occupiedPoses) {
                         BlockPos test = re.withY(y);
@@ -262,6 +242,28 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                 }
             }
         }
+        var directionTestPoses = new LinkedHashSet<BlockPos>();
+
+        for (int direction = 0; direction < 4; ++direction) {
+            Direction dir = dd[direction];
+            for (BlockPos occupiedPos : occupiedBasePoses) {
+                BlockPos expandedPos = occupiedPos.offset(dir);
+                if (!occupiedBasePoses.contains(expandedPos)) {
+                    directionTestPoses.add(expandedPos);
+                }
+            }
+        }
+        // do not place under me
+        for (int y = minY; y <= maxY; ++y) {
+            for (BlockPos testPos : directionTestPoses) {
+                BlockPos test = testPos.withY(y);
+                if (occupiedPoses.contains(test)) {
+                    continue;
+                }
+                result.add(test);
+            }
+        }
+
         return result;
     }
 

@@ -2,74 +2,83 @@
   "event.entity-log.notify": {
     "sounds": [
       {
-        "name": "slimefunhelper:event/entity-log.ogg",
+        "name": "slimefunhelper:event/entity-log",
         "volume": 0.8
       }
-    ]
+    ],
+    "subtitle": "subtitles.event.entity-log-notify"
   },
   "event.totem.notify": {
     "sounds": [
       {
-        "name": "slimefunhelper:event/totem.ogg",
+        "name": "slimefunhelper:event/totem",
         "volume": 0.8
       }
-    ]
+    ],
+    "subtitle": "subtitles.event.totem-notify"
   },
   "event.effect-warn.notify": {
     "sounds": [
       {
-        "name": "slimefunhelper:event/effect-warn.ogg",
+        "name": "slimefunhelper:event/effect-warn",
         "volume": 0.8
       }
-    ]
+    ],
+    "subtitle": "subtitles.event.effect-warn-notify"
   },
   "event.message-detection.notify": {
     "sounds": [
       {
-        "name": "slimefunhelper:event/message-detection.ogg",
+        "name": "slimefunhelper:event/message-detection",
         "volume": 0.8
       }
-    ]
+    ],
+    "subtitle": "subtitles.event.message-detection-notify"
   },
   "event.item-search.notify": {
     "sounds": [
       {
-        "name": "slimefunhelper:event/item-search.ogg",
+        "name": "slimefunhelper:event/item-search",
         "volume": 0.8
       }
-    ]
+    ],
+    "subtitle": "subtitles.event.item-search-notify"
   },
   "event.durability.notify": {
     "sounds": [
       {
-        "name": "slimefunhelper:event/durability.ogg",
+        "name": "slimefunhelper:event/durability",
         "volume": 0.8
       }
-    ]
+    ],
+    "subtitle": "subtitles.event.durability-notify"
   },
   "event.baritone.notify": {
     "sounds": [
       {
-        "name": "slimefunhelper:event/baritone.ogg",
+        "name": "slimefunhelper:event/baritone",
         "volume": 0.8
       }
-    ]
+    ],
+    "subtitle": "subtitles.event.baritone-notify"
   },
   "event.attack.notify": {
     "sounds": [
       {
-        "name": "slimefunhelper:event/attack.ogg",
+        "name": "slimefunhelper:event/attack",
         "volume": 0.8
       }
-    ]
+    ],
+    "subtitle": "subtitles.event.attack-notify"
   },
   "event.search-label.notify": {
     "sounds": [
       {
-        "name": "slimefunhelper:event/search-label.ogg",
+        "name": "slimefunhelper:event/search-label",
         "volume": 0.8
       }
-    ]
+    ],
+    "subtitle": "subtitles.event.search-label-notify"
   },
   "event.test": {
     "sounds": [
@@ -77,78 +86,88 @@
         "name": "slimefunhelper:event/test",
         "volume": 0.8
       }
-    ]
+    ],
+    "subtitle": "subtitles.event.test"
   },
   "custom.ai_you_wo_qu": {
     "sounds": [
       {
-        "name": "slimefunhelper:custom/ai_you_wo_qu.ogg",
+        "name": "slimefunhelper:custom/ai_you_wo_qu",
         "volume": 0.8
       }
-    ]
+    ],
+    "subtitle": "subtitles.custom.ai-you-wo-qu"
   },
   "custom.bing": {
     "sounds": [
       {
-        "name": "slimefunhelper:custom/bing.ogg",
+        "name": "slimefunhelper:custom/bing",
         "volume": 0.8
       }
-    ]
+    ],
+    "subtitle": "subtitles.custom.bing"
   },
   "custom.eeaa": {
     "sounds": [
       {
-        "name": "slimefunhelper:custom/eeaa.ogg",
+        "name": "slimefunhelper:custom/eeaa",
         "volume": 0.8
       }
-    ]
+    ],
+    "subtitle": "subtitles.custom.eeaa"
   },
   "custom.fen_nu": {
     "sounds": [
       {
-        "name": "slimefunhelper:custom/fen_nu.ogg",
+        "name": "slimefunhelper:custom/fen_nu",
         "volume": 0.8
       }
-    ]
+    ],
+    "subtitle": "subtitles.custom.fen-nu"
   },
   "custom.lao_mu_shi": {
     "sounds": [
       {
-        "name": "slimefunhelper:custom/lao_mu_shi.ogg",
+        "name": "slimefunhelper:custom/lao_mu_shi",
         "volume": 0.8
       }
-    ]
+    ],
+    "subtitle": "subtitles.custom.lao-mu-shi"
   },
   "custom.man_bo": {
     "sounds": [
       {
-        "name": "slimefunhelper:custom/man_bo.ogg",
+        "name": "slimefunhelper:custom/man_bo",
         "volume": 0.8
       }
-    ]
+    ],
+    "subtitle": "subtitles.custom.man-bo"
   },
   "custom.nai_long": {
     "sounds": [
       {
-        "name": "slimefunhelper:custom/nai_long.ogg",
+        "name": "slimefunhelper:custom/nai_long",
         "volume": 0.8
       }
-    ]
+    ],
+    "subtitle": "subtitles.custom.nai-long"
   },
   "custom.shi_ba_ma": {
     "sounds": [
       {
-        "name": "slimefunhelper:custom/shi_ba_ma.ogg",
+        "name": "slimefunhelper:custom/shi_ba_ma",
         "volume": 0.8
       }
-    ]
+    ],
+    "subtitle": "subtitles.custom.shi-ba-ma"
   },
   "custom.xing_fen_de_xiao_qu": {
     "sounds": [
       {
-        "name": "slimefunhelper:custom/xing_fen_de_xiao_qu.ogg",
+        "name": "slimefunhelper:custom/xing_fen_de_xiao_qu",
         "volume": 0.8
       }
-    ]
+    ],
+    "subtitle": "subtitles.custom.xing-fen-de-xiao-qu"
   }
 }

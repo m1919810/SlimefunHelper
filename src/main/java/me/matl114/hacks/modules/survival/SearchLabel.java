@@ -15,6 +15,7 @@ import me.matl114.hacks.modules.extra.EventNotify;
 import me.matl114.hacks.modules.extra.SoundNotify;
 import me.matl114.hacks.modules.task.ServerStorage;
 import me.matl114.hacks.utils.config.EntrySet;
+import me.matl114.hacks.utils.config.Holder;
 import me.matl114.hacks.utils.world.ChunkStorage;
 import me.matl114.hooks.impl.xaerowaypoints.IXWaypoint;
 import me.matl114.managers.Configs;
@@ -39,6 +40,7 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.BiomeTags;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -117,6 +119,13 @@ public class SearchLabel extends BaseModule {
 
     public final FlagRef notifySound =
             flagBuilder(searchControl.add("sound-when-update-label")).build();
+
+    public final NBTRef<Holder<SoundEvent>> searchLabelSound = builder(
+                    searchControl.add("sound"), Holder.<SoundEvent>parameter())
+            .defaultValue(Holder.of(
+                    Registries.SOUND_EVENT,
+                    SoundNotify.SEARCH_LABEL_SOUND.map(RegistryEntry::value).orElse(null)))
+            .build();
 
     public final FlagRef log =
             flagBuilder(searchControl.add("log-when-update-label")).build();
@@ -235,7 +244,8 @@ public class SearchLabel extends BaseModule {
                 EventNotify.INSTANCE.notify("[SlimefunHelper]自动标点", createLabel(record));
             }
             if (notifySound.get()) {
-                SoundNotify.playSearchLabelSound();
+                SoundNotify.INSTANCE.playSound(
+                        Optional.ofNullable(this.searchLabelSound.get().entry()).map(Registries.SOUND_EVENT::getEntry));
             }
             if (log.get()) {
                 logI18N("message.module.search-label.label-update", createLabel(record));

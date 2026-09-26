@@ -1,18 +1,16 @@
 package me.matl114.hacks.modules.extra;
 
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Consumer;
 import me.matl114.accessors.access.PlayerInteractEntityC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.MetadataUpdate;
 import me.matl114.gui.basic.ButtonAction;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.api.BaseModule;
@@ -29,10 +27,9 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.DamageUtils;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityStatuses;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.ItemEntity;
+import me.matl114.versioned.api.VDataFlag;
+import net.minecraft.entity.*;
+import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
@@ -65,16 +62,15 @@ public class SoundNotify extends BaseModule {
         super("SoundNotify");
         INSTANCE = this;
         bindFlag(enable);
-        for (TimerExecutor timer : soundTimers.values()) {
-            timer.mark(-SOUND_COOLDOWN_TICKS);
-        }
     }
 
     public final FlagRef enable = flagBuilder(path.addEnable()).build();
 
     private final ModulePath entityLogPath = path.add("entity-log");
-    public final FlagRef playerEnter = flagBuilder(entityLogPath.add("player-enter-range")).build();
-    public final FlagRef playerLeave = flagBuilder(entityLogPath.add("player-leave-range")).build();
+    public final FlagRef playerEnter =
+            flagBuilder(entityLogPath.add("player-enter-range")).build();
+    public final FlagRef playerLeave =
+            flagBuilder(entityLogPath.add("player-leave-range")).build();
     public final NBTRef<Holder<SoundEvent>> entityLogSound = soundBuilder(entityLogPath, ENTITY_LOG_SOUND);
 
     private final ModulePath totemPath = path.add("totem");
@@ -99,9 +95,9 @@ public class SoundNotify extends BaseModule {
             .build();
 
     // Private-message detection stays inactive until a server-specific format is defined.
-    public final FlagRef privateMessageSound = flagBuilder(messagePath.add("private-message-sound")).build();
-    public final NBTRef<Holder<SoundEvent>> messageDetectionSound =
-            soundBuilder(messagePath, MESSAGE_DETECTION_SOUND);
+    public final FlagRef privateMessageSound =
+            flagBuilder(messagePath.add("private-message-sound")).build();
+    public final NBTRef<Holder<SoundEvent>> messageDetectionSound = soundBuilder(messagePath, MESSAGE_DETECTION_SOUND);
 
     private final ModulePath itemSearchPath = path.add("item-search");
     public final FlagRef itemSearch = flagBuilder(itemSearchPath.addEnable()).build();
@@ -115,25 +111,29 @@ public class SoundNotify extends BaseModule {
     public final NBTRef<Holder<SoundEvent>> itemSearchSound = soundBuilder(itemSearchPath, ITEM_SEARCH_SOUND);
 
     private final ModulePath durabilityPath = path.add("durability");
-    public final FlagRef durabilityWarn = flagBuilder(durabilityPath.addEnable()).build();
-    public final IntRef durabilityThreshold =
-            intBuilder(durabilityPath.add("threshold-percent")).defaultValue(10).build();
+    public final FlagRef durabilityWarn =
+            flagBuilder(durabilityPath.addEnable()).build();
+    public final IntRef durabilityThresholdValue =
+            intBuilder(durabilityPath.add("threshold")).defaultValue(10).build();
+
+    public final DoubleRef durabilityThresholdPercentage = doubleBuilder(durabilityPath.add("threshold-percentage"))
+            .defaultValue(0.1)
+            .build();
     public final NBTRef<Holder<SoundEvent>> durabilitySound = soundBuilder(durabilityPath, DURABILITY_SOUND);
 
     private final ModulePath baritonePath = path.add("baritone");
-    public final FlagRef baritoneLanding = flagBuilder(baritonePath.add("landing")).build();
+    public final FlagRef baritoneLanding =
+            flagBuilder(baritonePath.add("landing")).build();
     public final NBTRef<Holder<SoundEvent>> baritoneSound = soundBuilder(baritonePath, BARITONE_SOUND);
 
     private final ModulePath attackPath = path.add("attack");
-    public final FlagRef clientMaceAttack = flagBuilder(attackPath.add("client-mace")).build();
-    public final FlagRef serverMaceAttack = flagBuilder(attackPath.add("server-mace")).build();
+    public final FlagRef clientMaceAttack =
+            flagBuilder(attackPath.add("client-mace")).build();
+    public final FlagRef serverMaceAttack =
+            flagBuilder(attackPath.add("server-mace")).build();
     public final NBTRef<Holder<SoundEvent>> attackSound = soundBuilder(attackPath, ATTACK_SOUND);
 
-    private final ModulePath searchLabelPath = path.add("search-label");
-    public final NBTRef<Holder<SoundEvent>> searchLabelSound = soundBuilder(searchLabelPath, SEARCH_LABEL_SOUND);
-
-    public static final Optional<RegistryEntry<SoundEvent>> ENTITY_LOG_SOUND =
-            registerSound("event.entity-log.notify");
+    public static final Optional<RegistryEntry<SoundEvent>> ENTITY_LOG_SOUND = registerSound("event.entity-log.notify");
     public static final Optional<RegistryEntry<SoundEvent>> TOTEM_SOUND = registerSound("event.totem.notify");
     public static final Optional<RegistryEntry<SoundEvent>> EFFECT_WARN_SOUND =
             registerSound("event.effect-warn.notify");
@@ -141,10 +141,8 @@ public class SoundNotify extends BaseModule {
             registerSound("event.message-detection.notify");
     public static final Optional<RegistryEntry<SoundEvent>> ITEM_SEARCH_SOUND =
             registerSound("event.item-search.notify");
-    public static final Optional<RegistryEntry<SoundEvent>> DURABILITY_SOUND =
-            registerSound("event.durability.notify");
-    public static final Optional<RegistryEntry<SoundEvent>> BARITONE_SOUND =
-            registerSound("event.baritone.notify");
+    public static final Optional<RegistryEntry<SoundEvent>> DURABILITY_SOUND = registerSound("event.durability.notify");
+    public static final Optional<RegistryEntry<SoundEvent>> BARITONE_SOUND = registerSound("event.baritone.notify");
     public static final Optional<RegistryEntry<SoundEvent>> ATTACK_SOUND = registerSound("event.attack.notify");
     public static final Optional<RegistryEntry<SoundEvent>> SEARCH_LABEL_SOUND =
             registerSound("event.search-label.notify");
@@ -163,7 +161,8 @@ public class SoundNotify extends BaseModule {
             ModulePath soundPath, Optional<RegistryEntry<SoundEvent>> defaultSound) {
         return builder(soundPath.add("sound"), Holder.<SoundEvent>parameter())
                 .defaultValue(Holder.of(
-                        Registries.SOUND_EVENT, defaultSound.map(RegistryEntry::value).orElse(null)))
+                        Registries.SOUND_EVENT,
+                        defaultSound.map(RegistryEntry::value).orElse(null)))
                 .build();
     }
 
@@ -175,11 +174,11 @@ public class SoundNotify extends BaseModule {
         ITEM_SEARCH,
         DURABILITY,
         BARITONE,
-        ATTACK,
-        SEARCH_LABEL
+        ATTACK
     }
 
-    private final EnumMap<Cue, TimerExecutor> soundTimers ;
+    private final EnumMap<Cue, TimerExecutor> soundTimers;
+
     {
         EnumMap<Cue, TimerExecutor> timers = new EnumMap<>(Cue.class);
         for (Cue cue : Cue.values()) {
@@ -189,9 +188,7 @@ public class SoundNotify extends BaseModule {
     }
 
     private final Set<RegistryEntry<StatusEffect>> alertedEffects = new HashSet<>();
-    private final Set<UUID> alertedItemEntities = new HashSet<>();
-    private final Set<Integer> lowDurabilitySlots = new HashSet<>();
-    private final Map<Integer, ItemStack> durabilityIdentities = new HashMap<>();
+    private final Set<EquipmentSlot> lowDurabilitySlots = new HashSet<>();
     private boolean durabilityInitialized;
     private volatile boolean acceptingIncomingChat;
 
@@ -206,8 +203,11 @@ public class SoundNotify extends BaseModule {
                 Listener.getPacketPostHandlePoint().getChannel(EntityStatusS2CPacket.class), this::onEntityStatus);
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class), this::onClientAttack);
+        registerListener(Listener.getPacketPoint().getChannel(EntityDamageS2CPacket.class), this::onServerAttack);
         registerListener(
-                Listener.getPacketPoint().getChannel(EntityDamageS2CPacket.class), this::onServerAttack);
+                Listener.getEntityTrackDataUpdate().getChannel(EntityType.ITEM), this::handleItemEntityItemData);
+        registerListener(
+                Listener.getEntityTrackDataUpdate().getChannel(EntityType.ITEM_FRAME), this::handleItemFrameItemData);
         registerListener(Listener.getPostTick(), this::onPostTick);
         registerListener(Listener.getServerDisconnectPoint(), this::onDisconnect);
         registerListener(Listener.getMessageAddToHud(), this::onChatAdd);
@@ -283,12 +283,10 @@ public class SoundNotify extends BaseModule {
         if (checkNull()) return;
         if (!enable.get()) {
             alertedEffects.clear();
-            alertedItemEntities.clear();
             resetDurabilityTracking();
             return;
         }
         updateEffectWarnings();
-        updateItemSearch();
         updateDurabilityWarnings();
     }
 
@@ -306,32 +304,41 @@ public class SoundNotify extends BaseModule {
             int duration = instance.getDuration();
             if (duration > 0 && duration < threshold && alertedEffects.add(effect)) {
                 play(Cue.EFFECT_WARN);
-            } else if (duration <= 0 || duration > threshold) {
+            } else if (duration <= 0 || duration >= threshold) {
                 alertedEffects.remove(effect);
             }
         }
         alertedEffects.retainAll(activeConfiguredEffects);
     }
 
-    private void updateItemSearch() {
-        if (!itemSearch.get()) {
-            alertedItemEntities.clear();
-            return;
-        }
-        Set<UUID> currentImportantItems = new HashSet<>();
-        for (Entity entity : mc.world.getEntities()) {
-            ItemStack stack = null;
-            if (entity instanceof ItemEntity item) {
-                stack = item.getStack();
-            }
-            if (stack == null || stack.isEmpty() || !importantItems.get().test(stack.getItem())) continue;
-            UUID uuid = entity.getUuid();
-            currentImportantItems.add(uuid);
-            if (alertedItemEntities.add(uuid)) {
-                play(Cue.ITEM_SEARCH);
+    public void handleItemEntityItemData(Event<MetadataUpdate> entryUpdateEvent) {
+        if (itemSearch.get()) {
+            var entry = entryUpdateEvent.context().metadata();
+            if (entry.id() == VDataFlag.ID_ITEM_ITEMSTACK
+                    && (entry.value()) instanceof ItemStack stack
+                    && entryUpdateEvent.context.entity() instanceof ItemEntity item) {
+                onItemEntity(item, item.getStack(), stack);
             }
         }
-        alertedItemEntities.retainAll(currentImportantItems);
+    }
+
+    public void handleItemFrameItemData(Event<MetadataUpdate> entryUpdateEvent) {
+        if (itemSearch.get()) {
+            var entry = entryUpdateEvent.context().metadata();
+            if (entry.id() == VDataFlag.ID_ITEM_FRAME_ITEMSTACK
+                    && entry.value() instanceof ItemStack stack
+                    && entryUpdateEvent.context.entity() instanceof ItemFrameEntity item) {
+                onItemEntity(item, item.getHeldItemStack(), stack);
+            }
+        }
+    }
+
+    public void onItemEntity(Entity itemEntity, ItemStack oldStack, ItemStack stack) {
+        if (!stack.isEmpty()
+                && importantItems.get().test(stack.getItem())
+                && !importantItems.get().test(oldStack.getItem())) {
+            play(Cue.ITEM_SEARCH);
+        }
     }
 
     private void updateDurabilityWarnings() {
@@ -339,26 +346,24 @@ public class SoundNotify extends BaseModule {
             resetDurabilityTracking();
             return;
         }
-        int threshold = Math.max(0, Math.min(100, durabilityThreshold.get()));
-        for (int slot = 0; slot < mc.player.getInventory().size(); slot++) {
-            ItemStack stack = mc.player.getInventory().getStack(slot);
+        double per = Math.clamp(durabilityThresholdPercentage.get(), 0, 1);
+        int thresholdValue = Math.max(0, durabilityThresholdValue.get());
+        for (EquipmentSlot slot :
+                new EquipmentSlot[] {EquipmentSlot.HEAD, EquipmentSlot.BODY, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
+            ItemStack stack = mc.player.getEquippedStack(slot);
             if (stack.isEmpty() || !stack.isDamageable()) {
                 lowDurabilitySlots.remove(slot);
-                durabilityIdentities.remove(slot);
                 continue;
             }
             ItemStack identity = stack.copy();
             identity.setDamage(0);
-            ItemStack previousIdentity = durabilityIdentities.put(slot, identity);
-            boolean replaced = previousIdentity == null
-                    || !ItemStack.areItemsAndComponentsEqual(previousIdentity, identity);
-            double remainingPercent = 100.0D * (stack.getMaxDamage() - stack.getDamage()) / stack.getMaxDamage();
-            if (remainingPercent >= threshold) {
+            int left = stack.getMaxDamage() - stack.getDamage();
+            double remainingPercent = (double) (left) / stack.getMaxDamage();
+            if (remainingPercent >= per && left >= thresholdValue) {
                 lowDurabilitySlots.remove(slot);
             } else if (!durabilityInitialized) {
                 lowDurabilitySlots.add(slot);
-            } else if (replaced || lowDurabilitySlots.add(slot)) {
-                lowDurabilitySlots.add(slot);
+            } else if (lowDurabilitySlots.add(slot)) {
                 play(Cue.DURABILITY);
             }
         }
@@ -367,7 +372,6 @@ public class SoundNotify extends BaseModule {
 
     private void resetDurabilityTracking() {
         lowDurabilitySlots.clear();
-        durabilityIdentities.clear();
         durabilityInitialized = false;
     }
 
@@ -380,11 +384,7 @@ public class SoundNotify extends BaseModule {
     }
 
     public void onChatAdd(Event<Text> event) {
-        if (!enable.get()
-                || !messageDetection.get()
-                || !acceptingIncomingChat
-                || event.isCancelled()
-                || checkNull()) {
+        if (!enable.get() || !messageDetection.get() || !acceptingIncomingChat || event.isCancelled() || checkNull()) {
             return;
         }
         String message = ChatUtils.textToPlainString(event.context()).toLowerCase(Locale.ROOT);
@@ -407,7 +407,6 @@ public class SoundNotify extends BaseModule {
 
     public void onDisconnect(Event<Void> event) {
         alertedEffects.clear();
-        alertedItemEntities.clear();
         resetDurabilityTracking();
         acceptingIncomingChat = false;
         for (TimerExecutor timer : soundTimers.values()) {
@@ -419,18 +418,7 @@ public class SoundNotify extends BaseModule {
     public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
         super.addCustomWidgets(acceptor, dx, dy, dblank);
         acceptor.accept(createExecuteButton(
-                "widget.sound-notify.test-usage",
-                ButtonAction.run(this::playTestSound),
-                0,
-                dblank,
-                dx,
-                dy));
-    }
-
-    public static void playSearchLabelSound() {
-        if (INSTANCE != null && INSTANCE.enable.get()) {
-            INSTANCE.play(Cue.SEARCH_LABEL);
-        }
+                "widget.sound-notify.test-usage", ButtonAction.run(this::playTestSound), 0, dblank, dx, dy));
     }
 
     private void playTestSound() {
@@ -442,7 +430,7 @@ public class SoundNotify extends BaseModule {
         soundTimers.get(cue).run(SOUND_COOLDOWN_TICKS, () -> playSound(soundFor(cue)));
     }
 
-    private void playSound(Optional<RegistryEntry<SoundEvent>> sound) {
+    public void playSound(Optional<RegistryEntry<SoundEvent>> sound) {
         if (checkNull()) return;
         sound.ifPresent(soundEvent -> mc.world.playSound(
                 mc.player,
@@ -469,7 +457,6 @@ public class SoundNotify extends BaseModule {
             case DURABILITY -> configuredSound(durabilitySound);
             case BARITONE -> configuredSound(baritoneSound);
             case ATTACK -> configuredSound(attackSound);
-            case SEARCH_LABEL -> configuredSound(searchLabelSound);
         };
     }
 

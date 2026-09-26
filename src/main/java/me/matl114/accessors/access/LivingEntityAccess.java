@@ -20,4 +20,6 @@ public interface LivingEntityAccess<T extends LivingEntity> extends EntityAccess
     public void tickEquipment();
 
     public void updateEquipmentAttributeChange();
+
+    public boolean isTrackedUsingItem();
 }
