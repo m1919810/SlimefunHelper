@@ -53,9 +53,6 @@ public class InvHelper extends BaseModule {
     public final DoubleRef stackPercentage =
             doubleBuilder(hotBar.add("stack-percentage")).defaultValue(0.25D).build();
 
-    public final FlagRef stackUsingHotBar =
-            flagBuilder(hotBar.add("hot-bar-stack-using-hot-bar")).build();
-
     public final FlagRef offHandStack =
             flagBuilder(hotBar.add("off-hand-stack")).build();
 
@@ -170,7 +167,7 @@ public class InvHelper extends BaseModule {
                 ItemStack stack = inventory.getStack(re);
                 if (!stack.isEmpty() && (double) stack.getCount() < (autoMergePercentage.get() * stack.getMaxCount())) {
                     int idx = re;
-                    for (var find = 0; find < InventoryUtils.getPlayerBackpackSize(); ++find) {
+                    for (var find = re + 1; find < InventoryUtils.getPlayerBackpackSize(); ++find) {
                         if (find == re) continue;
                         ItemStack stack2 = inventory.getStack(find);
                         if (!stack2.isEmpty()
@@ -231,7 +228,7 @@ public class InvHelper extends BaseModule {
             for (var i = 0; i < 9; ++i) {
                 ItemStack stack = inventory.getStack(i);
                 if (!stack.isEmpty() && (double) stack.getCount() < (stackPercentage.get() * stack.getMaxCount())) {
-                    if (resupply(inventory, i, stack, stackUsingHotBar.get())) {
+                    if (resupply(inventory, i, stack, false)) {
                         if (--total <= 0) {
                             return;
                         }
@@ -243,7 +240,7 @@ public class InvHelper extends BaseModule {
                 int i = 40;
                 ItemStack stack = inventory.getStack(i);
                 if (!stack.isEmpty() && (double) stack.getCount() < (stackPercentage.get() * stack.getMaxCount())) {
-                    resupply(inventory, i, stack, stackUsingHotBar.get());
+                    resupply(inventory, i, stack, false);
                 }
             }
         }

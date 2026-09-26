@@ -551,6 +551,10 @@ public class PlayerStateManager extends BaseModule {
             mc.player.getInventory().main.stream()
                     .filter(v -> !v.isEmpty())
                     .forEach(s -> map0.merge(ItemStackSample.of(s), s.getCount(), Integer::sum));
+            ItemStack offHand = mc.player.getOffHandStack();
+            if (!offHand.isEmpty()) {
+                map0.merge(ItemStackSample.of(offHand), offHand.getCount(), Integer::sum);
+            }
             inventorySummary = map0;
             LinkedHashMap<ItemStackSample, Integer> map1 = new LinkedHashMap<>(map0.size());
             for (var re : map0.entrySet()) {

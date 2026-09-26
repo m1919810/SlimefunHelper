@@ -1,4 +1,4 @@
-package me.matl114.bridge;
+package me.matl114.registry;
 
 import me.matl114.bukkit.BukkitItemStackUtils;
 import net.minecraft.component.ComponentMap;
@@ -9,7 +9,7 @@ import net.minecraft.item.Items;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-public class ItemBridge {
+public class ItemRegistry {
     public static void init() {}
 
     public static Item TESTITEM;

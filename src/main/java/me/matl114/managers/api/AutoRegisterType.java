@@ -1,4 +1,4 @@
-package me.matl114.managers.config;
+package me.matl114.managers.api;
 
 import java.util.HashSet;
 import java.util.Set;

@@ -2,7 +2,7 @@ package me.matl114.mixins.command;
 
 import com.mojang.brigadier.suggestion.Suggestions;
 import java.util.concurrent.CompletableFuture;
-import me.matl114.commands.MainCommand;
+import me.matl114.managers.command.MainCommand;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.screen.ChatInputSuggestor;
