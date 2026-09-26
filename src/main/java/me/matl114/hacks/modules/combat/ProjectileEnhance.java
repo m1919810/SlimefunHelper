@@ -5,10 +5,12 @@ import java.util.List;
 import me.matl114.accessors.access.PlayerInteractItemC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
@@ -80,6 +82,11 @@ public class ProjectileEnhance extends BaseModule {
         registerListener(Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onTridentDupe);
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class), this::onPlayerInteractItem);
+        registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
+    }
+
+    public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        mode.set(LegalInteractMode.getFromPreset(event.context.getValue()));
     }
 
     public static float getShootingPowerCrossbow(ItemStack a) {
