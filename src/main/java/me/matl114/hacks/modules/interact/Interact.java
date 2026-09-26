@@ -159,7 +159,7 @@ public class Interact extends BaseModule {
         }
         if (entity.isAlive() && !entity.isSpectator() && interactWhiteList.get().test(entity.getType())) {
             if (entityOnlyInteractable.get()
-                    && !InteractUtils.isInteractAcceptable(
+                    && !InteractUtils.isInteractAtEntityAcceptable(
                             mc.world, mc.player, entity, mc.player.getStackInHand(Hand.MAIN_HAND))) {
                 return false;
             }
@@ -192,7 +192,7 @@ public class Interact extends BaseModule {
                 return false;
             }
             if (blockOnlyInteractable.get()
-                    && !InteractUtils.isInteractAcceptable(
+                    && !InteractUtils.isInteractOnBlockAcceptable(
                             mc.world, mc.player, bp, state, mc.player.getStackInHand(Hand.MAIN_HAND))) {
                 return false;
             }
@@ -236,7 +236,7 @@ public class Interact extends BaseModule {
             if (!ignoreUseItem.get()) {
                 ItemStack stack = mc.player.getStackInHand(Hand.MAIN_HAND);
                 if (!useItemBlackList.get().test(stack.getItem())
-                        && InteractUtils.isInteractAcceptable(mc.world, mc.player, stack)) {
+                        && InteractUtils.isInteractItemAcceptable(mc.world, mc.player, stack)) {
                     currentInteractTarget = null;
                     return;
                 }
@@ -248,14 +248,14 @@ public class Interact extends BaseModule {
                 } else {
                     BlockPos pos = ((BlockHitResult) currentCrosshairTarget).getBlockPos();
                     BlockState state = mc.world.getBlockState(pos);
-                    if (InteractUtils.isInteractAcceptable(
+                    if (InteractUtils.isInteractOnBlockAcceptable(
                             mc.world, mc.player, pos, state, mc.player.getStackInHand(Hand.MAIN_HAND))) {
                         currentInteractTarget = currentCrosshairTarget;
                     }
                 }
             } else if (currentCrosshairTarget.getType() == HitResult.Type.ENTITY) {
                 Entity target = ((EntityHitResult) currentCrosshairTarget).getEntity();
-                if (InteractUtils.isInteractAcceptable(
+                if (InteractUtils.isInteractAtEntityAcceptable(
                         mc.world, mc.player, target, mc.player.getStackInHand(Hand.MAIN_HAND))) {
                     currentInteractTarget = currentCrosshairTarget;
                 }

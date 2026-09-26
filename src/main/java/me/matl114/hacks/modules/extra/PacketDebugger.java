@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
+import lombok.val;
 import me.matl114.SlimefunHelper;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -26,7 +27,9 @@ import net.minecraft.network.packet.PacketType;
 import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
 import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
+import net.minecraft.network.packet.s2c.play.InventoryS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
+import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 
@@ -132,6 +135,24 @@ public class PacketDebugger extends BaseModule {
                             timeStr);
                 } else if (type instanceof CommonPingS2CPacket ping) {
                     debug("Accept", simplifyId(type.getPacketId().id()), ", Id:", ping.getParameter(), timeStr);
+                } else if (type instanceof ScreenHandlerSlotUpdateS2CPacket slotUpdate) {
+                    debug(
+                            "Accept",
+                            simplifyId(type.getPacketId().id()),
+                            ", SyncId:",
+                            slotUpdate.getSyncId(),
+                            ", Revision:",
+                            slotUpdate.getRevision(),
+                            timeStr);
+                } else if (type instanceof InventoryS2CPacket packet) {
+                    debug(
+                            "Accept",
+                            simplifyId(type.getPacketId().id()),
+                            ", SyncId:",
+                            packet.syncId(),
+                            ", Revision:",
+                            packet.revision(),
+                            timeStr);
                 } else {
                     debug("Accept", simplifyId(type.getPacketId().id()), timeStr);
                 }

@@ -102,7 +102,7 @@ public class InteractUtils {
         return canCubePlace(player, pos);
     }
 
-    public static ActionResult simulateInteract(EntityHitResult entityHitResult) {
+    public static ActionResult simulateInteractEntity(EntityHitResult entityHitResult) {
         ActionResult actionResult = mc.interactionManager.interactEntityAtLocation(
                 mc.player, entityHitResult.getEntity(), entityHitResult, Hand.MAIN_HAND);
         if (!actionResult.isAccepted()) {
@@ -113,6 +113,28 @@ public class InteractUtils {
             if (actionResult.shouldSwingHand()) {
                 mc.player.swingHand(Hand.MAIN_HAND);
             }
+        }
+        return actionResult;
+    }
+
+    public static ActionResult simulateInteractItem(Hand hand) {
+        ItemStack itemStack = mc.player.getStackInHand(hand);
+        if (mc.player.getItemCooldownManager().isCoolingDown(itemStack)) {
+            return ActionResult.PASS;
+        }
+        ActionResult actionResult = itemStack.use(mc.world, mc.player, hand);
+        ItemStack itemStack2;
+        if (actionResult instanceof ActionResult.Success) {
+            ActionResult.Success success = (ActionResult.Success) actionResult;
+            itemStack2 = (ItemStack) Objects.requireNonNullElseGet(success.getNewHandStack(), () -> {
+                return mc.player.getStackInHand(hand);
+            });
+        } else {
+            itemStack2 = mc.player.getStackInHand(hand);
+        }
+
+        if (itemStack2 != itemStack) {
+            mc.player.setStackInHand(hand, itemStack2);
         }
         return actionResult;
     }
@@ -227,8 +249,9 @@ public class InteractUtils {
         return factory != null;
     }
 
-    public static boolean isInteractAcceptable(World world, PlayerEntity player, BlockPos pos, BlockState state) {
-        return isInteractAcceptable(world, player, pos, state, ItemStack.EMPTY);
+    public static boolean isInteractOnBlockAcceptable(
+            World world, PlayerEntity player, BlockPos pos, BlockState state) {
+        return isInteractOnBlockAcceptable(world, player, pos, state, ItemStack.EMPTY);
     }
 
     public static final Set<Block> shovelBlocks = new HashSet<>();
@@ -242,7 +265,7 @@ public class InteractUtils {
         shovelBlocks.add(Blocks.ROOTED_DIRT);
     }
 
-    public static boolean isInteractAcceptable(
+    public static boolean isInteractOnBlockAcceptable(
             World world, PlayerEntity player, BlockPos pos, BlockState state, ItemStack interactStack) {
         Block block = state.getBlock();
         if (block instanceof RespawnAnchorBlock) {
@@ -395,7 +418,7 @@ public class InteractUtils {
         ENTITY_MAY_INTERACT = result;
     }
 
-    public static boolean isInteractAcceptable(
+    public static boolean isInteractAtEntityAcceptable(
             World world, PlayerEntity player, Entity entity, ItemStack interactStack) {
         if (world == null || player == null || entity == null) {
             return false;
@@ -635,7 +658,7 @@ public class InteractUtils {
         return false;
     }
 
-    public static boolean isInteractAcceptable(World world, PlayerEntity player, ItemStack interactStack) {
+    public static boolean isInteractItemAcceptable(World world, PlayerEntity player, ItemStack interactStack) {
         if (world == null || player == null || interactStack == null || interactStack.isEmpty()) {
             return false;
         }

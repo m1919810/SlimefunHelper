@@ -22,6 +22,7 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.AttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
+import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
@@ -212,5 +213,15 @@ public abstract class LivingEntityEvents extends Entity
         }
 
         return;
+    }
+
+    @Shadow
+    @Final
+    public static TrackedData<Byte> LIVING_FLAGS;
+
+    @Unique
+    @Override
+    public boolean isTrackedUsingItem() {
+        return ((Byte) this.dataTracker.get(LIVING_FLAGS) & 1) > 0;
     }
 }

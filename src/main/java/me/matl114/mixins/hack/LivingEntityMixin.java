@@ -15,10 +15,10 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.*;
 import net.minecraft.entity.data.TrackedData;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -64,13 +64,6 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
 
     @Shadow
     public abstract boolean isUsingItem();
-
-    @Shadow
-    @Final
-    public static TrackedData<Byte> LIVING_FLAGS;
-
-    @Shadow
-    public abstract void updateLimbs(boolean flutter);
 
     @Unique
     @Override
@@ -209,7 +202,7 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
     private void tickActiveItemStack(LivingEntity instance, Operation<Void> original) {
         if (checkClientPlayer() && InteractExtra.INSTANCE.clientUsingStateFix.get()) {
             // do not reset ClientPlayerEntity using flag here
-            if (((Byte) this.dataTracker.get(LIVING_FLAGS) & 1) <= 0) {
+            if (!isTrackedUsingItem()) {
                 original.call(instance);
             } else {
                 this.activeItemStack = ItemStack.EMPTY;

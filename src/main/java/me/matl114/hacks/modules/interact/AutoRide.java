@@ -1,6 +1,5 @@
 package me.matl114.hacks.modules.interact;
 
-import javax.swing.*;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
@@ -66,7 +65,7 @@ public class AutoRide extends BaseModule {
                 if (selected != null) {
                     var boxxx = lastEntity.getBoundingBox();
                     var re = new EntityHitResult(lastEntity, boxxx.getCenter().add(0, boxxx.getLengthY() / 2, 0));
-                    InteractUtils.simulateInteract(re);
+                    InteractUtils.simulateInteractEntity(re);
                 }
             }
         }

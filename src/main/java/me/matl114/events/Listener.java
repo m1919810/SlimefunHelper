@@ -387,6 +387,15 @@ public class Listener {
     @Modifiable
     private static final EventChannel<String> chatScreenSendMessage = new EventChannel<>();
 
+    @Getter
+    @Cancelable
+    private static final EventChannel<ChatRecv> chatMessageReceive = new EventChannel<>();
+
+    @Getter
+    @Cancelable
+    @Modifiable
+    private static final EventChannel<Text> actionBarMessageReceive = new EventChannel<>();
+
     // screen events
     @Getter
     @Broadcast

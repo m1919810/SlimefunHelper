@@ -4,10 +4,13 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
+import java.util.*;
+import java.util.function.Consumer;
 import java.util.Objects;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.ChatRecv;
 import me.matl114.events.impl.Teleportation;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -15,6 +18,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.PlayerListEntry;
+import net.minecraft.client.network.message.MessageHandler;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.ClientConnection;
@@ -23,6 +27,12 @@ import net.minecraft.network.listener.PacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.play.*;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.TagGroupLoader;
+import net.minecraft.registry.tag.TagKey;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
@@ -165,6 +175,9 @@ public abstract class ClientPlayNetworkHandlerEvents {
 
     @Shadow
     public abstract void sendChatCommand(String command);
+
+    @Shadow
+    public abstract @Nullable PlayerListEntry getPlayerListEntry(UUID uuid);
 
     @WrapOperation(
             method = "onPlayerPositionLook",
@@ -310,5 +323,31 @@ public abstract class ClientPlayNetworkHandlerEvents {
     private void onLoadChunkPost(ChunkDataS2CPacket packet, CallbackInfo ci) {
         ChunkPos pos = new ChunkPos(packet.getChunkX(), packet.getChunkZ());
         Listener.getChunkUpdateListener().broadcast(pos);
+    }
+
+    @WrapOperation(
+            method = "onGameMessage",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/network/message/MessageHandler;onGameMessage(Lnet/minecraft/text/Text;Z)V"))
+    private void onGameMessage(MessageHandler instance, Text message, boolean overlay, Operation<Void> original) {
+        if (overlay) {
+            Event<Text> actionBarEvent = new Event<>(message, true, true);
+            Listener.getActionBarMessageReceive().handleValue(actionBarEvent);
+            if (actionBarEvent.isCancelled()) {
+                return;
+            }
+            original.call(instance, actionBarEvent.context, true);
+        } else {
+            ChatRecv chatRecv = ChatRecv.parseSystemMessage(message);
+            Event<ChatRecv> chatRecvEvent = new Event<>(chatRecv, true, false);
+            Listener.getChatMessageReceive().handleValue(chatRecvEvent);
+            if (chatRecvEvent.isCancelled()) {
+                return;
+            }
+            original.call(instance, chatRecvEvent.context.text(), false);
+        }
     }
 }
