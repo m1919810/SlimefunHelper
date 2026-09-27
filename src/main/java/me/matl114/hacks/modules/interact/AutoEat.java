@@ -154,6 +154,7 @@ public class AutoEat extends BaseModule {
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(EntityStatusS2CPacket.class), this::onStatusConsumed);
         registerListener(Listener.getPrePlayerUseItem(), this::onRightClick);
+        registerListener(Listener.getPlayerScrollHotBar(), this::onHotBarManuallySwap);
     }
 
     @Override
@@ -168,6 +169,16 @@ public class AutoEat extends BaseModule {
                 && event.context.getStatus() == EntityStatuses.CONSUME_ITEM) {
             stopEating();
             eatingCooldownTick = Tasks.getTick() + cooldown.get();
+        }
+    }
+
+    private void onHotBarManuallySwap(Event<Integer> eventSwap) {
+        if (eating && eventSwap.context() != InventoryUtils.getSelectedSlot()) {
+            if (log.get()) {
+                logI18N("message.module.auto-eat.stop");
+            }
+            stopEating();
+            eventSwap.cancel();
         }
     }
 

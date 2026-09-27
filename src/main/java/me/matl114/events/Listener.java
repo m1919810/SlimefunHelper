@@ -583,6 +583,11 @@ public class Listener {
     @Getter
     @Cancelable
     @Modifiable
+    private static final EventChannel<Integer> playerScrollHotBar = new EventChannel<>();
+
+    @Getter
+    @Cancelable
+    @Modifiable
     private static final EventChannel<Vec3d> playerExplosionVelocity = new EventChannel<>();
 
     // entities

@@ -2,12 +2,11 @@ package me.matl114.utils.tasks;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.concurrent.Executor;
 import java.util.function.BooleanSupplier;
 import me.matl114.managers.config.DoubleRef;
 import org.jetbrains.annotations.NotNull;
 
-public class LimitedSpeedExecutor implements Executor {
+public class LimitedSpeedExecutor {
     private Deque<BooleanSupplier> queue;
     private double counter;
     private final DoubleRef count;
@@ -42,14 +41,6 @@ public class LimitedSpeedExecutor implements Executor {
         } else {
             executeInternal(runnable);
         }
-    }
-
-    @Override
-    public void execute(@NotNull Runnable runnable) {
-        execute(() -> {
-            runnable.run();
-            return true;
-        });
     }
 
     private void executeInternal(BooleanSupplier runnable) {

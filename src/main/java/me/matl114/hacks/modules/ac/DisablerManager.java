@@ -55,6 +55,9 @@ public class DisablerManager extends BaseModule {
             .defaultValue(true)
             .build();
 
+    public final FlagRef grimMultiplaceFix =
+            flagBuilder(disablers.add("grim-multi-place-fix")).build();
+
     //    public final FlagRef grimMultiBreak = builder(disablers.add("grim-multi-break"), Boolean.class)
     //            .defaultValue(false)
     //            .build();
@@ -218,7 +221,11 @@ public class DisablerManager extends BaseModule {
         if (grimSelfCheckDisabler) {
             hasPlaceThisTick = false;
         }
-        if (hasPlaceThisTick && enable.get() && currentAC.get() == SupportAC.GRIM && grimMultiplace.get()) {
+        if (grimMultiplaceFix.get()
+                && grimMultiplace.get()
+                && hasPlaceThisTick
+                && enable.get()
+                && currentAC.get() == SupportAC.GRIM) {
             if (direction != lastDirection
                     || !Objects.equals(cursor, lastCursor)
                     || !Objects.equals(blockPos, lastPos)) {
@@ -229,6 +236,7 @@ public class DisablerManager extends BaseModule {
                 });
             }
         }
+        hasPlaceThisTick = true;
         lastDirection = direction;
         lastCursor = cursor;
         lastPos = blockPos;
