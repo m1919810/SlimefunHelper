@@ -19,6 +19,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.Window;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.util.Hand;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.hit.BlockHitResult;
@@ -459,5 +460,15 @@ public abstract class MinecraftClientEvents {
                                 MinecraftClient.getInstance().getWindow().getScaledHeight()),
                         false,
                         false));
+    }
+
+    @WrapOperation(
+            method = "handleInputEvents",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerInventory;setSelectedSlot(I)V"))
+    private void onSetSelectedSlotNumberButton(PlayerInventory instance, int slot, Operation<Void> original) {
+        Event<Integer> hotBar = new Event<>(slot, true, true);
+        Listener.getPlayerScrollHotBar().handleValue(hotBar);
+        if (hotBar.isCancelled()) return;
+        original.call(instance, (int) hotBar.context());
     }
 }

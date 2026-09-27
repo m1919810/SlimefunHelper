@@ -46,6 +46,8 @@ scripts/
 
 .cursor/
 
+.codex/skills/
+
 lang_scripts/
 
 AGENTS.md

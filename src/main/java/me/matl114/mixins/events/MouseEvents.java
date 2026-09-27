@@ -17,6 +17,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.Mouse;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -155,5 +156,15 @@ public abstract class MouseEvents {
         if (!event.isCancelled()) {
             original.call(instance, event.context().x, event.context().y);
         }
+    }
+
+    @WrapOperation(
+            method = "onMouseScroll",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerInventory;setSelectedSlot(I)V"))
+    private void onScrollInventorySelectedSlot(PlayerInventory instance, int slot, Operation<Void> original) {
+        Event<Integer> hotBar = new Event<>(slot, true, true);
+        Listener.getPlayerScrollHotBar().handleValue(hotBar);
+        if (hotBar.isCancelled()) return;
+        original.call(instance, (int) hotBar.context());
     }
 }
