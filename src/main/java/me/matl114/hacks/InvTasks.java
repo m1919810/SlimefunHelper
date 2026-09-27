@@ -142,9 +142,12 @@ public class InvTasks {
                 return;
             }
             (speedLimit ? clickExecutor : unlimitedClickExecutor).execute(() -> {
-                if (mc.interactionManager == null) return;
+                if (mc.interactionManager == null || InvTasks.getCurrentServerScreenHandler(mc.player) != handler) {
+                    return false;
+                }
                 mc.interactionManager.clickSlot(syncId, index, 0, SlotActionType.PICKUP, mc.player);
                 mc.interactionManager.clickSlot(syncId, index, 1, SlotActionType.PICKUP, mc.player);
+                return true;
             });
             ItemStack sample = handler.getCursorStack();
             if (sample.isEmpty()) {
@@ -162,8 +165,12 @@ public class InvTasks {
                                 && ItemStack.areItemsAndComponentsEqual(slot.getStack(), s.getStack()))) {
                     final int fi = i;
                     (speedLimit ? clickExecutor : unlimitedClickExecutor).execute(() -> {
-                        if (mc.interactionManager == null) return;
+                        if (mc.interactionManager == null
+                                || InvTasks.getCurrentServerScreenHandler(mc.player) != handler) {
+                            return false;
+                        }
                         mc.interactionManager.clickSlot(syncId, fi, 0, SlotActionType.PICKUP, mc.player);
+                        return true;
                     });
                     if (handler.getCursorStack().isEmpty()) {
                         return;
@@ -171,10 +178,13 @@ public class InvTasks {
                 }
             }
             (speedLimit ? clickExecutor : unlimitedClickExecutor).execute(() -> {
-                if (mc.interactionManager == null) return;
+                if (mc.interactionManager == null || InvTasks.getCurrentServerScreenHandler(mc.player) != handler) {
+                    return false;
+                }
                 if (!handler.getCursorStack().isEmpty()) {
                     mc.interactionManager.clickSlot(syncId, index, 0, SlotActionType.PICKUP, mc.player);
                 }
+                return true;
             });
 
             //            while (handler.getSlot(index).getStack().getCount() > 1){
@@ -195,12 +205,15 @@ public class InvTasks {
 
         } else {
             (speedLimit ? clickExecutor : unlimitedClickExecutor).execute(() -> {
-                if (mc.interactionManager == null) return;
+                if (mc.interactionManager == null || InvTasks.getCurrentServerScreenHandler(mc.player) != handler) {
+                    return false;
+                }
                 if (!handler.getCursorStack().isEmpty()) {
 
                     mc.interactionManager.clickSlot(handler.syncId, -999, 0, SlotActionType.PICKUP, mc.player);
                 }
                 mc.interactionManager.clickSlot(handler.syncId, index, 0, SlotActionType.QUICK_MOVE, mc.player);
+                return true;
             });
         }
     }

@@ -72,21 +72,27 @@ public class AutoStore extends BaseModule {
                             int slot = anyMatch(handler.slots, stackt, stackt.getCount(), outputSlot.toIntArray());
                             if (slot >= 0) {
                                 InvTasks.getClickExecutor().execute(() -> {
+                                    if (mc.interactionManager == null
+                                            || InvTasks.getCurrentServerScreenHandler(mc.player) != handler) {
+                                        return false;
+                                    }
                                     mc.interactionManager.clickSlot(
                                             handledScreen.getScreenHandler().syncId,
                                             slot,
                                             0,
                                             SlotActionType.PICKUP,
                                             player);
+                                    return true;
                                 });
                             } else {
                                 InvTasks.getClickExecutor().execute(() -> {
+                                    if (mc.interactionManager == null
+                                            || InvTasks.getCurrentServerScreenHandler(mc.player) != handler) {
+                                        return false;
+                                    }
                                     mc.interactionManager.clickSlot(
-                                            handledScreen.getScreenHandler().syncId,
-                                            slot,
-                                            0,
-                                            SlotActionType.THROW,
-                                            player);
+                                            handler.syncId, slot, 0, SlotActionType.THROW, player);
+                                    return true;
                                 });
                             }
                             return;
@@ -97,14 +103,13 @@ public class AutoStore extends BaseModule {
                         if (slot >= 0) {
 
                             InvTasks.getClickExecutor().execute(() -> {
-                                mc.interactionManager.clickSlot(
-                                        handledScreen.getScreenHandler().syncId, i, 1, SlotActionType.PICKUP, player);
-                                mc.interactionManager.clickSlot(
-                                        handledScreen.getScreenHandler().syncId,
-                                        slot,
-                                        0,
-                                        SlotActionType.PICKUP,
-                                        player);
+                                if (mc.interactionManager == null
+                                        || InvTasks.getCurrentServerScreenHandler(mc.player) != handler) {
+                                    return false;
+                                }
+                                mc.interactionManager.clickSlot(handler.syncId, i, 1, SlotActionType.PICKUP, player);
+                                mc.interactionManager.clickSlot(handler.syncId, slot, 0, SlotActionType.PICKUP, player);
+                                return true;
                             });
                             return;
                         }

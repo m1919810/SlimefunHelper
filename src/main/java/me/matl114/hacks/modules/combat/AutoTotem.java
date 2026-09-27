@@ -21,7 +21,6 @@ import me.matl114.hacks.utils.tasks.TimerExecutor;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.Debug;
 import me.matl114.utils.InventoryUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityStatuses;
@@ -64,6 +63,10 @@ public class AutoTotem extends BaseModule {
             .validator(slot -> slot.getValue() >= 0 && slot.getValue() < 9)
             .build();
 
+    public final FlagRef mainHandTotem = builder(totem.add("main-hand-totem"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     public final NBTRef<EntrySet<Item>> enableHandItems = builder(
                     totem.add("enable-hand-items"), EntrySet.<Item>parameter())
             .defaultValue(new EntrySet<>(new Regex("^()$"), Registries.ITEM))
@@ -79,7 +82,8 @@ public class AutoTotem extends BaseModule {
         registerListener(Listener.getPreGameTick(), this::onTick);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
         registerListener(Listener.getPacketPoint().getChannel(EntityStatusS2CPacket.class), this::onTotem);
-        registerListener(Listener.getPlayerInitConfiguration(), this::onPlayerInit);
+        registerListener(Listener.getPlayerRespawnPoint(), this::onPlayerInit);
+        registerListener(Listener.getPlayerScrollHotBar(), this::onTotemMainHand);
     }
 
     private boolean canBeAccepted(ItemStack ex) {
@@ -106,6 +110,7 @@ public class AutoTotem extends BaseModule {
     //    int swapCnt1919810 = 0;
     TimerExecutor swapFrequency = new TimerExecutor();
     int swapCntCounter = 0;
+    int reswapCounter = 0;
 
     private void handleTotemSwapSuccess() {
         noTotem.state(false);
@@ -124,7 +129,7 @@ public class AutoTotem extends BaseModule {
 
         // stop from duplicate swap
         if (mc.player.getOffHandStack().getItem() == Items.TOTEM_OF_UNDYING) {
-            restoreHotBar(forcedSlot);
+            restoreHotBar(forcedSlot, false);
             restoreForcedHotbar();
             return;
         }
@@ -139,22 +144,50 @@ public class AutoTotem extends BaseModule {
                 return;
             }
             if (forcedSlot >= 0) {
-                restoreHotBar(forcedSlot);
+                restoreHotBar(forcedSlot, false);
             }
         } else {
             // not totem
             if (forcedSlot >= 0) {
-                restoreHotBar(forcedSlot);
-                if (InventoryUtils.getSelectedSlot() != forcedSlot) {
-                    forcedHotbarPreviousSlot = InventoryUtils.getSelectedSlot();
-                    PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(forcedSlot);
+                restoreHotBar(forcedSlot, true);
+                if (mainHandTotem.get()
+                        && mc.player.getInventory().getStack(forcedSlot).getItem() == Items.TOTEM_OF_UNDYING
+                        && InventoryUtils.getSelectedSlot() != forcedSlot) {
+                    if (++reswapCounter > 1) {
+                        forcedHotbarPreviousSlot = InventoryUtils.getSelectedSlot();
+                        PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(forcedSlot);
+                        reswapCounter = 0;
+                    }
+                } else {
+                    reswapCounter = 0;
                 }
             } else if (mc.player.getMainHandStack().getItem() != Items.TOTEM_OF_UNDYING) {
-                int toSlot = InventoryUtils.getSelectedSlot();
-                if (!swap.canRun(cooldown.get())) {
-                    return;
+                if (mainHandTotem.get()) {
+                    int toSlot = InventoryUtils.getSelectedSlot();
+                    if (!swap.canRun(cooldown.get())) {
+                        return;
+                    }
+                    swapTo(toSlot);
                 }
-                swapTo(toSlot);
+            }
+        }
+    }
+
+    public void onTotemMainHand(Event<Integer> event) {
+        if (event.isCancelled()) return;
+        int forcedSlot;
+        if (enable.get() && mainHandTotem.get() && (forcedSlot = getForcedHotbarSlot()) >= 0) {
+            if (mc.player.getOffHandStack().getItem() == Items.TOTEM_OF_UNDYING) {
+                return;
+            }
+            if (canBeAccepted(mc.player.getOffHandStack())
+                    && mc.player.getInventory().getStack(forcedSlot).getItem() == Items.TOTEM_OF_UNDYING
+                    && event.context != forcedSlot) {
+                if (InventoryUtils.getSelectedSlot() != forcedSlot) {
+                    event.context(forcedSlot);
+                } else {
+                    event.cancel();
+                }
             }
         }
     }
@@ -166,11 +199,12 @@ public class AutoTotem extends BaseModule {
                 : -1;
     }
 
-    private void restoreHotBar(int forcedSlot) {
+    private void restoreHotBar(int forcedSlot, boolean forceTotem) {
         if (forcedSlot < 0 || forcedSlot >= 9) {
             return;
         }
-        boolean hasTotem = mc.player.getInventory().getStack(forcedSlot).getItem() == Items.TOTEM_OF_UNDYING;
+        ItemStack item = mc.player.getInventory().getStack(forcedSlot);
+        boolean hasTotem = forceTotem ? item.getItem() == Items.TOTEM_OF_UNDYING : canBeAccepted(item);
         if (!hasTotem) {
             if (swap.canRun(cooldown.get())) {
                 swapTo(forcedSlot);
@@ -194,23 +228,28 @@ public class AutoTotem extends BaseModule {
         ScreenHandler handled = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
         List<Slot> slots = handled.slots;
         int offHandSlot = 40;
+        boolean hasTotem = false;
         for (var i = 0; i < slots.size(); ++i) {
             Slot slot = slots.get(i);
             if ((slot.inventory instanceof PlayerInventory || handled == mc.player.playerScreenHandler)
-                    && !(slot.inventory instanceof PlayerInventory
-                            && (slot.getIndex() == offHandSlot
-                                    || slot.getIndex() == toSlot
-                                    || slot.getIndex() < 0
-                                    || slot.getIndex() > InventoryUtils.getPlayerInvSize()))
                     && slot.getStack().getItem() == Items.TOTEM_OF_UNDYING) {
+                hasTotem = true;
+                if (slot.inventory instanceof PlayerInventory
+                        && (slot.getIndex() == offHandSlot
+                                || slot.getIndex() == toSlot
+                                || slot.getIndex() < 0
+                                || slot.getIndex() > InventoryUtils.getPlayerInvSize())) {
+                    continue;
+                }
                 MovTasks.getMovExtra().sendPacketsForInventoryAction();
                 InvTasks.clickSlotAsync(i, toSlot, SlotActionType.SWAP);
-                Debug.debug("handle swap success");
                 handleTotemSwapSuccess();
                 return;
             }
         }
-        handleTotemSwapFailure();
+        if (!hasTotem) {
+            handleTotemSwapFailure();
+        }
     }
 
     TimerExecutor swap = new TimerExecutor();
@@ -222,6 +261,7 @@ public class AutoTotem extends BaseModule {
                 && eventTotem.context.getStatus() == EntityStatuses.USE_TOTEM_OF_UNDYING
                 && eventTotem.context.getEntity(mc.world) == mc.player) {
             ItemStack stackInMainHand = mc.player.getMainHandStack();
+            boolean find = false;
             int consumeSlot =
                     stackInMainHand.getItem() == Items.TOTEM_OF_UNDYING ? InventoryUtils.getSelectedSlot() : 40;
             mc.player.getInventory().setStack(consumeSlot, ItemStack.EMPTY);
@@ -232,22 +272,26 @@ public class AutoTotem extends BaseModule {
                 Slot slot = slots.get(i);
                 if (i != consumeSlot
                         && (slot.inventory instanceof PlayerInventory || handled == mc.player.playerScreenHandler)
-                        && !(slot.inventory instanceof PlayerInventory
-                                && (slot.getIndex() == 40
-                                        || slot.getIndex() == getForcedHotbarSlot()
-                                        || slot.getIndex() < 0
-                                        || slot.getIndex() > InventoryUtils.getPlayerInvSize()))
                         && slot.getStack().getItem() == Items.TOTEM_OF_UNDYING) {
+                    find = true;
+                    if ((slot.inventory instanceof PlayerInventory
+                            && (slot.getIndex() == 40
+                                    || slot.getIndex() == getForcedHotbarSlot()
+                                    || slot.getIndex() < 0
+                                    || slot.getIndex() > InventoryUtils.getPlayerInvSize()))) {
+                        continue;
+                    }
                     MovTasks.getMovExtra().sendPacketsForInventoryAction();
                     InvTasks.clickSlotAsync(i, consumeSlot, SlotActionType.SWAP);
                     handleTotemSwapSuccess();
-                    Debug.debug("handle antimiss success");
                     // pre tick
                     swap.mark(1);
                     return;
                 }
             }
-            handleTotemSwapFailure();
+            if (!find) {
+                handleTotemSwapFailure();
+            }
         }
     }
 

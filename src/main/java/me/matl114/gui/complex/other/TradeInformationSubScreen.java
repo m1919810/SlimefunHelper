@@ -179,7 +179,7 @@ public class TradeInformationSubScreen extends SubScreenWidget {
                 if (!output.isEmpty()) {
                     int maxCraft = (int) Math.ceil((float) output.getMaxCount() / (float) output.getCount());
                     maxCraft = Math.min(maxCraft, offer.getMaxUses() - offer.getUses());
-                    InvTasks.getFastCraft().craftAtSlotIndex(this.screen, maxCraft, 2);
+                    InvTasks.getFastCraft().craftAtSlotIndex(this.screen, output, maxCraft, 2);
                 }
             }
         }
