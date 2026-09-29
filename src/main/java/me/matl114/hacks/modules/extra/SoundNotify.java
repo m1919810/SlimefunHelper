@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 import me.matl114.accessors.access.PlayerInteractEntityC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.ChatRecv;
 import me.matl114.events.impl.MetadataUpdate;
 import me.matl114.gui.basic.ButtonAction;
 import me.matl114.gui.basic.DrawableWidget;
@@ -36,19 +37,15 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
-import net.minecraft.network.packet.s2c.play.ChatMessageS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntitiesDestroyS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
-import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.sound.SoundEvent;
-import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 public class SoundNotify extends BaseModule {
@@ -190,7 +187,6 @@ public class SoundNotify extends BaseModule {
     private final Set<RegistryEntry<StatusEffect>> alertedEffects = new HashSet<>();
     private final Set<EquipmentSlot> lowDurabilitySlots = new HashSet<>();
     private boolean durabilityInitialized;
-    private volatile boolean acceptingIncomingChat;
 
     @Override
     public void registerAll() {
@@ -210,19 +206,7 @@ public class SoundNotify extends BaseModule {
                 Listener.getEntityTrackDataUpdate().getChannel(EntityType.ITEM_FRAME), this::handleItemFrameItemData);
         registerListener(Listener.getPostTick(), this::onPostTick);
         registerListener(Listener.getServerDisconnectPoint(), this::onDisconnect);
-        registerListener(Listener.getMessageAddToHud(), this::onChatAdd);
-        registerListener(
-                Listener.getPacketPreHandlePoint().getChannel(ChatMessageS2CPacket.class),
-                (Consumer<Event<ChatMessageS2CPacket>>) this::<ChatMessageS2CPacket>onPacketIn);
-        registerListener(
-                Listener.getPacketPreHandlePoint().getChannel(GameMessageS2CPacket.class),
-                (Consumer<Event<GameMessageS2CPacket>>) this::<GameMessageS2CPacket>onPacketIn);
-        registerListener(
-                Listener.getPacketPostHandlePoint().getChannel(ChatMessageS2CPacket.class),
-                (Consumer<Event<ChatMessageS2CPacket>>) this::<ChatMessageS2CPacket>onPacketInPost);
-        registerListener(
-                Listener.getPacketPostHandlePoint().getChannel(GameMessageS2CPacket.class),
-                (Consumer<Event<GameMessageS2CPacket>>) this::<GameMessageS2CPacket>onPacketInPost);
+        registerListener(Listener.getChatMessageReceive(), this::onChatReceive);
         registerListener(BaritoneHooks.getLandingEvent(), this::onBaritoneLanding);
     }
 
@@ -375,19 +359,14 @@ public class SoundNotify extends BaseModule {
         durabilityInitialized = false;
     }
 
-    public <T extends Packet<?>> void onPacketIn(Event<T> event) {
-        acceptingIncomingChat = true;
-    }
-
-    public <T extends Packet<?>> void onPacketInPost(Event<T> event) {
-        acceptingIncomingChat = false;
-    }
-
-    public void onChatAdd(Event<Text> event) {
-        if (!enable.get() || !messageDetection.get() || !acceptingIncomingChat || event.isCancelled() || checkNull()) {
+    public void onChatReceive(Event<ChatRecv> event) {
+        if (!enable.get() || !messageDetection.get() || event.isCancelled() || checkNull()) {
             return;
         }
-        String message = ChatUtils.textToPlainString(event.context()).toLowerCase(Locale.ROOT);
+        if (privateMessageSound.get()) {
+            // todo: detect private message?
+        }
+        String message = ChatUtils.textToPlainString(event.context().text()).toLowerCase(Locale.ROOT);
         for (String keyword : messageKeywords.get()) {
             if (keyword != null && !keyword.isBlank() && message.contains(keyword.toLowerCase(Locale.ROOT))) {
                 play(Cue.MESSAGE_DETECTION);
@@ -408,7 +387,6 @@ public class SoundNotify extends BaseModule {
     public void onDisconnect(Event<Void> event) {
         alertedEffects.clear();
         resetDurabilityTracking();
-        acceptingIncomingChat = false;
         for (TimerExecutor timer : soundTimers.values()) {
             timer.mark(-SOUND_COOLDOWN_TICKS);
         }
