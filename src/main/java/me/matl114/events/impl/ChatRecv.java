@@ -44,7 +44,7 @@ public class ChatRecv {
                 .map(ChatRecv::parseNameInStyle)
                 .filter(Objects::nonNull)
                 .map(s -> Pair.of(
-                        Optional.of(s.map(
+                        Optional.ofNullable(s.map(
                                 v -> {
                                     return handler.getPlayerListEntry(v) != null ? v : null;
                                 },
@@ -52,7 +52,7 @@ public class ChatRecv {
                                         .map(PlayerListEntry::getProfile)
                                         .map(VRecord::getName)
                                         .orElse(null))),
-                        Optional.of(s.map(handler::getPlayerListEntry, handler::getPlayerListEntry))
+                        Optional.ofNullable(s.map(handler::getPlayerListEntry, handler::getPlayerListEntry))
                                 .map(PlayerListEntry::getProfile)))
                 .filter(s -> s.getFirst().isPresent() || s.getSecond().isPresent())
                 .findFirst();

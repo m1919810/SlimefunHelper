@@ -246,16 +246,7 @@ public abstract class BaseModule implements ModuleListProvider {
         registerListener(listener, handler, 0);
     }
 
-    public <W> void registerListener(ListenerPoint<W> listener, Predicate<W> handler) {
-        registerListener(listener, handler, 0);
-    }
-
     public <W> void registerListener(ListenerPoint<W> listener, Consumer<W> handler, int p) {
-        listener.registerHandler(registerReason(handler, REASON_LISTENER), p);
-        registeredPoints.add(listener);
-    }
-
-    public <W> void registerListener(ListenerPoint<W> listener, Predicate<W> handler, int p) {
         listener.registerHandler(registerReason(handler, REASON_LISTENER), p);
         registeredPoints.add(listener);
     }

@@ -91,6 +91,7 @@ public class InvDesyncFix extends BaseModule {
             }
             if (event.context.getStatus() == EntityStatuses.USE_TOTEM_OF_UNDYING && totemFix.get()) {
                 nextRevision();
+                nextRevision();
             }
         }
     }

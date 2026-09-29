@@ -398,21 +398,24 @@ public class InventoryUtils {
                 },
                 size,
                 doNotFSearchWhenOpenOtherScreen,
-                acceptEmpty);
+                acceptEmpty,
+                true);
     }
 
     public static IndexEntry<ItemStack> findBestPlayerInventory(
             Function<IndexEntry<ItemStack>, Double> maxFunction,
             boolean doNotFSearchWhenOpenOtherScreen,
             boolean acceptEmpty) {
-        return findBestPlayerInventory(maxFunction, getPlayerInvSize(), doNotFSearchWhenOpenOtherScreen, acceptEmpty);
+        return findBestPlayerInventory(
+                maxFunction, getPlayerInvSize(), doNotFSearchWhenOpenOtherScreen, acceptEmpty, true);
     }
 
     public static IndexEntry<ItemStack> findBestPlayerInventory(
             Function<IndexEntry<ItemStack>, Double> maxFunction,
             int searchTo,
             boolean doNotFSearchWhenOpenOtherScreen,
-            boolean acceptEmpty) {
+            boolean acceptEmpty,
+            boolean handPriority) {
         // while player is open Screen
         PlayerInventory pinv = mc.player.getInventory();
         ItemStack item = mc.player.getStackInHand(Hand.MAIN_HAND);
@@ -422,16 +425,19 @@ public class InventoryUtils {
         Double maxValue = null;
         IndexEntry<ItemStack> result = null;
         IndexEntry<ItemStack> test = null;
-        if ((acceptEmpty || !item.isEmpty())) {
-            test = new IndexEntry<>(selecedSlot, item);
-            maxValue = maxFunction.apply(test);
-            if (maxValue != null) {
-                result = test;
+        boolean ret = doNotFSearchWhenOpenOtherScreen
+                && ClientPlayerAccess.of(mc.player).getServerScreenHandler().syncId
+                        != mc.player.playerScreenHandler.syncId;
+        if (handPriority || ret) {
+            if ((acceptEmpty || !item.isEmpty())) {
+                test = new IndexEntry<>(selecedSlot, item);
+                maxValue = maxFunction.apply(test);
+                if (maxValue != null) {
+                    result = test;
+                }
             }
         }
-        if (doNotFSearchWhenOpenOtherScreen
-                && ClientPlayerAccess.of(mc.player).getServerScreenHandler().syncId
-                        != mc.player.playerScreenHandler.syncId) {
+        if (ret) {
             return result;
         }
 

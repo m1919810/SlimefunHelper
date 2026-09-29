@@ -17,6 +17,7 @@ import me.matl114.hacks.modules.move.PlayerInputManager;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
+import me.matl114.hacks.utils.tasks.StateExecutor;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
@@ -109,6 +110,7 @@ public class SelfTrap extends BaseModule {
 
     int delayTicks;
     boolean needSneak;
+    StateExecutor needPlaceState = new StateExecutor();
 
     public void onPrePacketMine(Event<PacketMine.Pre> eventPre) {
         if (enable.get() && !eventPre.isCancelled()) {
@@ -127,8 +129,14 @@ public class SelfTrap extends BaseModule {
         boolean wasSneaking = mc.player.isSneaking();
         if (++delayTicks >= delay.get()) {
             if (!eatingAbort.get() || !mc.player.isUsingItem()) {
-                checkSelfTrap();
-                delayTicks = 0;
+                if (checkSelfTrap()) {
+                    delayTicks = 0;
+                    needPlaceState.state(true);
+                } else {
+                    needPlaceState.state(false);
+                }
+            } else {
+                needPlaceState.state(false);
             }
         }
 
@@ -149,9 +157,6 @@ public class SelfTrap extends BaseModule {
         }
     }
 
-    /**
-     * Returns only the horizontal blocks around the player's feet layer, plus the optional block below it.
-     */
     public Set<BlockPos> getTargetingPos() {
         Box playerBox = mc.player.getBoundingBox();
         int feetY = (int) Math.floor(playerBox.minY);
@@ -184,6 +189,10 @@ public class SelfTrap extends BaseModule {
                 BlockPos candidate = occupied.offset(direction);
                 if (!occupiedFeet.contains(candidate)) {
                     result.add(candidate);
+                }
+                BlockPos candidateDown = candidate.down();
+                if (!occupiedFeet.contains(candidateDown)) {
+                    result.add(candidateDown);
                 }
             }
         }

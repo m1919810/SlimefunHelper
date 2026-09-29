@@ -506,7 +506,7 @@ public class Attack extends BaseModule {
                 // do here
                 if (!armorFly) {
                     // common elytra fly not supported yet
-                    swapElytraSlot = elytraExtra.findEmptyPlaceForElytra();
+                    swapElytraSlot = elytraExtra.findEmptySlotForElytra();
                     if (swapElytraSlot != -1) {
                         elytraExtra.switchSlotToArmor(swapElytraSlot);
                     }
@@ -666,8 +666,8 @@ public class Attack extends BaseModule {
                                             mc.getNetworkHandler()
                                                     .sendPacket(new ClientCommandC2SPacket(
                                                             mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                                            elytraExtra.switchSlotToArmor(elytraExtra.thisFallFlyingIsArmorFly);
-                                            elytraExtra.thisTickArmorFlySwitchBackIndex = -1;
+                                            elytraExtra.switchSlotToArmor(elytraExtra.armorGlideTransactionSlot);
+                                            elytraExtra.postTickSwapWithChestSlot = -1;
                                             EntityInternalAccess.of(mc.player)
                                                     .setDataFlag(VDataFlag.FALL_FLYING_FLAG_INDEX, true);
                                         }
