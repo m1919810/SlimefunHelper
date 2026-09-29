@@ -79,10 +79,6 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             .defaultValue(9.9D)
             .build();
 
-    public DoubleRef elytraSpeed = builder(travellingControl.add("elytra-speed"), DoubleRef.TYPE)
-            .defaultValue(1.7D)
-            .show(() -> controlType.get().isIn(Type.ELYTRASKY))
-            .build();
 
     public IntRef minHeight = builder(travellingControl.add("min-height"), IntRef.TYPE)
             .defaultValue(256)
@@ -607,12 +603,25 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
     }
 
     private class TravelMoveVelocity implements TravelDelegate {
-        private Vec3d elytraPos = null;
+        private Vec3d elytraRotation = null;
+        private boolean pullingUp;
         int tickCNT = 0;
 
         @Override
         public Type getType() {
             return Type.ELYTRASKY;
+        }
+
+        @Override
+        public void onStart(TravelInfo state) {
+            elytraRotation = null;
+            pullingUp = false;
+            tickCNT = 0;
+        }
+
+        @Override
+        public void onStop() {
+            elytraRotation = null;
         }
 
         @Override
@@ -622,8 +631,6 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             tickCNT += 1;
 
             double currentY = mc.player.getY();
-            double elySpeed = elytraSpeed.get() * 10;
-
             // 初始化持久化状态（如果为null）
             if (ti.state == null) {
                 if (currentY < minHeight.get()) {
@@ -638,50 +645,35 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             // 状态更新逻辑（与 MOV_VOID 相同）
             updateState(ti, currentY);
 
-            // 根据状态计算目标位置 elytraPos
-            if (ti.state == TravelState.STABLE) {
-                if (checkFinish(ti)) {
-                    return true;
-                }
-                Vec3d currentPos = mc.player.getPos();
-                Vec3d towards = ti.getCurrentFlyingTarget().subtract(currentPos);
-                Vec3d direction = towards.normalize()
-                        .withAxis(Direction.Axis.Y, 0)
-                        .multiply(elySpeed)
-                        .add(0, -0.05, 0);
-                elytraPos = currentPos.add(direction.multiply(10));
-            } else {
-                // 高度修正目标
-                double targetY;
-                if (ti.state == TravelState.TOO_LOW) {
-                    targetY = maxHeight.get();
-                } else { // TOO_HIGH
-                    targetY = minHeight.get();
-                }
-
-                double deltaY;
-                if ((tickCNT % 20) < 18) {
-                    double direction = Math.signum(targetY - currentY);
-                    deltaY = direction * elytraSpeed.get() * 10; // 使用鞘翅速度
-                } else {
-                    deltaY = -0.3;
-                }
-
-                elytraPos = mc.player.getPos().add(0, deltaY, 0);
+            if (ti.state == TravelState.STABLE && checkFinish(ti)) {
+                return true;
             }
+
+            Vec3d towards = ti.getCurrentFlyingTarget().subtract(mc.player.getPos());
+            Vec3d horizontalTowards = new Vec3d(towards.x, 0, towards.z);
+            float yaw = horizontalTowards.lengthSquared() > 1E-6
+                    ? EntityUtils.rotationToYaw(horizontalTowards)
+                    : mc.player.getYaw();
+            pullingUp = ti.state == TravelState.TOO_LOW;
+            elytraRotation = EntityUtils.pitchYawToRotation(pullingUp ? -45 : 10, yaw);
 
             return false;
         }
 
         public void onElytra(Event<EventContainer<FlightVelocity>> event) {
-            if (elytraPos == null) {
+            if (elytraRotation == null) {
                 return;
             }
             EventContainer<FlightVelocity> eventContainer = event.context();
             if (eventContainer.getValue().mode() != FlightVelocity.Mode.ELYTRA_FLIGHT) return;
             FlightVelocity velocity = eventContainer.getValue();
-            Vec3d towards = elytraPos.subtract(mc.player.getPos()).normalize().multiply(speed.get());
-            velocity.x(towards.x).y(towards.y).z(towards.z);
+            Vec3d rotation = elytraRotation;
+            if (MovTasks.getElytraFlight().useAutoRescale.get() && ElytraExtra.INSTANCE.autoRescale.get()) {
+                rotation = pullingUp
+                        ? ElytraOptimizeUtils.calculateBestPullupSpeed(rotation)
+                        : ElytraOptimizeUtils.calculateBestDownForwardSpeed(rotation, false);
+            }
+            velocity.velocity(rotation.normalize().multiply(velocity.maxVelocity()));
         }
     }
 
