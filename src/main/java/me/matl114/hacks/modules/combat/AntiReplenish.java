@@ -116,7 +116,7 @@ public class AntiReplenish extends BaseModule {
                 if (!cachedStolenPoses.contains(testPos)
                         && mc.world.getBlockState(testPos).getBlock() instanceof ShulkerBoxBlock
                         && mc.world.getBlockEntity(testPos) instanceof ShulkerBoxBlockEntity be
-                        && !ChestHistory.INSTANCE.isShulkerBoxPlacedBySelf(testPos)
+                        && (!ChestHistory.INSTANCE.isShulkerBoxPlacedBySelf(testPos) && !doesShulkerContainsAnyData(be))
                         && !mc.player.shouldCancelInteraction()
                         && InteractUtils.canShulkerOpen(mc.world, testPos, mc.world.getBlockState(testPos))
                         && InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), testPos)) {
@@ -155,6 +155,10 @@ public class AntiReplenish extends BaseModule {
                 }
             }
         }
+    }
+
+    private boolean doesShulkerContainsAnyData(ShulkerBoxBlockEntity blockEntity) {
+        return InventoryUtils.streamInventory(blockEntity).anyMatch(s -> !s.isEmpty());
     }
 
     private void onSwitchWorld(Event<World> event) {

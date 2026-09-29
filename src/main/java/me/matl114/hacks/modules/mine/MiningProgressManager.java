@@ -11,15 +11,18 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.managers.Tasks;
+import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.WorldUtils;
 import me.matl114.utils.inventory.ItemStackSample;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.s2c.play.BlockBreakingProgressS2CPacket;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -163,14 +166,25 @@ public class MiningProgressManager extends BaseModule {
         private static float predictGhostHandBreakSpeed(PlayerEntity player, BlockPos pos) {
             PlayerStateManager.PlayerStatus status = PlayerStateManager.INSTANCE.getPlayerStatus(player);
             BlockState blockState = mc.world.getBlockState(pos);
-            ItemStack bestTool = status.trackedInventoryItems.stream()
-                    .max(Comparator.comparingDouble(s -> {
-                        return WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
-                                player, blockState, s.sample());
-                    }))
-                    .map(ItemStackSample::sample)
-                    .orElse(ItemStack.EMPTY);
-            float speed = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(player, blockState, bestTool);
+            ItemStack bestTool = status == null
+                    ? player.getStackInHand(Hand.MAIN_HAND)
+                    : status.trackedInventoryItems.stream()
+                            .max(Comparator.comparingDouble(s -> {
+                                return WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
+                                        player, blockState, s.sample());
+                            }))
+                            .map(ItemStackSample::sample)
+                            .orElse(player.getStackInHand(Hand.MAIN_HAND));
+            ItemStack stackCopy = bestTool.copy();
+            if (!stackCopy.isEmpty()) {
+                int level = ItemStackUtils.getEnchantmentLevel(
+                        ItemStackUtils.getItemEnchant(stackCopy), Enchantments.EFFICIENCY);
+                if (level < 5) {
+                    ItemStackUtils.setEnchantmentLevel(stackCopy, Enchantments.EFFICIENCY, 5);
+                }
+            }
+
+            float speed = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(player, blockState, stackCopy);
             return WorldUtils.calcBlockBreakingDelta(blockState, mc.world, pos, speed);
         }
     }

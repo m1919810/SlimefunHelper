@@ -17,8 +17,11 @@ import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.ElytraExtra;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.config.EntrySet;
+import me.matl114.hacks.utils.config.NBTTypes;
+import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.enums.GhostHandMode;
+import me.matl114.hacks.utils.tasks.TimerExecutor;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -41,6 +44,10 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.consume.ApplyEffectsConsumeEffect;
+import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.entry.RegistryEntry;
@@ -74,6 +81,10 @@ public class AutoEat extends BaseModule {
 
     public final FlagRef forceEatLeftClickHold =
             flagBuilder(autoEat.add("left-click-tool-force-eat-hold")).build();
+
+    public final FlagRef forceEatOffhand = builder(autoEat.add("left-click-offhand-item-force-eat"), Boolean.class)
+            .defaultValue(true)
+            .build();
 
     public final FlagRef leftClickWeapon = builder(autoEat.add("left-click-weapon"), Boolean.class)
             .defaultValue(true)
@@ -135,6 +146,15 @@ public class AutoEat extends BaseModule {
             .defaultValue(false)
             .build();
 
+    public final FlagRef pauseWhenSurround = builder(autoEat.add("pause-when-surround"), Boolean.class)
+            .defaultValue(false)
+            .build();
+
+    public final NBTRef<OptionalPrimitive<Integer>> pauseWhenInteracting = builder(
+                    autoEat.add("pause-when-interact"), OptionalPrimitive.INT_TYPE)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.INT_TYPE, 2))
+            .build();
+
     public final EnumRef<GhostHandMode> ghostHand = builder(autoEat.add("ghost-hand-mode"), GhostHandMode.class)
             .defaultValue(GhostHandMode.INV_SWAP)
             .build();
@@ -146,6 +166,7 @@ public class AutoEat extends BaseModule {
     private int eatingSlot = -1;
     private int eatingCooldownTick = 0;
     private int nextTickStartEat = 0;
+    private final TimerExecutor interactMark = new TimerExecutor();
 
     @Override
     public void registerAll() {
@@ -157,12 +178,29 @@ public class AutoEat extends BaseModule {
                 Listener.getPacketPostHandlePoint().getChannel(EntityStatusS2CPacket.class), this::onStatusConsumed);
         registerListener(Listener.getPrePlayerUseItem(), this::onRightClick);
         registerListener(Listener.getPlayerScrollHotBar(), this::onHotBarManuallySwap);
+        registerListener(
+                Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class),
+                this::onInteractPacket,
+                114514);
+        registerListener(
+                Listener.getPacketPoint().getChannel(PlayerInteractBlockC2SPacket.class),
+                this::onInteractPacket,
+                114514);
+        registerListener(
+                Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class),
+                this::onInteractPacket,
+                114514);
     }
 
     @Override
     public void onDisableModule() {
         super.onDisableModule();
         stopEating();
+    }
+
+    private <T extends Packet<?>> void onInteractPacket(Event<T> eventPacket) {
+        if (eventPacket.isCancelled()) return;
+        interactMark.mark();
     }
 
     private void onStatusConsumed(Event<EntityStatusS2CPacket> event) {
@@ -216,6 +254,23 @@ public class AutoEat extends BaseModule {
                         true,
                         false)
                 : findHandStack(healthPriority);
+    }
+
+    private boolean interactionCheck() {
+        if (pauseWhenSurround.get()) {
+            if (AutoSurround.INSTANCE.enable.get() && AutoSurround.INSTANCE.needPlaceState.state()) {
+                return false;
+            }
+            if (SelfTrap.INSTANCE.enable.get() && SelfTrap.INSTANCE.needPlaceState.state()) {
+                return false;
+            }
+        }
+        if (pauseWhenInteracting.get().isPresent()) {
+            if (!interactMark.canRun(pauseWhenInteracting.get().getValue())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void tryStartEating(@Nonnull IndexEntry<ItemStack> re, boolean offHand, boolean manual) {
@@ -377,6 +432,9 @@ public class AutoEat extends BaseModule {
                             lastAutoFireworkIsDone = true;
                         }
                     }
+                    if (!interactionCheck()) {
+                        canStartNow = false;
+                    }
                     if (canStartNow) {
                         lastAutoFireworkIsDone = false;
                         tryStartEating(re, false, false);
@@ -404,7 +462,11 @@ public class AutoEat extends BaseModule {
 
     public void onRightClick(Event<UseItem> event) {
         Hand hand = event.context.hand();
-        if (enable.get() && forceEatLeftClick.get() && mc.options.useKey.isPressed() && !eating) {
+        if (enable.get()
+                && forceEatLeftClick.get()
+                && mc.options.useKey.isPressed()
+                && !eating
+                && (hand == Hand.MAIN_HAND || forceEatOffhand.get())) {
             ItemStack stack = mc.player.getStackInHand(hand);
             Hand offhand = hand == Hand.MAIN_HAND ? Hand.OFF_HAND : Hand.MAIN_HAND;
             ItemStack offhandStack = mc.player.getStackInHand(offhand);
@@ -426,6 +488,9 @@ public class AutoEat extends BaseModule {
                         ElytraExtra.INSTANCE.sendCustomUseFireworkPacket();
                         lastAutoFireworkIsDone = true;
                     }
+                }
+                if (!interactionCheck()) {
+                    canStartEat = false;
                 }
                 if (canStartEat) {
                     lastAutoFireworkIsDone = false;

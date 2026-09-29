@@ -104,6 +104,10 @@ public class InteractionTasks {
     }
 
     public static void addPostRotationCorrectTask(Vec3d look3d, Vec3d eyePos, Runnable callback) {
+        addPostRotationCorrectTask(look3d.subtract(eyePos), callback);
+    }
+
+    public static void addPostRotationCorrectTask(Vec3d rotationVec, Runnable callback) {
         //        RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
         //            RenderTasks.DEBUG_TICK, new RenderTasks.BoxObject(look3d.add(-0.1, -0.1, -0.1), look3d.add(0.1,
         // 0.1, 0.1), Color.MAGENTA)));
@@ -120,8 +124,7 @@ public class InteractionTasks {
                         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
 
                         Vec2f rotation =
-                                EntityUtils.rotationToPitchYaw(look3d.subtract(eyePos.add(mc.player.getVelocity()))
-                                        .normalize());
+                                EntityUtils.rotationToPitchYaw(rotationVec).normalize();
                         movementManagerEvent.context.pushImportantRotation(true, true);
                         PlayerStateManager.setPlayerYawSafe(player, rotation.y);
                         EntityUtils.setEntityPitchSafe(player, rotation.x);
@@ -140,7 +143,12 @@ public class InteractionTasks {
                 });
     }
 
-    private static Vec3d raycastBlock(BlockPos pos, Vec3d bestEyePos) {
+    public static Vec3d createBlockRayCastDirection(BlockPos pos) {
+        Vec3d bestEyePos = InteractExtra.INSTANCE.getBestInteractEyePos(mc.player.getPos(), pos);
+        return createBlockRayCastDirection(pos, bestEyePos);
+    }
+
+    public static Vec3d createBlockRayCastDirection(BlockPos pos, Vec3d bestEyePos) {
         Vec3d center = pos.toCenterPos();
         Box box = new Box(pos);
         var raycastDirection1 =
@@ -162,8 +170,9 @@ public class InteractionTasks {
         Vec3d bestEyePos = InteractExtra.INSTANCE.getBestInteractEyePos(mc.player.getPos(), result);
         switch (mode) {
             case USEITEM_PACKET -> {
-                Vec2f rotation = EntityUtils.rotationToPitchYaw(
-                        raycastBlock(result.getBlockPos(), bestEyePos).normalize());
+                Vec2f rotation =
+                        EntityUtils.rotationToPitchYaw(createBlockRayCastDirection(result.getBlockPos(), bestEyePos)
+                                .normalize());
                 mc.interactionManager.sendSequencedPacket(
                         mc.world, (i) -> new PlayerInteractItemC2SPacket(hand, i, rotation.y, rotation.x));
                 InteractionTasks.interactBlock(hand, result, swingHand);
@@ -190,7 +199,8 @@ public class InteractionTasks {
                 }
             }
             case LEGACY_SLIENT_ROT -> {
-                Vec2f rotation = EntityUtils.rotationToPitchYaw(raycastBlock(result.getBlockPos(), bestEyePos));
+                Vec2f rotation =
+                        EntityUtils.rotationToPitchYaw(createBlockRayCastDirection(result.getBlockPos(), bestEyePos));
                 LegacySnapRotManager.INSTANCE.snapAt(rotation.x, rotation.y, false);
                 InteractionTasks.interactBlock(hand, result, swingHand);
             }

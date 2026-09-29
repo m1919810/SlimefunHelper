@@ -369,6 +369,17 @@ public class ItemStackUtils {
                 Objects.equals(enchantments, ItemEnchantmentsComponent.DEFAULT) ? null : enchantments);
     }
 
+    public static int getEnchantmentLevel(ItemStack stack, RegistryKey<Enchantment> enchantment) {
+        return getEnchantmentLevel(getItemEnchant(stack), enchantment);
+    }
+
+    public static void setEnchantmentLevel(ItemStack stack, RegistryKey<Enchantment> enchantment, int level) {
+        var ench = getItemEnchant(stack);
+        var builder = new ItemEnchantmentsComponent.Builder(ench);
+        builder.set(RegistryUtils.getRegistryEntry(registry(), enchantment), level);
+        setEnchantment(stack, builder.build());
+    }
+
     public static ItemStack getCleanedItem(ItemStack stack) {
         return getCleanedItem(stack, true);
     }

@@ -85,6 +85,10 @@ public class Interact extends BaseModule {
             .defaultValue(LegalInteractMode.NONE)
             .build();
 
+    public final FlagRef blockAirPlace = builder(root.add("block-air-place"), Boolean.class)
+            .defaultValue(false)
+            .build();
+
     public final NBTRef<EntityTypeRegex> interactWhiteList = builder(
                     root.add("entity-whitelist"), EntityTypeRegex.class)
             .defaultValue(new EntityTypeRegex(new Regex("^(villager|chest_minecart)$")))
@@ -714,7 +718,7 @@ public class Interact extends BaseModule {
     @ApiMethod
     public boolean placeBlock(BlockPos pos) {
         FlagEntry<BlockHitResult> hitResult = InteractionTasks.getPlaceSupportingResult(
-                pos, !blockMode.get().isLegal(), !blockMode.get().isLegal());
+                pos, blockAirPlace.get(), !blockMode.get().isLegal());
         if (InteractUtils.canInteractAndPlace(mc.player, hitResult)) {
             return interactBlock(hitResult.val());
         } else return false;
@@ -723,11 +727,33 @@ public class Interact extends BaseModule {
     @ApiMethod
     public boolean placeBlockStrict(BlockPos pos, BlockState state) {
         FlagEntry<BlockHitResult> hitResult = InteractionTasks.getPlaceSupportingResult(
-                pos, !blockMode.get().isLegal(), !blockMode.get().isLegal());
+                pos, blockAirPlace.get(), !blockMode.get().isLegal());
         if (InteractUtils.canInteractAndPlace(mc.player, hitResult)) {
             BlockRotate.INSTANCE.addTempStateSchematic(pos, state);
             return interactBlock(hitResult.val());
         } else return false;
+    }
+
+    @ApiMethod
+    public FlagEntry<BlockHitResult> getPlaceSupportingResult(
+            Vec3d playerPos, BlockPos blockPos, Direction preferredDirection) {
+        return InteractionTasks.getPlaceSupportingResult(
+                playerPos,
+                blockPos,
+                preferredDirection,
+                blockAirPlace.get(),
+                !blockMode.get().isLegal());
+    }
+
+    @ApiMethod
+    public List<FlagEntry<BlockHitResult>> getAllPlaceSupportingResult(
+            Vec3d playerPos, BlockPos blockPos, Direction preferredDirection) {
+        return InteractionTasks.getAllPlaceSupportingResult(
+                playerPos,
+                blockPos,
+                preferredDirection,
+                blockAirPlace.get(),
+                !blockMode.get().isLegal());
     }
 
     @ApiMethod

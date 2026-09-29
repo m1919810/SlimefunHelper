@@ -15,6 +15,10 @@ public class StateExecutor {
         }
     }
 
+    public boolean state() {
+        return state;
+    }
+
     public void stateOrElse(boolean state, Runnable runnable, Runnable orElse) {
         if (!state(state, runnable)) {
             orElse.run();
