@@ -1575,7 +1575,7 @@ public class KitReplenish extends BaseModule {
                         return null;
                     }
                     List<FlagEntry<BlockHitResult>> placeHitResult =
-                            InteractionTasks.getAllPlaceSupportingResult(playerFeet, s, playerLook, false, false);
+                            Interact.INSTANCE.getAllPlaceSupportingResult(playerFeet, s, playerLook);
                     if (placeHitResult.isEmpty()) {
                         return null;
                     }
@@ -1619,7 +1619,7 @@ public class KitReplenish extends BaseModule {
                         return null;
                     }
                     FlagEntry<BlockHitResult> hitResult =
-                            InteractionTasks.getPlaceSupportingResult(currentPos, s, playerLook, false, false);
+                            Interact.INSTANCE.getPlaceSupportingResult(currentPos, s, playerLook);
                     if (InteractUtils.canInteractAndPlace(mc.player, hitResult)
                             && InteractExtra.INSTANCE.isWithinInteractRange(
                                     mc.player.getPos(), hitResult.val().getBlockPos())) {

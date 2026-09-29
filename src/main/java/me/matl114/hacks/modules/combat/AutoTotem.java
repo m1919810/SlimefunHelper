@@ -249,6 +249,8 @@ public class AutoTotem extends BaseModule {
         }
         if (!hasTotem) {
             handleTotemSwapFailure();
+        } else {
+            handleTotemSwapSuccess();
         }
     }
 
@@ -291,6 +293,8 @@ public class AutoTotem extends BaseModule {
             }
             if (!find) {
                 handleTotemSwapFailure();
+            } else {
+                handleTotemSwapSuccess();
             }
         }
     }

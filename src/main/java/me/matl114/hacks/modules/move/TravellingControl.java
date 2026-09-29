@@ -79,7 +79,6 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             .defaultValue(9.9D)
             .build();
 
-
     public IntRef minHeight = builder(travellingControl.add("min-height"), IntRef.TYPE)
             .defaultValue(256)
             .build();

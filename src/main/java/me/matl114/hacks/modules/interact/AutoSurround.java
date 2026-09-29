@@ -22,6 +22,7 @@ import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
+import me.matl114.hacks.utils.tasks.StateExecutor;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
@@ -102,6 +103,8 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
 
     public final FlagRef placeLower = flagBuilder(autoSurround.add("lower")).build();
 
+    public final FlagRef placeUpper = flagBuilder(autoSurround.add("upper")).build();
+
     public final FlagRef autoAttackCrystals =
             flagBuilder(autoSurround.add("auto-attack-crystal")).build();
 
@@ -160,6 +163,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
 
     int delayTicks;
     boolean needSneak = false;
+    StateExecutor needPlaceState = new StateExecutor();
 
     public void onInput(Event<Void> inputEvent) {
         if (enable.get()) {
@@ -171,9 +175,13 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                             triggerCenterFix = true;
                         }
                         delayTicks = 0;
+                        needPlaceState.state(true);
                     } else {
                         triggerCenterFix = false;
+                        needPlaceState.state(false);
                     }
+                } else {
+                    needPlaceState.state(false);
                 }
             }
             if (needSneak) {
@@ -231,7 +239,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                             mc.world,
                             mc.player,
                             playerBox.withMinY(playerBox.minY - 1.5).withMaxY(playerBox.minY))) {
-                for (int y = minY; y < maxY - 2; ++y) {
+                for (int y = minY; y < maxY - 1; ++y) {
                     for (var re : occupiedPoses) {
                         BlockPos test = re.withY(y);
                         if (occupiedPoses.contains(test)) {
@@ -257,6 +265,15 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
         for (int y = minY; y <= maxY; ++y) {
             for (BlockPos testPos : directionTestPoses) {
                 BlockPos test = testPos.withY(y);
+                if (occupiedPoses.contains(test)) {
+                    continue;
+                }
+                result.add(test);
+            }
+        }
+        if (placeUpper.get()) {
+            for (var re : occupiedPoses) {
+                BlockPos test = re.withY(maxY);
                 if (occupiedPoses.contains(test)) {
                     continue;
                 }
@@ -392,7 +409,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
         if (invCallback != null) {
             invCallback.run();
         }
-        return placeCnt > 0;
+        return placeCnt > 0 || !pendingRemoval.isEmpty();
     }
 
     public IndexEntry<ItemStack> supplyBlocks() {
