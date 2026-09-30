@@ -19,6 +19,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.CollisionUtil;
 import me.matl114.utils.InteractUtils;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.collections.FlagEntry;
@@ -31,6 +32,7 @@ import net.minecraft.registry.Registries;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.EmptyBlockView;
@@ -71,6 +73,8 @@ public class Scaffold extends BaseModule {
 
     public final FlagRef offhand = flagBuilder(scaffold.add("offhand-enable")).build();
 
+    public final FlagRef keepY = flagBuilder(scaffold.add("keep-y")).build();
+
     public final IntRef expandYDepth = builder(scaffold.add("expand-interact-y-depth"), IntRef.TYPE)
             .defaultValue(0)
             .validator(Configs.intRange(0, 3))
@@ -97,6 +101,7 @@ public class Scaffold extends BaseModule {
     }
 
     private int delayTick;
+    private int lastOnGroundY;
 
     private boolean placeBlock(int hand, BlockHitResult result) {
         boolean offhandOk = offhand.get() || hand == 40;
@@ -143,6 +148,9 @@ public class Scaffold extends BaseModule {
         if (checkNull()) {
             return;
         }
+        if (mc.player.isOnGround()) {
+            lastOnGroundY = mc.player.getBlockY();
+        }
         if (!enable.get()) {
             delayTick = 0;
             return;
@@ -162,7 +170,25 @@ public class Scaffold extends BaseModule {
         }
 
         Vec3d playerPos = mc.player.getPos();
-        BlockPos target = BlockPos.ofFloored(playerPos.subtract(0, 0.500001F, 0));
+        Box boundingBox = mc.player.getBoundingBox();
+        Box checkBox = new Box(
+                playerPos.x - 0.0001,
+                boundingBox.minY - 0.5,
+                playerPos.z - 0.0001,
+                playerPos.x + 0.0001,
+                boundingBox.maxY,
+                playerPos.z + 0.0001);
+        if (CollisionUtil.isBoxCollided(mc.world, mc.player, checkBox)) {
+            return false;
+        }
+        BlockPos current = BlockPos.ofFloored(playerPos);
+        BlockPos target = BlockPos.ofFloored(playerPos.subtract(0, 0.5F, 0));
+        if (keepY.get() && target.getY() == lastOnGroundY) {
+            target = target.withY(lastOnGroundY - 1);
+        }
+        if (Objects.equals(current, target)) {
+            return false;
+        }
         BlockState targetState = mc.world.getBlockState(target);
         if (!targetState.isReplaceable()
                 || (!targetState.isAir()
@@ -173,8 +199,8 @@ public class Scaffold extends BaseModule {
         if (path == null || path.isEmpty()) {
             return false;
         }
-        int cnt = (DisablerManager.INSTANCE.isMultiPlaceCheckDisabled()
-                        && legalMode.get().canMultiRotPlace())
+        int cnt = DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled(
+                        legalMode.get().canMultiRotPlace())
                 ? mul.get()
                 : 1;
         int ccc = 0;
@@ -209,7 +235,6 @@ public class Scaffold extends BaseModule {
                 for (BlockPos step = current; step != null; step = previous.get(step)) {
                     path.add(step.toImmutable());
                 }
-                Collections.reverse(path);
                 return path;
             }
 

@@ -100,20 +100,6 @@ public class AnchorAura extends BaseModule {
             .validator(Configs.doubleRange(0.0D, 1000.0D))
             .build();
 
-    public final FlagRef autoBlock = flagBuilder(root.add("auto-block")).build();
-
-    public final NBTRef<EntrySet<Item>> blockingBlock = builder(root.add("blocking-block"), EntrySet.<Item>parameter())
-            .defaultValue(new EntrySet<>(Registries.ITEM, List.of(Items.OBSIDIAN)))
-            .build();
-
-    public final DoubleRef blockReduce = doubleBuilder(root.add("block-reduce"))
-            .defaultValue(0.9D)
-            .validator(Configs.doubleRange(0.0D, 1.0D))
-            .build();
-
-    public final FlagRef zeroTickBlock =
-            flagBuilder(root.add("zero-tick-block")).build();
-
     public final DoubleRef targetDamageThreshold = doubleBuilder(root.add("target-damage-threshold"))
             .defaultValue(16.0D)
             .validator(Configs.doubleRange(0.0D, 1000.0D))
@@ -135,6 +121,22 @@ public class AnchorAura extends BaseModule {
     public final KeyBindRef packetMineBridgeHotkey = toggleHotkey(
                     packetMine.addHotkey(), new MultiKeyBind(), packetMine.addEnable())
             .build();
+
+    public final ModulePath blocking = root.add("auto-block");
+
+    public final FlagRef autoBlock = flagBuilder(blocking.addEnable()).build();
+
+    public final NBTRef<EntrySet<Item>> blockingBlock = builder(
+                    blocking.add("blocking-block"), EntrySet.<Item>parameter())
+            .defaultValue(new EntrySet<>(Registries.ITEM, List.of(Items.OBSIDIAN)))
+            .build();
+
+    public final DoubleRef blockReduce = doubleBuilder(blocking.add("block-reduce"))
+            .defaultValue(0.9D)
+            .validator(Configs.doubleRange(0.0D, 1.0D))
+            .build();
+
+    public final FlagRef zeroTickBlock = flagBuilder(blocking.add("zero-tick")).build();
 
     final TimerExecutor noSupplyExecutor = new TimerExecutor();
 
@@ -503,7 +505,7 @@ public class AnchorAura extends BaseModule {
         for (Direction direction : Direction.values()) {
             BlockPos blockingPos = anchorPos.offset(direction);
             // when it is in head, it's too late
-            if (InteractionTasks.checkInHead(blockingPos, mc.player.getPos())
+            if (InteractionTasks.checkInHead(anchorPos, mc.player.getPos())
                     || !InteractionTasks.checkPositionPlace(anchorPos, direction, mc.player.getPos())) {
                 continue;
             }
@@ -582,9 +584,9 @@ public class AnchorAura extends BaseModule {
         if (!blockingState.isAir() && !blockingState.isLiquid() && !blockingState.isReplaceable()) {
             return false;
         }
-        Vec3d directionVec = Vec3d.of(option.anchorPos().subtract(blockingPos));
+        Vec3d directionVec = Vec3d.of(blockingPos.subtract(option.anchorPos()));
         Direction direction = Direction.getFacing(directionVec);
-        BlockHitResult hitResult = InteractionTasks.createHitResult(blockingPos, direction);
+        BlockHitResult hitResult = InteractionTasks.createHitResult(option.anchorPos(), direction);
         if (!InteractionTasks.checkPositionPlace(hitResult)) {
             return false;
         }

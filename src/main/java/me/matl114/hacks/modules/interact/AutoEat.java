@@ -99,8 +99,7 @@ public class AutoEat extends BaseModule {
 
     public final ModulePath auto = autoEat.add("auto");
 
-    public final FlagRef inv =
-            builder(auto.addEnable(), Boolean.class).defaultValue(true).build();
+    public final FlagRef inv = flagBuilder(auto.addEnable()).build();
 
     public final FlagRef enableHealth =
             builder(auto.add("enable-health"), Boolean.class).defaultValue(true).build();
