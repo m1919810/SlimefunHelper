@@ -120,3 +120,6 @@ accessible method net/minecraft/entity/player/PlayerEntity getDamageSource (Lnet
 accessible field net/minecraft/entity/Entity movementMultiplier Lnet/minecraft/util/math/Vec3d;
 accessible method net/minecraft/block/vault/VaultSharedData getConnectedPlayers ()Ljava/util/Set;
 accessible field net/minecraft/network/packet/s2c/play/EntityS2CPacket id I
+accessible class net/minecraft/client/network/PendingUpdateManager$PendingUpdate
+accessible field net/minecraft/client/network/PendingUpdateManager$PendingUpdate blockState Lnet/minecraft/block/BlockState;
+accessible field net/minecraft/client/network/PendingUpdateManager$PendingUpdate sequence I

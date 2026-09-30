@@ -3,16 +3,22 @@ package me.matl114.hacks.modules.interact;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import lombok.Getter;
+import me.matl114.accessors.access.PendingUpdateManagerAccess;
 import me.matl114.accessors.access.PlayerInteractBlockC2SPacketAccess;
 import me.matl114.accessors.access.PlayerInteractItemC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.annotations.Broadcast;
+import me.matl114.events.channels.EventChannelDispatcher;
 import me.matl114.events.impl.BlockBreak;
+import me.matl114.events.impl.SequencedAction;
 import me.matl114.events.impl.UseItem;
 import me.matl114.events.impl.UseItemOnBlock;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.collections.IndexEntry;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
@@ -60,8 +66,16 @@ public class SequencedActionManager extends BaseModule {
     public IndexEntry<UseItem> lastItemUse;
     public int lastItemUseTick;
 
+    @Broadcast
+    @Getter
+    public static EventChannelDispatcher<SequencedAction> sequencedActionResponse =
+            new EventChannelDispatcher<>(SequencedAction::getClass);
+
     private void onPlayerRespawn(Event<ClientPlayerEntity> playerEntityEvent) {
         maxSeq = 0;
+        blockPlaceSequences.forEach(s -> sequencedActionResponse.broadcast(s.val()));
+        itemUsageSequences.forEach(s -> sequencedActionResponse.broadcast(s.val()));
+        blockBreakSequences.forEach(s -> sequencedActionResponse.broadcast(s.val()));
         blockPlaceSequences.clear();
         itemUsageSequences.clear();
         blockBreakSequences.clear();
@@ -131,13 +145,23 @@ public class SequencedActionManager extends BaseModule {
                         1.0F)));
     }
 
-    private <W> void updateACK(Deque<IndexEntry<W>> ackList, int ack) {
+    private <W extends SequencedAction> void updateACK(Deque<IndexEntry<W>> ackList, int ack) {
         IndexEntry<W> val;
         while ((val = ackList.peek()) != null && val.index() <= ack) {
-            ackList.pollFirst();
+            var pollOut = ackList.pollFirst();
+            if (pollOut != null) {
+                sequencedActionResponse.broadcast(pollOut.val());
+            }
         }
         if (!ackList.isEmpty()) {
-            ackList.removeIf(s -> s.index() <= ack);
+            var iter = ackList.iterator();
+            while (iter.hasNext()) {
+                var s = iter.next();
+                if (s.index() <= ack) {
+                    iter.remove();
+                    sequencedActionResponse.broadcast(s.val());
+                }
+            }
         }
     }
 
@@ -181,5 +205,31 @@ public class SequencedActionManager extends BaseModule {
         updateACK(itemUsageSequences, response);
         updateACK(blockPlaceSequences, response);
         updateACK(blockBreakSequences, response);
+    }
+
+    public boolean appendBlockBreakPrediction(BlockPos pos, BlockState state) {
+        if (mc.world.getPendingUpdateManager().hasPendingSequence()) {
+            return mc.world.setBlockState(pos, state, 11, 512);
+        } else {
+            BlockState blockState = mc.world.getBlockState(pos);
+            boolean bl = mc.world.setBlockState(pos, state, 11, 512);
+            if (bl) {
+                mc.world.getPendingUpdateManager().addPendingUpdate(pos, blockState, mc.player);
+            }
+            return bl;
+        }
+    }
+
+    public Optional<BlockState> getBeforeBreakPredictionState(BlockPos pos) {
+        var latestAction = blockBreakSequences.stream()
+                .filter(s -> Objects.equals(s.val().blockPos(), pos))
+                .max(Comparator.comparingInt(IndexEntry::index))
+                .orElse(null);
+        if (latestAction != null) {
+            return PendingUpdateManagerAccess.of(mc.world.getPendingUpdateManager())
+                    .getPendingBlockState(latestAction.index(), pos);
+        } else {
+            return Optional.empty();
+        }
     }
 }

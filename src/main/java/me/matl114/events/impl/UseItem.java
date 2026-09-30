@@ -13,7 +13,7 @@ import net.minecraft.util.Hand;
 @AllArgsConstructor
 @Getter
 @Accessors(fluent = true, chain = true)
-public class UseItem {
+public class UseItem implements SequencedAction {
     @Setter
     ActionResult actionResult;
 

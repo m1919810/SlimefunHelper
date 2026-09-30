@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.BlockBreak;
 import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.*;
 import me.matl114.hacks.api.BaseModule;
@@ -146,7 +147,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
         super.registerAll();
         registerListener(Listener.getPreHandleInputEvents(), this::onInput);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
-        registerListener(PacketMine.getPrePacketMine(), this::onPrePacketMine);
+        registerListener(PacketMine.getPacketMineAction().getChannel(BlockBreak.Stage.PRE), this::onPrePacketMine);
     }
 
     @Override
@@ -202,9 +203,12 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
         }
     }
 
-    public void onPrePacketMine(Event<PacketMine.Pre> eventPre) {
-        if (enable.get() && !eventPre.isCancelled()) {
-            BlockPos pos = eventPre.getArgs(0);
+    public void onPrePacketMine(Event<BlockBreak> eventPre) {
+        if (enable.get()
+                && !eventPre.isCancelled()
+                && eventPre.canCancel()
+                && eventPre.context().stage() == BlockBreak.Stage.PRE) {
+            BlockPos pos = eventPre.context().blockPos();
             if (getTargetingPos().contains(pos)) {
                 eventPre.cancel();
             }

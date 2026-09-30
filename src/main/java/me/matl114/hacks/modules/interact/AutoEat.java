@@ -103,6 +103,9 @@ public class AutoEat extends BaseModule {
 
     public final FlagRef inv = flagBuilder(auto.addEnable()).build();
 
+    public final KeyBindRef hk1 =
+            toggleHotkey(auto.addHotkey(), new MultiKeyBind(), auto.addEnable()).build();
+
     public final FlagRef enableHealth =
             builder(auto.add("enable-health"), Boolean.class).defaultValue(true).build();
 
@@ -142,6 +145,9 @@ public class AutoEat extends BaseModule {
     public final ModulePath manual = autoEat.add("left-click-force-eat");
 
     public final FlagRef forceEatLeftClick = flagBuilder(manual.addEnable()).build();
+
+    public final KeyBindRef hk2 = toggleHotkey(manual.addHotkey(), new MultiKeyBind(), manual.addEnable())
+            .build();
 
     public final FlagRef forceEatLeftClickHold =
             flagBuilder(manual.add("need-press-left-button")).build();
