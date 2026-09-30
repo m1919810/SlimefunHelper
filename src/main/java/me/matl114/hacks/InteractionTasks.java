@@ -14,7 +14,6 @@ import me.matl114.events.impl.UseItemOnBlock;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
-import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.interact.*;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
@@ -42,7 +41,6 @@ import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.Pair;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
@@ -160,6 +158,12 @@ public class InteractionTasks {
 
     public static void handlePlaceMode(LegalInteractMode mode, BlockHitResult result, Hand hand, boolean swingHand) {
         Vec3d bestEyePos = InteractExtra.INSTANCE.getBestInteractEyePos(mc.player.getPos(), result);
+        boolean directlyHit = RaycastUtils.canRaycastHit(
+                mc.player,
+                PlayerStateManager.INSTANCE.lastPitch,
+                PlayerStateManager.INSTANCE.lastYaw,
+                result.getBlockPos(),
+                InteractExtra.INSTANCE.getBlockReachDistance());
         switch (mode) {
             case USEITEM_PACKET -> {
                 Vec2f rotation = EntityUtils.rotationToPitchYaw(
@@ -170,108 +174,40 @@ public class InteractionTasks {
             }
             case DELAY_MOVEMENT -> {
                 InteractionTasks.interactBlock(hand, result, swingHand);
-                InteractionTasks.addPostRotationCorrectTask(
-                        result.getBlockPos().toCenterPos(), bestEyePos, Runnables.doNothing());
+                if (!directlyHit) {
+                    InteractionTasks.addPostRotationCorrectTask(
+                            result.getBlockPos().toCenterPos(), bestEyePos, Runnables.doNothing());
+                }
             }
             case MOVEMENT_POST -> {
-                MutableObject<PlayerInteractBlockC2SPacket> catcher = new MutableObject<>();
-                Listener.addPrePacketCatcher(new PacketCatcherImpl<>(PlayerInteractBlockC2SPacket.class, (eve) -> {
-                    if (eve.isCancelled()) return true;
-                    catcher.setValue(eve.context);
-                    eve.cancel();
-                    return true;
-                }));
-                InteractionTasks.interactBlock(hand, result, swingHand);
-                if (catcher.getValue() != null) {
-                    var pkt = catcher.getValue();
-                    InteractionTasks.addPostRotationCorrectTask(
-                            result.getBlockPos().toCenterPos(), bestEyePos, () -> mc.getNetworkHandler()
-                                    .sendPacket(pkt));
+                if (!directlyHit) {
+                    MutableObject<PlayerInteractBlockC2SPacket> catcher = new MutableObject<>();
+                    Listener.addPrePacketCatcher(new PacketCatcherImpl<>(PlayerInteractBlockC2SPacket.class, (eve) -> {
+                        if (eve.isCancelled()) return true;
+                        catcher.setValue(eve.context);
+                        eve.cancel();
+                        return true;
+                    }));
+                    InteractionTasks.interactBlock(hand, result, swingHand);
+                    if (catcher.getValue() != null) {
+                        var pkt = catcher.getValue();
+                        InteractionTasks.addPostRotationCorrectTask(
+                                result.getBlockPos().toCenterPos(), bestEyePos, () -> mc.getNetworkHandler()
+                                        .sendPacket(pkt));
+                    }
+                } else {
+                    InteractionTasks.interactBlock(hand, result, swingHand);
                 }
             }
             case LEGACY_SLIENT_ROT -> {
-                Vec2f rotation = EntityUtils.rotationToPitchYaw(raycastBlock(result.getBlockPos(), bestEyePos));
-                LegacySnapRotManager.INSTANCE.snapAt(rotation.x, rotation.y, false);
+                if (!directlyHit) {
+                    Vec2f rotation = EntityUtils.rotationToPitchYaw(raycastBlock(result.getBlockPos(), bestEyePos));
+                    LegacySnapRotManager.INSTANCE.snapAt(rotation.x, rotation.y, false);
+                }
                 InteractionTasks.interactBlock(hand, result, swingHand);
             }
             case NONE -> {
                 InteractionTasks.interactBlock(hand, result, swingHand);
-            }
-        }
-    }
-
-    public static void flushACPlaceQueue() {
-        DisablerManager.INSTANCE.flushACPlaceQueue();
-        // for flush places
-        //        ACTasks.getDisablerManager().flushACPlaceQueue();
-    }
-
-    public static void handlePlaceModeMulti(
-            LegalInteractMode mode,
-            Vec3d targetCenter,
-            List<Pair<BlockHitResult, Hand>> resultList,
-            boolean swingHand) {
-        switch (mode) {
-            case USEITEM_PACKET -> {
-                Vec2f rotation = EntityUtils.rotationToPitchYaw(
-                        targetCenter.subtract(mc.player.getEyePos()).normalize());
-
-                int selectedSlot = -1;
-                for (Pair<BlockHitResult, Hand> pair : resultList) {
-                    var hand = pair.getRight();
-                    var result = pair.getLeft();
-                    if (selectedSlot == -1) {
-                        selectedSlot = InventoryUtils.getSelectedSlot();
-                        mc.interactionManager.sendSequencedPacket(
-                                mc.world,
-                                (i) -> new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, i, rotation.y, rotation.x));
-                    } else {
-                        flushACPlaceQueue();
-                    }
-                    InteractionTasks.interactBlock(hand, result, swingHand);
-                }
-            }
-            case DELAY_MOVEMENT -> {
-                int selectedSlot = -1;
-                for (Pair<BlockHitResult, Hand> pair : resultList) {
-                    if (selectedSlot == -1) {
-                        selectedSlot = InventoryUtils.getSelectedSlot();
-                    } else {
-                        // for flush places
-                        flushACPlaceQueue();
-                    }
-                    var hand = pair.getRight();
-                    var result = pair.getLeft();
-                    InteractionTasks.interactBlock(hand, result, swingHand);
-                }
-                InteractionTasks.addPostRotationCorrectTask(targetCenter, mc.player.getEyePos(), Runnables.doNothing());
-            }
-            case LEGACY_SLIENT_ROT -> {
-                int selectedSlot = -1;
-                for (Pair<BlockHitResult, Hand> pair : resultList) {
-                    if (selectedSlot == -1) {
-                        selectedSlot = InventoryUtils.getSelectedSlot();
-                    } else {
-                        // for flush places
-                        flushACPlaceQueue();
-                    }
-                    var hand = pair.getRight();
-                    var result = pair.getLeft();
-                    LegacySnapRotManager.INSTANCE.snapAt(
-                            result.getBlockPos()
-                                    .toCenterPos()
-                                    .subtract(mc.player.getEyePos())
-                                    .normalize(),
-                            false);
-                    InteractionTasks.interactBlock(hand, result, swingHand);
-                }
-            }
-            case NONE -> {
-                for (Pair<BlockHitResult, Hand> pair : resultList) {
-                    var hand = pair.getRight();
-                    var result = pair.getLeft();
-                    InteractionTasks.interactBlock(hand, result, swingHand);
-                }
             }
         }
     }
