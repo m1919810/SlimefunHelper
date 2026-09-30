@@ -6,10 +6,9 @@ import lombok.Getter;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.events.annotations.Broadcast;
 import me.matl114.events.annotations.Cancelable;
-import me.matl114.events.annotations.ExtraArgs;
-import me.matl114.events.channels.EventChannel;
+import me.matl114.events.channels.EventChannelDispatcher;
+import me.matl114.events.impl.BlockBreak;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.interact.InteractExtra;
@@ -157,7 +156,7 @@ public class PacketMine extends BaseModule {
             if (pos == null) return;
 
             Runnable currentTickCallback = null;
-            boolean postMineCallback = false;
+            BlockBreak postMineCallback = null;
             float progress = 0;
             if (InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), pos)) {
                 BlockState blockState = mc.world.getBlockState(pos);
@@ -165,8 +164,11 @@ public class PacketMine extends BaseModule {
 
                 ItemStack currentTool = currentItemSlot.val();
                 if (canMine(blockState, currentTool)) {
-                    Event<Pre> eventPre = new Event<>(Pre.INSTANCE, true, false, pos);
-                    prePacketMine.handleValue(eventPre);
+                    progress = PlayerInteractionAccess.of(mc.interactionManager)
+                            .predictCurrentMiningProgressWithTool(currentTool);
+                    Event<BlockBreak> eventPre =
+                            new Event<>(new BlockBreak(pos, BlockBreak.Stage.PRE, currentTool, progress), true, false);
+                    packetMineAction.handleValue(eventPre);
                     if (!eventPre.isCancelled()) {
                         if (groundDeceive.get() && !mc.player.isOnGround()) {
                             boolean shouldExecute = true;
@@ -188,9 +190,6 @@ public class PacketMine extends BaseModule {
                         Runnable callback =
                                 InvExtra.INSTANCE.swapItemToHand(currentItemSlot.index(), false, ghostHand.get());
 
-                        progress = PlayerInteractionAccess.of(mc.interactionManager)
-                                .predictCurrentMiningProgressWithTool(currentTool);
-
                         for (int i = 0; i < multiplePackets.get(); ++i) {
                             if (swingHand.get())
                                 mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
@@ -198,7 +197,7 @@ public class PacketMine extends BaseModule {
                                     .sendBreakPacket(pos, !(realBreak.get() && progress > 0.7F));
                         }
                         currentTickCallback = callback;
-                        postMineCallback = true;
+                        postMineCallback = eventPre.context();
                     }
                 }
             }
@@ -210,8 +209,12 @@ public class PacketMine extends BaseModule {
                     currentTickCallback.run();
                 }
             }
-            if (postMineCallback) {
-                postPacketMine.broadcast(Post.INSTANCE, pos, progress);
+            if (postMineCallback != null) {
+                packetMineAction.broadcast(new BlockBreak(
+                        postMineCallback.blockPos(),
+                        BlockBreak.Stage.POST,
+                        postMineCallback.stack(),
+                        postMineCallback.progress()));
             } else if (WorldUtils.isChunkLoaded(pos)) {
                 BlockState state = mc.world.getBlockState(pos);
                 if (state.isAir() || state.isLiquid()) {
@@ -278,23 +281,6 @@ public class PacketMine extends BaseModule {
 
     @Getter
     @Cancelable
-    @ExtraArgs({BlockPos.class})
-    public static final EventChannel<Pre> prePacketMine = new EventChannel<>();
-
-    @Getter
-    @Broadcast
-    @ExtraArgs({BlockPos.class, float.class})
-    public static final EventChannel<Post> postPacketMine = new EventChannel<>();
-
-    public static class Pre {
-        public static final Pre INSTANCE = new Pre();
-
-        private Pre() {}
-    }
-
-    public static class Post {
-        public static final Post INSTANCE = new Post();
-
-        private Post() {}
-    }
+    public static final EventChannelDispatcher<BlockBreak> packetMineAction =
+            new EventChannelDispatcher<>(BlockBreak::stage);
 }

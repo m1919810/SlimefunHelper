@@ -5,6 +5,7 @@ import java.util.function.Predicate;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.BlockBreak;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -70,7 +71,7 @@ public class AutoCity extends BaseModule {
         super.registerAll();
         // add prio so that it works before place modules and crystal modules
         registerListener(Listener.getPreHandleInputEvents(), this::onInputEvent, -33550336);
-        registerListener(PacketMine.getPrePacketMine(), this::onPrePacketMine);
+        registerListener(PacketMine.getPacketMineAction().getChannel(BlockBreak.Stage.PRE), this::onPrePacketMine);
     }
 
     PlayerEntity targetEntity;
@@ -107,8 +108,12 @@ public class AutoCity extends BaseModule {
         }
     }
 
-    private void onPrePacketMine(Event<PacketMine.Pre> event) {
-        if (enable.get() && !event.isCancelled() && pendingSwitchPos) {
+    private void onPrePacketMine(Event<BlockBreak> event) {
+        if (enable.get()
+                && !event.isCancelled()
+                && event.canCancel()
+                && event.context().stage() == BlockBreak.Stage.PRE
+                && pendingSwitchPos) {
             event.cancel();
         }
     }

@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.BlockBreak;
 import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.MovTasks;
@@ -12,6 +13,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.interact.InteractExtra;
+import me.matl114.hacks.modules.interact.SequencedActionManager;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.mine.PacketMine;
 import me.matl114.hacks.utils.EntityUtils;
@@ -145,8 +147,8 @@ public class AnchorAura extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPlayerRespawnPoint(), this::onSwitchWorld);
         registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvents);
-        registerListener(PacketMine.getPostPacketMine(), this::onPacketMine);
-        registerListener(PacketMine.getPrePacketMine(), this::onPrePacketMine);
+        registerListener(PacketMine.getPacketMineAction(), this::onPacketMine);
+        registerListener(PacketMine.getPacketMineAction().getChannel(BlockBreak.Stage.PRE), this::onPrePacketMine);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPreset);
     }
 
@@ -327,10 +329,13 @@ public class AnchorAura extends BaseModule {
             }
             tickAnchorPosition();
             if (timer >= delay.get() && !targetEntity.isEmpty()) {
-                timer = 0;
                 if (!checkSupplies()) return;
                 if (!tickAnchorExplode()) {
-                    tickAnchorPlace();
+                    if (tickAnchorPlace()) {
+                        timer = 0;
+                    }
+                } else {
+                    timer = 0;
                 }
             }
         } else {
@@ -429,9 +434,9 @@ public class AnchorAura extends BaseModule {
         return interactCount;
     }
 
-    public void tickAnchorPlace() {
+    public boolean tickAnchorPlace() {
         if (targetEntity.isEmpty()) {
-            return;
+            return false;
         }
         Map<PlayerEntity, Box> predictedBoxes = new HashMap<>();
 
@@ -478,6 +483,12 @@ public class AnchorAura extends BaseModule {
                 bestOptionValue = optionValue;
             }
         }
+        if (bestOption == null) return false;
+        completeAnchorPlan(bestOption);
+        return true;
+    }
+
+    private void completeAnchorPlan(AnchorPlan bestOption) {
         if (bestOption != null && placeAnchor(bestOption.anchorHitResult)) {
             updateAnchor(bestOption.anchorPos, bestOption.damageMap);
             if (bestOption.blockingPos.isPresent()) {
@@ -646,9 +657,12 @@ public class AnchorAura extends BaseModule {
         return best;
     }
 
-    public void onPrePacketMine(Event<PacketMine.Pre> eventPreMine) {
-        if (enable.get() && !eventPreMine.isCancelled()) {
-            BlockPos pos = eventPreMine.getArgs(0);
+    public void onPrePacketMine(Event<BlockBreak> eventPreMine) {
+        if (enable.get()
+                && !eventPreMine.isCancelled()
+                && eventPreMine.canCancel()
+                && eventPreMine.context().stage() == BlockBreak.Stage.PRE) {
+            BlockPos pos = eventPreMine.context().blockPos();
             if (trackedAnchorPositions.containsKey(pos)
                     && mc.world.getBlockState(pos).getBlock() instanceof RespawnAnchorBlock) {
                 eventPreMine.cancel();
@@ -656,17 +670,35 @@ public class AnchorAura extends BaseModule {
         }
     }
 
-    public void onPacketMine(Event<PacketMine.Post> eventPostMine) {
-        if (enable.get() && packetMineBridge.get() && !targetEntity.isEmpty()) {
+    public void onPacketMine(Event<BlockBreak> eventPostMine) {
+        if (enable.get()
+                && packetMineBridge.get()
+                && !targetEntity.isEmpty()
+                && eventPostMine.context().stage() == BlockBreak.Stage.POST) {
             // bridge
-            float floatValue = eventPostMine.getArgs(1);
+            float floatValue = eventPostMine.context().progress();
             if (floatValue > 0.7f) {
-                BlockPos pos = eventPostMine.getArgs(0);
-                mc.world.handleBlockUpdate(pos, Blocks.AIR.getDefaultState(), 3);
+                BlockPos pos = eventPostMine.context().blockPos();
+                SequencedActionManager.INSTANCE.appendBlockBreakPrediction(pos, Blocks.AIR.getDefaultState());
                 Map<PlayerEntity, Double> damageMap = calculateAnchorDamage(pos, null, false);
-                if (isSuitableExplodePos(pos, damageMap)) {
-                    if (placeAnchor(pos)) {
-                        updateAnchor(pos, damageMap);
+
+                if (isTargetDamageAcceptable(damageMap)) {
+                    FlagEntry<BlockHitResult> hitResult = InteractionTasks.getPlaceSupportingResult(
+                            pos, airplace.get(), !mode.get().isLegal());
+                    if (InteractUtils.canInteractAndPlace(mc.player, hitResult)
+                            && InteractExtra.INSTANCE.isWithinInteractRange(
+                                    mc.player.getPos(), hitResult.val().getBlockPos())) {
+                        BlockHitResult hit = hitResult.val();
+                        AnchorPlan plan;
+
+                        if (isSelfDamageAcceptable(damageMap)) {
+                            plan = new AnchorPlan(pos, hit, damageMap, Optional.empty());
+                        } else {
+                            plan = findBlockingOption(pos, hit, null);
+                        }
+                        if (plan != null) {
+                            completeAnchorPlan(plan);
+                        }
                     }
                 }
             }

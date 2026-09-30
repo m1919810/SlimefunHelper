@@ -105,6 +105,7 @@
 		"hack.LightMapTextureMixin",
 		"hack.LivingEntityMixin",
 		"hack.MinecraftClientMixin",
+		"access.PendingUpdateManagerMixin",
 		"hack.PlayerAbilityMixin",
 		"hack.PlayerEntityMixin",
 		"hack.PlayerEntityRendererMixin",
