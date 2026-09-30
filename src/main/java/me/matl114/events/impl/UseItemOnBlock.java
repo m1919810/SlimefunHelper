@@ -16,7 +16,7 @@ import net.minecraft.util.math.BlockPos;
 @AllArgsConstructor
 @Getter
 @Accessors(fluent = true, chain = true)
-public class UseItemOnBlock {
+public class UseItemOnBlock implements SequencedAction {
     @Setter
     BlockHitResult hitResult;
 

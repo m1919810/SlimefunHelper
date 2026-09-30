@@ -11,7 +11,7 @@ import net.minecraft.util.math.BlockPos;
 @Setter
 @Getter
 @AllArgsConstructor
-public class BlockBreak {
+public class BlockBreak implements SequencedAction {
     BlockPos blockPos;
     Stage stage;
     ItemStack stack;

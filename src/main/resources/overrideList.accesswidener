@@ -106,3 +106,7 @@ accessible method net/minecraft/enchantment/EnchantmentHelper forEachEnchantment
 accessible class net/minecraft/enchantment/EnchantmentHelper$ContextAwareConsumer
 accessible method net/minecraft/enchantment/EnchantmentHelper$ContextAwareConsumer accept (Lnet/minecraft/registry/entry/RegistryEntry;ILnet/minecraft/enchantment/EnchantmentEffectContext;)V
 accessible method net/minecraft/enchantment/EnchantmentHelper forEachEnchantment (Lnet/minecraft/item/ItemStack;Lnet/minecraft/enchantment/EnchantmentHelper$Consumer;)V
+
+accessible class net/minecraft/client/network/PendingUpdateManager$PendingUpdate
+accessible field net/minecraft/client/network/PendingUpdateManager$PendingUpdate blockState Lnet/minecraft/block/BlockState;
+accessible field net/minecraft/client/network/PendingUpdateManager$PendingUpdate sequence I
