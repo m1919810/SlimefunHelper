@@ -441,7 +441,7 @@ public class AntiCrystal extends BaseModule {
                                                 hitPoint.subtract(mc.player.getEyePos())
                                                         .normalize(),
                                                 true,
-                                                Interact.INSTANCE.swingHand.get());
+                                                Interact.INSTANCE.swingHandBlock.get());
                                         break shoot;
                                     }
                                 }

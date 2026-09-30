@@ -247,10 +247,13 @@ public class AutoTotem extends BaseModule {
                 return;
             }
         }
+        if (mc.player.getInventory().getStack(offHandSlot).getItem() == Items.TOTEM_OF_UNDYING) {
+            hasTotem = true;
+        }
         if (!hasTotem) {
             handleTotemSwapFailure();
         } else {
-            handleTotemSwapSuccess();
+            noTotem.state(false);
         }
     }
 
@@ -294,7 +297,7 @@ public class AutoTotem extends BaseModule {
             if (!find) {
                 handleTotemSwapFailure();
             } else {
-                handleTotemSwapSuccess();
+                noTotem.state(false);
             }
         }
     }
