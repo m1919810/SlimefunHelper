@@ -156,6 +156,28 @@ public class CrystalAura extends BaseModule {
             .defaultValue(false)
             .build();
 
+    public final ModulePath damageBlock = root.add("auto-block");
+
+    public final FlagRef autoBlock =
+            builder(damageBlock.addEnable(), Boolean.class).defaultValue(false).build();
+
+    public final NBTRef<EntrySet<Item>> blockingBlock = builder(
+                    damageBlock.add("blocking-block"), EntrySet.<Item>parameter())
+            .defaultValue(new EntrySet<>(Registries.ITEM, List.of(Items.OBSIDIAN)))
+            .build();
+
+    public final DoubleRef blockReduce = builder(damageBlock.add("block-reduce"), DoubleRef.TYPE)
+            .defaultValue(0.9D)
+            .build();
+
+    public final FlagRef zeroTickBlock = builder(damageBlock.add("zero-tick"), Boolean.class)
+            .defaultValue(false)
+            .build();
+
+    public final FlagRef scaffoldBlock = builder(damageBlock.add("scaffold-block"), Boolean.class)
+            .defaultValue(false)
+            .build();
+
     @Override
     public void registerAll() {
         super.registerAll();
