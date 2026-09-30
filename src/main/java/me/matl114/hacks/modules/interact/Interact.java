@@ -78,6 +78,11 @@ public class Interact extends BaseModule {
             .defaultValue(false)
             .build();
 
+    public final NBTRef<OptionalPrimitive<Double>> tpInteract = builder(
+                    root.add("tp-interact-range"), OptionalPrimitive.DOUBLE_TYPE)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 10.0D))
+            .build();
+
     public final FlagRef swingHandBlock =
             builder(root.add("swing-hand"), Boolean.class).defaultValue(true).build();
     public final FlagRef swingHandEntity =
@@ -130,11 +135,6 @@ public class Interact extends BaseModule {
 
     public final FlagRef blockOnlyInteractable = builder(base.add("only-interact-interactable-block"), Boolean.class)
             .defaultValue(true)
-            .build();
-
-    public final NBTRef<OptionalPrimitive<Double>> tpInteract = builder(
-                    base.add("tp-interact-range"), OptionalPrimitive.DOUBLE_TYPE)
-            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 10.0D))
             .build();
 
     public final FlagRef renderAttackTarget =

@@ -210,7 +210,8 @@ public class InteractionTasks {
             }
             case LEGACY_SLIENT_ROT -> {
                 if (!directlyHit) {
-                    Vec2f rotation = EntityUtils.rotationToPitchYaw(raycastBlock(result.getBlockPos(), bestEyePos));
+                    Vec2f rotation = EntityUtils.rotationToPitchYaw(
+                            createBlockRayCastDirection(result.getBlockPos(), bestEyePos));
                     LegacySnapRotManager.INSTANCE.snapAt(rotation.x, rotation.y, false);
                 }
                 InteractionTasks.interactBlock(hand, result, swingHand);
@@ -242,7 +243,7 @@ public class InteractionTasks {
         if (hitResult.isInsideBlock()) {
             return checkInHead(hitResult.getBlockPos(), mc.player.getPos());
         } else {
-            return checkPositionPlace(hitResult.getBlockPos(), hitResult.getSide(), hitResult.getPos());
+            return checkPositionPlace(hitResult.getBlockPos(), hitResult.getSide(), mc.player.getPos());
         }
     }
 
