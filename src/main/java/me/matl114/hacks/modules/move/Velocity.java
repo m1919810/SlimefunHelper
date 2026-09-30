@@ -90,15 +90,23 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
             .defaultValue(true)
             .build();
 
-    public final FlagRef noBlock = flagBuilder(antiKb.add("no-block-push")).build();
+    private final ModulePath velocityControl = antiKb.add("client-velocity-control");
+
+    {
+        portConfigs(antiKb.add("no-block-push"), velocityControl.add("no-block-push"));
+    }
+
+    public final FlagRef noBlock =
+            flagBuilder(velocityControl.add("no-block-push")).build();
 
     public final FlagRef noEntityPush =
-            flagBuilder(antiKb.add("no-entity-push")).build();
+            flagBuilder(velocityControl.add("no-entity-push")).build();
 
     public final FlagRef noWaterPush =
-            flagBuilder(antiKb.add("no-liquid-flow-push")).build();
+            flagBuilder(velocityControl.add("no-liquid-flow-push")).build();
 
-    public final FlagRef noClimbing = flagBuilder(antiKb.add("no-climbing")).build();
+    public final FlagRef noClimbing =
+            flagBuilder(velocityControl.add("no-climbing")).build();
 
     public static LegalMovementManager.DelegateMovementModifier instance;
 

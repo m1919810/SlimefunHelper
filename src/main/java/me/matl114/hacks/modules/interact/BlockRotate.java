@@ -143,7 +143,8 @@ public class BlockRotate extends BaseModule {
 
                         handlePlaceCorrectLitematica(blockItem, e.context, context, yawDeceive, playerLookAt);
                         handlePlaceCorrectTemperarySchematic(blockItem, e.context, context, yawDeceive);
-
+                        handleSimpleInteractCorrect(
+                                e.context.getBlockHitResult().getBlockPos(), playerLookAt);
                     } else if (paccess.getUseContext().isAccepted()) {
                         BlockState oldState = paccess.getUseContext().oldState();
                         BlockPos interactState = e.context.getBlockHitResult().getBlockPos();
@@ -152,6 +153,7 @@ public class BlockRotate extends BaseModule {
                             // handle yaw fix
                             handleInteractCorrectLitematica(interactState, newState, yawDeceive, playerLookAt);
                         }
+                        handleSimpleInteractCorrect(interactState, playerLookAt);
                     }
                     if (yawDeceive.context != null && yawDeceive.context.hasDeceive()) {
                         deceivePy = yawDeceive.context;
@@ -302,6 +304,20 @@ public class BlockRotate extends BaseModule {
             if (litematicaState.getBlock() == newState.getBlock() && litematicaState != newState) {
                 handleYawInteractDeceive(litematicaState, yawDeceive.context);
             }
+        }
+    }
+
+    public void handleSimpleInteractCorrect(BlockPos interactPos, Event<BlockPos> look) {
+        if (enable4.get()
+                && legal.get()
+                && look.context == null
+                && !RaycastUtils.canRaycastHit(
+                        mc.player,
+                        PlayerStateManager.INSTANCE.lastPitch,
+                        PlayerStateManager.INSTANCE.lastYaw,
+                        interactPos,
+                        InteractExtra.INSTANCE.getBlockReachDistance())) {
+            look.context(interactPos);
         }
     }
 

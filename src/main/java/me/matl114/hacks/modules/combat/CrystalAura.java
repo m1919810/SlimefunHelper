@@ -97,37 +97,11 @@ public class CrystalAura extends BaseModule {
             .defaultValue(false)
             .build();
 
-    public final FlagRef autoBase =
-            builder(root.add("auto-base"), Boolean.class).defaultValue(true).build();
-
     public final FlagRef offhand =
             builder(root.add("offhand"), Boolean.class).defaultValue(false).build();
 
     public final FlagRef airplaceBase =
             builder(root.add("air-place"), Boolean.class).defaultValue(false).build();
-
-    public final FlagRef zeroTickBase = builder(root.add("zero-tick-base"), Boolean.class)
-            .defaultValue(false)
-            .build();
-
-    public final DoubleRef baseReduce = builder(root.add("base-value-reduce"), DoubleRef.TYPE)
-            .defaultValue(0.9D)
-            .build();
-
-    public final FlagRef autoFill =
-            builder(root.add("auto-fill"), Boolean.class).defaultValue(false).build();
-
-    public final KeyBindRef hotkeyFill = toggleHotkey(
-                    root.add("auto-fill-hotkey"), new MultiKeyBind(), root.add("auto-fill"))
-            .build();
-
-    public final NBTRef<EntrySet<Item>> fillWhiteList = builder(root.add("fill-white-list"), EntrySet.<Item>parameter())
-            .defaultValue(new EntrySet<>(Registries.ITEM, List.of(Items.GLASS, Items.OAK_LEAVES)))
-            .build();
-
-    public final FlagRef fillIgnoreDamage = builder(root.add("fill-ignore-damage"), Boolean.class)
-            .defaultValue(false)
-            .build();
 
     public final DoubleRef selfFinalDamageThreshold = doubleBuilder(root.add("self-final-damage-threshold"))
             .defaultValue(4.0D)
@@ -152,6 +126,35 @@ public class CrystalAura extends BaseModule {
 
     public final FlagRef swingHand =
             builder(root.add("swing-hand"), Boolean.class).defaultValue(true).build();
+
+    public final ModulePath base = root.add("obsidian-base");
+
+    public final FlagRef autoBase =
+            builder(base.addEnable(), Boolean.class).defaultValue(true).build();
+
+    public final FlagRef zeroTickBase = builder(base.add("zero-tick-base"), Boolean.class)
+            .defaultValue(false)
+            .build();
+
+    public final DoubleRef baseReduce = builder(base.add("base-value-reduce"), DoubleRef.TYPE)
+            .defaultValue(0.9D)
+            .build();
+
+    public final ModulePath fill = root.add("auto-fill");
+
+    public final FlagRef autoFill =
+            builder(fill.addEnable(), Boolean.class).defaultValue(false).build();
+
+    public final KeyBindRef hotkeyFill =
+            toggleHotkey(fill.addHotkey(), new MultiKeyBind(), fill.addEnable()).build();
+
+    public final NBTRef<EntrySet<Item>> fillWhiteList = builder(fill.add("white-list"), EntrySet.<Item>parameter())
+            .defaultValue(new EntrySet<>(Registries.ITEM, List.of(Items.GLASS, Items.OAK_LEAVES)))
+            .build();
+
+    public final FlagRef fillIgnoreDamage = builder(fill.add("fill-ignore-damage"), Boolean.class)
+            .defaultValue(false)
+            .build();
 
     @Override
     public void registerAll() {

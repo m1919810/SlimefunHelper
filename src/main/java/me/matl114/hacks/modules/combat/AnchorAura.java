@@ -82,6 +82,11 @@ public class AnchorAura extends BaseModule {
             .validator(Configs.INT_POSITIVE)
             .build();
 
+    public final FlagRef place0TickSupply =
+            flagBuilder(root.add("zero-tick-place-supply")).build();
+
+    public final FlagRef use0TickSupply = flagBuilder(root.add("zero-tick-use")).build();
+
     public final FlagRef eatingAbort = builder(root.add("using-item-abort"), Boolean.class)
             .defaultValue(false)
             .build();
@@ -96,21 +101,6 @@ public class AnchorAura extends BaseModule {
             .validator(Configs.doubleRange(0.0D, 1000.0D))
             .build();
 
-    public final FlagRef considerAllTerrain =
-            flagBuilder(root.add("consider-all-terrain")).build();
-
-    public final FlagRef packetMineBridge =
-            flagBuilder(root.add("packet-mine-bridge")).build();
-
-    public final KeyBindRef packetMineBridgeHotkey = toggleHotkey(
-                    root.add("packet-mine-bridge-hotkey"), new MultiKeyBind(), root.add("packet-mine-bridge"))
-            .build();
-
-    public final FlagRef place0TickSupply =
-            flagBuilder(root.add("zero-tick-place-supply")).build();
-
-    public final FlagRef use0TickSupply = flagBuilder(root.add("zero-tick-use")).build();
-
     public final EnumRef<GhostHandMode> ghostHand = builder(root.add("ghost-hand-mode"), GhostHandMode.class)
             .defaultValue(GhostHandMode.INV_SWAP)
             .build();
@@ -119,6 +109,14 @@ public class AnchorAura extends BaseModule {
 
     public final FlagRef swingHand =
             builder(root.add("swing-hand"), Boolean.class).defaultValue(true).build();
+
+    public final ModulePath packetMine = root.add("bridge-packet-mine");
+
+    public final FlagRef packetMineBridge = flagBuilder(packetMine.addEnable()).build();
+
+    public final KeyBindRef packetMineBridgeHotkey = toggleHotkey(
+                    packetMine.addHotkey(), new MultiKeyBind(), packetMine.addEnable())
+            .build();
 
     final TimerExecutor noSupplyExecutor = new TimerExecutor();
 
@@ -194,11 +192,7 @@ public class AnchorAura extends BaseModule {
             }
             Box targetBox = getTargetDamageBox(target, predictedBoxes, usePredict);
             damageMap.put(target, (double) ExplosionUtils.calculateExplosionRawDamage(
-                    ANCHOR_POWER,
-                    explosionPos,
-                    targetBox,
-                    access,
-                    considerAllTerrain.get() ? ExplosionUtils.ALL_TERRAIN : ExplosionUtils.EXPLOSION_RESISTENCE));
+                    ANCHOR_POWER, explosionPos, targetBox, access, ExplosionUtils.EXPLOSION_RESISTENCE));
         }
         return damageMap;
     }
