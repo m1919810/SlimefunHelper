@@ -66,12 +66,6 @@ public class Attack extends BaseModule {
         INSTANCE = this;
     }
 
-    public final FlagRef enable = flagBuilder(attack.add("always-att")).build();
-
-    public final KeyBindRef hotkey = moduleEntry(
-                    attack.add("always-att-hotkey"), new MultiKeyBind(), attack.add("always-att"))
-            .build();
-
     //    public final FlagRef legalMode = flagBuilder(attack.add("legal-mode")).build();
     public final EnumRef<LegalTargetingMode> legalTargetingMode = builder(
                     attack.add("legal-targeting"), LegalTargetingMode.class)
@@ -129,11 +123,16 @@ public class Attack extends BaseModule {
 
     public final FlagRef swingHand =
             builder(attack.add("swing-hand"), Boolean.class).defaultValue(true).build();
+    public final ModulePath base = attack.add("attack-redirect");
 
-    public final FlagRef renderAttackTarget =
-            flagBuilder(attack.add("render-target")).build();
+    public final FlagRef enable = flagBuilder(base.addEnable()).build();
 
-    public final NBTRef<WrapColor> renderAttackColor = builder(attack.add("render-target-color"), WrapColor.class)
+    public final KeyBindRef hotkey =
+            moduleEntry(base.addHotkey(), new MultiKeyBind(), base.addEnable()).build();
+
+    public final FlagRef renderAttackTarget = flagBuilder(base.add("render")).build();
+
+    public final NBTRef<WrapColor> renderAttackColor = builder(base.add("render-color"), WrapColor.class)
             .defaultValue(new WrapColor(Formatting.GREEN))
             .build();
 

@@ -68,79 +68,16 @@ public class AutoEat extends BaseModule {
     public final KeyBindRef hotkey = moduleEntry(autoEat.addHotkey(), new MultiKeyBind(), autoEat.addEnable())
             .build();
 
-    public final FlagRef log =
-            builder(autoEat.add("log"), Boolean.class).defaultValue(true).build();
-
-    public final FlagRef inv =
-            builder(autoEat.add("inv"), Boolean.class).defaultValue(true).build();
-
-    public final FlagRef forceEatLeftClick =
-            flagBuilder(autoEat.add("left-click-tool-force-eat")).build();
-
-    public final FlagRef forceEatLeftClickHold =
-            flagBuilder(autoEat.add("left-click-tool-force-eat-hold")).build();
-
-    public final FlagRef forceEatOffhand = builder(autoEat.add("left-click-offhand-item-force-eat"), Boolean.class)
-            .defaultValue(true)
-            .build();
-
-    public final FlagRef leftClickWeapon = builder(autoEat.add("left-click-weapon"), Boolean.class)
-            .defaultValue(true)
-            .build();
-
-    public final NBTRef<EntrySet<Item>> extraLeftClickItem = builder(
-                    autoEat.add("left-click-extra-items"), EntrySet.<Item>parameter())
-            .defaultValue(new EntrySet<>(Registries.ITEM, List.of(Items.TOTEM_OF_UNDYING)))
-            .build();
-
-    public final FlagRef enableHealth = builder(autoEat.add("enable-health"), Boolean.class)
-            .defaultValue(true)
-            .build();
-
-    public final FlagRef enableHunger = builder(autoEat.add("enable-hunger"), Boolean.class)
-            .defaultValue(true)
-            .build();
-
-    public final DoubleRef healthLevel = doubleBuilder(autoEat.add("health-level"))
-            .defaultValue(10.0D)
-            .validator(Configs.doubleRange(0.0D, 20.0D))
-            .build();
-
-    public final IntRef hungerLevel = intBuilder(autoEat.add("hunger-level"))
-            .defaultValue(16)
-            .validator(Configs.intRange(0, 20))
-            .build();
-
-    public final FlagRef noEnemy =
-            builder(autoEat.add("no-enemy"), Boolean.class).defaultValue(true).build();
-
-    public final DoubleRef noEnemyAir = doubleBuilder(autoEat.add("no-enemy-distance-air"))
-            .defaultValue(8.0D)
-            .validator(Configs.doubleRange(0.0D, 64.0D))
-            .build();
-
-    public final DoubleRef noEnemyGround = doubleBuilder(autoEat.add("no-enemy-distance-ground"))
-            .defaultValue(8.0D)
-            .validator(Configs.doubleRange(0.0D, 64.0D))
-            .build();
-
-    public final IntRef cooldown =
-            intBuilder(autoEat.add("cooldown")).defaultValue(20).build();
-
     public final NBTRef<EntrySet<Item>> whiteListItem = builder(
                     autoEat.add("white-list-item"), EntrySet.<Item>parameter())
             .defaultValue(new EntrySet<>(new Regex("^(golden_apple|potion|golden_carrot)$"), Registries.ITEM))
             .build();
 
-    public final FlagRef fireworkFix = builder(autoEat.add("firework-fix"), Boolean.class)
+    public final FlagRef fireworkFix = builder(autoEat.add("pause-for-fireworks"), Boolean.class)
             .defaultValue(true)
             .build();
 
     public final FlagRef autoFireworks = builder(autoEat.add("auto-fireworks"), Boolean.class)
-            .defaultValue(false)
-            .build();
-
-    public final FlagRef pauseInLava = builder(autoEat.add("pause-in-liquid"), Boolean.class)
             .defaultValue(false)
             .build();
 
@@ -155,6 +92,70 @@ public class AutoEat extends BaseModule {
 
     public final EnumRef<GhostHandMode> ghostHand = builder(autoEat.add("ghost-hand-mode"), GhostHandMode.class)
             .defaultValue(GhostHandMode.INV_SWAP)
+            .build();
+
+    public final FlagRef log =
+            builder(autoEat.add("log"), Boolean.class).defaultValue(true).build();
+
+    public final ModulePath auto = autoEat.add("auto");
+
+    public final FlagRef inv =
+            builder(auto.addEnable(), Boolean.class).defaultValue(true).build();
+
+    public final FlagRef enableHealth =
+            builder(auto.add("enable-health"), Boolean.class).defaultValue(true).build();
+
+    public final FlagRef enableHunger =
+            builder(auto.add("enable-hunger"), Boolean.class).defaultValue(true).build();
+
+    public final DoubleRef healthLevel = doubleBuilder(auto.add("health-level"))
+            .defaultValue(10.0D)
+            .validator(Configs.doubleRange(0.0D, 20.0D))
+            .build();
+
+    public final IntRef hungerLevel = intBuilder(auto.add("hunger-level"))
+            .defaultValue(16)
+            .validator(Configs.intRange(0, 20))
+            .build();
+
+    public final FlagRef noEnemy =
+            builder(auto.add("no-enemy"), Boolean.class).defaultValue(true).build();
+
+    public final DoubleRef noEnemyAir = doubleBuilder(auto.add("no-enemy-distance-air"))
+            .defaultValue(8.0D)
+            .validator(Configs.doubleRange(0.0D, 64.0D))
+            .build();
+
+    public final DoubleRef noEnemyGround = doubleBuilder(auto.add("no-enemy-distance-ground"))
+            .defaultValue(8.0D)
+            .validator(Configs.doubleRange(0.0D, 64.0D))
+            .build();
+
+    public final IntRef cooldown =
+            intBuilder(auto.add("cooldown")).defaultValue(20).build();
+
+    public final FlagRef pauseInLava = builder(auto.add("pause-in-lava"), Boolean.class)
+            .defaultValue(false)
+            .build();
+
+    public final ModulePath manual = autoEat.add("left-click-force-eat");
+
+    public final FlagRef forceEatLeftClick = flagBuilder(manual.addEnable()).build();
+
+    public final FlagRef forceEatLeftClickHold =
+            flagBuilder(manual.add("need-press-left-button")).build();
+
+    public final FlagRef forceEatOffhand = builder(manual.add("enable-offhand"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
+    public final FlagRef leftClickWeapon = builder(manual.add("enable-weapon"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
+    public final NBTRef<EntrySet<Item>> extraLeftClickItem = builder(
+                    manual.add("enable-extra-items"), EntrySet.<Item>parameter())
+            .defaultValue(new EntrySet<>(Registries.ITEM, List.of(Items.TOTEM_OF_UNDYING)))
             .build();
 
     private boolean eating;

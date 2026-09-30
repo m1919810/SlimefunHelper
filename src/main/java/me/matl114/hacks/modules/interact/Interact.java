@@ -66,17 +66,6 @@ public class Interact extends BaseModule {
 
     public final ModulePath root = makePath(Configs.INTERACT_CONFIG, "interact-arua.interact");
 
-    public final FlagRef enable = flagBuilder(root.addEnable()).build();
-
-    public final KeyBindRef hotkey =
-            moduleEntry(root.addHotkey(), new MultiKeyBind(), root.addEnable()).build();
-
-    public final FlagRef enableEntity =
-            builder(root.add("enable-entity"), Boolean.class).defaultValue(true).build();
-
-    public final FlagRef enableBlock =
-            builder(root.add("enable-block"), Boolean.class).defaultValue(false).build();
-
     public final EnumRef<LegalTargetingMode> entityMode = builder(root.add("entity-mode"), LegalTargetingMode.class)
             .defaultValue(LegalTargetingMode.NONE)
             .build();
@@ -89,56 +78,69 @@ public class Interact extends BaseModule {
             .defaultValue(false)
             .build();
 
+    public final FlagRef swingHandBlock =
+            builder(root.add("swing-hand"), Boolean.class).defaultValue(true).build();
+    public final FlagRef swingHandEntity =
+            builder(root.add("swing-hand"), Boolean.class).defaultValue(true).build();
+
+    public final ModulePath base = root.add("interact-redirect");
+    public final FlagRef enable = flagBuilder(base.addEnable()).build();
+    public final KeyBindRef hotkey =
+            moduleEntry(base.addHotkey(), new MultiKeyBind(), base.addEnable()).build();
+
+    public final FlagRef enableEntity =
+            builder(base.add("enable-entity"), Boolean.class).defaultValue(true).build();
+
+    public final FlagRef enableBlock =
+            builder(base.add("enable-block"), Boolean.class).defaultValue(false).build();
+
     public final NBTRef<EntityTypeRegex> interactWhiteList = builder(
-                    root.add("entity-whitelist"), EntityTypeRegex.class)
+                    base.add("entity-whitelist"), EntityTypeRegex.class)
             .defaultValue(new EntityTypeRegex(new Regex("^(villager|chest_minecart)$")))
             .build();
 
     public final FlagRef ignoreBlockPlace =
-            flagBuilder(root.add("ignore-block-place")).build();
+            flagBuilder(base.add("ignore-block-place")).build();
 
     public final FlagRef ignoreUseItem =
-            flagBuilder(root.add("ignore-use-item")).build();
+            flagBuilder(base.add("ignore-use-item")).build();
 
     public final NBTRef<EntrySet<Item>> useItemBlackList = builder(
-                    root.add("use-item-black-list"), EntrySet.<Item>parameter())
+                    base.add("use-item-black-list"), EntrySet.<Item>parameter())
             .defaultValue(new EntrySet<>(new Regex("^()$"), Registries.ITEM))
             .build();
 
-    public final FlagRef entityPriority = builder(root.add("entity-priority"), Boolean.class)
+    public final FlagRef entityPriority = builder(base.add("entity-priority"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final FlagRef entityOnlyInteractable = builder(root.add("only-interact-interactable-entity"), Boolean.class)
+    public final FlagRef entityOnlyInteractable = builder(base.add("only-interact-interactable-entity"), Boolean.class)
             .defaultValue(true)
             .build();
 
     public final NBTRef<EntrySet<Block>> blockWhiteList = builder(
-                    root.add("block-whitelist"), EntrySet.<Block>parameter())
+                    base.add("block-whitelist"), EntrySet.<Block>parameter())
             .defaultValue(new EntrySet<>(new Regex("^(.*chest|shulker.*)$"), Registries.BLOCK))
             .build();
 
     public final FlagRef blockOnlyHandNotPlace = builder(
-                    root.add("interact-block-only-when-hand-not-block"), Boolean.class)
+                    base.add("interact-block-only-when-hand-not-block"), Boolean.class)
             .defaultValue(true)
             .build();
 
-    public final FlagRef blockOnlyInteractable = builder(root.add("only-interact-interactable-block"), Boolean.class)
+    public final FlagRef blockOnlyInteractable = builder(base.add("only-interact-interactable-block"), Boolean.class)
             .defaultValue(true)
             .build();
 
     public final NBTRef<OptionalPrimitive<Double>> tpInteract = builder(
-                    root.add("tp-interact-range"), OptionalPrimitive.DOUBLE_TYPE)
+                    base.add("tp-interact-range"), OptionalPrimitive.DOUBLE_TYPE)
             .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 10.0D))
             .build();
 
-    public final FlagRef swingHand =
-            builder(root.add("swing-hand"), Boolean.class).defaultValue(true).build();
-
     public final FlagRef renderAttackTarget =
-            flagBuilder(root.add("render-target")).build();
+            flagBuilder(base.add("render-target")).build();
 
-    public final NBTRef<WrapColor> renderAttackColor = builder(root.add("render-target-color"), WrapColor.class)
+    public final NBTRef<WrapColor> renderAttackColor = builder(base.add("render-target-color"), WrapColor.class)
             .defaultValue(new WrapColor((Formatting.RED)))
             .build();
 
@@ -333,7 +335,7 @@ public class Interact extends BaseModule {
             case DELAY_MOVEMENT -> processDelayMovementInteract(target);
             case LEGACY_SLIENT_ROT -> processLegacySnapInteract(target);
             case NONE -> {
-                InteractionTasks.interactEntity(mc.player, target, Hand.MAIN_HAND, swingHand.get());
+                InteractionTasks.interactEntity(mc.player, target, Hand.MAIN_HAND, swingHandEntity.get());
                 yield true;
             }
         };
@@ -353,7 +355,7 @@ public class Interact extends BaseModule {
         if (canDirectlyHit) {
             // already actioned in caller
             // may not actioned in caller, fix it
-            InteractionTasks.interactEntity(mc.player, target, Hand.MAIN_HAND, swingHand.get());
+            InteractionTasks.interactEntity(mc.player, target, Hand.MAIN_HAND, swingHandEntity.get());
             return true;
         } else {
             // 提前转向 下个tick就有正确的velocity了
@@ -488,7 +490,7 @@ public class Interact extends BaseModule {
 
     private void postInteract(PlayerEntity player, Entity target) {
         // consider post
-        InteractionTasks.interactEntity(mc.player, target, Hand.MAIN_HAND, swingHand.get());
+        InteractionTasks.interactEntity(mc.player, target, Hand.MAIN_HAND, swingHandEntity.get());
     }
 
     private boolean processLegacySnapInteract(Entity target) {
@@ -503,7 +505,7 @@ public class Interact extends BaseModule {
         if (canDirectlyHit) {
             // already actioned in caller
             // may not actioned in caller, fix it
-            InteractionTasks.interactEntity(mc.player, target, Hand.MAIN_HAND, swingHand.get());
+            InteractionTasks.interactEntity(mc.player, target, Hand.MAIN_HAND, swingHandEntity.get());
             return true;
         }
         Vec3d vec3d = mc.player.getPos();
@@ -547,7 +549,7 @@ public class Interact extends BaseModule {
             Vec3d cacheDirection = attackOffsetted.subtract(predictedEyePos).normalize();
             // mace
             LegacySnapRotManager.INSTANCE.snapAt(cacheDirection, false);
-            InteractionTasks.interactEntity(mc.player, target, Hand.MAIN_HAND, swingHand.get());
+            InteractionTasks.interactEntity(mc.player, target, Hand.MAIN_HAND, swingHandEntity.get());
         }
         return true;
     }
@@ -612,7 +614,7 @@ public class Interact extends BaseModule {
                 actionBundles.get(i).run();
             }
             // processDuplicateAttack(player, target, moveInfos, movingContext, maceAttack);
-            InteractionTasks.interactEntity(player, target, Hand.MAIN_HAND, swingHand.get());
+            InteractionTasks.interactEntity(player, target, Hand.MAIN_HAND, swingHandEntity.get());
             for (int i = movingToBundleCnt; i < actionBundles.size(); ++i) {
                 if (actionBundles.get(i).success) {
                     actionBundles.get(i).run();
@@ -773,20 +775,20 @@ public class Interact extends BaseModule {
                 hitResult.getBlockPos(),
                 reach);
         if (canDirectlyHit) {
-            InteractionTasks.interactBlock(Hand.MAIN_HAND, hitResult, swingHand.get());
+            InteractionTasks.interactBlock(Hand.MAIN_HAND, hitResult, swingHandBlock.get());
             return true;
         }
         switch (blockMode.get()) {
             case NONE -> {
                 if (canUseTp() && !isWithinDistance) {
-                    return TpInteract.INSTANCE.tpAndInteractBlock(hitResult, Hand.MAIN_HAND, swingHand.get());
+                    return TpInteract.INSTANCE.tpAndInteractBlock(hitResult, Hand.MAIN_HAND, swingHandBlock.get());
                 }
-                InteractionTasks.interactBlock(Hand.MAIN_HAND, hitResult, swingHand.get());
+                InteractionTasks.interactBlock(Hand.MAIN_HAND, hitResult, swingHandBlock.get());
                 return true;
             }
             default -> {
                 if (isWithinDistance) {
-                    InteractionTasks.handlePlaceMode(blockMode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
+                    InteractionTasks.handlePlaceMode(blockMode.get(), hitResult, Hand.MAIN_HAND, swingHandBlock.get());
                     return true;
                 }
                 return false;
