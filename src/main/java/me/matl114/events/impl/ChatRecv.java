@@ -65,8 +65,8 @@ public class ChatRecv {
     public static Either<String, UUID> parseNameInStyle(Style style) {
         if (style.getClickEvent() != null) {
             var click = style.getClickEvent();
-            if (click instanceof ClickEvent.SuggestCommand suggest) {
-                String suggestCommand = suggest.command();
+            if (click.getAction() == ClickEvent.Action.SUGGEST_COMMAND) {
+                String suggestCommand = click.getValue();
                 Matcher matcher = MESSAGE_PATTERN.matcher(suggestCommand);
                 if (matcher.find()) {
                     String name = matcher.group(2);
@@ -76,8 +76,8 @@ public class ChatRecv {
         }
         if (style.getHoverEvent() != null) {
             var hover = style.getHoverEvent();
-            if (hover instanceof HoverEvent.ShowEntity entity) {
-                var uid = entity.entity().uuid;
+            if (hover.getAction() == HoverEvent.Action.SHOW_ENTITY && hover.getValue(HoverEvent.Action.SHOW_ENTITY) instanceof HoverEvent.EntityContent entity) {
+                var uid = entity.uuid;
                 if (uid != null) {
                     return Either.right(uid);
                 }

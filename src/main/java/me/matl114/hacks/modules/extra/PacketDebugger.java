@@ -149,9 +149,9 @@ public class PacketDebugger extends BaseModule {
                             "Accept",
                             simplifyId(type.getPacketId().id()),
                             ", SyncId:",
-                            packet.syncId(),
+                            packet.getSyncId(),
                             ", Revision:",
-                            packet.revision(),
+                            packet.getRevision(),
                             timeStr);
                 } else {
                     debug("Accept", simplifyId(type.getPacketId().id()), timeStr);

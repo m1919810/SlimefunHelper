@@ -177,7 +177,7 @@ public abstract class ClientPlayNetworkHandlerEvents {
     public abstract void sendChatCommand(String command);
 
     @Shadow
-    public abstract @Nullable PlayerListEntry getPlayerListEntry(UUID uuid);
+    public abstract PlayerListEntry getPlayerListEntry(UUID uuid);
 
     @WrapOperation(
             method = "onPlayerPositionLook",

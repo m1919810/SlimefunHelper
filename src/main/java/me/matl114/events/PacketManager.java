@@ -231,7 +231,7 @@ public class PacketManager {
                     packetQueueIn.clear();
                 }
             };
-            if (mc.getNetworkHandler().getConnection().channel.eventLoop().isExecutorThread(Thread.currentThread())) {
+            if (mc.getNetworkHandler().getConnection().channel.eventLoop().(Thread.currentThread())) {
                 task.run();
             } else {
                 mc.getNetworkHandler().getConnection().channel.eventLoop().execute(task);
