@@ -479,7 +479,7 @@ public class CrystalAura extends BaseModule {
                 .filter(this::isBasePlacedCrystalInAttackRange)
                 .filter(s -> canPlaceCrystal(s.up()))
                 .sorted(Comparator.comparingDouble(s -> currentTarget.stream()
-                        .map(v -> new Box(s).squaredMagnitude(v.getBoundingBox()))
+                        .map(v -> new Box(s).squaredMagnitude(v.getPos()))
                         .min(Double::compare)
                         .orElse(Double.POSITIVE_INFINITY)))
                 .toList();

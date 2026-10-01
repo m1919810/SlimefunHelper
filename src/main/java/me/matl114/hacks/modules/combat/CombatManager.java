@@ -231,7 +231,7 @@ public class CombatManager extends BaseModule {
         if (!state.canPlaceAt(world, pos)) {
             return false;
         }
-        ShapeContext context = ShapeContext.ofPlacement(player);
+        ShapeContext context = ShapeContext.of(player);
         VoxelShape shape = state.getCollisionShape(world, pos, context);
         if (shape.isEmpty()) {
             return true;
