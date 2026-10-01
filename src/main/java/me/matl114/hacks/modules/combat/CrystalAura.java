@@ -191,7 +191,6 @@ public class CrystalAura extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPlayerRespawnPoint(), this::onWorldSwitch);
-        registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvent);
         registerListener(Listener.getPostHandleInputEvents(), this::onPostInputEvent);
         registerListener(PacketMine.getPacketMineAction().getChannel(BlockBreak.Stage.PRE), this::onPrePacketMine);
         registerListener(PacketMine.getPacketMineAction(), this::onPostPacketMine);
@@ -219,30 +218,58 @@ public class CrystalAura extends BaseModule {
         delayQueue.clear();
     }
 
-    public void onPreInputEvent(Event<Void> event) {
+    boolean fillWorkingTick = false;
+    Pair<BlockPos, BlockState> lastMiningTarget = null;
+
+    public void onPostInputEvent(Event<Void> event) {
         if (checkNull()) {
             return;
         }
         debugRender.clear();
         if (enable.get()) {
+            boolean shouldWorkFill = false;
+            if (fillWorkingTick) {
+                shouldWorkFill = true;
+                fillWorkingTick = false;
+            }
+            var access = PlayerInteractionAccess.of(mc.interactionManager);
+            BlockPos pos = access.getCurrentMiningPos();
+            Pair<BlockPos, BlockState> currentPair = Pair.of(pos, mc.world.getBlockState(pos));
+            if (!Objects.equals(currentPair, lastMiningTarget)) {
+                lastMiningTarget = currentPair;
+                if (SequencedActionManager.INSTANCE.isWaitingBreakResponse(pos::equals)) {
+                    shouldWorkFill = true;
+                }
+            }
             refreshTargets();
+            if (currentTarget.isEmpty()) return;
             if (eatingAbort.get() && mc.player.isUsingItem()) {
                 return;
             }
-            tickTrackedGlasses();
+            boolean alreadyHasPlace = tickTrackedGlasses();
+            if (alreadyHasPlace) {
+                timer = 0;
+            }
             // constantly attack, only delay when place
             boolean attack = tickAttack();
-            tickDelayQueue();
-            tickPendingBase();
+            boolean queuedPlaces = false;
 
-            if ((++timer >= delay.get() || (placeAfterAttack.get() && attack) || fillWorkingTick)
+            queuedPlaces |= tickDelayQueue();
+            queuedPlaces |= tickPendingBase();
+            if (queuedPlaces) {
+                timer = 0;
+            }
+            ++timer;
+            if ((timer >= delay.get() || (placeAfterAttack.get() && attack) || fillWorkingTick)
                     && !currentTarget.isEmpty()) {
-
                 if (checkSupplies()) {
                     if (tickPlace()) {
                         timer = 0;
                     }
                 }
+            }
+            if (shouldWorkFill && autoFill.get()) {
+                tickFill(pos);
             }
         } else {
             currentTarget = List.of();
@@ -253,81 +280,51 @@ public class CrystalAura extends BaseModule {
         }
     }
 
-    boolean fillWorkingTick = false;
-    Pair<BlockPos, BlockState> lastMiningTarget = null;
-
-    public void onPostInputEvent(Event<Void> event) {
-        if (checkNull()) {
+    private void tickFill(BlockPos pos) {
+        if (CombatManager.INSTANCE.hasPendingCrystalSummon()) {
             return;
         }
-        if (enable.get() && autoFill.get()) {
-
-            boolean shouldWork = false;
-            if (fillWorkingTick) {
-                shouldWork = true;
-                fillWorkingTick = false;
-            }
-            var access = PlayerInteractionAccess.of(mc.interactionManager);
-            BlockPos pos = access.getCurrentMiningPos();
-            Pair<BlockPos, BlockState> currentPair = Pair.of(pos, mc.world.getBlockState(pos));
-            if (!Objects.equals(currentPair, lastMiningTarget)) {
-                lastMiningTarget = currentPair;
-                shouldWork = true;
-            }
-            if (!shouldWork) return;
-            if (eatingAbort.get() && mc.player.isUsingItem()) {
-                return;
-            }
-
-            if (currentTarget.isEmpty()) {
-                return;
-            }
-            if (CombatManager.INSTANCE.hasPendingCrystalSummon()) {
-                return;
-            }
-            if (supplyCrystalItem() == null) {
-                return;
-            }
-            if (!InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), pos)) return;
-            BlockState currentState = mc.world.getBlockState(pos);
-            if (!currentState.isAir()) return;
-            if (!canBridgeFillPos(pos)) {
-                return;
-            }
-            // within range check, do not check crystal range, because human can move
-            if (!InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), pos.down())) {
-                return;
-            }
-            if (!checkFillPlace(pos)) {
-                return;
-            }
-            // help fix PacketMine fakeAirMine
-            if (supplyFillBlock() == null) {
-                supplyFillBlockExecutor.run(100, () -> {
-                    if (notifySupply.get()) {
-                        logI18N("message.module.crystal-aura.no-item.fill-block");
-                    }
-                });
-                return;
-            }
-            Map<BlockPos, BlockState> overrideStates = new HashMap<>();
-            overrideStates.put(pos, Blocks.AIR.getDefaultState());
-            BlockPos failBreak =
-                    PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos();
-            if (failBreak != null) {
-                overrideStates.put(failBreak, Blocks.AIR.getDefaultState());
-            }
-            if (!fillIgnoreDamage.get()) {
-                Map<PlayerEntity, Double> damageMap = calculateCrystalDamage(pos.toBottomCenterPos(), overrideStates);
-                if (!isSuitableAttackExplodePos(damageMap)) {
-                    return;
+        if (supplyCrystalItem() == null) {
+            return;
+        }
+        if (!InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), pos)) return;
+        BlockState currentState = mc.world.getBlockState(pos);
+        if (!currentState.isAir()) return;
+        if (!canFillPos(pos)) {
+            return;
+        }
+        // within range check, do not check crystal range, because human can move
+        if (!InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), pos.down())) {
+            return;
+        }
+        if (!checkFillPlace(pos)) {
+            return;
+        }
+        // help fix PacketMine fakeAirMine
+        if (supplyFillBlock() == null) {
+            supplyFillBlockExecutor.run(100, () -> {
+                if (notifySupply.get()) {
+                    logI18N("message.module.crystal-aura.no-item.fill-block");
                 }
+            });
+            return;
+        }
+        Map<BlockPos, BlockState> overrideStates = new HashMap<>();
+        overrideStates.put(pos, Blocks.AIR.getDefaultState());
+        BlockPos failBreak = PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos();
+        if (failBreak != null) {
+            overrideStates.put(failBreak, Blocks.AIR.getDefaultState());
+        }
+        if (!fillIgnoreDamage.get()) {
+            Map<PlayerEntity, Double> damageMap = calculateCrystalDamage(pos.toBottomCenterPos(), overrideStates);
+            if (!isSuitableAttackExplodePos(damageMap)) {
+                return;
             }
-            FlagEntry<BlockHitResult> hitResult = InteractionTasks.getPlaceSupportingResult(
-                    pos, airplaceBase.get(), !mode.get().isLegal());
-            if (InteractUtils.canInteractAndPlace(mc.player, hitResult)) {
-                placeFill(pos, hitResult.val());
-            }
+        }
+        FlagEntry<BlockHitResult> hitResult = InteractionTasks.getPlaceSupportingResult(
+                pos, airplaceBase.get(), !mode.get().isLegal());
+        if (InteractUtils.canInteractAndPlace(mc.player, hitResult)) {
+            placeFill(pos, hitResult.val());
         }
     }
 
@@ -410,19 +407,23 @@ public class CrystalAura extends BaseModule {
                 .toList();
     }
 
-    public void tickPendingBase() {
-        for (CrystalPlan plan : pendingBases) {
+    public boolean tickPendingBase() {
+        var iter = pendingBases.iterator();
+        while (iter.hasNext()) {
+            var plan = iter.next();
+            iter.remove();
             BlockPos basePos = plan.option().basePos();
             if (InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), basePos)
                     && isBasePlacedCrystalInAttackRange(basePos)
                     && canPlaceCrystalAtBase(basePos)) {
                 placeBlockingAndCrystal(plan);
+                return true;
             }
         }
-        pendingBases.clear();
+        return false;
     }
 
-    private void tickDelayQueue() {
+    private boolean tickDelayQueue() {
         int queueSize = delayQueue.size();
         for (int index = 0; index < queueSize; ++index) {
             CrystalPlan plan = delayQueue.poll();
@@ -436,14 +437,15 @@ public class CrystalAura extends BaseModule {
             }
             if (plan.blockingPos().isPresent()) {
                 if (placeBlockingAndCrystal(plan)) {
-                    return;
+                    return true;
                 }
             } else {
                 if (tryPlaceCrystal(basePos)) {
-                    return;
+                    return true;
                 }
             }
         }
+        return false;
     }
 
     public boolean tickPlace() {
@@ -471,18 +473,18 @@ public class CrystalAura extends BaseModule {
         List<EndCrystalEntity> currentInAttackRange = findAttackableCrystals();
         BlockPos currentPlayerPos = mc.player.getBlockPos();
         double collisionDamage = -1.0D;
-        for (Vec3i delta : interactRangeBlocks) {
-            BlockPos pos = currentPlayerPos.add(delta);
-            if (!InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), pos)) {
-                continue;
-            }
-            if (!isBasePlacedCrystalInAttackRange(pos)) {
-                continue;
-            }
+        List<BlockPos> searchBlockPos = interactRangeBlocks.stream()
+                .map(currentPlayerPos::add)
+                .filter(s -> InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), s))
+                .filter(this::isBasePlacedCrystalInAttackRange)
+                .filter(s -> canPlaceCrystal(s.up()))
+                .sorted(Comparator.comparingDouble(s -> currentTarget.stream()
+                        .map(v -> new Box(s).squaredMagnitude(v.getBoundingBox()))
+                        .min(Double::compare)
+                        .orElse(Double.POSITIVE_INFINITY)))
+                .toList();
+        for (BlockPos pos : searchBlockPos) {
             BlockPos crystalPos = pos.up();
-            if (!canPlaceCrystal(crystalPos)) {
-                continue;
-            }
             boolean canPlaceCrystal = isCrystalHasBase(crystalPos);
             EndCrystalOption option;
             // filter the can-not-base positions first
@@ -528,9 +530,20 @@ public class CrystalAura extends BaseModule {
             }
 
             CrystalPlan plan = new CrystalPlan(option, Optional.empty());
-            Map<PlayerEntity, Double> damageMap =
-                    calculateCrystalDamage(getCrystalExplosionPos(pos), getDamageOverrides(plan));
-            if (!isSuitableExplodePos(damageMap)) {
+            Vec3d explosionPos = getCrystalExplosionPos(pos);
+            var maxDamageMap = estimateCrystalMaxDamage(explosionPos);
+            if (getMaxedPlanValue(getBestEnemyDamage(maxDamageMap)) < bestEnemyDamage) {
+                // fast skip, do not waste time on useless point
+                continue;
+            }
+            Map<PlayerEntity, Double> damageMap = calculateCrystalDamage(explosionPos, getDamageOverrides(plan));
+            double enemyDamage = getBestEnemyDamage(damageMap);
+            if (getMaxedPlanValue(enemyDamage) < bestEnemyDamage) {
+                // fast skip
+                continue;
+            }
+            // block only when it is a attack crystal, avoid duplicated calculation
+            if (!isSuitableExplodePos(damageMap) && isSuitableAttackExplodePos(damageMap)) {
                 if (!autoBlock.get()) {
                     continue;
                 }
@@ -544,7 +557,6 @@ public class CrystalAura extends BaseModule {
                 }
             }
 
-            double enemyDamage = getBestEnemyDamage(damageMap);
             double selfDamage = damageMap.getOrDefault(mc.player, Double.POSITIVE_INFINITY);
             double damageValue = getPlanValue(plan, enemyDamage);
             if (damageValue > bestEnemyDamage || (damageValue == bestEnemyDamage && selfDamage < bestSelfDamage)) {
@@ -621,6 +633,11 @@ public class CrystalAura extends BaseModule {
             value *= blockReduce.get();
         }
         return value;
+    }
+
+    private double getMaxedPlanValue(double enemyDamage) {
+        double value = Math.max(enemyDamage, enemyDamage * baseReduce.get());
+        return Math.max(value, value * blockReduce.get());
     }
 
     private CrystalPlan findBlockingPlan(EndCrystalOption option) {
@@ -735,20 +752,57 @@ public class CrystalAura extends BaseModule {
         return calculateCrystalDamage(explosionPos, Map.of());
     }
 
+    private Map<PlayerEntity, Double> estimateCrystalMaxDamage(Vec3d explosionPos) {
+        Map<PlayerEntity, Double> damageMap = new LinkedHashMap<>();
+        if (mc.world == null || mc.player == null) {
+            return damageMap;
+        }
+        for (PlayerEntity target : currentTarget) {
+            if (!EntityUtils.isEntityValid(target) || target == mc.player) {
+                continue;
+            }
+            Vec3d targetPos = target.getPos();
+            Vec3d realMovement;
+            if (usePredictor.get()) {
+                Vec3d predictionPos =
+                        PositionPredict.INSTANCE.attackPredictArgument.get().predict(target);
+
+                if (predictionPos.squaredDistanceTo(targetPos) > MathUtils.s2(0.5)) {
+                    Vec3d movement = predictionPos.subtract(targetPos);
+                    realMovement = MovTasks.simulateMovement(target, targetPos, movement, false);
+                } else {
+                    realMovement = Vec3d.ZERO;
+                }
+            } else {
+                realMovement = Vec3d.ZERO;
+            }
+            damageMap.put(target, (double) ExplosionUtils.calculateExplosionMaxDamage(
+                    ExplosionUtils.END_CRYSTAL_POWER, target.getBoundingBox().offset(realMovement), explosionPos));
+        }
+        return damageMap;
+    }
+
     private Map<PlayerEntity, Double> calculateCrystalDamage(Vec3d explosionPos, Map<BlockPos, BlockState> overrides) {
         Map<PlayerEntity, Double> damageMap = new LinkedHashMap<>();
         if (mc.world == null || mc.player == null) {
             return damageMap;
         }
-        ExplosionUtils.BlockStateAccess access = overrides.isEmpty()
-                ? ExplosionUtils.fromWorld(mc.world)
-                : ExplosionUtils.fromWorldWithOverrides(mc.world, overrides);
+
+        Map<BlockPos, BlockState> selfAccess = new LinkedHashMap<>(overrides);
+        var interact = PlayerInteractionAccess.of(mc.interactionManager);
+        if (interact.getCurrentMiningProgress(null) >= 1.0) {
+            selfAccess.put(interact.getCurrentMiningPos(), Blocks.AIR.getDefaultState());
+        }
+
         damageMap.put(mc.player, (double) ExplosionUtils.calculateExplosionRawDamage(
                 ExplosionUtils.END_CRYSTAL_POWER,
                 explosionPos,
                 mc.player.getBoundingBox(),
-                access,
+                ExplosionUtils.fromWorldWithOverrides(mc.world, selfAccess),
                 ExplosionUtils.ALL_TERRAIN));
+        ExplosionUtils.BlockStateAccess access = overrides.isEmpty()
+                ? ExplosionUtils.fromWorld(mc.world)
+                : ExplosionUtils.fromWorldWithOverrides(mc.world, overrides);
         for (PlayerEntity target : currentTarget) {
             if (!EntityUtils.isEntityValid(target) || target == mc.player) {
                 continue;
@@ -915,17 +969,6 @@ public class CrystalAura extends BaseModule {
                 false);
     }
 
-    private boolean shouldKeepTrackedGlass(BlockPos glassPos) {
-        if (fillIgnoreDamage.get()) {
-            return true;
-        }
-        Map<BlockPos, BlockState> overrides =
-                Map.of(glassPos, Blocks.AIR.getDefaultState(), glassPos.down(), Blocks.OBSIDIAN.getDefaultState());
-
-        Map<PlayerEntity, Double> damageMap = calculateCrystalDamage(glassPos.toBottomCenterPos(), overrides);
-        return isSuitableAttackExplodePos(damageMap);
-    }
-
     private boolean isTrackedGlassState(BlockState state) {
         if (state == null || state.isAir() || state.isLiquid()) {
             return false;
@@ -934,20 +977,52 @@ public class CrystalAura extends BaseModule {
         return item != Items.AIR && fillWhiteList.get().test(item);
     }
 
-    private void tickTrackedGlasses() {
+    private boolean tickTrackedGlasses() {
+        if (!enable.get()) {
+            trackedGlasses.clear();
+            return false;
+        }
         if (trackedGlasses.isEmpty()) {
-            return;
+            return false;
         }
         if (currentTarget.isEmpty()) {
             trackedGlasses.clear();
-            return;
+            return false;
         }
         trackedGlasses.keySet().removeIf(s -> s.getSquaredDistance(mc.player.getPos()) > MathUtils.s2(8));
-        trackedGlasses.entrySet().removeIf(entry -> {
+        var iter = trackedGlasses.entrySet().iterator();
+        boolean removal = false;
+        while (iter.hasNext()) {
+            var entry = iter.next();
             BlockPos pos = entry.getKey();
             BlockState state = mc.world.getBlockState(pos);
-            return !isTrackedGlassState(state) || !shouldKeepTrackedGlass(pos);
-        });
+
+            if (isTrackedGlassState(state)) {
+                Map<BlockPos, BlockState> overrides =
+                        Map.of(pos, Blocks.AIR.getDefaultState(), pos.down(), Blocks.OBSIDIAN.getDefaultState());
+                Map<PlayerEntity, Double> damageMap = calculateCrystalDamage(pos.toBottomCenterPos(), overrides);
+                if (fillIgnoreDamage.get() || isSuitableAttackExplodePos(damageMap)) {
+                    if (!isSuitableExplodePos(damageMap) && autoBlock.get()) {
+                        var blocking = findGlassBlockingPlan(pos);
+                        if (blocking != null) {
+                            placeBlockingBlock(blocking);
+                        }
+                    }
+                    continue;
+                }
+            }
+            iter.remove();
+            if (state.isAir()) {
+                if (autoFill.get()
+                        && canFillPos(pos)
+                        && InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), pos.down())) {
+                    if (tryPlaceCrystalAtGlass(pos, Map.of())) {
+                        removal = true;
+                    }
+                }
+            }
+        }
+        return removal;
     }
 
     private boolean tryPlaceCrystal(BlockPos basePos) {
@@ -1211,7 +1286,7 @@ public class CrystalAura extends BaseModule {
         return true;
     }
 
-    private boolean canBridgeFillPos(BlockPos crystalPos) {
+    private boolean canFillPos(BlockPos crystalPos) {
         BlockState baseState = mc.world.getBlockState(crystalPos.down());
         boolean availableBase = baseState.isOf(Blocks.OBSIDIAN) || baseState.isOf(Blocks.BEDROCK);
         if (!availableBase && autoBase.get()) {
@@ -1283,7 +1358,7 @@ public class CrystalAura extends BaseModule {
             return;
         }
         if (!isSuitableExplodePos(damageMap = calculateCrystalDamage(pos.toBottomCenterPos(), overrides))) {
-            if (isSuitableAttackExplodePos(damageMap)) {
+            if (isSuitableAttackExplodePos(damageMap) && autoBlock.get()) {
                 // try figure out the blocking now
                 var blocking = findGlassBlockingPlan(pos);
                 if (blocking != null) {
@@ -1333,7 +1408,7 @@ public class CrystalAura extends BaseModule {
         if (eatingAbort.get() && mc.player.isUsingItem()) {
             return;
         }
-        if (!canBridgeFillPos(pos)) {
+        if (!canFillPos(pos)) {
             return;
         }
         // within range check, do not check crystal range, because human can move
@@ -1341,23 +1416,30 @@ public class CrystalAura extends BaseModule {
             return;
         }
         pos = pos.toImmutable();
-        BlockPos immutable = pos;
         // do not write shit into prediction
         Map<BlockPos, BlockState> overrides = new HashMap<>();
         overrides.put(pos, Blocks.AIR.getDefaultState());
         // help fix PacketMine fakeAirMine
         SequencedActionManager.INSTANCE.appendBlockBreakPrediction(pos, Blocks.AIR.getDefaultState());
+
         if (trackedGlasses.containsKey(pos)) {
-            if (canPlaceCrystalAtPos(pos, overrides)) {
-                if (supplyCrystalItem() != null) {
-                    trackedGlasses.remove(pos);
-                    BlockPos checkBaseAndEntity = pos.down();
-                    tryPlaceCrystal(checkBaseAndEntity);
-                }
+            if (tryPlaceCrystalAtGlass(pos, overrides)) {
+                trackedGlasses.remove(pos);
                 return;
             }
         }
         fillWorkingTick = true;
+    }
+
+    private boolean tryPlaceCrystalAtGlass(BlockPos pos, Map<BlockPos, BlockState> overrides) {
+        if (canPlaceCrystalAtPos(pos, overrides)) {
+            if (supplyCrystalItem() != null) {
+                BlockPos checkBaseAndEntity = pos.down();
+                tryPlaceCrystal(checkBaseAndEntity);
+                return true;
+            }
+        }
+        return false;
     }
 
     private int compareCrystalEntries(Map<PlayerEntity, Double> first, Map<PlayerEntity, Double> second) {

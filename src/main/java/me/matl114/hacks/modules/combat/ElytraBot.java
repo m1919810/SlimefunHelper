@@ -159,14 +159,22 @@ public class ElytraBot extends BaseModule {
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
-    public final DoubleRef macePreSwapDelay = doubleBuilder(attackMace.add("mace-pre-swap-delay"))
-            .defaultValue(2.0D)
+    public final DoubleRef maceSwapTargetPredictTicks = doubleBuilder(attackMace.add("mace-pre-swap-prediction"))
+            .defaultValue(0.5D)
+            .build();
+
+    public final DoubleRef maceEstimatedDelay = doubleBuilder(attackMace.add("mace-pre-swap-delay"))
+            .defaultValue(3.0D)
             .validator(Configs.doubleRange(0, 10))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
-    public final DoubleRef macePreSwapDistancePerTick = doubleBuilder(attackMace.add("mace-pre-swap-distance-per-tick"))
-            .defaultValue(2.0D)
+    public final NBTRef<LabelVec2> macePreSwapSpeed = builder(
+                    attackMace.add("mace-pre-swap-self-speed-prediction"), LabelVec2.class)
+            .defaultValue(new LabelVec2(
+                    "widget.elytra-bot.mace-fix.extra-bonus",
+                    "widget.elytra-bot.mace-fix.predict-multiply",
+                    new Vec2(0.0D, 1.0D)))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
@@ -1453,9 +1461,11 @@ public class ElytraBot extends BaseModule {
                 Vec3d predictedPosition = PositionPredict.INSTANCE
                         .attackPredictArgument
                         .get()
-                        .predict0(base.target, base.macePreSwapDelay.get());
-                double range = CombatTasks.getCombatExtra().getAttackAtTargetRange(base.target)
-                        + base.macePreSwapDistancePerTick.get() * base.macePreSwapDelay.get();
+                        .predict0(base.target, base.maceSwapTargetPredictTicks.get());
+                double speed = PlayerStateManager.INSTANCE.lastKnownClientVelocity.length();
+                double predictingRange = base.macePreSwapSpeed.get().data().x()
+                        + base.macePreSwapSpeed.get().data().y() * speed;
+                double range = CombatTasks.getCombatExtra().getAttackAtTargetRange(base.target) + predictingRange;
                 if (TargetSelector.INSTANCE.isWithinAttackRange(
                         mc.player.getPos(), base.target.dimensions.getBoxAt(predictedPosition), range)) {
                     return ElytraExtra.INSTANCE.requestManualArmorSwapAndResetFallFlying(50);
