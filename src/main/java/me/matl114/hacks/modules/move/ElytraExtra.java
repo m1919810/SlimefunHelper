@@ -1158,17 +1158,11 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 } else if (hasGlidingEquipments()) {
                     ItemStack stack = mc.player.getEquippedStack(EquipmentSlot.CHEST);
                     if (isValidElytra(stack)) {
-                        int index = findEmptySlotForElytra();
-                        if (index != -1) {
-                            var slot = mc.player
-                                    .playerScreenHandler
-                                    .getSlotIndex(mc.player.getInventory(), index)
-                                    .orElse(-1);
-                            if (slot != -1) {
-                                armorGlideTransactionSlot = slot;
-                                clearSwapBackSlot();
-                                switchSlotToArmor(slot);
-                            }
+                        int slot = findEmptySlotForElytra();
+                        if (slot != -1) {
+                            armorGlideTransactionSlot = slot;
+                            clearSwapBackSlot();
+                            switchSlotToArmor(slot);
                         }
                     }
                 }
@@ -1820,7 +1814,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     boolean currentDelayingArmorGlide;
     Integer lastTransactionRecv = Integer.MIN_VALUE;
-    Integer currentDelayingLastTransaction = null;
+    volatile Integer currentDelayingLastTransaction = null;
     boolean acceptFireworkRemovalDuringDelay = false;
 
     public void onArmorGlideDelay(Event<PacketStorage> event) {
@@ -1908,7 +1902,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public void onPacketPing(Event<CommonPingS2CPacket> event) {
         if (checkNull()) return;
         if (event.isCancelled()) return;
-        if (currentDelayingLastTransaction != null && event.context.getParameter() == currentDelayingLastTransaction) {
+        Integer sendTrans = currentDelayingLastTransaction;
+        if (sendTrans != null && event.context.getParameter() == sendTrans) {
             currentDelayingLastTransaction = null;
             event.cancel();
         }
@@ -1920,7 +1915,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         if (lastTransactionRecv != null && lastTransactionRecv == event.context.getParameter()) {
             lastTransactionRecv = null;
         }
-        if (currentDelayingLastTransaction != null && currentDelayingLastTransaction == event.context.getParameter()) {
+        Integer sendTrans = currentDelayingLastTransaction;
+        if (sendTrans != null && sendTrans == event.context.getParameter()) {
             currentDelayingLastTransaction = null;
             event.cancel();
         }

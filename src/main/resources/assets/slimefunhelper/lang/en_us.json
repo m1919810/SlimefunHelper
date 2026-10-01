@@ -3417,6 +3417,8 @@
 	"auto-inv.replenish.search-range": "补给: 搜索范围",
 	"auto-inv.replenish.zero-tick-supply": "补给: 零刻补给",
 	"auto-inv.replenish.log": "补给: 日志",
+	"auto-inv.replenish.drop-black-listed-item": "补给: 不可丢弃物品",
+	"auto-inv.replenish.drop-black-listed-item.tooltips": "在补给和丢垃圾的过程中,这些物品一定不会被丢出去或者被存入盒子",
 	"auto-inv.replenish.execute-replenish": "补给: 执行补给流程",
 	"auto-inv.replenish.execute-replenish.tooltips": "该快捷键可在箱子界面中触发\n该快捷键触发后,会基于当前选中的kit进行补给,可以通过指令!!kit request <补给名字> 临时更改选中的补给\n补给将会按流程: 背包堆叠-盒子搜索-末影箱搜索-盒子补给-后处理-自动整理, 执行\n若快捷键在盒子打开时触发,则直接跳到盒子补给流程",
 	"auto-inv.replenish.execute-reorder": "补给: 执行自动整理",
