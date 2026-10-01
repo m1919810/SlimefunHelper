@@ -86,6 +86,12 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
     BlockPos currentLandingBlock;
     List<BlockPos> obstacles = new ArrayList<>();
     private static final int OBSTACLE_LIMIT = 5;
+    private int lastStableHeight = Integer.MIN_VALUE;
+    private int stableHeightCounter;
+    private BlockPos lastStableBlockTarget;
+    private boolean autoWalkAvoidObstacle;
+    private boolean needPathingToRoad;
+    private boolean ownsRoadPath;
 
     private void flushImmediately() {
         if (queueing) {
@@ -107,6 +113,8 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
     @Override
     public void onDisableModule() {
         super.onDisableModule();
+        clearRoadPath();
+        autoWalkAvoidObstacle = false;
         if (usePacketQueue.get()) {
             flushImmediately();
         }
@@ -192,12 +200,6 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
         return predictTicks.get();
     }
 
-    boolean autoWalkAvoidObstacle = false;
-    boolean needPathingToRoad = false;
-    int lastStableHeight;
-    int stableHeightCounter = 0;
-    BlockPos lastStableBlockTarget = null;
-
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         workThisTick = false;
@@ -236,10 +238,11 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
             }
             if (lastStableHeight == currentLandingBlock.getY()) {
                 Vec3d playerPos = mc.player.getPos().withAxis(Direction.Axis.Y, lastStableHeight + 1);
-                Vec3d dir = EntityUtils.pitchYawToRotation(
-                        0,
-                        axis(EntityUtils.rotationToYaw(
-                                PlayerStateManager.INSTANCE.lastKnownClientVelocity.normalize())));
+                Vec3d velocity = PlayerStateManager.INSTANCE.lastKnownClientVelocity.withAxis(Direction.Axis.Y, 0);
+                if (velocity.lengthSquared() < 1.0E-4) {
+                    velocity = EntityUtils.pitchYawToRotation(0, PlayerStateManager.INSTANCE.lastYaw);
+                }
+                Vec3d dir = EntityUtils.pitchYawToRotation(0, axis(EntityUtils.rotationToYaw(velocity.normalize())));
                 lastStableBlockTarget = BlockPos.ofFloored(playerPos.add(dir.multiply(10)));
             }
             if (lastLanding == currentLandingBlock.getY()) {
@@ -252,13 +255,10 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
             }
         } else if (!enable.get()) {
             lastStableHeight = Integer.MIN_VALUE;
+            stableHeightCounter = 0;
+            lastStableBlockTarget = null;
             autoWalkAvoidObstacle = false;
-            if (needPathingToRoad
-                    && lastStableBlockTarget != null
-                    && BaritoneHooks.getInstance().isBaritoneGoalPathingActive()) {
-                BaritoneHooks.getInstance().cancelBaritone();
-            }
-            needPathingToRoad = false;
+            clearRoadPath();
         }
         // 2 blocks lower
         if (workThisTick) {
@@ -324,14 +324,6 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
             if (simulationMove.lengthSquared() < 1E-1) {
                 autoWalkAvoidObstacle = true;
                 workThisTick = false;
-                List<BlockPos> checkBox = CollisionUtil.getBoxCollision(
-                        mc.world,
-                        mc.player,
-                        mc.player
-                                .dimensions
-                                .getBoxAt(
-                                        currentLandingBlock.toBottomCenterPos().add(0, 1, 0))
-                                .offset(EntityUtils.pitchYawToRotation(0, mc.player.getYaw())));
             } else {
                 autoWalkAvoidObstacle = false;
             }
@@ -348,28 +340,43 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
                 autoWalkAvoidObstacle = false;
             }
         }
-        path:
-        if (needPathingToRoad) {
-            if (!enable.get()) {
-                needPathingToRoad = false;
-                break path;
-            }
-            if (mc.player.getY() >= lastStableBlockTarget.getY() + 1) {
-                needPathingToRoad = false;
-                if (BaritoneHooks.getInstance().isBaritoneGoalPathingActive()) {
-                    BaritoneHooks.getInstance().cancelBaritone();
-                }
-                break path;
-            }
-            workThisTick = false;
-            if (lastStableBlockTarget != null
-                    && BaritoneHooks.getInstance().isBaritoneAPISupported()
-                    && !BaritoneHooks.getInstance().isBaritoneGoalPathingActive()) {
-                BlockPos target = lastStableBlockTarget;
+        updateRoadPathing();
+    }
 
-                BaritoneHooks.getInstance().setBaritoneCurrentGoal(new GoalNearBlockPos(target));
-            }
+    private void updateRoadPathing() {
+        if (!enable.get() || lastStableHeight == Integer.MIN_VALUE || lastStableBlockTarget == null) {
+            clearRoadPath();
+            return;
         }
+        if (!needPathingToRoad && mc.player.getY() < lastStableHeight) {
+            needPathingToRoad = true;
+        }
+        if (!needPathingToRoad) return;
+
+        workThisTick = false;
+        autoWalkAvoidObstacle = false;
+        if (currentLandingBlock != null
+                && currentLandingBlock.getY() >= lastStableHeight
+                && new GoalNearBlockPos(lastStableBlockTarget).isInGoal(mc.player.getPos())) {
+            clearRoadPath();
+            return;
+        }
+        if (!BaritoneHooks.getInstance().isBaritoneAPISupported()) {
+            clearRoadPath();
+            return;
+        }
+        if (!BaritoneHooks.getInstance().isBaritoneGoalPathingActive()) {
+            BaritoneHooks.getInstance().setBaritoneCurrentGoal(new GoalNearBlockPos(lastStableBlockTarget));
+            ownsRoadPath = true;
+        }
+    }
+
+    private void clearRoadPath() {
+        if (ownsRoadPath && BaritoneHooks.getInstance().isBaritoneGoalPathingActive()) {
+            BaritoneHooks.getInstance().cancelBaritone();
+        }
+        ownsRoadPath = false;
+        needPathingToRoad = false;
     }
 
     private float axis(float currentYaw) {
