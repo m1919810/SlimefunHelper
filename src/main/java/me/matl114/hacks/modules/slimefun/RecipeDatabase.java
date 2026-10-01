@@ -11,8 +11,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiPredicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.experimental.Accessors;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
@@ -441,7 +441,7 @@ public class RecipeDatabase extends BaseModule {
                 String rid,
                 String id,
                 List<ItemStackDataWithAmount> ingredientEntry,
-                @NonNull ItemStackDataWithAmount output) {
+                @Nonnull ItemStackDataWithAmount output) {
             this.rid = rid;
             this.id = id;
             this.ingredients = List.copyOf(ingredientEntry);

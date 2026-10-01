@@ -11,7 +11,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.ac.DisablerManager;
-import me.matl114.hacks.modules.combat.Attack;
+import me.matl114.hacks.modules.combat.CombatManager;
 import me.matl114.hacks.modules.combat.TargetSelector;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.mine.MiningProgressManager;
@@ -355,7 +355,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                                         null, MathUtils.getBlockBox(test), (e) -> e instanceof EndCrystalEntity)
                                 .forEach(endCrystalEntity -> {
                                     if (endCrystalEntity instanceof EndCrystalEntity endCrystal
-                                            && !Attack.INSTANCE.attackEntity(endCrystalEntity)) {
+                                            && CombatManager.INSTANCE.attackCrystal(endCrystalEntity)) {
                                         pendingRemoval.add(endCrystal);
                                     }
                                 });
