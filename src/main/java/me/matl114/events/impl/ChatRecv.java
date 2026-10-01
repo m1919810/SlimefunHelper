@@ -16,6 +16,7 @@ import me.matl114.utils.ChatUtils;
 import me.matl114.versioned.api.VRecord;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.PlayerListEntry;
+import net.minecraft.entity.EntityType;
 import net.minecraft.network.message.MessageType;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.ClickEvent;
@@ -76,7 +77,8 @@ public class ChatRecv {
         }
         if (style.getHoverEvent() != null) {
             var hover = style.getHoverEvent();
-            if (hover.getAction() == HoverEvent.Action.SHOW_ENTITY && hover.getValue(HoverEvent.Action.SHOW_ENTITY) instanceof HoverEvent.EntityContent entity) {
+            if (hover.getAction() == HoverEvent.Action.SHOW_ENTITY && hover.getValue(HoverEvent.Action.SHOW_ENTITY) instanceof HoverEvent.EntityContent entity
+                    && entity.entityType == EntityType.PLAYER) {
                 var uid = entity.uuid;
                 if (uid != null) {
                     return Either.right(uid);
