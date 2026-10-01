@@ -35,7 +35,6 @@ import net.minecraft.registry.tag.TagKey;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
-import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -178,7 +177,7 @@ public abstract class ClientPlayNetworkHandlerEvents {
     public abstract void sendChatCommand(String command);
 
     @Shadow
-    public abstract @Nullable PlayerListEntry getPlayerListEntry(UUID uuid);
+    public abstract PlayerListEntry getPlayerListEntry(UUID uuid);
 
     @WrapOperation(
             method = "onPlayerPositionLook",

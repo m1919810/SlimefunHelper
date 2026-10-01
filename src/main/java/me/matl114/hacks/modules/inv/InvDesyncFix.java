@@ -115,16 +115,16 @@ public class InvDesyncFix extends BaseModule {
 
     public void fastAsyncUpdateRevision2(Event<InventoryS2CPacket> eventUpdate) {
         if (checkNull()) return;
-        int syncId = eventUpdate.context.syncId();
+        int syncId = eventUpdate.context.getSyncId();
         if (enable.get()
                 && fastSync.get()
                 && mc.interactionManager.getCurrentGameMode().isSurvivalLike()) {
             if (syncId == 0) {
-                syncPlayerInventoryRevision(eventUpdate.context.revision());
+                syncPlayerInventoryRevision(eventUpdate.context.getRevision());
             } else {
                 ScreenHandler handler = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
                 if (handler.syncId == syncId) {
-                    handler.revision = eventUpdate.context.revision();
+                    handler.revision = eventUpdate.context.getRevision();
                 }
             }
         }

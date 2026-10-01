@@ -62,7 +62,7 @@ dependencies {
 	}
 //	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	mappings loom.layered {
-		mappings file("mapping/yarn-1.21.4+build-special-v4.local-v2.jar")
+		mappings file("mapping/yarn-1.21.4+build-special-v5.local-v2.jar")
 	}
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
