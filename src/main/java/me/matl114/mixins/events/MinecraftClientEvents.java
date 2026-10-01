@@ -463,7 +463,7 @@ public abstract class MinecraftClientEvents {
 
     @WrapOperation(
             method = "handleInputEvents",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerInventory;setSelectedSlot(I)V"))
+            at = @At(value = "FIELD", target = "Lnet/minecraft/entity/player/PlayerInventory;selectedSlot:I"))
     private void onSetSelectedSlotNumberButton(PlayerInventory instance, int slot, Operation<Void> original) {
         Event<Integer> hotBar = new Event<>(slot, true, true);
         Listener.getPlayerScrollHotBar().handleValue(hotBar);

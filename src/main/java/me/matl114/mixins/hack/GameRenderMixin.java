@@ -21,7 +21,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(GameRenderer.class)
 public abstract class GameRenderMixin {
 
-    @Shadow private ItemStack floatingItem;
+    @Shadow
+    private ItemStack floatingItem;
 
     @Inject(method = "getNightVisionStrength", at = @At("HEAD"), cancellable = true)
     private static void getNightVisionStrength(
@@ -60,10 +61,10 @@ public abstract class GameRenderMixin {
     }
 
     @Inject(method = "renderFloatingItem", at = @At("HEAD"), cancellable = true)
-    private void onNoRender3(DrawContext context, float tickDelta, CallbackInfo ci){
+    private void onNoRender3(DrawContext context, float tickDelta, CallbackInfo ci) {
         if (NoRender.INSTANCE.noTotemOverlay()
-            && floatingItem != null
-            && floatingItem.get(DataComponentTypes.DEATH_PROTECTION) != null) {
+                && floatingItem != null
+                && floatingItem.get(DataComponentTypes.DEATH_PROTECTION) != null) {
             ci.cancel();
         }
     }
