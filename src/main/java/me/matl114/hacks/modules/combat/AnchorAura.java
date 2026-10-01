@@ -146,7 +146,7 @@ public class AnchorAura extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPlayerRespawnPoint(), this::onSwitchWorld);
-        registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvents);
+        registerListener(Listener.getPostHandleInputEvents(), this::onPostInputEvents);
         registerListener(PacketMine.getPacketMineAction(), this::onPacketMine);
         registerListener(PacketMine.getPacketMineAction().getChannel(BlockBreak.Stage.PRE), this::onPrePacketMine);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPreset);
@@ -309,7 +309,7 @@ public class AnchorAura extends BaseModule {
 
     int timer = 0;
 
-    public void onPreInputEvents(Event<Void> event) {
+    public void onPostInputEvents(Event<Void> event) {
         if (checkNull()) return;
         if (enable.get()) {
             if (!InteractUtils.canRespawnAnchorExplode(mc.world)) {
