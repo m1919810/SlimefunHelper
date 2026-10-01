@@ -65,6 +65,9 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
     @Shadow
     public abstract boolean isUsingItem();
 
+    @Shadow
+    public abstract void updateLimbs(boolean flutter);
+
     @Unique
     @Override
     public float getJumpUpwardSpeed(float strength) {

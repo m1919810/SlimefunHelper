@@ -41,6 +41,7 @@ import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -119,24 +120,15 @@ public class InteractUtils {
 
     public static ActionResult simulateInteractItem(Hand hand) {
         ItemStack itemStack = mc.player.getStackInHand(hand);
-        if (mc.player.getItemCooldownManager().isCoolingDown(itemStack)) {
+        if (mc.player.getItemCooldownManager().isCoolingDown(itemStack.getItem())) {
             return ActionResult.PASS;
         }
-        ActionResult actionResult = itemStack.use(mc.world, mc.player, hand);
-        ItemStack itemStack2;
-        if (actionResult instanceof ActionResult.Success) {
-            ActionResult.Success success = (ActionResult.Success) actionResult;
-            itemStack2 = (ItemStack) Objects.requireNonNullElseGet(success.getNewHandStack(), () -> {
-                return mc.player.getStackInHand(hand);
-            });
-        } else {
-            itemStack2 = mc.player.getStackInHand(hand);
-        }
-
+        TypedActionResult<ItemStack> actionResult = itemStack.use(mc.world, mc.player, hand);
+        ItemStack itemStack2 = actionResult.getValue();
         if (itemStack2 != itemStack) {
             mc.player.setStackInHand(hand, itemStack2);
         }
-        return actionResult;
+        return actionResult.getResult();
     }
 
     public static void swingHandIfSuccess(ActionResult actionResult, Hand hand) {

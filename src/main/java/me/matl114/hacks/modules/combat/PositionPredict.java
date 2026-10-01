@@ -172,7 +172,7 @@ public class PositionPredict extends BaseModule {
         }
         if (ev instanceof EntityPositionS2CPacket packet) {
             synchronized (asyncLoadedPlayerPositionTrackers) {
-                impl = asyncLoadedPlayerPositionTrackers.get(packet.entityId());
+                impl = asyncLoadedPlayerPositionTrackers.get(packet.getEntityId());
             }
 
             if (impl != null) {
@@ -180,16 +180,16 @@ public class PositionPredict extends BaseModule {
             }
             return;
         }
-        if (ev instanceof EntityPositionSyncS2CPacket sync) {
-            synchronized (asyncLoadedPlayerPositionTrackers) {
-                impl = asyncLoadedPlayerPositionTrackers.get(sync.id());
-            }
-
-            if (impl != null) {
-                impl.onEntityPositionSyncPost(sync);
-            }
-            return;
-        }
+        //        if (ev instanceof EntityPositionSyncS2CPacket sync) {
+        //            synchronized (asyncLoadedPlayerPositionTrackers) {
+        //                impl = asyncLoadedPlayerPositionTrackers.get(sync.id());
+        //            }
+        //
+        //            if (impl != null) {
+        //                impl.onEntityPositionSyncPost(sync);
+        //            }
+        //            return;
+        //        }
     }
 
     public void onRender(Event<Render3D> event) {

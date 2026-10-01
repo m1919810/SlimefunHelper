@@ -7,9 +7,9 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.GameRenderer;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -62,9 +62,7 @@ public abstract class GameRenderMixin {
 
     @Inject(method = "renderFloatingItem", at = @At("HEAD"), cancellable = true)
     private void onNoRender3(DrawContext context, float tickDelta, CallbackInfo ci) {
-        if (NoRender.INSTANCE.noTotemOverlay()
-                && floatingItem != null
-                && floatingItem.get(DataComponentTypes.DEATH_PROTECTION) != null) {
+        if (NoRender.INSTANCE.noTotemOverlay() && floatingItem != null && floatingItem.isOf(Items.TOTEM_OF_UNDYING)) {
             ci.cancel();
         }
     }

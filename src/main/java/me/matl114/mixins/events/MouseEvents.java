@@ -181,11 +181,16 @@ public abstract class MouseEvents {
 
     @WrapOperation(
             method = "onMouseScroll",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerInventory;setSelectedSlot(I)V"))
-    private void onScrollInventorySelectedSlot(PlayerInventory instance, int slot, Operation<Void> original) {
-        Event<Integer> hotBar = new Event<>(slot, true, true);
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerInventory;scrollInHotbar(D)V"))
+    private void onScrollInventorySelectedSlot(
+            PlayerInventory instance, double scrollAmount, Operation<Void> original) {
+        int previousShit = instance.selectedSlot;
+        original.call(instance, scrollAmount);
+        int currentShit = instance.selectedSlot;
+        instance.selectedSlot = previousShit;
+        Event<Integer> hotBar = new Event<>(currentShit, true, true);
         Listener.getPlayerScrollHotBar().handleValue(hotBar);
         if (hotBar.isCancelled()) return;
-        original.call(instance, (int) hotBar.context());
+        instance.selectedSlot = hotBar.context();
     }
 }

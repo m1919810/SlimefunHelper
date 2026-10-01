@@ -18,7 +18,7 @@ import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.utils.Debug;
-
+import me.matl114.utils.MathUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;

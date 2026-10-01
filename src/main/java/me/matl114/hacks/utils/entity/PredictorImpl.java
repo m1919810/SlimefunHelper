@@ -4,11 +4,9 @@ import java.util.*;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.MathUtils;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.EntityPosition;
 import net.minecraft.entity.TrackedPosition;
 import net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityS2CPacket;
-import net.minecraft.network.packet.s2c.play.PositionFlag;
 import net.minecraft.util.math.Vec3d;
 
 public class PredictorImpl implements Predictor {
@@ -49,27 +47,31 @@ public class PredictorImpl implements Predictor {
 
     public void onEntityPositionPost(EntityPositionS2CPacket event) {
         EntityPositionS2CPacket packet = event;
-        if (packet.entityId() != ownerId) return;
+        if (packet.getEntityId() != ownerId) return;
         synchronized (this) {
-            EntityPosition position = apply(packet.change(), packet.relatives());
-            setSyncedPosition(position.position());
-            currentSyncedPitch = position.pitch();
-            currentSyncedYaw = position.yaw();
+            double d = packet.getX();
+            double e = packet.getY();
+            double f = packet.getZ();
+            currentTrackedPosition.setPos(new Vec3d(d, e, f));
+            float g = (float) (packet.getYaw() * 360) / 256.0F;
+            float h = (float) (packet.getPitch() * 360) / 256.0F;
+            currentSyncedPitch = h % 360;
+            currentSyncedYaw = g % 360;
             addRecord(new KnownPosition(currentTrackedPosition.getPos(), Tasks.getTick()));
         }
     }
 
-    public void onEntityPositionSyncPost(EntityPositionSyncS2CPacket event) {
-        EntityPositionSyncS2CPacket packet = event;
-        if (packet.id() != ownerId) return;
-        synchronized (this) {
-            EntityPosition position = packet.values();
-            setSyncedPosition(position.position());
-            currentSyncedPitch = position.pitch();
-            currentSyncedYaw = position.yaw();
-            addRecord(new KnownPosition(currentTrackedPosition.getPos(), Tasks.getTick()));
-        }
-    }
+    //    public void onEntityPositionSyncPost(EntityPositionSyncS2CPacket event) {
+    //        EntityPositionSyncS2CPacket packet = event;
+    //        if (packet.id() != ownerId) return;
+    //        synchronized (this) {
+    //            EntityPosition position = packet.values();
+    //            setSyncedPosition(position.position());
+    //            currentSyncedPitch = position.pitch();
+    //            currentSyncedYaw = position.yaw();
+    //            addRecord(new KnownPosition(currentTrackedPosition.getPos(), Tasks.getTick()));
+    //        }
+    //    }
 
     public void onEntityPositionMove(EntityS2CPacket event) {
         EntityS2CPacket packet = event;
@@ -81,19 +83,22 @@ public class PredictorImpl implements Predictor {
                     setSyncedPosition(position);
                 }
                 if (packet.hasRotation()) {
-                    currentSyncedYaw = packet.getYaw();
-                    currentSyncedPitch = packet.getPitch();
+                    float h = (float) (packet.getYaw() * 360) / 256.0F;
+                    float i = (float) (packet.getPitch() * 360) / 256.0F;
+                    currentSyncedYaw = h;
+                    currentSyncedPitch = i;
                 }
                 addRecord(new KnownPosition(currentTrackedPosition.getPos(), Tasks.getTick()));
             }
         }
     }
 
-    private EntityPosition apply(EntityPosition position, Set<PositionFlag> flags) {
-        EntityPosition current =
-                new EntityPosition(currentTrackedPosition.getPos(), Vec3d.ZERO, currentSyncedYaw, currentSyncedPitch);
-        return EntityPosition.apply(current, position, flags);
-    }
+    //    private EntityPosition apply(EntityPosition position, Set<PositionFlag> flags) {
+    //        EntityPosition current =
+    //                new EntityPosition(currentTrackedPosition.getPos(), Vec3d.ZERO, currentSyncedYaw,
+    // currentSyncedPitch);
+    //        return EntityPosition.apply(current, position, flags);
+    //    }
 
     private void setSyncedPosition(Vec3d position) {
         currentTrackedPosition.setPos(position);

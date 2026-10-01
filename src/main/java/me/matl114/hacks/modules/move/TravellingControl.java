@@ -707,7 +707,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             }
             if (dangerousNoFallFlyingTick == 0) {
                 MovExtra.INSTANCE.sendPacketsForInventoryAction();
-                if (mc.player.checkGliding()) {
+                if (mc.player.checkFallFlying()) {
                     MovExtra.INSTANCE.sendPacketsForPreStartFallFlying();
                     mc.getNetworkHandler()
                             .sendPacket(new ClientCommandC2SPacket(
