@@ -416,7 +416,9 @@ public class ElytraBot extends BaseModule {
     public final DoubleRef angleOptimizeAxisXZOutRange = doubleBuilder(
                     angleOptimize.add("combat-angle-optimize-xz-pullup-out-range"))
             .defaultValue(30.0D)
-            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA)
+                    && ElytraExtra.INSTANCE.autoRescale.get()
+                    && ElytraFlight.INSTANCE.useAutoRescale.get())
             .build();
 
     public final FlagRef angleOptimizeAxisXZPulluIn = builder(
@@ -430,7 +432,9 @@ public class ElytraBot extends BaseModule {
     public final DoubleRef angleOptimizeAxisXZInRange = doubleBuilder(
                     angleOptimize.add("combat-angle-optimize-xz-pullup-in-range"))
             .defaultValue(12.0D)
-            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA)
+                    && ElytraExtra.INSTANCE.autoRescale.get()
+                    && ElytraFlight.INSTANCE.useAutoRescale.get())
             .build();
     // 这个傻逼玩意， 代表的是 激进的拉升优化
 
