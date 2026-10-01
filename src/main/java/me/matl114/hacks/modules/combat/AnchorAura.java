@@ -304,7 +304,7 @@ public class AnchorAura extends BaseModule {
     public boolean isSuitablePosition(BlockPos pos) {
         BlockState state = mc.world.getBlockState(pos);
         return (state.isAir() || state.isLiquid() || state.isReplaceable())
-                && InteractUtils.canBlockPlace(mc.player, pos, Blocks.RESPAWN_ANCHOR.getDefaultState());
+                && CombatManager.INSTANCE.canBlockPlace(mc.player, pos, Blocks.RESPAWN_ANCHOR.getDefaultState());
     }
 
     int timer = 0;
@@ -525,7 +525,7 @@ public class AnchorAura extends BaseModule {
             if (!blockingState.isAir() && !blockingState.isLiquid() && !blockingState.isReplaceable()) {
                 continue;
             }
-            if (!InteractUtils.canCubePlace(mc.player, blockingPos)) {
+            if (!CombatManager.INSTANCE.canCubePlace(mc.player, blockingPos)) {
                 continue;
             }
             var newDamageMap = calculateAnchorDamage(

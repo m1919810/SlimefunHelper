@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Streams;
 import java.util.*;
 import java.util.List;
-import lombok.NonNull;
+import javax.annotation.Nonnull;
 import lombok.With;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.hacks.EntityInternalAccess;
@@ -320,7 +320,7 @@ public class Attack extends BaseModule {
                 && findAntiShieldWeapon(settings) != null;
     }
 
-    @NonNull
+    @Nonnull
     public static IndexEntry<ItemStack> selectBestWeapon(AttackSettings attackSettings, @Nullable Entity target) {
         IndexEntry<ItemStack> invResult;
         if (attackSettings.antiShieldSwap()

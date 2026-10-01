@@ -1,45 +1,58 @@
 package me.matl114.hacks.modules.combat;
 
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import javax.annotation.Nonnull;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import me.matl114.accessors.access.PlayerInteractEntityC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.annotations.Broadcast;
 import me.matl114.events.channels.EventChannel;
 import me.matl114.events.impl.BlockUpdate;
+import me.matl114.events.impl.UseItemOnBlock;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.interact.SequencedActionManager;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.managers.Configs;
+import me.matl114.managers.Tasks;
 import me.matl114.utils.algorithms.SerialExecutor;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.RespawnAnchorBlock;
+import me.matl114.utils.collections.IndexEntry;
+import net.minecraft.block.*;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.decoration.EndCrystalEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.EndCrystalItem;
+import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.registry.Registries;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.function.BooleanBiFunction;
+import net.minecraft.util.math.*;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.PalettedContainer;
 import net.minecraft.world.chunk.WorldChunk;
+import org.jetbrains.annotations.Nullable;
 
 public class CombatManager extends BaseModule {
     public final ModulePath combat = makePath(Configs.COMBAT_CONFIG, "attack");
     public static CombatManager INSTANCE;
 
     public static final int SECTION_RADIUS = 1;
+    private static final double NEARBY_ENTITY_CACHE_RADIUS = 16.0D;
     private static final float BLAST_RESISTANCE_THRESHOLD = 600.0F;
     private static final Set<Block> MINEABLE_BLAST_RESISTANT_BLOCKS;
     private static final Set<Block> UNBREAKABLE_BLAST_RESISTANT_BLOCKS;
@@ -77,6 +90,15 @@ public class CombatManager extends BaseModule {
         registerListener(Listener.getServerLeavePoint(), this::onServerLeave);
         registerListener(Listener.getBlockUpdateListener(), this::onBlockUpdate);
         registerListener(Listener.getChunkUpdateListener(), this::onChunkData);
+        registerListener(
+                SequencedActionManager.getSequencedActionResponse().getChannel(UseItemOnBlock.class),
+                this::onUseOnBlockAck);
+        registerListener(
+                Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class),
+                this::onPlayerAttackCrystal,
+                Integer.MAX_VALUE);
+        registerListener(Listener.getEntityRemoveListener().getChannel(EntityType.END_CRYSTAL), this::onEntityRemoval);
+        registerListener(Listener.getPostPlayerUseItemOnBlock(), this::onPlayerPlaceCrystalOnBlock);
     }
 
     @Getter
@@ -93,7 +115,6 @@ public class CombatManager extends BaseModule {
     private Set<ChunkSectionPos> dirtySections = new HashSet<>();
     private ChunkSectionPos lastSectionPos = ChunkSectionPos.from(0, 0, 0);
     public final Set<EndCrystalEntity> trackedEndCrystals = new HashSet<>();
-    private volatile Service currentService = new Service();
 
     private void clearTrackedCaches() {
         trackedObsidianLike.clear();
@@ -106,6 +127,254 @@ public class CombatManager extends BaseModule {
     private void clearCaches() {
         clearTrackedCaches();
         sectionSnapshots = new ConcurrentHashMap<>();
+    }
+
+    private volatile Service currentService = new Service();
+
+    public final Map<Entity, Integer> pendingCrystalRemovals = new HashMap<>();
+    public final Set<IndexEntry<BlockPos>> pendingCrystalSummons = new HashSet<>();
+
+    private void clearCombatState() {
+        clearPendingCrystalOperations();
+        clearNearbyEntityCache();
+    }
+
+    public void clearPendingCrystalOperations() {
+        pendingCrystalRemovals.clear();
+        pendingCrystalSummons.clear();
+    }
+
+    public void onUseOnBlockAck(Event<UseItemOnBlock> event) {
+        pendingCrystalSummons.removeIf(
+                entry -> Objects.equals(entry.val(), event.context.hitResult().getBlockPos()));
+    }
+
+    private void onPlayerAttackCrystal(Event<PlayerInteractEntityC2SPacket> event) {
+        if (checkNull()) return;
+        if (event.isCancelled()) return;
+        if (PlayerInteractEntityC2SPacketAccess.of(event.context).isAttack()
+                && mc.world.getEntityById(event.context.entityId) instanceof EndCrystalEntity crystal) {
+            pendingCrystalRemovals.put(crystal, Tasks.getTick());
+        }
+    }
+
+    private void onPlayerPlaceCrystalOnBlock(Event<UseItemOnBlock> eventUse) {
+        if (checkNull()) return;
+        if (eventUse.context().actionResult().isAccepted()
+                && eventUse.context().handItem().getItem() instanceof EndCrystalItem
+                && !eventUse.context().blockPlace()) {
+            BlockPos hitResult = eventUse.context.hitResult().getBlockPos();
+            BlockState state = mc.world.getBlockState(hitResult);
+            if ((state.isOf(Blocks.OBSIDIAN) || state.isOf(Blocks.BEDROCK)) && mc.world.isAir(hitResult.up())) {
+                pendingCrystalSummons.add(new IndexEntry<>(Tasks.getTick(), hitResult));
+            }
+        }
+    }
+
+    private void onEntityRemoval(Event<Entity> entityEvent) {
+        if (entityEvent.context instanceof EndCrystalEntity end) {
+            pendingCrystalRemovals.remove(end);
+        }
+    }
+
+    public boolean attackCrystal(Entity entity) {
+        if (!Attack.INSTANCE.attackEntity(entity)) {
+            pendingCrystalRemovals.put(entity, Tasks.getTick());
+            return true;
+        }
+        return false;
+    }
+
+    public void markCrystalPlace(BlockPos pos) {
+        pendingCrystalSummons.add(new IndexEntry<>(Tasks.getTick(), pos));
+    }
+
+    public boolean isPendingCrystalRemoval(Entity entity) {
+        return pendingCrystalRemovals.containsKey(entity);
+    }
+
+    public boolean isPendingCrystalSummon(BlockPos pos) {
+        return pendingCrystalSummons.stream().anyMatch(entry -> entry.val().equals(pos));
+    }
+
+    public boolean hasPendingCrystalSummon() {
+        return !pendingCrystalSummons.isEmpty();
+    }
+
+    private List<Entity> currentTickCache = List.of();
+    private Box currentTickCacheBox = null;
+
+    public List<Entity> getNearbyEntities(Box queryBox) {
+        if (contains(currentTickCacheBox, queryBox)) {
+            return currentTickCache.stream()
+                    .filter(s -> s.getBoundingBox().intersects(queryBox))
+                    .filter(this::isNotPendingRemove)
+                    .toList();
+        }
+        return mc.world.getOtherEntities(null, queryBox, this::isNotPendingRemove);
+    }
+
+    private boolean isNotPendingRemove(Entity s) {
+        if (s instanceof EndCrystalEntity) {
+            return !pendingCrystalRemovals.containsKey(s);
+        } else {
+            return true;
+        }
+    }
+
+    public boolean canCubePlace(PlayerEntity player, BlockPos pos) {
+        return canBlockPlace(player, pos, Blocks.OBSIDIAN.getDefaultState());
+    }
+
+    public boolean canBlockPlace(PlayerEntity player, BlockPos pos, BlockState state) {
+        World world = player.getEntityWorld();
+        if (!state.canPlaceAt(world, pos)) {
+            return false;
+        }
+        ShapeContext context = ShapeContext.ofPlacement(player);
+        VoxelShape shape = state.getCollisionShape(world, pos, context);
+        if (shape.isEmpty()) {
+            return true;
+        }
+        VoxelShape worldShape = shape.offset(pos.getX(), pos.getY(), pos.getZ());
+        return doesNotIntersectPendingCrystals(worldShape) && doesNotIntersectCachedEntities(worldShape);
+    }
+
+    private boolean doesNotIntersectCachedEntities(VoxelShape shape) {
+        if (shape.isEmpty()) return true;
+        Box box = shape.getBoundingBox();
+        if (contains(currentTickCacheBox, box)) {
+            return doesNotIntersectEntities(currentTickCache, shape);
+        }
+        return mc.world.doesNotIntersectEntities(null, shape);
+    }
+
+    private boolean doesNotIntersectEntities(List<Entity> entities, VoxelShape shape) {
+        if (shape.isEmpty()) {
+            return true;
+        }
+        Box shapeBox = shape.getBoundingBox();
+        for (Entity entity : entities) {
+            if (entity.isRemoved()
+                    || entity.isSpectator()
+                    || !entity.intersectionChecked
+                    || !entity.getBoundingBox().intersects(shapeBox)
+                    || isPendingCrystalRemoval(entity)) {
+                continue;
+            }
+            if (VoxelShapes.matchesAnywhere(
+                    shape, VoxelShapes.cuboid(entity.getBoundingBox()), BooleanBiFunction.AND)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private boolean doesNotIntersectPendingCrystals(VoxelShape shape) {
+        if (shape.isEmpty()) return true;
+        Box shapeBox = shape.getBoundingBox();
+        for (var pending : pendingCrystalSummons) {
+            Vec3d crystalBottom = pending.val().toBottomCenterPos().add(0, 1, 0);
+            Box expectingBox = new Box(
+                    crystalBottom.x - 1,
+                    crystalBottom.y,
+                    crystalBottom.z - 1,
+                    crystalBottom.x + 1,
+                    crystalBottom.y + 2,
+                    crystalBottom.z + 1);
+            if (!expectingBox.intersects(shapeBox)) {
+                continue;
+            }
+            if (VoxelShapes.matchesAnywhere(shape, VoxelShapes.cuboid(expectingBox), BooleanBiFunction.AND)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Nonnull
+    public CrystalResult isCrystalConditionedBlockedByEntity(BlockPos crystalPos) {
+        return isCrystalConditionedBlockedByEntity(crystalPos, null);
+    }
+
+    @Nonnull
+    public CrystalResult isCrystalConditionedBlockedByEntity(
+            BlockPos crystalPos, @Nullable Function<CrystalResult, Boolean> acceptingCondition) {
+        return isCrystalBlockedByEntity(crystalPos, (result) -> {
+            if (acceptingCondition != null) {
+                var result2 = acceptingCondition.apply(result);
+                if (result2 != null) {
+                    return result2;
+                }
+            }
+            if (result instanceof PendingItemDrop drop
+                    && drop.dropState().getBlock().getBlastResistance() < 600) {
+                // only obsidian like, other block will be destroyed by explosion and we dont have to consider about
+                // dropping
+                return false;
+            } else {
+                return true;
+            }
+        });
+    }
+
+    @Nonnull
+    public CrystalResult isCrystalBlockedByEntity(
+            BlockPos crystalPos, @Nonnull Predicate<CrystalResult> acceptingCondition) {
+        Box crystalEntityBox = new Box(crystalPos).stretch(0, 1, 0);
+        var result = getNearbyEntities(crystalEntityBox).stream()
+                .filter(s -> EntityUtils.isEntityValid(s) && !isPendingCrystalRemoval(s))
+                .map(EntityBlock::new)
+                .filter(acceptingCondition)
+                .findFirst();
+        if (result.isPresent()) {
+            return result.get();
+        }
+        for (var re : pendingCrystalSummons) {
+            Vec3d center = re.val().toBottomCenterPos().add(0, 1, 0);
+            Box summonBox = new Box(center.x - 1, center.y, center.z - 1, center.x + 1, center.y + 2, center.z + 1);
+            if (summonBox.intersects(crystalEntityBox)) {
+                CrystalResult result2 = new PendingCrystal(re.val());
+                if (acceptingCondition.test(result2)) {
+                    return result2;
+                }
+            }
+        }
+        BlockPos currentPos = crystalPos;
+        BlockPos upPos = crystalPos.up();
+        var lastBreak = SequencedActionManager.INSTANCE.getBeforeBreakPredictionState(currentPos);
+        if (lastBreak.isPresent()) {
+            BlockState state = lastBreak.get();
+            CrystalResult result3 = new PendingItemDrop(currentPos, state);
+            if (acceptingCondition.test(result3)) {
+                return result3;
+            }
+        }
+        lastBreak = SequencedActionManager.INSTANCE.getBeforeBreakPredictionState(upPos);
+        if (lastBreak.isPresent()) {
+            BlockState state = lastBreak.get();
+            CrystalResult result4 = new PendingItemDrop(currentPos, state);
+            if (acceptingCondition.test(result4)) {
+                return result4;
+            }
+        }
+        return new Success();
+    }
+
+    private void clearNearbyEntityCache() {
+        currentTickCache = List.of();
+        currentTickCacheBox = null;
+    }
+
+    private static boolean contains(Box outer, Box inner) {
+        return outer != null
+                && outer.minX <= inner.minX
+                && outer.minY <= inner.minY
+                && outer.minZ <= inner.minZ
+                && outer.maxX >= inner.maxX
+                && outer.maxY >= inner.maxY
+                && outer.maxZ >= inner.maxZ;
     }
 
     private void clearUnusedTrackedCaches(Service service) {
@@ -167,16 +436,26 @@ public class CombatManager extends BaseModule {
 
     public void onWorldSwitch(Event<ClientPlayerEntity> event) {
         clearCaches();
+        clearCombatState();
     }
 
     public void onServerLeave(Event<Void> event) {
         clearCaches();
+        clearCombatState();
     }
 
     public void onPreTick(Event<ClientPlayerEntity> event) {
         if (checkNull()) {
             return;
         }
+        // for most ping < 50, 3 ticks are ok for responses
+        pendingCrystalRemovals
+                .entrySet()
+                .removeIf(
+                        entry -> !EntityUtils.isEntityValid(entry.getKey()) || Tasks.getTick() >= entry.getValue() + 3);
+        pendingCrystalSummons.removeIf(entry -> Tasks.getTick() >= entry.index() + 3);
+        currentTickCacheBox = mc.player.getBoundingBox().expand(16, 16, 16);
+        currentTickCache = mc.world.getOtherEntities(null, currentTickCacheBox);
         Service lastService = currentService;
         currentService = new Service();
         requestEnableEvent.broadcast(currentService);
@@ -426,6 +705,42 @@ public class CombatManager extends BaseModule {
 
         public boolean isDisabled() {
             return !enableBlockSearch && !enableExplosiveSearch && !enableHoleSearch;
+        }
+    }
+
+    public interface CrystalResult {
+        boolean isAccepted();
+    }
+
+    public static record Success() implements CrystalResult {
+
+        @Override
+        public boolean isAccepted() {
+            return true;
+        }
+    }
+
+    public static record EntityBlock(Entity entity) implements CrystalResult {
+
+        @Override
+        public boolean isAccepted() {
+            return false;
+        }
+    }
+
+    public static record PendingCrystal(BlockPos basePos) implements CrystalResult {
+
+        @Override
+        public boolean isAccepted() {
+            return false;
+        }
+    }
+
+    public static record PendingItemDrop(BlockPos dropPos, BlockState dropState) implements CrystalResult {
+
+        @Override
+        public boolean isAccepted() {
+            return false;
         }
     }
 }

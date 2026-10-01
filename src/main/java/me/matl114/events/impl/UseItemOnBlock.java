@@ -28,4 +28,8 @@ public class UseItemOnBlock implements SequencedAction {
     final Hand hand;
 
     ItemStack handItem;
+
+    public boolean blockPlace() {
+        return placingBlockPos.isPresent();
+    }
 }
