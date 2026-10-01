@@ -103,7 +103,7 @@ public abstract class ClientPlayNetworkHandlerMixin {
                             target =
                                     "Lnet/minecraft/client/network/ClientPlayNetworkHandler;setPosition(Lnet/minecraft/entity/EntityPosition;Ljava/util/Set;Lnet/minecraft/entity/Entity;Z)Z"))
     private boolean wrapSetPositionLook(
-        EntityPosition pos, Set<PositionFlag> flags, Entity entity, boolean bl, Operation<Boolean> original) {
+            EntityPosition pos, Set<PositionFlag> flags, Entity entity, boolean bl, Operation<Boolean> original) {
         if (AutoResync.INSTANCE.noVelocitySetback.get()) {
             Vec3d currentVelocity = entity.getVelocity();
             boolean re = original.call(pos, flags, entity, bl);

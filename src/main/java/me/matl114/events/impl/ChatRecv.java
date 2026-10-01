@@ -77,7 +77,8 @@ public class ChatRecv {
         }
         if (style.getHoverEvent() != null) {
             var hover = style.getHoverEvent();
-            if (hover.getAction() == HoverEvent.Action.SHOW_ENTITY && hover.getValue(HoverEvent.Action.SHOW_ENTITY) instanceof HoverEvent.EntityContent entity
+            if (hover.getAction() == HoverEvent.Action.SHOW_ENTITY
+                    && hover.getValue(HoverEvent.Action.SHOW_ENTITY) instanceof HoverEvent.EntityContent entity
                     && entity.entityType == EntityType.PLAYER) {
                 var uid = entity.uuid;
                 if (uid != null) {

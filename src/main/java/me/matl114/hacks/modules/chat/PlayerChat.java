@@ -19,8 +19,6 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.ChatUtils;
 import me.matl114.versioned.api.VRecord;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.network.packet.Packet;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -129,31 +127,34 @@ public class PlayerChat extends BaseModule {
 
     public Consumer<ChatUtils.TextBuilder> handleChatHead(
             @Nullable UUID senderUuid, @Nullable String playerName, MutableBoolean mutableBoolean) {
-//        if (!playerHead.get()) {
-//            return null;
-//        }
-//        if (senderUuid != null) {
-//            ObjectTextContent content =
-//                    new ObjectTextContent(new PlayerTextObjectContents(ProfileComponent.ofDynamic(senderUuid), false));
-//            PlayerListEntry entry = mc.getNetworkHandler() == null
-//                    ? null
-//                    : mc.getNetworkHandler().getPlayerListEntry(senderUuid);
-//            mutableBoolean.setTrue();
-//            return builder -> builder.withHoverEvent(ChatUtils.getHoverShowText(List.of(
-//                            Text.literal("玩家:" + (entry == null ? "未知" : VRecord.getName(entry.getProfile()))),
-//                            Text.literal("玩家UUID:" + senderUuid))))
-//                    .withContent(content)
-//                    .withStyle(Style.EMPTY);
-//        }
-//        if (playerName != null && pattern.matcher(playerName).matches()) {
-//            ObjectTextContent content =
-//                    new ObjectTextContent(new PlayerTextObjectContents(ProfileComponent.ofDynamic(playerName), false));
-//            mutableBoolean.setTrue();
-//            return builder -> builder.withHoverEvent(
-//                            ChatUtils.getHoverShowText(List.of(Text.literal("玩家:" + playerName))))
-//                    .withContent(content)
-//                    .withStyle(Style.EMPTY);
-//        }
+        //        if (!playerHead.get()) {
+        //            return null;
+        //        }
+        //        if (senderUuid != null) {
+        //            ObjectTextContent content =
+        //                    new ObjectTextContent(new PlayerTextObjectContents(ProfileComponent.ofDynamic(senderUuid),
+        // false));
+        //            PlayerListEntry entry = mc.getNetworkHandler() == null
+        //                    ? null
+        //                    : mc.getNetworkHandler().getPlayerListEntry(senderUuid);
+        //            mutableBoolean.setTrue();
+        //            return builder -> builder.withHoverEvent(ChatUtils.getHoverShowText(List.of(
+        //                            Text.literal("玩家:" + (entry == null ? "未知" :
+        // VRecord.getName(entry.getProfile()))),
+        //                            Text.literal("玩家UUID:" + senderUuid))))
+        //                    .withContent(content)
+        //                    .withStyle(Style.EMPTY);
+        //        }
+        //        if (playerName != null && pattern.matcher(playerName).matches()) {
+        //            ObjectTextContent content =
+        //                    new ObjectTextContent(new PlayerTextObjectContents(ProfileComponent.ofDynamic(playerName),
+        // false));
+        //            mutableBoolean.setTrue();
+        //            return builder -> builder.withHoverEvent(
+        //                            ChatUtils.getHoverShowText(List.of(Text.literal("玩家:" + playerName))))
+        //                    .withContent(content)
+        //                    .withStyle(Style.EMPTY);
+        //        }
         return null;
     }
 
