@@ -10,6 +10,11 @@ public record SimpleEntityPredictor(Entity entity) implements Predictor {
     }
 
     @Override
+    public Vec3d getCurrentSyncedPos() {
+        return entity.getTrackedPosition().getPos();
+    }
+
+    @Override
     public Vec3d getCurrentPos() {
         return entity.getPos();
     }

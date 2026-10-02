@@ -63,6 +63,14 @@ public class TargetSelector extends BaseModule {
     public final FlagRef grimExpandEyeHeight =
             flagBuilder(attack.add("use-grim-expand-eye-height")).build();
 
+    public final FlagRef grimInterpolateBox =
+            flagBuilder(attack.add("use-grim-interpolation-box")).build();
+
+    public final DoubleRef realMaxExtraDistance = doubleBuilder(attack.add("max-extra-distance-ignore-expanding"))
+            .defaultValue(3.6D)
+            .validator(Configs.doubleRange(1.0D, 10.0D))
+            .build();
+
     public final NBTRef<EntityTypeRegex> whiteListTypes = builder(attack.add("whitelist"), EntityTypeRegex.class)
             .defaultValue(new EntityTypeRegex(new Regex("^(monster|!endermite|player)$")))
             .build();
@@ -165,12 +173,41 @@ public class TargetSelector extends BaseModule {
         return DoubleStream.of(mc.player.dimensions.eyeHeight());
     }
 
+    public Box getEffectiveBox(Entity entity) {
+        if (grimInterpolateBox.get() && entity instanceof OtherClientPlayerEntity) {
+            return CombatExtra.INSTANCE.getTracker(entity).getInteractBox(entity);
+        }
+        return entity.getBoundingBox();
+    }
+
     public boolean isWithinAttackRange(Vec3d pos, Entity entity) {
-        return isWithinAttackRange(pos, entity.getBoundingBox(), CombatExtra.INSTANCE.getAttackAtTargetRange(entity));
+        // add real place check if more than 3
+        Vec3d syncPos = PositionPredict.INSTANCE.getPredictor(entity).getCurrentSyncedPos();
+        Box syncBox = entity.dimensions.getBoxAt(syncPos);
+        if (syncBox.squaredMagnitude(pos.add(0, mc.player.dimensions.eyeHeight(), 0))
+                >= MathUtils.s2(CombatExtra.INSTANCE.getAttackRangeAttribute() + realMaxExtraDistance.get())) {
+            return false;
+        }
+        return isWithinAttackRange(pos, getEffectiveBox(entity), CombatExtra.INSTANCE.getAttackAtTargetRange(entity));
+    }
+
+    public boolean isWithinAttackRange(Vec3d pos, Entity entity, double range) {
+        Vec3d syncPos = PositionPredict.INSTANCE.getPredictor(entity).getCurrentSyncedPos();
+        Box syncBox = entity.dimensions.getBoxAt(syncPos);
+        if (syncBox.squaredMagnitude(pos.add(0, mc.player.dimensions.eyeHeight(), 0))
+                >= MathUtils.s2(range + realMaxExtraDistance.get())) {
+            return false;
+        }
+        return isWithinAttackRange(pos, getEffectiveBox(entity), range);
+    }
+
+    public boolean isWithinAttackRange(Vec3d pos, Box box) {
+        return isWithinAttackRange(pos, box, CombatExtra.INSTANCE.getAttackRange());
     }
 
     public boolean isWithinAttackRange(Vec3d pos, Box box, double range) {
-        if (box.squaredMagnitude(pos) > MathUtils.s2(range + 3 + mc.player.dimensions.eyeHeight())) {
+        if (box.squaredMagnitude(pos.add(0, mc.player.dimensions.eyeHeight(), 0))
+                >= MathUtils.s2(range + realMaxExtraDistance.get())) {
             // filter all outofrange
             // optimize calculation
             return false;
@@ -178,6 +215,21 @@ public class TargetSelector extends BaseModule {
         return getPotentialEyeHeights()
                 .mapToObj(s -> pos.add(0, s, 0))
                 .anyMatch(ps -> box.squaredMagnitude(ps) < MathUtils.s2(range));
+    }
+
+    public Vec3d getBestAttackEyePos(Vec3d pos, Entity entity) {
+        Box box = getEffectiveBox(entity);
+        var poses = getPotentialEyeHeights().mapToObj(s -> pos.add(0, s, 0)).toList();
+        Vec3d playerPos = pos.add(mc.player.getEyePos().subtract(mc.player.getPos()));
+        double s2 = box.squaredMagnitude(playerPos);
+        for (var pp : poses) {
+            double s3 = box.squaredMagnitude(pp);
+            if (s3 < s2) {
+                s2 = s3;
+                playerPos = pp;
+            }
+        }
+        return playerPos;
     }
 
     public Vec3d getBestAttackEyePos(Vec3d pos, Box box) {
@@ -192,6 +244,27 @@ public class TargetSelector extends BaseModule {
             }
         }
         return playerPos;
+    }
+
+    public Vec3d getEntityRayCast(Vec3d pos, Entity entity) {
+        Box box = getEffectiveBox(entity);
+        Vec3d eyePos = getBestAttackEyePos(pos, entity);
+        double attackAt = CombatExtra.INSTANCE.getAttackAtTargetRange(entity);
+        return fixRayCastBigBox(eyePos, box, box.getCenter().subtract(eyePos), attackAt);
+    }
+
+    private Vec3d fixRayCastBigBox(Vec3d usingEyePos, Box targetBox, Vec3d currentRayCast, double currentAttackRange) {
+        Vec3d rayCastTest = currentRayCast.normalize().multiply(currentAttackRange - 0.009178);
+        var ray = targetBox.raycast(usingEyePos, usingEyePos.add(rayCastTest));
+        if (ray.isPresent()) {
+            return currentRayCast;
+        } else {
+            // ?
+            Box shrinkedBox = targetBox.expand(-1E-7, -1E-7, -1E-7);
+
+            Vec3d targetingPos = MathUtils.magnitudePoint(shrinkedBox, usingEyePos);
+            return targetingPos.subtract(usingEyePos).normalize();
+        }
     }
 
     public Optional<Vec3d> getBestAttackEyePos(Vec3d pos, Box box, double range) {
@@ -458,7 +531,7 @@ public class TargetSelector extends BaseModule {
         nearby = Math.max(nearby, CombatExtra.INSTANCE.getAttackAtTargetRange(e));
         Vec3d predictedPlayerPos =
                 mc.player.getPos().add(mc.player.getVelocity().multiply(mc.player.isFallFlying() ? ticks : 0));
-        return isWithinAttackRange(predictedPlayerPos, e.getBoundingBox(), nearby);
+        return isWithinAttackRange(predictedPlayerPos, e, nearby);
     }
 
     public Entity searchAttackEntity(double nearby, boolean autoSelect) {

@@ -412,8 +412,7 @@ public class Interact extends BaseModule {
                                             args.getPos(), target.getBoundingBox());
                                 }
                                 // backoff
-                                if (!TargetSelector.INSTANCE.isWithinAttackRange(
-                                        args.getPos(), target.getBoundingBox(), attackRange)) {
+                                if (!TargetSelector.INSTANCE.isWithinAttackRange(args.getPos(), target, attackRange)) {
                                     // Debug.chat("Distance to large , disable atack");
                                     distancePassAttack = false;
                                     movementManagerEvent.context.playerStatus.restoreRotation();
@@ -510,8 +509,7 @@ public class Interact extends BaseModule {
         }
         Vec3d vec3d = mc.player.getPos();
         Vec3d predictedEyePos = TargetSelector.INSTANCE.getBestAttackEyePos(vec3d, target.getBoundingBox());
-        boolean distancePassAttack =
-                TargetSelector.INSTANCE.isWithinAttackRange(vec3d, mc.player.getBoundingBox(), attackRange);
+        boolean distancePassAttack = TargetSelector.INSTANCE.isWithinAttackRange(vec3d, mc.player, attackRange);
         if (tpInteract.get().positive() && !distancePassAttack) {
 
             Vec3d vec3d1 = MovTasks.tpAttackSearch(vec3d, target.getBoundingBox(), attackRange, 9.9, 1).stream()
@@ -523,7 +521,7 @@ public class Interact extends BaseModule {
                 predictedEyePos = TargetSelector.INSTANCE.getBestAttackEyePos(vec3d, target.getBoundingBox());
             }
             // backoff
-            if (!TargetSelector.INSTANCE.isWithinAttackRange(vec3d, mc.player.getBoundingBox(), attackRange)) {
+            if (!TargetSelector.INSTANCE.isWithinAttackRange(vec3d, mc.player, attackRange)) {
                 distancePassAttack = false;
                 mc.player.setPosition(vec3d);
                 // skip attack
@@ -569,7 +567,7 @@ public class Interact extends BaseModule {
         boolean alreadyInRange = alreadyAtTarget
                 || TargetSelector.INSTANCE.isWithinAttackRange(
                         player.getPos(),
-                        target.getBoundingBox(),
+                        target,
                         attackRange); // target.getBoundingBox().squaredMagnitude(player.getEyePos()) <
         // MathUtils.s2(attackRange);
         // mace hack、
