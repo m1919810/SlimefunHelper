@@ -37,6 +37,8 @@ public class InvDesyncFix extends BaseModule {
 
     public final FlagRef useItemFix = flagBuilder(root.add("use-item")).build();
 
+    public final FlagRef useItemFix2 = flagBuilder(root.add("use-item-fix")).build();
+
     public final FlagRef finishUseFix = flagBuilder(root.add("finish-use")).build();
 
     public final FlagRef totemFix = flagBuilder(root.add("totem-fix")).build();
@@ -63,11 +65,16 @@ public class InvDesyncFix extends BaseModule {
         serverHandler.nextRevision();
     }
 
+    private void makeDesync() {
+        var serverHandler = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
+        serverHandler.revision = (serverHandler.revision - 2) & 32767;
+    }
+
     public void onUseItem(Event<PlayerInteractItemC2SPacket> event) {
         if (checkNull()) return;
         if (event.isCancelled()) return;
         if (enable.get()
-                && useItemFix.get()
+                && (useItemFix.get() || useItemFix2.get())
                 && !LivingEntityAccess.of(mc.player).isTrackedUsingItem()) {
             Hand hand = event.context.getHand();
             ItemStack stack =
@@ -75,7 +82,8 @@ public class InvDesyncFix extends BaseModule {
             ItemStack currentStack = mc.player.getStackInHand(hand);
             if (!ItemStack.areEqual(stack, currentStack)
                     || InteractUtils.isInteractItemAcceptable(mc.world, mc.player, stack)) {
-                PacketManager.schedulePostScheduleCallback(event.context, this::nextRevision);
+                PacketManager.schedulePostScheduleCallback(
+                        event.context, useItemFix.get() ? this::nextRevision : this::makeDesync);
             }
         }
     }
@@ -86,12 +94,10 @@ public class InvDesyncFix extends BaseModule {
             if (event.context.getStatus() == EntityStatuses.CONSUME_ITEM && finishUseFix.get()) {
                 // abort revision, force desync
                 // fix grim shit.
-                nextRevision();
-                nextRevision();
+                makeDesync();
             }
             if (event.context.getStatus() == EntityStatuses.USE_TOTEM_OF_UNDYING && totemFix.get()) {
-                nextRevision();
-                nextRevision();
+                makeDesync();
             }
         }
     }

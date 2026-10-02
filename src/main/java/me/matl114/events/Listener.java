@@ -626,6 +626,11 @@ public class Listener {
             new EventChannelDispatcher<>(Entity::getType);
 
     @Getter
+    @Broadcast
+    private static final EventChannelDispatcher<PosUpdate> entityTrackedPositionUpdate =
+            new EventChannelDispatcher<>(s -> s.entity().getType());
+
+    @Getter
     @Cancelable
     @Modifiable
     @ExtraArgs(value = {EntityType.class})

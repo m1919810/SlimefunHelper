@@ -670,7 +670,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             if (MovTasks.getElytraFlight().useAutoRescale.get() && ElytraExtra.INSTANCE.autoRescale.get()) {
                 rotation = pullingUp
                         ? ElytraOptimizeUtils.calculateBestPullupSpeed(rotation)
-                        : ElytraOptimizeUtils.calculateBestDownForwardSpeed(rotation, false);
+                        : ElytraOptimizeUtils.calculateBestDownForwardSpeed(rotation, false, true);
             }
             velocity.velocity(rotation.normalize().multiply(velocity.maxVelocity()));
         }

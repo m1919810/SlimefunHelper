@@ -248,14 +248,18 @@ public class ElytraOptimizeUtils {
         return bestExtraYaw;
     }
 
-    public static Vec3d calculateBestDownForwardSpeed(Vec3d vec3d, boolean natural) {
+    public static Vec3d calculateBestDownForwardSpeed(Vec3d vec3d, boolean natural, boolean downward) {
         if (ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V3)) {
-            return calculateBestV3DownForwardSpeed(vec3d, natural);
+            return calculateBestV3DownForwardSpeed(vec3d, natural, downward);
         }
         if (ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V4, ElytraExtra.Al.V5)) {
-            return calculateBestV4DownForwardSpeed(vec3d, natural);
+            return calculateBestV4DownForwardSpeed(vec3d, natural, downward);
         }
         if (ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V1)) {
+            Vec2f py = EntityUtils.rotationToPitchYaw(vec3d.normalize());
+            if (downward && py.x > 75) {
+                return vec3d;
+            }
             double horizontal = vec3d.horizontalLength();
             if (horizontal < 1E-6) {
                 vec3d = vec3d.withAxis(Direction.Axis.X, 5);
@@ -273,27 +277,14 @@ public class ElytraOptimizeUtils {
         return vec3d;
     }
 
-    public static Vec3d calculateBestDownwardSpeed(Vec3d vec3d) {
-        Vec3d result = calculateBestDownForwardSpeed(vec3d, false);
-        if (result.y >= -1E-6) {
-            double horizontal = result.horizontalLength();
-            if (horizontal < 1E-6) {
-                result = result.withAxis(Direction.Axis.X, 5.0D);
-                horizontal = result.horizontalLength();
-            }
-            result = result.withAxis(Direction.Axis.Y, -horizontal * Math.tan(Math.toRadians(30.5D)));
-        }
-        return result;
-    }
-
-    public static Vec3d calculateBestV3DownForwardSpeed(Vec3d vec3d, boolean natural) {
+    public static Vec3d calculateBestV3DownForwardSpeed(Vec3d vec3d, boolean natural, boolean downward) {
         double horizontal = vec3d.horizontalLength();
         if (horizontal < 1E-6) {
             vec3d = vec3d.withAxis(Direction.Axis.X, 5);
             horizontal = vec3d.horizontalLength();
         }
         Vec2f py = EntityUtils.rotationToPitchYaw(vec3d.normalize());
-        if (py.x > 75) {
+        if (downward && py.x > 75) {
             return vec3d;
         }
         double pitchDeg = 30.5;
@@ -309,14 +300,14 @@ public class ElytraOptimizeUtils {
         return vec3d.withAxis(Direction.Axis.Y, newY);
     }
 
-    public static Vec3d calculateBestV4DownForwardSpeed(Vec3d vec3d, boolean natural) {
+    public static Vec3d calculateBestV4DownForwardSpeed(Vec3d vec3d, boolean natural, boolean downward) {
         double horizontal = vec3d.horizontalLength();
         if (horizontal < 1E-6) {
             vec3d = vec3d.withAxis(Direction.Axis.X, 5);
             horizontal = vec3d.horizontalLength();
         }
         Vec2f py = EntityUtils.rotationToPitchYaw(vec3d.normalize());
-        if (py.x < -70) {
+        if (downward && py.x > 75) {
             return vec3d;
         }
         double pitchDeg = 5;

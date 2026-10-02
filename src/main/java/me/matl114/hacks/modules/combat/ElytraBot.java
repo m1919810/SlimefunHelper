@@ -141,6 +141,11 @@ public class ElytraBot extends BaseModule {
         portConfigs(elytraBot, attackMace, "mace-combat-consider-use");
     }
 
+    public final DoubleRef maceMinFallDistance = builder(attackMace.add("mace-min-fall-distance"), DoubleRef.TYPE)
+            .defaultValue(1.5D)
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .build();
+
     public final FlagRef maceAttackUseSimple = builder(attackMace.add("mace-combat-use-extra-attack"), Boolean.class)
             .defaultValue(true)
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
@@ -161,6 +166,7 @@ public class ElytraBot extends BaseModule {
 
     public final DoubleRef maceSwapTargetPredictTicks = doubleBuilder(attackMace.add("mace-pre-swap-prediction"))
             .defaultValue(0.5D)
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
     public final DoubleRef maceEstimatedDelay = doubleBuilder(attackMace.add("mace-pre-swap-delay"))
@@ -380,6 +386,41 @@ public class ElytraBot extends BaseModule {
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
+    public final ModulePath spear = elytraBot.add("spear-mode");
+
+    public final IntRef spearPullawayCooldown = intBuilder(spear.add("cooldown"))
+            .defaultValue(6)
+            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA))
+            .build();
+
+    public final DoubleRef spearMinRange = doubleBuilder(spear.add("min-range"))
+            .defaultValue(1.0D)
+            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA))
+            .build();
+
+    public final DoubleRef spearActiveRange = doubleBuilder(spear.add("active-range"))
+            .defaultValue(8.0D)
+            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA))
+            .build();
+
+    public final FlagRef spearEnableNearPassthroughFeature = builder(
+                    spear.add("enable-nearby-pass-through"), Boolean.class)
+            .defaultValue(true)
+            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA))
+            .build();
+
+    public final FlagRef spearEscapingPulloutChaseHorizontal = builder(
+                    spear.add("enable-escaping-chase-horizontal"), Boolean.class)
+            .defaultValue(true)
+            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA))
+            .build();
+
+    public final FlagRef spearEscapingPulloutChaseVertical = builder(
+                    spear.add("enable-escaping-chase-vertical"), Boolean.class)
+            .defaultValue(true)
+            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA))
+            .build();
+
     public final ModulePath angleOptimize = elytraBot.add("angle-optimizing-flight");
 
     {
@@ -502,6 +543,17 @@ public class ElytraBot extends BaseModule {
                     && ElytraFlight.INSTANCE.useAutoRescale.get())
             .build();
 
+    public final FlagRef spearHideAngleOptimize = flagBuilder(angleOptimize.add("combat-angle-optimize-when-spear"))
+            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA)
+                    && ElytraExtra.INSTANCE.autoRescale.get()
+                    && ElytraFlight.INSTANCE.useAutoRescale.get())
+            .build();
+
+    public final DoubleRef spearChaseOptimizeAngle = doubleBuilder(
+                    angleOptimize.add("combat-angle-optimize-spear-range"))
+            .defaultValue(10.0D)
+            .build();
+
     public final ModulePath antiSpear = elytraBot.add("anti-spear-settings");
 
     {
@@ -567,6 +619,11 @@ public class ElytraBot extends BaseModule {
     public final FlagRef flyAntiSpearUseSpearResetWhenFollow = flagBuilder(
                     antiSpear.add("fly-anti-spear-use-spear-reset-when-follow"))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .build();
+
+    public final FlagRef spearAntiSpearPullOverWhenPredictHit = flagBuilder(
+                    antiSpear.add("spear-anti-spear-pull-over-when-predict-hit"))
+            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA))
             .build();
 
     public final ModulePath spearVer2 = elytraBot.add("spear-arua-v2");
@@ -721,7 +778,11 @@ public class ElytraBot extends BaseModule {
     Entity target;
 
     Vec3d getCurrentSyncedPos() {
-        return EntityInternalAccess.of(target).getPositionPredictor().getCurrentPos();
+        return EntityInternalAccess.of(target).getPositionPredictor().getCurrentSyncedPos();
+    }
+
+    Vec3d getCurrentPos() {
+        return target.getPos(); // EntityInternalAccess.of(target).getPositionPredictor().getCurrentPos();
     }
 
     @Nullable
@@ -818,8 +879,7 @@ public class ElytraBot extends BaseModule {
 
             // initialize pos
             double combatRange = combatRange();
-            currentInCombatRange = TargetSelector.INSTANCE.isWithinAttackRange(
-                    mc.player.getPos(), target.getBoundingBox(), combatRange);
+            currentInCombatRange = TargetSelector.INSTANCE.isWithinAttackRange(mc.player.getPos(), target, combatRange);
             currentOnGround = target.isOnGround() || CollisionUtil.isEntitySupported(target);
             if (target instanceof PlayerEntity pl) {
                 // speed < 1, we can easily handle this speed
@@ -1195,7 +1255,7 @@ public class ElytraBot extends BaseModule {
         public synchronized void onUpdate() {
             super.onUpdate();
             if (base.target != null) {
-                movementDirection = base.getCurrentSyncedPos().subtract(mc.player.getPos());
+                movementDirection = base.getCurrentPos().subtract(mc.player.getPos());
             } else {
                 movementDirection = Vec3d.ZERO;
             }
@@ -1243,8 +1303,7 @@ public class ElytraBot extends BaseModule {
         public int onStateNone(StateMachine machine) {
             if (base.target != null) {
                 if (PlayerStateManager.INSTANCE.fallDistance > 4
-                        && mc.player.getPos().getY()
-                                > base.getCurrentSyncedPos().getY() + 4.0) {
+                        && mc.player.getPos().getY() > base.getCurrentPos().getY() + 4.0) {
                     return STATE_FOLLOW;
                 }
                 return STATE_PULL_UP;
@@ -1278,10 +1337,10 @@ public class ElytraBot extends BaseModule {
                             .attackPredictArgument
                             .get()
                             .predict(base.target)
-                            .withAxis(Direction.Axis.Y, base.getCurrentSyncedPos().y)
-                    : base.getCurrentSyncedPos();
+                            .withAxis(Direction.Axis.Y, base.getCurrentPos().y)
+                    : base.getCurrentPos();
             double lerpY = base.maceYLevelWeight.get();
-            double yLerp = targetPos.y * lerpY + base.getCurrentSyncedPos().y * (1.0D - lerpY);
+            double yLerp = targetPos.y * lerpY + base.getCurrentPos().y * (1.0D - lerpY);
             targetPos = targetPos.withAxis(Direction.Axis.Y, yLerp);
             setTargetToPlayer(targetPos);
             if (movementDirection.y >= 0) {
@@ -1305,6 +1364,11 @@ public class ElytraBot extends BaseModule {
                 stateMachine.step();
                 // Debug.info("State", stateMachine.getState(), "height", PlayerStateManager.INSTANCE.fallDistance);
                 // todo: consider cooldown, do not attack too fast
+                if (movementDirection.y < 0
+                        && Math.abs(movementDirection.y)
+                                < movementDirection.horizontalLength() * Math.tan(Math.PI / 18.0D)) {
+                    Debug.debug("Issue 2");
+                }
                 if (attackFlag) {
                     if (base.target != null) {
                         // anti shield
@@ -1401,7 +1465,7 @@ public class ElytraBot extends BaseModule {
         public boolean shouldAttackMace() {
             boolean cooldown =
                     (lastMaceAttackSuccessTick < Tasks.getTick()) || Attack.INSTANCE.willUseMaceAttack(false);
-            return cooldown && PlayerStateManager.INSTANCE.fallDistance >= 1.5D;
+            return cooldown && PlayerStateManager.INSTANCE.fallDistance >= base.maceMinFallDistance.get();
         }
 
         public boolean canAttackMace() {
@@ -1513,7 +1577,7 @@ public class ElytraBot extends BaseModule {
             boolean shouldForcePullUp = shouldPullUpEating();
             Vec3d predictor = base.maceUsePredictor.get()
                     ? PositionPredict.INSTANCE.attackPredictArgument.get().predict(base.target)
-                    : base.getCurrentSyncedPos();
+                    : base.getCurrentPos();
             double pullupHeight = base.maceHeight.get();
             if (base.maceChaseFollowYBias.get()) {
                 double horizontalRange = mc.player.getPos().subtract(predictor).horizontalLength();
@@ -1533,7 +1597,7 @@ public class ElytraBot extends BaseModule {
             } else {
                 {
                     double thresholdY =
-                            base.maceTryFollowUsePredictor.get() ? predictor.getY() : base.getCurrentSyncedPos().y;
+                            base.maceTryFollowUsePredictor.get() ? predictor.getY() : base.getCurrentPos().y;
 
                     double targetY = thresholdY + pullupHeight;
 
@@ -1543,9 +1607,8 @@ public class ElytraBot extends BaseModule {
                                     && startPullUpTick != 0
                                     && Tasks.getTick()
                                             > base.maceRemainPullUpTick.get() + startPullUpTick + pullupHeight);
-
+                    setTargetToPlayerUpper(predictor, pullupHeight);
                     if (!mayFollow) {
-                        setTargetToPlayerUpper(predictor, pullupHeight);
                         machine.markForEndState();
                         return STATE_PULL_UP;
                     } else {
@@ -1569,10 +1632,9 @@ public class ElytraBot extends BaseModule {
             tryPreSwapArmorForAttack();
             Vec3d targetPos = base.maceUsePredictor.get()
                     ? PositionPredict.INSTANCE.attackPredictArgument.get().predict(base.target)
-                    : base.getCurrentSyncedPos();
-            double horizontalMovement =
-                    targetPos.subtract(base.getCurrentSyncedPos()).horizontalLength();
-            currentTargetUpFly = base.getCurrentSyncedPos().y + horizontalMovement * 1.0F < targetPos.y;
+                    : base.getCurrentPos();
+            double horizontalMovement = targetPos.subtract(base.getCurrentPos()).horizontalLength();
+            currentTargetUpFly = base.getCurrentPos().y + horizontalMovement * 1.0F < targetPos.y;
             boolean mayAttack = shouldAttackSimple() || shouldAttackMace();
             // use real bounding box for hit
             boolean targetInRange = TargetSelector.INSTANCE.isWithinAttackRange(mc.player.getPos(), base.target);
@@ -1580,6 +1642,9 @@ public class ElytraBot extends BaseModule {
             if (mayAttack && targetInRange) {
                 setTargetToPlayer(targetPos);
                 scheduleAttack();
+                if (movementDirection.y >= 0) {
+                    return STATE_PULL_UP;
+                }
                 machine.markForEndState();
                 return STATE_FOLLOW;
             } else {
@@ -1592,8 +1657,11 @@ public class ElytraBot extends BaseModule {
                     if (targetInRange) {
                         setTargetToPlayer(targetPos);
                         scheduleAttack();
+                        if (movementDirection.y >= 0) {
+                            return STATE_PULL_UP;
+                        }
                         machine.markForEndState();
-                        return STATE_WAIT_ATTACK;
+                        return STATE_FOLLOW;
                     } else {
                         return STATE_PULL_UP;
                     }
@@ -1606,13 +1674,16 @@ public class ElytraBot extends BaseModule {
             if (base.flyAntiSpearUseSpearResetWhenFollow.get()) {
                 SpearEnhance.INSTANCE.setForceSpearReset(true);
             }
+            if (movementDirection.y >= 0) {
+                return STATE_PULL_UP;
+            }
             machine.markForEndState();
             return STATE_FOLLOW;
         }
 
         private void setTargetToEat(Vec3d predictor, boolean headSimulation, double height) {
             if (headSimulation) {
-                Vec3d vec3d = base.getCurrentSyncedPos().subtract(mc.player.getPos());
+                Vec3d vec3d = base.getCurrentPos().subtract(mc.player.getPos());
                 if (vec3d.horizontalLength() > base.combatRange()) {
                     setTargetToPlayerUpper(predictor, height);
                 } else {
@@ -1778,28 +1849,28 @@ public class ElytraBot extends BaseModule {
         protected void setTargetToPlayer(Vec3d targetPos) {
             double lerpY = base.maceYLevelWeight.get();
             // use real y, because player may want to hit the target
-            double baseY = base.getCurrentSyncedPos().y;
+            double baseY = base.getCurrentPos().y;
 
             double yLerp = (targetPos.y * lerpY + baseY * (1.0D - lerpY));
             if (base.flyAntiSpearUseSpearResetWhenFollow.get()) {
                 SpearEnhance.INSTANCE.setForceSpearReset(true);
             }
-            direction_calculate:
-            {
-                Predicate<Vec3d> conditionMovement = (vec3) -> {
-                    if (vec3.y >= 0) {
+            Predicate<Vec3d> conditionMovement = (vec3) -> {
+                if (vec3.y >= 0) {
+                    return false;
+                }
+                float pitch = EntityUtils.rotationToPitch(vec3.normalize());
+                if (pitch < base.minPitchDownwards.get()) {
+                    Vec3d predictorMovement = simulateMovement(vec3);
+                    if (!TargetSelector.INSTANCE.isWithinAttackRange(
+                            mc.player.getPos().add(predictorMovement), base.target)) {
                         return false;
                     }
-                    float pitch = EntityUtils.rotationToPitch(vec3.normalize());
-                    if (pitch < base.minPitchDownwards.get()) {
-                        Vec3d predictorMovement = simulateMovement(vec3);
-                        if (!TargetSelector.INSTANCE.isWithinAttackRange(
-                                mc.player.getPos().add(predictorMovement), base.target)) {
-                            return false;
-                        }
-                    }
-                    return true;
-                };
+                }
+                return true;
+            };
+            direction_calculate:
+            {
                 if (base.maceFollowUsePredictorLine.get()) {
                     double distance = mc.player.getPos().distanceTo(targetPos);
                     if (distance > base.maceFollowStartPredictDistance.get()) {
@@ -1828,8 +1899,6 @@ public class ElytraBot extends BaseModule {
                     movementDirection = calculateTargetDirection(targetPos);
                     if (conditionMovement.test(movementDirection)) {
                         break direction_calculate;
-                    } else {
-                        movementDirection = movementDirection.withAxis(Direction.Axis.Y, 0);
                     }
                 }
                 if (near || (movementDirection.y >= 0 && base.followDownPosWhenLow.get())) {
@@ -1841,8 +1910,6 @@ public class ElytraBot extends BaseModule {
                                 targetPos.withAxis(Direction.Axis.Y, yLerp - base.maceFollowMinHeight.get()));
                         if (conditionMovement.test(movementDirection)) {
                             break direction_calculate;
-                        } else {
-                            movementDirection = movementDirection.withAxis(Direction.Axis.Y, 0);
                         }
                     }
                 }
@@ -1859,10 +1926,15 @@ public class ElytraBot extends BaseModule {
                 // use real value, because predictors may predict wrong values
                 if (yLerp - base.maceFollowMinHeight.get() > mc.player.getY()) {
                     // to nothing modify
-                    movementDirection = movementDirection.withAxis(Direction.Axis.Y, 0);
+                    if (movementDirection.y < 0) {
+                        movementDirection = movementDirection.withAxis(Direction.Axis.Y, 0);
+                    }
                     return;
                     // 我没招了。这还是尽快重开吧
                 }
+            }
+            if (!conditionMovement.test(movementDirection)) {
+                movementDirection = movementDirection.withAxis(Direction.Axis.Y, 0);
             }
             if (movementDirection.y >= 0) {
                 return;
@@ -1897,8 +1969,8 @@ public class ElytraBot extends BaseModule {
                                 if (Math.abs(movementDirection.y) > horizontal2) {
                                     movementDirection = movementDirection.withAxis(Direction.Axis.Y, -horizontal2);
                                 }
-                                movementDirection =
-                                        ElytraOptimizeUtils.calculateBestDownForwardSpeed(movementDirection, true);
+                                movementDirection = ElytraOptimizeUtils.calculateBestDownForwardSpeed(
+                                        movementDirection, true, false);
                             }
                         }
                     }
@@ -1931,7 +2003,11 @@ public class ElytraBot extends BaseModule {
                     && stateMachine.getState() != STATE_PULL_UP) {
                 // just in few ticks for the attack(current tick)
                 // pull up only when after mace attack to miss
-                if (lastMaceAttackTick >= Tasks.getTick() - 1 && currentTargetUpFly) {
+                if (movementDirection.y >= 0
+                        || (lastMaceAttackTick >= Tasks.getTick() - 1
+                                && currentTargetUpFly
+                                && TargetSelector.INSTANCE.isWithinAttackRange(
+                                        mc.player.getPos(), entity.getBoundingBox()))) {
                     stateMachine.setState(STATE_PULL_UP);
                     stateMachine.step();
                 } else {
@@ -1944,7 +2020,7 @@ public class ElytraBot extends BaseModule {
     public static class MaceAuraGround extends AbstractMaceBehaviour implements HitListener {
         private void setTargetToEat(Vec3d predictor, boolean headSimulation, double height) {
             if (headSimulation) {
-                Vec3d vec3d = base.getCurrentSyncedPos().subtract(mc.player.getPos());
+                Vec3d vec3d = base.getCurrentPos().subtract(mc.player.getPos());
                 if (vec3d.horizontalLength() > base.combatRange()) {
                     setTargetToPlayerUpper(predictor, height);
                 } else {
@@ -1965,7 +2041,7 @@ public class ElytraBot extends BaseModule {
             Vec3d simulation = MovTasks.simulateMovement(mc.player, mc.player.getPos(), testMovement, false);
             Vec3d predictor = base.maceUsePredictor.get()
                     ? PositionPredict.INSTANCE.attackPredictArgument.get().predict(base.target)
-                    : base.getCurrentSyncedPos();
+                    : base.getCurrentPos();
             boolean simulationHead = simulation.squaredDistanceTo(testMovement) > 1E-4;
             double pullupHeight = base.maceHeightGround.get();
             if (base.maceChaseFollowYBias.get()) {
@@ -1975,11 +2051,11 @@ public class ElytraBot extends BaseModule {
                             * (horizontalRange - base.maceChaseFollowBiasStartHorizontalRange.get());
                 }
             }
-            double targetY = base.getCurrentSyncedPos().y + pullupHeight;
+            double targetY = base.getCurrentPos().y + pullupHeight;
             // check pulling time
 
-            boolean mayFollow = (mc.player.getY() >= targetY)
-                    || (mc.player.getY() > base.getCurrentSyncedPos().y
+            boolean mayFollow = (mc.player.getY() >= targetY && startPullUpTick > 1)
+                    || (mc.player.getY() > base.getCurrentPos().y
                             && startPullUpTick != 0
                             && Tasks.getTick() > base.maceRemainPullUpTick.get() + startPullUpTick + pullupHeight);
             shouldFollow = simulationHead || mayFollow;
@@ -1987,7 +2063,7 @@ public class ElytraBot extends BaseModule {
                 if (!shouldForcePullUp) {
                     return STATE_FOLLOW;
                 } else {
-                    setTargetToEat(base.getCurrentSyncedPos(), simulationHead, pullupHeight);
+                    setTargetToEat(base.getCurrentPos(), simulationHead, pullupHeight);
                     machine.markForEndState();
                     return STATE_PULL_UP;
                 }
@@ -2011,25 +2087,28 @@ public class ElytraBot extends BaseModule {
             }
             Vec3d targetPos = base.maceUsePredictor.get()
                     ? PositionPredict.INSTANCE.attackPredictArgument.get().predict(base.target)
-                    : base.getCurrentSyncedPos();
+                    : base.getCurrentPos();
             // use real bounding box for hit
             boolean targetInRange = TargetSelector.INSTANCE.isWithinAttackRange(
                     mc.player.getPos(),
-                    base.target.getBoundingBox(),
+                    base.target,
                     CombatTasks.getCombatExtra().getAttackAtTargetRange(base.target));
 
             if (base.currentOnGround) {
                 if (targetInRange) {
-                    setTargetToPlayer(base.getCurrentSyncedPos());
+                    setTargetToPlayer(base.getCurrentPos());
                     scheduleAttack();
+                    if (movementDirection.y >= 0) {
+                        return STATE_PULL_UP;
+                    }
                     machine.markForEndState();
-                    return STATE_WAIT_ATTACK;
+                    return STATE_FOLLOW;
                 } else {
-                    setTargetToPlayer(base.getCurrentSyncedPos());
+                    setTargetToPlayer(base.getCurrentPos());
                     Vec3d testMovement = movementDirection.normalize().multiply(0.1);
                     Vec3d simulation = MovTasks.simulateMovement(mc.player, mc.player.getPos(), testMovement, true);
                     boolean simulationFeet = simulation.squaredDistanceTo(testMovement) > 1E-4;
-                    if (simulationFeet) {
+                    if (simulationFeet || movementDirection.y >= 0) {
                         // reset movement
                         movementDirection = Vec3d.ZERO;
                         return STATE_PULL_UP;
@@ -2049,7 +2128,7 @@ public class ElytraBot extends BaseModule {
                         scheduleAttack();
                         machine.markForEndState();
                         return movementDirection.y > 0 ? STATE_PULL_UP : STATE_FOLLOW;
-                    } else if (movementDirection.y > 0) {
+                    } else if (movementDirection.y >= 0) {
                         return STATE_PULL_UP;
                     } else {
                         machine.markForEndState();
@@ -2057,19 +2136,15 @@ public class ElytraBot extends BaseModule {
                     }
                 } else {
                     if (targetInRange) {
-                        setTargetToPlayer(base.getCurrentSyncedPos());
                         scheduleAttack();
+                    }
+                    setTargetToPlayer(targetPos);
+                    if (movementDirection.y >= 0) {
+                        movementDirection = Vec3d.ZERO;
+                        return STATE_PULL_UP;
+                    } else {
                         machine.markForEndState();
                         return STATE_FOLLOW;
-                    } else {
-                        setTargetToPlayer(targetPos);
-                        if (movementDirection.y > 0) {
-                            movementDirection = Vec3d.ZERO;
-                            return STATE_PULL_UP;
-                        } else {
-                            machine.markForEndState();
-                            return STATE_FOLLOW;
-                        }
                     }
                 }
             }
@@ -2182,7 +2257,7 @@ public class ElytraBot extends BaseModule {
             boolean found = false;
             if (base.currentOnGround) {
                 double attackAtTargetRange = CombatTasks.getCombatExtra().getAttackAtTargetRange(base.target);
-                Vec3d targetEyePos = base.getCurrentSyncedPos().add(0, base.target.dimensions.eyeHeight(), 0);
+                Vec3d targetEyePos = base.getCurrentPos().add(0, base.target.dimensions.eyeHeight(), 0);
                 BlockHitResult raycastResult = mc.world.raycast(new RaycastContext(
                         mc.player.getEyePos(),
                         targetEyePos,
@@ -2208,7 +2283,7 @@ public class ElytraBot extends BaseModule {
                     for (BlockPos pos : searchPoses) {
                         Vec3d centerPos = pos.toCenterPos();
                         if (!TargetSelector.INSTANCE.isWithinAttackRange(
-                                centerPos, base.target.getBoundingBox(), attackAtTargetRange + 0.5D)) {
+                                centerPos, base.target, attackAtTargetRange + 0.5D)) {
                             continue;
                         }
                         if (mc.world
@@ -2314,103 +2389,23 @@ public class ElytraBot extends BaseModule {
 
         public int onStateFollow(StateMachine machine) {
             Vec3d targetPos = getTargetPosition();
+            if (base.spearAntiSpearPullOverWhenPredictHit.get() && predictMayHitAntiSpear(targetPos)) {
+                return STATE_PULL_OVER;
+            }
             if (mc.player.getEyePos().squaredDistanceTo(targetPos) < MathUtils.s2(getActiveRange())) {
                 return STATE_NEAR_FOLLOW;
             }
             machine.markForEndState();
             /// compute their
-            Vec3d originalLook = calculateTargetDirection(targetPos);
-            if (originalLook.length() < 6) {
-                originalLook = originalLook.normalize().multiply(6);
-            }
-            if (canAdjustMovement()) {
-                if (adjustMovementForSpear((PlayerEntity) base.target, originalLook, false)) {
-                    return STATE_FOLLOW;
-                }
-            }
-            movementDirection = originalLook;
+            setTargetToPlayer(targetPos, false);
             return STATE_FOLLOW;
         }
 
-        private boolean canAdjustMovement() {
-            return false && base.isTargetUsingSpear();
-        }
-
-        private boolean adjustMovementForSpear(PlayerEntity otherShit, Vec3d originalLook, boolean expand) {
-            // shit not work
-            // handle their shit ass spear
-
-            // filter run away
-            //            if (otherShit.getRotationVector().dotProduct(mc.player.getPos().subtract(otherShit.getPos()))
-            // < 0) {
-            //                return false;
-            //            }
-            if (otherShit.squaredDistanceTo(mc.player.getPos()) < MathUtils.s2(getActiveRange() * 2)) {
-                if (Tasks.getTick() % 5 < 2) {
-                    return moveAdjust(originalLook);
-                } else {
-                    return movementPredictAdjust(originalLook);
-                }
-            }
-
-            Box ourBox = expand ? mc.player.getBoundingBox().expand(0.85, 0.85, 0.85) : mc.player.getBoundingBox();
-            Vec3d theirKnownMovement = PositionPredict.INSTANCE.predictKnownMovement(otherShit);
-            Vec3d theirPredictedPos = PositionPredict.INSTANCE
-                    .spearPredictArgument
-                    .get()
-                    .predict(otherShit); // predictFlyingPosition(otherShit, 2, 6);
-            Vec3d facing = otherShit.getRotationVector();
-            Debug.debug("Spear judgement", theirKnownMovement, theirPredictedPos, mc.player.getPos());
-            double reachD = theirKnownMovement.dotProduct(facing);
-            Vec3d theirPredictedEyePos = theirPredictedPos.add(0, otherShit.getEyeHeight(otherShit.getPose()), 0);
-            Vec3d raycastStart = theirPredictedEyePos.add(facing.multiply(getMinRange()));
-            Vec3d raycastEnd = theirPredictedEyePos.add(facing.multiply(getActiveRange() + reachD));
-            if (ourBox.raycast(raycastStart, raycastEnd).isPresent()) {
-                return moveAdjust(originalLook);
-            }
-            return false;
-            // do spear raytrace
-        }
-
-        private boolean moveAdjust(Vec3d originalLook) {
-            //
-            Debug.debug("Judget may hit");
-            Vec3d originalLookHorizontal = originalLook.withAxis(Direction.Axis.Y, 0);
-            Vec3d vertical = new Vec3d(0, 1, 0);
-            Vec3d side = vertical.crossProduct(originalLookHorizontal);
-            Vec3d revertDirection =
-                    side.normalize().multiply(originalLookHorizontal.length()).add(0, originalLookHorizontal.y, 0);
-            Vec3d testVector = revertDirection.normalize().multiply(0.5);
-            Vec3d simulate = MovTasks.simulateMovement(mc.player, mc.player.getPos(), testVector, false);
-            if (simulate.squaredDistanceTo(testVector) < 0.1) {
-                movementDirection = revertDirection;
-                Debug.debug("JudgeA", movementDirection);
-                RenderTasks.drawBoxMov(
-                        mc.player.getBoundingBox(), revertDirection.normalize().multiply(1.7), 50, Color.BLUE);
-                return true;
-            } else {
-                revertDirection = revertDirection.negate();
-                testVector = testVector.negate();
-                simulate = MovTasks.simulateMovement(mc.player, mc.player.getPos(), testVector, false);
-                if (simulate.squaredDistanceTo(testVector) < 0.1) {
-                    movementDirection = revertDirection;
-                    Debug.debug("JudgeB", movementDirection);
-                    RenderTasks.drawBoxMov(
-                            mc.player.getBoundingBox(),
-                            revertDirection.normalize().multiply(1.7),
-                            50,
-                            Color.BLUE);
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private boolean movementPredictAdjust(Vec3d originalLook) {
-            return false;
-        }
-
         public int onStateNearFollow(StateMachine machine) {
+            Vec3d targetPosition = getTargetPosition();
+            if (base.spearAntiSpearPullOverWhenPredictHit.get() && predictMayHitAntiSpear(targetPosition)) {
+                return STATE_PULL_OVER;
+            }
             if ((base.currentInCombatRange && base.currentAction == TargetAction.CIRCLING)
                     || base.currentAction == TargetAction.TOWARDS
                     || base.currentAction == TargetAction.AFK) {
@@ -2418,60 +2413,49 @@ public class ElytraBot extends BaseModule {
                     return STATE_PULL_OVER;
                 }
             }
-            Vec3d targetPosition = getTargetPosition();
-            if (mc.player.getEyePos().squaredDistanceTo(targetPosition) > MathUtils.s2(getActiveRange())) {
+            double sqDist = mc.player.getEyePos().squaredDistanceTo(targetPosition);
+            if (sqDist > MathUtils.s2(getActiveRange())) {
                 return STATE_FOLLOW;
             } else {
                 //                else if (++nearFollowTimer > getMaxAttackPeriod()) {
-                //                    // catch up
-                //                    state = STATE_PULL_OVER;
-                //                    nearFollowTimer = 0;
-                //                }
+                if (!base.spearEnableNearPassthroughFeature.get() && sqDist < MathUtils.s2(getMinRange())) {
+                    return STATE_PULL_OVER;
+                }
                 machine.markForEndState();
-                Vec3d look = targetPosition.subtract(mc.player.getEyePos());
-                if (look.length() < 6) {
-                    look = look.normalize().multiply(6);
-                }
-                if (canAdjustMovement()) {
-                    if (adjustMovementForSpear((PlayerEntity) base.target, look, false)) {
-                        return STATE_NEAR_FOLLOW;
-                    }
-                }
-                Vec3d lookHorizontal = look.withAxis(Direction.Axis.Y, 0);
-                Vec3d lastMoveHorizontal =
-                        PlayerStateManager.INSTANCE.lastKnownRealMovementSpeed.withAxis(Direction.Axis.Y, 0);
-                double dotValue = lookHorizontal.dotProduct(lastMoveHorizontal);
-                if (dotValue < 0) {
-                    look = look.negate();
-                }
-                movementDirection = look;
+                setTargetToPlayer(targetPosition, base.spearEnableNearPassthroughFeature.get());
                 return STATE_NEAR_FOLLOW;
             }
         }
+
         // todo: howto when combating
         public int onStatePullOver(StateMachine machine) {
             Vec3d targetPosition;
+            boolean predictMayHit;
             if (++pullOverTimer > getCooldown()) {
                 return STATE_FOLLOW;
             } else {
                 targetPosition = getTargetPosition();
+                predictMayHit = predictMayHitAntiSpear((targetPosition));
                 // calculate left time
-                if (base.currentAction != null) {
+                if (!predictMayHit && base.currentAction != null) {
                     if (base.currentAction == TargetAction.AFK
                             || base.currentAction == TargetAction.SLOW_SPEED
-                            || (base.currentInCombatRange && base.currentAction != TargetAction.ESCAPING)) {
+                            || (base.currentInCombatRange)
+                            || base.currentAction == TargetAction.ESCAPING) {
                         // stable
-                        int leftTicks = getCooldown() - pullOverTimer;
-                        double canChaseDistance = Math.max(0.0D, 1.0D * (leftTicks));
-                        if (mc.player.getEyePos().squaredDistanceTo(targetPosition) > MathUtils.s2(canChaseDistance)) {
-                            return STATE_FOLLOW;
-                        }
-                    } else if (base.currentAction == TargetAction.ESCAPING) {
-                        // chasing
-                        // do not too close,
                         double canChaseDistance = getMinRange();
                         if (mc.player.getEyePos().squaredDistanceTo(targetPosition) > MathUtils.s2(canChaseDistance)) {
-                            return STATE_FOLLOW;
+                            Vec3d currentPos = base.getCurrentPos();
+                            Vec3d predictMovement = targetPosition.subtract(currentPos);
+                            if (predictMovement.y < -predictMovement.horizontalLength()) {
+                                return STATE_FOLLOW;
+                            } else if (predictMovement.y < predictMovement.horizontalLength()
+                                    && base.spearEscapingPulloutChaseHorizontal.get()) {
+                                return STATE_FOLLOW;
+                            } else if (predictMovement.y > predictMovement.horizontalLength()
+                                    && base.spearEscapingPulloutChaseHorizontal.get()) {
+                                return STATE_FOLLOW;
+                            }
                         }
                     } else {
                         // meeting
@@ -2488,11 +2472,6 @@ public class ElytraBot extends BaseModule {
             if (look.length() < 6) {
                 look = look.normalize().multiply(6);
             }
-            if (canAdjustMovement()) {
-                if (adjustMovementForSpear((PlayerEntity) base.target, look, true)) {
-                    return STATE_PULL_OVER;
-                }
-            }
             if (base.currentOnGround) {
                 if (look.lengthSquared() < getMinRange()) {
                     movementDirection = look.negate().add(0, 1, 0);
@@ -2501,18 +2480,63 @@ public class ElytraBot extends BaseModule {
                 }
             } else {
                 movementDirection = look.negate();
-                movementDirection = movementDirection.withAxis(Direction.Axis.Y, Math.abs(movementDirection.y));
             }
-            //            Vec3d lookHorizontal = movementDirection.withAxis(Direction.Axis.Y, 0);
-            //            Vec3d lastMoveHorizontal =
-            //                PlayerStateManager.INSTANCE.lastKnownRealMovementSpeed.withAxis(Direction.Axis.Y, 0);
-            //            double dotValue = lookHorizontal.dotProduct(lastMoveHorizontal);
-            //            if (dotValue < 0) {
-            //                movementDirection = movementDirection.negate();
-            //                movementDirection = movementDirection.withAxis(Direction.Axis.Y,
-            // Math.abs(movementDirection.y));
-            //            }
+            if (predictMayHit && base.spearAntiSpearPullOverWhenPredictHit.get()) {
+                movementDirection = new Vec3d(movementDirection.z, movementDirection.y, -movementDirection.x);
+            }
+            if (movementDirection.y < 0) {
+                movementDirection = movementDirection.withAxis(Direction.Axis.Y, Math.abs(movementDirection.y));
+            } else if (movementDirection.y == 0) {
+                movementDirection = movementDirection.withAxis(Direction.Axis.Y, movementDirection.length());
+            }
+            Vec3d test = movementDirection.normalize().multiply(0.5D);
+            Vec3d simulate = MovTasks.simulateMovement(mc.player, mc.player.getPos(), test, true);
+            Vec3d delta = simulate.subtract(test);
+            if (delta.horizontalLengthSquared() > 1E-2) {
+                machine.markForEndState();
+                return STATE_FOLLOW;
+            }
+            if (delta.y != 0) {
+                movementDirection = movementDirection.withAxis(Direction.Axis.Y, 0);
+            } else {
+                angleOptimize();
+            }
             return STATE_PULL_OVER;
+        }
+
+        public void setTargetToPlayer(Vec3d targetPosition, boolean through) {
+            Vec3d look;
+            look = calculateTargetDirection(targetPosition);
+            if (look.length() < 6) {
+                look = look.normalize().multiply(6);
+            }
+            if (through) {
+                Vec3d lookHorizontal = look.withAxis(Direction.Axis.Y, 0);
+                Vec3d lastMoveHorizontal =
+                        PlayerStateManager.INSTANCE.lastKnownRealMovementSpeed.withAxis(Direction.Axis.Y, 0);
+                double dotValue = lookHorizontal.dotProduct(lastMoveHorizontal);
+                if (dotValue < 0) {
+                    look = look.negate();
+                }
+            }
+            movementDirection = look;
+            if (targetPosition.subtract(mc.player.getEyePos()).length() > base.spearChaseOptimizeAngle.get()) {
+                angleOptimize();
+            }
+        }
+
+        public void angleOptimize() {
+            if (base.spearHideAngleOptimize.get()) {
+                if (movementDirection.y >= 0) {
+                    movementDirection = movementDirection.withAxis(Direction.Axis.Y, movementDirection.length());
+                    movementDirection = ElytraOptimizeUtils.calculateBestPullupSpeed(movementDirection);
+                    movementDirection = movementDirection.normalize().multiply(5);
+                } else {
+                    movementDirection =
+                            ElytraOptimizeUtils.calculateBestDownForwardSpeed(movementDirection, true, true);
+                    movementDirection = movementDirection.normalize().multiply(5);
+                }
+            }
         }
 
         public void onSwitchToNearFollow(boolean isOn) {
@@ -2525,15 +2549,15 @@ public class ElytraBot extends BaseModule {
 
         public double getActiveRange() {
 
-            return 8.0D;
+            return base.spearActiveRange.get();
         }
 
         public double getMinRange() {
-            return 1.0D;
+            return base.spearMinRange.get();
         }
 
         public int getCooldown() {
-            return 6;
+            return base.spearPullawayCooldown.get();
         }
 
         @Override
@@ -2957,7 +2981,7 @@ public class ElytraBot extends BaseModule {
             Vec3d targetPosition =
                     base.target.dimensions.getBoxAt(predictor).getCenter().subtract(mc.player.getEyePos());
             if (targetPosition.length() > base.spearV3DiveDistance.get()) {
-                return ElytraOptimizeUtils.calculateBestDownwardSpeed(targetPosition);
+                return ElytraOptimizeUtils.calculateBestDownForwardSpeed(targetPosition, true, false);
             }
             if (targetPosition.length() < 5.0D && targetPosition.lengthSquared() > 1E-6) {
                 return targetPosition.normalize().multiply(5.0D);
@@ -2979,7 +3003,7 @@ public class ElytraBot extends BaseModule {
             }
             return TargetSelector.INSTANCE.isWithinAttackRange(
                     mc.player.getPos(),
-                    base.target.getBoundingBox(),
+                    base.target,
                     CombatTasks.getCombatExtra().getAttackAtTargetRange(base.target));
         }
 

@@ -246,7 +246,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
 
                                 velocity = ElytraOptimizeUtils.calculateBestPullupSpeed(velocity);
                             } else if (movementInput.y < 0 && velocity.y < 0) {
-                                velocity = ElytraOptimizeUtils.calculateBestDownForwardSpeed(velocity, false);
+                                velocity = ElytraOptimizeUtils.calculateBestDownForwardSpeed(velocity, false, true);
                             }
                         }
                         if (movementInput.horizontalLengthSquared() > 0.0D) {

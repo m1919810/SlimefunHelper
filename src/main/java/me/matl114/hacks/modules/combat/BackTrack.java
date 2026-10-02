@@ -124,7 +124,7 @@ public class BackTrack extends BaseModule {
                     lastTrackingPosition = currentTarget.getPos();
                 } else if (!TargetSelector.INSTANCE.isWithinAttackRange(
                         mc.player.getPos(),
-                        currentTarget.getBoundingBox(),
+                        currentTarget,
                         CombatExtra.INSTANCE.getAttackAtTargetRange(currentTarget))) {
                     setNoDelay();
                 }

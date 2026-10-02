@@ -489,6 +489,7 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
             Direction direction,
             CallbackInfoReturnable<Boolean> cir,
             net.minecraft.block.BlockState blockState) {
+        breakingBlock = true;
         if (breakIfComplete(pos, blockState, direction)) {
             cir.setReturnValue(true);
         }

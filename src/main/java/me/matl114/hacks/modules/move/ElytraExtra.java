@@ -170,9 +170,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             .defaultValue(ArmorFlyMode.TICK)
             .build();
 
-    public final FlagRef forceArmor =
-            flagBuilder(armorFlyPath.add("force-no-elytra")).build();
-
     public final FlagRef enableLiquidFly =
             flagBuilder(armorFlyPath.add("enable-liquid-fly")).build();
 

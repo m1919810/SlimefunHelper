@@ -40,6 +40,7 @@ import me.matl114.utils.config.kv.EnumAttrKeyValue;
 import me.matl114.utils.config.kv.TypeConvertAttrKeyValue;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VRender;
+import net.minecraft.client.network.OtherClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
@@ -121,6 +122,10 @@ public class PositionPredict extends BaseModule {
     }
 
     public static Predictor getPlayerPredictor(Entity id) {
+        // only OtherClientPlayerEntity can accept packet predictor
+        if (id instanceof PlayerEntity pl && !(pl instanceof OtherClientPlayerEntity)) {
+            return new LocalEntityPredictor(id);
+        }
         synchronized (asyncLoadedPlayerPositionTrackers) {
             var re = asyncLoadedPlayerPositionTrackers.get(id.getId());
             return re != null ? re : new LocalEntityPredictor(id);
@@ -196,8 +201,8 @@ public class PositionPredict extends BaseModule {
         if (playerSyncPositionPeek.get()) {
             List<Box> boxes = new ArrayList<>();
             for (var re : mc.world.getPlayers()) {
-                Vec3d trackedPos = re.getTrackedPosition().getPos();
-                Vec3d currentPos = getPredictor(re).getCurrentPos();
+                Vec3d trackedPos = re.getPos();
+                Vec3d currentPos = getPredictor(re).getCurrentSyncedPos();
                 if (currentPos.squaredDistanceTo(trackedPos) > 1E-2) {
                     boxes.add(re.dimensions.getBoxAt(currentPos));
                 }

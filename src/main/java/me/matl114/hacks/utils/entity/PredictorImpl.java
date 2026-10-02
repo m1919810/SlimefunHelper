@@ -14,6 +14,8 @@ public class PredictorImpl implements Predictor {
     private int ownerId;
     private final Deque<KnownPosition> positions = new ArrayDeque<>();
     private static final int MAX_HISTORY = 80;
+    private Vec3d lastSyncPosition;
+    private int lastSyncTick = 0;
     private final TrackedPosition currentTrackedPosition = new TrackedPosition();
     private float currentSyncedPitch;
     private float currentSyncedYaw;
@@ -23,6 +25,7 @@ public class PredictorImpl implements Predictor {
     public void initializeTrackedPosition(int owner, double x, double y, double z, float pitch, float yaw) {
         this.ownerId = owner;
         this.currentTrackedPosition.setPos(new Vec3d(x, y, z));
+        lastSyncPosition = this.currentTrackedPosition.getPos();
         this.currentSyncedPitch = pitch;
         this.currentSyncedYaw = yaw;
     }
@@ -101,7 +104,9 @@ public class PredictorImpl implements Predictor {
     //    }
 
     private void setSyncedPosition(Vec3d position) {
+        lastSyncPosition = getCurrentPos();
         currentTrackedPosition.setPos(position);
+        lastSyncTick = Tasks.getTick();
     }
 
     /**
@@ -124,6 +129,13 @@ public class PredictorImpl implements Predictor {
             }
             Vec3d displacement = newest.vec3d().subtract(second.vec3d());
             return displacement.multiply(1.0 / dt);
+        }
+    }
+
+    @Override
+    public Vec3d getCurrentSyncedPos() {
+        synchronized (this) {
+            return currentTrackedPosition.getPos();
         }
     }
 
