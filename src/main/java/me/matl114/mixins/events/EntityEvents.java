@@ -5,12 +5,15 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.accessors.events.EntityAccess;
+import me.matl114.accessors.events.TrackedPositionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.TrackedPosition;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.registry.tag.TagKey;
@@ -18,6 +21,8 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -28,6 +33,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Environment(EnvType.CLIENT)
 @Mixin(Entity.class)
 public abstract class EntityEvents<T extends Entity> implements EntityAccess<T> {
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void trackedPositionMarkOwner(EntityType type, World world, CallbackInfo ci) {
+        ((TrackedPositionAccess) this.trackedPosition).setOwner((Entity) (Object) this);
+    }
+
     @ModifyExpressionValue(
             method = "updateVelocity",
             at =
@@ -57,6 +67,10 @@ public abstract class EntityEvents<T extends Entity> implements EntityAccess<T> 
 
     @Shadow
     public abstract ActionResult interact(PlayerEntity player, Hand hand);
+
+    @Shadow
+    @Final
+    private TrackedPosition trackedPosition;
 
     @Unique
     public void setDataFlag(int index, boolean val) {

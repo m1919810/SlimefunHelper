@@ -136,8 +136,6 @@ public class Attack extends BaseModule {
             .defaultValue(new WrapColor(Formatting.GREEN))
             .build();
 
-    private final Random attackOffsetRand = new Random();
-
     public boolean canUseTp() {
         return tpRange.get().positive();
     }
@@ -530,7 +528,6 @@ public class Attack extends BaseModule {
                         Vec3d posDelta = Vec3d.ZERO;
                         Vec3d posDelta2 = Vec3d.ZERO;
                         Vec3d velocity;
-                        Vec3d lookVec;
                         boolean distancePassAttack = true;
                         boolean runThisTick = true;
                         int max = 10;
@@ -554,18 +551,15 @@ public class Attack extends BaseModule {
 
                             // step back our position
                             velocity = args.getVelocity();
-                            Vec3d predictedEyePos = TargetSelector.INSTANCE.getBestAttackEyePos(
-                                    mc.player.getPos(), target.getBoundingBox()); // mc.player.getEyePos();
+                            Vec3d pos = mc.player.getPos();
                             // revert shit
                             if (useMaceAttack || args.isFallFlying()) {
                                 // fix targeting in big velocity
-                                predictedEyePos = predictedEyePos.add(
-                                        mc.player.getVelocity()); // predictedEyePos.add(mc.player.getVelocity());
+                                pos = pos.add(mc.player.getVelocity()); // predictedEyePos.add(mc.player.getVelocity());
                             }
                             Vec3d vec3d = args.getPos();
                             if (tpRange.get().positive()
-                                    && target.getBoundingBox().squaredMagnitude(predictedEyePos)
-                                            > MathUtils.s2(attackRange)) {
+                                    && !TargetSelector.INSTANCE.isWithinAttackRange(pos, target, attackRange)) {
                                 // need tp attack
                                 // how?
                                 // 平面突袭？
@@ -580,12 +574,10 @@ public class Attack extends BaseModule {
                                     posDelta = vec3d; // vec3d1.subtract(vec3d);
                                     posDelta2 = vec3d1;
                                     args.setPosition(vec3d1.add(0, 9E-8, 0));
-                                    predictedEyePos = TargetSelector.INSTANCE.getBestAttackEyePos(
-                                            args.getPos(), target.getBoundingBox());
+                                    pos = args.getPos();
                                 }
                                 // backoff
-                                if (!TargetSelector.INSTANCE.isWithinAttackRange(
-                                        args.getPos(), target.getBoundingBox(), attackRange)) {
+                                if (!TargetSelector.INSTANCE.isWithinAttackRange(args.getPos(), target, attackRange)) {
                                     // Debug.chat("Distance to large , disable atack");
                                     distancePassAttack = false;
                                     movementManagerEvent.context.playerStatus.restoreRotation();
@@ -595,31 +587,10 @@ public class Attack extends BaseModule {
                             }
                             // after move player, do target
                             if (distancePassAttack) {
-                                Vec3d eyePos = target.getEyePos();
-                                Vec3d targetPos = target.getPos();
-                                double percentage = attackOffsetRand.nextDouble(0.8d, 1.00d);
-                                Vec3d attackOffsetted =
-                                        targetPos.add(eyePos.subtract(targetPos).multiply(percentage));
-                                attackOffsetted.add(
-                                        attackOffsetRand.nextDouble(-0.05d, 0.05d),
-                                        attackOffsetRand.nextDouble(-0.05d, 0.05d),
-                                        attackOffsetRand.nextDouble(-0.05d, 0.05d));
-                                Vec3d cacheDirection = attackOffsetted
-                                        .subtract(predictedEyePos)
-                                        .normalize();
                                 // only fix silent entities, because they will not move
-                                if (!(target instanceof LivingEntity)) {
-                                    cacheDirection = fixRayCastBigBox(
-                                            predictedEyePos, target.getBoundingBox(), cacheDirection, attackRange);
-                                }
+                                Vec3d cacheDirection = TargetSelector.INSTANCE.getEntityRayCast(pos, target);
                                 movementManagerEvent.context.pushImportantRotation(true, true);
                                 PlayerStateManager.setPlayerRotationSafe(args, cacheDirection);
-                                if (RenderTasks.DEBUG_RENDER_COMBAT) {
-                                    RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
-                                            RenderTasks.DEBUG_TICK,
-                                            new RenderTasks.LineObject(predictedEyePos, cacheDirection)));
-                                }
-                                lookVec = cacheDirection;
 
                                 movementManagerEvent.context.markForResetRot();
                             }
@@ -730,9 +701,7 @@ public class Attack extends BaseModule {
             return false;
         }
         Vec3d vec3d = mc.player.getPos();
-        Vec3d predictedEyePos = TargetSelector.INSTANCE.getBestAttackEyePos(vec3d, target.getBoundingBox());
-        boolean distancePassAttack =
-                TargetSelector.INSTANCE.isWithinAttackRange(vec3d, mc.player.getBoundingBox(), attackRange);
+        boolean distancePassAttack = TargetSelector.INSTANCE.isWithinAttackRange(vec3d, target, attackRange);
         if (tpRange.get().positive() && !distancePassAttack) {
 
             Vec3d vec3d1 = MovTasks.tpAttackSearch(vec3d, target.getBoundingBox(), attackRange, 9.9, 1).stream()
@@ -741,10 +710,9 @@ public class Attack extends BaseModule {
             // calculateBestReachPos(vec3d, target.getBoundingBox());
             if (vec3d1 != null && vec3d1.squaredDistanceTo(vec3d) > 1E-7) {
                 mc.player.setPosition(vec3d1.add(0, 9E-8, 0));
-                predictedEyePos = TargetSelector.INSTANCE.getBestAttackEyePos(vec3d, target.getBoundingBox());
             }
             // backoff
-            if (!TargetSelector.INSTANCE.isWithinAttackRange(vec3d, mc.player.getBoundingBox(), attackRange)) {
+            if (!TargetSelector.INSTANCE.isWithinAttackRange(vec3d, target, attackRange)) {
                 distancePassAttack = false;
                 mc.player.setPosition(vec3d);
                 // skip attack
@@ -760,37 +728,18 @@ public class Attack extends BaseModule {
                         .sendPacket(new PlayerActionC2SPacket(
                                 PlayerActionC2SPacket.Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, Direction.DOWN));
             }
-            Vec3d eyePos = target.getEyePos();
-            Vec3d targetPos = target.getPos();
-            double percentage = attackOffsetRand.nextDouble(0.8d, 1.00d);
-            Vec3d attackOffsetted = targetPos.add(eyePos.subtract(targetPos).multiply(percentage));
-            attackOffsetted.add(
-                    attackOffsetRand.nextDouble(-0.05d, 0.05d),
-                    attackOffsetRand.nextDouble(-0.05d, 0.05d),
-                    attackOffsetRand.nextDouble(-0.05d, 0.05d));
-            Vec3d cacheDirection = attackOffsetted.subtract(predictedEyePos).normalize();
-            cacheDirection = fixRayCastBigBox(predictedEyePos, target.getBoundingBox(), cacheDirection, attackRange);
+
+            Vec3d cacheDirection = TargetSelector.INSTANCE.getEntityRayCast(mc.player.getPos(), target);
             // mace
             LegacySnapRotManager.INSTANCE.snapAt(cacheDirection, false);
             attackWithSettings(mc.player, target, settings);
+            if (tpRange.get().positive()) {
+                mc.player.setPosition(vec3d);
+            }
         }
 
         mc.player.setSprinting(sprintFlag);
         return false;
-    }
-
-    private Vec3d fixRayCastBigBox(Vec3d usingEyePos, Box targetBox, Vec3d currentRayCast, double currentAttackRange) {
-        Vec3d rayCastTest = currentRayCast.normalize().multiply(currentAttackRange - 0.009178);
-        var ray = targetBox.raycast(usingEyePos, usingEyePos.add(rayCastTest));
-        if (ray.isPresent()) {
-            return currentRayCast;
-        } else {
-            // ?
-            Box shrinkedBox = targetBox.expand(-1E-7, -1E-7, -1E-7);
-
-            Vec3d targetingPos = MathUtils.magnitudePoint(shrinkedBox, usingEyePos);
-            return targetingPos.subtract(usingEyePos).normalize();
-        }
     }
 
     private boolean processIllegalAttack(Entity target, AttackSettings settings) {
@@ -808,7 +757,7 @@ public class Attack extends BaseModule {
         boolean alreadyInRange = alreadyAtTarget
                 || TargetSelector.INSTANCE.isWithinAttackRange(
                         player.getPos(),
-                        target.getBoundingBox(),
+                        target,
                         attackRange); // target.getBoundingBox().squaredMagnitude(player.getEyePos()) <
         // MathUtils.s2(attackRange);
         // mace hack、

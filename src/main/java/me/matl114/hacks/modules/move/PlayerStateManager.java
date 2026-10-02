@@ -90,7 +90,7 @@ public class PlayerStateManager extends BaseModule {
     public int lastAttackStrengthResetTick = 0;
     public int lastStartGlidingTick = 0;
     public boolean lastMovementContainsPosition = false;
-    boolean lastTickHasMovement = false;
+    public boolean lastTickHasMovement = false;
     public boolean lastClimbing;
     public boolean lastInLava;
     public boolean lastInWater;
