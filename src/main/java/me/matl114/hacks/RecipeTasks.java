@@ -5,7 +5,9 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.hacks.utils.recipes.NetworkRecipeWrap;
 import me.matl114.hacks.utils.recipes.RecipeIngredient;
+import me.matl114.hacks.utils.recipes.WrapRecipe;
 import net.fabricmc.fabric.api.recipe.v1.ingredient.CustomIngredient;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
@@ -22,7 +24,7 @@ import net.minecraft.util.context.ContextParameterMap;
 
 public class RecipeTasks {
     private static MinecraftClient mc = MinecraftClient.getInstance();
-    private static Map<Identifier, RecipeRecord> CACHE;
+    private static Map<Identifier, WrapRecipe> CACHE;
     public static final Map EMPTY = Map.of();
     public static final Map<String, RecipeType> TYPE_MAP = new LinkedHashMap<>();
 
@@ -46,14 +48,14 @@ public class RecipeTasks {
                 .orElse(null);
     }
 
-    public static Map<Identifier, RecipeRecord> getAllRecipe() {
+    public static Map<Identifier, WrapRecipe> getAllRecipe() {
         init();
         return CACHE;
     }
 
     private static void init() {
         if (CACHE == null || CACHE.isEmpty()) {
-            Map<Identifier, RecipeRecord> map;
+            Map<Identifier, WrapRecipe> map;
             synchronized (RecipeTasks.class) {
                 resetCache();
                 CACHE = new LinkedHashMap<>();
@@ -67,7 +69,7 @@ public class RecipeTasks {
             for (var entry : mc.player.getRecipeBook().recipes.entrySet()) {
                 var key = entry.getKey();
                 var value = entry.getValue();
-                map.put(Identifier.ofVanilla(String.valueOf(key.index())), RecipeRecord.of(value));
+                map.put(Identifier.ofVanilla(String.valueOf(key.index())), wrap(value));
             }
         }
     }
@@ -81,39 +83,9 @@ public class RecipeTasks {
         }
     }
 
-    public static record RecipeRecord(
-            Identifier identifier, ItemStack craftingTypeIcon, ItemStack output, RecipeIngredient[] ingredients)
-            implements me.matl114.hacks.utils.recipes.RecipeEntry {
-        public static RecipeRecord of(RecipeDisplayEntry instance) {
-            ContextParameterMap contextParameterMap = SlotDisplayContexts.createParameters(mc.world);
-            ItemStack craftingStation = instance.display().craftingStation().getFirst(contextParameterMap);
-            ItemStack output = instance.display().result().getFirst(contextParameterMap);
-            RecipeIngredient[] recipeIngredients = transfer3x3RecipeDisplay(instance.display(), contextParameterMap);
-            return new RecipeRecord(
-                    Identifier.ofVanilla(String.valueOf(instance.id().index())),
-                    craftingStation,
-                    output,
-                    recipeIngredients);
-        }
-
-        @Override
-        public String rid() {
-            return Registries.ITEM.getId(craftingTypeIcon.getItem()).toString();
-        }
-
-        @Override
-        public String id() {
-            return identifier.toString();
-        }
-
-        @Override
-        public RecipeIngredient[] ingredient() {
-            return ingredients;
-        }
-    }
-
-    public static RecipeIngredient[] transfer3x3RecipeDisplay(RecipeTasks.RecipeRecord recipeRecord) {
-        return recipeRecord.ingredients();
+    private static WrapRecipe wrap(RecipeDisplayEntry entry) {
+        ContextParameterMap context = SlotDisplayContexts.createParameters(mc.world);
+        return NetworkRecipeWrap.of(entry, context);
     }
 
     public static RecipeIngredient[] transfer3x3RecipeDisplay(RecipeDisplay instance, ContextParameterMap map) {
@@ -203,12 +175,12 @@ public class RecipeTasks {
         var map = getAllRecipe();
         for (RecipeBookAddS2CPacket.Entry entry : event.context().entries()) {
             RecipeDisplayEntry entry0 = entry.contents();
-            map.put(Identifier.ofVanilla(String.valueOf(entry0.id().index())), RecipeRecord.of(entry0));
+            map.put(Identifier.ofVanilla(String.valueOf(entry0.id().index())), wrap(entry0));
         }
     }
 
     public static void removeRecipe(Event<RecipeBookRemoveS2CPacket> event) {
-        Map<Identifier, RecipeRecord> map;
+        Map<Identifier, WrapRecipe> map;
         if ((map = CACHE) != null) {
             event.context().recipes().stream()
                     .map(NetworkRecipeId::index)
