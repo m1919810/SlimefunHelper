@@ -110,6 +110,8 @@ public class NoRender extends BaseModule {
             .defaultValue(new EntityTypeRegex(new Regex("^()$")))
             .build();
 
+    public final FlagRef noArmor = flagBuilder(entity.add("armor")).build();
+
     public final FlagRef invisibility = flagBuilder(entity.add("invisibility")).build();
 
     public final FlagRef ignoreParticle = flagBuilder(particle.add("force-no")).build();
@@ -253,5 +255,9 @@ public class NoRender extends BaseModule {
 
     public boolean noInvisibility() {
         return isActive() && invisibility.get();
+    }
+
+    public boolean noArmor() {
+        return isActive() && noArmor.get();
     }
 }

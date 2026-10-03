@@ -487,6 +487,9 @@ public class RenderTasks {
     private static NoRender noRender;
 
     @Getter
+    private static HandView handView;
+
+    @Getter
     private static NoSound noSound;
 
     @Getter
@@ -567,6 +570,7 @@ public class RenderTasks {
     private static void initModules(ModuleManager m) {
         renderExtra = new RenderExtra().register(m);
         noRender = new NoRender().register(m);
+        handView = new HandView().register(m);
         noSound = new NoSound().register(m);
         entityLog = new EntityLog().register(m);
         entityESP = new EntityESP().register(m);
