@@ -8,6 +8,7 @@ import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.config.NBTType;
 import me.matl114.managers.config.Ref;
 import me.matl114.utils.ColorUtils;
+import me.matl114.utils.config.NumberClamp;
 import me.matl114.utils.config.WrapperFactory;
 import me.matl114.utils.config.kv.TypeConvertAttrKeyValue;
 import net.minecraft.text.TextColor;
@@ -29,11 +30,13 @@ public record WrapRGBA(TextColor textColor, int alpha) implements NBTParsable<Wr
                         WrapperFactory.of(value.get()::withTextColor, WrapRGBA::textColor);
                 WrapperFactory<Integer, WrapRGBA> alphaFactory =
                         WrapperFactory.of(value.get()::withAlpha, WrapRGBA::alpha);
+                TypeConvertAttrKeyValue<WrapRGBA, Integer> alphaValue =
+                        new TypeConvertAttrKeyValue<>(value, alphaFactory, NBTTypes.INT_TYPE);
+                alphaValue.addValidator(new NumberClamp<>(0, 255));
                 return widget
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(value, colorFactory, NBTTypes.COLOR_TYPE)
                                 .generateValueWidget(factory, 0, 0, colorWidth, dy))
-                        .addDrawableChild(new TypeConvertAttrKeyValue<>(value, alphaFactory, NBTTypes.INT_TYPE)
-                                .generateValueWidget(factory, colorWidth, 0, alphaWidth, dy));
+                        .addDrawableChild(alphaValue.generateValueWidget(factory, colorWidth, 0, alphaWidth, dy));
             },
             new WrapRGBA(TextColor.fromFormatting(Formatting.WHITE), 255));
 

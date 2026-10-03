@@ -110,8 +110,7 @@ public class BaseAttrKeyValue<T> implements AttrKeyValue<T>, Cloneable {
         }
     }
 
-    @Getter
-    List<Predicate<T>> validators = new ArrayList<>();
+    private List<Predicate<T>> validators = new ArrayList<>();
 
     @Getter
     List<Consumer<T>> listeners = new ArrayList<>();
@@ -184,6 +183,11 @@ public class BaseAttrKeyValue<T> implements AttrKeyValue<T>, Cloneable {
 
     public final void addValidator(Predicate<T> validator) {
         validators.add(validator);
+    }
+
+    @Override
+    public final List<Predicate<T>> getValidators() {
+        return validators;
     }
 
     public final void setUpdater(Supplier<T> updater) {

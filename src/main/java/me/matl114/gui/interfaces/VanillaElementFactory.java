@@ -5,6 +5,7 @@ import java.util.function.Supplier;
 import me.matl114.gui.basic.ButtonAction;
 import me.matl114.gui.basic.ColorSampler;
 import me.matl114.gui.basic.ElementHandler;
+import me.matl114.gui.basic.TextAlign;
 import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.basic.TooltipHandler;
 import me.matl114.gui.complex.BoxElement;
@@ -33,6 +34,10 @@ public final class VanillaElementFactory implements ElementFactory {
         return () -> textConfigSupplier.get().color().color();
     }
 
+    private TextAlign textAlign() {
+        return textConfigSupplier.get().textAlign().textAlign();
+    }
+
     @Override
     public ElementHandler createBackground() {
         return createBackground(null);
@@ -50,7 +55,8 @@ public final class VanillaElementFactory implements ElementFactory {
 
     @Override
     public ElementHandler createLabel(TextProvider provider, TooltipHandler handler) {
-        return new LabelElement(provider, textColor().getColorInt()).withTooltips(handler);
+        return new LabelElement(TextProvider.withAlign(provider, textAlign()), textColor().getColorInt())
+                .withTooltips(handler);
     }
 
     @Override
@@ -76,10 +82,11 @@ public final class VanillaElementFactory implements ElementFactory {
     @Override
     public ElementHandler createTitle(TextProvider provider, TooltipHandler handler, boolean splitter) {
         ColorSampler textColor = textColor();
+        TextProvider alignedProvider = TextProvider.withAlign(provider, textAlign());
         ColorLabelElement title = new ColorLabelElement(textColor);
-        title.withElement(new RawTextElement(provider, textColor));
+        title.withElement(new RawTextElement(alignedProvider, textColor));
         if (splitter) {
-            title.combineRender(new SplitterTextElement(provider, textColor));
+            title.combineRender(new SplitterTextElement(alignedProvider, textColor));
         }
         return title.withTooltips(handler);
     }
@@ -90,8 +97,9 @@ public final class VanillaElementFactory implements ElementFactory {
             return createLabel(provider, handler);
         }
         ColorSampler textColor = textColor();
-        return new SplitterTextElement(provider, textColor)
-                .combineRender(new RawTextElement(provider, textColor))
+        TextProvider alignedProvider = TextProvider.withAlign(provider, textAlign());
+        return new SplitterTextElement(alignedProvider, textColor)
+                .combineRender(new RawTextElement(alignedProvider, textColor))
                 .withTooltips(handler);
     }
 

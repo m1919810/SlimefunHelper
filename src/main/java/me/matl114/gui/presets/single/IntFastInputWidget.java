@@ -8,6 +8,7 @@ import me.matl114.gui.complex.RawTextElement;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.IconElement;
 import me.matl114.gui.elements.PlateElement;
+import me.matl114.gui.interfaces.VanillaElementFactory;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.kv.AttrKeyValues;
@@ -147,7 +148,7 @@ public class IntFastInputWidget extends SubScreenWidget {
                         .setAlignment(TextAlign.LEFT))
                 .addToSub(this);
         inputField =
-                keyValue.generateValueWidget(4, 12, inputTextDx - 8, dy - 16).addToSub(this);
+                keyValue.generateValueWidget(VanillaElementFactory.INSTANCE,4, 12, inputTextDx - 8, dy - 16).addToSub(this);
     }
 
     protected void initConfirmButton() {

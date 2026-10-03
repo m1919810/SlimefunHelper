@@ -49,14 +49,12 @@ public interface AttrKeyValue<T> extends KeyValue<T> {
      */
     public void addValidator(Predicate<T> validator);
 
+    public List<Predicate<T>> getValidators();
+
     default SubScreenWidget generateKeyValueInput(
             ElementFactory factory, int x, int y, int keyDx, int blankDx, int inputDx, int dy) {
         return new KeyValueInputWidget<>(
                 x, y, keyDx + blankDx + inputDx, dy, keyDx, blankDx, inputDx, this, factory);
-    }
-    // do not override
-    default DrawableWidget generateValueWidget(int x, int y, int inputDx, int dy) {
-        return getCustomWidgetFactory().generateWidget(this, x, y, inputDx, dy);
     }
 
     default DrawableWidget generateValueWidget(ElementFactory factory, int x, int y, int inputDx, int dy) {

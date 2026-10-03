@@ -155,6 +155,11 @@ public record GuiSetting(
     }
 
     @Override
+    public AlignType textAlign() {
+        return textConfig.textAlign();
+    }
+
+    @Override
     public AlignType buttonTextAlign() {
         return alignConfig.buttonTextAlign();
     }
@@ -265,6 +270,12 @@ public record GuiSetting(
                         "widget.gui-settings.text-config.color",
                         colorAccessor(source, () -> source.get().textConfig().color(), value -> source.get()
                                 .withTextConfig(source.get().textConfig().withColor(value))),
+                        () -> true,
+                        layout,
+                        factory),
+                field("widget.gui-settings.text-config.text_align",
+                        alignAccessor(source, () -> source.get().textConfig().textAlign(), value -> source.get()
+                                .withTextConfig(source.get().textConfig().withTextAlign(value))),
                         () -> true,
                         layout,
                         factory)), layout, factory);

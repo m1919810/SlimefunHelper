@@ -24,6 +24,10 @@ public interface GuiColorSamplier {
 
     WrapRGBA sliderColor();
 
+    default AlignType textAlign() {
+        return AlignType.MIDDLE;
+    }
+
     default AlignType buttonTextAlign() {
         return AlignType.MIDDLE;
     }

@@ -52,17 +52,15 @@ public interface AttrKeyValues {
         AttrKeyValue<?> attrKeyValue) {
         Integer min = null;
         Integer max = null;
-        if(attrKeyValue instanceof BaseAttrKeyValue<?> base){
-            for (var validator :  base.getValidators()) {
-                if (validator instanceof NumberClamp<?> clamp) {
-                    Integer clampMin = clamp.min() != null ? clamp.min().intValue() : null;
-                    Integer clampMax = clamp.max() != null ? clamp.max().intValue() : null;
-                    if (clampMin != null && (min == null || clampMin > min)) {
-                        min = clampMin;
-                    }
-                    if (clampMax != null && (max == null || clampMax < max)) {
-                        max = clampMax;
-                    }
+        for (var validator : attrKeyValue.getValidators()) {
+            if (validator instanceof NumberClamp<?> clamp) {
+                Integer clampMin = clamp.min() != null ? clamp.min().intValue() : null;
+                Integer clampMax = clamp.max() != null ? clamp.max().intValue() : null;
+                if (clampMin != null && (min == null || clampMin > min)) {
+                    min = clampMin;
+                }
+                if (clampMax != null && (max == null || clampMax < max)) {
+                    max = clampMax;
                 }
             }
         }
@@ -92,17 +90,15 @@ public interface AttrKeyValues {
         AttrKeyValue<?> attrKeyValue) {
         Double min = null;
         Double max = null;
-        if(attrKeyValue instanceof BaseAttrKeyValue<?> base){
-            for (var validator : base.getValidators()) {
-                if (validator instanceof NumberClamp<?> clamp) {
-                    Double clampMin = clamp.min() != null ? clamp.min().doubleValue() : null;
-                    Double clampMax = clamp.max() != null ? clamp.max().doubleValue() : null;
-                    if (clampMin != null && (min == null || clampMin > min)) {
-                        min = clampMin;
-                    }
-                    if (clampMax != null && (max == null || clampMax < max)) {
-                        max = clampMax;
-                    }
+        for (var validator : attrKeyValue.getValidators()) {
+            if (validator instanceof NumberClamp<?> clamp) {
+                Double clampMin = clamp.min() != null ? clamp.min().doubleValue() : null;
+                Double clampMax = clamp.max() != null ? clamp.max().doubleValue() : null;
+                if (clampMin != null && (min == null || clampMin > min)) {
+                    min = clampMin;
+                }
+                if (clampMax != null && (max == null || clampMax < max)) {
+                    max = clampMax;
                 }
             }
         }
@@ -130,7 +126,7 @@ public interface AttrKeyValues {
 
 
     private static <T> WrapperFactory<Double, T> createDoubleSlider(
-        Value<T> value, BaseAttrKeyValue<?> attrKeyValue) {
+        Value<T> value, AttrKeyValue<?> attrKeyValue) {
         Number min = null;
         Number max = null;
         boolean foundClamp = false;

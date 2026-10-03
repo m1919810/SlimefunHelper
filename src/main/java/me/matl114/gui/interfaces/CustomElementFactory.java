@@ -68,6 +68,10 @@ public class CustomElementFactory implements ElementFactory {
         return colors().sliderTextAlign().textAlign();
     }
 
+    protected TextAlign textAlign() {
+        return colors().textAlign().textAlign();
+    }
+
     @Override
     public ElementHandler createBackground() {
         return createBackground(null);
@@ -122,9 +126,10 @@ public class CustomElementFactory implements ElementFactory {
     private ElementHandler createColorLabel(
             TextProvider provider, TooltipHandler handler, ColorSampler background, boolean splitter) {
         ColorLabelElement label = new ColorLabelElement(background);
-        label.withElement(new RawTextElement(provider, textColor()));
+        TextProvider alignedProvider = TextProvider.withAlign(provider, textAlign());
+        label.withElement(new RawTextElement(alignedProvider, textColor()));
         if (splitter) {
-            label.combineRender(new SplitterTextElement(provider, textColor()));
+            label.combineRender(new SplitterTextElement(alignedProvider, textColor()));
         }
         return label.withTooltips(handler);
     }

@@ -1357,7 +1357,7 @@ public class KitReplenish extends BaseModule {
     }
 
     private void onEditCommand(CommandExecution sender) {
-        Tasks.scheduleDelayed(()-> openKitEditScreen(ClickGui.INSTANCE.getConfigElementFactory()), 1);
+        Tasks.scheduleDelayed(()-> openKitEditScreen(CONFIG_FACTORY), 1);
         sender.sendMessage("&a正在打开Kit编辑界面");
     }
 
