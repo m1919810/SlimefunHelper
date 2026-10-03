@@ -4,21 +4,20 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import me.matl114.events.Listener;
+import me.matl114.hacks.utils.recipes.NetworkRecipeWrap;
 import me.matl114.hacks.utils.recipes.RecipeIngredient;
+import me.matl114.hacks.utils.recipes.WrapRecipe;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.s2c.play.SynchronizeRecipesS2CPacket;
 import net.minecraft.recipe.*;
-import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 
 public class RecipeTasks {
     private static MinecraftClient mc = MinecraftClient.getInstance();
-    private static Map<Identifier, RecipeRecord> CACHE;
-    private static RecipeManager INSTANCE;
-    private static DynamicRegistryManager REGISTRY;
+    private static Map<Identifier, WrapRecipe> CACHE;
     public static final Map EMPTY = Map.of();
     public static final Map<String, RecipeType> TYPE_MAP = new LinkedHashMap<>();
 
@@ -39,74 +38,29 @@ public class RecipeTasks {
         return SUPPORT_VANILLA_RTYPE.getOrDefault(rid, null);
     }
 
-    public static Map<Identifier, RecipeRecord> getAllRecipe() {
+    public static Map<Identifier, WrapRecipe> getAllRecipe() {
         init();
-        return CACHE;
+        return CACHE != null ? CACHE : Collections.emptyMap();
     }
 
     private static void init() {
-
-        if (INSTANCE == null || CACHE == null || CACHE.isEmpty()) {
-            resetCache();
-            INSTANCE = Objects.requireNonNull(mc.getNetworkHandler()).getRecipeManager();
-            REGISTRY = Objects.requireNonNull(mc.world).getRegistryManager();
+        if (CACHE == null && mc.world != null && mc.getNetworkHandler() != null) {
             CACHE = new LinkedHashMap<>();
-            for (RecipeType<?> types : Registries.RECIPE_TYPE) {
-                var rcps = (List<RecipeEntry>) (Object) (INSTANCE.listAllOfType((RecipeType) types));
-                for (RecipeEntry rcp : rcps) {
-                    CACHE.put(rcp.id(), RecipeRecord.of(rcp, types));
+            RecipeManager manager = mc.getNetworkHandler().getRecipeManager();
+            for (RecipeType<?> type : Registries.RECIPE_TYPE) {
+                var recipes = (List<RecipeEntry>) (Object) manager.listAllOfType((RecipeType) type);
+                for (RecipeEntry<?> recipe : recipes) {
+                    CACHE.put(recipe.id(), NetworkRecipeWrap.of(recipe, type, mc.world.getRegistryManager()));
                 }
             }
         }
     }
 
     private static void resetCache() {
-
-        INSTANCE = null;
         if (CACHE != null) {
             CACHE.clear();
         }
         CACHE = null;
-    }
-
-    public static record RecipeRecord(
-            Identifier identifier,
-            Recipe<?> instance,
-            RecipeType<?> type,
-            ItemStack output,
-            RecipeIngredient[] ingredients)
-            implements me.matl114.hacks.utils.recipes.RecipeEntry {
-        public static RecipeRecord of(RecipeEntry<?> instance, RecipeType type) {
-            return new RecipeRecord(
-                    instance.id(),
-                    (Recipe<?>) (Object) instance.value(),
-                    type,
-                    instance.value().getResult(mc.world.getRegistryManager()),
-                    RecipeTasks.transfer3x3RecipeDisplay(
-                            instance.value(),
-                            instance.value().getIngredients().stream()
-                                    .map(v -> new RecipeIngredient(v.getMatchingStacks()))
-                                    .toArray(RecipeIngredient[]::new)));
-        }
-
-        @Override
-        public String rid() {
-            return Registries.RECIPE_TYPE.getId(type).toString();
-        }
-
-        @Override
-        public String id() {
-            return identifier.toString();
-        }
-
-        @Override
-        public RecipeIngredient[] ingredient() {
-            return ingredients;
-        }
-    }
-
-    public static RecipeIngredient[] transfer3x3RecipeDisplay(RecipeTasks.RecipeRecord recipeRecord) {
-        return recipeRecord.ingredients();
     }
 
     public static RecipeIngredient[] transfer3x3RecipeDisplay(Recipe<?> instance, RecipeIngredient[] ingred) {

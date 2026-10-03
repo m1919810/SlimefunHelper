@@ -17,6 +17,7 @@ import me.matl114.hacks.RecipeTasks;
 import me.matl114.hacks.SlimefunTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.utils.recipes.RecipeEntry;
+import me.matl114.hacks.utils.recipes.WrapRecipe;
 import me.matl114.managers.TaskManagers;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
@@ -192,8 +193,8 @@ public class SlimefunGuide extends BaseModule {
                                                 return false;
                                             }
                                         })),
-                        RecipeTasks.RecipeRecord::output)
-                .setSearchFilter((BiPredicate<String, RecipeTasks.RecipeRecord>) (BiPredicate) RECIPE_FILTER));
+                        WrapRecipe::output)
+                .setSearchFilter((BiPredicate<String, WrapRecipe>) (BiPredicate) RECIPE_FILTER));
     }
 
     public void onClickRecipeType(String type, boolean isLeft) {
@@ -201,7 +202,7 @@ public class SlimefunGuide extends BaseModule {
         List<RecipeEntry> myEntry;
 
         if (RecipeTasks.isVanillaRecipeType(type)) {
-            Map<Identifier, RecipeTasks.RecipeRecord> myCache = RecipeTasks.getAllRecipe();
+            Map<Identifier, WrapRecipe> myCache = RecipeTasks.getAllRecipe();
             myEntry = myCache
                     .values() // RecipeTasks.getRecipeByType(type1)
                     .stream()
