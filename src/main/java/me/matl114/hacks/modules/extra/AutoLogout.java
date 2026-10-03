@@ -40,6 +40,7 @@ public class AutoLogout extends BaseModule {
             flagBuilder(autoLogout.add("health").add("enable")).build();
     public final IntRef healthThreshold = builder(autoLogout.add("health").add("threshold"), IntRef.TYPE)
             .defaultValue(4)
+            .validator(Configs.INT_NONNEGATIVE)
             .build();
 
     // 2. 不死图腾剩余数量相关
@@ -48,6 +49,7 @@ public class AutoLogout extends BaseModule {
     public final IntRef totemLeftThreshold = builder(
                     autoLogout.add("totem-left").add("threshold"), IntRef.TYPE)
             .defaultValue(1)
+            .validator(Configs.INT_NONNEGATIVE)
             .build();
 
     // 3. 图腾触发时自动退出
@@ -57,6 +59,7 @@ public class AutoLogout extends BaseModule {
     public final IntRef totemTriggerCheckLeftTotem = builder(
                     autoLogout.add("totem-trigger").add("threshold"), IntRef.TYPE)
             .defaultValue(99)
+            .validator(Configs.INT_NONNEGATIVE)
             .build();
 
     // 4. 最低高度相关

@@ -58,7 +58,10 @@ public class AntiReplenish extends BaseModule {
             .updateListener(s -> blockSeq = MathUtils.create3DPointListAroundPlayer(s))
             .build();
 
-    public final IntRef delay = intBuilder(root.add("delay")).defaultValue(10).build();
+    public final IntRef delay = intBuilder(root.add("delay"))
+            .defaultValue(10)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
     public final FlagRef zeroTick = flagBuilder(root.add("zero-tick")).build();
 

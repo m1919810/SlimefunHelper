@@ -61,11 +61,15 @@ public class ChatTools extends BaseModule {
                     Configs.CHAT_CONFIG, chatTools.add("auto-chat").toPath())
             .build();
 
-    public final IntRef period =
-            intBuilder(chatTools.add("auto-chat-period")).defaultValue(21).build();
+    public final IntRef period = intBuilder(chatTools.add("auto-chat-period"))
+            .defaultValue(21)
+            .validator(Configs.INT_POSITIVE)
+            .build();
 
-    public final IntRef multiple =
-            intBuilder(chatTools.add("auto-chat-multiple")).defaultValue(1).build();
+    public final IntRef multiple = intBuilder(chatTools.add("auto-chat-multiple"))
+            .defaultValue(1)
+            .validator(Configs.INT_POSITIVE)
+            .build();
 
     public final FlagRef keepChatInv = flagBuilder(
                     Configs.CHAT_CONFIG, chatTools.add("keep-chat-inv").toPath())

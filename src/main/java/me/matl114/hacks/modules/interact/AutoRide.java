@@ -29,8 +29,10 @@ public class AutoRide extends BaseModule {
     public final KeyBindRef hotkey = moduleEntry(autoRide.addHotkey(), new MultiKeyBind(), autoRide.addEnable())
             .build();
 
-    public final IntRef cd =
-            intBuilder(autoRide.add("interact-cooldown")).defaultValue(4).build();
+    public final IntRef cd = intBuilder(autoRide.add("interact-cooldown"))
+            .defaultValue(4)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
     @Override
     public void registerAll() {

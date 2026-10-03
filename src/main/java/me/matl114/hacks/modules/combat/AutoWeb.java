@@ -55,8 +55,10 @@ public class AutoWeb extends BaseModule {
     public final KeyBindRef hotkey =
             moduleEntry(root.addHotkey(), new MultiKeyBind(), root.addEnable()).build();
 
-    public final DoubleRef interactRange =
-            doubleBuilder(root.add("interact-range")).defaultValue(4.5).build();
+    public final DoubleRef interactRange = doubleBuilder(root.add("interact-range"))
+            .defaultValue(4.5)
+            .validator(Configs.doubleRange(0.0D, 100.0D))
+            .build();
 
     public final EnumRef<LegalInteractMode> mode = builder(root.add("mode"), LegalInteractMode.class)
             .defaultValue(LegalInteractMode.NONE)

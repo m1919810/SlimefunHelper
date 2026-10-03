@@ -59,11 +59,15 @@ public class AutoPlate extends BaseModule {
 
     public final FlagRef airplace = flagBuilder(autoPlate.add("air-place")).build();
 
-    public final IntRef delay =
-            intBuilder(autoPlate.add("delay")).defaultValue(5).build();
+    public final IntRef delay = intBuilder(autoPlate.add("delay"))
+            .defaultValue(5)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
-    public final IntRef mul =
-            intBuilder(autoPlate.add("multiply")).defaultValue(1).build();
+    public final IntRef mul = intBuilder(autoPlate.add("multiply"))
+            .defaultValue(1)
+            .validator(Configs.INT_POSITIVE)
+            .build();
 
     public final DoubleRef expandRange = doubleBuilder(autoPlate.add("expand-range"))
             .defaultValue(2.0D)

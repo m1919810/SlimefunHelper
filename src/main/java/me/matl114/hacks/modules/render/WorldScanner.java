@@ -72,6 +72,7 @@ public class WorldScanner extends BaseModule {
 
     public IntRef distanceChunk = builder(worldScanner.add("search-radius"), IntRef.TYPE)
             .defaultValue(12)
+            .validator(Configs.intRange(0, 36))
             .build();
 
     public NBTRef<TracingOption> option = builder(worldScanner.add("esp-option"), TracingOption.class)

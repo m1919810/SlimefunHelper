@@ -48,13 +48,17 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
             moduleEntry(root.addHotkey(), new MultiKeyBind(), root.addEnable()).build();
     //
 
-    public final DoubleRef pitch =
-            doubleBuilder(root.add("pitch")).defaultValue(80.0D).build();
+    public final DoubleRef pitch = doubleBuilder(root.add("pitch"))
+            .defaultValue(80.0D)
+            .validator(Configs.doubleRange(-90.0D, 90.0D))
+            .build();
 
     public final FlagRef sneak = flagBuilder(root.add("sneak")).build();
 
-    public final DoubleRef groundHeight =
-            doubleBuilder(root.add("ground-height")).defaultValue(3.0D).build();
+    public final DoubleRef groundHeight = doubleBuilder(root.add("ground-height"))
+            .defaultValue(3.0D)
+            .validator(Configs.doubleRange(0.0D, 10.0D))
+            .build();
 
     public final FlagRef axisStrict = flagBuilder(root.add("axis-strict")).build();
     public final FlagRef autoMineStoneAndNetherrackObstacles =
@@ -65,11 +69,13 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
 
     public final IntRef avoidObstacleYawRange = intBuilder(root.add("avoid-obstacles-yaw-range"))
             .defaultValue(50)
+            .validator(Configs.intRange(0, 180))
             .show(this.autoAvoidObstacle::get)
             .build();
 
     public final IntRef predictTicks = intBuilder(root.add("avoid-obstacles-predict-ticks"))
             .defaultValue(80)
+            .validator(Configs.intRange(0, 400))
             .build();
 
     public final FlagRef avoidHoles = flagBuilder(root.add("avoid-holes")).build();

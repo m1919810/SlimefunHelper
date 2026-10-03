@@ -26,7 +26,10 @@ public class SkinBlink extends BaseModule {
     public final KeyBindRef hotkey =
             toggleHotkey(path.addHotkey(), new MultiKeyBind(), path.addEnable()).build();
 
-    public final IntRef delay = intBuilder(path.add("delay")).defaultValue(20).build();
+    public final IntRef delay = intBuilder(path.add("delay"))
+            .defaultValue(20)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
     public final FlagRef model =
             builder(path.add("switch-model"), Boolean.class).defaultValue(true).build();
