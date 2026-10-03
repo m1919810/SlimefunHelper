@@ -22,6 +22,8 @@ import me.matl114.utils.render.RenderCollector;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.damage.DamageTypes;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.decoration.EndCrystalEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Box;
@@ -56,6 +58,8 @@ public class ExplosiveESP extends BaseModule {
     public final NBTRef<WrapColor> crystalColor = builder(root.add("crystal-color"), WrapColor.class)
             .defaultValue(new WrapColor(Formatting.LIGHT_PURPLE))
             .build();
+
+    public final FlagRef highlightCrystal = flagBuilder(root.add("highlight-crystal")).build();
 
     private final RenderCollector<Box> boxOutlineCollector = RenderCollectors.createBoxCollector(true, false, false);
     private final RenderCollector<RenderElements.Text> textCollector = RenderCollectors.createTextCollector();
@@ -150,5 +154,24 @@ public class ExplosiveESP extends BaseModule {
 
     private void onRequestCombatService(Event<CombatManager.Service> event) {
         event.context().enableExplosiveSearch(enable.get());
+    }
+
+    public Integer getHighlightColor(Entity entity) {
+        if (!enable.get() || entity == null || mc.player == null) {
+            return null;
+        }
+
+        double maxDistanceSq = MathUtils.s2(distance.get());
+        if (entity.squaredDistanceTo(mc.player) > maxDistanceSq) {
+            return null;
+        }
+
+        if (highlightCrystal.get()
+                && entity instanceof EndCrystalEntity crystal
+                && CombatManager.INSTANCE.trackedEndCrystals.contains(crystal)) {
+            return crystalColor.get().withAlpha(255);
+        }
+
+        return null;
     }
 }

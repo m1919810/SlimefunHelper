@@ -3424,6 +3424,7 @@
 	"combat-render.explosive-esp.options": "选项",
 	"combat-render.explosive-esp.anchor-color": "重生锚颜色",
 	"combat-render.explosive-esp.crystal-color": "水晶颜色",
+	"combat-render.explosive-esp.highlight-crystal": "高亮水晶",
 	"widget.click-gui.module-name.Render.ExplosiveESP": "ExplosiveESP",
 	"detect-entity.item-list.bold": "加粗",
 	"detect-entity.item-list.scaling": "缩放",

@@ -96,6 +96,7 @@
 		"hack.CobwebBlockMixin",
 		"hack.EntityMixin",
 		"hack.EntityRenderDisplayNameMixin",
+		"hack.EntityRendererMixin",
 		"hack.EntityRenderStateMixin",
 		"hack.FogRendererMixin",
 		"hack.GameRenderMixin",
