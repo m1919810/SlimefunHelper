@@ -92,6 +92,7 @@ public class PathManager extends BaseModule {
     private FileStorage recordingStorage;
     private String recordingPathFile;
     private RecordPath recordingPath;
+    private boolean recordingStarted;
     private boolean recordingFlightStarted;
     private RecordSnapshot recordingSnapshot;
 
@@ -126,57 +127,6 @@ public class PathManager extends BaseModule {
     public void bootStrapPathCommand(MainCommand mainCommand) {
         TreeSubCommand main = mainCommand.subMainBuilder().name("pathm").build();
         main.subBuilder(SubCommand.taskBuilder())
-                .name("start")
-                .helper("message.command.pathm.start.help")
-                .arg(SimpleCommandArgs.argumentBuilder().name("path_file").build())
-                .arg(SimpleCommandArgs.argumentBuilder()
-                        .name("force")
-                        .defaultValue("")
-                        .select("force")
-                        .build())
-                .post(e -> e.executor(this::onStart))
-                .complete()
-                .subBuilder(SubCommand.taskBuilder())
-                .name("restart")
-                .helper("message.command.pathm.restart.help")
-                .arg(SimpleCommandArgs.argumentBuilder()
-                        .name("path_file")
-                        .tabCompletor(TabResult.ofStreamSupplier(CommandUtils.fileSupplier(SAVE_FILE, (ex) -> {
-                            return ex.endsWith(".nbt") || ex.endsWith(".dat");
-                        })))
-                        .build())
-                .post(e -> e.executor(this::onReStart))
-                .complete()
-                .subBuilder(SubCommand.treeBuilder())
-                .name("modify")
-                .helper("message.command.pathm.modify.help")
-                .post(s -> s.subBuilder(SubCommand.taskBuilder())
-                        .name("push")
-                        .helper("message.command.pathm.modify.push.help")
-                        .post(s1 -> s1.executor(CommandContext.execute(this::onPush)))
-                        .complete()
-                        .subBuilder(SubCommand.taskBuilder())
-                        .name("pop")
-                        .helper("message.command.pathm.modify.pop.help")
-                        .post(s1 -> s1.executor(CommandContext.execute(this::onPop)))
-                        .complete()
-                        .subBuilder(SubCommand.taskBuilder())
-                        .name("pause")
-                        .helper("message.command.pathm.modify.pause.help")
-                        .post(s1 -> s1.executor(CommandContext.execute(this::onPause)))
-                        .complete()
-                        .subBuilder(SubCommand.taskBuilder())
-                        .name("continue")
-                        .helper("message.command.pathm.modify.continue.help")
-                        .post(s1 -> s1.executor(CommandContext.execute(this::onContinue)))
-                        .complete())
-                .complete()
-                .subBuilder(SubCommand.taskBuilder())
-                .name("stop")
-                .helper("message.command.pathm.stop.help")
-                .post(e -> e.executor(this::onStop))
-                .complete()
-                .subBuilder(SubCommand.taskBuilder())
                 .name("load")
                 .helper("message.command.pathm.load.help")
                 .arg(SimpleCommandArgs.argumentBuilder()
@@ -185,35 +135,78 @@ public class PathManager extends BaseModule {
                             return ex.endsWith(".nbt") || ex.endsWith(".dat");
                         })))
                         .build())
-                .arg(SimpleCommandArgs.argumentBuilder()
-                        .name("reverse")
-                        .bool(false)
-                        .build())
-                .post(e -> e.executor(this::onLoad))
+                .post(e -> e.executor(this::onLoadRecord))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
-                .name("unload")
-                .helper("message.command.pathm.unload.help")
-                .post(e -> e.executor(this::onUnload))
+                .name("start")
+                .helper("message.command.pathm.start.help")
+                .post(e -> e.executor(this::onStart))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
-                .name("trim")
-                .helper("message.command.pathm.trim.help")
-                .arg(SimpleCommandArgs.argumentBuilder()
-                        .name("path_file")
-                        .tabCompletor(TabResult.ofStreamSupplier(CommandUtils.fileSupplier(SAVE_FILE, (ex) -> {
-                            return ex.endsWith(".nbt") || ex.endsWith(".dat");
-                        })))
-                        .build())
-                .arg(SimpleCommandArgs.argumentBuilder()
-                        .name("outfile")
-                        .defaultObject(null)
-                        .build())
-                .post(e -> e.executor(this::onTrim))
+                .name("stop")
+                .helper("message.command.pathm.stop.help")
+                .post(e -> e.executor(this::onStop))
+                .complete()
+                .subBuilder(SubCommand.treeBuilder())
+                .name("record")
+                .post(record -> record.subBuilder(SubCommand.taskBuilder())
+                        .name("save")
+                        .helper("message.command.pathm.record.save.help")
+                        .post(e -> e.executor(this::onSave))
+                        .complete()
+                        .subBuilder(SubCommand.treeBuilder())
+                        .name("modify")
+                        .helper("message.command.pathm.record.modify.help")
+                        .post(modify -> modify.subBuilder(SubCommand.taskBuilder())
+                                .name("push")
+                                .helper("message.command.pathm.modify.push.help")
+                                .post(e -> e.executor(CommandContext.execute(this::onPush)))
+                                .complete()
+                                .subBuilder(SubCommand.taskBuilder())
+                                .name("pop")
+                                .helper("message.command.pathm.modify.pop.help")
+                                .post(e -> e.executor(CommandContext.execute(this::onPop)))
+                                .complete())
+                        .complete()
+                        .subBuilder(SubCommand.taskBuilder())
+                        .name("trim")
+                        .helper("message.command.pathm.trim.help")
+                        .arg(SimpleCommandArgs.argumentBuilder()
+                                .name("path_file")
+                                .tabCompletor(TabResult.ofStreamSupplier(CommandUtils.fileSupplier(SAVE_FILE, (ex) -> {
+                                    return ex.endsWith(".nbt") || ex.endsWith(".dat");
+                                })))
+                                .build())
+                        .arg(SimpleCommandArgs.argumentBuilder()
+                                .name("outfile")
+                                .defaultObject(null)
+                                .build())
+                        .post(e -> e.executor(this::onTrim))
+                        .complete())
                 .complete()
                 .subBuilder(SubCommand.treeBuilder())
                 .name("rerun")
                 .post(s -> s.subBuilder(SubCommand.taskBuilder())
+                        .name("load")
+                        .helper("message.command.pathm.rerun.load.help")
+                        .arg(SimpleCommandArgs.argumentBuilder()
+                                .name("path_file")
+                                .tabCompletor(TabResult.ofStreamSupplier(CommandUtils.fileSupplier(SAVE_FILE, (ex) -> {
+                                    return ex.endsWith(".nbt") || ex.endsWith(".dat");
+                                })))
+                                .build())
+                        .arg(SimpleCommandArgs.argumentBuilder()
+                                .name("reverse")
+                                .bool(false)
+                                .build())
+                        .post(e -> e.executor(this::onRerunLoad))
+                        .complete()
+                        .subBuilder(SubCommand.taskBuilder())
+                        .name("unload")
+                        .helper("message.command.pathm.rerun.unload.help")
+                        .post(e -> e.executor(this::onUnload))
+                        .complete()
+                        .subBuilder(SubCommand.taskBuilder())
                         .name("start")
                         .helper("message.command.pathm.rerun.start.help")
                         .post(e -> e.executor(this::onRerun))
@@ -232,66 +225,19 @@ public class PathManager extends BaseModule {
         acceptor.accept(createTitle("widget.path-manager.command", 0, dblank, dx, dy));
     }
 
-    boolean pauseRecord = false;
-
     private boolean onStart(CommandExecution context, ArgumentInputStream args, ArgumentReader rest) {
-        if (checkNull()) {
-            context.sendMessage("&c当前不在游戏内，无法开始路径录制");
+        if (recordingStorage == null || recordingPath == null) {
+            context.sendMessage("&c请先使用 load 加载路径");
             return true;
         }
-        if (recordingStorage != null) {
-            context.sendMessage("&c当前已经在录制路径: " + recordingPathFile);
+        if (recordingStarted) {
+            context.sendMessage("&c当前已经开始录制路径: " + recordingPathFile);
             return true;
         }
-        String pathFile = args.nextNonnullString();
-        String force = args.nextNonnullString();
-        if (!pathFile.endsWith(".nbt")) {
-            pathFile = pathFile + ".nbt";
-        }
-        File file = new File(SAVE_FILE, pathFile);
-        if (!"force".equals(force) && file.exists()) {
-            context.sendMessage("&c路径文件已存在: " + pathFile + "，请输入 force 或更换文件名");
-            return true;
-        }
-        startPath(pathFile, FileManager.getInstance().getStorage(file));
-        context.sendMessage("&a开始等待鞘翅飞行，路径文件: " + pathFile);
-        return true;
-    }
-
-    private boolean onReStart(CommandExecution context, ArgumentInputStream args, ArgumentReader rest) {
-        if (checkNull()) {
-            context.sendMessage("&c当前不在游戏内，无法开始路径录制");
-            return true;
-        }
-        if (recordingStorage != null) {
-            context.sendMessage("&c当前已经在录制路径: " + recordingPathFile);
-            return true;
-        }
-        String pathFile = args.nextNonnullString();
-        FileStorage storage = FileManager.getInstance().getStorage(new File(SAVE_FILE, pathFile), true, false);
-        if (storage == null) {
-            context.sendMessage("&c路径文件不存在: " + pathFile);
-            return true;
-        }
-        var loadedPath = readPath(storage);
-        if (loadedPath == null || loadedPath.bp().isEmpty()) {
-            context.sendMessage("&c路径文件为空或格式不正确: " + pathFile);
-            storage.markDeprecated(true);
-            return true;
-        }
-        String currentServer = CommonUtils.getServerName();
-        String currentWorld = currentWorldKey();
-        if (!Objects.equals(loadedPath.server(), currentServer)) {
-            context.sendMessage("&e路径服务器不一致: 文件=" + loadedPath.server() + " 当前=" + currentServer + "，仍继续加载");
-        }
-        if (!Objects.equals(loadedPath.world(), currentWorld)) {
-            context.sendMessage("&c路径维度不一致: 文件=" + loadedPath.world() + " 当前=" + currentWorld + "，已取消加载");
-            storage.markDeprecated(true);
-            return true;
-        }
-        restartPath(pathFile, storage, loadedPath.bp());
-        context.sendMessage("&a已载入历史路线记录，路径文件: " + pathFile);
-        onPause(context);
+        recordingStarted = true;
+        recordingFlightStarted = false;
+        recordingSnapshot = null;
+        context.sendMessage("&a开始录制路径: " + recordingPathFile);
         return true;
     }
 
@@ -301,7 +247,7 @@ public class PathManager extends BaseModule {
             return;
         }
         startSnapshot(mc.player.getBlockPos());
-        context.sendMessage("&a当前位置以添加");
+        context.sendMessage("&a已添加当前位置");
         return;
     }
 
@@ -316,47 +262,134 @@ public class PathManager extends BaseModule {
         }
 
         recordingPath.bp.remove(recordingPath.bp.size() - 1);
-        restartSnapshot();
-        context.sendMessage("&a当前位置以添加");
+        if (recordingPath.bp.isEmpty()) {
+            recordingSnapshot = null;
+        } else {
+            restartSnapshot();
+        }
+        context.sendMessage("&a已移除最后一个路径点");
         return;
     }
 
-    public void onPause(CommandExecution context) {
-        if (recordingStorage == null || recordingPath == null) {
-            context.sendMessage("&c当前没有正在录制的路径");
-            return;
-        }
-        pauseRecord = true;
-        context.sendMessage(Text.literal("&a当前记录已暂停, 输入!!pathm modify continue (点击该文本以补全)继续录制")
-                .styled(s -> s.withClickEvent(
-                        ChatUtils.getSuggestCommand(MainCommand.getMainCommandPrefix() + "pathm modify continue"))));
-    }
-
-    public void onContinue(CommandExecution context) {
-        if (recordingStorage == null || recordingPath == null) {
-            context.sendMessage("&c当前没有正在录制的路径");
-            return;
-        }
-        pauseRecord = false;
-        context.sendMessage("&a当前记录已继续");
-    }
-
     private boolean onStop(CommandExecution context, ArgumentInputStream args, ArgumentReader rest) {
-        if (recordingStorage == null) {
-            context.sendMessage("&c当前没有正在录制的路径");
+        if (recordingStorage == null || recordingPath == null) {
+            context.sendMessage("&c当前没有加载路径");
             return true;
         }
-        int size = finishPath("手动停止", context);
-        context.sendMessage("&a路径录制已停止，已保存点数: " + size);
+        if (!recordingStarted) {
+            context.sendMessage("&c当前路径录制未开始");
+            return true;
+        }
+        recordingStarted = false;
+        recordingFlightStarted = false;
+        recordingSnapshot = null;
+        context.sendMessage("&a路径录制已暂停，使用 record save 保存路径");
         return true;
     }
 
-    private boolean onLoad(CommandExecution context, ArgumentInputStream args, ArgumentReader rest) {
+    private boolean onLoadRecord(CommandExecution context, ArgumentInputStream args, ArgumentReader rest) {
         if (checkNull()) {
             context.sendMessage("&c当前不在游戏内，无法加载路径");
             return true;
         }
-        String pathFile = args.nextNonnullString();
+        if (recordingStorage != null) {
+            finishPath("重新加载", context);
+        }
+
+        String pathFile = normalizePathFile(args.nextNonnullString());
+        File file = new File(SAVE_FILE, pathFile);
+        boolean existed = file.exists();
+        FileStorage storage = FileManager.getInstance().getStorage(file, true, true);
+        RecordPath loadedPath = existed ? readPath(storage) : new RecordPath(List.of());
+        if (loadedPath == null) {
+            context.sendMessage("&c路径文件为空或格式不正确: " + pathFile);
+            storage.markDeprecated(true);
+            return true;
+        }
+
+        String currentServer = CommonUtils.getServerName();
+        String currentWorld = currentWorldKey();
+        if (existed && !Objects.equals(loadedPath.server(), currentServer)) {
+            context.sendMessage("&e路径服务器不一致: 文件=" + loadedPath.server() + " 当前=" + currentServer + "，仍继续加载");
+        }
+        if (existed && !Objects.equals(loadedPath.world(), currentWorld)) {
+            context.sendMessage("&c路径维度不一致: 文件=" + loadedPath.world() + " 当前=" + currentWorld + "，已取消加载");
+            storage.markDeprecated(true);
+            return true;
+        }
+
+        recordingStorage = storage;
+        recordingPathFile = pathFile;
+        recordingPath = loadedPath;
+        recordingStarted = false;
+        recordingFlightStarted = false;
+        recordingSnapshot = null;
+        context.sendMessage(existed
+                ? "&a已加载已有路径记录: " + pathFile + "，使用 start 继续录制"
+                : "&a已创建路径记录: " + pathFile + "，使用 start 开始录制");
+        return true;
+    }
+
+    private boolean onSave(CommandExecution context, ArgumentInputStream args, ArgumentReader rest) {
+        if (recordingStorage == null) {
+            context.sendMessage("&c当前没有加载路径");
+            return true;
+        }
+        int size = finishPath("手动保存", context);
+        context.sendMessage("&a路径已保存，点数: " + size);
+        return true;
+    }
+
+    private boolean onUnload(CommandExecution context, ArgumentInputStream args, ArgumentReader rest) {
+        if (currentPath == null) {
+            context.sendMessage("&c当前没有正在加载的路径");
+            return true;
+        }
+        currentPath = null;
+        stopCurrentRunningBaritone();
+        context.sendMessage("&c已卸载当前路径");
+        return true;
+    }
+
+    private boolean onRerun(CommandExecution context, ArgumentInputStream args, ArgumentReader rest) {
+        if (currentPath == null) {
+            context.sendMessage("&c当前没有正在加载的路径");
+            return true;
+        }
+        if (rerunningBaritone) {
+            context.sendMessage("&c当前有正在执行的路径, 请使用指令!!pathm rerun stop暂停");
+            return true;
+        }
+        rerunningBaritone = true;
+        if (rerunMode.get().isIn(Mode.ELYTRA_FLIGHT)) {
+            context.sendMessage("&c当前执行类型为 ELYTRA_FLIGHT, 暂时不支持,请切换为 BARITONE 模式以使用");
+            rerunningBaritone = false;
+            return true;
+        }
+        context.sendMessage("&a开始重新执行当前路径");
+        return true;
+    }
+
+    private boolean onRerunStop(CommandExecution context, ArgumentInputStream args, ArgumentReader rest) {
+        if (currentPath == null) {
+            context.sendMessage("&c当前没有正在加载的路径");
+            return true;
+        }
+        if (!rerunningBaritone) {
+            context.sendMessage("&c当前没有正在执行的路径");
+            return true;
+        }
+        pauseCurrentRunningBaritone();
+        context.sendMessage("&c当前执行路径已暂停");
+        return true;
+    }
+
+    private boolean onRerunLoad(CommandExecution context, ArgumentInputStream args, ArgumentReader rest) {
+        if (checkNull()) {
+            context.sendMessage("&c当前不在游戏内，无法加载路径");
+            return true;
+        }
+        String pathFile = normalizePathFile(args.nextNonnullString());
         boolean reverse = args.nextBoolean();
         RecordPath loadedPath;
         try (FileStorage storage = FileManager.getInstance().getStorage(new File(SAVE_FILE, pathFile), true, false)) {
@@ -389,63 +422,21 @@ public class PathManager extends BaseModule {
         }
         var alignLoaded = alignPathToNearest(loaded);
         boolean cutMode = rerunMode.get().isIn(Mode.BARITONE);
-        currentPath = createRerunContext(pathFile, alignLoaded, cutMode);
         stopCurrentRunningBaritone();
+        currentPath = createRerunContext(pathFile, alignLoaded, cutMode);
         context.sendMessage(
                 "&a已加载路径: " + pathFile + ", 当前位置 %d / %d".formatted(loaded.size() - alignLoaded.size(), loaded.size())
                         + "，剩余段数: " + currentPath.remainingSegments());
         return true;
     }
 
-    private boolean onUnload(CommandExecution context, ArgumentInputStream args, ArgumentReader rest) {
-        if (currentPath == null) {
-            context.sendMessage("&c当前没有正在加载的路径");
-            return true;
-        }
-        currentPath = null;
-        stopCurrentRunningBaritone();
-        context.sendMessage("&c已卸载当前路径");
-        return true;
-    }
-
-    private boolean onRerun(CommandExecution context, ArgumentInputStream args, ArgumentReader rest) {
-        if (currentPath == null) {
-            context.sendMessage("&c当前没有正在加载的路径");
-            return true;
-        }
-        if (rerunningBaritone) {
-            context.sendMessage("&c当前有正在执行的路径, 请使用指令!!rerun stop终止");
-            return true;
-        }
-        rerunningBaritone = true;
-        if (rerunMode.get().isIn(Mode.ELYTRA_FLIGHT)) {
-            context.sendMessage("&c当前执行类型为 ELYTRA_FLIGHT, 暂时不支持,请切换为 BARITONE 模式以使用");
-            rerunningBaritone = false;
-            return true;
-        }
-        context.sendMessage("&a开始重新执行当前路径");
-        return true;
-    }
-
-    private boolean onRerunStop(CommandExecution context, ArgumentInputStream args, ArgumentReader rest) {
-        if (currentPath == null) {
-            context.sendMessage("&c当前没有正在加载的路径");
-            return true;
-        }
-        if (!rerunningBaritone) {
-            context.sendMessage("&c当前没有正在执行的路径");
-            return true;
-        }
-        stopCurrentRunningBaritone();
-        context.sendMessage("&c当前执行路径已终止");
-        return true;
-    }
-
     private boolean onTrim(CommandExecution context, ArgumentInputStream args, ArgumentReader rest) {
-        String pathFile = args.nextNonnullString();
+        String pathFile = normalizePathFile(args.nextNonnullString());
         String outputPathFile = args.nextArg();
         if (outputPathFile == null || outputPathFile.isBlank()) {
             outputPathFile = pathFile;
+        } else {
+            outputPathFile = normalizePathFile(outputPathFile);
         }
         File file = new File(SAVE_FILE, pathFile);
         File outputFile = new File(SAVE_FILE, outputPathFile);
@@ -507,15 +498,16 @@ public class PathManager extends BaseModule {
         if (path.size() <= 2) {
             return List.copyOf(path);
         }
+        List<BlockPos> cleaned = removeOddPoints(path);
         List<BlockPos> trimmed = new ArrayList<>();
         int current = 0;
-        while (current < path.size()) {
-            BlockPos currentPos = path.get(current);
+        while (current < cleaned.size()) {
+            BlockPos currentPos = cleaned.get(current);
             trimmed.add(currentPos.toImmutable());
             int next = current + 1;
-            int maxNext = Math.min(path.size() - 1, current + TRIM_LOOKAHEAD);
+            int maxNext = Math.min(cleaned.size() - 1, current + TRIM_LOOKAHEAD);
             for (int target = maxNext; target >= current + 2; --target) {
-                if (isDetour(currentPos, path.get(target - 1), path.get(target))) {
+                if (isDetour(currentPos, cleaned.get(target - 1), cleaned.get(target))) {
                     next = target;
                     break;
                 }
@@ -523,6 +515,23 @@ public class PathManager extends BaseModule {
             current = next;
         }
         return trimmed;
+    }
+
+    private List<BlockPos> removeOddPoints(List<BlockPos> path) {
+        List<BlockPos> cleaned = new ArrayList<>(path);
+        for (int i = 1; i < cleaned.size() - 1; ) {
+            BlockPos previous = cleaned.get(i - 1);
+            BlockPos current = cleaned.get(i);
+            BlockPos next = cleaned.get(i + 1);
+            if (previous.getSquaredDistance(current) > TRIM_MAX_DISTANCE_SQUARED
+                    && current.getSquaredDistance(next) > TRIM_MAX_DISTANCE_SQUARED
+                    && previous.getSquaredDistance(next) <= TRIM_MAX_DISTANCE_SQUARED) {
+                cleaned.remove(i);
+                continue;
+            }
+            ++i;
+        }
+        return cleaned;
     }
 
     private boolean isDetour(BlockPos point, BlockPos lineStart, BlockPos lineEnd) {
@@ -543,7 +552,7 @@ public class PathManager extends BaseModule {
     }
 
     private void onPreTick(Event<ClientPlayerEntity> event) {
-        if (recordingStorage != null) {
+        if (recordingStorage != null && recordingStarted) {
             if (checkNull()) {
                 finishPath("录制任务意外退出", null);
             } else {
@@ -552,7 +561,11 @@ public class PathManager extends BaseModule {
                     if (!player.isFallFlying()) {
                         return;
                     }
-                    startSnapshot(player.getBlockPos());
+                    if (recordingPath.bp().isEmpty()) {
+                        startSnapshot(player.getBlockPos());
+                    } else {
+                        restartSnapshot();
+                    }
                     recordingFlightStarted = true;
                     return;
                 }
@@ -666,25 +679,6 @@ public class PathManager extends BaseModule {
         }
     }
 
-    private void startPath(String pathFile, FileStorage storage) {
-        recordingStorage = storage;
-        recordingPathFile = pathFile;
-        recordingPath = new RecordPath(new ArrayList<>());
-        recordingFlightStarted = false;
-        recordingSnapshot = null;
-        pauseRecord = false;
-    }
-
-    private void restartPath(String pathFile, FileStorage storage, List<BlockPos> blockPos) {
-        recordingStorage = storage;
-        recordingPathFile = pathFile;
-        recordingPath = new RecordPath(new ArrayList<>(blockPos));
-
-        recordingFlightStarted = true;
-        recordingSnapshot = null;
-        restartSnapshot();
-    }
-
     private void endPath(FileStorage storage) {
         if (storage != null) {
             storage.markDeprecated(true);
@@ -692,6 +686,7 @@ public class PathManager extends BaseModule {
         recordingStorage = null;
         recordingPathFile = null;
         recordingPath = null;
+        recordingStarted = false;
         recordingFlightStarted = false;
         recordingSnapshot = null;
     }
@@ -789,9 +784,6 @@ public class PathManager extends BaseModule {
     }
 
     private boolean shouldWriteBeforeCurrent(RecordSnapshot snapshot, BlockPos current) {
-        if (pauseRecord) {
-            return false;
-        }
         double writeDistance = autoWriteDistance.get();
         double disSqr = snapshot.snapshotPos().getSquaredDistance(current);
         if (disSqr < MathUtils.s2(writeDistance)) {
@@ -922,6 +914,13 @@ public class PathManager extends BaseModule {
 
     private static String currentWorldKey() {
         return mc.world == null ? "" : mc.world.getRegistryKey().getValue().toString();
+    }
+
+    private static String normalizePathFile(String pathFile) {
+        if (pathFile.endsWith(".nbt") || pathFile.endsWith(".dat")) {
+            return pathFile;
+        }
+        return pathFile + ".nbt";
     }
 
     int lastUpdatedIndex = 0;
@@ -1074,6 +1073,14 @@ public class PathManager extends BaseModule {
             if (currentPath != null) {
                 currentPath.resetRunningState();
             }
+        }
+    }
+
+    private void pauseCurrentRunningBaritone() {
+        if (rerunningBaritone) {
+            rerunningBaritone = false;
+            endBaritonePathOverride();
+            BaritoneHooks.getInstance().cancelBaritone();
         }
     }
     // baritone related
