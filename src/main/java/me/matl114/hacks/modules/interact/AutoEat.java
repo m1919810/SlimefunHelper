@@ -133,8 +133,10 @@ public class AutoEat extends BaseModule {
             .validator(Configs.doubleRange(0.0D, 64.0D))
             .build();
 
-    public final IntRef cooldown =
-            intBuilder(auto.add("cooldown")).defaultValue(20).build();
+    public final IntRef cooldown = intBuilder(auto.add("cooldown"))
+            .defaultValue(20)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
     public final FlagRef pauseInLava = builder(auto.add("pause-in-lava"), Boolean.class)
             .defaultValue(false)

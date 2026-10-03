@@ -67,8 +67,10 @@ public class FakePlayer extends BaseModule {
 
     public final FlagRef copyEquipment = flagBuilder(root.add("copy-equipment")).build();
 
-    public final DoubleRef maxHealth =
-            doubleBuilder(root.add("max-health")).defaultValue(20.0D).build();
+    public final DoubleRef maxHealth = doubleBuilder(root.add("max-health"))
+            .defaultValue(20.0D)
+            .validator(Configs.doubleRange(0.0D, Double.MAX_VALUE))
+            .build();
 
     public final FlagRef autoTotem = flagBuilder(root.add("auto-totem")).build();
 

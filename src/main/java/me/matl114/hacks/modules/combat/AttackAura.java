@@ -68,6 +68,7 @@ public class AttackAura extends BaseModule {
 
     public final IntRef maxAttackInterval = intBuilder(respectCooldown.add("max-attack-interval"))
             .defaultValue(50)
+            .validator(Configs.INT_NONNEGATIVE)
             .show(this.cooldownUsePacketTime::get)
             .build();
 

@@ -64,8 +64,10 @@ public class Flight extends BaseModule implements LegalMovementManager.MovementM
     public final FlagRef doAntiKick =
             builder(flight.add("antikick"), Boolean.class).defaultValue(true).build();
 
-    public final IntRef antiKickPeriod =
-            intBuilder(flight.add("antikick-period")).defaultValue(60).build();
+    public final IntRef antiKickPeriod = intBuilder(flight.add("antikick-period"))
+            .defaultValue(60)
+            .validator(Configs.INT_POSITIVE)
+            .build();
     public final FlagRef overrideFlySpeed = builder(moveSpeed.add("fly-speed"), Boolean.class)
             .defaultValue(false)
             .build();

@@ -67,6 +67,7 @@ public class MineExtra extends BaseModule {
 
     public final IntRef grimAcCounterThreshold = builder(fastbreak.add("grim-punishment-threshold"), Integer.class)
             .defaultValue(500)
+            .validator(Configs.intRange(0, 1000))
             .show(() -> fastBreakBypassMode.get() == Mode.BYPASS_GRIM_LEGIT)
             .build();
 
@@ -77,6 +78,7 @@ public class MineExtra extends BaseModule {
 
     public final IntRef breakSpeedExtraTicks = builder(fastbreak.add("break-speed-extra-ticks"), IntRef.TYPE)
             .defaultValue(1)
+            .validator(Configs.intRange(0, 5))
             .build();
 
     public final FlagRef cooldownOverride = builder(fastbreak.add("cooldown-override"), Boolean.class)

@@ -35,7 +35,10 @@ public class AntiAFK extends BaseModule {
 
     public final FlagRef rotate = flagBuilder(root.add("rotate")).build();
 
-    public final IntRef delay = intBuilder(root.add("delay")).defaultValue(1200).build();
+    public final IntRef delay = intBuilder(root.add("delay"))
+            .defaultValue(1200)
+            .validator(Configs.INT_POSITIVE)
+            .build();
 
     boolean lastForward = false;
     boolean lastRotateBack = false;

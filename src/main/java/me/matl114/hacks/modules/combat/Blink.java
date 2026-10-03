@@ -62,13 +62,17 @@ public class Blink extends BaseModule {
 
     public final FlagRef autoClose = flagBuilder(blink.add("close-on-delay")).build();
 
-    public final IntRef closeDelay =
-            intBuilder(blink.add("close-delay")).defaultValue(50).build();
+    public final IntRef closeDelay = intBuilder(blink.add("close-delay"))
+            .defaultValue(50)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
     public final FlagRef autoFlush = flagBuilder(blink.add("auto-flush")).build();
 
-    public final IntRef autoFlushDelay =
-            intBuilder(blink.add("auto-flush-period")).defaultValue(20).build();
+    public final IntRef autoFlushDelay = intBuilder(blink.add("auto-flush-period"))
+            .defaultValue(20)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
     public final EnumRef<Action> attackBehaviour = builder(blink.add("attack-behaviour"), Action.class)
             .defaultValue(Action.FLUSH)
@@ -96,6 +100,7 @@ public class Blink extends BaseModule {
 
     public final DoubleRef nearRange = builder(blink.add("enermy-near-range"), DoubleRef.TYPE)
             .defaultValue(3.5D)
+            .validator(Configs.doubleRange(0.0D, 20.0D))
             .build();
 
     public final EnumRef<Action> nearTargetAction = builder(blink.add("on-near-target"), Action.class)

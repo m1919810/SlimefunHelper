@@ -45,11 +45,15 @@ public class CombatExtra extends BaseModule {
 
     public final ModulePath combat = makePath(Configs.COMBAT_CONFIG, "attack");
 
-    public final DoubleRef range =
-            doubleBuilder(combat.add("att-range")).defaultValue(0.0D).build();
+    public final DoubleRef range = doubleBuilder(combat.add("att-range"))
+            .defaultValue(0.0D)
+            .validator(Configs.doubleRange(0.0D, 64.0D))
+            .build();
 
-    public final DoubleRef boatAttackRange =
-            doubleBuilder(combat.add("boat-reach-range")).defaultValue(0.0D).build();
+    public final DoubleRef boatAttackRange = doubleBuilder(combat.add("boat-reach-range"))
+            .defaultValue(0.0D)
+            .validator(Configs.doubleRange(0.0D, 64.0D))
+            .build();
 
     public final FlagRef shieldPredict =
             flagBuilder(combat.add("shielding-setback-log")).build();

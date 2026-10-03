@@ -80,10 +80,14 @@ public class CrystalAura extends BaseModule {
             .defaultValue(LegalInteractMode.NONE)
             .build();
 
-    public final IntRef range = intBuilder(root.add("range")).defaultValue(10).build();
+    public final IntRef range = intBuilder(root.add("range"))
+            .defaultValue(10)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
     private List<Vec3i> interactRangeBlocks = new ArrayList<>();
     public final DoubleRef interactRange = doubleBuilder(root.add("interact-range"))
             .defaultValue(4.5)
+            .validator(Configs.doubleRange(0.0D, 100.0D))
             .updateListener(s -> interactRangeBlocks = MathUtils.create3DPointListAroundPlayer(s))
             .build();
 
@@ -159,11 +163,15 @@ public class CrystalAura extends BaseModule {
             .defaultValue(false)
             .build();
 
-    public final IntRef fillMinWaitTime =
-            intBuilder(fill.add("fill-min-wait-time")).defaultValue(2).build();
+    public final IntRef fillMinWaitTime = intBuilder(fill.add("fill-min-wait-time"))
+            .defaultValue(2)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
-    public final IntRef fillMaxWaitTime =
-            intBuilder(fill.add("fill-max-wait-time")).defaultValue(4).build();
+    public final IntRef fillMaxWaitTime = intBuilder(fill.add("fill-max-wait-time"))
+            .defaultValue(4)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
     public final ModulePath damageBlock = root.add("auto-block");
 

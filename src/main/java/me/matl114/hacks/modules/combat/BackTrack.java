@@ -42,13 +42,17 @@ public class BackTrack extends BaseModule {
     public final KeyBindRef hotkey =
             moduleEntry(bt.addHotkey(), new MultiKeyBind(), bt.addEnable()).build();
 
-    public final DoubleRef maxDelay =
-            doubleBuilder(bt.add("max-delay")).defaultValue(50.0D).build();
+    public final DoubleRef maxDelay = doubleBuilder(bt.add("max-delay"))
+            .defaultValue(50.0D)
+            .validator(Configs.doubleRange(0.0D, 1000.0D))
+            .build();
 
     public final FlagRef render = flagBuilder(bt.add("render-old")).build();
 
-    public final DoubleRef maxDistance =
-            doubleBuilder(bt.add("max-distance")).defaultValue(5.0D).build();
+    public final DoubleRef maxDistance = doubleBuilder(bt.add("max-distance"))
+            .defaultValue(5.0D)
+            .validator(Configs.doubleRange(0.0D, 10.0D))
+            .build();
 
     public final FlagRef playerOnly = flagBuilder(bt.add("player-only")).build();
 

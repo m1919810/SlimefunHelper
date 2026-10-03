@@ -71,10 +71,14 @@ public class AnchorAura extends BaseModule {
     public final FlagRef airplace =
             builder(root.add("air-place"), Boolean.class).defaultValue(false).build();
 
-    public final IntRef range = intBuilder(root.add("range")).defaultValue(10).build();
+    public final IntRef range = intBuilder(root.add("range"))
+            .defaultValue(10)
+            .validator(Configs.intRange(0, 100))
+            .build();
     private List<Vec3i> interactRangeBlocks = new ArrayList<>();
     public final DoubleRef interactRange = doubleBuilder(root.add("interact-range"))
             .defaultValue(4.5)
+            .validator(Configs.doubleRange(0.0D, 100))
             .updateListener(s -> interactRangeBlocks = MathUtils.create3DPointListAroundPlayer(s))
             .build();
 

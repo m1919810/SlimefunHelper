@@ -34,11 +34,15 @@ public class SchedularSettings extends BaseModule {
     public final FlagRef enableAutoDischarge =
             builder(root.add("discharge"), Boolean.class).defaultValue(true).build();
 
-    public final IntRef defaultInventoryActionPerTick =
-            intBuilder(root.add("inv-speed-limit")).defaultValue(27).build();
+    public final IntRef defaultInventoryActionPerTick = intBuilder(root.add("inv-speed-limit"))
+            .defaultValue(27)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
-    public final IntRef hotbarProtectRange =
-            intBuilder(root.add("hotbar-protect")).defaultValue(0).build();
+    public final IntRef hotbarProtectRange = intBuilder(root.add("hotbar-protect"))
+            .defaultValue(0)
+            .validator(Configs.intRange(0, 10))
+            .build();
 
     public final NBTRef<Vec3> scannChestRange = builder(root.add("scann-chest-range"), Vec3.class)
             .defaultValue(new Vec3(20, 5, 20))

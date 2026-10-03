@@ -104,10 +104,12 @@ public class ElytraBot extends BaseModule {
 
     public final DoubleRef combatMaceRange = builder(elytraBot.add("combat-range"), DoubleRef.TYPE)
             .defaultValue(10.0D)
+            .validator(Configs.doubleRange(-100.0D, 100.0D))
             .build();
 
     public final DoubleRef combatSpearRange = builder(elytraBot.add("combat-spear-range"), DoubleRef.TYPE)
             .defaultValue(11.0D)
+            .validator(Configs.doubleRange(-100.0D, 100.0D))
             .build();
 
     public final FlagRef followFriend = flagBuilder(elytraBot.add("follower-follow-friend"))
@@ -166,6 +168,7 @@ public class ElytraBot extends BaseModule {
 
     public final DoubleRef maceSwapTargetPredictTicks = doubleBuilder(attackMace.add("mace-pre-swap-prediction"))
             .defaultValue(0.5D)
+            .validator(Configs.doubleRange(-10.0D, 10.0D))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
@@ -235,6 +238,7 @@ public class ElytraBot extends BaseModule {
     public final IntRef maceRemainPullUpTick = builder(
                     maceHeightAndChase.add("mace-max-extra-pull-up-tick"), IntRef.TYPE)
             .defaultValue(20)
+            .validator(Configs.INT_NONNEGATIVE)
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
@@ -251,6 +255,7 @@ public class ElytraBot extends BaseModule {
     public final DoubleRef maceChaseFollowBiasStartHorizontalRange = doubleBuilder(
                     maceHeightAndChase.add("combat-mace-chase-follow-use-y-bias-range"))
             .defaultValue(15.0D)
+            .validator(Configs.doubleRange(-100.0D, 100.0D))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
@@ -268,6 +273,7 @@ public class ElytraBot extends BaseModule {
                     maceHeightAndChase.add("combat-smooth-flight-circle-extra-range"))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .defaultValue(1.0D)
+            .validator(Configs.doubleRange(-100.0D, 100.0D))
             .build();
 
     public final NBTRef<OptionalPrimitive<Vec3>> combatSmoothCircleDynamicRangeByHeight = builder(
@@ -287,6 +293,7 @@ public class ElytraBot extends BaseModule {
                     maceHeightAndChase.add("combat-smooth-flight-out-pull-ratio-enable-distance"))
             .defaultValue(16.0D)
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .validator(Configs.doubleRange(-100.0D, 100.0D))
             .build();
 
     public final FlagRef combatSmoothOutPullRatioUseHorizontalDistance = flagBuilder(
@@ -303,6 +310,7 @@ public class ElytraBot extends BaseModule {
                     maceHeightAndChase.add("combat-smooth-flight-pull-attack-max-horizontal"))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .defaultValue(10.0D)
+            .validator(Configs.doubleRange(-100.0D, 100.0D))
             .build();
 
     public final DoubleRef combatSmoothFlightPullupAttackMinRelativeY = doubleBuilder(
@@ -333,17 +341,20 @@ public class ElytraBot extends BaseModule {
     public final DoubleRef maceFollowMinHeight = doubleBuilder(maceFollow.add("mace-max-follow-height"))
             .defaultValue(1.5D)
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .validator(Configs.doubleRange(-100.0D, 100.0D))
             .build();
 
     public final DoubleRef maceYLevelWeight = doubleBuilder(maceFollow.add("mace-y-level-lerp"))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .defaultValue(0.0)
+            .validator(Configs.doubleRange(-5.0D, 5.0D))
             .build();
 
     public final DoubleRef chooseDownTargetDistance = builder(
                     maceFollow.add("choose-down-target-distance"), DoubleRef.TYPE)
             .defaultValue(3.0D)
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .validator(Configs.doubleRange(-36.0D, 36.0D))
             .build();
 
     public final FlagRef followDownPosWhenLow = builder(maceFollow.add("follow-lerp-pos-when-low"), Boolean.class)
@@ -354,6 +365,7 @@ public class ElytraBot extends BaseModule {
     public final DoubleRef minPitchDownwards = doubleBuilder(maceFollow.add("follow-min-pitch-deg"))
             .defaultValue(15.0D)
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .validator(Configs.doubleRange(0.0D, 90.0D))
             .build();
 
     public final FlagRef maceFollowUsePredictorLine = flagBuilder(maceFollow.add("predict-line"))
@@ -363,6 +375,7 @@ public class ElytraBot extends BaseModule {
     public final DoubleRef maceFollowStartPredictDistance = doubleBuilder(maceFollow.add("start-predict-distance"))
             .defaultValue(10.0D)
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .validator(Configs.doubleRange(-100.0D, 100.0D))
             .build();
 
     public final DoubleRef maceFollowPredictTicksPerDistance = doubleBuilder(
@@ -457,6 +470,7 @@ public class ElytraBot extends BaseModule {
     public final DoubleRef angleOptimizeAxisXZOutRange = doubleBuilder(
                     angleOptimize.add("combat-angle-optimize-xz-pullup-out-range"))
             .defaultValue(30.0D)
+            .validator(Configs.doubleRange(0.0D, Double.MAX_VALUE))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA)
                     && ElytraExtra.INSTANCE.autoRescale.get()
                     && ElytraFlight.INSTANCE.useAutoRescale.get())
@@ -473,6 +487,7 @@ public class ElytraBot extends BaseModule {
     public final DoubleRef angleOptimizeAxisXZInRange = doubleBuilder(
                     angleOptimize.add("combat-angle-optimize-xz-pullup-in-range"))
             .defaultValue(12.0D)
+            .validator(Configs.doubleRange(-100.0D, 100.0D))
             .show(() -> mode.get().isIn(Mode.MACE_ARUA)
                     && ElytraExtra.INSTANCE.autoRescale.get()
                     && ElytraFlight.INSTANCE.useAutoRescale.get())
@@ -573,6 +588,7 @@ public class ElytraBot extends BaseModule {
     public final DoubleRef flyAntiSpearRange = doubleBuilder(antiSpear.add("fly-anti-spear-range"))
             .defaultValue(9.0D)
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
+            .validator(Configs.doubleRange(-100.0D, 100.0D))
             .build();
 
     public final NBTRef<OptionalPrimitive<Double>> flyAntiSpearWhenPullup = builder(
@@ -584,6 +600,7 @@ public class ElytraBot extends BaseModule {
     public final DoubleRef flyAntiSpearPullupRange = doubleBuilder(antiSpear.add("fly-anti-spear-pull-up-range"))
             .defaultValue(9.0D)
             .show(() -> (mode.get().isNotIn(Mode.SPEAR_ARUA)))
+            .validator(Configs.doubleRange(-100.0D, 100.0D))
             .build();
 
     public final FlagRef flyAntiSpearDisableWhenSpear = flagBuilder(

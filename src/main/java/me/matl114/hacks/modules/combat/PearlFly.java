@@ -56,6 +56,7 @@ public class PearlFly extends BaseModule {
 
     public final DoubleRef autoPearlActivateRange = doubleBuilder(pearlPhase.add("auto-activate-range"))
             .defaultValue(0.35)
+            .validator(Configs.doubleRange(0.0D, 2.0D))
             .build();
 
     public final FlagRef useWASDControl =

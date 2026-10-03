@@ -45,11 +45,15 @@ public class XaeroMapScanner extends BaseModule {
     public final KeyBindRef hotkey =
             moduleEntry(root.addHotkey(), new MultiKeyBind(), root.addEnable()).build();
 
-    public final IntRef chunkRange =
-            intBuilder(root.add("chunk-range")).defaultValue(24).build();
+    public final IntRef chunkRange = intBuilder(root.add("chunk-range"))
+            .defaultValue(24)
+            .validator(Configs.intRange(0, 36))
+            .build();
 
-    public final IntRef rescheduleRange =
-            intBuilder(root.add("reschedule-range")).defaultValue(8).build();
+    public final IntRef rescheduleRange = intBuilder(root.add("reschedule-range"))
+            .defaultValue(8)
+            .validator(Configs.intRange(0, 36))
+            .build();
 
     public final EnumRef<Mode> mode = builder(root.add("mode"), Mode.class)
             .defaultValue(Mode.LIQUID)
@@ -60,8 +64,10 @@ public class XaeroMapScanner extends BaseModule {
             .show(() -> mode.get().isIn(Mode.LIQUID))
             .build();
 
-    public final DoubleRef unloadedRatio =
-            doubleBuilder(root.add("new-chunk-ratio")).defaultValue(0.25D).build();
+    public final DoubleRef unloadedRatio = doubleBuilder(root.add("new-chunk-ratio"))
+            .defaultValue(0.25D)
+            .validator(Configs.doubleRange(0.0D, 1.0D))
+            .build();
 
     public final FlagRef render =
             builder(root.add("render"), Boolean.class).defaultValue(true).build();
