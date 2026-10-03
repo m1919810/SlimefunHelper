@@ -324,9 +324,8 @@ public class PathManager extends BaseModule {
         recordingStarted = false;
         recordingFlightStarted = false;
         recordingSnapshot = null;
-        context.sendMessage(existed
-                ? "&a已加载已有路径记录: " + pathFile + "，使用 start 继续录制"
-                : "&a已创建路径记录: " + pathFile + "，使用 start 开始录制");
+        context.sendMessage(
+                existed ? "&a已加载已有路径记录: " + pathFile + "，使用 start 继续录制" : "&a已创建路径记录: " + pathFile + "，使用 start 开始录制");
         return true;
     }
 
