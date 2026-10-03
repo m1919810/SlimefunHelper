@@ -121,6 +121,10 @@ public class AutoThrow extends BaseModule {
             .defaultValue(new EntrySet<>(Registries.STATUS_EFFECT, List.of()))
             .build();
 
+    public final KeyBindRef manualPotion = hotkey(potions.add("manually-throw"), new MultiKeyBind())
+            .registerHotkey(HotKeyUtils.wrapAsHandler(this::throwPotion))
+            .build();
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -201,9 +205,9 @@ public class AutoThrow extends BaseModule {
         if (canThrow()) {
             if (eatingAbort.get() && mc.player.isUsingItem()) return;
             if (++timer >= delay.get()) {
-                timer = 0;
                 //
                 if (xpEnable.get()) {
+                    timer = 0;
                     if (checkDurability.get()) {
                         if (startMending) {
                             if (canMend()) {
@@ -228,54 +232,53 @@ public class AutoThrow extends BaseModule {
                 } else {
                     startMending = false;
                 }
-                if (potionEnable.get() && effectCheck.run(5)) {
-                    if (SequencedActionManager.INSTANCE.isWaitingItemResponse(s -> s.isOf(Items.SPLASH_POTION))) {
-                        return;
-                    }
-                    // check flying potions
-
-                    Set<RegistryEntry<StatusEffect>> onePotion = new HashSet<>();
-                    for (var re : keepPotions.get().set()) {
-                        var entry = Registries.STATUS_EFFECT.getEntry(re);
-                        var statusInstance = mc.player.getStatusEffect(entry);
-                        if (statusInstance == null || statusInstance.isDurationBelow(20)) {
-                            onePotion.add(entry);
-                        }
-                    }
-                    Box checkUpperBox =
-                            mc.player.getBoundingBox().expand(3.6, 8.0, 3.6).stretch(0, 5, 0);
-                    mc.world
-                            .getEntitiesByType(EntityType.SPLASH_POTION, checkUpperBox, Predicates.alwaysTrue())
-                            .forEach(potion -> {
-                                var po = potion.getStack().get(DataComponentTypes.POTION_CONTENTS);
-                                if (po != null) {
-                                    po.getEffects().forEach(effect -> {
-                                        onePotion.remove(effect.getEffectType());
-                                    });
-                                }
-                            });
-                    if (!onePotion.isEmpty()) {
-                        throwItem(
-                                s -> {
-                                    if (s.isOf(Items.SPLASH_POTION) && s.contains(DataComponentTypes.POTION_CONTENTS)) {
-                                        var con = s.get(DataComponentTypes.POTION_CONTENTS);
-                                        if (con == null) return null;
-                                        int totalLevel = 0;
-                                        for (var re : con.getEffects()) {
-                                            if (onePotion.contains(re.getEffectType())) {
-                                                totalLevel += re.getAmplifier();
-                                            }
-                                        }
-                                        return totalLevel > 0 ? (double) totalLevel : null;
-                                    }
-                                    return null;
-                                },
-                                1);
-                    }
-                }
-            } else {
-                return;
             }
+            if (potionEnable.get() && effectCheck.run(5)) {
+                throwPotion();
+            }
+        }
+    }
+
+    public void throwPotion() {
+        if (SequencedActionManager.INSTANCE.isWaitingItemResponse(s -> s.isOf(Items.SPLASH_POTION))) {
+            return;
+        }
+        Set<RegistryEntry<StatusEffect>> onePotion = new HashSet<>();
+        for (var re : keepPotions.get().set()) {
+            var entry = Registries.STATUS_EFFECT.getEntry(re);
+            var statusInstance = mc.player.getStatusEffect(entry);
+            if (statusInstance == null || statusInstance.isDurationBelow(20)) {
+                onePotion.add(entry);
+            }
+        }
+        Box checkUpperBox = mc.player.getBoundingBox().expand(4.0, 8.0, 4.0).stretch(0, 40, 0);
+        mc.world
+                .getEntitiesByType(EntityType.SPLASH_POTION, checkUpperBox, Predicates.alwaysTrue())
+                .forEach(potion -> {
+                    var po = potion.getStack().get(DataComponentTypes.POTION_CONTENTS);
+                    if (po != null) {
+                        po.getEffects().forEach(effect -> {
+                            onePotion.remove(effect.getEffectType());
+                        });
+                    }
+                });
+        if (!onePotion.isEmpty()) {
+            throwItem(
+                    s -> {
+                        if (s.isOf(Items.SPLASH_POTION) && s.contains(DataComponentTypes.POTION_CONTENTS)) {
+                            var con = s.get(DataComponentTypes.POTION_CONTENTS);
+                            if (con == null) return null;
+                            int totalLevel = 0;
+                            for (var re : con.getEffects()) {
+                                if (onePotion.contains(re.getEffectType())) {
+                                    totalLevel += re.getAmplifier();
+                                }
+                            }
+                            return totalLevel > 0 ? (double) totalLevel : null;
+                        }
+                        return null;
+                    },
+                    1);
         }
     }
 
