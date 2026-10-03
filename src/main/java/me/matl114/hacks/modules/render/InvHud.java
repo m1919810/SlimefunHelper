@@ -48,8 +48,10 @@ public class InvHud extends BaseModule {
             .defaultValue(new RegistryRegex<>(new Regex("^(.*)$"), Registries.ITEM))
             .build();
 
-    public IntRef line =
-            intBuilder(invHud.add("count-per-line")).defaultValue(9).build();
+    public IntRef line = intBuilder(invHud.add("count-per-line"))
+            .defaultValue(9)
+            .validator(Configs.INT_POSITIVE)
+            .build();
 
     public FlagRef showShulkerItems = builder(invHud.add("show-shulker-items"), Boolean.class)
             .defaultValue(true)

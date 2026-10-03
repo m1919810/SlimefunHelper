@@ -81,8 +81,10 @@ public class SoundNotify extends BaseModule {
                     effectWarnPath.add("effects"), EntrySet.<StatusEffect>parameter())
             .defaultValue(new EntrySet<>(Registries.STATUS_EFFECT, List.of()))
             .build();
-    public final IntRef effectWarnDuration =
-            intBuilder(effectWarnPath.add("duration-ticks")).defaultValue(200).build();
+    public final IntRef effectWarnDuration = intBuilder(effectWarnPath.add("duration-ticks"))
+            .defaultValue(200)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
     public final NBTRef<Holder<SoundEvent>> effectWarnSound = soundBuilder(effectWarnPath, EFFECT_WARN_SOUND);
 
     private final ModulePath messagePath = path.add("message-detection");
@@ -110,11 +112,14 @@ public class SoundNotify extends BaseModule {
     private final ModulePath durabilityPath = path.add("durability");
     public final FlagRef durabilityWarn =
             flagBuilder(durabilityPath.addEnable()).build();
-    public final IntRef durabilityThresholdValue =
-            intBuilder(durabilityPath.add("threshold")).defaultValue(10).build();
+    public final IntRef durabilityThresholdValue = intBuilder(durabilityPath.add("threshold"))
+            .defaultValue(10)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
     public final DoubleRef durabilityThresholdPercentage = doubleBuilder(durabilityPath.add("threshold-percentage"))
             .defaultValue(0.1)
+            .validator(Configs.doubleRange(0.0D, 1.0D))
             .build();
     public final NBTRef<Holder<SoundEvent>> durabilitySound = soundBuilder(durabilityPath, DURABILITY_SOUND);
 

@@ -67,10 +67,12 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
 
     public final DoubleRef spearDistance = builder(spearModule.add("spear-motion-simulation"), DoubleRef.TYPE)
             .defaultValue(50.0D)
+            .validator(Configs.doubleRange(0.0D, 200.0D))
             .build();
 
     public final DoubleRef spearMaxTp = builder(spearModule.add("spear-max-tp"), DoubleRef.TYPE)
             .defaultValue(100.0D)
+            .validator(Configs.doubleRange(0.0D, 200.0D))
             .build();
 
     public final FlagRef spearRender =

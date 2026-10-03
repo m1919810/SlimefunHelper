@@ -60,8 +60,10 @@ public class AutoThrow extends BaseModule {
 
     public final FlagRef avoidEnemies = flagBuilder(root.add("avoid-enemies")).build();
 
-    public final DoubleRef avoidEnemyDistance =
-            doubleBuilder(root.add("avoid-enemies-distance")).defaultValue(1.5).build();
+    public final DoubleRef avoidEnemyDistance = doubleBuilder(root.add("avoid-enemies-distance"))
+            .defaultValue(1.5)
+            .validator(Configs.doubleRange(0.0D, 10.0D))
+            .build();
 
     public final FlagRef eatingAbort = builder(root.add("using-item-abort"), Boolean.class)
             .defaultValue(false)
@@ -86,14 +88,24 @@ public class AutoThrow extends BaseModule {
     public final FlagRef checkDurability =
             flagBuilder(xp.add("check-durability")).build();
 
-    public final IntRef startFixArmorDur =
-            intBuilder(xp.add("start-fixing-durability")).defaultValue(100).build();
+    public final IntRef startFixArmorDur = intBuilder(xp.add("start-fixing-durability"))
+            .defaultValue(100)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
-    public final IntRef stopFixArmorDur =
-            intBuilder(xp.add("stop-fixing-durability")).defaultValue(50).build();
+    public final IntRef stopFixArmorDur = intBuilder(xp.add("stop-fixing-durability"))
+            .defaultValue(50)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
-    public final IntRef delay = intBuilder(xp.add("delay")).defaultValue(3).build();
-    public final IntRef mul = intBuilder(xp.add("multiply")).defaultValue(8).build();
+    public final IntRef delay = intBuilder(xp.add("delay"))
+            .defaultValue(3)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
+    public final IntRef mul = intBuilder(xp.add("multiply"))
+            .defaultValue(8)
+            .validator(Configs.INT_POSITIVE)
+            .build();
 
     public final FlagRef autoClose = flagBuilder(xp.add("auto-close")).build();
 

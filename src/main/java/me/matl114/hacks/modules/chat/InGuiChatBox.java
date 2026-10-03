@@ -36,6 +36,7 @@ public class InGuiChatBox extends BaseModule {
 
     public final DoubleRef otherScreenInputLength = doubleBuilder(chat.add("chat-box-other-length"))
             .defaultValue(100.0D)
+            .validator(Configs.doubleRange(0.0D, Double.MAX_VALUE))
             .build();
     public static InGuiChatBox INSTANCE;
 

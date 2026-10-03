@@ -65,8 +65,10 @@ public class AntiCrystal extends BaseModule {
     public final KeyBindRef hotkey =
             moduleEntry(root.addHotkey(), new MultiKeyBind(), root.addEnable()).build();
 
-    public final DoubleRef progressPercentage =
-            doubleBuilder(root.add("progress-percentage")).defaultValue(0.66).build();
+    public final DoubleRef progressPercentage = doubleBuilder(root.add("progress-percentage"))
+            .defaultValue(0.66)
+            .validator(Configs.doubleRange(0.0D, 1.0D))
+            .build();
 
     public final FlagRef onlyAround = flagBuilder(root.add("only-around-self")).build();
 
@@ -87,6 +89,7 @@ public class AntiCrystal extends BaseModule {
 
     public final DoubleRef eachLevelDelay = doubleBuilder(fireworks.add("each-level-effective"))
             .defaultValue(10.0D)
+            .validator(Configs.doubleRange(0.0D, Double.MAX_VALUE))
             .build();
 
     public final FlagRef onlyCeiling = builder(fireworks.add("only-ceiling"), Boolean.class)
@@ -124,8 +127,10 @@ public class AntiCrystal extends BaseModule {
             .defaultValue(4)
             .build();
 
-    public final IntRef arrowEffectiveTicks =
-            intBuilder(bows.add("arrow-effective-ticks")).defaultValue(1150).build();
+    public final IntRef arrowEffectiveTicks = intBuilder(bows.add("arrow-effective-ticks"))
+            .defaultValue(1150)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
     @Override
     public void registerAll() {

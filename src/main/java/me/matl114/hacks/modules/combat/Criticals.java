@@ -121,6 +121,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
 
     public final IntRef cooldownCritical = builder(criticals.add("critical-cooldown"), Integer.class)
             .defaultValue(10)
+            .validator(Configs.INT_NONNEGATIVE)
             .build();
 
     static LegalMovementManager.DelegateMovementModifier instance;

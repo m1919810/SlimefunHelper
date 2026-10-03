@@ -126,11 +126,15 @@ public class AutoMine extends BaseModule {
             .validator(Configs.INT_POSITIVE)
             .build();
 
-    public final DoubleRef collectEnterDistance =
-            doubleBuilder(root.add("collect-enter-distance")).defaultValue(8.0).build();
+    public final DoubleRef collectEnterDistance = doubleBuilder(root.add("collect-enter-distance"))
+            .defaultValue(8.0)
+            .validator(Configs.doubleRange(0.0D, Double.MAX_VALUE))
+            .build();
 
-    public final DoubleRef collectSearchRadius =
-            doubleBuilder(root.add("collect-search-radius")).defaultValue(8.0).build();
+    public final DoubleRef collectSearchRadius = doubleBuilder(root.add("collect-search-radius"))
+            .defaultValue(8.0)
+            .validator(Configs.doubleRange(0.0D, Double.MAX_VALUE))
+            .build();
 
     public final FlagRef mineDuringCollect =
             flagBuilder(root.add("mine-during-collect")).defaultValue(true).build();

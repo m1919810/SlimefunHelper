@@ -58,6 +58,7 @@ public class AutoResync extends BaseModule {
 
     public final DoubleRef autoResyncPosDistance = builder(moveSafety.add("auto-resync-distance"), DoubleRef.TYPE)
             .defaultValue(10.0D)
+            .validator(Configs.doubleRange(0.0D, 200.0D))
             .build();
 
     public final FlagRef logAutoResync =

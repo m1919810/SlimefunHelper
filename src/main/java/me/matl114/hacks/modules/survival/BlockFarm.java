@@ -52,9 +52,15 @@ public class BlockFarm extends BaseModule {
     public final KeyBindRef hotkey =
             moduleEntry(root.addHotkey(), new MultiKeyBind(), root.addEnable()).build();
 
-    public final IntRef delay = intBuilder(root.add("delay")).defaultValue(6).build();
+    public final IntRef delay = intBuilder(root.add("delay"))
+            .defaultValue(6)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
-    public final IntRef mul = intBuilder(root.add("multiply")).defaultValue(9).build();
+    public final IntRef mul = intBuilder(root.add("multiply"))
+            .defaultValue(9)
+            .validator(Configs.INT_POSITIVE)
+            .build();
 
     public final FlagRef enableWhiteList =
             flagBuilder(root.add("white-list-enable")).build();

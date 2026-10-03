@@ -52,6 +52,7 @@ public class RenderOptimize extends BaseModule {
 
     public final DoubleRef cullingDistanceItem = builder(renderOptimize.add("item-culling-distance"), DoubleRef.TYPE)
             .defaultValue(40.0D)
+            .validator(Configs.doubleRange(0.0D, 360.0D))
             .build();
 
     public final FlagRef enableParticleTickOpt =
@@ -66,6 +67,7 @@ public class RenderOptimize extends BaseModule {
     public final DoubleRef cullingDistanceEntityLabel = builder(
                     renderOptimize.add("entity-label-render-culling-distance"), DoubleRef.TYPE)
             .defaultValue(64.0D)
+            .validator(Configs.doubleRange(0.0D, 360.0D))
             .build();
 
     public final FlagRef enableBlockLabelRenderOpt =
@@ -74,6 +76,7 @@ public class RenderOptimize extends BaseModule {
     public final DoubleRef cullingDistanceBlockLabel = builder(
                     renderOptimize.add("block-label-render-culling-distance"), DoubleRef.TYPE)
             .defaultValue(20.0D)
+            .validator(Configs.doubleRange(0.0D, 360.0D))
             .build();
 
     public final FlagRef cullingEnable =
@@ -103,6 +106,7 @@ public class RenderOptimize extends BaseModule {
 
     public final DoubleRef cullingRadius = builder(renderOptimize.add("optimize-culling-radius"), DoubleRef.TYPE)
             .defaultValue(64.0D)
+            .validator(Configs.doubleRange(0.0D, 360.0D))
             .build();
 
     public final FlagRef cullingUseRaycast =

@@ -57,6 +57,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     public final IntRef fireworksRotationLastingTicks = builder(
                     simpleFlightControl.add("firework-rotation-last-ticks"), Integer.class)
             .defaultValue(3)
+            .validator(Configs.intRange(0, 10))
             .show(() -> motionMode.get().isIn(ElytraExtra.MotionMode.FIRE_WORKS))
             .build();
 

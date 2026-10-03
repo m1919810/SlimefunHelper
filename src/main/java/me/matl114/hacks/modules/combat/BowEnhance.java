@@ -71,6 +71,7 @@ public class BowEnhance extends BaseModule {
 
     public DoubleRef tpDistance = builder(bowAtt.add("tp-accelerate"), DoubleRef.TYPE)
             .defaultValue(150.0D)
+            .validator(Configs.doubleRange(0.0D, 200.0D))
             .show(enableTp::get)
             .build();
 

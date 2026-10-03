@@ -44,8 +44,10 @@ public class QueueMine extends BaseModule {
     public final KeyBindRef hotkey = moduleEntry(packetMine.addHotkey(), new MultiKeyBind(), packetMine.addEnable())
             .build();
 
-    public final IntRef queueSize =
-            intBuilder(packetMine.add("queue-size")).defaultValue(2).build();
+    public final IntRef queueSize = intBuilder(packetMine.add("queue-size"))
+            .defaultValue(2)
+            .validator(Configs.intRange(0, 100))
+            .build();
 
     public final FlagRef useDoubleBreak =
             flagBuilder(packetMine.add("double-break")).build();

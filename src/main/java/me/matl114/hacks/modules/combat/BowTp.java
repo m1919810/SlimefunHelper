@@ -54,10 +54,12 @@ public class BowTp extends BaseModule {
 
     public DoubleRef tpDistance = builder(bowAtt.add("bowtp-distance"), DoubleRef.TYPE)
             .defaultValue(80.0D)
+            .validator(Configs.doubleRange(0.0D, 200.0D))
             .build();
 
     public DoubleRef targetingDistance = builder(bowAtt.add("bowtp-target-distance"), DoubleRef.TYPE)
             .defaultValue(80.0D)
+            .validator(Configs.doubleRange(0.0D, 200.0D))
             .build();
 
     public FlagRef render = flagBuilder(bowAtt.add("bowtp-render-target")).build();

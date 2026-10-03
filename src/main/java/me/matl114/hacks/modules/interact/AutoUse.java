@@ -38,8 +38,10 @@ public class AutoUse extends BaseModule {
     public final FlagRef onlyWhenEnemyNear =
             flagBuilder(path.add("only-when-enemy-near")).build();
 
-    public final DoubleRef nearDistance =
-            doubleBuilder(path.add("enemy-near-distance")).defaultValue(12.0D).build();
+    public final DoubleRef nearDistance = doubleBuilder(path.add("enemy-near-distance"))
+            .defaultValue(12.0D)
+            .validator(Configs.doubleRange(0.0D, 20.0D))
+            .build();
 
     public final FlagRef useFood = flagBuilder(path.add("use-food")).build();
 
