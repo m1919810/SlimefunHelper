@@ -2499,7 +2499,9 @@ public class ElytraBot extends BaseModule {
                 movementDirection = look.negate();
             }
             if (predictMayHit && base.spearAntiSpearPullOverWhenPredictHit.get()) {
-                movementDirection = new Vec3d(movementDirection.z, movementDirection.y, -movementDirection.x);
+                movementDirection = Tasks.getTick() % 2 == 0
+                        ? new Vec3d(movementDirection.z, movementDirection.y, -movementDirection.x)
+                        : new Vec3d(-movementDirection.z, movementDirection.y, movementDirection.x);
             }
             if (movementDirection.y < 0) {
                 movementDirection = movementDirection.withAxis(Direction.Axis.Y, Math.abs(movementDirection.y));
