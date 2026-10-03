@@ -55,6 +55,7 @@ public class AutoTotem extends BaseModule {
 
     public final IntRef cooldown = builder(totem.add("totem-swap-cooldown"), IntRef.TYPE)
             .defaultValue(1)
+            .validator(Configs.INT_NONNEGATIVE)
             .build();
 
     public final NBTRef<OptionalPrimitive<Integer>> forcedHotbarSlot = builder(

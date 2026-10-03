@@ -126,6 +126,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public final IntRef autoTakeOffRetryGt = intBuilder(elytraTweaks.add("auto-take-off-retry-ticks"))
             .defaultValue(3)
+            .validator(Configs.INT_NONNEGATIVE)
             .build();
 
     public final FlagRef autoTakeOffWhenJoinServer =
@@ -222,6 +223,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public final IntRef rocketExtraEffectiveTicks = intBuilder(customFireworksPath.add("rocket-extra-effect-ticks"))
             .defaultValue(1)
+            .validator(Configs.INT_NONNEGATIVE)
             .build();
 
     public final FlagRef autoRescale =
@@ -229,6 +231,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public final DoubleRef autoRescaleAmount = doubleBuilder(customFireworksPath.add("auto-rescale-firework-amount"))
             .defaultValue(1.65D)
+            .validator(Configs.doubleRange(0.0D, Double.MAX_VALUE))
             .show(this.autoRescale::get)
             .build();
 
@@ -316,6 +319,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public final IntRef fireworksDelayMS = builder(customFireworksPath.add("fireworks-delay-ms"), Integer.class)
             .defaultValue(500)
+            .validator(Configs.intRange(0, 3600))
             .build();
 
     // public final FlagRef useFireworks =

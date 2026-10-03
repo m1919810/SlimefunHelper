@@ -59,14 +59,18 @@ public class ChatExtra extends BaseModule {
     public final FlagRef checkMessageLength =
             flagBuilder(chat.add("check-chat-len")).build();
 
-    public final IntRef messageLengthLimit =
-            intBuilder(chat.add("chat-len-limit")).defaultValue(256).build();
+    public final IntRef messageLengthLimit = intBuilder(chat.add("chat-len-limit"))
+            .defaultValue(256)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
     public final FlagRef checkCommandLength =
             flagBuilder(chat.add("check-command-len")).build();
 
-    public final IntRef commandLengthLimit =
-            intBuilder(chat.add("command-len-limit")).defaultValue(32760).build();
+    public final IntRef commandLengthLimit = intBuilder(chat.add("command-len-limit"))
+            .defaultValue(32760)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
     public final StringRef warnFormat = builder(chat.add("limit-warn-format"), String.class)
             .defaultValue("&c你的输入内容太长了! %d / %d")
@@ -154,6 +158,7 @@ public class ChatExtra extends BaseModule {
 
     public final IntRef encryptLength = intBuilder(chatTools.add("password-encrypt-length"))
             .defaultValue(20)
+            .validator(Configs.INT_POSITIVE)
             .build();
 
     public final StringRef encryptSalt = builder(chatTools.add("password-encrypt-salt"), String.class)

@@ -30,7 +30,10 @@ public class AutoClick extends BaseModule {
             .defaultValue(true)
             .build();
 
-    public final IntRef cd = intBuilder(root.add("cooldown")).defaultValue(0).build();
+    public final IntRef cd = intBuilder(root.add("cooldown"))
+            .defaultValue(0)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
     public final FlagRef enableLeft = flagBuilder(root.add("left")).build();
 

@@ -62,6 +62,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
 
     public final IntRef maxResetKBTick = intBuilder(antiKb.add("grim-reset-kb-tick"))
             .defaultValue(3)
+            .validator(Configs.intRange(0, 10))
             .show(() -> mode.get().isIn(Mode.GRIM_LEGACY_GROUND))
             .build();
 

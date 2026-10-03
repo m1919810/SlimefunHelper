@@ -46,16 +46,19 @@ public class SearchControl extends BaseModule {
 
     public final DoubleRef rangeSpiral = doubleBuilder(searchControl.add("range-spiral"))
             .defaultValue(32.0D)
+            .validator(Configs.doubleRange(0.0D, Double.MAX_VALUE))
             .show(() -> mode.get().isIn(Mode.SPIRAL))
             .build();
 
     public final DoubleRef rangeRect = doubleBuilder(searchControl.add("range-rect"))
             .defaultValue(192.0D)
+            .validator(Configs.doubleRange(0.0D, Double.MAX_VALUE))
             .show(() -> mode.get().isIn(Mode.RECT))
             .build();
 
     public final DoubleRef rangeCircle = doubleBuilder(searchControl.add("range-circle"))
             .defaultValue(192.0D)
+            .validator(Configs.doubleRange(0.0D, Double.MAX_VALUE))
             .show(() -> mode.get().isIn(Mode.CIRCLE))
             .build();
 
@@ -67,6 +70,7 @@ public class SearchControl extends BaseModule {
 
     public final DoubleRef maxDist = doubleBuilder(searchControl.add("max-distance"))
             .defaultValue(300_000_000.0D)
+            .validator(Configs.doubleRange(0.0D, Double.MAX_VALUE))
             .build();
 
     public final FlagRef outMaxLog =

@@ -73,8 +73,10 @@ public class AutoBreed extends BaseModule {
     public final FlagRef enableFeedBaby =
             flagBuilder(root.add("enable-feed-baby")).build();
 
-    public final IntRef babyFeedLimit =
-            builder(root.add("baby-feed-limit"), Integer.class).defaultValue(3).build();
+    public final IntRef babyFeedLimit = builder(root.add("baby-feed-limit"), Integer.class)
+            .defaultValue(3)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
 
     public final FlagRef render = flagBuilder(root.add("render")).build();
 

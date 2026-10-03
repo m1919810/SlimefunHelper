@@ -46,8 +46,10 @@ public class EventNotify extends BaseModule {
 
     public final FlagRef onlyMin = flagBuilder(path.add("min-only")).build();
 
-    public final DoubleRef minScreenWidth =
-            doubleBuilder(path.add("min-width")).defaultValue(0.0D).build();
+    public final DoubleRef minScreenWidth = doubleBuilder(path.add("min-width"))
+            .defaultValue(0.0D)
+            .validator(Configs.doubleRange(0.0D, Double.MAX_VALUE))
+            .build();
 
     public final FlagRef enableQueue = flagBuilder(path.add("enable-queue")).build();
 
