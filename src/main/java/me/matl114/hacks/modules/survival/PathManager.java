@@ -293,8 +293,7 @@ public class PathManager extends BaseModule {
             return true;
         }
         if (recordingStorage != null) {
-            context.sendMessage("&c当前已经加载路径: " + recordingPathFile + "，请先使用 record save");
-            return true;
+            finishPath("重新加载", context);
         }
 
         String pathFile = normalizePathFile(args.nextNonnullString());
