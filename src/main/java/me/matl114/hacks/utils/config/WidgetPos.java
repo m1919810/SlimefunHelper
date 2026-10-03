@@ -2,6 +2,8 @@ package me.matl114.hacks.utils.config;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -12,8 +14,9 @@ import lombok.With;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.Constants;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.IconElement;
+import me.matl114.gui.interfaces.DefaultElementFactory;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.gui.presets.single.WidgetPosSelectScreen;
 import me.matl114.managers.config.NBTParsable;
 import me.matl114.managers.config.NBTRef;
@@ -53,24 +56,26 @@ public class WidgetPos implements NBTParsable<WidgetPos> {
                             Codec.INT.fieldOf("lengthX").forGetter(WidgetPos::getLengthX),
                             Codec.INT.fieldOf("lengthY").forGetter(WidgetPos::getLengthY))
                     .apply(oInstance, WidgetPos::new)),
-            (w, x, y, dx, dy) -> {
+            (factory, w, x, y, dx, dy) -> {
                 SubScreenWidget widget = new SubScreenWidget(x, y, dx, dy);
-                widget.addDrawableChild(ExecutableWidget.instance(0, 0, 2 * dy, dy)
-                        .setElementHandler(new ButtonElement(
-                                (el) -> {
-                                    return switch (w.get().getType()) {
-                                        case 0 -> Text.translatableWithFallback(
-                                                "widget.nbt-parsable.widget-pos.percentage", "Per");
-                                        case 1 -> Text.translatableWithFallback(
-                                                "widget.nbt-parsable.widget-pos.absolute-length", "Abs");
-                                        default -> Text.empty();
-                                    };
-                                },
-                                ButtonAction.run(() -> {
-                                    int total = 2;
-                                    int type = w.get().getType();
-                                    w.accept(w.get().withType((type + 1) % total));
-                                }))));
+                widget.addDrawableChild(factory.createExecuteButton(
+                        () -> switch (w.get().getType()) {
+                            case 0 -> Text.translatableWithFallback(
+                                    "widget.nbt-parsable.widget-pos.percentage", "Per");
+                            case 1 -> Text.translatableWithFallback(
+                                    "widget.nbt-parsable.widget-pos.absolute-length", "Abs");
+                            default -> Text.empty();
+                        },
+                        List::of,
+                        ButtonAction.run(() -> {
+                            int total = 2;
+                            int type = w.get().getType();
+                            w.accept(w.get().withType((type + 1) % total));
+                        }),
+                        0,
+                        0,
+                        2 * dy,
+                        dy));
 
                 TypeConvertAttrKeyValue<WidgetPos, Vec2> percentageSel = new TypeConvertAttrKeyValue<>(
                         w,
@@ -78,8 +83,9 @@ public class WidgetPos implements NBTParsable<WidgetPos> {
                         NBTTypes.VEC2_TYPE);
 
                 SubScreenWidget percentage1 = new SubScreenWidget(0, 0, dx - 2 * dy, dy);
-                percentage1.addDrawableChild(percentageSel.generateValueWidget(0, 0, dx - 3 * dy, dy));
+                percentage1.addDrawableChild(percentageSel.generateValueWidget(factory, 0, 0, dx - 3 * dy, dy));
                 percentage1.addDrawableChild(generateWidgetPosSelectScreenButton(
+                        factory,
                         dx - 3 * dy, 0, dy, dy, () -> w.get().getFPoint(), (el) -> {
                             int width = mc.getWindow().getScaledWidth();
                             int height = mc.getWindow().getScaledHeight();
@@ -93,8 +99,9 @@ public class WidgetPos implements NBTParsable<WidgetPos> {
                 TypeConvertAttrKeyValue<WidgetPos, Vec2> absoluteSel = new TypeConvertAttrKeyValue<>(
                         w, WrapperFactory.of(s -> w.get().withLength(s), WidgetPos::toLength), NBTTypes.VEC2_TYPE);
                 SubScreenWidget percentage2 = new SubScreenWidget(0, 0, dx - 2 * dy, dy);
-                percentage2.addDrawableChild(absoluteSel.generateValueWidget(0, 0, dx - 3 * dy, dy));
+                percentage2.addDrawableChild(absoluteSel.generateValueWidget(factory, 0, 0, dx - 3 * dy, dy));
                 percentage2.addDrawableChild(generateWidgetPosSelectScreenButton(
+                        factory,
                         dx - 3 * dy, 0, dy, dy, () -> w.get().getFPoint(), (el) -> {
                             absoluteSel.accept(new Vec2(el.x, el.y));
                         }));
@@ -116,14 +123,32 @@ public class WidgetPos implements NBTParsable<WidgetPos> {
 
     public static DrawableWidget generateWidgetPosSelectScreenButton(
             int x, int y, int dx, int dy, Supplier<FPoint> current, Consumer<FPoint> consumer) {
-        return ExecutableWidget.instance(x, y, dx, dy)
-                .setElementHandler(IconElement.fixedGui(Constants.EDITOR_SPRITE, ButtonAction.run(() -> {
+        return generateWidgetPosSelectScreenButton(
+                DefaultElementFactory.INSTANCE, x, y, dx, dy, current, consumer);
+    }
+
+    public static DrawableWidget generateWidgetPosSelectScreenButton(
+            ElementFactory factory,
+            int x,
+            int y,
+            int dx,
+            int dy,
+            Supplier<FPoint> current,
+            Consumer<FPoint> consumer) {
+        return factory.createElement(
+                IconElement.fixedGui(Constants.EDITOR_SPRITE, ButtonAction.run(() -> {
                             // open gui
                             ScreenAccess.of(new WidgetPosSelectScreen(320, current.get(), consumer))
                                     .openFromCurrent();
                         }))
                         .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                "widget.nbt-parsable.widget-pos.open-select-screen.tooltips", ""))));
+                                "widget.nbt-parsable.widget-pos.open-select-screen.tooltips", ""))),
+                null,
+                null,
+                x,
+                y,
+                dx,
+                dy);
     }
 
     public WidgetPos withPercentage(Vec2 vec2) {

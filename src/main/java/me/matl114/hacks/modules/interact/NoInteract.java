@@ -111,10 +111,11 @@ public class NoInteract extends BaseModule {
     }
 
     @Override
-    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
-        super.addCustomWidgets(acceptor, dx, dy, dblank);
+    public void addCustomWidgets(
+            Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank, me.matl114.gui.interfaces.ElementFactory factory) {
+        super.addCustomWidgets(acceptor, dx, dy, dblank, factory);
         acceptor.accept(WidgetUtils.withCondition(
-                createTitle("widget.block-rotate.yaw-deceive.use-argument", 0, dblank, dx, dy), correctState::get));
+                factory.createTitle("widget.block-rotate.yaw-deceive.use-argument", 0, dblank, dx, dy), correctState::get));
     }
 
     int lastCancelMainHandVanillaInputTick = 0;

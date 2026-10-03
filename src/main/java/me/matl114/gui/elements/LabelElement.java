@@ -2,6 +2,7 @@ package me.matl114.gui.elements;
 
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.RenderHandler;
+import me.matl114.gui.basic.TextAlign;
 import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.complex.RawTextElement;
 import me.matl114.versioned.api.VDrawContext;
@@ -23,14 +24,18 @@ public class LabelElement extends RawTextElement {
     }
 
     public LabelElement(Text text, int color) {
-        this(text, color, 0);
+        this(text, color, TextAlign.MIDDLE);
     }
 
-    public LabelElement(Text text, int color, int alignment) {
-        this(TextProvider.of(text), color, alignment);
+    public LabelElement(Text text, int color, TextAlign alignment) {
+        this(TextProvider.of(text, alignment), color);
     }
 
-    public LabelElement(TextProvider text, int color, int alignment) {
+    public LabelElement(TextProvider text, int color) {
+        super(text, color);
+    }
+
+    public LabelElement(TextProvider text, int color, TextAlign alignment) {
         super(text, color, alignment);
     }
 
@@ -70,7 +75,7 @@ public class LabelElement extends RawTextElement {
                     element.getTextureWidth(),
                     element.getTextureHeight(),
                     color.getColorInt(),
-                    alignment);
+                    text.getAlign(element));
         }
     }
 }

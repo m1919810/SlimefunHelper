@@ -1,0 +1,38 @@
+package me.matl114.hacks.utils.gui;
+
+import me.matl114.gui.basic.ColorSampler;
+import me.matl114.hacks.utils.config.WrapRGBA;
+
+public interface GuiColorSamplier {
+    WrapRGBA frameColor();
+
+    WrapRGBA backgroundColor();
+
+    WrapRGBA plateColor() ;
+
+    WrapRGBA titleColor();
+
+    WrapRGBA labelColor();
+
+    WrapRGBA buttonActiveColor();
+
+    WrapRGBA buttonInactiveColor();
+
+    WrapRGBA textColor();
+
+    WrapRGBA textBackground();
+
+    WrapRGBA sliderColor();
+
+    default AlignType buttonTextAlign() {
+        return AlignType.MIDDLE;
+    }
+
+    default AlignType inputTextAlign() {
+        return AlignType.LEFT;
+    }
+
+    default AlignType sliderTextAlign() {
+        return AlignType.MIDDLE;
+    }
+}

@@ -4,9 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import me.matl114.gui.basic.ButtonAction;
-import me.matl114.gui.basic.ExecutableWidget;
-import me.matl114.gui.basic.TextProvider;
-import me.matl114.gui.elements.ButtonElement;
 import me.matl114.managers.config.NBTType;
 import me.matl114.utils.CodecUtils;
 import net.minecraft.text.Text;
@@ -21,12 +18,17 @@ public class BoundedPrimitiveFlagMap<E extends Enum<E>> extends BoundedPrimitive
                 creator,
                 Arrays.asList(enumS.getEnumConstants()),
                 CodecUtils.enumCodec(enumS),
-                (v, x, y, width, height) -> {
+                (factory, v, x, y, width, height) -> {
                     int estimateWidth = 180;
                     int startX = (width - estimateWidth) / 2;
-                    return ExecutableWidget.instance(x + startX, y, estimateWidth, height)
-                            .setElementHandler(
-                                    new ButtonElement(TextProvider.of(Text.literal(v.name())), ButtonAction.empty()));
+                    return factory.createExecuteButton(
+                            () -> Text.literal(v.name()),
+                            List::of,
+                            ButtonAction.empty(),
+                            x + startX,
+                            y,
+                            estimateWidth,
+                            height);
                 },
                 NBTTypes.BOOLEAN_TYPE,
                 250,

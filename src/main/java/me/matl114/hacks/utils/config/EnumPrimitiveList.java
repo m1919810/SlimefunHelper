@@ -172,7 +172,7 @@ public class EnumPrimitiveList<T extends ConfigEnum, W> implements NBTParsable<E
         return new NBTType<EnumPrimitiveList<T, W>>(
                 "enumprimitivelist",
                 codec,
-                (w, x, y, dx, dy) -> {
+                (factory, w, x, y, dx, dy) -> {
                     EnumPrimitiveList<T, W> map = w.get();
                     map.tryResolve();
                     WrapperFactory<List<Pair<T, Primitive<W>>>, EnumPrimitiveList<T, W>> wrapperFactory =
@@ -180,7 +180,7 @@ public class EnumPrimitiveList<T extends ConfigEnum, W> implements NBTParsable<E
                                     mp -> EnumPrimitiveList.of(mp, map.getType(), map.getPrimitiveType()),
                                     EnumPrimitiveList::toList);
                     return new TypeConvertAttrKeyValue<>(w, wrapperFactory, typeGenerator.apply(map))
-                            .generateValueWidget(x, y, dx, dy);
+                            .generateValueWidget(factory, x, y, dx, dy);
                 },
                 (EnumPrimitiveList<T, W>) new EnumPrimitiveList<>(List.of(), "config_enum", NBTTypes.STRING_TYPE));
     }

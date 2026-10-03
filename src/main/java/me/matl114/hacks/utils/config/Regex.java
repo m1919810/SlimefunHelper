@@ -31,14 +31,20 @@ public class Regex implements NBTParsable<Regex>, Predicate<String> {
 
     static {
         AttrKeyValue.CustomWidgetGenerator<Regex> regexWidget = TYPE.customWidgetFactory();
-        AttrKeyValue.CustomWidgetGenerator<Regex> newWidget = (s, x, y, dx, dy) -> {
+        AttrKeyValue.CustomWidgetGenerator<Regex> newWidget = (factory, s, x, y, dx, dy) -> {
             SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, dx, dy);
-            subScreenWidget.addDrawableChild(regexWidget.generateWidget(s, 0, 0, dx - dy, dy));
-            subScreenWidget.addDrawableChild(ExecutableWidget.instance(dx - dy, 0, dy, dy)
-                    .setElementHandler(
-                            IconElement.fixedGui(Constants.SEARCH_TEXTURE_SPRITE, ButtonAction.run(Regex::runHelpRegex))
-                                    .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                            "widget.nbt-parsable.regex.rules.tooltips", "")))));
+            subScreenWidget.addDrawableChild(regexWidget.generateWidget(factory, s, 0, 0, dx - dy, dy));
+            subScreenWidget.addDrawableChild(factory.createElement(
+                    IconElement.fixedGui(
+                                    Constants.SEARCH_TEXTURE_SPRITE, ButtonAction.run(Regex::runHelpRegex))
+                            .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                    "widget.nbt-parsable.regex.rules.tooltips", ""))),
+                    null,
+                    null,
+                    dx - dy,
+                    0,
+                    dy,
+                    dy));
             return subScreenWidget;
         };
         TYPE.customWidgetFactory(newWidget);

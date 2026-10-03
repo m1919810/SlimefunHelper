@@ -381,7 +381,7 @@ public class PositionPredict extends BaseModule {
                                         .fieldOf("mode")
                                         .forGetter(PredictArgument::mode))
                         .apply(s, PredictArgument::new)),
-                (s, x, y, dx, dy) -> {
+                (factory, s, x, y, dx, dy) -> {
                     SubScreenWidget subScreenWidget = SubScreenWidget.instance(x, y, dx, dy);
                     int half = dx / 4;
                     WrapperFactory<Double, PredictArgument> firstWrapper =
@@ -400,7 +400,7 @@ public class PositionPredict extends BaseModule {
                                             .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
                                                     "widget.nbt-parsable.predict-argument.ticks.tooltips", "")))))
                             .addDrawableChild(new TypeConvertAttrKeyValue<>(s, firstWrapper, NBTTypes.DOUBLE_TYPE)
-                                    .generateValueWidget(dy, 0, half - dy, dy))
+                                    .generateValueWidget(factory, dy, 0, half - dy, dy))
                             .addDrawableChild(DisplayWidget.instance(half, 0, dy, dy)
                                     .setRenderHandler(new ButtonElement(
                                                     TextProvider.of(Text.translatableWithFallback(
@@ -409,7 +409,7 @@ public class PositionPredict extends BaseModule {
                                             .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
                                                     "widget.nbt-parsable.predict-argument.history.tooltips", "")))))
                             .addDrawableChild(new TypeConvertAttrKeyValue<>(s, secondWrapper, NBTTypes.INT_TYPE)
-                                    .generateValueWidget(half + dy, 0, half - dy, dy))
+                                    .generateValueWidget(factory, half + dy, 0, half - dy, dy))
                             .addDrawableChild(DisplayWidget.instance(2 * half, 0, dy, dy)
                                     .setRenderHandler(new ButtonElement(
                                                     TextProvider.of(Text.translatableWithFallback(
@@ -422,7 +422,7 @@ public class PositionPredict extends BaseModule {
                                             thirdWrapper,
                                             EnumAttrKeyValue.createEnumWidgetFactory(PredictionMode.class),
                                             WrapperFactory.of(PredictionMode::valueOf, PredictionMode::name))
-                                    .generateValueWidget(2 * half + dy, 0, 2 * half - dy, dy));
+                                    .generateValueWidget(factory, 2 * half + dy, 0, 2 * half - dy, dy));
                 },
                 new PredictArgument(2, 5, PredictionMode.NO_PREDICT));
 

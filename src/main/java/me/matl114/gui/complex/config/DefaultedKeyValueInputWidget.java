@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.Optional;
 import me.matl114.gui.basic.ExecutableWidget;
 import me.matl114.gui.elements.ResetButtonElement;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.managers.config.Ref;
 import me.matl114.utils.config.AttrKeyValue;
 
@@ -13,6 +14,21 @@ public class DefaultedKeyValueInputWidget<W> extends KeyValueInputWidget<W> {
     public DefaultedKeyValueInputWidget(
             int x, int y, int dx, int dy, int dKey, int dblank, int dvalue, Ref<W> kv, String key) {
         super(x, y, dx, dy, dKey, dblank, dvalue - dy, kv.createKeyValue(key));
+        this.reference = kv.hasDefaultValue() ? Optional.of(kv.getDefaultValue()) : Optional.empty();
+    }
+
+    public DefaultedKeyValueInputWidget(
+            int x,
+            int y,
+            int dx,
+            int dy,
+            int dKey,
+            int dblank,
+            int dvalue,
+            Ref<W> kv,
+            String key,
+            ElementFactory elementFactory) {
+        super(x, y, dx, dy, dKey, dblank, dvalue - dy, kv.createKeyValue(key), elementFactory);
         this.reference = kv.hasDefaultValue() ? Optional.of(kv.getDefaultValue()) : Optional.empty();
     }
 
@@ -36,16 +52,34 @@ public class DefaultedKeyValueInputWidget<W> extends KeyValueInputWidget<W> {
         this.reference = kv;
     }
 
+    public DefaultedKeyValueInputWidget(
+            int x,
+            int y,
+            int dx,
+            int dy,
+            int dKey,
+            int dblank,
+            int dvalue,
+            Optional<W> kv,
+            AttrKeyValue<W> attr,
+            ElementFactory elementFactory) {
+        super(x, y, dx, dy, dKey, dblank, dvalue - dy, attr, elementFactory);
+        this.reference = kv;
+    }
+
     @Override
     protected void init() {
         super.init();
         ExecutableWidget.instance(this.dkey + this.dblank + this.dvalue + 1, 1, dy - 2, dy - 2)
-                .setElementHandler(new ResetButtonElement(
-                        () -> this.reference.isPresent()
-                                && !Objects.equals(this.keyValueHolder.get(), this.reference.get()),
-                        () -> {
-                            this.reference.ifPresent(w -> this.keyValueHolder.accept(w));
-                        }))
+                .setElementHandler(elementFactory.createElement(
+                        new ResetButtonElement(
+                                () -> this.reference.isPresent()
+                                        && !Objects.equals(this.keyValueHolder.get(), this.reference.get()),
+                                () -> {
+                                    this.reference.ifPresent(w -> this.keyValueHolder.accept(w));
+                                }),
+                        null,
+                        null))
                 .addToSub(this);
     }
 }

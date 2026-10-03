@@ -11,16 +11,17 @@ import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.config.DefaultedKeyValueInputWidget;
 import me.matl114.gui.complex.config.KeyValueInputWidget;
 import me.matl114.gui.elements.AdvancedScrollElement;
-import me.matl114.gui.elements.ColorLabelTextElement;
 import me.matl114.gui.elements.IconElement;
-import me.matl114.gui.elements.TextFieldElement;
+import me.matl114.gui.interfaces.DefaultElementFactory;
+import me.matl114.gui.interfaces.ElementFactory;
+import me.matl114.gui.interfaces.InputElement;
 import me.matl114.gui.presets.lists.StringListModifyScreen;
-import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.managers.config.Ref;
 import me.matl114.managers.config.Refs;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.collections.MutableRecord;
 import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.BaseAttrKeyValue;
 import me.matl114.utils.config.ValueAccessor;
 import me.matl114.utils.config.kv.ListAttrKeyValue;
 import me.matl114.versioned.api.VDrawContext;
@@ -29,13 +30,9 @@ import net.minecraft.util.Colors;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
 public class WidgetUtils {
-    public static final ConfigScreenLayout DEFAULT_CONFIG_SCREEN_LAYOUT = new ConfigScreenLayout(140, 10, 180, 18, 2);
+    private static final int COLLAPSIBLE_ARROW_SIZE = 8;
 
-    public static WidgetUtils.ConfigScreenPalette DEFAULT_PALETTE = new WidgetUtils.ConfigScreenPalette(
-            () -> Colors.WHITE,
-            () -> new WrapColor(("#984FDB")).withAlpha(255),
-            () -> Colors.WHITE,
-            () -> new WrapColor(("#323232")).withAlpha(255));
+    public static final ConfigScreenLayout DEFAULT_CONFIG_SCREEN_LAYOUT = new ConfigScreenLayout(140, 10, 180, 18, 2);
 
     public static DrawableWidget getFocusedWidget(DrawableWidget drawable) {
         DrawableWidget current = drawable;
@@ -77,10 +74,11 @@ public class WidgetUtils {
     public static boolean isInputWidget(DrawableWidget widget) {
         if (widget instanceof ContentDelegateWidget<?> content && (content.getDelegate() instanceof TextFieldAccess)) {
             return true;
-        } else if (widget instanceof ExecutableWidget exe && exe.getHandler() instanceof TextFieldElement) {
-            return true;
         }
-        return false;
+        if (widget instanceof ExecutableWidget exe && exe.getHandler() instanceof InputElement input) {
+            return input.isPreparingInput();
+        }
+        return widget instanceof InputElement input && input.isPreparingInput();
     }
 
     public record ConfigScreenLayout(
@@ -88,25 +86,125 @@ public class WidgetUtils {
         public int totalWidth() {
             return indexWidth + blankWidth + buttonWidth;
         }
+
+        public ConfigScreenLayout forWidth(int width) {
+            return new ConfigScreenLayout(indexWidth, blankWidth, width - indexWidth - blankWidth, buttonHeight, buttonBlank);
+        }
     }
 
-    public record ConfigScreenPalette(
-            ColorSampler titleTextColor,
-            ColorSampler titleBackgroundColor,
-            ColorSampler keyTextColor,
-            ColorSampler keyBackgroundColor) {}
+    public static void addConditionalWidgets(DynamicListWidget list, List<ConditionalWidget> widgets) {
+        for (var conditional : widgets) {
+            list.addDrawableChild(new DynamicContentWidget<>(
+                    () -> conditional.shouldShow() ? conditional.widget() : null, 0, 0));
+        }
+    }
+
+    public static void addCollapsibleGroup(
+            DynamicListWidget list,
+            DrawableWidget header,
+            ValueAccessor<Boolean> expanded,
+            List<ConditionalWidget> widgets,
+            ElementFactory factory,
+            int arrowX,
+            int arrowY,
+            int arrowWidth,
+            int arrowHeight) {
+        int headerX = header.getX();
+        int headerWidth = list.getWidth();
+        boolean hasAlwaysVisibleWidget = widgets.stream()
+                .anyMatch(widget -> widget.condition() == ConditionalWidget.ALWAYS_TRUE);
+
+        SubScreenWidget headerSubScreen = new SubScreenWidget(
+                headerX, 0, headerWidth, arrowY + arrowHeight);
+        headerSubScreen.addDrawableChild(ExecutableWidget.instance(
+                        0, 0, headerWidth, arrowY + arrowHeight)
+                .setElementHandler(new AbstractElement()
+                        .withInputHandler(InputHandler.clickRun(
+                                () -> expanded.setValue(!expanded.getValue())))));
+        headerSubScreen.addDrawableChild(header);
+        headerSubScreen.addDrawableChild(ExecutableWidget.instance(
+                        arrowX, arrowY, arrowWidth, arrowHeight)
+                .setRenderHandler(new AbstractElement()
+                        .combineRender(factory.createLabel(
+                                TextProvider.of(Text.empty()), TooltipHandler.of(List.of())))
+                        .combineRender((element, context, mouseX, mouseY, delta, alpha, shouldHighlight) -> {
+                            context.setShaderColor(Colors.WHITE);
+                            context.drawGuiTexture(
+                                    expanded.getValue()
+                                            ? Constants.EXPAND_GUI_ON_SPRITE
+                                            : Constants.EXPAND_GUI_OFF_SPRITE,
+                                    2,
+                                    2,
+                                    0,
+                                    COLLAPSIBLE_ARROW_SIZE,
+                                    COLLAPSIBLE_ARROW_SIZE);
+                            context.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+                        })));
+        list.addDrawableChild(new DynamicContentWidget<>(
+                () -> hasAlwaysVisibleWidget || widgets.stream().anyMatch(ConditionalWidget::shouldShow)
+                        ? headerSubScreen
+                        : null,
+                0,
+                0));
+        for (var conditional : widgets) {
+            list.addDrawableChild(new DynamicContentWidget<>(
+                    () -> expanded.getValue() && conditional.shouldShow()
+                            ? conditional.widget()
+                            : null,
+                    0,
+                    0));
+        }
+    }
+
+    public static DynamicListWidget createValueAccessorList(
+            List<Pair<String, ValueAccessor<?>>> accessors,
+            ConfigScreenLayout layout,
+            ElementFactory factory) {
+        int width = layout.totalWidth();
+        DynamicListWidget list = new DynamicListWidget(0, 0, width);
+        for (var accessorEntry : accessors) {
+            ValueAccessor accessor = accessorEntry.getSecond();
+            Ref tempRef = Refs.wrapInstance(accessor.getValue());
+            String key = accessorEntry.getFirst();
+            BaseAttrKeyValue keyValue = tempRef.createKeyValue(key);
+            keyValue.setUpdater(accessor::getValue);
+            keyValue.addListener(accessor::setValue);
+            SubScreenWidget row = new SubScreenWidget(0, 0, width, layout.buttonHeight() + layout.buttonBlank());
+            row.addDrawableChild(DisplayWidget.instance(0, 0, width, layout.buttonBlank() + layout.buttonHeight()));
+            row.addDrawableChild(createKeyValueWidget(
+                    Optional.ofNullable(accessor.getValue()), keyValue, layout, factory));
+            list.addDrawableChild(row);
+        }
+        return list;
+    }
 
     public static <T> KeyValueInputWidget<T> createKeyValueWidget(
-            Ref<T> ref, String keyName, ConfigScreenLayout layout, ConfigScreenPalette palette) {
+            Ref<T> ref, String keyName, ConfigScreenLayout layout) {
+        return createKeyValueWidget(ref, keyName, layout, DefaultElementFactory.INSTANCE);
+    }
+
+    public static <T> KeyValueInputWidget<T> createKeyValueWidget(
+            Ref<T> ref,
+            String keyName,
+            ConfigScreenLayout layout,
+            ElementFactory factory) {
         return createKeyValueWidget(
                 ref.hasDefaultValue() ? Optional.of(ref.getDefaultValue()) : Optional.empty(),
                 ref.createKeyValue(keyName),
                 layout,
-                palette);
+                factory);
     }
 
     public static <T> KeyValueInputWidget<T> createKeyValueWidget(
-            Optional<T> ref, AttrKeyValue<T> attrKeyValue, ConfigScreenLayout layout, ConfigScreenPalette palette) {
+            Optional<T> ref, AttrKeyValue<T> attrKeyValue, ConfigScreenLayout layout) {
+        return createKeyValueWidget(ref, attrKeyValue, layout, DefaultElementFactory.INSTANCE);
+    }
+
+    public static <T> KeyValueInputWidget<T> createKeyValueWidget(
+            Optional<T> ref,
+            AttrKeyValue<T> attrKeyValue,
+            ConfigScreenLayout layout,
+            ElementFactory factory) {
         return new DefaultedKeyValueInputWidget<T>(
                 0,
                 layout.buttonBlank(),
@@ -116,15 +214,14 @@ public class WidgetUtils {
                 layout.blankWidth(),
                 layout.buttonWidth(),
                 ref,
-                attrKeyValue) {
+                attrKeyValue,
+                factory) {
             @Override
             public DrawableWidget createKeyLabel() {
-                return ExecutableWidget.instance(0, layout.buttonBlank(), layout.indexWidth(), layout.buttonHeight())
-                        .setElementHandler(new ColorLabelTextElement(
-                                        TextProvider.of(this.getTranslationName()),
-                                        () -> palette.keyTextColor().getColorInt(),
-                                        () -> palette.keyBackgroundColor().getColorInt())
-                                .withTooltips(TooltipHandler.of(this::getTooltips)));
+                return ExecutableWidget.instance(0, 0, layout.indexWidth(), layout.buttonHeight())
+                        .setElementHandler(factory.createLabel(
+                                TextProvider.of(this.getTranslationName()),
+                                TooltipHandler.of(this::getTooltips)));
             }
         };
     }
@@ -134,8 +231,18 @@ public class WidgetUtils {
             Supplier<List<Text>> titleTooltips,
             MutableRecord configs,
             Function<String, String> translationKeyFunction,
+            ConfigScreenLayout layout) {
+        return createMutableRecordEditScreen(
+                title, titleTooltips, configs, translationKeyFunction, layout, DefaultElementFactory.INSTANCE);
+    }
+
+    public static DrawableWidget createMutableRecordEditScreen(
+            Text title,
+            Supplier<List<Text>> titleTooltips,
+            MutableRecord configs,
+            Function<String, String> translationKeyFunction,
             ConfigScreenLayout layout,
-            ConfigScreenPalette palette) {
+            ElementFactory factory) {
         List<Pair<String, ValueAccessor<?>>> accessors = new ArrayList<>();
         for (var re : configs.getComponents()) {
             String key = re.getFirst();
@@ -143,7 +250,7 @@ public class WidgetUtils {
             String translationKey = translationKeyFunction.apply(key);
             accessors.add(Pair.of(translationKey, access));
         }
-        return createValueAccessorsEditScreen(title, titleTooltips, accessors, layout, palette);
+        return createValueAccessorsEditScreen(title, titleTooltips, accessors, layout, factory, false);
     }
 
     public static DrawableWidget createValueAccessorsEditScreen(
@@ -151,8 +258,8 @@ public class WidgetUtils {
             Supplier<List<Text>> titleTooltips,
             List<Pair<String, ValueAccessor<?>>> accessors,
             ConfigScreenLayout layout,
-            ConfigScreenPalette palette) {
-        return createValueAccessorsEditScreen(title, titleTooltips, accessors, layout, palette, false);
+            ElementFactory factory) {
+        return createValueAccessorsEditScreen(title, titleTooltips, accessors, layout, factory, false);
     }
 
     public static DrawableWidget createValueAccessorsEditScreen(
@@ -160,17 +267,23 @@ public class WidgetUtils {
             Supplier<List<Text>> titleTooltips,
             List<Pair<String, ValueAccessor<?>>> accessors,
             ConfigScreenLayout layout,
-            ConfigScreenPalette palette,
+            boolean filter) {
+        return createValueAccessorsEditScreen(title, titleTooltips, accessors, layout, DefaultElementFactory.INSTANCE, filter);
+    }
+
+    public static DrawableWidget createValueAccessorsEditScreen(
+            Text title,
+            Supplier<List<Text>> titleTooltips,
+            List<Pair<String, ValueAccessor<?>>> accessors,
+            ConfigScreenLayout layout,
+            ElementFactory factory,
             boolean filter) {
         int width = layout.totalWidth();
         DynamicListWidget listWidget = new DynamicListWidget(0, 0, width);
 
         listWidget.addDrawableChild(ExecutableWidget.instance(0, 0, width, layout.buttonHeight())
-                .setElementHandler(new ColorLabelTextElement(
-                                TextProvider.of(title),
-                                () -> palette.titleTextColor().getColorInt(),
-                                () -> palette.titleBackgroundColor().getColorInt())
-                        .withTooltips(TooltipHandler.of(titleTooltips))));
+                .setElementHandler(factory.createTitle(
+                        TextProvider.of(title), TooltipHandler.of(titleTooltips))));
         List<Pair<String, MutableBoolean>> showFlag = new ArrayList<>();
         if (filter) {
             // add filter,
@@ -212,7 +325,7 @@ public class WidgetUtils {
             keyValue.setUpdater(access::getValue);
             keyValue.addListener(access::setValue);
             keyValueRow.addDrawableChild(
-                    createKeyValueWidget(Optional.of(access.getValue()), keyValue, layout, palette));
+                    createKeyValueWidget(Optional.of(access.getValue()), keyValue, layout, factory));
             MutableBoolean bl = new MutableBoolean(true);
             showFlag.add(Pair.of(key, bl));
             DynamicContentWidget<?> contentWidget =
@@ -322,11 +435,16 @@ public class WidgetUtils {
 
     public static <T> DrawableWidget createOpenListModifyScreenButton(
             ListAttrKeyValue<T> s, int x, int y, int dx, int dy) {
+        return createOpenListModifyScreenButton(DefaultElementFactory.INSTANCE, s, x, y, dx, dy);
+    }
+
+    public static <T> DrawableWidget createOpenListModifyScreenButton(
+            ElementFactory factory, ListAttrKeyValue<T> s, int x, int y, int dx, int dy) {
         return ExecutableWidget.instance(x, y, dx, dy)
                 .setElementHandler(IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.run(() -> {
                             ScreenAccess.of(new StringListModifyScreen<>(s, listAttrKeyValue -> {
                                         s.setOriginValue(listAttrKeyValue.get());
-                                    }))
+                                    }, factory))
                                     .openFromCurrent();
                         }))
                         .withTooltips(TooltipHandler.of(Constants.openListEditTooltips())));
@@ -334,12 +452,24 @@ public class WidgetUtils {
 
     public static <T> DrawableWidget createOpenListModifyScreenButton(
             Supplier<ListAttrKeyValue<T>> attrCreator, Consumer<List<T>> listConsumer, int x, int y, int dx, int dy) {
+        return createOpenListModifyScreenButton(
+                DefaultElementFactory.INSTANCE, attrCreator, listConsumer, x, y, dx, dy);
+    }
+
+    public static <T> DrawableWidget createOpenListModifyScreenButton(
+            ElementFactory factory,
+            Supplier<ListAttrKeyValue<T>> attrCreator,
+            Consumer<List<T>> listConsumer,
+            int x,
+            int y,
+            int dx,
+            int dy) {
         return ExecutableWidget.instance(x, y, dx, dy)
                 .setElementHandler(IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.run(() -> {
                             var s = attrCreator.get();
                             ScreenAccess.of(new StringListModifyScreen<>(s, listAttrKeyValue -> {
                                         listConsumer.accept(listAttrKeyValue.get());
-                                    }))
+                                    }, factory))
                                     .openFromCurrent();
                         }))
                         .withTooltips(TooltipHandler.of(Constants.openListEditTooltips())));

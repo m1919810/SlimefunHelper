@@ -17,12 +17,11 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import me.matl114.events.channels.ListenerPoint;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.complex.BoxElement;
 import me.matl114.gui.complex.config.DefaultedKeyValueInputWidget;
-import me.matl114.gui.elements.ColorBoxElement;
-import me.matl114.gui.elements.ColorLabelTextElement;
-import me.matl114.hacks.modules.task.ClickGui;
+import me.matl114.gui.interfaces.BaseModuleElementFactory;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.gui.CustomGuiConfig;
 import me.matl114.hacks.utils.config.StringFormat;
 import me.matl114.managers.*;
 import me.matl114.managers.command.MainCommand;
@@ -31,7 +30,6 @@ import me.matl114.managers.input.IHotKey;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.managers.input.SimpleHotKey;
 import me.matl114.managers.input.SimpleInputManager;
-import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.commands.commandGroup.AbstractMainCommand;
 import me.matl114.utils.config.AttrKeyValue;
@@ -307,7 +305,7 @@ public abstract class BaseModule implements ModuleListProvider {
             }
             Class<?> clazz = this.getClass();
             try {
-                Method method = clazz.getMethod("addCustomWidgets", Consumer.class, int.class, int.class, int.class);
+                Method method = clazz.getMethod("addCustomWidgets", Consumer.class, int.class, int.class, int.class, ElementFactory.class);
                 if (method.getDeclaringClass() != BaseModule.class) {
                     showInGui = true;
                     return true;
@@ -458,43 +456,28 @@ public abstract class BaseModule implements ModuleListProvider {
 
     // todo: remake config screen
 
-    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {}
+    public void addCustomWidgets(
+            Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank, ElementFactory factory) {}
 
     protected static final int indexWidth = 140;
     protected static final int blankWidth = 10;
-
+    protected static ElementFactory ELEMENT_FACTORY = new BaseModuleElementFactory(() -> CustomGuiConfig.DEFAULT);
+    protected static ElementFactory CONFIG_FACTORY =  new BaseModuleElementFactory(() -> CustomGuiConfig.DEFAULT);
     public static SubScreenWidget createSubWidget(int x, int y, int dx, int dy) {
         return new SubScreenWidget(x, y, dx, dy);
     }
 
     public static DrawableWidget createLabel(String translationKey, int x, int y, int dx, int dy) {
-        return ExecutableWidget.instance(x, y, dx, dy)
-                .setElementHandler(new ColorLabelTextElement(
-                                TextProvider.of(Text.translatable(translationKey)),
-                                () -> ClickGui.INSTANCE.textColor.get().withAlpha(255),
-                                () -> ClickGui.INSTANCE.configColor.get().withAlpha(ClickGui.INSTANCE.labelAlpha.get()))
-                        .withTooltips(TooltipHandler.of(
-                                ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", ""))));
+        return ELEMENT_FACTORY.createLabel(translationKey, x, y, dx, dy);
     }
 
     public static DrawableWidget createLabel(
             Supplier<Text> text, Supplier<List<Text>> tooltips, int x, int y, int dx, int dy) {
-        return ExecutableWidget.instance(x, y, dx, dy)
-                .setElementHandler(new ColorLabelTextElement(
-                                el -> text.get(),
-                                () -> ClickGui.INSTANCE.textColor.get().withAlpha(255),
-                                () -> ClickGui.INSTANCE.configColor.get().withAlpha(ClickGui.INSTANCE.labelAlpha.get()))
-                        .withTooltips(TooltipHandler.of(tooltips)));
+        return ELEMENT_FACTORY.createLabel(text, tooltips, x, y, dx, dy);
     }
 
     public static DrawableWidget createTitle(String translationKey, int x, int y, int dx, int dy) {
-        return DisplayWidget.instance(x, y, dx, dy)
-                .setRenderHandler(new ColorLabelTextElement(
-                                TextProvider.of(Text.translatable(translationKey)),
-                                () -> ClickGui.INSTANCE.textColor.get().withAlpha(255),
-                                () -> ClickGui.INSTANCE.moduleListColor.get().withAlpha(255))
-                        .withTooltips(TooltipHandler.of(
-                                ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", ""))));
+        return ELEMENT_FACTORY.createTitle(translationKey, x, y, dx, dy);
     }
 
     public static DrawableWidget createExecuteButton(
@@ -504,25 +487,7 @@ public abstract class BaseModule implements ModuleListProvider {
 
     public static DrawableWidget createExecuteButton(
             String translationKey, ButtonAction action, BooleanSupplier active, int x, int y, int dx, int dy) {
-        return ExecutableWidget.instance(x, y, dx, dy)
-                .setElementHandler(new ColorBoxElement(
-                                action,
-                                TextProvider.of(Text.translatable(translationKey)),
-                                () -> ClickGui.INSTANCE
-                                        .configColor
-                                        .get()
-                                        .withAlpha(
-                                                active.getAsBoolean()
-                                                        ? ClickGui.INSTANCE.buttonActiveAlpha.get()
-                                                        : ClickGui.INSTANCE.buttonInactiveAlpha.get()),
-                                () -> ClickGui.INSTANCE.textColor.get().withAlpha(255),
-                                (el, bl) -> {
-                                    if (bl) {
-                                        return -1;
-                                    } else return null;
-                                })
-                        .withTooltips(TooltipHandler.of(
-                                ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", ""))));
+        return ELEMENT_FACTORY.createExecuteButton(translationKey, action, active, x, y, dx, dy);
     }
 
     public static DrawableWidget createExecuteButton(
@@ -534,24 +499,7 @@ public abstract class BaseModule implements ModuleListProvider {
             int y,
             int dx,
             int dy) {
-        return ExecutableWidget.instance(x, y, dx, dy)
-                .setElementHandler(new ColorBoxElement(
-                                action,
-                                el -> (text.get()),
-                                () -> ClickGui.INSTANCE
-                                        .configColor
-                                        .get()
-                                        .withAlpha(
-                                                condition.getAsBoolean()
-                                                        ? ClickGui.INSTANCE.buttonActiveAlpha.get()
-                                                        : ClickGui.INSTANCE.buttonInactiveAlpha.get()),
-                                () -> ClickGui.INSTANCE.textColor.get().withAlpha(255),
-                                (el, bl) -> {
-                                    if (bl) {
-                                        return -1;
-                                    } else return null;
-                                })
-                        .withTooltips(TooltipHandler.of(tooltips)));
+        return ELEMENT_FACTORY.createExecuteButton(text, tooltips, action, condition, x, y, dx, dy);
     }
 
     public static DrawableWidget createExecuteButton(
@@ -566,32 +514,7 @@ public abstract class BaseModule implements ModuleListProvider {
 
     public static DrawableWidget createToggleButton(
             String translationKey, ValueAccessor<Boolean> value, int x, int y, int dx, int dy, boolean frame) {
-        return ExecutableWidget.instance(x, y, dx, dy)
-                .setElementHandler(new ColorBoxElement(
-                                ButtonAction.run(() -> {
-                                    value.setValue(!value.getValue());
-                                }),
-                                TextProvider.of(Text.translatable(translationKey)),
-                                () -> ClickGui.INSTANCE
-                                        .configColor
-                                        .get()
-                                        .withAlpha(
-                                                value.getValue()
-                                                        ? ClickGui.INSTANCE.buttonActiveAlpha.get()
-                                                        : ClickGui.INSTANCE.buttonInactiveAlpha.get()),
-                                () -> ClickGui.INSTANCE.textColor.get().withAlpha(255),
-                                (el, nl) -> {
-                                    if (frame && value.getValue()) {
-                                        return ClickGui.INSTANCE
-                                                .moduleListColor
-                                                .get()
-                                                .withAlpha(255);
-                                    } else if (nl) {
-                                        return -1;
-                                    } else return null;
-                                })
-                        .withTooltips(TooltipHandler.of(
-                                ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", ""))));
+        return ELEMENT_FACTORY.createToggleButton(translationKey, value, frame, x, y, dx, dy);
     }
 
     public static DrawableWidget createToggleButton(
@@ -614,31 +537,7 @@ public abstract class BaseModule implements ModuleListProvider {
             int dx,
             int dy,
             boolean frame) {
-        return ExecutableWidget.instance(x, y, dx, dy)
-                .setElementHandler(new ColorBoxElement(
-                                ButtonAction.run(() -> {
-                                    value.setValue(!value.getValue());
-                                }),
-                                el -> text.get(),
-                                () -> ClickGui.INSTANCE
-                                        .configColor
-                                        .get()
-                                        .withAlpha(
-                                                value.getValue()
-                                                        ? ClickGui.INSTANCE.buttonActiveAlpha.get()
-                                                        : ClickGui.INSTANCE.buttonInactiveAlpha.get()),
-                                () -> ClickGui.INSTANCE.textColor.get().withAlpha(255),
-                                (el, nl) -> {
-                                    if (frame && value.getValue()) {
-                                        return ClickGui.INSTANCE
-                                                .moduleListColor
-                                                .get()
-                                                .withAlpha(255);
-                                    } else if (nl) {
-                                        return -1;
-                                    } else return null;
-                                })
-                        .withTooltips(TooltipHandler.of(tooltips)));
+        return ELEMENT_FACTORY.createToggleButton(text, tooltips, value, frame, x, y, dx, dy);
     }
 
     public static DrawableWidget createElement(
@@ -649,14 +548,14 @@ public abstract class BaseModule implements ModuleListProvider {
             int y,
             int dx,
             int dy) {
-        var element = elementHandler;
-        if (tooltips != null) {
-            element = element.withTooltips(TooltipHandler.of(tooltips));
-        }
-        if (action != null) {
-            element = new BoxElement(action).withElement(element);
-        }
-        return ExecutableWidget.instance(x, y, dx, dy).setElementHandler(element);
+        return ELEMENT_FACTORY.createElement(
+                elementHandler,
+                tooltips == null ? null : TooltipHandler.of(tooltips),
+                action,
+                x,
+                y,
+                dx,
+                dy);
     }
 
     public static DrawableWidget createElement(
@@ -667,19 +566,27 @@ public abstract class BaseModule implements ModuleListProvider {
             int y,
             int dx,
             int dy) {
-        var element = new BoxElement(action == null ? ButtonAction.empty() : action).combineRender(elementHandler);
-        if (tooltips != null) {
-            element = element.withTooltips(TooltipHandler.of(tooltips));
-        }
-        return ExecutableWidget.instance(x, y, dx, dy).setElementHandler(element);
+        return ELEMENT_FACTORY.createElement(
+                elementHandler,
+                tooltips == null ? null : TooltipHandler.of(tooltips),
+                action,
+                x,
+                y,
+                dx,
+                dy);
     }
 
     public static DrawableWidget createRefEditor(String path, Ref<?> ref, int x, int y, int dx, int dy) {
+        return createRefEditor(path, ref, x, y, dx, dy, ELEMENT_FACTORY);
+    }
+
+    public static DrawableWidget createRefEditor(
+            String path, Ref<?> ref, int x, int y, int dx, int dy, ElementFactory factory) {
         return new DefaultedKeyValueInputWidget(
-                x, y, dx, dy, indexWidth, blankWidth, dx - indexWidth - blankWidth, ref, path) {
+                x, y, dx, dy, indexWidth, blankWidth, dx - indexWidth - blankWidth - y, ref, path, factory) {
             @Override
             public DrawableWidget createKeyLabel() {
-                return createLabel(this::getTranslationName, this::getTooltips, 0, 0, dkey, dy);
+                return factory.createLabel(this::getTranslationName, this::getTooltips, 0, 0, dkey, dy);
             }
         };
     }

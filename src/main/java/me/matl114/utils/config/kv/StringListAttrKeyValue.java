@@ -2,7 +2,6 @@ package me.matl114.utils.config.kv;
 
 import java.util.ArrayList;
 import java.util.List;
-import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.WidgetUtils;
 import me.matl114.gui.basic.*;
 import me.matl114.utils.config.AttrKeyValue;
@@ -32,10 +31,10 @@ public class StringListAttrKeyValue extends ListAttrKeyValue<String> {
         super(key, value, LIST_WIDGET_FACTORY, AttrKeyValues.STR_LIST_FACTORY);
     }
 
-    public static final CustomWidgetGenerator<List<String>> LIST_WIDGET_FACTORY = (s, x, y, inputDx, dy) -> {
+    public static final CustomWidgetGenerator<List<String>> LIST_WIDGET_FACTORY = (factory, s, x, y, inputDx, dy) -> {
         return new SubScreenWidget(x, y, inputDx, dy)
-                .addDrawableChild(McWidgetHelpers.createAttrValueEditBox(s, 0, 0, inputDx - dy, dy))
+                .addDrawableChild(factory.createInput(s, 0, 0, inputDx - dy, dy))
                 .addDrawableChild(WidgetUtils.createOpenListModifyScreenButton(
-                        (StringListAttrKeyValue) s, inputDx - dy + 1, 0, dy - 1, dy));
+                        factory, (StringListAttrKeyValue) s, inputDx - dy + 1, 0, dy - 1, dy));
     };
 }

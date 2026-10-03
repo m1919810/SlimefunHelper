@@ -84,7 +84,7 @@ public class IntFastInputWidget extends SubScreenWidget {
             super.initBackgroundAndText();
             DisplayWidget.instance(inputTextDx - 2, 12, inputDx - inputTextDx, dy - 16)
                     .setRenderHandler(RawTextElement.instance((i) -> Text.literal("/" + this.maxValue))
-                            .setAlignment(-1))
+                            .setAlignment(TextAlign.LEFT))
                     .addToSub(this);
         }
     }
@@ -144,7 +144,7 @@ public class IntFastInputWidget extends SubScreenWidget {
                 .addToSub(this);
         DisplayWidget.instance(4, 1, inputDx - 8, 10)
                 .setRenderHandler(RawTextElement.instance(Text.literal(keyValue.getKeyName()))
-                        .setAlignment(-1))
+                        .setAlignment(TextAlign.LEFT))
                 .addToSub(this);
         inputField =
                 keyValue.generateValueWidget(4, 12, inputTextDx - 8, dy - 16).addToSub(this);

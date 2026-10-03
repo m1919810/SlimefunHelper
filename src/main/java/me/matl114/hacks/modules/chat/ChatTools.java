@@ -301,7 +301,8 @@ public class ChatTools extends BaseModule {
         this.basicSubScreenWidget = basicSubScreenWidget;
         toggleSpecialCharWidget(this.enableSpecialChars.get());
         this.delegateToolScreen = new ContentDelegateWidget<>(-250, -68, 0, 0);
-        toggleBasicToolScreen(this.enableChatScreenTools.get());
+        this.delegateToolScreen.setContentDelegate(
+                this.enableChatScreenTools.get() ? this.basicSubScreenWidget : null);
     }
 
     private void toggleSpecialCharWidget(boolean bl) {
@@ -385,9 +386,7 @@ public class ChatTools extends BaseModule {
 
     public void onChatScreenInitialize(Event<ChatScreen> event) {
         var chat0 = event.context;
-        if (basicSubScreenWidget == null) {
-            initToolWidget();
-        }
+        initToolWidget();
         createExecuteButton(
                         () -> enableChatScreenTools.get() ? ENABLE_STATE : DISABLE_STATE,
                         () -> ChatUtils.parseTooltipsTranslation("widget.chat-tools.toggle-hud.tooltips", ""),

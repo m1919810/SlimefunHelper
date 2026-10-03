@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import me.matl114.gui.basic.DrawableWidget;
+import me.matl114.gui.interfaces.DefaultElementFactory;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.BaseAttrKeyValue;
 import me.matl114.utils.config.WrapperFactory;
@@ -83,8 +85,13 @@ public class NBTType<T> implements WrapperFactory<NbtElement, T> {
     }
 
     public DrawableWidget generateValueWidget(AttrKeyValue<T> value, int x, int y, int inputDx, int dy) {
+        return generateValueWidget(DefaultElementFactory.INSTANCE, value, x, y, inputDx, dy);
+    }
+
+    public DrawableWidget generateValueWidget(
+            ElementFactory factory, AttrKeyValue<T> value, int x, int y, int inputDx, int dy) {
         if (customWidgetFactory != null) {
-            return customWidgetFactory.generateWidget(value, x, y, inputDx, dy);
+            return customWidgetFactory.generateWidget(factory, value, x, y, inputDx, dy);
         } else {
             throw new IllegalStateException("Can not find factory");
         }

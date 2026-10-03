@@ -13,6 +13,7 @@ import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.Constants;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.IconElement;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.gui.presets.choices.RegistryChooseScreen;
 import me.matl114.managers.config.NBTParsable;
 import me.matl114.managers.config.NBTType;
@@ -101,7 +102,7 @@ public class WeakRegistryRegex<T> implements NBTParsable<WeakRegistryRegex<T>>, 
     }
 
     public static <T, W extends WeakRegistryRegex<T>> DrawableWidget createTextEditWidget(
-            AttrKeyValue<W> attr, int x, int y, int width, int height) {
+            ElementFactory factory, AttrKeyValue<W> attr, int x, int y, int width, int height) {
         SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, width, height);
         W originValue = attr.get();
         AttrKeyValue<Regex> attrKeyValue = new TypeConvertAttrKeyValue<>(
@@ -109,23 +110,29 @@ public class WeakRegistryRegex<T> implements NBTParsable<WeakRegistryRegex<T>>, 
         var registry = originValue.resolveRegistry();
         if (registry.isPresent()) {
             Registry<T> lookupValue = registry.get();
-            subScreenWidget.addDrawableChild(attrKeyValue.generateValueWidget(0, 0, width - height, height));
-            subScreenWidget.addDrawableChild(ExecutableWidget.instance(width - height, 0, height, height)
-                    .setElementHandler(IconElement.fixedGui(
+            subScreenWidget.addDrawableChild(attrKeyValue.generateValueWidget(factory, 0, 0, width - height, height));
+            subScreenWidget.addDrawableChild(factory.createElement(
+                    IconElement.fixedGui(
                                     Constants.LIST_TAG_SPRITE,
-                                    ButtonAction.run(() -> openRegexListView(lookupValue, attr)))
+                                    ButtonAction.run(() -> openRegexListView(factory, lookupValue, attr)))
                             .withTooltips(TooltipHandler.of(Streams.concat(
                                             originValue.getRules().stream(),
                                             Constants.openListPreviewTooltips().stream())
-                                    .toList()))));
+                                    .toList())),
+                    null,
+                    null,
+                    width - height,
+                    0,
+                    height,
+                    height));
         } else {
-            subScreenWidget.addDrawableChild(attrKeyValue.generateValueWidget(0, 0, width, height));
+            subScreenWidget.addDrawableChild(attrKeyValue.generateValueWidget(factory, 0, 0, width, height));
         }
         return subScreenWidget;
     }
 
     private static <T, W extends WeakRegistryRegex<T>> void openRegexListView(
-            Registry<T> registry, AttrKeyValue<W> original) {
+            ElementFactory factory, Registry<T> registry, AttrKeyValue<W> original) {
         AttrKeyValue<W> originalCopy = original.copy();
         var originalValue = originalCopy.get();
         AttrKeyValue<Regex> regexWrapper = new TypeConvertAttrKeyValue<>(
@@ -144,16 +151,21 @@ public class WeakRegistryRegex<T> implements NBTParsable<WeakRegistryRegex<T>>, 
                                 SubScreenWidget subScreenWidget = selectSubScreen.getScrollableBorder();
                                 subScreenWidget.clearChildren();
                                 subScreenWidget.addDrawableChild(
-                                        regexWrapper.generateValueWidget(0, -20, subScreenWidget.getWidth(), 20));
+                                        regexWrapper.generateValueWidget(
+                                                factory, 0, -20, subScreenWidget.getWidth(), 20));
                                 subScreenWidget.addDrawableChild(generateInformationButton(subScreenWidget));
                             }
 
                             public DrawableWidget generateInformationButton(SubScreenWidget subScreenWidget) {
-                                return ExecutableWidget.instance(subScreenWidget.getWidth(), -20, 20, 20)
-                                        .setElementHandler(IconElement.fixedGui(
-                                                        Constants.EDITOR_SPRITE, ButtonAction.run(() -> {}))
-                                                .withTooltips(TooltipHandler.of(
-                                                        original.get().getRules())));
+                                return factory.createElement(
+                                        IconElement.fixedGui(Constants.EDITOR_SPRITE, ButtonAction.run(() -> {}))
+                                                .withTooltips(TooltipHandler.of(original.get().getRules())),
+                                        null,
+                                        null,
+                                        subScreenWidget.getWidth(),
+                                        -20,
+                                        20,
+                                        20);
                             }
 
                             @Override

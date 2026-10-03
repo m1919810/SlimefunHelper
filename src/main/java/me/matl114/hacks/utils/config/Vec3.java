@@ -18,7 +18,7 @@ public record Vec3(double x, double y, double z) implements NBTParsable<Vec3> {
                             Codec.DOUBLE.fieldOf("y").forGetter(Vec3::y),
                             Codec.DOUBLE.fieldOf("z").forGetter(Vec3::z))
                     .apply(s, Vec3::new)),
-            (s, x, y, dx, dy) -> {
+            (factory, s, x, y, dx, dy) -> {
                 SubScreenWidget subScreenWidget = SubScreenWidget.instance(x, y, dx, dy);
                 int half = dx / 3;
                 WrapperFactory<Double, Vec3> firstWrapper =
@@ -30,11 +30,11 @@ public record Vec3(double x, double y, double z) implements NBTParsable<Vec3> {
 
                 return subScreenWidget
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(s, firstWrapper, NBTTypes.DOUBLE_TYPE)
-                                .generateValueWidget(0, 0, half, dy))
+                                .generateValueWidget(factory, 0, 0, half, dy))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(s, secondWrapper, NBTTypes.DOUBLE_TYPE)
-                                .generateValueWidget(half, 0, half, dy))
+                                .generateValueWidget(factory, half, 0, half, dy))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(s, thirdWrapper, NBTTypes.DOUBLE_TYPE)
-                                .generateValueWidget(2 * half, 0, half, dy));
+                                .generateValueWidget(factory, 2 * half, 0, half, dy));
             },
             new Vec3(0, 0, 0));
 

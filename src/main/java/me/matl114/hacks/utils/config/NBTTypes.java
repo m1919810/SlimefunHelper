@@ -15,8 +15,9 @@ import java.util.regex.Pattern;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.Constants;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.IconElement;
+import me.matl114.gui.interfaces.DefaultElementFactory;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.gui.presets.choices.ColorSelectIcon;
 import me.matl114.gui.presets.lists.NBTBoundedListScreen;
 import me.matl114.gui.presets.lists.NBTListModifyScreen;
@@ -101,8 +102,9 @@ public interface NBTTypes {
     public NBTType<Registry<?>> REGISTRY_TYPE = new NBTType<>(
             "registry",
             (Codec<Registry<?>>) (Codec<?>) Registries.REGISTRIES.getCodec(),
-            (s, x, y, dx, dy) ->
-                    RegistryAttrKeyValue.generateTextInputWithRegistrySearch(Registries.REGISTRIES, s, x, y, dx, dy),
+            (factory, s, x, y, dx, dy) ->
+                    RegistryAttrKeyValue.generateTextInputWithRegistrySearch(
+                            factory, Registries.REGISTRIES, s, x, y, dx, dy),
             WrapperFactory.<String, Registry<?>>of(
                     s -> Registries.REGISTRIES.get(Identifier.tryParse(s)),
                     v -> ((Registry) Registries.REGISTRIES).getId(v).toString()),
@@ -154,11 +156,18 @@ public interface NBTTypes {
     public NBTType<DispatchData<?>> DISPATCH_DATA_TYPE = DispatchData.TYPE.cast();
 
     public static DrawableWidget generateColorInputWidget(
-            AttrKeyValue<TextColor> keyValue, int x, int y, int dx, int dy) {
+            ElementFactory factory, AttrKeyValue<TextColor> keyValue, int x, int y, int dx, int dy) {
         SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, dx, dy);
-        subScreenWidget.addDrawableChild(BaseAttrKeyValue.generateTextInputValueWidget(keyValue, 0, 0, dx - dy, dy));
-        subScreenWidget.addDrawableChild(new ExecutableWidget(dx - dy, 0, dy, dy)
-                .setElementHandler(new ColorSelectIcon(ValueAccessor.of(keyValue))));
+        subScreenWidget.addDrawableChild(
+                BaseAttrKeyValue.generateTextInputValueWidget(factory, keyValue, 0, 0, dx - dy, dy));
+        subScreenWidget.addDrawableChild(factory.createElement(
+                new ColorSelectIcon(ValueAccessor.of(keyValue)),
+                null,
+                null,
+                dx - dy,
+                0,
+                dy,
+                dy));
         return subScreenWidget;
     }
 
@@ -168,10 +177,10 @@ public interface NBTTypes {
         return new NBTType<>(
                 name,
                 type.typeCodec().<T>xmap(wrapper::create, wrapper::get),
-                (attr, x, y, dx, dy) -> {
+                (factory, attr, x, y, dx, dy) -> {
                     return new TypeConvertAttrKeyValue<>(
                                     attr, wrapper, type.customWidgetFactory(), type.stringifyFactory())
-                            .generateValueWidget(x, y, dx, dy);
+                            .generateValueWidget(factory, x, y, dx, dy);
                 },
                 type.stringifyFactory().concat(wrapper),
                 wrapper.create(type.empty()));
@@ -191,10 +200,10 @@ public interface NBTTypes {
                                     }
                                 },
                                 wrapper::get),
-                (attr, x, y, dx, dy) -> {
+                (factory, attr, x, y, dx, dy) -> {
                     return new TypeConvertAttrKeyValue<>(
                                     attr, wrapper, type.customWidgetFactory(), type.stringifyFactory())
-                            .generateValueWidget(x, y, dx, dy);
+                            .generateValueWidget(factory, x, y, dx, dy);
                 },
                 type.stringifyFactory().concat(wrapper),
                 empty);
@@ -209,8 +218,9 @@ public interface NBTTypes {
         return new NBTType<>(
                 targetClass,
                 Codec.list(type.typeCodec()).xmap(wrapper::create, wrapper::get),
-                (attr, x, y, dx, dy) -> {
+                (factory, attr, x, y, dx, dy) -> {
                     return generateListModifyButton(
+                            factory,
                             new WrapperAttrKeyValue<>(attr, wrapper),
                             type,
                             type::empty,
@@ -237,8 +247,9 @@ public interface NBTTypes {
         return new NBTType<>(
                 targetClass,
                 Codec.list(type.typeCodec()).xmap(wrapper::create, wrapper::get),
-                (attr, x, y, dx, dy) -> {
+                (factory, attr, x, y, dx, dy) -> {
                     return generateListModifyButton(
+                            factory,
                             new WrapperAttrKeyValue<>(attr, wrapper),
                             type,
                             customNewElementSupplier,
@@ -271,7 +282,7 @@ public interface NBTTypes {
                                 k1Type.typeCodec().fieldOf(name1).forGetter(pairFactory::getFirst),
                                 k2Type.typeCodec().fieldOf(name2).forGetter(pairFactory::getSecond))
                         .apply(instance, pairFactory::create)),
-                (s, x, y, dx, dy) -> {
+                (factory, s, x, y, dx, dy) -> {
                     AttrKeyValue<T> sourceAttr = s;
                     AttrKeyValue<K1> key1Attr =
                             new TypeConvertAttrKeyValue<>(s, pairFactory.asFirstWrapper(s::get), k1Type);
@@ -279,10 +290,10 @@ public interface NBTTypes {
                             new TypeConvertAttrKeyValue<>(s, pairFactory.asSecondWrapper(s::get), k2Type);
                     SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, dx, dy);
                     subScreenWidget
-                            .addDrawableChild(
-                                    k1Resize.apply(k1Type.customWidgetFactory()).generateWidget(key1Attr, 0, 0, dx, dy))
+                            .addDrawableChild(k1Resize.apply(k1Type.customWidgetFactory())
+                                    .generateWidget(factory, key1Attr, 0, 0, dx, dy))
                             .addDrawableChild(k2Resize.apply(k2Type.customWidgetFactory())
-                                    .generateWidget(key2Attr, 0, 0, dx, dy));
+                                    .generateWidget(factory, key2Attr, 0, 0, dx, dy));
                     return subScreenWidget;
                 },
                 WrapperFactory.of(
@@ -317,16 +328,16 @@ public interface NBTTypes {
                                 k1Codec.fieldOf(name1).forGetter(pairFactory::getFirst),
                                 k2Type.typeCodec().fieldOf(name2).forGetter(pairFactory::getSecond))
                         .apply(instance, pairFactory::create)),
-                (s, x, y, dx, dy) -> {
+                (factory, s, x, y, dx, dy) -> {
                     AttrKeyValue<T> sourceAttr = s;
                     K1 k1Value = pairFactory.getFirst(sourceAttr.get());
                     AttrKeyValue<K2> key2Attr =
                             new TypeConvertAttrKeyValue<>(s, pairFactory.asSecondWrapper(s::get), k2Type);
                     SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, dx, dy);
                     subScreenWidget
-                            .addDrawableChild(k1Factory.generateWidget(k1Value, 0, 0, dx, dy))
+                            .addDrawableChild(k1Factory.generateWidget(factory, k1Value, 0, 0, dx, dy))
                             .addDrawableChild(k2Resize.apply(k2Type.customWidgetFactory())
-                                    .generateWidget(key2Attr, 0, 0, dx, dy));
+                                    .generateWidget(factory, key2Attr, 0, 0, dx, dy));
                     return subScreenWidget;
                 },
                 pairFactory.create(k1Default, k2Type.empty()));
@@ -402,10 +413,10 @@ public interface NBTTypes {
         return new NBTType<>(
                 targetClass,
                 factory.wrapCodecXmap(type.typeCodec()),
-                (attr, x, y, dx, dy) -> {
+                (elementFactory, attr, x, y, dx, dy) -> {
                     return new TypeConvertAttrKeyValue<Optional<T>, T>(
                                     attr, factory, type.customWidgetFactory(), stringifyFactory2)
-                            .generateValueWidget(x, y, dx, dy);
+                            .generateValueWidget(elementFactory, x, y, dx, dy);
                 },
                 stringifyFactory,
                 Optional.empty());
@@ -428,10 +439,10 @@ public interface NBTTypes {
         return new NBTType<>(
                 targetClass,
                 factory.wrapCodecComapFlatMap(type.typeCodec()),
-                (attr, x, y, dx, dy) -> {
+                (elementFactory, attr, x, y, dx, dy) -> {
                     return new TypeConvertAttrKeyValue<Optional<T>, T>(
                                     attr, factory, type.customWidgetFactory(), stringifyFactory2)
-                            .generateValueWidget(x, y, dx, dy);
+                            .generateValueWidget(elementFactory, x, y, dx, dy);
                 },
                 stringifyFactory,
                 Optional.empty());
@@ -457,15 +468,55 @@ public interface NBTTypes {
             int dy,
             int listWidth,
             int listHeight) {
+        return generateListModifyButton(
+                DefaultElementFactory.INSTANCE,
+                keyValue,
+                typeW,
+                supplier,
+                x,
+                y,
+                dx,
+                dy,
+                listWidth,
+                listHeight);
+    }
+
+    public static <W> DrawableWidget generateListModifyButton(
+            ElementFactory elementFactory,
+            AttrKeyValue<List<W>> keyValue,
+            NBTType<W> typeW,
+            Supplier<W> supplier,
+            int x,
+            int y,
+            int dx,
+            int dy,
+            int listWidth,
+            int listHeight) {
         return new SubScreenWidget(x, y, dx, dy)
-                .addDrawableChild(new ExecutableWidget(dy, 0, dx - dy, dy)
-                        .setElementHandler(new ButtonElement(
-                                        TextProvider.of(Constants.OPEN_LIST_EDIT_TEXT), ButtonAction.run(() -> {
-                                            openListModifyScreen(keyValue, typeW, supplier, listWidth, listHeight);
-                                        }))
-                                .withTooltips(TooltipHandler.of(Constants.openListEditTooltips()))))
-                .addDrawableChild(DisplayWidget.instance(0, 0, dy - 1, dy)
-                        .setRenderHandler(IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.empty())));
+                .addDrawableChild(elementFactory.createExecuteButton(
+                        () -> Constants.OPEN_LIST_EDIT_TEXT,
+                        Constants::openListEditTooltips,
+                ButtonAction.run(() -> {
+                    openListModifyScreen(
+                            elementFactory,
+                                    keyValue,
+                                    typeW,
+                                    supplier,
+                                    listWidth,
+                                    listHeight);
+                        }),
+                        dy,
+                        0,
+                        dx - dy,
+                        dy))
+                .addDrawableChild(elementFactory.createElement(
+                        IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.empty()),
+                        null,
+                        null,
+                        0,
+                        0,
+                        dy - 1,
+                        dy));
     }
 
     public static <T, W> DrawableWidget generateBoundedListModifyButton(
@@ -480,32 +531,113 @@ public interface NBTTypes {
             int keyLabelWidth,
             int listWidth,
             int listHeight) {
+        return generateBoundedListModifyButton(
+                DefaultElementFactory.INSTANCE,
+                keyValue,
+                keyBound,
+                valueType,
+                keyWidget,
+                x,
+                y,
+                dx,
+                dy,
+                keyLabelWidth,
+                listWidth,
+                listHeight);
+    }
+
+    public static <T, W> DrawableWidget generateBoundedListModifyButton(
+            ElementFactory elementFactory,
+            AttrKeyValue<Map<T, W>> keyValue,
+            List<T> keyBound,
+            NBTType<W> valueType,
+            WidgetGenerator<T> keyWidget,
+            int x,
+            int y,
+            int dx,
+            int dy,
+            int keyLabelWidth,
+            int listWidth,
+            int listHeight) {
         return new SubScreenWidget(x, y, dx, dy)
-                .addDrawableChild(new ExecutableWidget(dy, 0, dx - dy, dy)
-                        .setElementHandler(new ButtonElement(
-                                        TextProvider.of(Constants.OPEN_LIST_EDIT_TEXT), ButtonAction.run(() -> {
-                                            openBoundedListModifyScreen(
-                                                    keyValue,
-                                                    keyBound,
-                                                    valueType,
-                                                    keyWidget,
-                                                    keyLabelWidth,
-                                                    listWidth,
-                                                    listHeight);
-                                        }))
-                                .withTooltips(TooltipHandler.of(Constants.openListEditTooltips()))))
-                .addDrawableChild(DisplayWidget.instance(0, 0, dy - 1, dy)
-                        .setRenderHandler(IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.empty())));
+                .addDrawableChild(elementFactory.createExecuteButton(
+                        () -> Constants.OPEN_LIST_EDIT_TEXT,
+                        Constants::openListEditTooltips,
+                        ButtonAction.run(() -> {
+                            openBoundedListModifyScreen(
+                                    elementFactory,
+                                    keyValue,
+                                    keyBound,
+                                    valueType,
+                                    keyWidget,
+                                    keyLabelWidth,
+                                    listWidth,
+                                    listHeight);
+                        }),
+                        dy,
+                        0,
+                        dx - dy,
+                        dy))
+                .addDrawableChild(elementFactory.createElement(
+                        IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.empty()),
+                        null,
+                        null,
+                        0,
+                        0,
+                        dy - 1,
+                        dy));
     }
 
     public static <W> void openListModifyScreen(
             AttrKeyValue<List<W>> keyValue, NBTType<W> type, Supplier<W> supplier, int listWidth, int listHeight) {
+        openListModifyScreen(
+                DefaultElementFactory.INSTANCE,
+                keyValue,
+                type,
+                supplier,
+                listWidth,
+                listHeight);
+    }
+
+    public static <W> void openListModifyScreen(
+            ElementFactory elementFactory,
+            AttrKeyValue<List<W>> keyValue,
+            NBTType<W> type,
+            Supplier<W> supplier,
+            int listWidth,
+            int listHeight) {
         ScreenAccess.of(new NBTListModifyScreen<>(
-                        keyValue, type, supplier, (lst) -> keyValue.accept(lst), listWidth, listHeight))
+                        keyValue,
+                        type,
+                        elementFactory,
+                        supplier,
+                        (lst) -> keyValue.accept(lst),
+                        listWidth,
+                        listHeight))
                 .openFromCurrent();
     }
 
     public static <T, W> void openBoundedListModifyScreen(
+            AttrKeyValue<Map<T, W>> keyValue,
+            List<T> bound,
+            NBTType<W> type,
+            WidgetGenerator<T> keyWidget,
+            int keyLabelWidth,
+            int listWidth,
+            int listHeight) {
+        openBoundedListModifyScreen(
+                DefaultElementFactory.INSTANCE,
+                keyValue,
+                bound,
+                type,
+                keyWidget,
+                keyLabelWidth,
+                listWidth,
+                listHeight);
+    }
+
+    public static <T, W> void openBoundedListModifyScreen(
+            ElementFactory elementFactory,
             AttrKeyValue<Map<T, W>> keyValue,
             List<T> bound,
             NBTType<W> type,
@@ -526,7 +658,14 @@ public interface NBTTypes {
             keyValue.accept(twMap);
         }
         NBTBoundedListScreen<T, W> listModifyScreenImmutable = new NBTBoundedListScreen<>(
-                keyValue, type, keyWidget, (map) -> keyValue.accept(map), keyLabelWidth, listWidth, listHeight);
+                keyValue,
+                type,
+                keyWidget,
+                elementFactory,
+                (map) -> keyValue.accept(map),
+                keyLabelWidth,
+                listWidth,
+                listHeight);
         ScreenAccess.of(listModifyScreenImmutable).openFromCurrent();
     }
 
@@ -540,10 +679,12 @@ public interface NBTTypes {
             try {
                 if (Modifier.isStatic(field.getModifiers()) && NBTType.class.isAssignableFrom(field.getType())) {
                     field.setAccessible(true);
-                    NBTType nbtType = (NBTType) field.get(null);
+                    NBTType nbtType = Objects.requireNonNull(
+                            (NBTType) field.get(null), "NBTType field is null: " + field.getName());
                     PRIMITIVE_TYPES.put(nbtType.typeName(), nbtType);
                 }
-            } catch (Throwable e) {
+            } catch (IllegalAccessException e) {
+                throw new IllegalStateException("Failed to inspect NBTType field " + field.getName(), e);
             }
         }
     }

@@ -17,7 +17,6 @@ import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.config.ListModifyWidget;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.IconElement;
-import me.matl114.gui.elements.LabelElement;
 import me.matl114.gui.elements.MultiLineTextElement;
 import me.matl114.gui.presets.lists.ListEntryWidgetController;
 import me.matl114.gui.presets.single.CenterScreen;
@@ -72,9 +71,10 @@ public class ConnectionProxy extends BaseModule {
     }
 
     @Override
-    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
+    public void addCustomWidgets(
+            Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank, me.matl114.gui.interfaces.ElementFactory factory) {
         acceptor.accept(ExecutableWidget.instance(0, dblank, dx, dy)
-                .setElementHandler(new ButtonElement(
+                .setElementHandler(factory.createButton(
                                 (el -> {
                                     var currentSelected = proxyList.getSelected();
                                     if (currentSelected != null) {
@@ -92,8 +92,10 @@ public class ConnectionProxy extends BaseModule {
                                                 .append("None");
                                     }
                                 }),
-                                ButtonAction.run(this::openProxyListEditScreen))
-                        .withTooltips(TooltipHandler.of(Constants.openListEditTooltips()))));
+                                TooltipHandler.of(Constants.openListEditTooltips()),
+                                ButtonAction.run(this::openProxyListEditScreen),
+                                () -> true,
+                                () -> false)));
     }
 
     public void openProxyListEditScreen() {
@@ -142,7 +144,7 @@ public class ConnectionProxy extends BaseModule {
                 .addToSub(subScreen);
         DisplayWidget.instance(45, 0, 100, 20)
                 .setRenderHandler(
-                        new LabelElement(ClickGui.INSTANCE.backGroundColor.get().withAlpha(64)))
+                        ClickGui.INSTANCE.getGuiElementFactory().createBackground())
                 .addToSub(subScreen);
         ExecutableWidget.instance(45, 0, 100, 20)
                 .setElementHandler(new MultiLineTextElement(
@@ -151,8 +153,8 @@ public class ConnectionProxy extends BaseModule {
                             return Text.literal("%s\n(%s:%s:%d)"
                                     .formatted(entry.name(), entry.type().name(), entry.address(), entry.port()));
                         },
-                        ClickGui.INSTANCE.configColor.get().withAlpha(255),
-                        0))
+                        ClickGui.INSTANCE.labelColor().withAlpha(255).color(),
+                        TextAlign.MIDDLE))
                 .addToSub(subScreen);
 
         ExecutableWidget.instance(155, 0, 60, 20)
@@ -164,8 +166,7 @@ public class ConnectionProxy extends BaseModule {
                                     List::of,
                                     argsMap,
                                     s -> "widget.connection-proxy." + s,
-                                    WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT,
-                                    WidgetUtils.DEFAULT_PALETTE);
+                                    WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT);
                             new CenterScreen(re).access().openFromCurrent();
                         })))
                 .addToSub(subScreen);

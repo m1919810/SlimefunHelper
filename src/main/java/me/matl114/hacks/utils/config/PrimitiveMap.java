@@ -163,7 +163,7 @@ public class PrimitiveMap<T, W> implements NBTParsable<PrimitiveMap<T, W>> {
                                         .optionalFieldOf("default_value_primitive")
                                         .forGetter(PrimitiveMap::defaultValuePrimitive))
                         .apply(instance, PrimitiveMap::new)),
-                (attr, x, y, dx, dy) -> {
+                (factory, attr, x, y, dx, dy) -> {
                     PrimitiveMap<T, W> map = attr.get();
                     WrapperFactory<Map<Primitive<T>, Primitive<W>>, PrimitiveMap<T, W>> wrapperFactory =
                             WrapperFactory.of(
@@ -175,7 +175,7 @@ public class PrimitiveMap<T, W> implements NBTParsable<PrimitiveMap<T, W>> {
                                             map.defaultValuePrimitive),
                                     PrimitiveMap::toPrimitiveMap);
                     return new TypeConvertAttrKeyValue<>(attr, wrapperFactory, typeGenerator.apply(map))
-                            .generateValueWidget(x, y, dx, dy);
+                            .generateValueWidget(factory, x, y, dx, dy);
                 },
                 (PrimitiveMap<T, W>) new PrimitiveMap<>(NBTTypes.STRING_TYPE, NBTTypes.STRING_TYPE, Map.of()));
     }
@@ -200,8 +200,9 @@ public class PrimitiveMap<T, W> implements NBTParsable<PrimitiveMap<T, W>> {
             Function<PrimitiveMap<T, W>, R> wrapper) {
         NBTType<PrimitiveMap<T, W>> delegateType = PrimitiveMap.TYPE.cast();
         WrapperFactory<PrimitiveMap<T, W>, R> wrapperFactory = WrapperFactory.of(wrapper, map -> map);
-        return (attr, x, y, dx, dy) ->
-                new TypeConvertAttrKeyValue<>(attr, wrapperFactory, delegateType).generateValueWidget(x, y, dx, dy);
+        return (factory, attr, x, y, dx, dy) ->
+                new TypeConvertAttrKeyValue<>(attr, wrapperFactory, delegateType)
+                        .generateValueWidget(factory, x, y, dx, dy);
     }
 
     @Override

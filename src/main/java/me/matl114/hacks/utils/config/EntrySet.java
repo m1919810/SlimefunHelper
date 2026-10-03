@@ -11,12 +11,10 @@ import me.matl114.gui.Constants;
 import me.matl114.gui.basic.ButtonAction;
 import me.matl114.gui.basic.DisplayWidget;
 import me.matl114.gui.basic.DrawableWidget;
-import me.matl114.gui.basic.ExecutableWidget;
 import me.matl114.gui.basic.SubScreenWidget;
-import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.basic.TooltipHandler;
-import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.IconElement;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.gui.presets.choices.RegistrySelectScreen;
 import me.matl114.managers.config.NBTParsable;
 import me.matl114.managers.config.NBTRef;
@@ -96,15 +94,29 @@ public class EntrySet<T> implements NBTParsable<EntrySet<T>>, Predicate<T> {
     }
 
     private static <T> DrawableWidget generateValueWidget(
-            me.matl114.utils.config.AttrKeyValue<EntrySet<T>> attr, int x, int y, int dx, int dy) {
+            ElementFactory factory,
+            me.matl114.utils.config.AttrKeyValue<EntrySet<T>> attr,
+            int x,
+            int y,
+            int dx,
+            int dy) {
         return new SubScreenWidget(x, y, dx, dy)
-                .addDrawableChild(new ExecutableWidget(dy, 0, dx - dy, dy)
-                        .setElementHandler(new ButtonElement(
-                                        TextProvider.of(Constants.OPEN_LIST_EDIT_TEXT),
-                                        ButtonAction.run(() -> openRegistrySelectScreen(attr)))
-                                .withTooltips(TooltipHandler.of(Constants.openListEditTooltips()))))
-                .addDrawableChild(DisplayWidget.instance(0, 0, dy - 1, dy)
-                        .setRenderHandler(IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.empty())));
+                .addDrawableChild(factory.createExecuteButton(
+                        () -> Constants.OPEN_LIST_EDIT_TEXT,
+                        Constants::openListEditTooltips,
+                        ButtonAction.run(() -> openRegistrySelectScreen(attr)),
+                        dy,
+                        0,
+                        dx - dy,
+                        dy))
+                .addDrawableChild(factory.createElement(
+                        IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.empty()),
+                        null,
+                        null,
+                        0,
+                        0,
+                        dy - 1,
+                        dy));
     }
 
     private static <T> void openRegistrySelectScreen(me.matl114.utils.config.AttrKeyValue<EntrySet<T>> attr) {

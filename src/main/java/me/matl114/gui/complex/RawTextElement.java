@@ -14,34 +14,41 @@ public class RawTextElement extends AbstractElement {
 
     protected final ColorSampler color;
 
-    @Setter
-    protected int alignment;
+    public RawTextElement setAlignment(TextAlign alignment) {
+        return new RawTextElement(TextProvider.withAlign(this.text, alignment), this.color);
+    }
 
     public static RawTextElement instance(Text text) {
         return new RawTextElement(text, Colors.WHITE);
     }
 
     public static RawTextElement instance(TextProvider text) {
-        return new RawTextElement(text, Colors.WHITE, 0);
+        return new RawTextElement(text, Colors.WHITE);
     }
 
     public RawTextElement(Text text, int color) {
-        this(text, color, 0);
+        this(TextProvider.of(text), color);
     }
 
     public RawTextElement(Text text, int color, int alignment) {
-        this(TextProvider.of(text), color, alignment);
+        this(TextProvider.of(text, TextAlign.fromLegacy(alignment)), color);
     }
 
-    public RawTextElement(TextProvider provider, int color, int alignment) {
-        this(provider, ColorSampler.of(color), alignment);
+    public RawTextElement(Text text, int color, TextAlign alignment) {
+        this(TextProvider.of(text, alignment), color);
     }
 
-    public RawTextElement(TextProvider provider, ColorSampler color, int alignment) {
+    public RawTextElement(TextProvider provider, int color) {
+        this(provider, ColorSampler.of(color));
+    }
+
+    public RawTextElement(TextProvider provider, int color, TextAlign alignment) {
+        this(TextProvider.withAlign(provider, alignment), color);
+    }
+
+    public RawTextElement(TextProvider provider, ColorSampler color) {
         this.text = provider;
         this.color = color;
-
-        this.alignment = alignment;
     }
 
     @Override
@@ -64,7 +71,7 @@ public class RawTextElement extends AbstractElement {
                     element.getTextureWidth(),
                     element.getTextureHeight(),
                     color.getColorInt(),
-                    alignment);
+                    text.getAlign(element));
         }
     }
 }

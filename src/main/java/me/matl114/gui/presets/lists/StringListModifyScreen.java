@@ -3,9 +3,10 @@ package me.matl114.gui.presets.lists;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.ElementHandler;
 import me.matl114.gui.complex.config.ListModifyWidget;
+import me.matl114.gui.interfaces.DefaultElementFactory;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.gui.presets.choices.ConfirmingBigScreen;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.kv.ListAttrKeyValue;
@@ -17,28 +18,28 @@ public class StringListModifyScreen<T> extends ConfirmingBigScreen {
     List<AttrKeyValue<T>> list;
     Consumer<ListAttrKeyValue<T>> consumer;
     ListEntryWidgetController controller;
+    private final ElementFactory elementFactory;
     private static final int WIDTH = 240;
 
     public StringListModifyScreen(ListAttrKeyValue<T> list, Consumer<ListAttrKeyValue<T>> consumer) {
+        this(list, consumer, DefaultElementFactory.INSTANCE);
+    }
+
+    public StringListModifyScreen(
+            ListAttrKeyValue<T> list, Consumer<ListAttrKeyValue<T>> consumer, ElementFactory elementFactory) {
         super(Text.empty());
         setTitleLabel(
                 Text.translatable("widget.gui.string-list-modify-screen.title").formatted(Formatting.GREEN));
         this.listAttrKeyValue = list;
         this.list = new ArrayList<>(this.listAttrKeyValue.createAttrKeyValueForElements());
         this.consumer = consumer;
+        this.elementFactory = elementFactory;
         // todo: add WidgetBuilder
         // todo: add more acceptable
         this.controller = ListEntryWidgetController.mutable(
                 this.list,
                 this.listAttrKeyValue::createNewAttrKeyValueElement,
-                stringAttrKeyValue -> McWidgetHelpers.createTextFieldEditBox(
-                        0,
-                        1,
-                        WIDTH,
-                        18,
-                        stringAttrKeyValue::setInput,
-                        stringAttrKeyValue.getInput(),
-                        McWidgetHelpers.getWrongRedTextBoxColorProvider(stringAttrKeyValue::isValidate)),
+                stringAttrKeyValue -> stringAttrKeyValue.generateValueWidget(elementFactory, 0, 1, WIDTH, 18),
                 20,
                 WIDTH);
     }

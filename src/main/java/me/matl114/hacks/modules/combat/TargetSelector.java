@@ -651,15 +651,16 @@ public class TargetSelector extends BaseModule {
     }
 
     @Override
-    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
-        acceptor.accept(createExecuteButton(
+    public void addCustomWidgets(
+            Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank, me.matl114.gui.interfaces.ElementFactory factory) {
+        acceptor.accept(factory.createExecuteButton(
                 "widget.friend-list.edit-friend-list",
                 ButtonAction.run(this::openEditFriendsScreen),
                 0,
                 dblank,
                 dx,
                 dy));
-        acceptor.accept(createTitle("widget.friend-list.command", 0, dblank, dx, dy));
+        acceptor.accept(factory.createTitle("widget.friend-list.command", 0, dblank, dx, dy));
     }
 
     public static record FriendListStorage(List<String> friends, Map<String, String> alias) {

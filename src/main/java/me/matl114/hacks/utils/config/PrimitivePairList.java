@@ -188,7 +188,7 @@ public class PrimitivePairList<T, W> implements NBTParsable<PrimitivePairList<T,
                                         .optionalFieldOf("default_second_primitive")
                                         .forGetter(PrimitivePairList::defaultSecondPrimitive))
                         .apply(instance, PrimitivePairList::new)),
-                (AttrKeyValue.CustomWidgetGenerator<PrimitivePairList<T, W>>) (attr, x, y, dx, dy) -> {
+                (AttrKeyValue.CustomWidgetGenerator<PrimitivePairList<T, W>>) (factory, attr, x, y, dx, dy) -> {
                     PrimitivePairList<T, W> pairList = attr.get();
                     String firstName = pairList.firstName();
                     String secondName = pairList.secondName();
@@ -209,8 +209,17 @@ public class PrimitivePairList<T, W> implements NBTParsable<PrimitivePairList<T,
                                                             Text.translatableWithFallback(secondName, secondName))
                                                     .apply((AttrKeyValue.CustomWidgetGenerator) w)));
                     AttrKeyValue.CustomWidgetGenerator<List<Pair<Primitive<T>, Primitive<W>>>> widgetFactory =
-                            (w1, x1, y1, dx1, dy1) -> NBTTypes.generateListModifyButton(
-                                    w1, pairType, pairList::createNewPrimitivePair, x1, y1, dx1, dy1, 300, 20);
+                            (elementFactory, w1, x1, y1, dx1, dy1) -> NBTTypes.generateListModifyButton(
+                                    elementFactory,
+                                    w1,
+                                    pairType,
+                                    pairList::createNewPrimitivePair,
+                                    x1,
+                                    y1,
+                                    dx1,
+                                    dy1,
+                                    300,
+                                    20);
                     WrapperFactory<String, List<Pair<Primitive<T>, Primitive<W>>>> stringListWrapperFactory =
                             AttrKeyValues.STR_LIST_FACTORY.concat(WrapperFactory.list(pairType.stringifyFactory()));
                     WrapperFactory<List<Pair<Primitive<T>, Primitive<W>>>, PrimitivePairList<T, W>> wrapperFactory =
@@ -225,7 +234,7 @@ public class PrimitivePairList<T, W> implements NBTParsable<PrimitivePairList<T,
                                             pairList.defaultSecondPrimitive),
                                     PrimitivePairList::toPrimitivePairList);
                     return new TypeConvertAttrKeyValue<>(attr, wrapperFactory, widgetFactory, stringListWrapperFactory)
-                            .generateValueWidget(x, y, dx, dy);
+                            .generateValueWidget(factory, x, y, dx, dy);
                 },
                 (PrimitivePairList<T, W>)
                         new PrimitivePairList<>("", "", NBTTypes.STRING_TYPE, NBTTypes.STRING_TYPE, List.of()));

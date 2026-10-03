@@ -13,6 +13,7 @@ import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.Constants;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.IconElement;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.gui.presets.choices.RegistryChooseScreen;
 import me.matl114.managers.config.NBTParsable;
 import me.matl114.managers.config.NBTType;
@@ -84,24 +85,31 @@ public class RegistryRegex<T> implements NBTParsable<RegistryRegex<T>>, Predicat
     }
 
     public static <T, W extends RegistryRegex<T>> DrawableWidget createTextEditWidget(
-            AttrKeyValue<W> attr, int x, int y, int width, int height) {
+            ElementFactory factory, AttrKeyValue<W> attr, int x, int y, int width, int height) {
         SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, width, height);
         W originValue = attr.get();
         Registry<T> registry = originValue.getRegistry();
         AttrKeyValue<Regex> attrKeyValue = new TypeConvertAttrKeyValue<W, Regex>(
                 attr, WrapperFactory.<Regex, W>of(originValue::<W>withParent, RegistryRegex::getParent), Regex.TYPE);
-        subScreenWidget.addDrawableChild(attrKeyValue.generateValueWidget(0, 0, width - height, height));
-        subScreenWidget.addDrawableChild(ExecutableWidget.instance(width - height, 0, height, height)
-                .setElementHandler(IconElement.fixedGui(
-                                Constants.LIST_TAG_SPRITE, ButtonAction.run(() -> openRegexListView(registry, attr)))
+        subScreenWidget.addDrawableChild(attrKeyValue.generateValueWidget(factory, 0, 0, width - height, height));
+        subScreenWidget.addDrawableChild(factory.createElement(
+                IconElement.fixedGui(
+                                Constants.LIST_TAG_SPRITE,
+                                ButtonAction.run(() -> openRegexListView(factory, registry, attr)))
                         .withTooltips(TooltipHandler.of(Streams.concat(
                                         originValue.getRules().stream(), Constants.openListPreviewTooltips().stream())
-                                .toList()))));
+                                .toList())),
+                null,
+                null,
+                width - height,
+                0,
+                height,
+                height));
         return subScreenWidget;
     }
 
     private static <T, W extends RegistryRegex<T>> void openRegexListView(
-            Registry<T> registry, AttrKeyValue<W> original) {
+            ElementFactory factory, Registry<T> registry, AttrKeyValue<W> original) {
         AttrKeyValue<W> originalCopy = original.copy();
         var originalValue = originalCopy.get();
         AttrKeyValue<Regex> regexWrapper = new TypeConvertAttrKeyValue<W, Regex>(
@@ -120,16 +128,21 @@ public class RegistryRegex<T> implements NBTParsable<RegistryRegex<T>>, Predicat
                                 SubScreenWidget subScreenWidget = selectSubScreen.getScrollableBorder();
                                 subScreenWidget.clearChildren();
                                 subScreenWidget.addDrawableChild(
-                                        regexWrapper.generateValueWidget(0, -20, subScreenWidget.getWidth(), 20));
+                                        regexWrapper.generateValueWidget(
+                                                factory, 0, -20, subScreenWidget.getWidth(), 20));
                                 subScreenWidget.addDrawableChild(generateInformationButton(subScreenWidget));
                             }
 
                             public DrawableWidget generateInformationButton(SubScreenWidget subScreenWidget) {
-                                return ExecutableWidget.instance(subScreenWidget.getWidth(), -20, 20, 20)
-                                        .setElementHandler(IconElement.fixedGui(
-                                                        Constants.EDITOR_SPRITE, ButtonAction.run(() -> {}))
-                                                .withTooltips(TooltipHandler.of(
-                                                        original.get().getRules())));
+                                return factory.createElement(
+                                        IconElement.fixedGui(Constants.EDITOR_SPRITE, ButtonAction.run(() -> {}))
+                                                .withTooltips(TooltipHandler.of(original.get().getRules())),
+                                        null,
+                                        null,
+                                        subScreenWidget.getWidth(),
+                                        -20,
+                                        20,
+                                        20);
                             }
 
                             @Override

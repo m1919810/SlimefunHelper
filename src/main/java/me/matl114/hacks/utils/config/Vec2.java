@@ -23,16 +23,16 @@ public record Vec2(double x, double y) implements NBTParsable<Vec2> {
                             Codec.DOUBLE.fieldOf("x").forGetter(Vec2::x),
                             Codec.DOUBLE.fieldOf("y").forGetter(Vec2::y))
                     .apply(s, Vec2::new)),
-            (s, x, y, dx, dy) -> {
+            (factory, s, x, y, dx, dy) -> {
                 SubScreenWidget subScreenWidget = SubScreenWidget.instance(x, y, dx, dy);
                 int half = dx / 2;
                 return subScreenWidget
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(
                                         s, PAIR_FACTORY.asFirstWrapper(s::get), NBTTypes.DOUBLE_TYPE)
-                                .generateValueWidget(0, 0, half, dy))
+                                .generateValueWidget(factory, 0, 0, half, dy))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(
                                         s, PAIR_FACTORY.asSecondWrapper(s::get), NBTTypes.DOUBLE_TYPE)
-                                .generateValueWidget(half, 0, half, dy));
+                                .generateValueWidget(factory, half, 0, half, dy));
             },
             new Vec2(0, 0));
 

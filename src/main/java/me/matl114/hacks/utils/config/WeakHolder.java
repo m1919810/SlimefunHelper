@@ -33,7 +33,7 @@ public record WeakHolder<T>(Identifier registry, Identifier location) implements
     public static NBTType<WeakHolder> TYPE = new NBTType<>(
             "weakholder",
             Codec.STRING.comapFlatMap(WeakHolder::parse, WeakHolder::asString),
-            (w, x, y, dx, dy) -> {
+            (factory, w, x, y, dx, dy) -> {
                 Identifier registry = w.get().registry();
                 var handler = mc.getNetworkHandler();
                 Optional<Registry<Object>> optionalLookup;
@@ -49,9 +49,10 @@ public record WeakHolder<T>(Identifier registry, Identifier location) implements
                         NBTTypes.IDENTIFIER_TYPE);
                 if (optionalLookup.isPresent()) {
                     Registry<Object> lookupValue = optionalLookup.get();
-                    return RegistryAttrKeyValue.generateTextInputWithRegistrySearch(lookupValue, wrapper, x, y, dx, dy);
+                    return RegistryAttrKeyValue.generateTextInputWithRegistrySearch(
+                            factory, lookupValue, wrapper, x, y, dx, dy);
                 } else {
-                    return wrapper.generateValueWidget(x, y, dx, dy);
+                    return wrapper.generateValueWidget(factory, x, y, dx, dy);
                 }
             },
             new WeakHolder(Enchantments.AQUA_AFFINITY));

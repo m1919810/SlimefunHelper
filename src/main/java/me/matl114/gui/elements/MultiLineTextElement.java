@@ -4,6 +4,7 @@ import java.util.List;
 import lombok.experimental.Accessors;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.RenderHandler;
+import me.matl114.gui.basic.TextAlign;
 import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.complex.RawTextElement;
 import me.matl114.versioned.api.VDrawContext;
@@ -13,14 +14,18 @@ import net.minecraft.text.Text;
 @Accessors(chain = true)
 public class MultiLineTextElement extends RawTextElement {
     public MultiLineTextElement(Text text, int color) {
-        this(text, color, 0);
+        super(TextProvider.of(text), color);
     }
 
-    public MultiLineTextElement(Text text, int color, int alignment) {
-        this(TextProvider.of(text), color, alignment);
+    public MultiLineTextElement(Text text, int color, TextAlign alignment) {
+        this(TextProvider.of(text, alignment), color);
     }
 
-    public MultiLineTextElement(TextProvider provider, int color, int alignment) {
+    public MultiLineTextElement(TextProvider provider, int color) {
+        super(provider, color);
+    }
+
+    public MultiLineTextElement(TextProvider provider, int color, TextAlign alignment) {
         super(provider, color, alignment);
     }
 
@@ -57,7 +62,7 @@ public class MultiLineTextElement extends RawTextElement {
                             element.getTextureWidth(),
                             (i + 1) * lineHeight + startY,
                             color.getColorInt(),
-                            alignment);
+                            text.getAlign(element));
                 }
             }
         }
