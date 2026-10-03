@@ -28,6 +28,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.MaceItem;
 import net.minecraft.network.packet.Packet;
@@ -238,8 +239,12 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         if (args.isOnGround()
                 || args.isTouchingWater()
                 || args.getBlockStateAtPos().isOf(Blocks.BUBBLE_COLUMN)
+                || args.hasVehicle()
                 || PlayerStateManager.INSTANCE.lastInWeb
-                || PlayerStateManager.INSTANCE.lastInWater) {
+                || PlayerStateManager.INSTANCE.lastInWater
+                || PlayerStateManager.INSTANCE.lastClimbing
+                || mc.player.hasStatusEffect(StatusEffects.SLOW_FALLING)
+                || mc.player.hasStatusEffect(StatusEffects.LEVITATION)) {
             lastOnGroundHeight = lastHeight;
             runningDelegate.counter = 0;
         }
