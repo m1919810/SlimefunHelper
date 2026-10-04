@@ -13,6 +13,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import me.matl114.accessors.access.PlayerInteractEntityC2SPacketAccess;
+import me.matl114.accessors.interfaces.MetadataHolder;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.annotations.Broadcast;
@@ -22,21 +23,34 @@ import me.matl114.events.impl.UseItemOnBlock;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.interact.SequencedActionManager;
+import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
+import me.matl114.utils.DamageUtils;
+import me.matl114.utils.ExplosionUtils;
 import me.matl114.utils.algorithms.SerialExecutor;
 import me.matl114.utils.collections.IndexEntry;
+import me.matl114.utils.containers.MetaData;
 import net.minecraft.block.*;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.damage.DamageType;
+import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.decoration.EndCrystalEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.EndCrystalItem;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.MaceItem;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
+import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
+import net.minecraft.network.packet.s2c.play.ExplosionS2CPacket;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.math.*;
 import net.minecraft.util.shape.VoxelShape;
@@ -54,6 +68,10 @@ public class CombatManager extends BaseModule {
     public static final int SECTION_RADIUS = 1;
     private static final double NEARBY_ENTITY_CACHE_RADIUS = 16.0D;
     private static final float BLAST_RESISTANCE_THRESHOLD = 600.0F;
+    private static final int DAMAGE_ESTIMATE_TTL = 7;
+    private static final int DAMAGE_PACKET_NETWORK_DELAY = 3;
+    private static final float UNKNOWN_DAMAGE_ESTIMATE = 1.0F;
+    public static final String KEY_DAMAGE_TRACKER = "slimefunhelper:combat/damage_tracker";
     private static final Set<Block> MINEABLE_BLAST_RESISTANT_BLOCKS;
     private static final Set<Block> UNBREAKABLE_BLAST_RESISTANT_BLOCKS;
 
@@ -65,6 +83,21 @@ public class CombatManager extends BaseModule {
             }
         }
         MINEABLE_BLAST_RESISTANT_BLOCKS = Set.copyOf(blocks);
+    }
+
+    private enum TrackedDamageCategory {
+        PLAYER_ATTACK(DamageTypes.PLAYER_ATTACK),
+        SMASH(RegistryKey.of(RegistryKeys.DAMAGE_TYPE, Identifier.ofVanilla("mace_smash"))),
+        SPEAR(RegistryKey.of(RegistryKeys.DAMAGE_TYPE, Identifier.ofVanilla("spear"))),
+        BAD_RESPAWN_POINT(DamageTypes.BAD_RESPAWN_POINT),
+        PLAYER_EXPLOSION(DamageTypes.PLAYER_EXPLOSION),
+        EXPLOSION(DamageTypes.EXPLOSION);
+
+        TrackedDamageCategory(RegistryKey<DamageType> world) {
+            this.damageTypeKey = world;
+        }
+
+        RegistryKey<DamageType> damageTypeKey;
     }
 
     static {
@@ -97,6 +130,13 @@ public class CombatManager extends BaseModule {
                 Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class),
                 this::onPlayerAttackCrystal,
                 Integer.MAX_VALUE);
+        registerListener(
+                Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class),
+                this::onTrackPlayerAttack,
+                Integer.MAX_VALUE - 1);
+        registerListener(Listener.getPacketPoint().getChannel(EntityDamageS2CPacket.class), this::onDamagePacket);
+        registerListener(
+                Listener.getPacketPreHandlePoint().getChannel(ExplosionS2CPacket.class), this::onExplosionPacket);
         registerListener(Listener.getEntityRemoveListener().getChannel(EntityType.END_CRYSTAL), this::onEntityRemoval);
         registerListener(Listener.getPostPlayerUseItemOnBlock(), this::onPlayerPlaceCrystalOnBlock);
     }
@@ -490,6 +530,191 @@ public class CombatManager extends BaseModule {
             trackedEndCrystals.clear();
         }
     }
+
+    private void onTrackPlayerAttack(Event<PlayerInteractEntityC2SPacket> event) {
+        if (event.isCancelled()
+                || checkNull()
+                || !PlayerInteractEntityC2SPacketAccess.of(event.context).isAttack()) {
+            return;
+        }
+        Entity target = mc.world.getEntityById(
+                PlayerInteractEntityC2SPacketAccess.of(event.context).getEntityId());
+        if (!(target instanceof PlayerEntity player)) return;
+        ItemStack weapon = mc.player.getMainHandStack();
+        cacheDamageEstimate(
+                player, TrackedDamageCategory.PLAYER_ATTACK, getMaximumWeaponDamage(mc.player, player, weapon, false));
+        String weaponPath = Registries.ITEM.getId(weapon.getItem()).getPath();
+        if (weapon.getItem() instanceof MaceItem) {
+            cacheDamageEstimate(
+                    player, TrackedDamageCategory.SMASH, getMaximumWeaponDamage(mc.player, player, weapon, true));
+        }
+        if (weaponPath.contains("spear")) {
+            cacheDamageEstimate(
+                    player, TrackedDamageCategory.SPEAR, getMaximumWeaponDamage(mc.player, player, weapon, false));
+        }
+    }
+
+    private void onExplosionPacket(Event<ExplosionS2CPacket> event) {
+        if (checkNull()) return;
+        BlockPos explosionBlock = BlockPos.ofFloored(event.context.center());
+        BlockState explosionState = mc.world.getBlockState(explosionBlock);
+        boolean centeredExplosion = Objects.equals(event.context.center(), explosionBlock.toCenterPos());
+        boolean respawnAnchor = centeredExplosion && explosionState.getBlock() instanceof RespawnAnchorBlock;
+        boolean bed = centeredExplosion && explosionState.getBlock() instanceof BedBlock;
+        float radius = event.context.radius();
+        if (radius <= 0.0F) {
+            radius = respawnAnchor
+                    ? ExplosionUtils.RESPAWN_ANCHOR_POWER
+                    : bed ? ExplosionUtils.BED_POWER : ExplosionUtils.END_CRYSTAL_POWER;
+        }
+        ExplosionUtils.BlockStateAccess blockAccess =
+                ExplosionUtils.fromWorldWithAutomaticOverrides(mc.world, event.context.center());
+        for (PlayerEntity player : mc.world.getPlayers()) {
+            float rawDamage = ExplosionUtils.calculateExplosionRawDamage(
+                    radius, event.context.center(), player.getBoundingBox(), blockAccess, ExplosionUtils.ALL_TERRAIN);
+            float damage = DamageUtils.getMultipliedDamageByDifficulty(mc.world, rawDamage);
+            if (respawnAnchor || bed) {
+                cacheDamageEstimate(player, TrackedDamageCategory.BAD_RESPAWN_POINT, damage);
+            } else {
+                cacheDamageEstimate(player, TrackedDamageCategory.EXPLOSION, damage);
+                cacheDamageEstimate(player, TrackedDamageCategory.PLAYER_EXPLOSION, damage);
+            }
+        }
+    }
+
+    private void onDamagePacket(Event<EntityDamageS2CPacket> event) {
+        if (checkNull()) return;
+        Entity entity = mc.world.getEntityById(event.context.entityId());
+        if (!(entity instanceof PlayerEntity player)) return;
+
+        DamageTracker tracker = getOrCreateDamageTracker(player);
+        RegistryKey<DamageType> damageType = event.context.sourceType().getKey().orElse(null);
+        Entity source = mc.world.getEntityById(event.context.sourceCauseId());
+        TrackedDamageCategory category = getDamageCategory(damageType);
+        float damage = UNKNOWN_DAMAGE_ESTIMATE;
+        if (source instanceof PlayerEntity attacker) {
+            damage = tracker.takeEstimate(category, Tasks.getTick());
+            if (damage <= 0.0F) {
+                ItemStack weapon = attacker.getMainHandStack();
+                damage = getMaximumWeaponDamage(attacker, player, weapon, category == TrackedDamageCategory.SMASH);
+            }
+        } else if (category == TrackedDamageCategory.BAD_RESPAWN_POINT) {
+            damage = tracker.takeEstimate(category, Tasks.getTick());
+        }
+        if (damage <= 0.0F) damage = UNKNOWN_DAMAGE_ESTIMATE;
+        tracker.onDamage(damage, Tasks.getTick(), DAMAGE_PACKET_NETWORK_DELAY);
+    }
+
+    public void cacheDamageEstimate(PlayerEntity player, RegistryKey<DamageType> damageType, float damage) {
+        if (damageType == null || !Float.isFinite(damage) || damage < 0.0F) return;
+        cacheDamageEstimate(player, getDamageCategory(damageType), damage);
+    }
+
+    private void cacheDamageEstimate(PlayerEntity player, TrackedDamageCategory category, float damage) {
+        if (!Float.isFinite(damage) || damage < 0.0F) return;
+        DamageTracker tracker = getOrCreateDamageTracker(player);
+        tracker.cacheEstimate(category, damage, Tasks.getTick());
+        tracker.considerEstimatedDamage(damage);
+    }
+
+    private float getMaximumWeaponDamage(PlayerEntity attacker, PlayerEntity target, ItemStack weapon, boolean smash) {
+        double baseDamage = DamageUtils.getAttackDamage(attacker, target, weapon);
+        if (smash && weapon.getItem() instanceof MaceItem) {
+            double fallDistance = attacker == mc.player && PlayerStateManager.INSTANCE != null
+                    ? PlayerStateManager.INSTANCE.fallDistance
+                    : 0.0D;
+            baseDamage += DamageUtils.getSmashDamageBonus(
+                    weapon, DamageUtils.createDamageSource(attacker, attacker, weapon), fallDistance);
+        }
+        return (float) (baseDamage * 1.5D);
+    }
+
+    private static TrackedDamageCategory getDamageCategory(RegistryKey<DamageType> type) {
+        if (DamageUtils.isType(type, "mace_smash")) return TrackedDamageCategory.SMASH;
+        if (DamageUtils.isType(type, "spear")) return TrackedDamageCategory.SPEAR;
+        if (DamageUtils.isType(type, "bad_respawn_point")) return TrackedDamageCategory.BAD_RESPAWN_POINT;
+        if (DamageUtils.isType(type, "player_explosion")) return TrackedDamageCategory.PLAYER_EXPLOSION;
+        if (DamageUtils.isType(type, "explosion")) return TrackedDamageCategory.EXPLOSION;
+        return TrackedDamageCategory.PLAYER_ATTACK;
+    }
+
+    public DamageTracker getDamageTracker(PlayerEntity player) {
+        if (!(player instanceof MetadataHolder holder) || holder.isMetaEmpty()) return null;
+        return holder.getMetadata().get(this, KEY_DAMAGE_TRACKER);
+    }
+
+    private DamageTracker getOrCreateDamageTracker(PlayerEntity player) {
+        MetaData metadata = ((MetadataHolder) player).getMetadata();
+        return metadata.getOrPut(this, KEY_DAMAGE_TRACKER, DamageTracker::new);
+    }
+
+    public static class DamageTracker {
+        private final Map<TrackedDamageCategory, DamageEstimate> estimates = new EnumMap<>(TrackedDamageCategory.class);
+        private DamageEstimate lastPlayerExplosionEstimate;
+        public float lastDamage;
+        public float damageThreshold;
+        public int lastDamageTick;
+        private int invulnerabilityEndTick;
+
+        public int getInvulnerabilityTicks() {
+            return Math.max(invulnerabilityEndTick - Tasks.getTick(), 0);
+        }
+
+        private void cacheEstimate(TrackedDamageCategory category, float damage, int tick) {
+            DamageEstimate estimate = new DamageEstimate(damage, tick + DAMAGE_ESTIMATE_TTL);
+            estimates.put(category, estimate);
+            if (category == TrackedDamageCategory.PLAYER_EXPLOSION) {
+                lastPlayerExplosionEstimate = estimate;
+            }
+        }
+
+        private void considerEstimatedDamage(float damage) {
+            if (getInvulnerabilityTicks() <= 0 || damage <= 0.0F) return;
+            lastDamage = Math.max(lastDamage, damage);
+            damageThreshold = lastDamage;
+        }
+
+        private float takeEstimate(TrackedDamageCategory category, int tick) {
+            estimates.entrySet().removeIf(entry -> entry.getValue().expiresAt < tick);
+            DamageEstimate estimate = estimates.remove(category);
+            if (estimate == null && category == TrackedDamageCategory.BAD_RESPAWN_POINT) {
+                if (lastPlayerExplosionEstimate != null && lastPlayerExplosionEstimate.expiresAt >= tick) {
+                    estimate = lastPlayerExplosionEstimate;
+                    lastPlayerExplosionEstimate = null;
+                } else {
+                    lastPlayerExplosionEstimate = null;
+                }
+            }
+            if (estimate == null && category != TrackedDamageCategory.PLAYER_ATTACK) {
+                estimate = estimates.remove(TrackedDamageCategory.PLAYER_ATTACK);
+            }
+            return estimate == null ? 0.0F : estimate.damage;
+        }
+
+        private void onDamage(float damage, int tick, int networkDelay) {
+            if (getInvulnerabilityTicks() > 0) {
+                lastDamage = Math.max(lastDamage, damage);
+            } else {
+                lastDamage = damage;
+            }
+            damageThreshold = lastDamage;
+            int invulnerabilityTicks = Math.max(10 - networkDelay, 0);
+            lastDamageTick = tick;
+            invulnerabilityEndTick = tick + invulnerabilityTicks;
+        }
+
+        public boolean canTakeDamage() {
+            return getInvulnerabilityTicks() == 0;
+        }
+
+        public float getDamageAboveThreshold(float incomingDamage) {
+            if (incomingDamage <= 0.0F) return 0.0F;
+            if (canTakeDamage()) return incomingDamage;
+            return Math.max(incomingDamage - damageThreshold, 0.0F);
+        }
+    }
+
+    private record DamageEstimate(float damage, int expiresAt) {}
 
     public void onUpdatePlayerPosition() {
         ChunkSectionPos currentPos = ChunkSectionPos.from(mc.player);
