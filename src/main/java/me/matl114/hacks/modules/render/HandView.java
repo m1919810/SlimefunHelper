@@ -1,0 +1,53 @@
+package me.matl114.hacks.modules.render;
+
+import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.config.Vec3;
+import me.matl114.managers.Configs;
+import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.NBTRef;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.Hand;
+
+public class HandView extends BaseModule {
+    public static HandView INSTANCE;
+
+    public final ModulePath handView = makePath(Configs.RENDER_CONFIG, "hand-view");
+    public final ModulePath mainHand = handView.add("main-hand");
+    public final ModulePath offHand = handView.add("off-hand");
+
+    public HandView() {
+        super("HandView");
+        bindFlag(enable);
+        INSTANCE = this;
+    }
+
+    public final FlagRef enable = flagBuilder(handView.addEnable()).build();
+
+    public final NBTRef<Vec3> mainHandScale = builder(mainHand.add("scale"), Vec3.class)
+            .defaultValue(new Vec3(1, 1, 1))
+            .build();
+
+    public final NBTRef<Vec3> mainHandPosition = builder(mainHand.add("position"), Vec3.class)
+            .defaultValue(new Vec3(0, 0, 0))
+            .build();
+
+    public final NBTRef<Vec3> offHandScale = builder(offHand.add("scale"), Vec3.class)
+            .defaultValue(new Vec3(1, 1, 1))
+            .build();
+
+    public final NBTRef<Vec3> offHandPosition = builder(offHand.add("position"), Vec3.class)
+            .defaultValue(new Vec3(0, 0, 0))
+            .build();
+
+    public void applyHandTransform(MatrixStack matrices, Hand hand) {
+        Vec3 scale = hand == Hand.MAIN_HAND ? mainHandScale.get() : offHandScale.get();
+        Vec3 position = hand == Hand.MAIN_HAND ? mainHandPosition.get() : offHandPosition.get();
+        applyTransform(matrices, scale, position);
+    }
+
+    private static void applyTransform(MatrixStack matrices, Vec3 scale, Vec3 position) {
+        matrices.scale((float) scale.x(), (float) scale.y(), (float) scale.z());
+        matrices.translate((float) position.x(), (float) position.y(), (float) position.z());
+    }
+}

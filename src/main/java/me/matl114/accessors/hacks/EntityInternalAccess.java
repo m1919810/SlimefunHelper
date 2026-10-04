@@ -9,8 +9,6 @@ public interface EntityInternalAccess<T extends Entity> extends EntityAccess<T> 
         return (EntityInternalAccess<T>) entity;
     }
 
-    public void setGlow0(boolean glow);
-
     byte RENDER_LEVEL_DISABLE = 0;
     byte RENDER_LEVEL_WHITELIST = 1;
     byte RENDER_LEVEL_FORCE = 2;
