@@ -6,7 +6,6 @@ import java.util.Objects;
 import java.util.Optional;
 import lombok.With;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.elements.ButtonElement;
 import me.matl114.managers.config.NBTParsable;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.config.NBTType;
@@ -31,7 +30,7 @@ public record LabelVec3(String xLabel, String yLabel, String zLabel, Vec3 data) 
                             Codec.STRING.fieldOf("z_label").forGetter(LabelVec3::zLabel),
                             Vec3.TYPE.typeCodec().fieldOf("data").forGetter(LabelVec3::data))
                     .apply(s, LabelVec3::new)),
-            (s, x, y, dx, dy) -> {
+            (factory, s, x, y, dx, dy) -> {
                 SubScreenWidget subScreenWidget = SubScreenWidget.instance(x, y, dx, dy);
                 int half = dx / 3;
                 int label = Math.min(dy, (int) half / 2);
@@ -44,33 +43,33 @@ public record LabelVec3(String xLabel, String yLabel, String zLabel, Vec3 data) 
                         WrapperFactory.of((d) -> s.get().withZ(d), LabelVec3::z);
 
                 return subScreenWidget
-                        .addDrawableChild(DisplayWidget.instance(0, 0, label, dy)
-                                .setRenderHandler(new ButtonElement(
-                                                TextProvider.of(Text.translatableWithFallback(
-                                                        original.xLabel(), original.xLabel())),
-                                                ButtonAction.empty())
-                                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                                original.xLabel() + ".tooltips", "")))))
+                        .addDrawableChild(factory.createLabel(
+                                () -> Text.translatableWithFallback(original.xLabel(), original.xLabel()),
+                                () -> ChatUtils.parseTooltipsTranslation(original.xLabel() + ".tooltips", ""),
+                                0,
+                                0,
+                                label,
+                                dy))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(s, firstWrapper, NBTTypes.DOUBLE_TYPE)
-                                .generateValueWidget(label, 0, half - label, dy))
-                        .addDrawableChild(DisplayWidget.instance(half, 0, label, dy)
-                                .setRenderHandler(new ButtonElement(
-                                                TextProvider.of(Text.translatableWithFallback(
-                                                        original.yLabel(), original.yLabel())),
-                                                ButtonAction.empty())
-                                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                                original.yLabel() + ".tooltips", "")))))
+                                .generateValueWidget(factory, label, 0, half - label, dy))
+                        .addDrawableChild(factory.createLabel(
+                                () -> Text.translatableWithFallback(original.yLabel(), original.yLabel()),
+                                () -> ChatUtils.parseTooltipsTranslation(original.yLabel() + ".tooltips", ""),
+                                half,
+                                0,
+                                label,
+                                dy))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(s, secondWrapper, NBTTypes.DOUBLE_TYPE)
-                                .generateValueWidget(half + label, 0, half - label, dy))
-                        .addDrawableChild(DisplayWidget.instance(2 * half, 0, label, dy)
-                                .setRenderHandler(new ButtonElement(
-                                                TextProvider.of(Text.translatableWithFallback(
-                                                        original.zLabel(), original.zLabel())),
-                                                ButtonAction.empty())
-                                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                                original.zLabel() + ".tooltips", "")))))
+                                .generateValueWidget(factory, half + label, 0, half - label, dy))
+                        .addDrawableChild(factory.createLabel(
+                                () -> Text.translatableWithFallback(original.zLabel(), original.zLabel()),
+                                () -> ChatUtils.parseTooltipsTranslation(original.zLabel() + ".tooltips", ""),
+                                2 * half,
+                                0,
+                                label,
+                                dy))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(s, thirdWrapper, NBTTypes.DOUBLE_TYPE)
-                                .generateValueWidget(2 * half + label, 0, half - label, dy));
+                                .generateValueWidget(factory, 2 * half + label, 0, half - label, dy));
             },
             new LabelVec3("", "", "", new Vec3(0, 0, 0)));
 

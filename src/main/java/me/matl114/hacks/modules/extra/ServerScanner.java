@@ -149,7 +149,7 @@ public class ServerScanner extends BaseModule {
                 .setElementHandler(new ButtonElement(
                         TextProvider.of(Text.literal("AScan")), ButtonAction.run(this::startScanTaskAsync))));
         subScreenWidget.addDrawableChild(ExecutableWidget.instance(320, 0, 80, 20)
-                .setElementHandler(new LabelElement((s) -> logInfo, Colors.WHITE, 0)));
+                .setElementHandler(new LabelElement((s) -> logInfo, Colors.WHITE, TextAlign.MIDDLE)));
         return subScreenWidget;
     }
 
@@ -634,7 +634,7 @@ public class ServerScanner extends BaseModule {
 
         subScreenWidget.addDrawableChild(ExecutableWidget.instance(45, 0, 100, 9)
                 .setElementHandler(RawTextElement.instance(Text.literal(ip))
-                        .setAlignment(-1)
+                        .setAlignment(TextAlign.LEFT)
                         .withInputHandler(new ButtonElement(TextProvider.of(Text.empty()), ButtonAction.run(() -> {
                             mc.keyboard.setClipboard(ip);
                             logInfo("成功拷贝ip");
@@ -651,17 +651,18 @@ public class ServerScanner extends BaseModule {
                     .setRenderHandler(TooltipHandler.of(() -> getServerInfoHover(info))));
             subScreenWidget.addDrawableChild(DisplayWidget.instance(260, 8, 50, 9)
                     .setRenderHandler(RawTextElement.instance((b) -> getStatusDisplay(info.getStatus()))
-                            .setAlignment(1)));
+                            .setAlignment(TextAlign.RIGHT)));
             subScreenWidget.addDrawableChild(DisplayWidget.instance(260, 16, 50, 9)
                     .setRenderHandler(RawTextElement.instance((b) -> getPlayerListDisplay(info))
-                            .setAlignment(1)));
+                            .setAlignment(TextAlign.RIGHT)));
 
             subScreenWidget.addDrawableChild(DisplayWidget.instance(260, 24, 50, 9)
                     .setRenderHandler(RawTextElement.instance((b) -> getServerBrandInfoDisplay(info))
-                            .setAlignment(1)));
+                            .setAlignment(TextAlign.RIGHT)));
             // motd
             subScreenWidget.addDrawableChild(DisplayWidget.instance(50, 10, 270, 30)
-                    .setRenderHandler(new MultiLineTextElement((s) -> getServerMotd(info), Colors.WHITE, -1)));
+                    .setRenderHandler(
+                            new MultiLineTextElement((s) -> getServerMotd(info), Colors.WHITE, TextAlign.LEFT)));
         } else {
             subScreenWidget.addDrawableChild(
                     DisplayWidget.instance(2, 2, 36, 36).setRenderHandler(LabelElement.instance(Text.empty())));

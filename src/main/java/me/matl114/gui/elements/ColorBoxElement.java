@@ -51,7 +51,7 @@ public class ColorBoxElement extends BoxElement {
                     element.getTextureWidth(),
                     element.getTextureHeight(),
                     textSampler.getColorInt(),
-                    0);
+                    text.getAlign(element));
         }
         Integer color = (highLightProvider == null)
                 ? (shouldHighlight ? Integer.valueOf(Colors.WHITE) : null)

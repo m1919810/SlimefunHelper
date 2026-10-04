@@ -70,9 +70,14 @@ public class PlayerQueue extends BaseModule {
     }
 
     @Override
-    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
-        super.addCustomWidgets(acceptor, dx, dy, dblank);
-        acceptor.accept(createTitle("widget.player-queue.command", 0, dblank, dx, dy));
+    public void addCustomWidgets(
+            Consumer<DrawableWidget> acceptor,
+            int dx,
+            int dy,
+            int dblank,
+            me.matl114.gui.interfaces.ElementFactory factory) {
+        super.addCustomWidgets(acceptor, dx, dy, dblank, factory);
+        acceptor.accept(factory.createTitle("widget.player-queue.command", 0, dblank, dx, dy));
     }
 
     public Set<String> trackedPlayers = new LinkedHashSet<>();

@@ -105,13 +105,18 @@ public class FakePlayer extends BaseModule {
     }
 
     @Override
-    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
-        super.addCustomWidgets(acceptor, dx, dy, dblank);
+    public void addCustomWidgets(
+            Consumer<DrawableWidget> acceptor,
+            int dx,
+            int dy,
+            int dblank,
+            me.matl114.gui.interfaces.ElementFactory factory) {
+        super.addCustomWidgets(acceptor, dx, dy, dblank, factory);
         if (mc.world == null) {
-            acceptor.accept(createTitle("widget.fake-player.fake-player-list.enter-world", 0, dblank, dx, dy));
+            acceptor.accept(factory.createTitle("widget.fake-player.fake-player-list.enter-world", 0, dblank, dx, dy));
             return;
         }
-        acceptor.accept(createTitle("widget.fake-player.fake-player-list.title", 0, dblank, dx, dy));
+        acceptor.accept(factory.createTitle("widget.fake-player.fake-player-list.title", 0, dblank, dx, dy));
         DynamicListWidget list = new DynamicListWidget(0, dblank, dx);
         for (var re : mc.world.getEntities()) {
             if (re instanceof FakePlayerEntity fakePlayer) {

@@ -99,6 +99,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
     }
 
     public void render0(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
+        resizeMaxHeight();
         this.selected = !disableSelect && isMouseOver(mouseX, mouseY);
         if (scoll != null) {
             scoll.render0(context, mouseX, mouseY, delta, disableSelect);
@@ -185,6 +186,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
         //            return true;
         //        }
         // force check, only if the mouse is on the template can the mouse interact with subwidgets
+        resizeMaxHeight();
         if (this.scrollableBorder != null && this.scrollableBorder.mouseClicked(mouseX, mouseY, button)) {
             setSelected(this.scrollableBorder);
             return true;
@@ -208,6 +210,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
         //        if(this.scoll != null && this.scoll.mouseClicked(mouseX, mouseY, button)){
         //            return true;
         //        }
+        resizeMaxHeight();
         if (this.scrollableBorder != null && this.scrollableBorder.mouseReleased(mouseX, mouseY, button)) {
             return true;
         }
@@ -227,6 +230,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        resizeMaxHeight();
         super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
 
         if (this.isMouseOver(mouseX, mouseY) || (this.scoll != null && this.scoll.isMouseOver(mouseX, mouseY))) {
@@ -237,6 +241,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        resizeMaxHeight();
         if (this.draggingElement != null) {
             if (this.draggingElement.isDragging()) {
                 if (this.draggingElement == this.scoll) {
@@ -255,6 +260,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
     }
 
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        resizeMaxHeight();
         if (this.scrollableBorder != null && this.scrollableBorder.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
         }
@@ -267,6 +273,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
     }
 
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        resizeMaxHeight();
         if (this.scrollableBorder != null && this.scrollableBorder.keyReleased(keyCode, scanCode, modifiers)) {
             return true;
         }
@@ -280,6 +287,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
 
     @Override
     public boolean charTyped(char chr, int modifiers) {
+        resizeMaxHeight();
         if (this.scrollableBorder != null && this.scrollableBorder.charTyped(chr, modifiers)) {
             return true;
         }
@@ -310,6 +318,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
     }
 
     public void releaseDrag(Screen screen, double mouseX, double mouseY) {
+        resizeMaxHeight();
         if (this.draggingElement != null) {
             if (this.draggingElement == this.scoll) {
                 this.draggingElement.releaseDrag(screen, mouseX, mouseY);
@@ -325,6 +334,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
     }
 
     public boolean startDrag(Screen screen, double mouseX, double mouseY) {
+        resizeMaxHeight();
         if (this.scoll != null && this.scoll.startDrag(screen, mouseX, mouseY)) {
             this.draggingElement = scoll;
             return true;

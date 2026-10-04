@@ -7,13 +7,13 @@ import me.matl114.gui.basic.ColorSampler;
 import me.matl114.gui.basic.ElementHandler;
 import me.matl114.gui.basic.InputHandler;
 import me.matl114.gui.basic.RenderHandler;
+import me.matl114.gui.basic.TextAlign;
 import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.complex.RawTextElement;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.IconElement;
 import me.matl114.gui.elements.TextFieldElement;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.widget.TextFieldWidget;
+import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -53,46 +53,20 @@ public final class DefaultElementSupplier implements ElementSupplier {
     @Override
     public ElementHandler create(ElementSupplier.RawTextBuilder builder) {
         RawTextElement element = new RawTextElement(
-                safeTextProvider(builder.textProvider),
-                builder.color == null ? ColorSampler.WHITE : builder.color,
-                builder.alignment);
+                TextProvider.withAlign(safeTextProvider(builder.textProvider), TextAlign.fromLegacy(builder.alignment)),
+                builder.color == null ? ColorSampler.WHITE : builder.color);
         return applyCommon(element, builder);
     }
 
     @Override
     public ElementHandler create(ElementSupplier.TextFieldBuilder builder) {
-        TextFieldWidget textFieldWidget = builder.textFieldWidget != null
-                ? builder.textFieldWidget
-                : new TextFieldWidget(
-                        MinecraftClient.getInstance().textRenderer,
-                        0,
-                        0,
-                        0,
-                        0,
-                        builder.message == null ? Text.empty() : builder.message);
-        if (builder.textPredicate != null) {
-            textFieldWidget.setTextPredicate(builder.textPredicate);
-        }
-        textFieldWidget.setMaxLength(builder.maxLength);
-        if (builder.editable != null) {
-            textFieldWidget.setEditable(builder.editable);
-        }
-        if (builder.placeholder != null) {
-            textFieldWidget.setPlaceholder(builder.placeholder);
-        }
-        if (builder.suggestion != null) {
-            textFieldWidget.setSuggestion(builder.suggestion);
-        }
-        if (builder.editableColor != null) {
-            textFieldWidget.setEditableColor(builder.editableColor);
-        }
-        if (builder.uneditableColor != null) {
-            textFieldWidget.setUneditableColor(builder.uneditableColor);
-        }
-        TextFieldElement element = new TextFieldElement(textFieldWidget);
+        String initialText = builder.textFieldWidget == null ? builder.text : builder.textFieldWidget.getText();
+        TextFieldElement element = new TextFieldElement(ValueAccessor.holder(initialText == null ? "" : initialText));
+        element.setMessage(builder.message);
+        element.setMaxLength(builder.maxLength);
         element.setText(builder.text == null ? "" : builder.text);
         if (builder.cursorToEnd != null) {
-            textFieldWidget.setCursorToEnd(builder.cursorToEnd);
+            element.setCursorToEnd(builder.cursorToEnd);
         }
         if (builder.borderColorProvider != null) {
             element.setBorderColorProvider(builder.borderColorProvider);
@@ -102,16 +76,6 @@ public final class DefaultElementSupplier implements ElementSupplier {
         }
         if (builder.focusUnlocked != null) {
             element.setFocusUnlocked(builder.focusUnlocked);
-        }
-        if (builder.changedListener != null || builder.listener != null) {
-            element.setChangedListener(str -> {
-                if (builder.changedListener != null) {
-                    builder.changedListener.accept(str);
-                }
-                if (builder.listener != null) {
-                    builder.listener.accept(str);
-                }
-            });
         }
         return applyCommon(element, builder);
     }

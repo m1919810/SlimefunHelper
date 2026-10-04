@@ -3,9 +3,7 @@ package me.matl114.hacks.utils.config;
 import com.mojang.serialization.Codec;
 import java.util.Objects;
 import java.util.Optional;
-import me.matl114.gui.basic.DisplayWidget;
 import me.matl114.gui.basic.TooltipHandler;
-import me.matl114.gui.complex.RawTextElement;
 import me.matl114.managers.config.NBTParsable;
 import me.matl114.managers.config.NBTType;
 import me.matl114.managers.config.Ref;
@@ -16,12 +14,15 @@ public record Label(String label) implements NBTParsable<Label> {
     public static NBTType<Label> TYPE = new NBTType<>(
             "label",
             Codec.STRING.xmap(Label::new, Label::label),
-            (w, x, y, dx, dy) -> {
+            (factory, w, x, y, dx, dy) -> {
                 String label = w.get().label();
-                return DisplayWidget.instance(x, y, dx, dy)
-                        .setRenderHandler(new RawTextElement(Text.translatableWithFallback(label, label), -1)
-                                .withTooltips(TooltipHandler.of(
-                                        ChatUtils.parseTooltipsTranslation(label + ".tooltips", ""))));
+                return factory.createTitle(
+                        el -> Text.translatableWithFallback(label, label),
+                        TooltipHandler.of(ChatUtils.parseTooltipsTranslation(label + ".tooltips", "")),
+                        x,
+                        y,
+                        dx,
+                        dy);
             },
             new Label(""));
 

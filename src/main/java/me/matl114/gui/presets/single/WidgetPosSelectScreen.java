@@ -6,6 +6,7 @@ import me.matl114.gui.WidgetUtils;
 import me.matl114.gui.basic.DisplayWidget;
 import me.matl114.gui.basic.ExecutableWidget;
 import me.matl114.gui.basic.InputHandler;
+import me.matl114.gui.basic.TextAlign;
 import me.matl114.gui.complex.RawTextElement;
 import me.matl114.utils.collections.FPoint;
 import net.minecraft.text.Text;
@@ -29,7 +30,7 @@ public class WidgetPosSelectScreen extends GenericScreen {
     protected void init() {
         super.init();
         DisplayWidget.instance(this.x, this.y, this.backgroundWidth, this.backgroundHeight)
-                .setRenderHandler(new RawTextElement(this::getTitleLabel, -1, 0))
+                .setRenderHandler(new RawTextElement(this::getTitleLabel, -1, TextAlign.MIDDLE))
                 .addTo(this);
         ;
         InputHandler selectHandler = WidgetUtils.createGridPosSelectInputHandler(selected::setX, selected::setY);

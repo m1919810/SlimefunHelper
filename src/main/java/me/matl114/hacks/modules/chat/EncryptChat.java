@@ -50,8 +50,8 @@ import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.config.ListModifyWidget;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.IconElement;
-import me.matl114.gui.elements.LabelElement;
 import me.matl114.gui.elements.MultiLineTextElement;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.gui.presets.lists.ListEntryWidgetController;
 import me.matl114.gui.presets.single.CenterScreen;
 import me.matl114.gui.presets.single.ConfirmingWidgetScreen;
@@ -132,35 +132,42 @@ public class EncryptChat extends BaseModule {
     }
 
     @Override
-    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
+    public void addCustomWidgets(
+            Consumer<DrawableWidget> acceptor,
+            int dx,
+            int dy,
+            int dblank,
+            me.matl114.gui.interfaces.ElementFactory factory) {
         acceptor.accept(ExecutableWidget.instance(0, dblank, dx, dy)
-                .setElementHandler(new ButtonElement(
-                                el -> {
-                                    ChatKeyEntry selected = keyList.getSelected();
-                                    if (selected == null) {
-                                        return Text.translatable("widget.encrypt-chat.key-list-editor")
-                                                .append("None");
-                                    }
-                                    String detail = "%s(%s%s)"
-                                            .formatted(
-                                                    selected.getName(),
-                                                    selected.getAlgorithm().name(),
-                                                    selected.getPhase().isEmpty() ? "" : "/phrase");
-                                    return Text.translatable("widget.encrypt-chat.key-list-editor")
-                                            .append(detail);
-                                },
-                                ButtonAction.run(this::openKeyListEditScreen))
-                        .withTooltips(TooltipHandler.of(Constants.openListEditTooltips()))));
+                .setElementHandler(factory.createButton(
+                        el -> {
+                            ChatKeyEntry selected = keyList.getSelected();
+                            if (selected == null) {
+                                return Text.translatable("widget.encrypt-chat.key-list-editor")
+                                        .append("None");
+                            }
+                            String detail = "%s(%s%s)"
+                                    .formatted(
+                                            selected.getName(),
+                                            selected.getAlgorithm().name(),
+                                            selected.getPhase().isEmpty() ? "" : "/phrase");
+                            return Text.translatable("widget.encrypt-chat.key-list-editor")
+                                    .append(detail);
+                        },
+                        TooltipHandler.of(Constants.openListEditTooltips()),
+                        ButtonAction.run(() -> openKeyListEditScreen(factory)),
+                        () -> true,
+                        () -> false)));
     }
 
-    private void openKeyListEditScreen() {
+    private void openKeyListEditScreen(ElementFactory factory) {
         List<ChatKeyEntry> currentList = new ArrayList<>(
                 keyList.entries().stream().map(ChatKeyEntry::copy).toList());
         int indexList = keyList.selected();
         MutableObject<ChatKeyEntry> index = new MutableObject<>(
                 (indexList >= 0 && indexList < currentList.size()) ? currentList.get(indexList) : null);
         ListEntryWidgetController controller = ListEntryWidgetController.mutable(
-                currentList, ChatKeyEntry::empty, value -> createEditRenderHandler(value, index), 30, 220);
+                currentList, ChatKeyEntry::empty, value -> createEditRenderHandler(factory, value, index), 30, 220);
         ConfirmingWidgetScreen confirmScreen = new ConfirmingWidgetScreen(
                 Text.translatable("widget.encrypt-chat.key-list-editor.title"),
                 (screen) -> new ListModifyWidget(controller, 0, 0, 330, screen.getContentHeight()),
@@ -171,7 +178,8 @@ public class EncryptChat extends BaseModule {
         confirmScreen.access().openFromCurrent();
     }
 
-    private DrawableWidget createEditRenderHandler(ChatKeyEntry entry, MutableObject<ChatKeyEntry> index) {
+    private DrawableWidget createEditRenderHandler(
+            ElementFactory factory, ChatKeyEntry entry, MutableObject<ChatKeyEntry> index) {
         SubScreenWidget subScreen = new SubScreenWidget(0, 0, 220, 20);
         ExecutableWidget.instance(2, 2, 16, 16)
                 .setElementHandler(IconElement.statedGuiPredicate(
@@ -189,25 +197,26 @@ public class EncryptChat extends BaseModule {
                         }))
                 .addToSub(subScreen);
         DisplayWidget.instance(45, 0, 100, 20)
-                .setRenderHandler(
-                        new LabelElement(ClickGui.INSTANCE.backGroundColor.get().withAlpha(64)))
+                .setRenderHandler(ClickGui.INSTANCE.getGuiElementFactory().createBackground())
                 .addToSub(subScreen);
         ExecutableWidget.instance(45, 0, 100, 20)
                 .setElementHandler(new MultiLineTextElement(
                         el -> Text.literal("%s\n(%s)"
                                 .formatted(entry.getName(), entry.getAlgorithm().name())),
-                        ClickGui.INSTANCE.configColor.get().withAlpha(255),
-                        0))
+                        ClickGui.INSTANCE.labelColor().withAlpha(255).color(),
+                        TextAlign.MIDDLE))
                 .addToSub(subScreen);
         ExecutableWidget.instance(155, 0, 60, 20)
-                .setElementHandler(new ButtonElement(
-                        TextProvider.of(Text.translatable("widget.encrypt-chat.open-editor")), ButtonAction.run(() -> {
+                .setElementHandler(factory.createExecuteButton(
+                        TextProvider.of(Text.translatable("widget.encrypt-chat.open-editor")),
+                        TooltipHandler.of(List.of()),
+                        ButtonAction.run(() -> {
                             var screen = WidgetUtils.createValueAccessorsEditScreen(
                                     Text.translatable("widget.encrypt-chat.open-editor.title"),
                                     List::of,
                                     createChatKeyEntryAccessors(entry),
                                     WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT,
-                                    WidgetUtils.DEFAULT_PALETTE);
+                                    factory);
                             new CenterScreen(screen).access().openFromCurrent();
                         })))
                 .addToSub(subScreen);

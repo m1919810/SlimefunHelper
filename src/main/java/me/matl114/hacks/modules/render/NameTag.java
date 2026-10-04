@@ -76,7 +76,7 @@ public class NameTag extends INameTag {
         Vec3d pos = player.player.getLerpedPos(tick).add(0, player.player.getHeight() + 0.5, 0);
         Vector2d screenPos = projector.apply(pos);
         if (screenPos != null) {
-            vdraw.pushMatrix();
+            vdraw.getMatrices().pushMatrix();
             try {
                 vdraw.getMatrices().translate((float) screenPos.x, (float) screenPos.y);
                 handleSize(vdraw);
@@ -92,7 +92,7 @@ public class NameTag extends INameTag {
                 //               }
                 // vdraw.drawText(mc.textRenderer, player.getNameForScoreboard(), 0,0, -1, true);
             } finally {
-                vdraw.popMatrix();
+                vdraw.getMatrices().popMatrix();
             }
         }
     }
@@ -158,7 +158,7 @@ public class NameTag extends INameTag {
             vdraw.getMatrices().pushMatrix();
             vdraw.getMatrices().scale(0.75F, 0.75F);
             vdraw.drawText(mc.textRenderer, player.otherInfoDisplay.asOrderedText(), (int) -lengthHalf, 0, -1, true);
-            vdraw.popMatrix();
+            vdraw.getMatrices().popMatrix();
         }
     }
 

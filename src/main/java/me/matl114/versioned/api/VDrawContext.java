@@ -22,9 +22,10 @@ public interface VDrawContext {
         return new DrawContext_v1_21_1(drawContext);
     }
     // These method push and pop DrawContext's matrixStack to ensure that it is same as getMatrices()
+    // Matrix changes stay local until a drawing operation needs the vanilla context.
     public DrawContext pushMatrix();
 
-    public DrawContext popMatrix();
+    public void popMatrix();
 
     public void pushLayer(int depth);
 
@@ -193,6 +194,7 @@ public interface VDrawContext {
     public void drawText(TextRenderer textRenderer, OrderedText text, int x, int y, int color, boolean shadow);
 
     public void drawText(TextRenderer textRenderer, @Nullable String text, int x, int y, int color, boolean shadow);
+
     // just pass the relative coord
     public void enableScissor(int x, int y, int width, int height);
 

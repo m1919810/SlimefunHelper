@@ -2,6 +2,7 @@ package me.matl114.gui.elements;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import me.matl114.gui.basic.AbstractElement;
+import me.matl114.gui.basic.ColorSampler;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.ExecutableWidget;
 import me.matl114.versioned.api.VDrawContext;
@@ -11,23 +12,36 @@ public class PlateElement extends AbstractElement {
     private static final int xTextureOffset = 0;
     private static final int yTextureOffset = 66;
     public static final Identifier TEXTURE = new Identifier("slimefunhelper", "textures/custom/recipecontainer.png");
-    private int color = -1; // 0xFFBB0000;
-    private boolean catchInteract;
+    private final ColorSampler color;
+    private final boolean catchInteract;
 
     public static PlateElement instance() {
-        return new PlateElement(false);
+        return new PlateElement(false, null);
+    }
+
+    public static PlateElement instance(ColorSampler color) {
+        return new PlateElement(false, color);
     }
 
     public static PlateElement catchInteract() {
-        return new PlateElement(true);
+        return new PlateElement(true, null);
+    }
+
+    public static PlateElement catchInteract(ColorSampler color) {
+        return new PlateElement(true, color);
     }
 
     public PlateElement() {
-        this(false);
+        this(false, null);
     }
 
     public PlateElement(boolean catchInteract) {
+        this(catchInteract, null);
+    }
+
+    public PlateElement(boolean catchInteract, ColorSampler color) {
         this.catchInteract = catchInteract;
+        this.color = color == null ? ColorSampler.of(-1) : color;
         showTooltips = false;
     }
 
@@ -40,11 +54,11 @@ public class PlateElement extends AbstractElement {
             float delta,
             float alpha,
             boolean shouldHighlight) {
-        color = -1;
-        float alpha1 = ((color >> 24) & 0xFF) / 255f;
-        float red = ((color >> 16) & 0xFF) / 255f;
-        float green = ((color >> 8) & 0xFF) / 255f;
-        float blue = (color & 0xFF) / 255f;
+        int sampledColor = color.getColorInt();
+        float alpha1 = ((sampledColor >> 24) & 0xFF) / 255f;
+        float red = ((sampledColor >> 16) & 0xFF) / 255f;
+        float green = ((sampledColor >> 8) & 0xFF) / 255f;
+        float blue = (sampledColor & 0xFF) / 255f;
         context.setShaderColor(red, green, blue, alpha1);
         RenderSystem.enableBlend();
         RenderSystem.blendFuncSeparate(770, 771, 1, 0);

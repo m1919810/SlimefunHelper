@@ -1,6 +1,7 @@
 package me.matl114.versioned.api;
 
 import org.joml.Matrix3f;
+import org.joml.Matrix3x2f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
@@ -22,6 +23,7 @@ public interface MatrixStack {
 
     public void multiply3D(Quaternionf quaternion);
 
+    public void set(Matrix3x2f matrix);
     static MatrixStack of(net.minecraft.client.util.math.MatrixStack matrixStack) {
         return (MatrixStack) matrixStack;
     }

@@ -84,8 +84,13 @@ public class ServerStorage extends BaseModule {
     }
 
     @Override
-    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
-        super.addCustomWidgets(acceptor, dx, dy, dblank);
+    public void addCustomWidgets(
+            Consumer<DrawableWidget> acceptor,
+            int dx,
+            int dy,
+            int dblank,
+            me.matl114.gui.interfaces.ElementFactory factory) {
+        super.addCustomWidgets(acceptor, dx, dy, dblank, factory);
         var pth = path.add("persistent-storage-name-mapper");
         NBTRef<PrimitivePairList<String, String>> ref = new NBTRef<>(new PrimitivePairList<>(
                 "widget.server-storage.ip",
@@ -96,7 +101,7 @@ public class ServerStorage extends BaseModule {
         ref.addUpdateListener(s -> {
             updateServerFolder(serverFolder.withIpToFolder(CollectionUtils.pairListToMap(s.list())));
         });
-        acceptor.accept(createRefEditor(pth.asString(), ref, 0, dblank, dx, dy));
+        acceptor.accept(createRefEditor(pth.asString(), ref, 0, dblank, dx, dy, factory));
         var pth2 = path.add("ip-proxies");
         NBTRef<PrimitivePairList<String, String>> ref2 = new NBTRef<>(new PrimitivePairList<>(
                 "widget.server-storage.proxy",
@@ -106,7 +111,7 @@ public class ServerStorage extends BaseModule {
                 CollectionUtils.mapToPairList(serverFolder.ipProxy())));
         ref2.addUpdateListener(
                 s -> updateServerFolder(serverFolder.withIpProxy(CollectionUtils.pairListToMap(s.list()))));
-        acceptor.accept(createRefEditor(pth2.asString(), ref2, 0, dblank, dx, dy));
+        acceptor.accept(createRefEditor(pth2.asString(), ref2, 0, dblank, dx, dy, factory));
     }
 
     public String getSaveId(String ip) {

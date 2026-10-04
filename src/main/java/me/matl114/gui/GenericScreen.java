@@ -75,12 +75,14 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
     }
 
     protected Draggable draggingElement = null;
+    protected int draggingButton = -1;
 
     @Override
     public final boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0) {
+        if (button == this.draggingButton && draggingElement != null) {
             // stop dragging here
             releaseDrag(this, mouseX, mouseY);
+            this.draggingButton = -1;
         }
         return super.mouseReleased(mouseX, mouseY, button);
     }
@@ -88,8 +90,10 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
     @Override
     public final boolean mouseClicked(double mouseX, double mouseY, int button) {
         boolean val = super.mouseClicked(mouseX, mouseY, button);
-        if (button == 0) {
-            startDrag(this, mouseX, mouseY);
+        if (button == 0 || button == 1) {
+            if (startDrag(this, mouseX, mouseY)) {
+                this.draggingButton = button;
+            }
         }
         return val;
     }
@@ -97,7 +101,7 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
     @Override
     public final boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         return this.draggingElement != null
-                && button == 0
+                && button == this.draggingButton
                 && this.draggingElement.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
 

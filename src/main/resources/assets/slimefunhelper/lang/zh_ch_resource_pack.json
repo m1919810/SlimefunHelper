@@ -238,5 +238,11 @@
 	
 	"widget.click-gui.module-name.Survival.XaeroHelper": "Xaero助手",
 	
-	"widget.click-gui.module-name.Extra.AutoLogout": "自动退出"
+	"widget.click-gui.module-name.Extra.AutoLogout": "自动退出",
+	"configenum.text-align-type.left": "左对齐",
+	"configenum.text-align-type.middle": "居中对齐",
+	"configenum.text-align-type.right": "右对齐",
+	"configenum.gui-style.vanilla": "原版",
+	"configenum.gui-style.custom": "自定义",
+	"widget.gui-settings.text-config.text_align": "文本对齐"
 }

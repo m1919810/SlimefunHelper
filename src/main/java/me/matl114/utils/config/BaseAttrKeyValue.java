@@ -11,8 +11,8 @@ import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 import lombok.Getter;
 import lombok.Setter;
-import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.DrawableWidget;
+import me.matl114.gui.interfaces.ElementFactory;
 import org.jetbrains.annotations.Nullable;
 
 public class BaseAttrKeyValue<T> implements AttrKeyValue<T>, Cloneable {
@@ -110,8 +110,7 @@ public class BaseAttrKeyValue<T> implements AttrKeyValue<T>, Cloneable {
         }
     }
 
-    @Getter
-    List<Predicate<T>> validators = new ArrayList<>();
+    private List<Predicate<T>> validators = new ArrayList<>();
 
     @Getter
     List<Consumer<T>> listeners = new ArrayList<>();
@@ -186,6 +185,11 @@ public class BaseAttrKeyValue<T> implements AttrKeyValue<T>, Cloneable {
         validators.add(validator);
     }
 
+    @Override
+    public final List<Predicate<T>> getValidators() {
+        return validators;
+    }
+
     public final void setUpdater(Supplier<T> updater) {
         this.updater = updater;
         checkUpdate();
@@ -214,7 +218,7 @@ public class BaseAttrKeyValue<T> implements AttrKeyValue<T>, Cloneable {
     }
 
     public static <T> DrawableWidget generateTextInputValueWidget(
-            AttrKeyValue<T> attrKeyValue, int x, int y, int inputDx, int dy) {
-        return McWidgetHelpers.createAttrValueEditBox(attrKeyValue, x, y, inputDx, dy);
+            ElementFactory factory, AttrKeyValue<T> attrKeyValue, int x, int y, int inputDx, int dy) {
+        return factory.createInput(attrKeyValue, x, y, inputDx, dy);
     }
 }

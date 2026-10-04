@@ -91,7 +91,7 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
             }
         }
         int yLevel = 0;
-        context.pushMatrix();
+        context.getMatrices().pushMatrix();
         for (var ch : children) {
             boolean disable = ch != selected;
 
@@ -106,7 +106,7 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
                 context.getMatrices().translate(0, height);
             }
         }
-        context.popMatrix();
+        context.getMatrices().popMatrix();
     }
 
     @Override

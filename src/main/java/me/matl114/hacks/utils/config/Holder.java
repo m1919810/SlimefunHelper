@@ -80,7 +80,7 @@ public record Holder<T>(Registry<T> registry, @Nullable T entry, String asString
         return new NBTType<Holder<T>>(
                 "holder",
                 Codec.STRING.comapFlatMap(Holder::parse, Holder::asString),
-                (w, x, y, dx, dy) -> {
+                (factory, w, x, y, dx, dy) -> {
                     Holder<T> holder = w.get();
                     Registry<T> registry = holder.registry;
                     WrapperFactory<Optional<T>, Holder<T>> wrapperFactory = WrapperFactory.of(
@@ -98,11 +98,13 @@ public record Holder<T>(Registry<T> registry, @Nullable T entry, String asString
                                 }
                             },
                             t -> t.map(stringifyFactory::get).orElse(DEFAULT_EMPTY_STRING));
-                    AttrKeyValue.CustomWidgetGenerator<Optional<T>> widgetFactory = (s, x1, y1, dx1, dy1) -> {
-                        return RegistryAttrKeyValue.generateTextInputWithRegistrySearch(registry, s, x1, y1, dx1, dy1);
-                    };
+                    AttrKeyValue.CustomWidgetGenerator<Optional<T>> widgetFactory =
+                            (elementFactory, s, x1, y1, dx1, dy1) -> {
+                                return RegistryAttrKeyValue.generateTextInputWithRegistrySearch(
+                                        elementFactory, registry, s, x1, y1, dx1, dy1);
+                            };
                     return new TypeConvertAttrKeyValue<>(w, wrapperFactory, widgetFactory, stringifyFactoryWithDefault)
-                            .generateValueWidget(x, y, dx, dy);
+                            .generateValueWidget(factory, x, y, dx, dy);
                 },
                 WrapperFactory.of(s -> Holder.<T>parse(s).getOrThrow(), Holder::asString),
                 Holder.of((Registry<T>) Registries.ITEM, null));
