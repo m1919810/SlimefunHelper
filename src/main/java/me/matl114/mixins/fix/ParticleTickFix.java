@@ -6,12 +6,19 @@ import net.minecraft.client.world.ClientWorld;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Particle.class)
 public abstract class ParticleTickFix {
+    @Unique
+    private boolean previousCollidesWithWorld;
+
+    @Unique
+    private boolean collisionOverrideActive;
+
     @Shadow
     protected boolean collidesWithWorld;
 
@@ -23,7 +30,17 @@ public abstract class ParticleTickFix {
     private void onMove(CallbackInfo ci) {
         if (world.isClient()
                 && RenderTasks.getRenderOptimize().enableParticleTickOpt.get()) {
+            previousCollidesWithWorld = collidesWithWorld;
+            collisionOverrideActive = true;
             collidesWithWorld = false;
+        }
+    }
+
+    @Inject(method = "move(DDD)V", at = @At("RETURN"))
+    private void restoreCollisionState(CallbackInfo ci) {
+        if (collisionOverrideActive) {
+            collidesWithWorld = previousCollidesWithWorld;
+            collisionOverrideActive = false;
         }
     }
 }
