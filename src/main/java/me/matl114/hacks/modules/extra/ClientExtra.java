@@ -95,9 +95,6 @@ public class ClientExtra extends BaseModule {
             .registerHotkey(HotKeyUtils.asHandler(this::onBlankScreenCreate))
             .build();
 
-    public final FlagRef paletteException =
-            flagBuilder(other.add("fix-palette-exception")).build();
-
     public final FlagRef logServerExiting =
             flagBuilder(other.add("log-self-server-leaving")).build();
 

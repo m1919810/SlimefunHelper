@@ -44,9 +44,6 @@ public abstract class EditBoxWidgetMixin extends ScrollableTextFieldWidget imple
     @Shadow
     protected abstract void moveCursor(double mouseX, double mouseY);
 
-    @Shadow
-    protected abstract double getDeltaYPerScroll();
-
     @Unique
     @Nonnull
     private ColorProvider boxColorProvider = ORIGIN_PROVIDER;
