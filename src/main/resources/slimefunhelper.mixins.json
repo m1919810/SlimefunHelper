@@ -108,7 +108,6 @@
 		"hack.MinecraftClientMixin",
 		"hack.PlayerAbilityMixin",
 		"hack.PlayerEntityMixin",
-		"hack.PlayerEntityRendererMixin",
 		"hack.ResourcePackPositionMixin",
 		"hack.ScreenMixin",
 		"hack.SlimeBlockMixin",

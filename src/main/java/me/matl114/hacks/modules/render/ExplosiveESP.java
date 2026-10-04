@@ -21,8 +21,8 @@ import me.matl114.utils.*;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.decoration.EndCrystalEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -59,7 +59,8 @@ public class ExplosiveESP extends BaseModule {
             .defaultValue(new WrapColor(Formatting.LIGHT_PURPLE))
             .build();
 
-    public final FlagRef highlightCrystal = flagBuilder(root.add("highlight-crystal")).build();
+    public final FlagRef highlightCrystal =
+            flagBuilder(root.add("highlight-crystal")).build();
 
     private final RenderCollector<Box> boxOutlineCollector = RenderCollectors.createBoxCollector(true, false, false);
     private final RenderCollector<RenderElements.Text> textCollector = RenderCollectors.createTextCollector();

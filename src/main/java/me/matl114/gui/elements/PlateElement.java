@@ -1,6 +1,7 @@
 package me.matl114.gui.elements;
 
 import me.matl114.gui.basic.AbstractElement;
+import me.matl114.gui.basic.ColorSampler;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.ExecutableWidget;
 import me.matl114.versioned.api.VDrawContext;
@@ -10,23 +11,40 @@ public class PlateElement extends AbstractElement {
     private static final int xTextureOffset = 0;
     private static final int yTextureOffset = 66;
     public static final Identifier TEXTURE = new Identifier("slimefunhelper", "textures/custom/recipecontainer.png");
-    private int color = -1; // 0xFFBB0000;
+    private final ColorSampler color;
     private boolean catchInteract;
 
     public static PlateElement instance() {
         return new PlateElement(false);
     }
 
+    public static PlateElement instance(ColorSampler color) {
+        return new PlateElement(false, color);
+    }
+
     public static PlateElement catchInteract() {
         return new PlateElement(true);
+    }
+
+    public static PlateElement catchInteract(ColorSampler color) {
+        return new PlateElement(true, color);
     }
 
     public PlateElement() {
         this(false);
     }
 
+    public PlateElement(ColorSampler color) {
+        this(false, color);
+    }
+
     public PlateElement(boolean catchInteract) {
+        this(catchInteract, ColorSampler.WHITE);
+    }
+
+    public PlateElement(boolean catchInteract, ColorSampler color) {
         this.catchInteract = catchInteract;
+        this.color = color;
         showTooltips = false;
     }
 
@@ -39,12 +57,7 @@ public class PlateElement extends AbstractElement {
             float delta,
             float alpha,
             boolean shouldHighlight) {
-        color = -1;
-        float alpha1 = ((color >> 24) & 0xFF) / 255f;
-        float red = ((color >> 16) & 0xFF) / 255f;
-        float green = ((color >> 8) & 0xFF) / 255f;
-        float blue = (color & 0xFF) / 255f;
-        context.setShaderColor(red, green, blue, alpha1);
+        context.setShaderColor(color.getColorInt());
         int width = element.getTextureWidth();
         int height = element.getTextureHeight();
         context.drawTexture(TEXTURE, 0, 0, 106 + xTextureOffset, 124 + yTextureOffset, 8, 8);
@@ -110,7 +123,7 @@ public class PlateElement extends AbstractElement {
                 (248 + xTextureOffset) / 256f,
                 (132 + yTextureOffset) / 256f,
                 (182 + yTextureOffset) / 256f);
-        context.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        context.setShaderColor(-1);
     }
 
     @Override

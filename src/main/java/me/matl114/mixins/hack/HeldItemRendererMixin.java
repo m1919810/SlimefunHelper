@@ -5,19 +5,15 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.matl114.hacks.modules.render.HandView;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.render.item.HeldItemRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemDisplayContext;
-import net.minecraft.util.Arm;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.Hand;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Environment(EnvType.CLIENT)
 @Mixin(HeldItemRenderer.class)
@@ -49,40 +45,5 @@ public abstract class HeldItemRendererMixin {
         HandView.INSTANCE.applyHandTransform(matrices, hand);
         original.call(instance, entity, item, renderMode, matrices, queue, light);
         matrices.pop();
-    }
-
-    @Inject(
-            method =
-                    "renderArmHoldingItem(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;IFFLnet/minecraft/util/Arm;)V",
-            at = @At("HEAD"))
-    private void applyArmTransform(
-            MatrixStack matrices,
-            OrderedRenderCommandQueue queue,
-            int light,
-            float equipProgress,
-            float swingProgress,
-            Arm arm,
-            CallbackInfo ci) {
-        if (HandView.INSTANCE != null && HandView.INSTANCE.isActive()) {
-            matrices.push();
-            HandView.INSTANCE.applyArmTransform(matrices);
-        }
-    }
-
-    @Inject(
-            method =
-                    "renderArmHoldingItem(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;IFFLnet/minecraft/util/Arm;)V",
-            at = @At("RETURN"))
-    private void restoreArmTransform(
-            MatrixStack matrices,
-            OrderedRenderCommandQueue queue,
-            int light,
-            float equipProgress,
-            float swingProgress,
-            Arm arm,
-            CallbackInfo ci) {
-        if (HandView.INSTANCE != null && HandView.INSTANCE.isActive()) {
-            matrices.pop();
-        }
     }
 }

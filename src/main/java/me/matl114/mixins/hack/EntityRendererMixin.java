@@ -20,8 +20,7 @@ public abstract class EntityRendererMixin {
             at =
                     @At(
                             value = "FIELD",
-                            target =
-                                    "Lnet/minecraft/client/render/entity/state/EntityRenderState;outlineColor:I",
+                            target = "Lnet/minecraft/client/render/entity/state/EntityRenderState;outlineColor:I",
                             opcode = Opcodes.PUTFIELD,
                             shift = At.Shift.AFTER))
     private void applyCustomHighlight(Entity entity, EntityRenderState state, float tickProgress, CallbackInfo ci) {

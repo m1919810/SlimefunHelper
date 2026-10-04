@@ -567,6 +567,9 @@ public class RenderTasks {
     @Getter
     private static EnchantmentDisplay enchantmentDisplay;
 
+    @Getter
+    private static ShulkerDisplay shulkerDisplay;
+
     private static void initModules(ModuleManager m) {
         renderExtra = new RenderExtra().register(m);
         noRender = new NoRender().register(m);
@@ -598,6 +601,7 @@ public class RenderTasks {
         equipmentHud = new EquipmentHud().register(m);
         storageDisplay = new StorageDisplay().register(m);
         enchantmentDisplay = new EnchantmentDisplay().register(m);
+        shulkerDisplay = new ShulkerDisplay().register(m);
     }
 
     static {
