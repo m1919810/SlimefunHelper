@@ -8,8 +8,10 @@ import javax.annotation.Nonnull;
 import lombok.AllArgsConstructor;
 import lombok.With;
 import me.matl114.accessors.events.ItemRenderStateAccess;
+import me.matl114.events.RenderListener;
 import net.minecraft.client.item.ItemModelManager;
 import net.minecraft.client.render.item.ItemRenderState;
+import net.minecraft.client.render.item.model.ItemModel;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.component.DataComponentTypes;
@@ -47,17 +49,14 @@ public interface GuiModel {
         return new ItemStackModel(stack);
     }
 
-    //    public static GuiModel of(ItemModel model){
-    //        if(model == null)return EMPTY;
-    //        return new ItemGuiModel(model);
-    //    }
+    public static GuiModel of(ItemModel model) {
+        if (model == null) return EMPTY;
+        return new ItemGuiModel(model);
+    }
 
     public static GuiModel of(Identifier id) {
         if (id == null) return EMPTY;
-        //        return new ItemGuiModel(RenderListener.getCustomModelOf(id));
-        ItemStack stack = new ItemStack(Items.BARRIER);
-        stack.set(DataComponentTypes.ITEM_MODEL, id);
-        return new ItemStackModel(stack);
+        return of(RenderListener.getCustomModelOf(id));
     }
 
     default void update(
@@ -125,30 +124,34 @@ public interface GuiModel {
             return null;
         }
     }
-    //
-    //    @AllArgsConstructor
-    //    public static class ItemGuiModel implements GuiModel{
-    //        ItemModel itemModel;
-    //
-    //        @Override
-    //        public Entry updateAndSubmit(ItemRenderState renderState, ItemStack stack, ItemModelManager resolver,
-    // ItemDisplayContext displayContext,  ClientWorld world,  HeldItemContext heldItemContext, int
-    // seed) {
-    //            if(itemModel != null){
-    //                ItemRenderState state2 = new ItemRenderState();
-    //                // init attached info
-    //                renderState.clear();
-    //                renderState.displayContext = displayContext;
-    //                renderState.setOversizedInGui(false);
-    //                itemModel.update(renderState, new ItemStack(Items.BARRIER), resolver, displayContext, world,
-    // heldItemContext, seed);
-    //                return new Entry(null, state2);
-    //            }else {
-    //                return null;
-    //            }
-    //
-    //        }
-    //    }
+
+    @AllArgsConstructor
+    public static class ItemGuiModel implements GuiModel {
+        ItemModel itemModel;
+
+        @Override
+        public Entry updateAndSubmit(
+                ItemRenderState renderState,
+                ItemStack stack,
+                ItemModelManager resolver,
+                ItemDisplayContext displayContext,
+                @Nullable ClientWorld world,
+                @Nullable HeldItemContext heldItemContext,
+                int seed) {
+            if (itemModel == null) {
+                return null;
+            }
+
+            ItemRenderState state2 = new ItemRenderState();
+            state2.clear();
+            ItemRenderStateAccess.of(state2).setDisplayContext(displayContext);
+            state2.setOversizedInGui(false);
+            itemModel.update(
+                    state2, new ItemStack(Items.BARRIER), resolver, displayContext, world, heldItemContext, seed);
+            return new Entry(null, state2);
+        }
+    }
+
     @AllArgsConstructor
     public static class PackingModel implements GuiModel {
         List<GuiModel> guiModelList;

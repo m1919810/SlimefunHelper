@@ -40,6 +40,11 @@ public abstract class ItemRenderStateEvents implements ItemRenderStateAccess {
         }
     }
 
+    @Override
+    public void setDisplayContext(ItemDisplayContext displayContext) {
+        this.displayContext = displayContext;
+    }
+
     @Inject(method = "render", at = @At("RETURN"))
     private void onRender1(
             MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, CallbackInfo ci) {
