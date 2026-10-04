@@ -8,21 +8,21 @@ import me.matl114.events.annotations.Cancelable;
 import me.matl114.events.annotations.ExtraArgs;
 import me.matl114.events.annotations.Modifiable;
 import me.matl114.events.channels.EventChannel;
+import me.matl114.events.channels.EventChannelDispatcher;
 import me.matl114.events.impl.Render2D;
 import me.matl114.events.impl.Render3D;
+import me.matl114.events.impl.RenderScreen;
+import me.matl114.events.impl.RenderSlot;
 import me.matl114.events.model.GuiModel;
 import me.matl114.utils.Debug;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.render.item.model.ItemModel;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.resource.ResourceManager;
-import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.crash.CrashException;
@@ -117,33 +117,13 @@ public class RenderListener {
     }
 
     @Getter
-    @Broadcast
-    @ExtraArgs(
-            value = {HandledScreen.class, Slot.class},
-            names = {"renderer", "stack"})
-    private static final EventChannel<DrawContext> renderSlot = new EventChannel<>();
-
-    public static void renderSlotInScreen(DrawContext context, HandledScreen<?> renderer, Slot stack) {
-        if (renderSlot.isEmpty()) return;
-        Event<DrawContext> contextEvent = new Event<>(context, false, false, renderer, stack);
-        renderSlot.handleValue(contextEvent);
-    }
+    @Cancelable
+    private static final EventChannel<RenderSlot> renderSlot = new EventChannel<>();
 
     @Getter
-    @Broadcast
-    @ExtraArgs(
-            value = {HandledScreen.class, int.class, int.class, float.class},
-            names = {"renderer", "mouseX", "mouseY", "delta"})
-    private static final EventChannel<DrawContext> renderHandledScreen = new EventChannel<>();
-
-    public static void renderHandledScreen(
-            DrawContext context, HandledScreen<?> screen, int mouseX, int mouseY, float delta) {
-        if (renderHandledScreen.isEmpty()) {
-            return;
-        }
-        Event<DrawContext> contextEvent = new Event<>(context, false, false, screen, mouseX, mouseY, delta);
-        renderHandledScreen.handleValue(contextEvent);
-    }
+    @Cancelable
+    private static final EventChannelDispatcher<RenderScreen> renderScreen = new EventChannelDispatcher<>(
+            (v) -> Listener.screenClassIdentifierMapper.apply(v.screen().getClass()));
 
     @Getter
     @Broadcast

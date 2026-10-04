@@ -1,7 +1,11 @@
 package me.matl114.mixins.events;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import java.util.Iterator;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.RenderSlot;
+import me.matl114.versioned.api.VDrawContext;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.DrawContext;
@@ -32,19 +36,23 @@ public abstract class HandledScreenEvents extends Screen {
                             target = "Lnet/minecraft/client/util/math/MatrixStack;translate(FFF)V",
                             shift = At.Shift.AFTER))
     public void onRenderBegin(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-        RenderListener.renderHandledScreen(context, (HandledScreen<?>) (Object) this, mouseX, mouseY, delta);
+        // RenderListener.renderHandledScreen(context, (HandledScreen<?>) (Object) this, mouseX, mouseY, delta);
     }
 
-    @Inject(
+    @WrapOperation(
             method = "drawSlots",
             at =
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;drawSlot(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/screen/slot/Slot;)V"),
-            locals = LocalCapture.CAPTURE_FAILHARD)
-    public void onRenderSlot(DrawContext context, CallbackInfo ci, Iterator var2, Slot slot) {
-        RenderListener.renderSlotInScreen(context, (HandledScreen<?>) (Object) this, slot);
+                                    "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;drawSlot(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/screen/slot/Slot;II)V"))
+    public void onRenderSlot(
+            HandledScreen instance, DrawContext context, Slot slot, int mouseX, int mouseY, Operation<Void> original) {
+        if (!RenderListener.getRenderSlot()
+                .fireEvent(new RenderSlot(VDrawContext.of(context), instance, slot, mouseX, mouseY))) {
+            return;
+        }
+        original.call(instance, context, slot, mouseX, mouseY);
     }
 
     // fix mouse scroll dispatch

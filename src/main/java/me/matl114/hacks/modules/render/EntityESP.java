@@ -128,7 +128,6 @@ public class EntityESP extends BaseModule {
         boolean enable = this.enable.get();
 
         var whitelist = whiteList.get().set();
-        var glowMap = highLightSettings.get();
         for (Entity entity : mc.world.getEntities()) {
             if (entity == mc.gameRenderer.getCamera().getFocusedEntity()) continue;
             if (entity == null || entity.isRemoved()) {
@@ -136,23 +135,14 @@ public class EntityESP extends BaseModule {
             } else {
                 EntityInternalAccess<?> access = EntityInternalAccess.of(entity);
                 int renderLevel = access.renderTrackedLevel();
-                if (!glowMap.getEntryValueOr(entity.getType(), false)) {
-                    access.setGlow0(false);
-                }
                 if (renderLevel == EntityInternalAccess.RENDER_LEVEL_WHITELIST) {
                     if (!whitelist.contains(entity.getType())) {
-                        access.setGlow0(false);
                         access.markRenderTracked(EntityInternalAccess.RENDER_LEVEL_DISABLE);
                         continue;
                     }
                 }
                 if ((renderLevel == EntityInternalAccess.RENDER_LEVEL_WHITELIST && enable)
                         || renderLevel == EntityInternalAccess.RENDER_LEVEL_FORCE) {
-                    if (glowMap.getEntryValueOr(entity.getType(), false)) {
-                        if (!entity.isGlowing()) {
-                            access.setGlow0(true);
-                        }
-                    }
                     entities.add(entity);
                 }
                 if (renderLevel == EntityInternalAccess.RENDER_LEVEL_DISABLE) {
@@ -162,6 +152,25 @@ public class EntityESP extends BaseModule {
                 }
             }
         }
+    }
+
+    public Integer getHighlightColor(Entity entity) {
+        if (entity == null || !highLightSettings.get().getEntryValueOr(entity.getType(), false)) {
+            return null;
+        }
+
+        EntityInternalAccess<?> access = EntityInternalAccess.of(entity);
+        int renderLevel = access.renderTrackedLevel();
+        if (renderLevel == EntityInternalAccess.RENDER_LEVEL_WHITELIST) {
+            if (!enable.get() || !whiteList.get().set().contains(entity.getType())) {
+                return null;
+            }
+        } else if (renderLevel != EntityInternalAccess.RENDER_LEVEL_FORCE) {
+            return null;
+        }
+
+        TextColor color = renderColor.get().getEntryValue(entity.getType());
+        return color == null ? null : ColorUtils.withAlphaInt(color.getRgb(), 255);
     }
 
     public void onRender3D(Event<Render3D> stackE) {

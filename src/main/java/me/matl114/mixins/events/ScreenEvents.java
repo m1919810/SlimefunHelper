@@ -8,14 +8,14 @@ import lombok.Setter;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.accessors.interfaces.MetadataHolder;
 import me.matl114.events.Listener;
+import me.matl114.events.RenderListener;
+import me.matl114.events.impl.RenderScreen;
 import me.matl114.gui.basic.DisplayWidget;
+import me.matl114.versioned.api.VDrawContext;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.AbstractParentElement;
-import net.minecraft.client.gui.Drawable;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.Selectable;
+import net.minecraft.client.gui.*;
 import net.minecraft.client.gui.screen.Screen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -184,6 +184,71 @@ public abstract class ScreenEvents extends AbstractParentElement implements Meta
         if (parent != null) {
             args.set(0, parent);
             parent = null;
+        }
+    }
+
+    @Inject(
+            method = "renderWithTooltip",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/gui/screen/Screen;renderBackground(Lnet/minecraft/client/gui/DrawContext;IIF)V",
+                            shift = At.Shift.BEFORE),
+            cancellable = true)
+    private void onRenderPre(DrawContext context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+        if (!RenderListener.getRenderScreen()
+                .fireEvent(new RenderScreen(
+                        VDrawContext.of(context),
+                        (Screen) (Object) this,
+                        RenderScreen.Stage.PRE,
+                        mouseX,
+                        mouseY,
+                        deltaTicks))) {
+            ci.cancel();
+        }
+    }
+
+    @Inject(
+            method = "renderWithTooltip",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/gui/screen/Screen;render(Lnet/minecraft/client/gui/DrawContext;IIF)V",
+                            shift = At.Shift.BEFORE),
+            cancellable = true)
+    private void onRenderMid(DrawContext context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+        if (!RenderListener.getRenderScreen()
+                .fireEvent(new RenderScreen(
+                        VDrawContext.of(context),
+                        (Screen) (Object) this,
+                        RenderScreen.Stage.MID,
+                        mouseX,
+                        mouseY,
+                        deltaTicks))) {
+            ci.cancel();
+        }
+    }
+
+    @Inject(
+            method = "renderWithTooltip",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/client/gui/DrawContext;drawDeferredElements()V",
+                            shift = At.Shift.BEFORE),
+            cancellable = true)
+    private void onRenderPost(DrawContext context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+        if (!RenderListener.getRenderScreen()
+                .fireEvent(new RenderScreen(
+                        VDrawContext.of(context),
+                        (Screen) (Object) this,
+                        RenderScreen.Stage.POST,
+                        mouseX,
+                        mouseY,
+                        deltaTicks))) {
+            ci.cancel();
         }
     }
 }

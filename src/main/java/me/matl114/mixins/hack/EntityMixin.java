@@ -48,21 +48,6 @@ public abstract class EntityMixin<T extends Entity> implements EntityAccess<T>, 
         renderTracked = tracked;
     }
 
-    @Unique
-    boolean clientGlowEffect = false;
-
-    @Override
-    public void setGlow0(boolean glow) {
-        clientGlowEffect = glow;
-    }
-
-    @Inject(method = "isGlowing", at = @At("HEAD"), cancellable = true)
-    public void onGlowEffect(CallbackInfoReturnable<Boolean> cir) {
-        if (clientGlowEffect) {
-            cir.setReturnValue(true);
-        }
-    }
-
     //    @Inject(
     //            method = "slowMovement",
     //            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;onLanding()V", shift =
