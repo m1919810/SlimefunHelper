@@ -44,6 +44,12 @@ public class ExtraTasks {
     private static AntiAFK antiAFK;
 
     @Getter
+    private static PlayerLog playerLog;
+
+    @Getter
+    private static PlayerQueue playerQueue;
+
+    @Getter
     public static Warps warps;
 
     @Getter
@@ -57,6 +63,9 @@ public class ExtraTasks {
 
     @Getter
     public static SoundNotify soundNotify;
+
+    @Getter
+    private static NoSound noSound;
 
     @Getter
     public static FakePlayer fakePlayer;
@@ -77,12 +86,15 @@ public class ExtraTasks {
         autoReconnect = new AutoReconnect().register(m);
         autoLogout = new AutoLogout().register(m);
         antiAFK = new AntiAFK().register(m);
+        playerLog = new PlayerLog().register(m);
+        playerQueue = new PlayerQueue().register(m);
         warps = new Warps().register(m);
         boatVClip = new BoatVClip().register(m);
 
         skinBlink = new SkinBlink().register(m);
         eventNotify = new EventNotify().register(m);
         soundNotify = new SoundNotify().register(m);
+        noSound = new NoSound().register(m);
         fakePlayer = new FakePlayer().register(m);
         fakeLag = new FakeLag().register(m);
     }

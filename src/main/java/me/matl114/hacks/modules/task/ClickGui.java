@@ -406,7 +406,7 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                                     }
                                 })
                                 : ButtonAction.run(() -> openConfigurateScreen(baseModule, metaData)),
-                        () -> false,
+                        () -> true,
                         () -> bindFlag != null && bindFlag.get()));
     }
 

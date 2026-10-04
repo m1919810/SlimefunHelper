@@ -1,4 +1,4 @@
-package me.matl114.hacks.modules.render;
+package me.matl114.hacks.modules.extra;
 
 import java.util.Map;
 import java.util.Set;
@@ -26,7 +26,13 @@ public class NoSound extends BaseModule {
         bindFlag(enable);
     }
 
-    public ModulePath root = makePath(Configs.RENDER_CONFIG, "sounds.no-sounds");
+    {
+        portConfigs(
+                makePath(Configs.RENDER_CONFIG, "sounds.no-sounds"),
+                makePath(Configs.EXTRA_CONFIG, "sounds.no-sounds"));
+    }
+
+    public ModulePath root = makePath(Configs.EXTRA_CONFIG, "sounds.no-sounds");
 
     public final FlagRef enable = flagBuilder(root.addEnable()).build();
 
