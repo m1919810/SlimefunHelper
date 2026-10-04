@@ -12,6 +12,11 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.render.model.BakedModel;
+import me.matl114.accessors.events.ItemRenderStateAccess;
+import me.matl114.events.RenderListener;
+import net.minecraft.client.item.ItemModelManager;
+import net.minecraft.client.render.item.ItemRenderState;
+import net.minecraft.client.render.item.model.ItemModel;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
@@ -46,17 +51,14 @@ public interface GuiModel {
         return new ItemStackModel(stack);
     }
 
-    //    public static GuiModel of(ItemModel model){
-    //        if(model == null)return EMPTY;
-    //        return new ItemGuiModel(model);
-    //    }
+//    public static GuiModel of(ItemModel model) {
+//        if (model == null) return EMPTY;
+//        return new ItemGuiModel(model);
+//    }
 
     public static GuiModel of(Identifier id) {
         if (id == null) return EMPTY;
-        //        return new ItemGuiModel(RenderListener.getCustomModelOf(id));
-        ItemStack stack = new ItemStack(Items.BARRIER);
-        BakedModel model = RenderListener.getCustomModelOf(id);
-        return new ItemGuiModel(stack, model);
+        return of(RenderListener.getCustomModelOf(id));
     }
 
     default void render(
@@ -130,6 +132,33 @@ public interface GuiModel {
         @Override
         public Entry updateAndSubmit(ItemRenderer itemRenderer) {
             return new Entry(null, itemStack, itemModel);
+        }
+    }
+
+    @AllArgsConstructor
+    public static class ItemGuiModel implements GuiModel {
+        ItemModel itemModel;
+
+        @Override
+        public Entry updateAndSubmit(
+                ItemRenderState renderState,
+                ItemStack stack,
+                ItemModelManager resolver,
+                ItemDisplayContext displayContext,
+                @Nullable ClientWorld world,
+                @Nullable HeldItemContext heldItemContext,
+                int seed) {
+            if (itemModel == null) {
+                return null;
+            }
+
+            ItemRenderState state2 = new ItemRenderState();
+            state2.clear();
+            ItemRenderStateAccess.of(state2).setDisplayContext(displayContext);
+            state2.setOversizedInGui(false);
+            itemModel.update(
+                    state2, new ItemStack(Items.BARRIER), resolver, displayContext, world, heldItemContext, seed);
+            return new Entry(null, state2);
         }
     }
 
