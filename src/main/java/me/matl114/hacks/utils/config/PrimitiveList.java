@@ -101,20 +101,21 @@ public class PrimitiveList<W> implements NBTParsable<PrimitiveList<W>> {
                                         .optionalFieldOf("default_primitive")
                                         .<PrimitiveList<W>>forGetter(PrimitiveList::defaultPrimitive))
                         .apply(oInstance, PrimitiveList::new)),
-                (AttrKeyValue.CustomWidgetGenerator<PrimitiveList<W>>) (w, x, y, dx, dy) -> {
+                (AttrKeyValue.CustomWidgetGenerator<PrimitiveList<W>>) (factory, w, x, y, dx, dy) -> {
                     PrimitiveList<W> map = w.get();
                     NBTType<W> type = map.elementType();
-                    AttrKeyValue.CustomWidgetGenerator<List<W>> widgetFactory = (w1, x1, y1, dx1, dy1) -> {
-                        return NBTTypes.generateListModifyButton(
-                                w1, type, map::createNewElement, x1, y1, dx1, dy1, 300, 20);
-                    };
+                    AttrKeyValue.CustomWidgetGenerator<List<W>> widgetFactory =
+                            (elementFactory, w1, x1, y1, dx1, dy1) -> {
+                                return NBTTypes.generateListModifyButton(
+                                        elementFactory, w1, type, map::createNewElement, x1, y1, dx1, dy1, 300, 20);
+                            };
                     WrapperFactory<String, List<W>> stringListWrapperFactory =
                             AttrKeyValues.STR_LIST_FACTORY.concat(WrapperFactory.list(type.stringifyFactory()));
 
                     WrapperFactory<List<W>, PrimitiveList<W>> wrapperFactory = WrapperFactory.of(
                             mp -> new PrimitiveList<>(map.elementType, mp, map.defaultPrimitive), PrimitiveList::list);
                     return new TypeConvertAttrKeyValue<>(w, wrapperFactory, widgetFactory, stringListWrapperFactory)
-                            .generateValueWidget(x, y, dx, dy);
+                            .generateValueWidget(factory, x, y, dx, dy);
                 },
                 (PrimitiveList<W>) new PrimitiveList<>(NBTTypes.STRING_TYPE, List.of()));
     }

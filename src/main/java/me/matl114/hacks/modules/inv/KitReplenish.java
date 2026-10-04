@@ -20,6 +20,7 @@ import me.matl114.gui.WidgetUtils;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.config.ListModifyWidget;
 import me.matl114.gui.complex.invcache.InventoryViewScreen;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.gui.presets.lists.ListEntryWidgetController;
 import me.matl114.gui.presets.single.CenterScreen;
 import me.matl114.gui.presets.single.ConfirmingWidgetScreen;
@@ -1355,7 +1356,7 @@ public class KitReplenish extends BaseModule {
     }
 
     private void onEditCommand(CommandExecution sender) {
-        Tasks.scheduleDelayed(this::openKitEditScreen, 1);
+        Tasks.scheduleDelayed(() -> openKitEditScreen(CONFIG_FACTORY), 1);
         sender.sendMessage("&a正在打开Kit编辑界面");
     }
 
@@ -1699,19 +1700,24 @@ public class KitReplenish extends BaseModule {
     }
 
     @Override
-    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
-        super.addCustomWidgets(acceptor, dx, dy, dblank);
+    public void addCustomWidgets(
+            Consumer<DrawableWidget> acceptor,
+            int dx,
+            int dy,
+            int dblank,
+            me.matl114.gui.interfaces.ElementFactory factory) {
+        super.addCustomWidgets(acceptor, dx, dy, dblank, factory);
         SubScreenWidget kitEditEntry = new SubScreenWidget(0, dblank, dx, dy);
-        kitEditEntry.addDrawableChild(createLabel("widget.kit-manager.kit-save-map", 0, 0, indexWidth, dy));
-        kitEditEntry.addDrawableChild(createExecuteButton(
+        kitEditEntry.addDrawableChild(factory.createLabel("widget.kit-manager.kit-save-map", 0, 0, indexWidth, dy));
+        kitEditEntry.addDrawableChild(factory.createExecuteButton(
                 "widget.kit-manager.open-kit-list",
-                ButtonAction.run(this::openKitEditScreen),
+                ButtonAction.run(() -> openKitEditScreen(factory)),
                 indexWidth + blankWidth,
                 0,
                 dx - indexWidth - blankWidth,
                 dy));
         acceptor.accept(kitEditEntry);
-        acceptor.accept(createExecuteButton(
+        acceptor.accept(factory.createExecuteButton(
                 () -> {
                     Kit kit = kitMap.getDefaultKit();
                     if (kit != null) {
@@ -1724,17 +1730,17 @@ public class KitReplenish extends BaseModule {
                     }
                 },
                 List::of,
-                ButtonAction.run(this::openKitEditScreen),
+                ButtonAction.run(() -> openKitEditScreen(factory)),
                 0,
                 dblank,
                 dx,
                 dy));
-        acceptor.accept(createTitle("widget.kit-manager.command", 0, dblank, dx, dy));
-        acceptor.accept(createTitle("widget.interact.interact-all.use-argument", 0, dblank, dx, dy));
-        acceptor.accept(createTitle("widget.queue-mine.mine.use-argument", 0, dblank, dx, dy));
+        acceptor.accept(factory.createTitle("widget.kit-manager.command", 0, dblank, dx, dy));
+        acceptor.accept(factory.createTitle("widget.interact.interact-all.use-argument", 0, dblank, dx, dy));
+        acceptor.accept(factory.createTitle("widget.queue-mine.mine.use-argument", 0, dblank, dx, dy));
     }
 
-    public void openKitEditScreen() {
+    public void openKitEditScreen(ElementFactory factory) {
         List<MutableRecord> records = kitMap.kitList().stream()
                 .map(s -> MutableRecord.of(Kit.KEYS, s))
                 .collect(Collectors.toCollection(ArrayList::new));
@@ -1744,7 +1750,7 @@ public class KitReplenish extends BaseModule {
         ListEntryWidgetController mutableList = ListEntryWidgetController.mutable(
                 records,
                 () -> MutableRecord.of(Kit.KEYS, Kit.EMPTY),
-                (v) -> createEditWidget(indexOf, records, v),
+                (v) -> createEditWidget(indexOf, records, v, factory),
                 45,
                 250);
         ConfirmingWidgetScreen confirmScreen = new ConfirmingWidgetScreen(
@@ -1761,7 +1767,10 @@ public class KitReplenish extends BaseModule {
     }
 
     private SubScreenWidget createEditWidget(
-            MutableObject<MutableRecord> indexOf, List<MutableRecord> mutableList, MutableRecord record) {
+            MutableObject<MutableRecord> indexOf,
+            List<MutableRecord> mutableList,
+            MutableRecord record,
+            ElementFactory factory) {
         SubScreenWidget widget = new SubScreenWidget(0, 0, 250, 45);
         widget.addDrawableChild(createToggleButton(
                 Text::empty,
@@ -1789,14 +1798,14 @@ public class KitReplenish extends BaseModule {
             return true;
         });
         name.addListener(s -> record.set(nameKey, s));
-        widget.addDrawableChild(name.generateKeyValueInput(30, 1, 30, 0, 60, 20));
+        widget.addDrawableChild(name.generateKeyValueInput(factory, 30, 1, 30, 0, 60, 20));
         String maxSizeKey = Kit.KEYS.get(2);
         AttrKeyValue<Integer> maxSize =
                 AttrKeyValue.integer("widget.kit-manager.open-kit-list.max-size", record.getOrPut(maxSizeKey, 0));
         maxSize.addValidator(Configs.INT_NONNEGATIVE);
         maxSize.addListener(s -> record.set(maxSizeKey, s));
 
-        widget.addDrawableChild(maxSize.generateKeyValueInput(120, 1, 30, 0, 20, 20));
+        widget.addDrawableChild(maxSize.generateKeyValueInput(factory, 120, 1, 30, 0, 20, 20));
         String ruleKey = Kit.KEYS.get(3);
         widget.addDrawableChild(createLabel(
                 () -> {
@@ -1825,8 +1834,7 @@ public class KitReplenish extends BaseModule {
                             List::of,
                             mut,
                             (id) -> "widget.kit-manager.open-kit-list.rule." + id,
-                            WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT,
-                            WidgetUtils.DEFAULT_PALETTE);
+                            WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT);
                     var screen = new CenterScreen(wd);
                     screen.access().addCloseFuture(() -> {
                         Rule rule2 = mut.toRecord(Rule.class);

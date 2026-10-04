@@ -19,6 +19,11 @@ public abstract class DrawContextMixin implements MatrixStack {
     }
 
     @Override
+    public void set(Matrix3x2f matrix) {
+        this.matrices.set(matrix);
+    }
+
+    @Override
     public void popMatrix() {
         this.matrices.popMatrix();
     }

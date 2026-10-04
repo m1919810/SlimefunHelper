@@ -4,6 +4,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.basic.ColorProvider;
+import me.matl114.gui.basic.ColorSampler;
 import me.matl114.gui.basic.ContentDelegateWidget;
 import me.matl114.gui.complex.other.ValueSyncTextFieldWidget;
 import me.matl114.utils.config.Value;
@@ -100,11 +101,24 @@ public class McWidgetHelpers {
             int height,
             boolean focus,
             ColorProvider borderColor) {
+        drawTextWidgetBox(drawable, context, x, y, width, height, focus, borderColor, ColorSampler.of(-16777216));
+    }
+
+    public static void drawTextWidgetBox(
+            Drawable drawable,
+            DrawContext context,
+            int x,
+            int y,
+            int width,
+            int height,
+            boolean focus,
+            ColorProvider borderColor,
+            ColorSampler backgroundColor) {
         Integer i = borderColor.provideTextColor(drawable, focus);
         if (i != null) {
             context.fill(x, y, x + width, y + height, i);
         }
-        context.fill(x + 1, y + 1, x + width - 1, y + height - 1, -16777216);
+        context.fill(x + 1, y + 1, x + width - 1, y + height - 1, backgroundColor.getColorInt());
     }
 
     public static <T> ContentDelegateWidget<TextFieldWidget> createEnhancedTextBox(

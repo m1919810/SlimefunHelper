@@ -75,20 +75,20 @@ public class OptionalPrimitive<T> implements NBTParsable<OptionalPrimitive<T>> {
                             Codec.BOOL.fieldOf("present").forGetter(OptionalPrimitive::isPresent),
                             Primitive.TYPE.typeCodec().fieldOf("value").forGetter(OptionalPrimitive::getPrimitive))
                     .apply(oInstance, OptionalPrimitive::new)),
-            (s, x, y, dx, dy) -> {
+            (factory, s, x, y, dx, dy) -> {
                 NBTType type = s.get().getType();
-                PairLikeFactory<Boolean, ?, OptionalPrimitive> factory = PairLikeFactory.of(
+                PairLikeFactory<Boolean, ?, OptionalPrimitive> pairFactory = PairLikeFactory.of(
                         (bool, val) -> new OptionalPrimitive(bool, type, val),
                         OptionalPrimitive::isPresent,
                         OptionalPrimitive::getValue);
                 SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, dx, dy);
                 subScreenWidget.addDrawableChild(
-                        new TypeConvertAttrKeyValue<>(s, factory.asFirstWrapper(s::get), NBTTypes.BOOLEAN_TYPE)
-                                .generateValueWidget(0, 0, dy, dy));
+                        new TypeConvertAttrKeyValue<>(s, pairFactory.asFirstWrapper(s::get), NBTTypes.BOOLEAN_TYPE)
+                                .generateValueWidget(factory, 0, 0, dy, dy));
 
                 TypeConvertAttrKeyValue<OptionalPrimitive, ?> valueWidget =
-                        new TypeConvertAttrKeyValue<>(s, factory.asSecondWrapper(s::get), type);
-                var widget = valueWidget.generateValueWidget(dy + 2, 0, dx - dy - 2, dy);
+                        new TypeConvertAttrKeyValue<>(s, pairFactory.asSecondWrapper(s::get), type);
+                var widget = valueWidget.generateValueWidget(factory, dy + 2, 0, dx - dy - 2, dy);
                 DynamicContentWidget<?> widget2 = new DynamicContentWidget<>(
                         () -> {
                             if (s.get().isPresent()) {

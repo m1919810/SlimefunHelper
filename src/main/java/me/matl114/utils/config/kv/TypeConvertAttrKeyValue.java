@@ -1,5 +1,7 @@
 package me.matl114.utils.config.kv;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -31,6 +33,8 @@ public class TypeConvertAttrKeyValue<W, T> implements AttrKeyValue<T>, Cloneable
     }
 
     protected boolean validate = true;
+
+    private List<Predicate<T>> validators = new ArrayList<>();
 
     private String value = "";
 
@@ -71,7 +75,7 @@ public class TypeConvertAttrKeyValue<W, T> implements AttrKeyValue<T>, Cloneable
     public boolean isValueValid(T val) {
         W value;
         try {
-            value = wrapperFactory.create(val);
+            value = create0(val);
         } catch (Throwable e) {
             return false;
         }
@@ -89,7 +93,7 @@ public class TypeConvertAttrKeyValue<W, T> implements AttrKeyValue<T>, Cloneable
     public boolean validateAndUpdate() {
         try {
             T val = stringifyOverride.create(value);
-            W wval = wrapperFactory.create(val);
+            W wval = create0(val);
             if (delegate.setOriginValue(wval)) {
                 validate = true;
                 lastUpdate = wval;
@@ -119,7 +123,19 @@ public class TypeConvertAttrKeyValue<W, T> implements AttrKeyValue<T>, Cloneable
 
     @Override
     public void addValidator(Predicate<T> validator) {
-        delegate.addValidator(s -> validator.test(wrapperFactory.get(s)));
+        validators.add(validator);
+    }
+
+    @Override
+    public List<Predicate<T>> getValidators() {
+        return validators;
+    }
+
+    private W create0(T val) {
+        if (validators.stream().anyMatch(s -> !s.test(val))) {
+            throw WrapperFactory.PARSE_FAILURE;
+        }
+        return wrapperFactory.create(val);
     }
 
     @Override
@@ -148,7 +164,7 @@ public class TypeConvertAttrKeyValue<W, T> implements AttrKeyValue<T>, Cloneable
     public TypeConvertAttrKeyValue<W, T> clone() {
         try {
             TypeConvertAttrKeyValue clone = (TypeConvertAttrKeyValue) super.clone();
-            // TODO: copy mutable state here, so the clone can't change the internals of the original
+            clone.validators = new ArrayList<>(validators);
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new AssertionError();

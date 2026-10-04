@@ -17,6 +17,7 @@ import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.task.*;
 import me.matl114.hacks.modules.task.ConnectionProxy;
+import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.Config;
 import me.matl114.managers.config.ConfigEnum;
@@ -315,6 +316,8 @@ public class MainTasks {
     // TODO: add entity inspect in info command
     //
     static {
+        // initialize config
+        NBTTypes.init();
         moduleManager.registerFactories(MainTasks::initModule);
         HackModules.registerModuleGroup(moduleManager);
         MineTasks.init();

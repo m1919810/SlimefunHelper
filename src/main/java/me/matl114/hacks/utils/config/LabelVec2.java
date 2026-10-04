@@ -6,7 +6,6 @@ import java.util.Objects;
 import java.util.Optional;
 import lombok.With;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.elements.ButtonElement;
 import me.matl114.managers.config.NBTParsable;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.config.NBTType;
@@ -31,33 +30,33 @@ public record LabelVec2(String xLabel, String yLabel, Vec2 data) implements NBTP
                             Codec.STRING.fieldOf("y_label").forGetter(LabelVec2::yLabel),
                             Vec2.TYPE.typeCodec().fieldOf("data").forGetter(LabelVec2::data))
                     .apply(s, LabelVec2::new)),
-            (s, x, y, dx, dy) -> {
+            (factory, s, x, y, dx, dy) -> {
                 LabelVec2 originalLabel = s.get();
                 SubScreenWidget subScreenWidget = SubScreenWidget.instance(x, y, dx, dy);
                 int half = dx / 2;
                 WrapperFactory<Vec2, LabelVec2> wrapper = WrapperFactory.of(originalLabel::withData, LabelVec2::data);
                 PairLikeFactory<Double, Double, LabelVec2> pairFactory = Vec2.PAIR_FACTORY.concat(wrapper);
                 return subScreenWidget
-                        .addDrawableChild(DisplayWidget.instance(0, 0, 2 * dy, dy)
-                                .setRenderHandler(new ButtonElement(
-                                                TextProvider.of(Text.translatableWithFallback(
-                                                        originalLabel.xLabel(), originalLabel.xLabel())),
-                                                ButtonAction.empty())
-                                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                                originalLabel.xLabel() + ".tooltips", "")))))
+                        .addDrawableChild(factory.createLabel(
+                                () -> Text.translatableWithFallback(originalLabel.xLabel(), originalLabel.xLabel()),
+                                () -> ChatUtils.parseTooltipsTranslation(originalLabel.xLabel() + ".tooltips", ""),
+                                0,
+                                0,
+                                2 * dy,
+                                dy))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(
                                         s, pairFactory.asFirstWrapper(s::get), NBTTypes.DOUBLE_TYPE)
-                                .generateValueWidget(2 * dy, 0, half - 2 * dy, dy))
-                        .addDrawableChild(DisplayWidget.instance(half, 0, 2 * dy, dy)
-                                .setRenderHandler(new ButtonElement(
-                                                TextProvider.of(Text.translatableWithFallback(
-                                                        originalLabel.yLabel(), originalLabel.yLabel())),
-                                                ButtonAction.empty())
-                                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                                originalLabel.yLabel() + ".tooltips", "")))))
+                                .generateValueWidget(factory, 2 * dy, 0, half - 2 * dy, dy))
+                        .addDrawableChild(factory.createLabel(
+                                () -> Text.translatableWithFallback(originalLabel.yLabel(), originalLabel.yLabel()),
+                                () -> ChatUtils.parseTooltipsTranslation(originalLabel.yLabel() + ".tooltips", ""),
+                                half,
+                                0,
+                                2 * dy,
+                                dy))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(
                                         s, pairFactory.asSecondWrapper(s::get), NBTTypes.DOUBLE_TYPE)
-                                .generateValueWidget(half + 2 * dy, 0, half - 2 * dy, dy));
+                                .generateValueWidget(factory, half + 2 * dy, 0, half - 2 * dy, dy));
             },
             new LabelVec2("", "", new Vec2(0, 0)));
 

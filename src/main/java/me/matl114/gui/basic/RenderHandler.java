@@ -271,7 +271,7 @@ public interface RenderHandler {
                     element.getTextureWidth(),
                     element.getTextureHeight(),
                     color,
-                    0);
+                    TextAlign.MIDDLE);
         };
     }
 
@@ -339,7 +339,7 @@ public interface RenderHandler {
             int endX,
             int endY,
             int color,
-            int alignment) {
+            TextAlign alignment) {
         drawScaledText0(context, textRenderer, text.asOrderedText(), startX, startY, endX, endY, color, alignment);
     }
 
@@ -352,19 +352,24 @@ public interface RenderHandler {
             int endX,
             int endY,
             int color,
-            int alignment) {
+            TextAlign alignment) {
+        TextAlign resolvedAlignment = alignment == null ? TextAlign.MIDDLE : alignment;
+        int textStartX = startX;
+        int textEndX = endX;
+        if (resolvedAlignment != TextAlign.MIDDLE) {
+            textStartX += 2;
+            textEndX -= 2;
+        }
         float i = textRenderer.getTextHandler().getWidth(text);
-        int availableWidth = endX - startX;
+        int availableWidth = Math.max(0, textEndX - textStartX);
         // 居中位置
         float j = (startY + endY - 9) / 2.0F;
         if (availableWidth > i) {
             float l =
-                    switch (alignment) {
-                        case -1 -> startX;
-
-                        case 1 -> endX - i;
-                            // magic, I dont know
-                        default -> (float) (startX + endX - i + 1) / 2.0F;
+                    switch (resolvedAlignment) {
+                        case LEFT -> textStartX;
+                        case RIGHT -> textEndX - i;
+                        case MIDDLE -> (float) (textStartX + textEndX - i + 1) / 2.0F;
                     };
             context.getMatrices().pushMatrix();
             context.getMatrices().translate(l, j);
@@ -375,7 +380,7 @@ public interface RenderHandler {
             float scaledHeight = 9.0F * scale;
             float newJ = (startY + endY - scaledHeight) / 2.0F;
             context.getMatrices().pushMatrix();
-            context.getMatrices().translate(startX, newJ);
+            context.getMatrices().translate(textStartX, newJ);
             context.getMatrices().scale(scale, scale);
             context.drawText(textRenderer, text, 0, 0, color, true);
             context.getMatrices().popMatrix();

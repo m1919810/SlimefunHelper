@@ -6,16 +6,16 @@ import javax.annotation.Nonnull;
 import lombok.Getter;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.Constants;
-import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.IconElement;
+import me.matl114.gui.interfaces.DefaultElementFactory;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.gui.presets.choices.RegistryChooseScreen;
 import me.matl114.gui.presets.single.RegistryDisplays;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.BaseAttrKeyValue;
 import me.matl114.utils.config.WrapperFactory;
 import me.matl114.versioned.api.VDrawContext;
-import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
@@ -54,28 +54,23 @@ public class RegistryAttrKeyValue<T> extends BaseAttrKeyValue<T> {
     }
 
     public static <T> DrawableWidget generateRegistryValueWidget(
-            AttrKeyValue<T> attr, int x, int y, int inputDx, int dy) {
+            ElementFactory factory, AttrKeyValue<T> attr, int x, int y, int inputDx, int dy) {
         if (attr instanceof RegistryAttrKeyValue keyValue) {
-            return generateTextInputWithRegistrySearch(keyValue.registry, attr, x, y, inputDx, dy);
+            return generateTextInputWithRegistrySearch(factory, keyValue.registry, attr, x, y, inputDx, dy);
         } else {
-            return BaseAttrKeyValue.generateTextInputValueWidget(attr, x, y, inputDx, dy);
+            return BaseAttrKeyValue.generateTextInputValueWidget(factory, attr, x, y, inputDx, dy);
         }
     }
 
     public static <T, W> DrawableWidget generateTextInputWithRegistrySearch(
             Registry<T> registry, AttrKeyValue<W> attr, int x, int y, int inputDx, int dy) {
+        return generateTextInputWithRegistrySearch(DefaultElementFactory.INSTANCE, registry, attr, x, y, inputDx, dy);
+    }
 
-        ContentDelegateWidget<TextFieldWidget> interactPlace = McWidgetHelpers.createTextFieldEditBox(
-                dy,
-                0,
-                inputDx - 2 * dy,
-                dy,
-                attr::setInput,
-                attr.getInput(),
-                McWidgetHelpers.getWrongRedTextBoxColorProvider(attr::isValidate));
-        TextFieldWidget widget = interactPlace.getDelegate();
+    public static <T, W> DrawableWidget generateTextInputWithRegistrySearch(
+            ElementFactory factory, Registry<T> registry, AttrKeyValue<W> attr, int x, int y, int inputDx, int dy) {
         var icon = RegistryDisplays.getIcon(registry);
-        var show = DisplayWidget.instance(0, 0, dy, dy).setRenderHandler(new RenderHandler() {
+        RenderHandler showHandler = new RenderHandler() {
             @Override
             public void renderAtCentered(
                     DrawableWidget element,
@@ -103,23 +98,29 @@ public class RegistryAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                     }
                 }
             }
-        });
-        var select = ExecutableWidget.instance(inputDx - dy, 0, dy, dy)
-                .setElementHandler(IconElement.fixedGui(
+        };
+        var show = factory.createElement(showHandler, null, null, 0, 0, dy, dy);
+        var select = factory.createElement(
+                IconElement.fixedGui(
                                 Constants.SEARCH_TEXTURE_SPRITE,
-                                ButtonAction.run(() -> openRegistrySearch(registry, widget)))
-                        .withTooltips(TooltipHandler.of(Constants.searchRegistryTooltips())));
+                                ButtonAction.run(() -> openRegistrySearch(registry, attr)))
+                        .withTooltips(TooltipHandler.of(Constants.searchRegistryTooltips())),
+                null,
+                null,
+                inputDx - dy,
+                0,
+                dy,
+                dy);
         return new SubScreenWidget(x, y, inputDx, dy)
                 .addDrawableChild(show)
-                .addDrawableChild(interactPlace)
+                .addDrawableChild(factory.createInput(attr, dy, 0, inputDx - 2 * dy, dy))
                 .addDrawableChild(select);
     }
 
-    private static <T> void openRegistrySearch(Registry<T> registry, TextFieldWidget widget) {
-
+    private static <T, W> void openRegistrySearch(Registry<T> registry, AttrKeyValue<W> attr) {
         ScreenAccess.of(new RegistryChooseScreen<>(registry, (var) -> {
                     if (var != null) {
-                        widget.setText(registry.getId(var).toString());
+                        attr.setInput(registry.getId(var).toString());
                     }
                 }))
                 .openFromCurrent();

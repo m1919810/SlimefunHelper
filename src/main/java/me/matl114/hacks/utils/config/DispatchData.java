@@ -79,13 +79,13 @@ public class DispatchData<T extends ConfigEnum> implements NBTParsable<DispatchD
                                         .fieldOf("data")
                                         .forGetter(DispatchData::getDispatchMap))
                         .apply(oInstance, DispatchData::new)),
-                (custom, x, y, dx, dy) -> {
+                (factory, custom, x, y, dx, dy) -> {
                     SubScreenWidget currentWidget = new SubScreenWidget(x, y, dx, dy);
                     TypeConvertAttrKeyValue<DispatchData<T>, WrapEnum<T>> typeConvert = new TypeConvertAttrKeyValue<>(
                             custom,
                             WrapperFactory.of((s) -> custom.get().withSelection(s), DispatchData::getEnumType),
                             WrapEnum.TYPE.cast());
-                    currentWidget.addDrawableChild(typeConvert.generateValueWidget(0, 0, dx / 2, dy));
+                    currentWidget.addDrawableChild(typeConvert.generateValueWidget(factory, 0, 0, dx / 2, dy));
                     Map<T, DrawableWidget> cacheMap = new HashMap<>();
                     DynamicContentWidget<DrawableWidget> dynamic = new DynamicContentWidget<>(
                             () -> {
@@ -99,7 +99,7 @@ public class DispatchData<T extends ConfigEnum> implements NBTParsable<DispatchD
                                                                             .withDispatchData(v, s),
                                                                     (s) -> s.getDispatch(v)),
                                                             RecordData.TYPE);
-                                            return typeConvert2.generateValueWidget(0, 0, dx / 2, dy);
+                                            return typeConvert2.generateValueWidget(factory, 0, 0, dx / 2, dy);
                                         });
                             },
                             dx / 2 + 1,

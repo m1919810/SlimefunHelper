@@ -72,7 +72,8 @@ public abstract class BoundedPrimitiveMap<W, T> {
                                     return re;
                                 })
                         .xmap((map) -> creator.apply(baseLookup, map, ptype), BoundedPrimitiveMap::toMap),
-                (w, x, y, dx, dy) -> NBTTypes.generateBoundedListModifyButton(
+                (factory, w, x, y, dx, dy) -> NBTTypes.generateBoundedListModifyButton(
+                        factory,
                         new WrapperAttrKeyValue<>(w, wrapper),
                         baseLookup,
                         ptype,

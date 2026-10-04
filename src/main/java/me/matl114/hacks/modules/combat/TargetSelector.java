@@ -11,6 +11,7 @@ import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 import lombok.Getter;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -330,7 +331,7 @@ public class TargetSelector extends BaseModule {
         }
     }
 
-    public void openEditFriendsScreen() {
+    public void openEditFriendsScreen(ElementFactory factory) {
         List<Pair<String, String>> playerListCopy = playerList.toPairList();
         NBTRef<PrimitivePairList<String, String>> holder = new NBTRef<>(new PrimitivePairList<>(
                 "widget.friend-list.friend-name",
@@ -339,7 +340,7 @@ public class TargetSelector extends BaseModule {
                 NBTTypes.STRING_TYPE,
                 playerListCopy));
         var keyValue = holder.createKeyValue("");
-        DrawableWidget drawableWidget = keyValue.generateValueWidget(0, 0, 300, 20);
+        DrawableWidget drawableWidget = keyValue.generateValueWidget(factory, 0, 0, 300, 20);
         // open edit screen
         keyValue.addListener((pairList) -> onListChange(FriendListStorage.create(pairList.list())));
 
@@ -717,22 +718,27 @@ public class TargetSelector extends BaseModule {
                             .subBuilder(SubCommand.taskBuilder())
                             .name("gui")
                             .helper("message.command.friends_command.friends.gui.help")
-                            .post(e -> e.executor(CommandContext.run(this::openEditFriendsScreen)))
+                            .post(e -> e.executor(CommandContext.run(() -> openEditFriendsScreen(CONFIG_FACTORY))))
                             .complete())
                     .complete();
         }
     }
 
     @Override
-    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
-        acceptor.accept(createExecuteButton(
+    public void addCustomWidgets(
+            Consumer<DrawableWidget> acceptor,
+            int dx,
+            int dy,
+            int dblank,
+            me.matl114.gui.interfaces.ElementFactory factory) {
+        acceptor.accept(factory.createExecuteButton(
                 "widget.friend-list.edit-friend-list",
-                ButtonAction.run(this::openEditFriendsScreen),
+                ButtonAction.run(() -> openEditFriendsScreen(factory)),
                 0,
                 dblank,
                 dx,
                 dy));
-        acceptor.accept(createTitle("widget.friend-list.command", 0, dblank, dx, dy));
+        acceptor.accept(factory.createTitle("widget.friend-list.command", 0, dblank, dx, dy));
     }
 
     public static record FriendListStorage(List<String> friends, Map<String, String> alias) {

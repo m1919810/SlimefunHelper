@@ -169,9 +169,14 @@ public class EventNotify extends BaseModule {
     }
 
     @Override
-    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
-        super.addCustomWidgets(acceptor, dx, dy, dblank);
-        acceptor.accept(createExecuteButton(
+    public void addCustomWidgets(
+            Consumer<DrawableWidget> acceptor,
+            int dx,
+            int dy,
+            int dblank,
+            me.matl114.gui.interfaces.ElementFactory factory) {
+        super.addCustomWidgets(acceptor, dx, dy, dblank, factory);
+        acceptor.accept(factory.createExecuteButton(
                 "widget.event-notify.test-usage",
                 ButtonAction.run(() -> {
                     notify("[SlimefunHelper]测试", "HelloWorld");

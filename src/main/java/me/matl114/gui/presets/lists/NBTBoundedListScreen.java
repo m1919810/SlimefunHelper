@@ -11,6 +11,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import me.matl114.gui.basic.ElementHandler;
 import me.matl114.gui.basic.SubScreenWidget;
+import me.matl114.gui.interfaces.DefaultElementFactory;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.gui.presets.choices.ConfirmingBigScreen;
 import me.matl114.managers.config.NBTType;
 import me.matl114.utils.config.AttrKeyValue;
@@ -26,6 +28,7 @@ public class NBTBoundedListScreen<W, T> extends ConfirmingBigScreen {
     int widgetDkey;
     int widgetDx;
     int widgetDy;
+    final ElementFactory elementFactory;
     ListEntryWidgetController fuckController;
     // modifiable
     public NBTBoundedListScreen(
@@ -36,12 +39,25 @@ public class NBTBoundedListScreen<W, T> extends ConfirmingBigScreen {
             int dkey,
             int dx,
             int dy) {
+        this(attrKeyValue, type, keyWidgetFactory, DefaultElementFactory.INSTANCE, callback, dkey, dx, dy);
+    }
+
+    public NBTBoundedListScreen(
+            AttrKeyValue<Map<W, T>> attrKeyValue,
+            NBTType<T> type,
+            WidgetGenerator<W> keyWidgetFactory,
+            ElementFactory elementFactory,
+            Consumer<Map<W, T>> callback,
+            int dkey,
+            int dx,
+            int dy) {
         this(
                 attrKeyValue.get(),
                 attrKeyValue::isValueValid,
                 type::createAttrKeyValue,
                 keyWidgetFactory,
                 type::generateValueWidget,
+                elementFactory,
                 callback,
                 dkey,
                 dx,
@@ -59,6 +75,30 @@ public class NBTBoundedListScreen<W, T> extends ConfirmingBigScreen {
             int dkey,
             int dx,
             int dy) {
+        this(
+                list,
+                listValidator,
+                attrElementFactory,
+                keyWidgetFactory,
+                valueWidgetFactory,
+                DefaultElementFactory.INSTANCE,
+                callback,
+                dkey,
+                dx,
+                dy);
+    }
+
+    public NBTBoundedListScreen(
+            Map<W, T> list,
+            Predicate<Map<W, T>> listValidator,
+            BiFunction<String, T, AttrKeyValue<T>> attrElementFactory,
+            WidgetGenerator<W> keyWidgetFactory,
+            WidgetGenerator<AttrKeyValue<T>> valueWidgetFactory,
+            ElementFactory elementFactory,
+            Consumer<Map<W, T>> callback,
+            int dkey,
+            int dx,
+            int dy) {
         super(Text.translatable("widget.gui.nbt-bounded-list-screen.title").formatted(Formatting.GREEN));
         validator = listValidator;
         this.attrFactory = attrElementFactory;
@@ -69,13 +109,20 @@ public class NBTBoundedListScreen<W, T> extends ConfirmingBigScreen {
         this.widgetDkey = dkey;
         this.widgetDx = dx;
         this.widgetDy = dy;
+        this.elementFactory = elementFactory;
         this.fuckController = ListEntryWidgetController.immutable(
                 this.list,
                 (w) -> {
                     return new SubScreenWidget(0, 0, widgetDx, widgetDy)
-                            .addDrawableChild(keyWidgetFactory.generateWidget(w.getFirst(), 0, 0, widgetDkey, widgetDy))
+                            .addDrawableChild(keyWidgetFactory.generateWidget(
+                                    this.elementFactory, w.getFirst(), 0, 0, widgetDkey, widgetDy))
                             .addDrawableChild(valueWidgetFactory.generateWidget(
-                                    w.getSecond(), widgetDkey, 0, widgetDx - widgetDkey, widgetDy));
+                                    this.elementFactory,
+                                    w.getSecond(),
+                                    widgetDkey,
+                                    0,
+                                    widgetDx - widgetDkey,
+                                    widgetDy));
                 },
                 widgetDy,
                 widgetDx);

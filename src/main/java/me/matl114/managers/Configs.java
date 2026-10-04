@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import me.matl114.managers.config.Config;
 import me.matl114.managers.config.ConfigLoader;
+import me.matl114.utils.config.NumberClamp;
 import net.minecraft.util.Identifier;
 
 public class Configs {
@@ -68,24 +69,26 @@ public class Configs {
         }
     };
 
-    public static Predicate<Integer> intRange(int min, int max) {
-        return x -> x >= min && x <= max;
+    public static NumberClamp<Integer> intRange(int min, int max) {
+        return new NumberClamp<>(min, max);
     }
 
-    public static Predicate<Integer> intHigher(int min) {
-        return x -> x >= min;
+    public static NumberClamp<Integer> intHigher(int min) {
+        return new NumberClamp<>(min, null);
     }
 
-    public static Predicate<Integer> intLower(int mAX) {
-        return x -> x <= mAX;
+    public static NumberClamp<Integer> intLower(int mAX) {
+        return new NumberClamp<>(null, mAX);
     }
 
-    public static Predicate<Double> doubleRange(double min, double max) {
-        return x -> x >= min && x <= max;
+    public static NumberClamp<Double> doubleRange(double min, double max) {
+        Double min1 = min == Double.MIN_VALUE ? null : min;
+        Double max1 = max == Double.MAX_VALUE ? null : max;
+        return new NumberClamp<>(min1, max1);
     }
 
-    public static final Predicate<Integer> INT_NONNEGATIVE = intHigher(0);
-    public static final Predicate<Integer> INT_POSITIVE = intHigher(1);
+    public static final NumberClamp<Integer> INT_NONNEGATIVE = intHigher(0);
+    public static final NumberClamp<Integer> INT_POSITIVE = intHigher(1);
 
     private static boolean init = false;
 

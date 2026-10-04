@@ -1537,8 +1537,13 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
     }
 
     @Override
-    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
-        acceptor.accept(createTitle("widget.travelling-control.command", 0, dblank, dx, dy));
+    public void addCustomWidgets(
+            Consumer<DrawableWidget> acceptor,
+            int dx,
+            int dy,
+            int dblank,
+            me.matl114.gui.interfaces.ElementFactory factory) {
+        acceptor.accept(factory.createTitle("widget.travelling-control.command", 0, dblank, dx, dy));
     }
 
     public static TravelInfo travelTask;
