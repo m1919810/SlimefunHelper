@@ -1,4 +1,4 @@
-package me.matl114.hacks.modules.render;
+package me.matl114.hacks.modules.extra;
 
 import java.util.List;
 import me.matl114.events.Event;
@@ -14,7 +14,11 @@ import me.matl114.versioned.api.VRecord;
 import net.minecraft.client.network.PlayerListEntry;
 
 public class PlayerLog extends BaseModule {
-    public final ModulePath playerIo = makePath(Configs.RENDER_CONFIG, "player-io");
+    public final ModulePath playerIo = makePath(Configs.EXTRA_CONFIG, "player-io");
+
+    {
+        portConfigs(makePath(Configs.RENDER_CONFIG, "player-io"), makePath(Configs.EXTRA_CONFIG, "player-io"));
+    }
 
     public PlayerLog() {
         super("PlayerLog");

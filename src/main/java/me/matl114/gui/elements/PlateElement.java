@@ -2,6 +2,7 @@ package me.matl114.gui.elements;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import me.matl114.gui.basic.AbstractElement;
+import me.matl114.gui.basic.ColorSampler;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.ExecutableWidget;
 import me.matl114.versioned.api.VDrawContext;
@@ -22,16 +23,8 @@ public class PlateElement extends AbstractElement {
         return new PlateElement(false, color);
     }
 
-    public static PlateElement instance(ColorSampler color) {
-        return new PlateElement(false, color);
-    }
-
     public static PlateElement catchInteract() {
         return new PlateElement(true, null);
-    }
-
-    public static PlateElement catchInteract(ColorSampler color) {
-        return new PlateElement(true, color);
     }
 
     public static PlateElement catchInteract(ColorSampler color) {
@@ -48,10 +41,6 @@ public class PlateElement extends AbstractElement {
 
     public PlateElement(boolean catchInteract) {
         this(catchInteract, null);
-    }
-
-    public PlateElement(boolean catchInteract, ColorSampler color) {
-        this(catchInteract, ColorSampler.WHITE);
     }
 
     public PlateElement(boolean catchInteract, ColorSampler color) {

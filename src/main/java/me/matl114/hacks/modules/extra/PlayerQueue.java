@@ -1,4 +1,4 @@
-package me.matl114.hacks.modules.render;
+package me.matl114.hacks.modules.extra;
 
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
@@ -29,11 +29,15 @@ import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
 import net.minecraft.world.GameMode;
 
 public class PlayerQueue extends BaseModule {
-    public final ModulePath playerIo = makePath(Configs.RENDER_CONFIG, "player-io.player-queue");
+    public final ModulePath playerIo = makePath(Configs.EXTRA_CONFIG, "player-io.player-queue");
 
     public PlayerQueue() {
         super("PlayerQueue");
         bindFlag(enable);
+    }
+
+    {
+        portConfigs(makePath(Configs.RENDER_CONFIG, "player-io"), makePath(Configs.EXTRA_CONFIG, "player-io"));
     }
 
     public final FlagRef enable = flagBuilder(playerIo.addEnable()).build();

@@ -490,9 +490,6 @@ public class RenderTasks {
     private static HandView handView;
 
     @Getter
-    private static NoSound noSound;
-
-    @Getter
     private static EntityLog entityLog;
 
     @Getter
@@ -521,12 +518,6 @@ public class RenderTasks {
 
     @Getter
     private static MineESP mineESP;
-
-    @Getter
-    private static PlayerLog playerLog;
-
-    @Getter
-    private static PlayerQueue playerQueue;
 
     @Getter
     private static ProjectileESP projectileESP;
@@ -574,7 +565,6 @@ public class RenderTasks {
         renderExtra = new RenderExtra().register(m);
         noRender = new NoRender().register(m);
         handView = new HandView().register(m);
-        noSound = new NoSound().register(m);
         entityLog = new EntityLog().register(m);
         entityESP = new EntityESP().register(m);
         explosiveESP = new ExplosiveESP().register(m);
@@ -586,8 +576,7 @@ public class RenderTasks {
         itemList = new ItemList().register(m);
         worldScanner = new WorldScanner().register(m);
         mineESP = new MineESP().register(m);
-        playerLog = new PlayerLog().register(m);
-        playerQueue = new PlayerQueue().register(m);
+
         projectileESP = new ProjectileESP().register(m);
         zoom = new Zoom().register(m);
         sleepMode = new SleepMode().register(m);

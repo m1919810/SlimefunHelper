@@ -107,6 +107,10 @@ public class MineExtra extends BaseModule {
     public final FlagRef doubleBreak =
             flagBuilder(fastbreak.add("double-break")).build();
 
+    public final FlagRef doubleBreakVanilla = builder(fastbreak.add("use-double-break-in-vanilla"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     public final FlagRef optimizeOneBlock =
             flagBuilder(fastbreak.add("same-block-optimize")).build();
 
@@ -730,11 +734,8 @@ public class MineExtra extends BaseModule {
                                 ColorUtils.withAlpha(frameColor.get().color(), 1.0F));
                         BlockState state = mc.world.getBlockState(blockPos);
                         var tool = getGhostHandMiningTool(state);
-                        float progress = PacketMine.INSTANCE.autoEnable.get()
-                                ? PlayerInteractionAccess.of(mc.interactionManager)
-                                        .predictCurrentMiningProgressWithTool(tool.val(), 1)
-                                : PlayerInteractionAccess.of(mc.interactionManager)
-                                        .getCurrentMiningProgress(tool.val());
+                        float progress = PlayerInteractionAccess.of(mc.interactionManager)
+                                .predictCurrentMiningProgressWithTool(tool.val(), 1);
                         if (progress > 0.0F) {
                             Box box;
                             if (state.isAir()) {
