@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.render;
 
+import com.mojang.datafixers.util.Pair;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
@@ -12,14 +13,14 @@ import me.matl114.gui.basic.AbstractElement;
 import me.matl114.gui.basic.ColorSampler;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.ExecutableWidget;
-import me.matl114.gui.elements.ColorLabelTextElement;
+import me.matl114.gui.elements.ColorLabelElement;
 import me.matl114.gui.elements.PlateElement;
 import me.matl114.gui.elements.SlotElement;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.config.WidgetPos;
-import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.utils.ColorUtils;
@@ -31,12 +32,12 @@ import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
-import net.minecraft.text.Text;
+import net.minecraft.text.TextColor;
 import net.minecraft.util.DyeColor;
+import net.minecraft.util.Formatting;
 
 public class ShulkerDisplay extends BaseModule {
     private static final int COLUMNS = 9;
-    private static final int COMPACT_COLUMNS = 2;
     private static final int ROWS = 3;
     private static final int SLOT_SIZE = 18;
     private static final int CONTENT_WIDTH = COLUMNS * SLOT_SIZE;
@@ -53,9 +54,9 @@ public class ShulkerDisplay extends BaseModule {
             .defaultValue(PreviewMode.TEXTURE)
             .build();
 
-    public final NBTRef<OptionalPrimitive<WrapColor>> color = builder(
-                    root.add("color"), OptionalPrimitive.type(WrapColor.class))
-            .defaultValue(new OptionalPrimitive<>(false, WrapColor.TYPE, WrapColor.WHITE))
+    public final NBTRef<OptionalPrimitive<TextColor>> color = builder(
+                    root.add("color"), OptionalPrimitive.type(TextColor.class))
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.COLOR_TYPE, ColorUtils.color(Formatting.WHITE)))
             .build();
 
     public final IntRef alpha = builder(root.add("alpha"), IntRef.TYPE)
@@ -82,6 +83,7 @@ public class ShulkerDisplay extends BaseModule {
 
     public ShulkerDisplay() {
         super("ShulkerDisplay");
+        bindFlag(enable);
     }
 
     @Override
@@ -146,21 +148,93 @@ public class ShulkerDisplay extends BaseModule {
 
         int screenWidth = mc.getWindow().getScaledWidth();
         int screenHeight = mc.getWindow().getScaledHeight();
-        int columnWidth = COMPACT_COLUMNS * SLOT_SIZE + BORDER_SIZE * 2 + 4;
-        int absoluteX = 4;
-        int absoluteY = 4;
+        List<Pair<Slot, List<ItemStack>>> renderData = new ArrayList<>();
+        double height = 0;
         for (Slot slot : shulkers) {
             List<ItemStack> contents =
                     compressedContents.computeIfAbsent(slot, (slot1) -> this.compressContents(slot1.getStack()));
-            int height = previewHeight(contents.size());
-            if (absoluteY + height > screenHeight) {
-                absoluteX += columnWidth;
-                absoluteY = 4;
-            }
-            if (absoluteX >= screenWidth) break;
-            renderPreview(context, slot.getStack(), contents, true, absoluteX, absoluteY, slot == selected);
-            absoluteY += height + 4;
+            if (contents.isEmpty() && filterEmpty.get()) continue;
+            height += previewHeight(contents.size()) + 1;
+            renderData.add(Pair.of(slot, contents));
         }
+        height = height + 30;
+        double scale = 1.0D;
+        int expectingColumn = 1;
+        double acceptedMaxWith = 1.2D;
+        while (true) {
+            scale = (screenHeight * 2 * expectingColumn) / height;
+            if (scale * (expectingColumn + 1) < acceptedMaxWith) {
+                expectingColumn += 1;
+                continue;
+            } else {
+                break;
+            }
+        }
+        scale = Math.clamp(
+                (screenHeight * 2 * expectingColumn) / height,
+                acceptedMaxWith / ((expectingColumn + 1)),
+                acceptedMaxWith / (expectingColumn));
+        scale = Math.clamp(scale, 0, 0.8);
+        expectingColumn = (int) Math.ceil((scale * height / (screenHeight)));
+        int oneSideColumn = (expectingColumn + 1) / 2;
+        double scaledHeight = screenHeight / scale;
+
+        context.getMatrices().pushMatrix();
+        double totalHeight = 0;
+        int totalColumn = 0;
+        int width = (COLUMNS * SLOT_SIZE + 2 * BORDER_SIZE) + 1;
+        var iter = renderData.iterator();
+        {
+            context.getMatrices().translate(1, 1);
+            context.getMatrices().scale((float) scale, (float) scale);
+            while (iter.hasNext()) {
+                Pair<Slot, List<ItemStack>> pair = iter.next();
+                renderPreview(
+                        context,
+                        pair.getFirst().getStack(),
+                        pair.getSecond(),
+                        true,
+                        totalColumn * width,
+                        (int) totalHeight,
+                        selected == pair.getFirst());
+                totalHeight += previewHeight(pair.getSecond().size()) + 1;
+                if (totalHeight >= scaledHeight - 30) {
+                    totalHeight = 0;
+                    totalColumn += 1;
+                    if (totalColumn >= oneSideColumn) {
+                        totalColumn = 0;
+                        break;
+                    }
+                }
+            }
+        }
+        context.getMatrices().popMatrix();
+        context.getMatrices().pushMatrix();
+        {
+            context.getMatrices().translate(screenWidth - 1, 1);
+            context.getMatrices().scale((float) scale, (float) scale);
+            context.getMatrices().translate(-width, 0);
+            while (iter.hasNext()) {
+                Pair<Slot, List<ItemStack>> pair = iter.next();
+                renderPreview(
+                        context,
+                        pair.getFirst().getStack(),
+                        pair.getSecond(),
+                        true,
+                        -totalColumn * width,
+                        (int) totalHeight,
+                        selected == pair.getFirst());
+                totalHeight += previewHeight(pair.getSecond().size()) + 1;
+                if (totalHeight >= scaledHeight - 30) {
+                    totalHeight = 0;
+                    totalColumn += 1;
+                    if (totalColumn >= oneSideColumn) {
+                        totalColumn -= 1;
+                    }
+                }
+            }
+        }
+        context.getMatrices().popMatrix();
     }
 
     private boolean isShulker(ItemStack stack) {
@@ -183,7 +257,7 @@ public class ShulkerDisplay extends BaseModule {
             double x,
             double y,
             boolean selected) {
-        int columns = compact ? COMPACT_COLUMNS : COLUMNS;
+        int columns = COLUMNS;
         int rows = compact ? Math.max(1, (contents.size() + columns - 1) / columns) : ROWS;
         int previewWidth = columns * SLOT_SIZE + BORDER_SIZE * 2;
         int previewHeight = rows * SLOT_SIZE + BORDER_SIZE * 2;
@@ -196,12 +270,7 @@ public class ShulkerDisplay extends BaseModule {
                 case TEXTURE -> renderElement(
                         context, new PlateElement(false, sampler), previewWidth, previewHeight, 0, 0);
                 case BACKGROUND -> renderElement(
-                        context,
-                        new ColorLabelTextElement(element -> Text.empty(), ColorSampler.WHITE, sampler),
-                        previewWidth,
-                        previewHeight,
-                        0,
-                        0);
+                        context, new ColorLabelElement(sampler), previewWidth, previewHeight, 0, 0);
                 case TRANSPARENT -> {}
             }
 
@@ -238,7 +307,7 @@ public class ShulkerDisplay extends BaseModule {
     }
 
     private int previewHeight(int itemCount) {
-        int rows = Math.max(1, (itemCount + COMPACT_COLUMNS - 1) / COMPACT_COLUMNS);
+        int rows = Math.max(1, (itemCount + COLUMNS - 1) / COLUMNS);
         return rows * SLOT_SIZE + BORDER_SIZE * 2;
     }
 
@@ -251,8 +320,10 @@ public class ShulkerDisplay extends BaseModule {
     }
 
     private int getTint(ItemStack shulker) {
-        OptionalPrimitive<WrapColor> override = color.get();
-        if (override.isPresent()) return override.getValue().withAlpha(alpha.get());
+        OptionalPrimitive<TextColor> override = color.get();
+        if (override.isPresent())
+            return ColorUtils.withAlphaInt(
+                    override.getValue().getRgb(), alpha.get()); //  override.getValue().withAlpha(alpha.get());
         if (shulker.getItem() instanceof BlockItem blockItem
                 && blockItem.getBlock() instanceof ShulkerBoxBlock shulkerBlock) {
             DyeColor dyeColor = shulkerBlock.getColor();

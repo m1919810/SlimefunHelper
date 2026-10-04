@@ -125,9 +125,10 @@ public class CustomElementFactory implements ElementFactory {
             TextProvider provider, TooltipHandler handler, ColorSampler background, boolean splitter) {
         ColorLabelElement label = new ColorLabelElement(background);
         TextProvider alignedProvider = TextProvider.withAlign(provider, textAlign());
-        label.withElement(new RawTextElement(alignedProvider, textColor()));
         if (splitter) {
-            label.combineRender(new SplitterTextElement(alignedProvider, textColor()));
+            label.withElement(new SplitterTextElement(alignedProvider, textColor()));
+        } else {
+            label.withElement(new RawTextElement(alignedProvider, textColor()));
         }
         return label.withTooltips(handler);
     }

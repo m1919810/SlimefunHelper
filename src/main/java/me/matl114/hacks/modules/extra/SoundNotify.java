@@ -53,7 +53,11 @@ public class SoundNotify extends BaseModule {
     private static final int SOUND_COOLDOWN_TICKS = 10;
     public static SoundNotify INSTANCE;
 
-    public final ModulePath path = makePath(Configs.EXTRA_CONFIG, "other.sound-notify");
+    public final ModulePath path = makePath(Configs.EXTRA_CONFIG, "sounds.sound-notify");
+
+    {
+        portConfigs(makePath(Configs.EXTRA_CONFIG, "other.sound-notify"), path);
+    }
 
     public SoundNotify() {
         super("SoundNotify");
