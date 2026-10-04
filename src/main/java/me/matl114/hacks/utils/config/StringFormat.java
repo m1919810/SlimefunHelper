@@ -11,7 +11,6 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import me.matl114.gui.Constants;
 import me.matl114.gui.basic.ButtonAction;
-import me.matl114.gui.basic.ExecutableWidget;
 import me.matl114.gui.basic.SubScreenWidget;
 import me.matl114.gui.basic.TooltipHandler;
 import me.matl114.gui.elements.IconElement;
@@ -61,7 +60,7 @@ public class StringFormat implements NBTParsable<StringFormat> {
                             Codec.STRING.fieldOf("format").forGetter(StringFormat::formatString),
                             Codec.BOOL.optionalFieldOf("color_str", false).forGetter(StringFormat::colorString))
                     .apply(oInstance, StringFormat::new)),
-            (s, x, y, dx, dy) -> {
+            (factory, s, x, y, dx, dy) -> {
                 StringFormat original = s.get();
                 AttrKeyValue<String> wrapper = new TypeConvertAttrKeyValue<>(
                         s,
@@ -76,21 +75,32 @@ public class StringFormat implements NBTParsable<StringFormat> {
                 if (original.colorString()) {
                     width -= dy;
                 }
-                subScreenWidget.addDrawableChild(wrapper.generateValueWidget(0, 0, width, dy));
+                subScreenWidget.addDrawableChild(wrapper.generateValueWidget(factory, 0, 0, width, dy));
                 if (hasFormatArgument) {
-                    subScreenWidget.addDrawableChild(new ExecutableWidget(width, 0, dy, dy)
-                            .setElementHandler(
-                                    IconElement.fixedGui(Constants.FORMATTING_TEXTURE_SPRITE, ButtonAction.empty())
-                                            .withTooltips(TooltipHandler.of(
-                                                    generateTooltipsForArgument(original.formattingArgument())))));
+                    subScreenWidget.addDrawableChild(factory.createElement(
+                            IconElement.fixedGui(Constants.FORMATTING_TEXTURE_SPRITE, ButtonAction.empty())
+                                    .withTooltips(TooltipHandler.of(
+                                            generateTooltipsForArgument(original.formattingArgument()))),
+                            null,
+                            null,
+                            width,
+                            0,
+                            dy,
+                            dy));
                 }
                 if (original.colorString()) {
-                    subScreenWidget.addDrawableChild(new ExecutableWidget(width + dy, 0, dy, dy)
-                            .setElementHandler(IconElement.fixedGui(
+                    subScreenWidget.addDrawableChild(factory.createElement(
+                            IconElement.fixedGui(
                                             Constants.EDITOR_SPRITE,
                                             ButtonAction.run(StringFormat::openWikiColorString))
                                     .withTooltips(
-                                            TooltipHandler.of((el) -> s.get().generateColorStringPreview()))));
+                                            TooltipHandler.of((el) -> s.get().generateColorStringPreview())),
+                            null,
+                            null,
+                            width + dy,
+                            0,
+                            dy,
+                            dy));
                 }
                 return subScreenWidget;
             },

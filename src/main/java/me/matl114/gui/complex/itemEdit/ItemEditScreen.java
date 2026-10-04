@@ -1036,7 +1036,7 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                                                                     "widget.gui.item-edit-screen.nbt-editor.component.component-empty")
                                                             .formatted(Formatting.YELLOW),
                                             Colors.WHITE,
-                                            0)))
+                                            TextAlign.MIDDLE)))
                             .addDrawableChild(ExecutableWidget.instance(150, 0, 30, 20)
                                     .setElementHandler(new ButtonElement(
                                                     TextProvider.of(

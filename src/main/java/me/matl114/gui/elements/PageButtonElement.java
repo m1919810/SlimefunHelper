@@ -50,7 +50,7 @@ public class PageButtonElement extends ButtonElement {
 
     public PageButtonElement(
             List<Text> pageSwitch, IntSupplier maxPage, IntSupplier pageGetter, IntConsumer pageSetter, int delta) {
-        super(TextProvider.of(null), ((element, widget, mouseButton) -> {
+        super(TextProvider.of(Text.empty()), ((element, widget, mouseButton) -> {
             int pageNow = pageGetter.getAsInt();
             int nextPage = MathHelper.clamp(pageNow + delta, 1, maxPage.getAsInt());
             pageSetter.accept(nextPage);

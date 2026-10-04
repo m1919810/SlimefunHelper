@@ -4,9 +4,6 @@ import com.mojang.serialization.Codec;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.With;
-import me.matl114.gui.basic.DisplayWidget;
-import me.matl114.gui.basic.TooltipHandler;
-import me.matl114.gui.complex.RawTextElement;
 import me.matl114.managers.config.NBTParsable;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.config.NBTType;
@@ -26,15 +23,18 @@ public record LabelPrimitive<T>(String label, Primitive<T> primitive) implements
             "data",
             PairLikeFactory.<String, Primitive<?>, LabelPrimitive<?>>of(
                     LabelPrimitive::new, LabelPrimitive::label, LabelPrimitive::primitive),
-            (string, x, y, dx, dy) -> {
-                return DisplayWidget.instance(0, 0, 2 * dy, dy)
-                        .setRenderHandler(new RawTextElement(Text.translatableWithFallback(string, string), -1)
-                                .withTooltips(TooltipHandler.of(
-                                        ChatUtils.parseTooltipsTranslation(string + ".tooltips", ""))));
+            (elementFactory, string, x, y, dx, dy) -> {
+                return elementFactory.createTitle(
+                        () -> Text.translatableWithFallback(string, string),
+                        () -> ChatUtils.parseTooltipsTranslation(string + ".tooltips", ""),
+                        x,
+                        y,
+                        2 * dy,
+                        dy);
             },
             (factory) -> {
-                return (s, x, y, dx, dy) -> {
-                    return factory.generateWidget(s, x + 2 * dy, y, dx - 2 * dy, dy);
+                return (elementFactory, s, x, y, dx, dy) -> {
+                    return factory.generateWidget(elementFactory, s, x + 2 * dy, y, dx - 2 * dy, dy);
                 };
             });
 

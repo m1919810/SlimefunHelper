@@ -38,12 +38,13 @@ public class IntPrimitiveList extends PrimitiveList<Integer> {
     public static final NBTType<IntPrimitiveList> TYPE = new NBTType<>(
             "intprimitivelist",
             SIMPLIFIED_INT_PRIMITIVE_LIST_FACTORY.wrapCodecComapFlatMap(Codec.STRING),
-            (s, x, y, dx, dy) -> {
+            (factory, s, x, y, dx, dy) -> {
                 return new SubScreenWidget(x, y, dx, dy)
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(
                                         s, SIMPLIFIED_INT_PRIMITIVE_LIST_FACTORY, NBTTypes.STRING_TYPE)
-                                .generateValueWidget(0, 0, dx - dy, dy))
+                                .generateValueWidget(factory, 0, 0, dx - dy, dy))
                         .addDrawableChild(WidgetUtils.createOpenListModifyScreenButton(
+                                factory,
                                 () -> new IntListAttrKeyValue(
                                         s.getKeyName(), s.get().list(), SIMPLIFIED_STRINGIFY_FACTORY),
                                 (lst) -> s.accept(new IntPrimitiveList(lst)),

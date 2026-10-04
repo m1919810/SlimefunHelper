@@ -7,9 +7,8 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.complex.RawTextElement;
 import me.matl114.gui.complex.config.KeyValueInputWidget;
-import me.matl114.gui.elements.LabelElement;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.utils.ReflectUtils;
 import me.matl114.utils.config.kv.EnumAttrKeyValue;
 import me.matl114.utils.config.kv.RegistryAttrKeyValue;
@@ -50,12 +49,15 @@ public interface AttrKeyValue<T> extends KeyValue<T> {
      */
     public void addValidator(Predicate<T> validator);
 
-    default SubScreenWidget generateKeyValueInput(int x, int y, int keyDx, int blankDx, int inputDx, int dy) {
-        return new KeyValueInputWidget<>(x, y, keyDx + blankDx + inputDx, dy, keyDx, blankDx, inputDx, this);
+    public List<Predicate<T>> getValidators();
+
+    default SubScreenWidget generateKeyValueInput(
+            ElementFactory factory, int x, int y, int keyDx, int blankDx, int inputDx, int dy) {
+        return new KeyValueInputWidget<>(x, y, keyDx + blankDx + inputDx, dy, keyDx, blankDx, inputDx, this, factory);
     }
-    // do not override
-    default DrawableWidget generateValueWidget(int x, int y, int inputDx, int dy) {
-        return getCustomWidgetFactory().generateWidget(this, x, y, inputDx, dy);
+
+    default DrawableWidget generateValueWidget(ElementFactory factory, int x, int y, int inputDx, int dy) {
+        return getCustomWidgetFactory().generateWidget(factory, this, x, y, inputDx, dy);
     }
 
     /**
@@ -75,7 +77,7 @@ public interface AttrKeyValue<T> extends KeyValue<T> {
     }
 
     public static BaseAttrKeyValue<Integer> integer(String key, int val) {
-        return new BaseAttrKeyValue<>(key, val, INT_FACTORY);
+        return new BaseAttrKeyValue<>(key, val, INT_WIDGET_FACTORY, INT_FACTORY);
     }
 
     public static BaseAttrKeyValue<Integer> clampedInt(String key, int val, int from, int to) {
@@ -87,7 +89,7 @@ public interface AttrKeyValue<T> extends KeyValue<T> {
     }
 
     public static BaseAttrKeyValue<Double> doubleVal(String keyName, double val) {
-        return new BaseAttrKeyValue<>(keyName, val, DOUBLE_FACTORY);
+        return new BaseAttrKeyValue<>(keyName, val, DOUBLE_WIDGET_FACTORY, DOUBLE_FACTORY);
     }
 
     public static <T> BaseAttrKeyValue<T> registry(String key, Registry<T> registry, T val) {
@@ -126,11 +128,12 @@ public interface AttrKeyValue<T> extends KeyValue<T> {
     }
 
     public static interface CustomWidgetGenerator<T> extends WidgetGenerator<AttrKeyValue<T>> {
-        // public DrawableWidget generateWidget(AttrKeyValue<T> kv, int x, int y, int dx, int dy);
+        // public DrawableWidget generateWidget(ElementFactory factory, AttrKeyValue<T> kv, int x, int y, int dx, int
+        // dy);
 
         public static <T> CustomWidgetGenerator<T> cutSizeXLeft(CustomWidgetGenerator<T> factory, double portion) {
-            return (s1, x, y, dx, dy) -> {
-                return factory.generateWidget(s1, x, y, (int) (dx * portion), dy);
+            return (elementFactory, s1, x, y, dx, dy) -> {
+                return factory.generateWidget(elementFactory, s1, x, y, (int) (dx * portion), dy);
             };
         }
 
@@ -139,9 +142,9 @@ public interface AttrKeyValue<T> extends KeyValue<T> {
         }
 
         public static <T> CustomWidgetGenerator<T> cutSizeXRight(CustomWidgetGenerator<T> factory, double portion) {
-            return (s1, x, y, dx, dy) -> {
+            return (elementFactory, s1, x, y, dx, dy) -> {
                 int val = (int) (dx * portion) + 1;
-                return factory.generateWidget(s1, x + val, y, dx - val, dy);
+                return factory.generateWidget(elementFactory, s1, x + val, y, dx - val, dy);
             };
         }
 
@@ -151,14 +154,13 @@ public interface AttrKeyValue<T> extends KeyValue<T> {
 
         public static <T> UnaryOperator<CustomWidgetGenerator<T>> withLabel(Text label) {
             return (w) -> {
-                return (s111, x, y, dx, dy) -> {
+                return (elementFactory, s111, x, y, dx, dy) -> {
                     SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, dx, dy);
-                    subScreenWidget.addDrawableChild(DisplayWidget.instance(1, 1, dy * 2 - 2, dy - 2)
-                            .setRenderHandler(new LabelElement(Text.empty(), -1)));
                     subScreenWidget.addDrawableChild(
-                            DisplayWidget.instance(0, 0, dy * 2, dy).setRenderHandler(new RawTextElement(label, -1)));
+                            elementFactory.createLabel(() -> label, List::of, 0, 0, dy * 2, dy));
 
-                    subScreenWidget.addDrawableChild(w.generateWidget(s111, dy * 2, 0, dx - dy * 2, dy));
+                    subScreenWidget.addDrawableChild(
+                            w.generateWidget(elementFactory, s111, dy * 2, 0, dx - dy * 2, dy));
                     return subScreenWidget;
                 };
             };

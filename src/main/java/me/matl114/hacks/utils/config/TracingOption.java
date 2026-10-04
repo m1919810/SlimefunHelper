@@ -3,7 +3,6 @@ package me.matl114.hacks.utils.config;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.elements.ButtonElement;
 import me.matl114.managers.config.NBTParsable;
 import me.matl114.managers.config.NBTType;
 import me.matl114.utils.ChatUtils;
@@ -21,29 +20,31 @@ public record TracingOption(boolean box, boolean line) implements NBTParsable<Tr
                             Codec.BOOL.fieldOf("box").forGetter(TracingOption::box),
                             Codec.BOOL.fieldOf("line").forGetter(TracingOption::line))
                     .apply(s, TracingOption::new)),
-            (s, x, y, dx, dy) -> {
+            (factory, s, x, y, dx, dy) -> {
                 SubScreenWidget subScreenWidget = SubScreenWidget.instance(x, y, dx, dy);
                 return subScreenWidget
-                        .addDrawableChild(DisplayWidget.instance(0, 0, 2 * dy, dy)
-                                .setRenderHandler(new ButtonElement(
-                                                TextProvider.of(Text.translatableWithFallback(
-                                                        "widget.nbt-parsable.tracing-option.box", "Box:")),
-                                                ButtonAction.empty())
-                                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                                "widget.nbt-parsable.tracing-option.box.tooltips", "")))))
+                        .addDrawableChild(factory.createLabel(
+                                () -> Text.translatableWithFallback("widget.nbt-parsable.tracing-option.box", "Box:"),
+                                () -> ChatUtils.parseTooltipsTranslation(
+                                        "widget.nbt-parsable.tracing-option.box.tooltips", ""),
+                                0,
+                                0,
+                                2 * dy,
+                                dy))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(
                                         s, PAIR_FACTORY.asFirstWrapper(s::get), NBTTypes.BOOLEAN_TYPE)
-                                .generateValueWidget(2 * dy, 0, dy, dy))
-                        .addDrawableChild(DisplayWidget.instance(3 * dy, 0, 2 * dy, dy)
-                                .setRenderHandler(new ButtonElement(
-                                                TextProvider.of(Text.translatableWithFallback(
-                                                        "widget.nbt-parsable.tracing-option.line", "Line:")),
-                                                ButtonAction.empty())
-                                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                                "widget.nbt-parsable.tracing-option.line.tooltips", "")))))
+                                .generateValueWidget(factory, 2 * dy, 0, dy, dy))
+                        .addDrawableChild(factory.createLabel(
+                                () -> Text.translatableWithFallback("widget.nbt-parsable.tracing-option.line", "Line:"),
+                                () -> ChatUtils.parseTooltipsTranslation(
+                                        "widget.nbt-parsable.tracing-option.line.tooltips", ""),
+                                3 * dy,
+                                0,
+                                2 * dy,
+                                dy))
                         .addDrawableChild(new TypeConvertAttrKeyValue<>(
                                         s, PAIR_FACTORY.asSecondWrapper(s::get), NBTTypes.BOOLEAN_TYPE)
-                                .generateValueWidget(5 * dy, 0, dy, dy));
+                                .generateValueWidget(factory, 5 * dy, 0, dy, dy));
             },
             new TracingOption(false, false));
 

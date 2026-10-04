@@ -59,8 +59,12 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
 
                 draw.render0(context, translatedMouseX, translatedMouseY, delta, disableSelect);
             } else {
-                this.getDelegate().render(context.pushMatrix(), translatedMouseX, translatedMouseY, delta);
-                context.popMatrix();
+                var drawContext = context.pushMatrix();
+                try {
+                    this.getDelegate().render(drawContext, translatedMouseX, translatedMouseY, delta);
+                } finally {
+                    context.popMatrix();
+                }
             }
         }
     }

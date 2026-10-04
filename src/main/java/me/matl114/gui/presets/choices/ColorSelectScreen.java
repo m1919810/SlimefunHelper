@@ -76,7 +76,7 @@ public class ColorSelectScreen extends ConfirmingBigScreen {
                 .setElementHandler(new RawTextElement(
                         (el) -> Text.literal("R: %d, G: %d, B: %d".formatted(rValue, gValue, bValue)),
                         ColorUtils.getColorInt(0, 0, 0, 255),
-                        0))
+                        TextAlign.MIDDLE))
                 .addToSub(subScreenWidget);
         subScreenWidget.addTo(this);
     }

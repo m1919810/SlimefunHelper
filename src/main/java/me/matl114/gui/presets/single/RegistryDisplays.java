@@ -7,6 +7,7 @@ import javax.annotation.Nonnull;
 import lombok.AllArgsConstructor;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.RenderHandler;
+import me.matl114.gui.basic.TextAlign;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.RegistryUtils;
@@ -178,9 +179,17 @@ public class RegistryDisplays {
             int startIndexX = (element.getTextureHeight() - 16) / 2;
             int startIndexY = startIndexX;
             icon.render(startIndexX, startIndexY, context, value);
-            RenderHandler.drawScaledText0(context, mc.textRenderer, name, 20, 1, 200, 10, -16711936, -1);
+            RenderHandler.drawScaledText0(context, mc.textRenderer, name, 20, 1, 200, 10, -16711936, TextAlign.LEFT);
             RenderHandler.drawScaledText0(
-                    context, mc.textRenderer, Text.literal(identifier.toString()), 20, 10, 200, 19, -16711936, -1);
+                    context,
+                    mc.textRenderer,
+                    Text.literal(identifier.toString()),
+                    20,
+                    10,
+                    200,
+                    19,
+                    -16711936,
+                    TextAlign.LEFT);
         }
     }
 

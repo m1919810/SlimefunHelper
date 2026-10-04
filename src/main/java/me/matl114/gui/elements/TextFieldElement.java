@@ -2,17 +2,20 @@ package me.matl114.gui.elements;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
+import lombok.Getter;
 import lombok.experimental.Accessors;
 import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.AbstractElement;
 import me.matl114.gui.basic.ColorProvider;
+import me.matl114.gui.basic.ColorSampler;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.ExecutableWidget;
+import me.matl114.gui.basic.TextAlign;
+import me.matl114.gui.interfaces.InputElement;
 import me.matl114.utils.ScreenUtils;
+import me.matl114.utils.config.Value;
+import me.matl114.utils.config.ValueAccessor;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -23,75 +26,45 @@ import net.minecraft.text.OrderedText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.StringHelper;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 import org.lwjgl.glfw.GLFW;
 
 @Accessors(chain = true)
-public class TextFieldElement extends AbstractElement {
+public class TextFieldElement extends AbstractElement implements InputElement, TextFieldAccess {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
-    private static final Identifier TEXT_FIELD_TEXTURE = Identifier.ofVanilla("widget/text_field");
-    private static final Identifier TEXT_FIELD_HIGHLIGHTED_TEXTURE =
-            Identifier.ofVanilla("widget/text_field_highlighted");
     private static final long DOUBLE_CLICK_INTERVAL = 250L;
     private static final int DEFAULT_EDITABLE_COLOR = -2039584;
-    private static final int DEFAULT_UNEDITABLE_COLOR = -9408400;
     private static final String HORIZONTAL_CURSOR = "_";
     public static final Style PLACEHOLDER_STYLE = Style.EMPTY.withColor(Formatting.DARK_GRAY);
     public static final Style SEARCH_STYLE = Style.EMPTY.withFormatting(Formatting.GRAY, Formatting.ITALIC);
 
     private final TextRenderer textRenderer;
-    private final TextFieldAccess accessBridge = new TextFieldAccess() {
-
-        @Override
-        public void setBorderColorProvider(ColorProvider provider) {
-            TextFieldElement.this.setBorderColorProvider(provider);
-        }
-
-        @Override
-        public boolean canStartDrag(double mouseX, double mouseY) {
-            return TextFieldElement.this.canStartDrag(mouseX, mouseY);
-        }
-
-        @Override
-        public void dragSelect(int deltaX, int deltaY, boolean shiftDownAction) {
-            TextFieldElement.this.dragSelect(deltaX, deltaY, shiftDownAction);
-        }
-
-        @Override
-        public void resetSelect() {
-            TextFieldElement.this.resetSelection();
-        }
-    };
-
     private Text message;
-    private String text = "";
+    private ValueAccessor<String> text = ValueAccessor.holder("");
     private int maxLength = 32;
     private boolean drawsBackground = true;
     private boolean focusUnlocked = true;
-    private boolean editable = true;
-    private boolean centered = false;
-    private boolean textShadow = true;
     private boolean invertSelectionBackground = true;
-    private boolean visible = true;
     private int firstCharacterIndex;
     private int selectionStart;
     private int selectionEnd;
-    private int editableColor = DEFAULT_EDITABLE_COLOR;
-    private int uneditableColor = DEFAULT_UNEDITABLE_COLOR;
-    private String suggestion;
-    private Consumer<String> changedListener;
-    private Consumer<String> tracker;
-    private Predicate<String> textPredicate = Objects::nonNull;
+    private ColorSampler backgroundColor = ColorSampler.of(-16777216);
+    private ColorSampler textColor = ColorSampler.of(DEFAULT_EDITABLE_COLOR);
     private final List<Formatter> formatters = new ArrayList<>();
     private Text placeholder;
     private long lastSwitchFocusTime = Util.getMeasuringTimeMs();
+
+    @Getter
     private int textX;
+
+    @Getter
     private int textY;
-    private int width;
-    private int height;
+
+    @Getter
+    private TextAlign align = TextAlign.LEFT;
+
     private boolean draggingSelection;
     private boolean focused;
     private ColorProvider borderColorProvider;
@@ -107,6 +80,20 @@ public class TextFieldElement extends AbstractElement {
         return new TextFieldElement(message);
     }
 
+    public static <T> TextFieldElement ofValue(Value<T> value) {
+        TextFieldElement element =
+                new TextFieldElement(ValueAccessor.of(() -> value == null ? "" : value.getInput(), input -> {
+                    if (value != null) {
+                        value.setInput(input);
+                    }
+                }));
+        element.setMaxLength(32768);
+        if (value != null) {
+            element.setBorderColorProvider(McWidgetHelpers.getWrongRedTextBoxColorProvider(value::isValidate));
+        }
+        return element;
+    }
+
     public TextFieldElement() {
         this(Text.empty());
     }
@@ -117,16 +104,11 @@ public class TextFieldElement extends AbstractElement {
         this.updateTextPosition();
     }
 
-    public TextFieldElement(TextFieldWidget textFieldWidget) {
-        this(textFieldWidget == null ? Text.empty() : textFieldWidget.getMessage());
-        if (textFieldWidget != null) {
-            this.text = textFieldWidget.getText();
-            this.drawsBackground = textFieldWidget.drawsBackground();
-            this.selectionStart = MathHelper.clamp(textFieldWidget.getCursor(), 0, this.text.length());
-            this.selectionEnd = this.selectionStart;
-            this.updateFirstCharacterIndex(this.selectionStart);
-            this.updateTextPosition();
-        }
+    public TextFieldElement(ValueAccessor<String> text) {
+        this.textRenderer = mc.textRenderer;
+        this.text = text == null ? ValueAccessor.holder("") : text;
+        this.message = Text.empty();
+        this.updateTextPosition();
     }
 
     public Text getMessage() {
@@ -139,50 +121,49 @@ public class TextFieldElement extends AbstractElement {
     }
 
     public TextFieldElement setText(String text) {
-        String next = text == null ? "" : text;
-        if (this.textPredicate.test(next)) {
-            this.text = next.length() > this.maxLength ? next.substring(0, this.maxLength) : next;
-            this.setCursorToEnd(false);
-            this.setSelectionEnd(this.selectionStart);
-            this.onChanged(this.text);
-        }
+        this.setTextValue(text, true);
         return this;
     }
 
     public String getText() {
-        return this.text;
+        String currentText = this.text.getValue();
+        currentText = currentText == null ? "" : currentText;
+        this.selectionStart = MathHelper.clamp(this.selectionStart, 0, currentText.length());
+        this.selectionEnd = MathHelper.clamp(this.selectionEnd, 0, currentText.length());
+        this.firstCharacterIndex = MathHelper.clamp(this.firstCharacterIndex, 0, currentText.length());
+        return currentText;
     }
 
     public String getSelectedText() {
         int i = Math.min(this.selectionStart, this.selectionEnd);
         int j = Math.max(this.selectionStart, this.selectionEnd);
-        return this.text.substring(i, j);
-    }
-
-    public TextFieldElement setTextPredicate(Predicate<String> textPredicate) {
-        this.textPredicate = textPredicate == null ? Objects::nonNull : textPredicate;
-        return this;
+        return this.getText().substring(i, j);
     }
 
     public TextFieldElement setMaxLength(int maxLength) {
         this.maxLength = Math.max(0, maxLength);
-        if (this.text.length() > this.maxLength) {
-            this.text = this.text.substring(0, this.maxLength);
-            this.selectionStart = Math.min(this.selectionStart, this.text.length());
-            this.selectionEnd = Math.min(this.selectionEnd, this.text.length());
+        String currentText = this.getText();
+        if (currentText.length() > this.maxLength) {
+            this.text.setValue(currentText.substring(0, this.maxLength));
+            this.selectionStart = Math.min(this.selectionStart, this.maxLength);
+            this.selectionEnd = Math.min(this.selectionEnd, this.maxLength);
             this.updateFirstCharacterIndex(this.selectionStart);
-            this.onChanged(this.text);
+            this.updateTextPosition();
         }
         return this;
     }
 
-    public TextFieldElement setChangedListener(Consumer<String> listener) {
-        this.changedListener = listener;
+    public void setBorderColorProvider(ColorProvider provider) {
+        this.borderColorProvider = provider;
+    }
+
+    public TextFieldElement setBackgroundColor(ColorSampler backgroundColor) {
+        this.backgroundColor = backgroundColor == null ? ColorSampler.of(-16777216) : backgroundColor;
         return this;
     }
 
-    public TextFieldElement setBorderColorProvider(ColorProvider provider) {
-        this.borderColorProvider = provider;
+    public TextFieldElement setTextColor(ColorSampler textColor) {
+        this.textColor = textColor == null ? ColorSampler.of(DEFAULT_EDITABLE_COLOR) : textColor;
         return this;
     }
 
@@ -197,11 +178,6 @@ public class TextFieldElement extends AbstractElement {
         return this;
     }
 
-    public TextFieldElement setEditable(boolean editable) {
-        this.editable = editable;
-        return this;
-    }
-
     public TextFieldElement setPlaceholder(Text placeholder) {
         if (placeholder == null) {
             this.placeholder = null;
@@ -212,23 +188,12 @@ public class TextFieldElement extends AbstractElement {
         return this;
     }
 
-    public TextFieldElement setSuggestion(String suggestion) {
-        this.suggestion = suggestion;
-        return this;
-    }
-
     public TextFieldElement setEditableColor(int editableColor) {
-        this.editableColor = editableColor;
-        return this;
-    }
-
-    public TextFieldElement setUneditableColor(int uneditableColor) {
-        this.uneditableColor = uneditableColor;
-        return this;
+        return this.setTextColor(ColorSampler.of(editableColor));
     }
 
     public TextFieldElement setCursorToEnd(boolean shiftKeyPressed) {
-        this.setCursor(this.text.length(), shiftKeyPressed);
+        this.setCursor(this.getText().length(), shiftKeyPressed);
         return this;
     }
 
@@ -237,24 +202,17 @@ public class TextFieldElement extends AbstractElement {
         return this;
     }
 
-    public TextFieldElement setCentered(boolean centered) {
-        this.centered = centered;
+    public TextFieldElement setAlign(TextAlign align) {
+        if (align == null) {
+            throw new IllegalArgumentException("align must be -1, 0, or 1");
+        }
+        this.align = align;
         this.updateTextPosition();
-        return this;
-    }
-
-    public TextFieldElement setTextShadow(boolean textShadow) {
-        this.textShadow = textShadow;
         return this;
     }
 
     public TextFieldElement setInvertSelectionBackground(boolean invertSelectionBackground) {
         this.invertSelectionBackground = invertSelectionBackground;
-        return this;
-    }
-
-    public TextFieldElement setVisible(boolean visible) {
-        this.visible = visible;
         return this;
     }
 
@@ -272,12 +230,12 @@ public class TextFieldElement extends AbstractElement {
     }
 
     public int getCursor() {
+        this.getText();
         return this.selectionStart;
     }
 
     protected void syncWidgetState(DrawableWidget element) {
-        this.width = Math.max(0, element.getTextureWidth());
-        this.height = Math.max(0, element.getTextureHeight());
+        getText();
         boolean nextFocused = element.isFocused();
         if (this.focusUnlocked || nextFocused) {
             if (this.focused != nextFocused) {
@@ -308,26 +266,28 @@ public class TextFieldElement extends AbstractElement {
         return (int) translateMouseY(element, mouseY);
     }
 
-    protected boolean isEditable() {
-        return this.editable;
+    protected boolean isActive() {
+        return this.focused;
     }
 
-    protected boolean isActive() {
-        return this.focused && this.editable;
+    @Override
+    public boolean isPreparingInput() {
+        return this.focused;
     }
 
     protected boolean drawsBackground() {
         return this.drawsBackground;
     }
 
-    protected int getInnerWidth() {
-        return this.drawsBackground ? Math.max(0, this.width - 8) : this.width;
+    protected int getInnerWidth(int textureWidth) {
+        return this.drawsBackground ? Math.max(0, textureWidth - 8) : textureWidth;
     }
 
     protected void write(String value) {
         int i = Math.min(this.selectionStart, this.selectionEnd);
         int j = Math.max(this.selectionStart, this.selectionEnd);
-        int k = this.maxLength - this.text.length() - (i - j);
+        String currentText = this.getText();
+        int k = this.maxLength - currentText.length() - (i - j);
         if (k <= 0) {
             return;
         }
@@ -340,13 +300,11 @@ public class TextFieldElement extends AbstractElement {
             string = string.substring(0, Math.max(0, k));
             l = string.length();
         }
-        String string2 = new StringBuilder(this.text).replace(i, j, string).toString();
-        if (this.textPredicate.test(string2)) {
-            this.text = string2;
-            this.setSelectionStart(i + l);
-            this.setSelectionEnd(this.selectionStart);
-            this.onChanged(this.text);
-        }
+        String string2 = new StringBuilder(currentText).replace(i, j, string).toString();
+        this.text.setValue(string2);
+        this.setSelectionStart(i + l);
+        this.setSelectionEnd(this.selectionStart);
+        this.updateTextPosition();
     }
 
     protected void erase(int offset, boolean words) {
@@ -358,7 +316,7 @@ public class TextFieldElement extends AbstractElement {
     }
 
     public void eraseWords(int wordOffset) {
-        if (this.text.isEmpty()) {
+        if (this.getText().isEmpty()) {
             return;
         }
         if (this.selectionEnd != this.selectionStart) {
@@ -373,7 +331,8 @@ public class TextFieldElement extends AbstractElement {
     }
 
     public void eraseCharactersTo(int position) {
-        if (this.text.isEmpty()) {
+        String currentText = this.getText();
+        if (currentText.isEmpty()) {
             return;
         }
         if (this.selectionEnd != this.selectionStart) {
@@ -385,11 +344,10 @@ public class TextFieldElement extends AbstractElement {
         if (i == j) {
             return;
         }
-        String string = new StringBuilder(this.text).delete(i, j).toString();
-        if (this.textPredicate.test(string)) {
-            this.text = string;
-            this.setCursor(i, false);
-        }
+        String string = new StringBuilder(currentText).delete(i, j).toString();
+        this.text.setValue(string);
+        this.setCursor(i, false);
+        this.updateTextPosition();
     }
 
     public int getWordSkipPosition(int wordOffset) {
@@ -406,20 +364,21 @@ public class TextFieldElement extends AbstractElement {
         int count = Math.abs(wordOffset);
         for (int i = 0; i < count; ++i) {
             if (!backward) {
-                int length = this.text.length();
-                index = this.text.indexOf(32, index);
+                String currentText = this.getText();
+                int length = currentText.length();
+                index = currentText.indexOf(32, index);
                 if (index == -1) {
                     index = length;
                 } else {
-                    while (skipOverSpaces && index < length && this.text.charAt(index) == ' ') {
+                    while (skipOverSpaces && index < length && currentText.charAt(index) == ' ') {
                         ++index;
                     }
                 }
             } else {
-                while (skipOverSpaces && index > 0 && this.text.charAt(index - 1) == ' ') {
+                while (skipOverSpaces && index > 0 && this.getText().charAt(index - 1) == ' ') {
                     --index;
                 }
-                while (index > 0 && this.text.charAt(index - 1) != ' ') {
+                while (index > 0 && this.getText().charAt(index - 1) != ' ') {
                     --index;
                 }
             }
@@ -432,7 +391,7 @@ public class TextFieldElement extends AbstractElement {
     }
 
     protected int getCursorPosWithOffset(int offset) {
-        return Util.moveCursor(this.text, this.selectionStart, offset);
+        return Util.moveCursor(this.getText(), this.selectionStart, offset);
     }
 
     protected void setCursor(int cursor, boolean select) {
@@ -444,23 +403,30 @@ public class TextFieldElement extends AbstractElement {
     }
 
     protected void setSelectionStart(int cursor) {
-        this.selectionStart = MathHelper.clamp(cursor, 0, this.text.length());
+        this.selectionStart = MathHelper.clamp(cursor, 0, this.getText().length());
         this.updateFirstCharacterIndex(this.selectionStart);
     }
 
     protected void setSelectionEnd(int index) {
-        this.selectionEnd = MathHelper.clamp(index, 0, this.text.length());
+        this.selectionEnd = MathHelper.clamp(index, 0, this.getText().length());
         this.updateFirstCharacterIndex(this.selectionEnd);
     }
 
-    protected void onChanged(String newText) {
-        if (this.changedListener != null) {
-            this.changedListener.accept(newText);
-        }
-        if (this.tracker != null) {
-            this.tracker.accept(newText);
+    public boolean setTextValue(String value, boolean moveCursorToEnd) {
+        String next = value == null ? "" : value;
+        String boundedText = next.length() > this.maxLength ? next.substring(0, this.maxLength) : next;
+        this.text.setValue(boundedText);
+        if (moveCursorToEnd) {
+            this.setCursorToEnd(false);
+            this.setSelectionEnd(this.selectionStart);
+        } else {
+            this.selectionStart = Math.min(this.selectionStart, boundedText.length());
+            this.selectionEnd = Math.min(this.selectionEnd, boundedText.length());
+            this.updateFirstCharacterIndex(this.selectionStart);
+            this.updateFirstCharacterIndex(this.selectionEnd);
         }
         this.updateTextPosition();
+        return true;
     }
 
     protected boolean handleKeyPressed(int keyCode, int scanCode, int modifiers) {
@@ -474,15 +440,11 @@ public class TextFieldElement extends AbstractElement {
         boolean shift = hasShift(modifiers);
         switch (keyCode) {
             case GLFW.GLFW_KEY_BACKSPACE -> {
-                if (this.editable) {
-                    this.erase(-1, ctrlOrCmd);
-                }
+                this.erase(-1, ctrlOrCmd);
                 return true;
             }
             case GLFW.GLFW_KEY_DELETE -> {
-                if (this.editable) {
-                    this.erase(1, ctrlOrCmd);
-                }
+                this.erase(1, ctrlOrCmd);
                 return true;
             }
             case GLFW.GLFW_KEY_RIGHT -> {
@@ -506,12 +468,12 @@ public class TextFieldElement extends AbstractElement {
                 return true;
             }
             case GLFW.GLFW_KEY_END -> {
-                this.setCursor(this.text.length(), shift);
+                this.setCursor(this.getText().length(), shift);
                 return true;
             }
             default -> {
                 if (ctrlOrCmd && keyCode == GLFW.GLFW_KEY_A) {
-                    this.setCursor(this.text.length(), false);
+                    this.setCursor(this.getText().length(), false);
                     this.setSelectionEnd(0);
                     return true;
                 }
@@ -520,16 +482,12 @@ public class TextFieldElement extends AbstractElement {
                     return true;
                 }
                 if (ctrlOrCmd && keyCode == GLFW.GLFW_KEY_V) {
-                    if (this.editable) {
-                        this.write(mc.keyboard.getClipboard());
-                    }
+                    this.write(mc.keyboard.getClipboard());
                     return true;
                 }
                 if (ctrlOrCmd && keyCode == GLFW.GLFW_KEY_X) {
                     mc.keyboard.setClipboard(this.getSelectedText());
-                    if (this.editable) {
-                        this.write("");
-                    }
+                    this.write("");
                     return true;
                 }
                 return false;
@@ -548,9 +506,9 @@ public class TextFieldElement extends AbstractElement {
         return true;
     }
 
-    protected int calculateCursorPos(double mouseX) {
-        int innerX = Math.min(MathHelper.floor(mouseX) - this.textX, this.getInnerWidth());
-        String string = this.text.substring(this.firstCharacterIndex);
+    protected int calculateCursorPos(double mouseX, int textureWidth) {
+        int innerX = MathHelper.clamp(MathHelper.floor(mouseX) - this.textX, 0, this.getInnerWidth(textureWidth));
+        String string = this.getText().substring(this.firstCharacterIndex);
         return this.firstCharacterIndex
                 + this.textRenderer.trimToWidth(string, innerX).length();
     }
@@ -562,22 +520,61 @@ public class TextFieldElement extends AbstractElement {
         this.setCursor(end, true);
     }
 
-    protected boolean canStartDrag(double mouseX, double mouseY) {
-        return mouseX >= 0 && mouseY >= 0 && mouseX < this.width && mouseY < this.height;
+    public boolean canStartDrag(double mouseX, double mouseY) {
+        return mouseX >= 0 && mouseY >= 0;
     }
 
-    protected void dragSelect(int mouseX, int mouseY, boolean shiftDownAction) {
-        int innerX = mouseX;
-        if (this.drawsBackground()) {
-            innerX -= 4;
+    protected boolean canStartDrag(DrawableWidget element, double mouseX, double mouseY) {
+        return mouseX >= element.getX()
+                && mouseY >= element.getY()
+                && mouseX < element.getX() + element.getWidth()
+                && mouseY < element.getY() + element.getHeight();
+    }
+
+    protected boolean handleMouseClick(ExecutableWidget element, double mouseX, double mouseY, int button) {
+        syncWidgetState(element);
+        if (button != 0) {
+            return false;
         }
-        String string =
-                this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.getInnerWidth());
+        double translatedMouseX = translateMouseX(element, mouseX);
+        double translatedMouseY = translateMouseY(element, mouseY);
+        if (!this.canStartDrag(element, mouseX, mouseY)) {
+            return false;
+        }
+        int cursor = this.calculateCursorPos(translatedMouseX, element.getTextureWidth());
+        long now = Util.getMeasuringTimeMs();
+        boolean doubled = this.lastClickButton == button
+                && this.lastClickCursor == cursor
+                && now - this.lastClickTime <= DOUBLE_CLICK_INTERVAL;
+        if (doubled) {
+            this.selectWord(cursor);
+        } else {
+            this.setCursor(cursor, ScreenUtils.hasShiftDown());
+        }
+        this.lastClickTime = now;
+        this.lastClickCursor = cursor;
+        this.lastClickButton = button;
+        return true;
+    }
+
+    public void dragSelect(int mouseX, int mouseY, boolean shiftDownAction) {
+        this.dragSelect(mouseX, mouseY, shiftDownAction, Integer.MAX_VALUE);
+    }
+
+    protected void dragSelect(int mouseX, int mouseY, boolean shiftDownAction, int textureWidth) {
+        int innerX = MathHelper.clamp(mouseX - this.textX, 0, this.getInnerWidth(textureWidth));
+        String string = this.textRenderer.trimToWidth(
+                this.getText().substring(this.firstCharacterIndex), this.getInnerWidth(textureWidth));
         this.setCursor(
                 this.textRenderer.trimToWidth(string, innerX).length() + this.firstCharacterIndex, shiftDownAction);
     }
 
-    public void drawSelection(DrawContext context, int x1, int y1, int x2, int y2, boolean invert) {
+    @Override
+    public void resetSelect() {
+        resetSelection();
+    }
+
+    protected void drawSelection(DrawContext context, int x1, int y1, int x2, int y2, boolean invert) {
         if (invert) {
             context.fill(RenderLayer.getGui(), x1, y1, x2, y2, -1);
         }
@@ -595,38 +592,32 @@ public class TextFieldElement extends AbstractElement {
             float alpha,
             boolean shouldHighlight) {
         syncWidgetState(element);
-        if (!this.visible) {
-            return;
-        }
+        this.updateFirstCharacterIndex(this.selectionStart, element.getTextureWidth());
+        this.updateTextPosition(element.getTextureWidth(), element.getTextureHeight());
         int translatedMouseX = translateRenderMouseX(element, mouseX);
         int translatedMouseY = translateRenderMouseY(element, mouseY);
-        DrawContext drawContext = context.pushMatrix();
+        var drawContext = context.pushMatrix();
         try {
             if (this.drawsBackground()) {
-                if (this.borderColorProvider != null) {
-                    McWidgetHelpers.drawTextWidgetBox(
-                            element,
-                            drawContext,
-                            0,
-                            0,
-                            this.width,
-                            this.height,
-                            this.focused,
-                            this.borderColorProvider);
-                } else {
-                    context.drawGuiTexture(
-                            this.focused ? TEXT_FIELD_HIGHLIGHTED_TEXTURE : TEXT_FIELD_TEXTURE,
-                            0,
-                            0,
-                            this.width,
-                            this.height);
-                }
+                McWidgetHelpers.drawTextWidgetBox(
+                        element,
+                        drawContext,
+                        0,
+                        0,
+                        element.getTextureWidth(),
+                        element.getTextureHeight(),
+                        this.focused,
+                        this.borderColorProvider == null
+                                ? McWidgetHelpers.getDefaultTextBoxColorProvider()
+                                : this.borderColorProvider,
+                        this.backgroundColor);
             }
 
-            int color = this.editable ? this.editableColor : this.uneditableColor;
+            this.renderInputBackgroundOverlay(element, context, translatedMouseX, translatedMouseY);
+            int color = this.textColor.getColorInt();
             int cursorOffset = this.selectionStart - this.firstCharacterIndex;
-            String visibleText =
-                    this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.getInnerWidth());
+            String visibleText = this.textRenderer.trimToWidth(
+                    this.getText().substring(this.firstCharacterIndex), this.getInnerWidth(element.getTextureWidth()));
             boolean cursorInVisibleRange = cursorOffset >= 0 && cursorOffset <= visibleText.length();
             boolean showBlink = this.focused
                     && (Util.getMeasuringTimeMs() - this.lastSwitchFocusTime) / 300L % 2L == 0L
@@ -637,111 +628,90 @@ public class TextFieldElement extends AbstractElement {
             if (!visibleText.isEmpty()) {
                 String beforeCursor = cursorInVisibleRange ? visibleText.substring(0, cursorOffset) : visibleText;
                 OrderedText orderedText = this.format(beforeCursor, this.firstCharacterIndex);
-                drawContext.drawText(this.textRenderer, orderedText, drawX, this.textY, color, this.textShadow);
+                context.drawText(this.textRenderer, orderedText, drawX, this.textY, color, true);
                 drawX += this.textRenderer.getWidth(orderedText) + 1;
             }
 
-            boolean hasMoreChars = this.selectionStart < this.text.length() || this.text.length() >= this.maxLength;
+            boolean hasMoreChars = this.selectionStart < this.getText().length()
+                    || this.getText().length() >= this.maxLength;
             int cursorX = drawX;
             if (!cursorInVisibleRange) {
-                cursorX = cursorOffset > 0 ? this.textX + this.width : this.textX;
+                cursorX = cursorOffset > 0 ? this.textX + element.getTextureWidth() : this.textX;
             } else if (hasMoreChars) {
                 --cursorX;
                 --drawX;
             }
 
             if (!visibleText.isEmpty() && cursorInVisibleRange && cursorOffset < visibleText.length()) {
-                drawContext.drawText(
+                context.drawText(
                         this.textRenderer,
                         this.format(visibleText.substring(cursorOffset), this.selectionStart),
                         drawX,
                         this.textY,
                         color,
-                        this.textShadow);
+                        true);
             }
 
             if (this.placeholder != null && visibleText.isEmpty() && !this.focused) {
-                drawContext.drawTextWithShadow(this.textRenderer, this.placeholder, drawX, this.textY, color);
-            }
-
-            if (!hasMoreChars && this.suggestion != null) {
-                drawContext.drawText(
-                        this.textRenderer, this.suggestion, cursorX - 1, this.textY, -8355712, this.textShadow);
+                context.drawText(this.textRenderer, this.placeholder.asOrderedText(), drawX, this.textY, color, true);
             }
 
             if (selectionOffset != cursorOffset) {
                 int selectionX = this.textX + this.textRenderer.getWidth(visibleText.substring(0, selectionOffset));
                 drawSelection(
                         drawContext,
-                        Math.min(cursorX, this.width),
+                        Math.min(cursorX, element.getTextureWidth()),
                         this.textY - 1,
-                        Math.min(selectionX - 1, this.width),
+                        Math.min(selectionX - 1, element.getTextureWidth()),
                         this.textY + 10,
                         this.invertSelectionBackground);
             }
 
             if (showBlink) {
                 if (hasMoreChars) {
-                    drawContext.fill(cursorX, this.textY - 1, cursorX + 1, this.textY + 10, color);
+                    context.fill(cursorX, this.textY - 1, cursorX + 1, this.textY + 10, color);
                 } else {
-                    drawContext.drawText(
-                            this.textRenderer, HORIZONTAL_CURSOR, cursorX, this.textY, color, this.textShadow);
+                    context.drawText(this.textRenderer, HORIZONTAL_CURSOR, cursorX, this.textY, color, true);
                 }
             }
+
         } finally {
             context.popMatrix();
         }
     }
 
+    protected void renderInputBackgroundOverlay(DrawableWidget element, VDrawContext context, int mouseX, int mouseY) {}
+
     @Override
     public boolean onClick(ExecutableWidget element, double mouseX, double mouseY, int button) {
-        throw new UnsupportedOperationException("Use onAction(Type.MOUSE_CLICK) instead");
+        return this.handleMouseClick(element, mouseX, mouseY, button);
     }
 
     @Override
     public boolean onAction(ExecutableWidget element, double mouseX, double mouseY, int button, Type type) {
+        if (type == Type.MOUSE_CLICK) {
+            return this.handleMouseClick(element, mouseX, mouseY, button);
+        }
         if (super.onAction(element, mouseX, mouseY, button, type)) {
             return true;
         }
         syncWidgetState(element);
-        if (!this.visible) {
-            this.draggingSelection = false;
-            return false;
-        }
+        this.getText();
         double translatedMouseX = translateMouseX(element, mouseX);
         double translatedMouseY = translateMouseY(element, mouseY);
         return switch (type) {
-            case MOUSE_CLICK -> {
-                if (button != 0 || !this.canStartDrag(translatedMouseX, translatedMouseY)) {
-                    yield false;
-                }
-                int cursor = this.calculateCursorPos(translatedMouseX);
-                long now = Util.getMeasuringTimeMs();
-                boolean doubled = this.lastClickButton == button
-                        && this.lastClickCursor == cursor
-                        && now - this.lastClickTime <= DOUBLE_CLICK_INTERVAL;
-                if (doubled) {
-                    this.selectWord(cursor);
-                } else {
-                    this.setCursor(cursor, ScreenUtils.hasShiftDown());
-                }
-                this.lastClickTime = now;
-                this.lastClickCursor = cursor;
-                this.lastClickButton = button;
-                yield true;
-            }
             case MOUSE_RELEASE -> {
                 boolean wasDragging = this.draggingSelection;
                 this.draggingSelection = false;
                 yield wasDragging;
             }
             case MOUSE_START_DRAG -> {
-                this.draggingSelection = button == 0 && this.canStartDrag(translatedMouseX, translatedMouseY);
+                this.draggingSelection = button == 0 && this.canStartDrag(element, mouseX, mouseY);
                 yield this.draggingSelection;
             }
             case MOUSE_DRAG -> {
                 if (this.draggingSelection) {
-                    this.dragSelect((int) translatedMouseX, (int) translatedMouseY, true);
+                    this.dragSelect((int) translatedMouseX, (int) translatedMouseY, true, element.getTextureWidth());
                     yield true;
                 }
                 yield false;
@@ -750,6 +720,9 @@ public class TextFieldElement extends AbstractElement {
                 boolean wasDragging = this.draggingSelection;
                 this.draggingSelection = false;
                 yield wasDragging;
+            }
+            default -> {
+                yield false;
             }
         };
     }
@@ -782,30 +755,42 @@ public class TextFieldElement extends AbstractElement {
         return OrderedText.styledForwardsVisitedString(value, Style.EMPTY);
     }
 
-    protected void updateTextPosition() {
-        String visibleText =
-                this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), this.getInnerWidth());
-        this.textX = this.centered
-                ? (this.width - this.textRenderer.getWidth(visibleText)) / 2
-                : (this.drawsBackground ? 4 : 0);
-        this.textY = this.drawsBackground ? (this.height - 8) / 2 : 0;
+    protected void updateTextPosition() {}
+
+    protected void updateTextPosition(int textureWidth, int textureHeight) {
+        String currentText = this.getText();
+        String visibleText = this.textRenderer.trimToWidth(
+                currentText.substring(this.firstCharacterIndex), this.getInnerWidth(textureWidth));
+        int leftPadding = this.drawsBackground ? 4 : 0;
+        int availableWidth = Math.max(0, textureWidth - leftPadding * 2);
+        this.textX = switch (this.align) {
+            case MIDDLE -> leftPadding + (availableWidth - this.textRenderer.getWidth(visibleText)) / 2;
+            case RIGHT -> textureWidth - leftPadding - this.textRenderer.getWidth(visibleText);
+            case LEFT -> leftPadding;};
+        this.textY = this.drawsBackground ? (textureHeight - 8) / 2 : 0;
     }
 
     protected void updateFirstCharacterIndex(int cursor) {
-        this.firstCharacterIndex = Math.min(this.firstCharacterIndex, this.text.length());
-        int innerWidth = this.getInnerWidth();
-        String visibleText = this.textRenderer.trimToWidth(this.text.substring(this.firstCharacterIndex), innerWidth);
+        String currentText = this.getText();
+        this.firstCharacterIndex = MathHelper.clamp(cursor, 0, currentText.length());
+    }
+
+    protected void updateFirstCharacterIndex(int cursor, int textureWidth) {
+        String currentText = this.getText();
+        this.firstCharacterIndex = Math.min(this.firstCharacterIndex, currentText.length());
+        int innerWidth = this.getInnerWidth(textureWidth);
+        String visibleText = this.textRenderer.trimToWidth(currentText.substring(this.firstCharacterIndex), innerWidth);
         int visibleEnd = visibleText.length() + this.firstCharacterIndex;
         if (cursor == this.firstCharacterIndex) {
             this.firstCharacterIndex -=
-                    this.textRenderer.trimToWidth(this.text, innerWidth, true).length();
+                    this.textRenderer.trimToWidth(currentText, innerWidth, true).length();
         }
         if (cursor > visibleEnd) {
             this.firstCharacterIndex += cursor - visibleEnd;
         } else if (cursor <= this.firstCharacterIndex) {
             this.firstCharacterIndex -= this.firstCharacterIndex - cursor;
         }
-        this.firstCharacterIndex = MathHelper.clamp(this.firstCharacterIndex, 0, this.text.length());
+        this.firstCharacterIndex = MathHelper.clamp(this.firstCharacterIndex, 0, currentText.length());
     }
 
     protected boolean hasCtrlOrCmd(int modifiers) {

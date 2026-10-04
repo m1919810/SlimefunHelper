@@ -8,6 +8,7 @@ import me.matl114.gui.complex.RawTextElement;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.IconElement;
 import me.matl114.gui.elements.PlateElement;
+import me.matl114.gui.interfaces.VanillaElementFactory;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.kv.AttrKeyValues;
@@ -84,7 +85,7 @@ public class IntFastInputWidget extends SubScreenWidget {
             super.initBackgroundAndText();
             DisplayWidget.instance(inputTextDx - 2, 12, inputDx - inputTextDx, dy - 16)
                     .setRenderHandler(RawTextElement.instance((i) -> Text.literal("/" + this.maxValue))
-                            .setAlignment(-1))
+                            .setAlignment(TextAlign.LEFT))
                     .addToSub(this);
         }
     }
@@ -144,10 +145,10 @@ public class IntFastInputWidget extends SubScreenWidget {
                 .addToSub(this);
         DisplayWidget.instance(4, 1, inputDx - 8, 10)
                 .setRenderHandler(RawTextElement.instance(Text.literal(keyValue.getKeyName()))
-                        .setAlignment(-1))
+                        .setAlignment(TextAlign.LEFT))
                 .addToSub(this);
-        inputField =
-                keyValue.generateValueWidget(4, 12, inputTextDx - 8, dy - 16).addToSub(this);
+        inputField = keyValue.generateValueWidget(VanillaElementFactory.INSTANCE, 4, 12, inputTextDx - 8, dy - 16)
+                .addToSub(this);
     }
 
     protected void initConfirmButton() {

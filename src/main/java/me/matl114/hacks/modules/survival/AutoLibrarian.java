@@ -120,18 +120,23 @@ public class AutoLibrarian extends BaseModule {
     final AdjustmentSchedular adjustmentSchedular = new AdjustmentSchedular();
 
     @Override
-    public void addCustomWidgets(Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank) {
-        super.addCustomWidgets(acceptor, dx, dy, dblank);
-        acceptor.accept(createTitle("widget.interact.interact-all.use-argument", 0, dblank, dx, dy));
+    public void addCustomWidgets(
+            Consumer<DrawableWidget> acceptor,
+            int dx,
+            int dy,
+            int dblank,
+            me.matl114.gui.interfaces.ElementFactory factory) {
+        super.addCustomWidgets(acceptor, dx, dy, dblank, factory);
+        acceptor.accept(factory.createTitle("widget.interact.interact-all.use-argument", 0, dblank, dx, dy));
         if (mc.getNetworkHandler() != null) {
-            acceptor.accept(createExecuteButton(
+            acceptor.accept(factory.createExecuteButton(
                     "widget.auto-librarian.set-min-price",
                     ButtonAction.run(this::setLowestPriceForAllEnchantments),
                     0,
                     dblank,
                     dx,
                     dy));
-            acceptor.accept(createExecuteButton(
+            acceptor.accept(factory.createExecuteButton(
                     "widget.auto-librarian.fill-all-enchantment",
                     ButtonAction.run(this::setAllEnchantments),
                     0,

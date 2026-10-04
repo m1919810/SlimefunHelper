@@ -42,14 +42,14 @@ public record Primitive<T>(NBTType<T> valueType, @Nonnull T value, String valueS
         return new NBTType(
                 "primitive",
                 Codec.STRING.<Primitive<T>>comapFlatMap(Primitive::<T>parse, Primitive::asString),
-                (AttrKeyValue.CustomWidgetGenerator<Primitive<T>>) (w, x, y, dx, dy) -> {
+                (AttrKeyValue.CustomWidgetGenerator<Primitive<T>>) (factory, w, x, y, dx, dy) -> {
                     Primitive<T> primitive = w.get();
                     NBTType<T> typeT = primitive.valueType;
                     return new TypeConvertAttrKeyValue<>(
                                     w,
                                     WrapperFactory.<T, Primitive<T>>of(s -> Primitive.of(typeT, s), Primitive::value),
                                     typeT)
-                            .generateValueWidget(x, y, dx, dy);
+                            .generateValueWidget(factory, x, y, dx, dy);
                 },
                 WrapperFactory.<String, Primitive<T>>of(
                         (s) -> Primitive.<T>parse(s).getOrThrow(), Primitive::asString),
