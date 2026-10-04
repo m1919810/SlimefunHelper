@@ -2,8 +2,10 @@ package me.matl114.utils;
 
 import java.util.*;
 import me.matl114.utils.annotations.NeedTest;
+import net.minecraft.block.BedBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.RespawnAnchorBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.hit.BlockHitResult;
@@ -341,6 +343,36 @@ public final class ExplosionUtils {
                 return world.getFluidState(pos).getBlastResistance();
             }
         };
+    }
+
+    @NeedTest
+    public static BlockStateAccess fromWorldWithAutomaticOverrides(BlockView world, Vec3d explosionPos) {
+        return fromWorldWithOverrides(world, getAutomaticExplosionOverrides(world, explosionPos));
+    }
+
+    @NeedTest
+    public static Map<BlockPos, BlockState> getAutomaticExplosionOverrides(BlockView world, Vec3d explosionPos) {
+        if (world == null || explosionPos == null) {
+            return Map.of();
+        }
+        BlockPos explosionBlock = BlockPos.ofFloored(explosionPos);
+        if (!Objects.equals(explosionPos, explosionBlock.toCenterPos())) {
+            return Map.of();
+        }
+
+        BlockState explosionState = world.getBlockState(explosionBlock);
+        if (explosionState.getBlock() instanceof RespawnAnchorBlock) {
+            return Map.of(explosionBlock, Blocks.AIR.getDefaultState());
+        }
+        if (explosionState.getBlock() instanceof BedBlock) {
+            Map<BlockPos, BlockState> overrides = new LinkedHashMap<>();
+            overrides.put(explosionBlock, Blocks.AIR.getDefaultState());
+            overrides.put(
+                    explosionBlock.offset(BedBlock.getOppositePartDirection(explosionState)),
+                    Blocks.AIR.getDefaultState());
+            return Map.copyOf(overrides);
+        }
+        return Map.of();
     }
 
     @NeedTest
