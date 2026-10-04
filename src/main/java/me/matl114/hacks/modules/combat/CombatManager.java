@@ -573,11 +573,9 @@ public class CombatManager extends BaseModule {
             float rawDamage = ExplosionUtils.calculateExplosionRawDamage(
                     radius, event.context.center(), player.getBoundingBox(), blockAccess, ExplosionUtils.ALL_TERRAIN);
             float damage = DamageUtils.getMultipliedDamageByDifficulty(mc.world, rawDamage);
-            if (respawnAnchor || bed) {
-                cacheDamageEstimate(player, TrackedDamageCategory.BAD_RESPAWN_POINT, damage);
-            } else {
-                cacheDamageEstimate(player, TrackedDamageCategory.EXPLOSION, damage);
-                cacheDamageEstimate(player, TrackedDamageCategory.PLAYER_EXPLOSION, damage);
+            DamageTracker tracker = getDamageTracker(player);
+            if (tracker != null) {
+                tracker.onExplosionDamage(damage);
             }
         }
     }
@@ -592,14 +590,14 @@ public class CombatManager extends BaseModule {
         Entity source = mc.world.getEntityById(event.context.sourceCauseId());
         TrackedDamageCategory category = getDamageCategory(damageType);
         float damage = UNKNOWN_DAMAGE_ESTIMATE;
-        if (source instanceof PlayerEntity attacker) {
+        if (isExplosionDamageCategory(category)) {
+            damage = UNKNOWN_DAMAGE_ESTIMATE;
+        } else if (source instanceof PlayerEntity attacker) {
             damage = tracker.takeEstimate(category, Tasks.getTick());
             if (damage <= 0.0F) {
                 ItemStack weapon = attacker.getMainHandStack();
                 damage = getMaximumWeaponDamage(attacker, player, weapon, category == TrackedDamageCategory.SMASH);
             }
-        } else if (category == TrackedDamageCategory.BAD_RESPAWN_POINT) {
-            damage = tracker.takeEstimate(category, Tasks.getTick());
         }
         if (damage <= 0.0F) damage = UNKNOWN_DAMAGE_ESTIMATE;
         tracker.onDamage(damage, Tasks.getTick(), DAMAGE_PACKET_NETWORK_DELAY);
@@ -638,6 +636,12 @@ public class CombatManager extends BaseModule {
         return TrackedDamageCategory.PLAYER_ATTACK;
     }
 
+    private static boolean isExplosionDamageCategory(TrackedDamageCategory category) {
+        return category == TrackedDamageCategory.BAD_RESPAWN_POINT
+                || category == TrackedDamageCategory.PLAYER_EXPLOSION
+                || category == TrackedDamageCategory.EXPLOSION;
+    }
+
     public DamageTracker getDamageTracker(PlayerEntity player) {
         if (!(player instanceof MetadataHolder holder) || holder.isMetaEmpty()) return null;
         return holder.getMetadata().get(this, KEY_DAMAGE_TRACKER);
@@ -650,7 +654,6 @@ public class CombatManager extends BaseModule {
 
     public static class DamageTracker {
         private final Map<TrackedDamageCategory, DamageEstimate> estimates = new EnumMap<>(TrackedDamageCategory.class);
-        private DamageEstimate lastPlayerExplosionEstimate;
         public float lastDamage;
         public float damageThreshold;
         public int lastDamageTick;
@@ -663,9 +666,6 @@ public class CombatManager extends BaseModule {
         private void cacheEstimate(TrackedDamageCategory category, float damage, int tick) {
             DamageEstimate estimate = new DamageEstimate(damage, tick + DAMAGE_ESTIMATE_TTL);
             estimates.put(category, estimate);
-            if (category == TrackedDamageCategory.PLAYER_EXPLOSION) {
-                lastPlayerExplosionEstimate = estimate;
-            }
         }
 
         private void considerEstimatedDamage(float damage) {
@@ -677,18 +677,16 @@ public class CombatManager extends BaseModule {
         private float takeEstimate(TrackedDamageCategory category, int tick) {
             estimates.entrySet().removeIf(entry -> entry.getValue().expiresAt < tick);
             DamageEstimate estimate = estimates.remove(category);
-            if (estimate == null && category == TrackedDamageCategory.BAD_RESPAWN_POINT) {
-                if (lastPlayerExplosionEstimate != null && lastPlayerExplosionEstimate.expiresAt >= tick) {
-                    estimate = lastPlayerExplosionEstimate;
-                    lastPlayerExplosionEstimate = null;
-                } else {
-                    lastPlayerExplosionEstimate = null;
-                }
-            }
             if (estimate == null && category != TrackedDamageCategory.PLAYER_ATTACK) {
                 estimate = estimates.remove(TrackedDamageCategory.PLAYER_ATTACK);
             }
             return estimate == null ? 0.0F : estimate.damage;
+        }
+
+        private void onExplosionDamage(float damage) {
+            if (getInvulnerabilityTicks() <= 0 || damage <= 0.0F) return;
+            lastDamage = Math.max(lastDamage, damage);
+            damageThreshold = lastDamage;
         }
 
         private void onDamage(float damage, int tick, int networkDelay) {
