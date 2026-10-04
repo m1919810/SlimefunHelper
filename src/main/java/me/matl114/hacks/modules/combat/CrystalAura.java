@@ -120,7 +120,28 @@ public class CrystalAura extends BaseModule {
             .validator(Configs.doubleRange(0.0D, 1000.0D))
             .build();
 
+    public final ModulePath invulnerability = root.add("invulnerability-frame");
+
+    public final FlagRef considerInvulnerability = builder(invulnerability.add("consider"), Boolean.class)
+            .defaultValue(false)
+            .build();
+
+    public final DoubleRef invulnerabilityDamageMultiplier = doubleBuilder(invulnerability.add("damage-multiplier"))
+            .defaultValue(1.0D)
+            .validator(Configs.doubleRange(0.0D, 100.0D))
+            .build();
+
+    public final IntRef invulnerabilityConsiderTicks = intBuilder(invulnerability.add("consider-ticks"))
+            .defaultValue(7)
+            .validator(Configs.INT_POSITIVE)
+            .build();
+
     public final FlagRef usePredictor = builder(root.add("damage-use-predictor"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
+    public final FlagRef considerExistingDamage = builder(
+                    invulnerability.add("consider-existing-damage"), Boolean.class)
             .defaultValue(true)
             .build();
 
@@ -217,6 +238,7 @@ public class CrystalAura extends BaseModule {
     int timer = 0;
     RenderCollector<Box> debugRender = RenderCollectors.createBoxCollector(true, false, false);
     boolean nextHitSkipDamageTest;
+    double maxExistingDamageValue = Double.NEGATIVE_INFINITY;
 
     public void onWorldSwitch(Event<ClientPlayerEntity> event) {
         currentTarget = List.of();
@@ -370,6 +392,7 @@ public class CrystalAura extends BaseModule {
     }
 
     public boolean tickAttack() {
+        maxExistingDamageValue = Double.NEGATIVE_INFINITY;
         boolean skipTick = nextHitSkipDamageTest;
         nextHitSkipDamageTest = false;
         if (currentTarget.isEmpty()) {
@@ -386,8 +409,14 @@ public class CrystalAura extends BaseModule {
                 continue;
             }
             Map<PlayerEntity, Double> damageMap = calculateCrystalDamage(crystal.getPos());
-            if (isSuitableExplodePos(damageMap) && (skipTick || isSuitableAttackExplodePos(damageMap))) {
-                candidates.add(Map.entry(crystal, damageMap));
+            Map<PlayerEntity, Double> attackDamageMap = calculateInvulnerabilityDamageMap(damageMap);
+            if (isSuitableExplodePos(damageMap) && (skipTick || isSuitableAttackExplodePos(attackDamageMap))) {
+                candidates.add(Map.entry(crystal, attackDamageMap));
+            } else if (considerInvulnerability.get()
+                    && considerExistingDamage.get()
+                    && isSuitableExplodePos(damageMap)
+                    && getBestEnemyDamage(damageMap) >= targetDamageThreshold.get()) {
+                maxExistingDamageValue = Math.max(maxExistingDamageValue, getBestEnemyDamage(damageMap));
             }
         }
         candidates.sort(Map.Entry.comparingByValue(this::compareCrystalEntries));
@@ -463,7 +492,9 @@ public class CrystalAura extends BaseModule {
         boolean legal = mode.get().isLegal();
 
         CrystalPlan bestPlan = null;
-        double bestEnemyDamage = Double.NEGATIVE_INFINITY;
+        double bestEnemyDamage = considerInvulnerability.get() && considerExistingDamage.get()
+                ? Math.max(maxExistingDamageValue, Double.NEGATIVE_INFINITY)
+                : Double.NEGATIVE_INFINITY;
         double bestSelfDamage = Double.POSITIVE_INFINITY;
         Map<PlayerEntity, Double> bestDamageMap = Map.of();
         Set<EndCrystalEntity> currentPreRemovals = Set.of();
@@ -879,6 +910,26 @@ public class CrystalAura extends BaseModule {
             }
         }
         return best;
+    }
+
+    private Map<PlayerEntity, Double> calculateInvulnerabilityDamageMap(Map<PlayerEntity, Double> damageMap) {
+        if (!considerInvulnerability.get()) return damageMap;
+        Map<PlayerEntity, Double> adjustedDamageMap = new LinkedHashMap<>(damageMap);
+        for (PlayerEntity target : currentTarget) {
+            Double damage = damageMap.get(target);
+            CombatManager.DamageTracker tracker = CombatManager.INSTANCE.getDamageTracker(target);
+            int invulnerabilityTicks = tracker == null ? 0 : tracker.getInvulnerabilityTicks();
+            if (damage == null
+                    || tracker == null
+                    || invulnerabilityTicks <= 0
+                    || invulnerabilityTicks > invulnerabilityConsiderTicks.get()) {
+                continue;
+            }
+            double adjustedDamage =
+                    Math.min((damage - tracker.lastDamage) * invulnerabilityDamageMultiplier.get(), damage);
+            adjustedDamageMap.put(target, adjustedDamage);
+        }
+        return adjustedDamageMap;
     }
 
     private boolean isBasePlacedCrystalInAttackRange(BlockPos basePos) {
