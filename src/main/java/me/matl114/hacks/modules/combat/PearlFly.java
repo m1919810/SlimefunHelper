@@ -123,21 +123,25 @@ public class PearlFly extends BaseModule {
             if (mc.player.getItemCooldownManager().isCoolingDown(new ItemStack(Items.ENDER_PEARL))) {
                 return;
             }
+            Vec3d facingDirection = EntityUtils.pitchYawToRotation(0, mc.player.getYaw());
             Direction direction = mc.player.getHorizontalFacing();
             Vec3d pos = mc.player.getBlockPos().toCenterPos();
             Vec3d ppos = mc.player.getPos();
-            BlockPos pbpos = mc.player.getBlockPos();
 
             BlockPos searchPos;
             if (useWASDControl.get()) {
                 var input = PlayerInputUtils.of(mc.options);
-                Direction right = direction.rotateYCounterclockwise();
-                searchPos = pbpos.add(direction.getVector().multiply(input.forwardSpeed()))
-                        .add(right.getVector().multiply(input.sidewaysSpeed()));
+                Vec3d adAxis = new Vec3d(facingDirection.z, 0, -facingDirection.x);
+                Vec3d inputVec = facingDirection
+                        .multiply(input.forwardSpeed())
+                        .add(adAxis.multiply(input.sidewaysSpeed()))
+                        .normalize();
+                searchPos = BlockPos.ofFloored(ppos.add(inputVec));
                 if (enableJump.get() && input.upwardSpeed() > 0) {
                     searchPos = searchPos.offset(Direction.UP, input.upwardSpeed());
                 }
-                if (!Objects.equals(pbpos, searchPos) && doPearlUse(pbpos, searchPos)) {
+                if (!Objects.equals(mc.player.getBlockPos(), searchPos)
+                        && doPearlUse(mc.player.getBlockPos(), searchPos)) {
                     enablePearlPhase.set(false);
                     return;
                 }
@@ -148,9 +152,9 @@ public class PearlFly extends BaseModule {
                 Direction search = direction;
                 Direction result = direction;
                 double min = Double.MAX_VALUE;
+                BlockPos pbpos = mc.player.getBlockPos();
                 do {
                     BlockPos test = pbpos.offset(search);
-                    BlockState state = mc.world.getBlockState(test);
 
                     if (MathUtils.isInXZRange(ppos, test.toCenterPos(), 0.5 + autoPearlActivateRange.get())) {
                         double sqd = test.getSquaredDistance(ppos);

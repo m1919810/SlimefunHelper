@@ -27,9 +27,9 @@ public record WrapRGBA(TextColor textColor, int alpha) implements NBTParsable<Wr
                 int colorWidth = dx * 2 / 3;
                 int alphaWidth = dx - colorWidth;
                 WrapperFactory<TextColor, WrapRGBA> colorFactory =
-                        WrapperFactory.of(value.get()::withTextColor, WrapRGBA::textColor);
+                        WrapperFactory.of((v) -> value.get().withTextColor(v), WrapRGBA::textColor);
                 WrapperFactory<Integer, WrapRGBA> alphaFactory =
-                        WrapperFactory.of(value.get()::withAlpha, WrapRGBA::alpha);
+                        WrapperFactory.of((v) -> value.get().withAlpha(v), WrapRGBA::alpha);
                 TypeConvertAttrKeyValue<WrapRGBA, Integer> alphaValue =
                         new TypeConvertAttrKeyValue<>(value, alphaFactory, NBTTypes.INT_TYPE);
                 alphaValue.addValidator(new NumberClamp<>(0, 255));

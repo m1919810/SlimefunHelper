@@ -149,12 +149,14 @@ public class RenderOptimize extends BaseModule {
             boolean itemFalling = !item.isOnGround() && item.getFinalGravity() > 0;
             if (!itemInFluid && !itemFalling) {
                 event.cancel();
+                item.setPosition(item.getTrackedPosition().getPos());
                 return;
             }
             ClientPlayerEntity player = MinecraftClient.getInstance().player;
             if (player != null
                     && player.getPos().squaredDistanceTo(item.getPos()) > MathUtils.s2(cullingDistanceItem.get())) {
                 event.cancel();
+                item.setPosition(item.getTrackedPosition().getPos());
                 return;
             }
         } else if (entity instanceof ArmorStandEntity armorStand && enableArmorStandTickOpt.get()) {
