@@ -14,8 +14,8 @@ import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.ColorLabelElement;
 import me.matl114.gui.elements.LabelElement;
 import me.matl114.gui.elements.PlateElement;
-import me.matl114.gui.elements.SplitterTextElement;
 import me.matl114.gui.elements.TextFieldElement;
+import me.matl114.gui.elements.TextSplitterElement;
 import me.matl114.hacks.utils.gui.TextConfig;
 import me.matl114.utils.config.Value;
 import me.matl114.utils.config.ValueAccessor;
@@ -72,7 +72,7 @@ public final class VanillaElementFactory implements ElementFactory {
         ColorSampler textColor = textColor();
         RawTextElement text = new RawTextElement(provider, textColor);
         if (splitter) {
-            text.combineRender(new SplitterTextElement(provider, textColor));
+            text.combineRender(new TextSplitterElement(provider, textColor));
         }
         return text.withTooltips(handler);
     }
@@ -89,7 +89,7 @@ public final class VanillaElementFactory implements ElementFactory {
         ColorLabelElement title = new ColorLabelElement(textColor);
         title.withElement(new RawTextElement(alignedProvider, textColor));
         if (splitter) {
-            title.combineRender(new SplitterTextElement(alignedProvider, textColor));
+            title.combineRender(new TextSplitterElement(alignedProvider, textColor));
         }
         return title.withTooltips(handler);
     }
@@ -101,7 +101,7 @@ public final class VanillaElementFactory implements ElementFactory {
         }
         ColorSampler textColor = textColor();
         TextProvider alignedProvider = TextProvider.withAlign(provider, textAlign());
-        return new SplitterTextElement(alignedProvider, textColor)
+        return new TextSplitterElement(alignedProvider, textColor)
                 .combineRender(new RawTextElement(alignedProvider, textColor))
                 .withTooltips(handler);
     }

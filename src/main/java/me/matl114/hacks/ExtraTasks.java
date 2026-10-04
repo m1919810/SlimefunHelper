@@ -56,6 +56,9 @@ public class ExtraTasks {
     public static BoatVClip boatVClip;
 
     @Getter
+    public static AutoDick autoDick;
+
+    @Getter
     public static SkinBlink skinBlink;
 
     @Getter
@@ -90,7 +93,7 @@ public class ExtraTasks {
         playerQueue = new PlayerQueue().register(m);
         warps = new Warps().register(m);
         boatVClip = new BoatVClip().register(m);
-
+        autoDick = new AutoDick().register(m);
         skinBlink = new SkinBlink().register(m);
         eventNotify = new EventNotify().register(m);
         soundNotify = new SoundNotify().register(m);

@@ -274,6 +274,12 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
 
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         if (entityStage == ENTITY_STAGE_ALIVE) {
+            ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
+            // when falling into water, reset onGroundHeight
+            if (args.isTouchingWater() || args.getBlockStateAtPos().isOf(Blocks.BUBBLE_COLUMN) || args.hasVehicle()) {
+                lastOnGroundHeight = lastHeight = args.getY();
+                runningDelegate.counter = 0;
+            }
             runningDelegate.applyBeforeMovementPacketModify(movementManagerEvent);
         }
     }

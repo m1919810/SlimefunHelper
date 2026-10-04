@@ -379,12 +379,22 @@ public class RenderCollectors {
                             vdraw.getMatrices().scale(scale, scale);
                             Text text = pair.text();
                             int offsetFlag = pair.offSetFlag();
-                            double dd = mc.textRenderer.getTextHandler().getWidth(text);
                             int xAlign = offsetFlag % 3;
                             int yAlign = offsetFlag / 3;
-                            vdraw.getMatrices().translate((float) (-((dd * xAlign) / 2.0D)), (float)
-                                    (-((HEIGHT * yAlign) / 2.0D)));
-                            vdraw.drawText(mc.textRenderer, text.asOrderedText(), 0, 0, color, true);
+                            List<Text> listText = ChatUtils.splitToMultiLineText(text, Integer.MAX_VALUE);
+                            int index = 0;
+                            for (var re : listText) {
+                                double dd = mc.textRenderer.getTextHandler().getWidth(re);
+                                vdraw.getMatrices().pushMatrix();
+                                vdraw.getMatrices()
+                                        .translate(
+                                                (float) (-((dd * xAlign) / 2.0D)),
+                                                (float) (-((HEIGHT * yAlign) / 2.0D)) + index * 9);
+                                vdraw.drawText(mc.textRenderer, re.asOrderedText(), 0, 0, color, true);
+                                vdraw.getMatrices().popMatrix();
+                                index += 1;
+                            }
+
                         } finally {
                             vdraw.popMatrix();
                         }
