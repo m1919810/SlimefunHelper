@@ -86,6 +86,7 @@ disable-model-invocation: true
   - `power = 5.0`
   - `createFire = true`
   - 来源类型：`BLOCK`
+  - 床的放置、睡觉、重生与维度规则详见 [床机制](minecraft-bed-mechanics.md)
 - 重生锚爆炸
   - 来源：`RespawnAnchorBlock.explode`
   - 条件：当前维度不可用 respawn anchor

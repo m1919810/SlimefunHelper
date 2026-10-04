@@ -144,6 +144,27 @@ public class AnchorAura extends BaseModule {
 
     public final FlagRef zeroTickBlock = flagBuilder(blocking.add("zero-tick")).build();
 
+    public final ModulePath invulnerability = root.add("invulnerability-frame");
+
+    public final FlagRef considerInvulnerability = builder(invulnerability.add("consider"), Boolean.class)
+            .defaultValue(false)
+            .build();
+
+    public final DoubleRef invulnerabilityDamageMultiplier = doubleBuilder(invulnerability.add("damage-multiplier"))
+            .defaultValue(1.0D)
+            .validator(Configs.doubleRange(0.0D, 100.0D))
+            .build();
+
+    public final IntRef invulnerabilityConsiderTicks = intBuilder(invulnerability.add("consider-ticks"))
+            .defaultValue(7)
+            .validator(Configs.INT_POSITIVE)
+            .build();
+
+    public final FlagRef considerExistingDamage = builder(
+                    invulnerability.add("consider-existing-damage"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     final TimerExecutor noSupplyExecutor = new TimerExecutor();
 
     @Override
@@ -159,6 +180,7 @@ public class AnchorAura extends BaseModule {
     public Map<BlockPos, AnchorCache> trackedAnchorPositions = new LinkedHashMap<>();
     public List<PlayerEntity> targetEntity = List.of();
     private AnchorPlan pendingPlace;
+    private double maxExistingDamageValue = Double.NEGATIVE_INFINITY;
 
     public void onSwitchWorld(Event<ClientPlayerEntity> event) {
         trackedAnchorPositions.clear();
@@ -359,6 +381,7 @@ public class AnchorAura extends BaseModule {
     }
 
     public boolean tickAnchorExplode() {
+        maxExistingDamageValue = Double.NEGATIVE_INFINITY;
         List<Map.Entry<BlockPos, AnchorCache>> entries = new ArrayList<>(trackedAnchorPositions.entrySet());
         entries.sort(Map.Entry.comparingByValue(this::compareAnchorEntries));
         int multiply = mul.get();
@@ -366,7 +389,17 @@ public class AnchorAura extends BaseModule {
         for (var i = 0; i < entries.size() && success < multiply; ++i) {
             BlockPos targetPos = entries.get(i).getKey();
             if (InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), targetPos)) {
-                success += litBlockPos(targetPos, entries.get(i).getValue());
+                AnchorCache cache = entries.get(i).getValue();
+                Map<PlayerEntity, Double> damageMap = cache.damageCache;
+                if (considerInvulnerability.get()) {
+                    Map<PlayerEntity, Double> adjustedDamageMap = calculateInvulnerabilityDamageMap(damageMap);
+                    double rawDamage = getBestEnemyDamage(damageMap);
+                    if (getBestEnemyDamage(adjustedDamageMap) < targetDamageThreshold.get()) {
+                        maxExistingDamageValue = Math.max(maxExistingDamageValue, rawDamage);
+                        continue;
+                    }
+                }
+                success += litBlockPos(targetPos, cache);
             }
         }
         return success >= multiply;
@@ -445,7 +478,9 @@ public class AnchorAura extends BaseModule {
         Map<PlayerEntity, Box> predictedBoxes = new HashMap<>();
 
         AnchorPlan bestOption = null;
-        double bestOptionValue = Double.NEGATIVE_INFINITY;
+        double bestOptionValue = (considerInvulnerability.get() && considerExistingDamage.get())
+                ? Math.max(maxExistingDamageValue, Double.NEGATIVE_INFINITY)
+                : Double.NEGATIVE_INFINITY;
         BlockPos currentPos = mc.player.getBlockPos();
         for (Vec3i delta : interactRangeBlocks) {
             BlockPos pos = currentPos.add(delta);
@@ -467,6 +502,11 @@ public class AnchorAura extends BaseModule {
             Map<PlayerEntity, Double> damageMap = calculateAnchorDamage(pos, predictedBoxes, true);
             AnchorPlan option;
             if (!isTargetDamageAcceptable(damageMap)) {
+                continue;
+            }
+            double bestMayOptionValue = getBestOptionValue(damageMap);
+            // pass
+            if (bestMayOptionValue < bestOptionValue) {
                 continue;
             }
             if (isSelfDamageAcceptable(damageMap)) {
@@ -546,6 +586,11 @@ public class AnchorAura extends BaseModule {
             }
         }
         return bestOption;
+    }
+
+    private double getBestOptionValue(Map<PlayerEntity, Double> damageMap) {
+        double value = getBestOptionValue(damageMap);
+        return Math.max(value, value * blockReduce.get());
     }
 
     private double getOptionValue(AnchorPlan option) {
@@ -659,6 +704,25 @@ public class AnchorAura extends BaseModule {
             }
         }
         return best;
+    }
+
+    private Map<PlayerEntity, Double> calculateInvulnerabilityDamageMap(Map<PlayerEntity, Double> damageMap) {
+        Map<PlayerEntity, Double> adjustedDamageMap = new LinkedHashMap<>(damageMap);
+        for (PlayerEntity target : targetEntity) {
+            Double damage = damageMap.get(target);
+            CombatManager.DamageTracker tracker = CombatManager.INSTANCE.getDamageTracker(target);
+            int invulnerabilityTicks = tracker == null ? 0 : tracker.getInvulnerabilityTicks();
+            if (damage == null
+                    || tracker == null
+                    || invulnerabilityTicks <= 0
+                    || invulnerabilityTicks > invulnerabilityConsiderTicks.get()) {
+                continue;
+            }
+            double adjustedDamage =
+                    Math.min((damage - tracker.lastDamage) * invulnerabilityDamageMultiplier.get(), damage);
+            adjustedDamageMap.put(target, adjustedDamage);
+        }
+        return adjustedDamageMap;
     }
 
     public void onPrePacketMine(Event<BlockBreak> eventPreMine) {

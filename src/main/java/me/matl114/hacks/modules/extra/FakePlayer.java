@@ -25,8 +25,8 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.utils.*;
+import net.minecraft.block.BedBlock;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.block.RespawnAnchorBlock;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
@@ -282,30 +282,35 @@ public class FakePlayer extends BaseModule {
         if (fakes.isEmpty()) {
             return;
         }
-        Map<BlockPos, BlockState> stateMap = new LinkedHashMap<>();
         Vec3d center = new Vec3d(event.context.getX(), event.context.getY(), event.context.getZ());
         BlockPos explodeCenter = BlockPos.ofFloored(center);
         float radius = 0;
-        if (Objects.equals(center, explodeCenter.toCenterPos())
-                && mc.world.getBlockState(explodeCenter).getBlock() instanceof RespawnAnchorBlock) {
-            stateMap.put(explodeCenter, Blocks.AIR.getDefaultState());
+        BlockState explosionState = mc.world.getBlockState(explodeCenter);
+        boolean centeredExplosion = Objects.equals(center, explodeCenter.toCenterPos());
+        boolean respawnAnchor = centeredExplosion && explosionState.getBlock() instanceof RespawnAnchorBlock;
+        boolean bed = centeredExplosion && explosionState.getBlock() instanceof BedBlock;
+        if (respawnAnchor || bed) {
             if (radius <= 0) {
-                radius = 6;
+                radius = respawnAnchor ? ExplosionUtils.RESPAWN_ANCHOR_POWER : ExplosionUtils.BED_POWER;
             }
         } else {
             if (radius <= 0) {
-                radius = 5;
+                radius = ExplosionUtils.END_CRYSTAL_POWER;
             }
         }
+        ExplosionUtils.BlockStateAccess blockAccess =
+                ExplosionUtils.fromWorldWithAutomaticOverrides(mc.world, event.context.center());
         for (var re : fakes) {
             float damage = ExplosionUtils.calculateExplosionRawDamage(
-                    radius,
-                    center,
-                    re.getBoundingBox(),
-                    ExplosionUtils.fromWorldWithOverrides(mc.world, stateMap),
-                    ExplosionUtils.ALL_TERRAIN);
+                    radius, center, re.getBoundingBox(), blockAccess, ExplosionUtils.ALL_TERRAIN);
             if (damage > 0) {
-                onDamage(re, DamageUtils.createDamageSource(DamageTypes.PLAYER_ATTACK, null, mc.player), damage);
+                onDamage(
+                        re,
+                        DamageUtils.createDamageSource(
+                                respawnAnchor || bed ? DamageTypes.BAD_RESPAWN_POINT : DamageTypes.PLAYER_ATTACK,
+                                null,
+                                mc.player),
+                        damage);
             }
         }
     }
