@@ -53,8 +53,7 @@ public interface AttrKeyValue<T> extends KeyValue<T> {
 
     default SubScreenWidget generateKeyValueInput(
             ElementFactory factory, int x, int y, int keyDx, int blankDx, int inputDx, int dy) {
-        return new KeyValueInputWidget<>(
-                x, y, keyDx + blankDx + inputDx, dy, keyDx, blankDx, inputDx, this, factory);
+        return new KeyValueInputWidget<>(x, y, keyDx + blankDx + inputDx, dy, keyDx, blankDx, inputDx, this, factory);
     }
 
     default DrawableWidget generateValueWidget(ElementFactory factory, int x, int y, int inputDx, int dy) {
@@ -129,7 +128,8 @@ public interface AttrKeyValue<T> extends KeyValue<T> {
     }
 
     public static interface CustomWidgetGenerator<T> extends WidgetGenerator<AttrKeyValue<T>> {
-        // public DrawableWidget generateWidget(ElementFactory factory, AttrKeyValue<T> kv, int x, int y, int dx, int dy);
+        // public DrawableWidget generateWidget(ElementFactory factory, AttrKeyValue<T> kv, int x, int y, int dx, int
+        // dy);
 
         public static <T> CustomWidgetGenerator<T> cutSizeXLeft(CustomWidgetGenerator<T> factory, double portion) {
             return (elementFactory, s1, x, y, dx, dy) -> {

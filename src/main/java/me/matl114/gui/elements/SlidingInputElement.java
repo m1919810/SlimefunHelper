@@ -1,15 +1,14 @@
 package me.matl114.gui.elements;
 
+import me.matl114.gui.McWidgetHelpers;
+import me.matl114.gui.basic.ColorSampler;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.ExecutableWidget;
-import me.matl114.gui.basic.ColorSampler;
-import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.TextAlign;
 import me.matl114.utils.config.Value;
 import me.matl114.utils.config.ValueAccessor;
 import me.matl114.utils.config.WrapperFactory;
 import me.matl114.versioned.api.VDrawContext;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.util.math.MathHelper;
 
 public class SlidingInputElement<T> extends TextFieldElement {
@@ -20,13 +19,11 @@ public class SlidingInputElement<T> extends TextFieldElement {
     private boolean sliding;
 
     public SlidingInputElement(Value<T> value, WrapperFactory<Double, T> sliderFactory) {
-        super(ValueAccessor.of(
-                () -> value == null ? "" : value.getInput(),
-                input -> {
-                    if (value != null) {
-                        value.setInput(input);
-                    }
-                }));
+        super(ValueAccessor.of(() -> value == null ? "" : value.getInput(), input -> {
+            if (value != null) {
+                value.setInput(input);
+            }
+        }));
         this.value = value;
         this.sliderFactory = sliderFactory;
         this.setMaxLength(32768);
@@ -61,8 +58,7 @@ public class SlidingInputElement<T> extends TextFieldElement {
         syncWidgetState(element);
         double localX = translateMouseX(element, mouseX);
         double trackWidth = Math.max(1.0, element.getTextureWidth() - 2.0);
-        double selected = MathHelper.clamp(
-                (localX - 1.0) / trackWidth, 0.0, 1.0);
+        double selected = MathHelper.clamp((localX - 1.0) / trackWidth, 0.0, 1.0);
         try {
             T next = this.sliderFactory.create(selected);
             this.value.accept(next);
@@ -73,18 +69,12 @@ public class SlidingInputElement<T> extends TextFieldElement {
     }
 
     @Override
-    protected void renderInputBackgroundOverlay(
-        DrawableWidget element, VDrawContext context, int mouseX, int mouseY) {
+    protected void renderInputBackgroundOverlay(DrawableWidget element, VDrawContext context, int mouseX, int mouseY) {
         int trackWidth = Math.max(0, element.getTextureWidth() - 2);
-        int progress = MathHelper.clamp(
-                MathHelper.floor(trackWidth * getPercentage() ) + 2, 0, trackWidth);
+        int progress = MathHelper.clamp(MathHelper.floor(trackWidth * getPercentage()) + 2, 0, trackWidth);
         if (progress > 0) {
             context.fill(
-                    1,
-                    1,
-                    1 + progress,
-                    Math.max(1, element.getTextureHeight() - 1),
-                    this.sliderColor.getColorInt());
+                    1, 1, 1 + progress, Math.max(1, element.getTextureHeight() - 1), this.sliderColor.getColorInt());
         }
     }
 

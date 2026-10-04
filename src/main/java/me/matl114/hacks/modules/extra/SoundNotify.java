@@ -394,7 +394,11 @@ public class SoundNotify extends BaseModule {
 
     @Override
     public void addCustomWidgets(
-            Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank, me.matl114.gui.interfaces.ElementFactory factory) {
+            Consumer<DrawableWidget> acceptor,
+            int dx,
+            int dy,
+            int dblank,
+            me.matl114.gui.interfaces.ElementFactory factory) {
         super.addCustomWidgets(acceptor, dx, dy, dblank, factory);
         acceptor.accept(factory.createExecuteButton(
                 "widget.sound-notify.test-usage", ButtonAction.run(this::playTestSound), 0, dblank, dx, dy));

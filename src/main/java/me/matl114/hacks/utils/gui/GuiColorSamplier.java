@@ -1,6 +1,5 @@
 package me.matl114.hacks.utils.gui;
 
-import me.matl114.gui.basic.ColorSampler;
 import me.matl114.hacks.utils.config.WrapRGBA;
 
 public interface GuiColorSamplier {
@@ -8,7 +7,7 @@ public interface GuiColorSamplier {
 
     WrapRGBA backgroundColor();
 
-    WrapRGBA plateColor() ;
+    WrapRGBA plateColor();
 
     WrapRGBA titleColor();
 

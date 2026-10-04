@@ -8,10 +8,10 @@ import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.Constants;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.IconElement;
-import me.matl114.gui.presets.choices.RegistryChooseScreen;
-import me.matl114.gui.presets.single.RegistryDisplays;
 import me.matl114.gui.interfaces.DefaultElementFactory;
 import me.matl114.gui.interfaces.ElementFactory;
+import me.matl114.gui.presets.choices.RegistryChooseScreen;
+import me.matl114.gui.presets.single.RegistryDisplays;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.BaseAttrKeyValue;
 import me.matl114.utils.config.WrapperFactory;
@@ -64,8 +64,7 @@ public class RegistryAttrKeyValue<T> extends BaseAttrKeyValue<T> {
 
     public static <T, W> DrawableWidget generateTextInputWithRegistrySearch(
             Registry<T> registry, AttrKeyValue<W> attr, int x, int y, int inputDx, int dy) {
-        return generateTextInputWithRegistrySearch(
-                DefaultElementFactory.INSTANCE, registry, attr, x, y, inputDx, dy);
+        return generateTextInputWithRegistrySearch(DefaultElementFactory.INSTANCE, registry, attr, x, y, inputDx, dy);
     }
 
     public static <T, W> DrawableWidget generateTextInputWithRegistrySearch(

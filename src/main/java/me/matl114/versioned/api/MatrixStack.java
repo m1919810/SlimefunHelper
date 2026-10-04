@@ -1,7 +1,7 @@
 package me.matl114.versioned.api;
 
-import net.minecraft.client.gui.DrawContext;
 import org.joml.Matrix3f;
+import org.joml.Matrix3x2f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
@@ -23,7 +23,5 @@ public interface MatrixStack {
 
     public void multiply3D(Quaternionf quaternion);
 
-    static MatrixStack of(DrawContext matrixStack) {
-        return (MatrixStack) matrixStack;
-    }
+    public void set(Matrix3x2f matrix);
 }

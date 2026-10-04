@@ -100,9 +100,9 @@ public record Holder<T>(Registry<T> registry, @Nullable T entry, String asString
                             t -> t.map(stringifyFactory::get).orElse(DEFAULT_EMPTY_STRING));
                     AttrKeyValue.CustomWidgetGenerator<Optional<T>> widgetFactory =
                             (elementFactory, s, x1, y1, dx1, dy1) -> {
-                        return RegistryAttrKeyValue.generateTextInputWithRegistrySearch(
-                                elementFactory, registry, s, x1, y1, dx1, dy1);
-                    };
+                                return RegistryAttrKeyValue.generateTextInputWithRegistrySearch(
+                                        elementFactory, registry, s, x1, y1, dx1, dy1);
+                            };
                     return new TypeConvertAttrKeyValue<>(w, wrapperFactory, widgetFactory, stringifyFactoryWithDefault)
                             .generateValueWidget(factory, x, y, dx, dy);
                 },

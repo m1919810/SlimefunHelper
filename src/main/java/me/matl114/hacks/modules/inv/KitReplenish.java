@@ -34,7 +34,6 @@ import me.matl114.hacks.modules.interact.Interact;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.interact.SequencedActionManager;
 import me.matl114.hacks.modules.mine.QueueMine;
-import me.matl114.hacks.modules.task.ClickGui;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.NBTTypes;
@@ -1357,7 +1356,7 @@ public class KitReplenish extends BaseModule {
     }
 
     private void onEditCommand(CommandExecution sender) {
-        Tasks.scheduleDelayed(()-> openKitEditScreen(CONFIG_FACTORY), 1);
+        Tasks.scheduleDelayed(() -> openKitEditScreen(CONFIG_FACTORY), 1);
         sender.sendMessage("&a正在打开Kit编辑界面");
     }
 
@@ -1702,13 +1701,17 @@ public class KitReplenish extends BaseModule {
 
     @Override
     public void addCustomWidgets(
-            Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank, me.matl114.gui.interfaces.ElementFactory factory) {
+            Consumer<DrawableWidget> acceptor,
+            int dx,
+            int dy,
+            int dblank,
+            me.matl114.gui.interfaces.ElementFactory factory) {
         super.addCustomWidgets(acceptor, dx, dy, dblank, factory);
         SubScreenWidget kitEditEntry = new SubScreenWidget(0, dblank, dx, dy);
         kitEditEntry.addDrawableChild(factory.createLabel("widget.kit-manager.kit-save-map", 0, 0, indexWidth, dy));
         kitEditEntry.addDrawableChild(factory.createExecuteButton(
                 "widget.kit-manager.open-kit-list",
-                ButtonAction.run(()-> openKitEditScreen(factory)),
+                ButtonAction.run(() -> openKitEditScreen(factory)),
                 indexWidth + blankWidth,
                 0,
                 dx - indexWidth - blankWidth,
@@ -1727,7 +1730,7 @@ public class KitReplenish extends BaseModule {
                     }
                 },
                 List::of,
-                ButtonAction.run(()-> openKitEditScreen(factory)),
+                ButtonAction.run(() -> openKitEditScreen(factory)),
                 0,
                 dblank,
                 dx,
@@ -1764,7 +1767,10 @@ public class KitReplenish extends BaseModule {
     }
 
     private SubScreenWidget createEditWidget(
-            MutableObject<MutableRecord> indexOf, List<MutableRecord> mutableList, MutableRecord record, ElementFactory factory) {
+            MutableObject<MutableRecord> indexOf,
+            List<MutableRecord> mutableList,
+            MutableRecord record,
+            ElementFactory factory) {
         SubScreenWidget widget = new SubScreenWidget(0, 0, 250, 45);
         widget.addDrawableChild(createToggleButton(
                 Text::empty,
@@ -1792,14 +1798,14 @@ public class KitReplenish extends BaseModule {
             return true;
         });
         name.addListener(s -> record.set(nameKey, s));
-        widget.addDrawableChild(name.generateKeyValueInput(factory,30, 1, 30, 0, 60, 20));
+        widget.addDrawableChild(name.generateKeyValueInput(factory, 30, 1, 30, 0, 60, 20));
         String maxSizeKey = Kit.KEYS.get(2);
         AttrKeyValue<Integer> maxSize =
                 AttrKeyValue.integer("widget.kit-manager.open-kit-list.max-size", record.getOrPut(maxSizeKey, 0));
         maxSize.addValidator(Configs.INT_NONNEGATIVE);
         maxSize.addListener(s -> record.set(maxSizeKey, s));
 
-        widget.addDrawableChild(maxSize.generateKeyValueInput(factory,120, 1, 30, 0, 20, 20));
+        widget.addDrawableChild(maxSize.generateKeyValueInput(factory, 120, 1, 30, 0, 20, 20));
         String ruleKey = Kit.KEYS.get(3);
         widget.addDrawableChild(createLabel(
                 () -> {

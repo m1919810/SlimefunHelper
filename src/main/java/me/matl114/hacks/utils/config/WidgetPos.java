@@ -2,7 +2,6 @@ package me.matl114.hacks.utils.config;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -60,8 +59,7 @@ public class WidgetPos implements NBTParsable<WidgetPos> {
                 SubScreenWidget widget = new SubScreenWidget(x, y, dx, dy);
                 widget.addDrawableChild(factory.createExecuteButton(
                         () -> switch (w.get().getType()) {
-                            case 0 -> Text.translatableWithFallback(
-                                    "widget.nbt-parsable.widget-pos.percentage", "Per");
+                            case 0 -> Text.translatableWithFallback("widget.nbt-parsable.widget-pos.percentage", "Per");
                             case 1 -> Text.translatableWithFallback(
                                     "widget.nbt-parsable.widget-pos.absolute-length", "Abs");
                             default -> Text.empty();
@@ -81,12 +79,12 @@ public class WidgetPos implements NBTParsable<WidgetPos> {
                         w,
                         WrapperFactory.of(s -> w.get().withPercentage(s), WidgetPos::toPercentage),
                         NBTTypes.VEC2_TYPE);
+                percentageSel.addValidator(s -> s.x() >= 0.0D && s.x() <= 1.0D && s.y() >= 0.0D && s.y() <= 1.0D);
 
                 SubScreenWidget percentage1 = new SubScreenWidget(0, 0, dx - 2 * dy, dy);
                 percentage1.addDrawableChild(percentageSel.generateValueWidget(factory, 0, 0, dx - 3 * dy, dy));
                 percentage1.addDrawableChild(generateWidgetPosSelectScreenButton(
-                        factory,
-                        dx - 3 * dy, 0, dy, dy, () -> w.get().getFPoint(), (el) -> {
+                        factory, dx - 3 * dy, 0, dy, dy, () -> w.get().getFPoint(), (el) -> {
                             int width = mc.getWindow().getScaledWidth();
                             int height = mc.getWindow().getScaledHeight();
                             double mulWidth = (el.x * 100) / width;
@@ -98,11 +96,11 @@ public class WidgetPos implements NBTParsable<WidgetPos> {
                         }));
                 TypeConvertAttrKeyValue<WidgetPos, Vec2> absoluteSel = new TypeConvertAttrKeyValue<>(
                         w, WrapperFactory.of(s -> w.get().withLength(s), WidgetPos::toLength), NBTTypes.VEC2_TYPE);
+                absoluteSel.addValidator(s -> s.x() >= 0.0D && s.y() >= 0.0D);
                 SubScreenWidget percentage2 = new SubScreenWidget(0, 0, dx - 2 * dy, dy);
                 percentage2.addDrawableChild(absoluteSel.generateValueWidget(factory, 0, 0, dx - 3 * dy, dy));
                 percentage2.addDrawableChild(generateWidgetPosSelectScreenButton(
-                        factory,
-                        dx - 3 * dy, 0, dy, dy, () -> w.get().getFPoint(), (el) -> {
+                        factory, dx - 3 * dy, 0, dy, dy, () -> w.get().getFPoint(), (el) -> {
                             absoluteSel.accept(new Vec2(el.x, el.y));
                         }));
 
@@ -123,18 +121,11 @@ public class WidgetPos implements NBTParsable<WidgetPos> {
 
     public static DrawableWidget generateWidgetPosSelectScreenButton(
             int x, int y, int dx, int dy, Supplier<FPoint> current, Consumer<FPoint> consumer) {
-        return generateWidgetPosSelectScreenButton(
-                DefaultElementFactory.INSTANCE, x, y, dx, dy, current, consumer);
+        return generateWidgetPosSelectScreenButton(DefaultElementFactory.INSTANCE, x, y, dx, dy, current, consumer);
     }
 
     public static DrawableWidget generateWidgetPosSelectScreenButton(
-            ElementFactory factory,
-            int x,
-            int y,
-            int dx,
-            int dy,
-            Supplier<FPoint> current,
-            Consumer<FPoint> consumer) {
+            ElementFactory factory, int x, int y, int dx, int dy, Supplier<FPoint> current, Consumer<FPoint> consumer) {
         return factory.createElement(
                 IconElement.fixedGui(Constants.EDITOR_SPRITE, ButtonAction.run(() -> {
                             // open gui

@@ -13,14 +13,12 @@ import java.util.function.Supplier;
 import lombok.experimental.Accessors;
 import me.matl114.gui.Constants;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.elements.ButtonElement;
-import me.matl114.gui.elements.ColorBoxElement;
 import me.matl114.gui.elements.IconElement;
+import me.matl114.gui.interfaces.DefaultElementFactory;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.managers.api.Displayable;
 import me.matl114.managers.config.ConfigEnum;
 import me.matl114.utils.ReflectUtils;
-import me.matl114.gui.interfaces.DefaultElementFactory;
-import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.BaseAttrKeyValue;
 import me.matl114.utils.config.WrapperFactory;
@@ -130,8 +128,7 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
             int dx,
             int dy,
             Runnable runnable) {
-        return generateSwitchingButton(
-                DefaultElementFactory.INSTANCE, flattenMap, ex, x, y, dx, dy, runnable);
+        return generateSwitchingButton(DefaultElementFactory.INSTANCE, flattenMap, ex, x, y, dx, dy, runnable);
     }
 
     public static DrawableWidget generateSwitchingButton(

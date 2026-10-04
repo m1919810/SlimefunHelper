@@ -24,8 +24,7 @@ public record TracingOption(boolean box, boolean line) implements NBTParsable<Tr
                 SubScreenWidget subScreenWidget = SubScreenWidget.instance(x, y, dx, dy);
                 return subScreenWidget
                         .addDrawableChild(factory.createLabel(
-                                () -> Text.translatableWithFallback(
-                                        "widget.nbt-parsable.tracing-option.box", "Box:"),
+                                () -> Text.translatableWithFallback("widget.nbt-parsable.tracing-option.box", "Box:"),
                                 () -> ChatUtils.parseTooltipsTranslation(
                                         "widget.nbt-parsable.tracing-option.box.tooltips", ""),
                                 0,
@@ -36,8 +35,7 @@ public record TracingOption(boolean box, boolean line) implements NBTParsable<Tr
                                         s, PAIR_FACTORY.asFirstWrapper(s::get), NBTTypes.BOOLEAN_TYPE)
                                 .generateValueWidget(factory, 2 * dy, 0, dy, dy))
                         .addDrawableChild(factory.createLabel(
-                                () -> Text.translatableWithFallback(
-                                        "widget.nbt-parsable.tracing-option.line", "Line:"),
+                                () -> Text.translatableWithFallback("widget.nbt-parsable.tracing-option.line", "Line:"),
                                 () -> ChatUtils.parseTooltipsTranslation(
                                         "widget.nbt-parsable.tracing-option.line.tooltips", ""),
                                 3 * dy,

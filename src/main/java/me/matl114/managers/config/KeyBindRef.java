@@ -54,8 +54,8 @@ public class KeyBindRef extends ObjectRef<MultiKeyBind> {
 
     public static final AttrKeyValue.CustomWidgetGenerator<MultiKeyBind> WIDGET_FACTORY =
             (factory, s, x, y, dx, dy) -> {
-        return new KeyBindConfigurateWidget(factory, x, y, dx, dy, s);
-    };
+                return new KeyBindConfigurateWidget(factory, x, y, dx, dy, s);
+            };
 
     public static final WrapperFactory<String, MultiKeyBind> FACTORY = WrapperFactory.of(
             (s) -> {

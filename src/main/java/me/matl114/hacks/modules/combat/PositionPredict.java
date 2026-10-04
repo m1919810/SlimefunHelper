@@ -17,7 +17,6 @@ import me.matl114.events.impl.Render3D;
 import me.matl114.events.packets.PacketStorage;
 import me.matl114.events.packets.PacketStorageImpl;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.elements.ButtonElement;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -393,30 +392,30 @@ public class PositionPredict extends BaseModule {
 
                     return subScreenWidget
                             .addDrawableChild(DisplayWidget.instance(0, 0, dy, dy)
-                                    .setRenderHandler(new ButtonElement(
-                                                    TextProvider.of(Text.translatableWithFallback(
-                                                            "widget.nbt-parsable.predict-argument.ticks", "F:")),
-                                                    ButtonAction.empty())
-                                            .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                                    "widget.nbt-parsable.predict-argument.ticks.tooltips", "")))))
+                                    .setRenderHandler(factory.createExecuteButton(
+                                            TextProvider.of(Text.translatableWithFallback(
+                                                    "widget.nbt-parsable.predict-argument.ticks", "F:")),
+                                            TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                                    "widget.nbt-parsable.predict-argument.ticks.tooltips", "")),
+                                            ButtonAction.empty())))
                             .addDrawableChild(new TypeConvertAttrKeyValue<>(s, firstWrapper, NBTTypes.DOUBLE_TYPE)
                                     .generateValueWidget(factory, dy, 0, half - dy, dy))
                             .addDrawableChild(DisplayWidget.instance(half, 0, dy, dy)
-                                    .setRenderHandler(new ButtonElement(
-                                                    TextProvider.of(Text.translatableWithFallback(
-                                                            "widget.nbt-parsable.predict-argument.history", "H:")),
-                                                    ButtonAction.empty())
-                                            .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                                    "widget.nbt-parsable.predict-argument.history.tooltips", "")))))
+                                    .setRenderHandler(factory.createExecuteButton(
+                                            TextProvider.of(Text.translatableWithFallback(
+                                                    "widget.nbt-parsable.predict-argument.history", "H:")),
+                                            TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                                    "widget.nbt-parsable.predict-argument.history.tooltips", "")),
+                                            ButtonAction.empty())))
                             .addDrawableChild(new TypeConvertAttrKeyValue<>(s, secondWrapper, NBTTypes.INT_TYPE)
                                     .generateValueWidget(factory, half + dy, 0, half - dy, dy))
                             .addDrawableChild(DisplayWidget.instance(2 * half, 0, dy, dy)
-                                    .setRenderHandler(new ButtonElement(
-                                                    TextProvider.of(Text.translatableWithFallback(
-                                                            "widget.nbt-parsable.predict-argument.mode", "M:")),
-                                                    ButtonAction.empty())
-                                            .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                                    "widget.nbt-parsable.predict-argument.mode.tooltips", "")))))
+                                    .setRenderHandler(factory.createExecuteButton(
+                                            TextProvider.of(Text.translatableWithFallback(
+                                                    "widget.nbt-parsable.predict-argument.mode", "M:")),
+                                            TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                                    "widget.nbt-parsable.predict-argument.mode.tooltips", "")),
+                                            ButtonAction.empty())))
                             .addDrawableChild(new TypeConvertAttrKeyValue<>(
                                             s,
                                             thirdWrapper,

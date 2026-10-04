@@ -17,7 +17,7 @@ import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.config.ListModifyWidget;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.IconElement;
-import me.matl114.gui.elements.MultiLineTextElement;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.gui.presets.lists.ListEntryWidgetController;
 import me.matl114.gui.presets.single.CenterScreen;
 import me.matl114.gui.presets.single.ConfirmingWidgetScreen;
@@ -72,33 +72,37 @@ public class ConnectionProxy extends BaseModule {
 
     @Override
     public void addCustomWidgets(
-            Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank, me.matl114.gui.interfaces.ElementFactory factory) {
+            Consumer<DrawableWidget> acceptor,
+            int dx,
+            int dy,
+            int dblank,
+            me.matl114.gui.interfaces.ElementFactory factory) {
         acceptor.accept(ExecutableWidget.instance(0, dblank, dx, dy)
                 .setElementHandler(factory.createButton(
-                                (el -> {
-                                    var currentSelected = proxyList.getSelected();
-                                    if (currentSelected != null) {
-                                        return Text.translatable("widget.connection-proxy.proxy-list-editor")
-                                                .append(Text.literal(currentSelected.name()
-                                                        + "(%s:%s:%d)"
-                                                                .formatted(
-                                                                        currentSelected
-                                                                                .type()
-                                                                                .name(),
-                                                                        currentSelected.address(),
-                                                                        currentSelected.port())));
-                                    } else {
-                                        return Text.translatable("widget.connection-proxy.proxy-list-editor")
-                                                .append("None");
-                                    }
-                                }),
-                                TooltipHandler.of(Constants.openListEditTooltips()),
-                                ButtonAction.run(this::openProxyListEditScreen),
-                                () -> true,
-                                () -> false)));
+                        (el -> {
+                            var currentSelected = proxyList.getSelected();
+                            if (currentSelected != null) {
+                                return Text.translatable("widget.connection-proxy.proxy-list-editor")
+                                        .append(Text.literal(currentSelected.name()
+                                                + "(%s:%s:%d)"
+                                                        .formatted(
+                                                                currentSelected
+                                                                        .type()
+                                                                        .name(),
+                                                                currentSelected.address(),
+                                                                currentSelected.port())));
+                            } else {
+                                return Text.translatable("widget.connection-proxy.proxy-list-editor")
+                                        .append("None");
+                            }
+                        }),
+                        TooltipHandler.of(Constants.openListEditTooltips()),
+                        ButtonAction.run(() -> this.openProxyListEditScreen(factory)),
+                        () -> true,
+                        () -> false)));
     }
 
-    public void openProxyListEditScreen() {
+    public void openProxyListEditScreen(ElementFactory factory) {
         List<MutableRecord> currentList = new ArrayList<>(proxyList.entries().stream()
                 .map(s -> MutableRecord.of(ProxyEntry.KEYS, s))
                 .toList());
@@ -108,7 +112,7 @@ public class ConnectionProxy extends BaseModule {
         ListEntryWidgetController controller = ListEntryWidgetController.mutable(
                 currentList,
                 () -> MutableRecord.of(ProxyEntry.KEYS, ProxyEntry.EMPTY),
-                (v) -> createEditRenderHandler(v, index),
+                (v) -> createEditRenderHandler(v, index, factory),
                 30,
                 220);
         ConfirmingWidgetScreen confirmScreen = new ConfirmingWidgetScreen(
@@ -125,7 +129,8 @@ public class ConnectionProxy extends BaseModule {
         confirmScreen.access().openFromCurrent();
     }
 
-    public DrawableWidget createEditRenderHandler(MutableRecord argsMap, MutableObject<MutableRecord> index) {
+    public DrawableWidget createEditRenderHandler(
+            MutableRecord argsMap, MutableObject<MutableRecord> index, ElementFactory factory) {
         SubScreenWidget subScreen = new SubScreenWidget(0, 0, 220, 20);
         ExecutableWidget.instance(2, 2, 16, 16)
                 .setElementHandler(IconElement.statedGuiPredicate(
@@ -143,23 +148,22 @@ public class ConnectionProxy extends BaseModule {
                         }))
                 .addToSub(subScreen);
         DisplayWidget.instance(45, 0, 100, 20)
-                .setRenderHandler(
-                        ClickGui.INSTANCE.getGuiElementFactory().createBackground())
+                .setRenderHandler(ClickGui.INSTANCE.getGuiElementFactory().createBackground())
                 .addToSub(subScreen);
         ExecutableWidget.instance(45, 0, 100, 20)
-                .setElementHandler(new MultiLineTextElement(
+                .setElementHandler(factory.createText(
                         (el) -> {
                             ProxyEntry entry = argsMap.toRecord(ProxyEntry.class);
                             return Text.literal("%s\n(%s:%s:%d)"
                                     .formatted(entry.name(), entry.type().name(), entry.address(), entry.port()));
                         },
-                        ClickGui.INSTANCE.labelColor().withAlpha(255).color(),
-                        TextAlign.MIDDLE))
+                        TooltipHandler.of(List.of())))
                 .addToSub(subScreen);
 
         ExecutableWidget.instance(155, 0, 60, 20)
-                .setElementHandler(new ButtonElement(
+                .setElementHandler(factory.createExecuteButton(
                         TextProvider.of(Text.translatable("widget.connection-proxy.open-editor")),
+                        TooltipHandler.of(List.of()),
                         ButtonAction.run(() -> {
                             var re = WidgetUtils.createMutableRecordEditScreen(
                                     Text.translatable("widget.connection-proxy.open-editor.title"),

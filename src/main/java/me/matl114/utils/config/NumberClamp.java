@@ -6,8 +6,8 @@ public record NumberClamp<T extends Number & Comparable<T>>(T min, T max) implem
     @Override
     public boolean test(T t) {
         if (t == null) return false;
-        if(min != null && min.compareTo(t) > 0) return false;
-        if(max != null && max.compareTo(t) < 0) return false;
+        if (min != null && min.compareTo(t) > 0) return false;
+        if (max != null && max.compareTo(t) < 0) return false;
         return true;
     }
 }

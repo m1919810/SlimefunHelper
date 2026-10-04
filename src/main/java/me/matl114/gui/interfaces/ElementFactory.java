@@ -5,7 +5,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import me.matl114.gui.basic.ButtonAction;
-import me.matl114.gui.basic.AbstractElement;
 import me.matl114.gui.basic.ColorSampler;
 import me.matl114.gui.basic.DisplayWidget;
 import me.matl114.gui.basic.DrawableWidget;
@@ -15,8 +14,6 @@ import me.matl114.gui.basic.RenderHandler;
 import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.basic.TooltipHandler;
 import me.matl114.gui.complex.BoxElement;
-import me.matl114.gui.elements.PlateElement;
-import me.matl114.gui.elements.SplitterTextElement;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.config.Value;
 import me.matl114.utils.config.ValueAccessor;
@@ -26,7 +23,9 @@ import org.jetbrains.annotations.Nullable;
 
 public interface ElementFactory {
     default ElementHandler createLabel(String translationKey) {
-        return createLabel(translationKey, false);
+        return createLabel(
+                TextProvider.of(Text.translatable(translationKey)),
+                TooltipHandler.of(ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", "")));
     }
 
     default ElementHandler createLabel(String translationKey, boolean splitter) {
@@ -45,25 +44,34 @@ public interface ElementFactory {
     }
 
     default DrawableWidget createLabel(String translationKey, int x, int y, int dx, int dy) {
-        return createLabel(translationKey, x, y, dx, dy, false);
+        return ExecutableWidget.instance(x, y, dx, dy)
+                .setElementHandler(createLabel(
+                        TextProvider.of(Text.translatable(translationKey)),
+                        TooltipHandler.of(ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", ""))));
     }
 
     default DrawableWidget createLabel(String translationKey, int x, int y, int dx, int dy, boolean splitter) {
-        return ExecutableWidget.instance(x, y, dx, dy).setElementHandler(createLabel(translationKey, splitter));
+        return ExecutableWidget.instance(x, y, dx, dy)
+                .setElementHandler(createLabel(
+                        TextProvider.of(Text.translatable(translationKey)),
+                        TooltipHandler.of(ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", "")),
+                        splitter));
     }
 
     default DrawableWidget createLabel(
             Supplier<Text> text, Supplier<List<Text>> tooltips, int x, int y, int dx, int dy) {
-        return createLabel(text, tooltips, x, y, dx, dy, false);
+        return ExecutableWidget.instance(x, y, dx, dy)
+                .setElementHandler(createLabel(el -> text.get(), TooltipHandler.of(tooltips)));
     }
 
     default DrawableWidget createLabel(
             Supplier<Text> text, Supplier<List<Text>> tooltips, int x, int y, int dx, int dy, boolean splitter) {
-        return ExecutableWidget.instance(x, y, dx, dy).setElementHandler(createLabel(text, tooltips, splitter));
+        return ExecutableWidget.instance(x, y, dx, dy)
+                .setElementHandler(createLabel(el -> text.get(), TooltipHandler.of(tooltips), splitter));
     }
 
     default DrawableWidget createLabel(TextProvider provider, TooltipHandler handler, int x, int y, int dx, int dy) {
-        return createLabel(provider, handler, x, y, dx, dy, false);
+        return ExecutableWidget.instance(x, y, dx, dy).setElementHandler(createLabel(provider, handler));
     }
 
     default DrawableWidget createLabel(
@@ -73,17 +81,12 @@ public interface ElementFactory {
 
     ElementHandler createLabel(TextProvider provider, TooltipHandler handler);
 
-    default ElementHandler createLabel(TextProvider provider, TooltipHandler handler, boolean splitter) {
-        ElementHandler label = createLabel(provider, handler);
-        return splitter
-                ? new AbstractElement()
-                        .withElement(label)
-                        .combineRender(new SplitterTextElement(provider, () -> 0xFFFFFFFF))
-                : label;
-    }
+    ElementHandler createLabel(TextProvider provider, TooltipHandler handler, boolean splitter);
 
     default ElementHandler createText(String translationKey) {
-        return createText(translationKey, false);
+        return createText(
+                TextProvider.of(Text.translatable(translationKey)),
+                TooltipHandler.of(ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", "")));
     }
 
     default ElementHandler createText(String translationKey, boolean splitter) {
@@ -102,33 +105,34 @@ public interface ElementFactory {
     }
 
     default DrawableWidget createText(String translationKey, int x, int y, int dx, int dy) {
-        return createText(translationKey, x, y, dx, dy, false);
+        return ExecutableWidget.instance(x, y, dx, dy)
+                .setElementHandler(createText(
+                        TextProvider.of(Text.translatable(translationKey)),
+                        TooltipHandler.of(ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", ""))));
     }
 
-    default DrawableWidget createText(
-            String translationKey, int x, int y, int dx, int dy, boolean splitter) {
-        return ExecutableWidget.instance(x, y, dx, dy).setElementHandler(createText(translationKey, splitter));
+    default DrawableWidget createText(String translationKey, int x, int y, int dx, int dy, boolean splitter) {
+        return ExecutableWidget.instance(x, y, dx, dy)
+                .setElementHandler(createText(
+                        TextProvider.of(Text.translatable(translationKey)),
+                        TooltipHandler.of(ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", "")),
+                        splitter));
     }
 
     default DrawableWidget createText(
             Supplier<Text> text, Supplier<List<Text>> tooltips, int x, int y, int dx, int dy) {
-        return createText(text, tooltips, x, y, dx, dy, false);
+        return ExecutableWidget.instance(x, y, dx, dy)
+                .setElementHandler(createText(el -> text.get(), TooltipHandler.of(tooltips)));
     }
 
     default DrawableWidget createText(
-            Supplier<Text> text,
-            Supplier<List<Text>> tooltips,
-            int x,
-            int y,
-            int dx,
-            int dy,
-            boolean splitter) {
-        return ExecutableWidget.instance(x, y, dx, dy).setElementHandler(createText(text, tooltips, splitter));
+            Supplier<Text> text, Supplier<List<Text>> tooltips, int x, int y, int dx, int dy, boolean splitter) {
+        return ExecutableWidget.instance(x, y, dx, dy)
+                .setElementHandler(createText(el -> text.get(), TooltipHandler.of(tooltips), splitter));
     }
 
-    default DrawableWidget createText(
-            TextProvider provider, TooltipHandler handler, int x, int y, int dx, int dy) {
-        return createText(provider, handler, x, y, dx, dy, false);
+    default DrawableWidget createText(TextProvider provider, TooltipHandler handler, int x, int y, int dx, int dy) {
+        return ExecutableWidget.instance(x, y, dx, dy).setElementHandler(createText(provider, handler));
     }
 
     default DrawableWidget createText(
@@ -138,17 +142,10 @@ public interface ElementFactory {
 
     ElementHandler createText(TextProvider provider, TooltipHandler handler);
 
-    default ElementHandler createText(TextProvider provider, TooltipHandler handler, boolean splitter) {
-        ElementHandler text = createText(provider, handler);
-        return splitter
-                ? new AbstractElement()
-                        .withElement(text)
-                        .combineRender(new SplitterTextElement(provider, () -> 0xFFFFFFFF))
-                : text;
-    }
+    ElementHandler createText(TextProvider provider, TooltipHandler handler, boolean splitter);
 
     default DrawableWidget createBackground(int x, int y, int dx, int dy) {
-        return createBackground(null, x, y, dx, dy);
+        return DisplayWidget.instance(x, y, dx, dy).setRenderHandler(createBackground());
     }
 
     default DrawableWidget createBackground(@Nullable ColorSampler overrideColor, int x, int y, int dx, int dy) {
@@ -157,20 +154,18 @@ public interface ElementFactory {
 
     ElementHandler createBackground();
 
-    default ElementHandler createBackground(@Nullable ColorSampler overrideColor) {
-        return createBackground();
-    }
+    ElementHandler createBackground(@Nullable ColorSampler overrideColor);
 
-    default ElementHandler createPlate(boolean hasInteract, @Nullable ColorSampler overrideColor) {
-        return new PlateElement(hasInteract, overrideColor);
-    }
+    ElementHandler createPlate(boolean hasInteract, @Nullable ColorSampler overrideColor);
 
     default ElementHandler createPlate(boolean hasInteract) {
         return createPlate(hasInteract, null);
     }
 
     default ElementHandler createTitle(String translationKey) {
-        return createTitle(translationKey, false);
+        return createTitle(
+                TextProvider.of(Text.translatable(translationKey)),
+                TooltipHandler.of(ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", "")));
     }
 
     default ElementHandler createTitle(String translationKey, boolean splitter) {
@@ -189,25 +184,34 @@ public interface ElementFactory {
     }
 
     default DrawableWidget createTitle(String translationKey, int x, int y, int dx, int dy) {
-        return createTitle(translationKey, x, y, dx, dy, false);
+        return DisplayWidget.instance(x, y, dx, dy)
+                .setRenderHandler(createTitle(
+                        TextProvider.of(Text.translatable(translationKey)),
+                        TooltipHandler.of(ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", ""))));
     }
 
     default DrawableWidget createTitle(String translationKey, int x, int y, int dx, int dy, boolean splitter) {
-        return DisplayWidget.instance(x, y, dx, dy).setRenderHandler(createTitle(translationKey, splitter));
+        return DisplayWidget.instance(x, y, dx, dy)
+                .setRenderHandler(createTitle(
+                        TextProvider.of(Text.translatable(translationKey)),
+                        TooltipHandler.of(ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", "")),
+                        splitter));
     }
 
     default DrawableWidget createTitle(
             Supplier<Text> text, Supplier<List<Text>> tooltips, int x, int y, int dx, int dy) {
-        return createTitle(text, tooltips, x, y, dx, dy, false);
+        return DisplayWidget.instance(x, y, dx, dy)
+                .setRenderHandler(createTitle(el -> text.get(), TooltipHandler.of(tooltips)));
     }
 
     default DrawableWidget createTitle(
             Supplier<Text> text, Supplier<List<Text>> tooltips, int x, int y, int dx, int dy, boolean splitter) {
-        return DisplayWidget.instance(x, y, dx, dy).setRenderHandler(createTitle(text, tooltips, splitter));
+        return DisplayWidget.instance(x, y, dx, dy)
+                .setRenderHandler(createTitle(el -> text.get(), TooltipHandler.of(tooltips), splitter));
     }
 
     default DrawableWidget createTitle(TextProvider provider, TooltipHandler handler, int x, int y, int dx, int dy) {
-        return createTitle(provider, handler, x, y, dx, dy, false);
+        return DisplayWidget.instance(x, y, dx, dy).setRenderHandler(createTitle(provider, handler));
     }
 
     default DrawableWidget createTitle(
@@ -217,14 +221,7 @@ public interface ElementFactory {
 
     ElementHandler createTitle(TextProvider provider, TooltipHandler handler);
 
-    default ElementHandler createTitle(TextProvider provider, TooltipHandler handler, boolean splitter) {
-        ElementHandler title = createTitle(provider, handler);
-        return splitter
-                ? new AbstractElement()
-                        .withElement(title)
-                        .combineRender(new SplitterTextElement(provider, () -> 0xFFFFFFFF))
-                : title;
-    }
+    ElementHandler createTitle(TextProvider provider, TooltipHandler handler, boolean splitter);
 
     default ElementHandler createConfigKey(TextProvider provider, TooltipHandler handler) {
         return createLabel(provider, handler);
@@ -243,35 +240,56 @@ public interface ElementFactory {
 
     default ElementHandler createExecuteButton(
             TextProvider provider, TooltipHandler handler, ButtonAction action, BooleanSupplier active) {
-        return createButton(provider, handler, action, active, () -> false);
+        return createButton(provider, handler, action, active, active);
+    }
+
+    default ElementHandler createExecuteButton(TextProvider provider, TooltipHandler handler, ButtonAction action) {
+        return createButton(provider, handler, action, () -> true, () -> false);
     }
 
     default ElementHandler createExecuteButton(String translationKey, ButtonAction action) {
-        return createExecuteButton(translationKey, action, () -> true);
-    }
-
-    default ElementHandler createExecuteButton(String translationKey, ButtonAction action, BooleanSupplier active) {
-        return createExecuteButton(
+        return createButton(
                 TextProvider.of(Text.translatable(translationKey)),
                 TooltipHandler.of(ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", "")),
                 action,
+                () -> true,
+                () -> false);
+    }
+
+    default ElementHandler createExecuteButton(String translationKey, ButtonAction action, BooleanSupplier active) {
+        return createButton(
+                TextProvider.of(Text.translatable(translationKey)),
+                TooltipHandler.of(ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", "")),
+                action,
+                active,
                 active);
     }
 
     default ElementHandler createExecuteButton(
             Supplier<Text> text, Supplier<List<Text>> tooltips, ButtonAction action, BooleanSupplier active) {
-        return createExecuteButton(el -> text.get(), TooltipHandler.of(tooltips), action, active);
+        return createButton(el -> text.get(), TooltipHandler.of(tooltips), action, active, active);
     }
 
     default DrawableWidget createExecuteButton(
             String translationKey, ButtonAction action, int x, int y, int dx, int dy) {
-        return createExecuteButton(translationKey, action, () -> true, x, y, dx, dy);
+        return ExecutableWidget.instance(x, y, dx, dy)
+                .setElementHandler(createButton(
+                        TextProvider.of(Text.translatable(translationKey)),
+                        TooltipHandler.of(ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", "")),
+                        action,
+                        () -> true,
+                        () -> false));
     }
 
     default DrawableWidget createExecuteButton(
             String translationKey, ButtonAction action, BooleanSupplier active, int x, int y, int dx, int dy) {
         return ExecutableWidget.instance(x, y, dx, dy)
-                .setElementHandler(createExecuteButton(translationKey, action, active));
+                .setElementHandler(createButton(
+                        TextProvider.of(Text.translatable(translationKey)),
+                        TooltipHandler.of(ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", "")),
+                        action,
+                        active,
+                        active));
     }
 
     default DrawableWidget createExecuteButton(
@@ -284,25 +302,35 @@ public interface ElementFactory {
             int dx,
             int dy) {
         return ExecutableWidget.instance(x, y, dx, dy)
-                .setElementHandler(createExecuteButton(text, tooltips, action, active));
+                .setElementHandler(createButton(el -> text.get(), TooltipHandler.of(tooltips), action, active, active));
     }
 
     default DrawableWidget createExecuteButton(
             Supplier<Text> text, Supplier<List<Text>> tooltips, ButtonAction action, int x, int y, int dx, int dy) {
-        return createExecuteButton(text, tooltips, action, () -> true, x, y, dx, dy);
+        return ExecutableWidget.instance(x, y, dx, dy)
+                .setElementHandler(
+                        createButton(el -> text.get(), TooltipHandler.of(tooltips), action, () -> true, () -> false));
     }
 
     default DrawableWidget createExecuteButton(
-        TextProvider provider, TooltipHandler handler, ButtonAction action, BooleanSupplier active, int x, int y, int dx, int dy) {
+            TextProvider provider,
+            TooltipHandler handler,
+            ButtonAction action,
+            BooleanSupplier active,
+            int x,
+            int y,
+            int dx,
+            int dy) {
         return ExecutableWidget.instance(x, y, dx, dy)
-            .setElementHandler(createExecuteButton(provider, handler, action, active));
+                .setElementHandler(createButton(provider, handler, action, active, active));
     }
 
     default ElementHandler createToggleButton(String translationKey, ValueAccessor<Boolean> accessor) {
         return createToggleButton(
                 TextProvider.of(Text.translatable(translationKey)),
                 TooltipHandler.of(ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", "")),
-                accessor);
+                accessor,
+                true);
     }
 
     default ElementHandler createToggleButton(
@@ -310,15 +338,8 @@ public interface ElementFactory {
         return createToggleButton(provider, handler, accessor, true);
     }
 
-    default ElementHandler createToggleButton(
-            TextProvider provider, TooltipHandler handler, ValueAccessor<Boolean> accessor, boolean frame) {
-        return createButton(
-                provider,
-                handler,
-                ButtonAction.run(() -> accessor.setValue(!accessor.getValue())),
-                accessor::getValue,
-                frame ? accessor::getValue : () -> false);
-    }
+    ElementHandler createToggleButton(
+            TextProvider provider, TooltipHandler handler, ValueAccessor<Boolean> accessor, boolean frame);
 
     default ElementHandler createToggleButton(
             Supplier<Text> text, Supplier<List<Text>> tooltips, ValueAccessor<Boolean> accessor) {
@@ -326,26 +347,22 @@ public interface ElementFactory {
     }
 
     default ElementHandler createToggleButton(
-            Supplier<Text> text,
-            Supplier<List<Text>> tooltips,
-            ValueAccessor<Boolean> accessor,
-            boolean frame) {
+            Supplier<Text> text, Supplier<List<Text>> tooltips, ValueAccessor<Boolean> accessor, boolean frame) {
         return createToggleButton(el -> text.get(), TooltipHandler.of(tooltips), accessor, frame);
     }
 
     default DrawableWidget createToggleButton(
             String translationKey, ValueAccessor<Boolean> accessor, int x, int y, int dx, int dy) {
-        return createToggleButton(translationKey, accessor, true, x, y, dx, dy);
+        return ExecutableWidget.instance(x, y, dx, dy)
+                .setElementHandler(createToggleButton(
+                        TextProvider.of(Text.translatable(translationKey)),
+                        TooltipHandler.of(ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", "")),
+                        accessor,
+                        true));
     }
 
     default DrawableWidget createToggleButton(
-            String translationKey,
-            ValueAccessor<Boolean> accessor,
-            boolean frame,
-            int x,
-            int y,
-            int dx,
-            int dy) {
+            String translationKey, ValueAccessor<Boolean> accessor, boolean frame, int x, int y, int dx, int dy) {
         return ExecutableWidget.instance(x, y, dx, dy)
                 .setElementHandler(createToggleButton(
                         TextProvider.of(Text.translatable(translationKey)),
@@ -355,14 +372,13 @@ public interface ElementFactory {
     }
 
     default DrawableWidget createToggleButton(
-            String translationKey,
-            ValueAccessor<Boolean> accessor,
-            int x,
-            int y,
-            int dx,
-            int dy,
-            boolean frame) {
-        return createToggleButton(translationKey, accessor, frame, x, y, dx, dy);
+            String translationKey, ValueAccessor<Boolean> accessor, int x, int y, int dx, int dy, boolean frame) {
+        return ExecutableWidget.instance(x, y, dx, dy)
+                .setElementHandler(createToggleButton(
+                        TextProvider.of(Text.translatable(translationKey)),
+                        TooltipHandler.of(ChatUtils.parseTooltipsTranslation(translationKey + ".tooltips", "")),
+                        accessor,
+                        frame));
     }
 
     default DrawableWidget createToggleButton(
@@ -373,7 +389,8 @@ public interface ElementFactory {
             int y,
             int dx,
             int dy) {
-        return createToggleButton(text, tooltips, accessor, true, x, y, dx, dy);
+        return ExecutableWidget.instance(x, y, dx, dy)
+                .setElementHandler(createToggleButton(el -> text.get(), TooltipHandler.of(tooltips), accessor, true));
     }
 
     default DrawableWidget createToggleButton(
@@ -386,28 +403,20 @@ public interface ElementFactory {
             int dx,
             int dy) {
         return ExecutableWidget.instance(x, y, dx, dy)
-                .setElementHandler(createToggleButton(text, tooltips, accessor, frame));
+                .setElementHandler(createToggleButton(el -> text.get(), TooltipHandler.of(tooltips), accessor, frame));
     }
 
     default DrawableWidget createToggleButton(
-            Supplier<Text> text,
-            Supplier<List<Text>> tooltips,
+            TextProvider provider,
+            TooltipHandler handler,
             ValueAccessor<Boolean> accessor,
+            boolean frame,
             int x,
             int y,
             int dx,
-            int dy,
-            boolean frame) {
-        return createToggleButton(text, tooltips, accessor, frame, x, y, dx, dy);
-    }
-
-    default DrawableWidget createToggleButton(
-        TextProvider provider, TooltipHandler handler, ValueAccessor<Boolean> accessor, boolean frame, int x,
-        int y,
-        int dx,
-        int dy){
+            int dy) {
         return ExecutableWidget.instance(x, y, dx, dy)
-            .setElementHandler(createToggleButton(provider, handler, accessor, frame));
+                .setElementHandler(createToggleButton(provider, handler, accessor, frame));
     }
 
     ElementHandler createElement(
@@ -454,27 +463,21 @@ public interface ElementFactory {
     default <T> ElementHandler createSlider(Value<T> value, WrapperFactory<Double, T> sliderFactory) {
         return createSlidingInput(value, sliderFactory)
                 .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                        "widget.gui.slider.tooltips", "\u5de6\u952e\u8f93\u5165\u7f16\u8f91\n\u53f3\u952e\u8bbe\u7f6e\u4f4d\u7f6e")));
+                        "widget.gui.slider.tooltips",
+                        "\u5de6\u952e\u8f93\u5165\u7f16\u8f91\n\u53f3\u952e\u8bbe\u7f6e\u4f4d\u7f6e")));
     }
 
     default <T> DrawableWidget createSlider(
-            Value<T> value,
-            WrapperFactory<Double, T> sliderFactory,
-            int x,
-            int y,
-            int dx,
-            int dy) {
-        return ExecutableWidget.instance(x, y, dx, dy).setElementHandler(createSlider(value, sliderFactory));
+            Value<T> value, WrapperFactory<Double, T> sliderFactory, int x, int y, int dx, int dy) {
+        return ExecutableWidget.instance(x, y, dx, dy)
+                .setElementHandler(createSlidingInput(value, sliderFactory)
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.slider.tooltips",
+                                "\u5de6\u952e\u8f93\u5165\u7f16\u8f91\n\u53f3\u952e\u8bbe\u7f6e\u4f4d\u7f6e"))));
     }
 
     default <T> DrawableWidget createSlidingInput(
-            Value<T> string,
-            WrapperFactory<Double, T> sliderFactory,
-            int x,
-            int y,
-            int dx,
-            int dy) {
-        return ExecutableWidget.instance(x, y, dx, dy)
-                .setElementHandler(createSlidingInput(string, sliderFactory));
+            Value<T> string, WrapperFactory<Double, T> sliderFactory, int x, int y, int dx, int dy) {
+        return ExecutableWidget.instance(x, y, dx, dy).setElementHandler(createSlidingInput(string, sliderFactory));
     }
 }

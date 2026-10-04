@@ -85,7 +85,11 @@ public class ServerStorage extends BaseModule {
 
     @Override
     public void addCustomWidgets(
-            Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank, me.matl114.gui.interfaces.ElementFactory factory) {
+            Consumer<DrawableWidget> acceptor,
+            int dx,
+            int dy,
+            int dblank,
+            me.matl114.gui.interfaces.ElementFactory factory) {
         super.addCustomWidgets(acceptor, dx, dy, dblank, factory);
         var pth = path.add("persistent-storage-name-mapper");
         NBTRef<PrimitivePairList<String, String>> ref = new NBTRef<>(new PrimitivePairList<>(

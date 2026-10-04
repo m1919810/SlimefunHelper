@@ -35,14 +35,7 @@ public class NBTListModifyScreen<T> extends ConfirmingBigScreen {
             Consumer<List<T>> callback,
             int dx,
             int dy) {
-        this(
-                attrKeyValue,
-                type,
-                DefaultElementFactory.INSTANCE,
-                newElement,
-                callback,
-                dx,
-                dy);
+        this(attrKeyValue, type, DefaultElementFactory.INSTANCE, newElement, callback, dx, dy);
     }
 
     public NBTListModifyScreen(
@@ -108,8 +101,7 @@ public class NBTListModifyScreen<T> extends ConfirmingBigScreen {
         this.fuckController = ListEntryWidgetController.mutable(
                 this.list,
                 () -> attrFactory.apply("", newElement.get()),
-                (w) -> customWidgetFactory.generateWidget(
-                        this.elementFactory, w, 0, 0, widgetDx, widgetDy),
+                (w) -> customWidgetFactory.generateWidget(this.elementFactory, w, 0, 0, widgetDx, widgetDy),
                 widgetDy,
                 widgetDx);
     }

@@ -1,6 +1,6 @@
 package me.matl114.gui.complex;
 
-import lombok.Setter;
+import java.util.List;
 import lombok.experimental.Accessors;
 import me.matl114.gui.basic.*;
 import me.matl114.versioned.api.VDrawContext;
@@ -13,9 +13,10 @@ public class RawTextElement extends AbstractElement {
     protected final TextProvider text;
 
     protected final ColorSampler color;
+    private final boolean multiLine;
 
     public RawTextElement setAlignment(TextAlign alignment) {
-        return new RawTextElement(TextProvider.withAlign(this.text, alignment), this.color);
+        return new RawTextElement(TextProvider.withAlign(this.text, alignment), this.color, this.multiLine);
     }
 
     public static RawTextElement instance(Text text) {
@@ -47,8 +48,42 @@ public class RawTextElement extends AbstractElement {
     }
 
     public RawTextElement(TextProvider provider, ColorSampler color) {
+        this(provider, color, false);
+    }
+
+    protected RawTextElement(TextProvider provider, ColorSampler color, boolean multiLine) {
         this.text = provider;
         this.color = color;
+        this.multiLine = multiLine;
+    }
+
+    public Text getText(DrawableWidget element) {
+        return text.getText(element);
+    }
+
+    public boolean hasText(DrawableWidget element) {
+        return getText(element) != null;
+    }
+
+    public void renderText(DrawableWidget element, VDrawContext context, Text rawText) {
+        if (rawText == null) {
+            return;
+        }
+        if (multiLine) {
+            renderMultiLine(element, context, rawText);
+            return;
+        }
+        OrderedText text1 = rawText.asOrderedText();
+        RenderHandler.drawScaledText0(
+                context,
+                mc.textRenderer,
+                text1,
+                0,
+                0,
+                element.getTextureWidth(),
+                element.getTextureHeight(),
+                color.getColorInt(),
+                text.getAlign(element));
     }
 
     @Override
@@ -60,16 +95,33 @@ public class RawTextElement extends AbstractElement {
             float delta,
             float alpha,
             boolean shouldHighlight) {
-        OrderedText text1 = text.getLabel(element);
-        if (text1 != null) {
+        renderText(element, context, getText(element));
+    }
+
+    private void renderMultiLine(DrawableWidget element, VDrawContext context, Text rawText) {
+        int width = element.getTextureWidth();
+        List<OrderedText> lines = mc.textRenderer.wrapLines(rawText, width);
+        int size = lines.size();
+        if (size == 0) {
+            return;
+        }
+        int lineHeight = 9;
+        int estimated = lineHeight * size;
+        int startY = 0;
+        if (estimated < element.getTextureHeight()) {
+            startY = (element.getTextureHeight() - estimated) / 2;
+        } else {
+            lineHeight = Math.min(lineHeight, element.getTextureHeight() / size);
+        }
+        for (int index = 0; index < size; index++) {
             RenderHandler.drawScaledText0(
                     context,
                     mc.textRenderer,
-                    text1,
+                    lines.get(index),
                     0,
-                    0,
+                    index * lineHeight + startY,
                     element.getTextureWidth(),
-                    element.getTextureHeight(),
+                    (index + 1) * lineHeight + startY,
                     color.getColorInt(),
                     text.getAlign(element));
         }

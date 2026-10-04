@@ -645,7 +645,7 @@ public class TargetSelector extends BaseModule {
                             .subBuilder(SubCommand.taskBuilder())
                             .name("gui")
                             .helper("message.command.friends_command.friends.gui.help")
-                            .post(e -> e.executor(CommandContext.run(()-> openEditFriendsScreen(CONFIG_FACTORY))))
+                            .post(e -> e.executor(CommandContext.run(() -> openEditFriendsScreen(CONFIG_FACTORY))))
                             .complete())
                     .complete();
         }
@@ -653,10 +653,14 @@ public class TargetSelector extends BaseModule {
 
     @Override
     public void addCustomWidgets(
-            Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank, me.matl114.gui.interfaces.ElementFactory factory) {
+            Consumer<DrawableWidget> acceptor,
+            int dx,
+            int dy,
+            int dblank,
+            me.matl114.gui.interfaces.ElementFactory factory) {
         acceptor.accept(factory.createExecuteButton(
                 "widget.friend-list.edit-friend-list",
-                ButtonAction.run(()-> openEditFriendsScreen(factory)),
+                ButtonAction.run(() -> openEditFriendsScreen(factory)),
                 0,
                 dblank,
                 dx,

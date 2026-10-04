@@ -147,8 +147,8 @@ public class IntFastInputWidget extends SubScreenWidget {
                 .setRenderHandler(RawTextElement.instance(Text.literal(keyValue.getKeyName()))
                         .setAlignment(TextAlign.LEFT))
                 .addToSub(this);
-        inputField =
-                keyValue.generateValueWidget(VanillaElementFactory.INSTANCE,4, 12, inputTextDx - 8, dy - 16).addToSub(this);
+        inputField = keyValue.generateValueWidget(VanillaElementFactory.INSTANCE, 4, 12, inputTextDx - 8, dy - 16)
+                .addToSub(this);
     }
 
     protected void initConfirmButton() {

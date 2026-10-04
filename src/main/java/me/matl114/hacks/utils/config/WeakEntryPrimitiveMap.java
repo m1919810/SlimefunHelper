@@ -187,7 +187,8 @@ public class WeakEntryPrimitiveMap<T, W> extends PrimitiveMap<WeakHolder<T>, W> 
         AttrKeyValue.CustomWidgetGenerator<WeakEntryPrimitiveMap<T, W>> widgetFactory =
                 (elementFactory, attr, x, y, dx, dy) -> parentType
                         .customWidgetFactory()
-                        .generateWidget(elementFactory, new TypeConvertAttrKeyValue<>(attr, factory, parentType), x, y, dx, dy);
+                        .generateWidget(
+                                elementFactory, new TypeConvertAttrKeyValue<>(attr, factory, parentType), x, y, dx, dy);
         return new NBTType<>(
                 "weakentryprimitivemap",
                 factory.wrapCodecXmap(parentType.typeCodec()),

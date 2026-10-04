@@ -670,7 +670,8 @@ public class ServerScanner extends BaseModule {
                             .setAlignment(TextAlign.RIGHT)));
             // motd
             subScreenWidget.addDrawableChild(DisplayWidget.instance(50, 10, 270, 30)
-                    .setRenderHandler(new MultiLineTextElement((s) -> getServerMotd(info), Colors.WHITE, TextAlign.LEFT)));
+                    .setRenderHandler(
+                            new MultiLineTextElement((s) -> getServerMotd(info), Colors.WHITE, TextAlign.LEFT)));
         } else {
             subScreenWidget.addDrawableChild(
                     DisplayWidget.instance(2, 2, 36, 36).setRenderHandler(LabelElement.instance(Text.empty())));

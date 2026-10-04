@@ -9,7 +9,8 @@ public record TextConfig(WrapRGBA color, AlignType textAlign) {
     public static final TextConfig DEFAULT = new TextConfig(CustomGuiConfig.DEFAULT_TEXT_COLOR, AlignType.MIDDLE);
 
     public static final Codec<TextConfig> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                    WrapRGBA.TYPE.typeCodec()
+                    WrapRGBA.TYPE
+                            .typeCodec()
                             .optionalFieldOf("color", CustomGuiConfig.DEFAULT_TEXT_COLOR)
                             .forGetter(TextConfig::color),
                     CodecUtils.enumCodec(AlignType.class)

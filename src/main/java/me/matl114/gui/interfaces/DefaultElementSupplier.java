@@ -53,17 +53,14 @@ public final class DefaultElementSupplier implements ElementSupplier {
     @Override
     public ElementHandler create(ElementSupplier.RawTextBuilder builder) {
         RawTextElement element = new RawTextElement(
-                TextProvider.withAlign(
-                        safeTextProvider(builder.textProvider), TextAlign.fromLegacy(builder.alignment)),
+                TextProvider.withAlign(safeTextProvider(builder.textProvider), TextAlign.fromLegacy(builder.alignment)),
                 builder.color == null ? ColorSampler.WHITE : builder.color);
         return applyCommon(element, builder);
     }
 
     @Override
     public ElementHandler create(ElementSupplier.TextFieldBuilder builder) {
-        String initialText = builder.textFieldWidget == null
-                ? builder.text
-                : builder.textFieldWidget.getText();
+        String initialText = builder.textFieldWidget == null ? builder.text : builder.textFieldWidget.getText();
         TextFieldElement element = new TextFieldElement(ValueAccessor.holder(initialText == null ? "" : initialText));
         element.setMessage(builder.message);
         element.setMaxLength(builder.maxLength);

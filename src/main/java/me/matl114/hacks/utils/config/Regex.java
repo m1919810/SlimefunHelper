@@ -9,7 +9,6 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import me.matl114.gui.Constants;
 import me.matl114.gui.basic.ButtonAction;
-import me.matl114.gui.basic.ExecutableWidget;
 import me.matl114.gui.basic.SubScreenWidget;
 import me.matl114.gui.basic.TooltipHandler;
 import me.matl114.gui.elements.IconElement;
@@ -35,8 +34,7 @@ public class Regex implements NBTParsable<Regex>, Predicate<String> {
             SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, dx, dy);
             subScreenWidget.addDrawableChild(regexWidget.generateWidget(factory, s, 0, 0, dx - dy, dy));
             subScreenWidget.addDrawableChild(factory.createElement(
-                    IconElement.fixedGui(
-                                    Constants.SEARCH_TEXTURE_SPRITE, ButtonAction.run(Regex::runHelpRegex))
+                    IconElement.fixedGui(Constants.SEARCH_TEXTURE_SPRITE, ButtonAction.run(Regex::runHelpRegex))
                             .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
                                     "widget.nbt-parsable.regex.rules.tooltips", ""))),
                     null,

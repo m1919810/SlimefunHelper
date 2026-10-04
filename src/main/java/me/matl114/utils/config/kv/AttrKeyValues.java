@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.function.Function;
 import lombok.Getter;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.BaseAttrKeyValue;
 import me.matl114.utils.config.NumberClamp;
@@ -26,16 +25,9 @@ import net.minecraft.util.math.MathHelper;
 public interface AttrKeyValues {
     public static final AttrKeyValue.CustomWidgetGenerator<Boolean> BOOLEAN_WIDGET_FACTORY =
             (factory, s, x, y, inputDx, dy) -> {
-        return factory.createToggleButton(
-                () -> net.minecraft.text.Text.empty(),
-                List::of,
-                ValueAccessor.of(s),
-                true,
-                x,
-                y,
-                dy,
-                dy);
-    };
+                return factory.createToggleButton(
+                        () -> net.minecraft.text.Text.empty(), List::of, ValueAccessor.of(s), true, x, y, dy, dy);
+            };
 
     public static final AttrKeyValue.CustomWidgetGenerator<Integer> INT_WIDGET_FACTORY =
             (factory, attrKeyValue, x, y, inputDx, dy) -> {
@@ -48,8 +40,7 @@ public interface AttrKeyValues {
                 return factory.createSlider(attrKeyValue, sliderFactory, x, y, inputDx, dy);
             };
 
-    private static WrapperFactory<Double, Integer> createIntSlider(
-        AttrKeyValue<?> attrKeyValue) {
+    private static WrapperFactory<Double, Integer> createIntSlider(AttrKeyValue<?> attrKeyValue) {
         Integer min = null;
         Integer max = null;
         for (var validator : attrKeyValue.getValidators()) {
@@ -65,29 +56,28 @@ public interface AttrKeyValues {
             }
         }
 
-        if(max == null){
-            if(min == null){
+        if (max == null) {
+            if (min == null) {
                 max = 10;
                 min = 0;
-            }else{
+            } else {
                 max = min + 10;
             }
-        }else if(min == null){
-            if(max <= 10){
+        } else if (min == null) {
+            if (max <= 10) {
                 min = max - 10;
-            }else{
+            } else {
                 min = 0;
             }
         }
         int finalMin = min;
         int finalMax = max;
         return WrapperFactory.of(
-                percentage -> (int)((1 - percentage) * finalMin + percentage * finalMax),
-                current -> Math.clamp((current - finalMin) / (double)(finalMax - finalMin ), 0.0D, 1.0D));
+                percentage -> (int) ((1 - percentage) * finalMin + percentage * finalMax),
+                current -> Math.clamp((current - finalMin) / (double) (finalMax - finalMin), 0.0D, 1.0D));
     }
 
-    private static WrapperFactory<Double, Double> createDoubleSlider(
-        AttrKeyValue<?> attrKeyValue) {
+    private static WrapperFactory<Double, Double> createDoubleSlider(AttrKeyValue<?> attrKeyValue) {
         Double min = null;
         Double max = null;
         for (var validator : attrKeyValue.getValidators()) {
@@ -103,30 +93,28 @@ public interface AttrKeyValues {
             }
         }
 
-        if(max == null){
-            if(min == null){
+        if (max == null) {
+            if (min == null) {
                 max = 10.0D;
                 min = 0.0D;
-            }else{
+            } else {
                 max = min + 10;
             }
-        }else if(min == null){
-            if(max <= 10){
+        } else if (min == null) {
+            if (max <= 10) {
                 min = max - 10;
-            }else{
+            } else {
                 min = 0.0D;
             }
         }
         double finalMin = min;
         double finalMax = max;
         return WrapperFactory.of(
-            percentage -> ((1 - percentage) * finalMin + percentage * finalMax),
-            current -> Math.clamp((current - finalMin) / (finalMax - finalMin ), 0.0D, 1.0D));
+                percentage -> ((1 - percentage) * finalMin + percentage * finalMax),
+                current -> Math.clamp((current - finalMin) / (finalMax - finalMin), 0.0D, 1.0D));
     }
 
-
-    private static <T> WrapperFactory<Double, T> createDoubleSlider(
-        Value<T> value, AttrKeyValue<?> attrKeyValue) {
+    private static <T> WrapperFactory<Double, T> createDoubleSlider(Value<T> value, AttrKeyValue<?> attrKeyValue) {
         Number min = null;
         Number max = null;
         boolean foundClamp = false;
@@ -158,8 +146,8 @@ public interface AttrKeyValues {
         double range = max.doubleValue() - minValue;
         Number numberSample = sample;
         return WrapperFactory.of(
-            percentage -> (T) numberFromDouble(minValue + range * percentage, numberSample),
-            current -> range == 0.0 ? 0.0 : (((Number) current).doubleValue() - minValue) / range);
+                percentage -> (T) numberFromDouble(minValue + range * percentage, numberSample),
+                current -> range == 0.0 ? 0.0 : (((Number) current).doubleValue() - minValue) / range);
     }
 
     private static Number numberFromDouble(double value, Number sample) {
@@ -170,6 +158,7 @@ public interface AttrKeyValues {
         if (sample instanceof Byte) return (byte) Math.round(value);
         return value;
     }
+
     public static WrapperFactory<String, Boolean> BOOL_FACTORY = WrapperFactory.of(
             (s) -> {
                 switch (s) {

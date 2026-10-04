@@ -106,18 +106,9 @@ public class PrimitiveList<W> implements NBTParsable<PrimitiveList<W>> {
                     NBTType<W> type = map.elementType();
                     AttrKeyValue.CustomWidgetGenerator<List<W>> widgetFactory =
                             (elementFactory, w1, x1, y1, dx1, dy1) -> {
-                        return NBTTypes.generateListModifyButton(
-                                elementFactory,
-                                w1,
-                                type,
-                                map::createNewElement,
-                                x1,
-                                y1,
-                                dx1,
-                                dy1,
-                                300,
-                                20);
-                    };
+                                return NBTTypes.generateListModifyButton(
+                                        elementFactory, w1, type, map::createNewElement, x1, y1, dx1, dy1, 300, 20);
+                            };
                     WrapperFactory<String, List<W>> stringListWrapperFactory =
                             AttrKeyValues.STR_LIST_FACTORY.concat(WrapperFactory.list(type.stringifyFactory()));
 

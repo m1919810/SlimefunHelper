@@ -21,11 +21,12 @@ import me.matl114.events.Listener;
 import me.matl114.gui.*;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.config.ConfigMultiLevelListScreen;
-import me.matl114.gui.presets.single.CenterScreen;
-import me.matl114.gui.presets.single.SimpleScreen;
 import me.matl114.gui.interfaces.ClickGuiElementFactory;
 import me.matl114.gui.interfaces.CombinedElementFactory;
 import me.matl114.gui.interfaces.ElementFactory;
+import me.matl114.gui.interfaces.VanillaElementFactory;
+import me.matl114.gui.presets.single.CenterScreen;
+import me.matl114.gui.presets.single.SimpleScreen;
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModuleGroup;
@@ -33,11 +34,11 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.combat.TargetSelector;
 import me.matl114.hacks.utils.HotKeyUtils;
-import me.matl114.hacks.utils.config.Vec2;
 import me.matl114.hacks.utils.config.GuiSetting;
+import me.matl114.hacks.utils.config.Vec2;
 import me.matl114.hacks.utils.config.WrapRGBA;
-import me.matl114.hacks.utils.gui.GuiColorSamplier;
 import me.matl114.hacks.utils.gui.AlignType;
+import me.matl114.hacks.utils.gui.GuiColorSamplier;
 import me.matl114.hooks.BaritoneHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.FileManager;
@@ -155,16 +156,14 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
     public final ModulePath configType = clickGui.add("config-editor-style");
 
     public final NBTRef<GuiSetting> configGuiConfig = builder(configType.add("setting"), GuiSetting.class)
-        .defaultValue(GuiSetting.DEFAULT)
-        .build();
+            .defaultValue(GuiSetting.DEFAULT)
+            .build();
 
     public final ModulePath widgetType = clickGui.add("widget-style");
 
     public final NBTRef<GuiSetting> widgetGuiConfig = builder(widgetType.add("setting"), GuiSetting.class)
-        .defaultValue(GuiSetting.DEFAULT)
-        .build();
-
-
+            .defaultValue(GuiSetting.DEFAULT)
+            .build();
 
     private boolean onHotkey(IHotKey iHotKey, IInputManager manager) {
         if (HotKeyUtils.isValidState()) {
@@ -233,7 +232,7 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
         if (screenEvent.context() instanceof MultiplayerScreen mp) {
             // todo: add
             ExecutableWidget executableWidget = ExecutableWidget.instance(0, 0, 100, 20)
-                    .setElementHandler(guiElementFactory.createButton(
+                    .setElementHandler(VanillaElementFactory.INSTANCE.createButton(
                             TextProvider.of(Text.literal("SlimefunHelper")),
                             TooltipHandler.of(List.of()),
                             ButtonAction.run(this::openClickGui),
@@ -399,14 +398,14 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                         TextProvider.of(getModuleName(baseModule)),
                         TooltipHandler.of(getModuleButtonTooltips(baseModule)),
                         bindFlag != null
-                                        ? ButtonAction.isLeft((bl) -> {
-                                            if (bl) {
-                                                bindFlag.toggle();
-                                            } else {
-                                                openConfigurateScreen(baseModule, metaData);
-                                            }
-                                        })
-                                        : ButtonAction.run(() -> openConfigurateScreen(baseModule, metaData)),
+                                ? ButtonAction.isLeft((bl) -> {
+                                    if (bl) {
+                                        bindFlag.toggle();
+                                    } else {
+                                        openConfigurateScreen(baseModule, metaData);
+                                    }
+                                })
+                                : ButtonAction.run(() -> openConfigurateScreen(baseModule, metaData)),
                         () -> false,
                         () -> bindFlag != null && bindFlag.get()));
     }
@@ -444,12 +443,10 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
             }
         } else {
             for (var configWidget : editableConfigs) {
-                WidgetUtils.addConditionalWidgets(
-                        listWidget, List.of(createBaseModuleConfigurateRow(configWidget)));
+                WidgetUtils.addConditionalWidgets(listWidget, List.of(createBaseModuleConfigurateRow(configWidget)));
             }
         }
-        baseModule.addCustomWidgets(
-                listWidget::addDrawableChild, width, buttonHeight, buttonBlank, CONFIG_FACTORY);
+        baseModule.addCustomWidgets(listWidget::addDrawableChild, width, buttonHeight, buttonBlank, CONFIG_FACTORY);
         return listWidget;
     }
 
@@ -493,9 +490,8 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                 height,
                 true);
         DynamicListWidget group = new DynamicListWidget(0, 0, width);
-        List<ConditionalWidget> widgets = subs.stream()
-                .map(this::createBaseModuleConfigurateRow)
-                .toList();
+        List<ConditionalWidget> widgets =
+                subs.stream().map(this::createBaseModuleConfigurateRow).toList();
         WidgetUtils.addCollapsibleGroup(
                 group,
                 header,
@@ -508,9 +504,7 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                 buttonBlank,
                 height,
                 height);
-        return new ConditionalWidget(
-                () -> subs.stream().anyMatch(WrapperConfigRef::shouldShow),
-                group);
+        return new ConditionalWidget(() -> subs.stream().anyMatch(WrapperConfigRef::shouldShow), group);
     }
 
     private Text getConfigSubGroupTitle(String prefix) {
@@ -533,8 +527,7 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
         DrawableWidget kvInputWidget = getKeyValueWidget(configWidget.ref(), configWidget.keyName());
         keyValue.addDrawableChild(kvInputWidget);
         BooleanSupplier showCondition = configWidget.showPredicate();
-        return new ConditionalWidget(
-                () -> showCondition.getAsBoolean() && extraShowCondition.getAsBoolean(), keyValue);
+        return new ConditionalWidget(() -> showCondition.getAsBoolean() && extraShowCondition.getAsBoolean(), keyValue);
     }
 
     public NBTRef<GuiSetting> clickGuiConfig = builder(clickGui.add("gui-config"), GuiSetting.class)
@@ -568,17 +561,14 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
         // SubScreenWidget levelSubScreen = new SubScreenWidget(0, 0, 0,0);
     }
 
-
     {
         CONFIG_FACTORY = new CombinedElementFactory(configGuiConfig::get);
         ELEMENT_FACTORY = new CombinedElementFactory(widgetGuiConfig::get);
     }
 
-
     private @NotNull DrawableWidget getKeyValueWidget(Ref<?> wrapper, String keyName) {
         ElementFactory factory = CONFIG_FACTORY;
-        return WidgetUtils.createKeyValueWidget(
-                wrapper, keyName, WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT, factory);
+        return WidgetUtils.createKeyValueWidget(wrapper, keyName, WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT, factory);
     }
 
     private DrawableWidget createSearchList(ClickGuiMetaData metaData, ModuleSlideMeta slideMeta) {
@@ -662,7 +652,8 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                 .setElementHandler(new AbstractElement()
                         .withInputHandler(InputHandler.clickRun(() -> showFlag.setValue(!showFlag.booleanValue()))))
                 .addToSub(subScreen);
-        guiElementFactory.createTitle(
+        guiElementFactory
+                .createTitle(
                         TextProvider.of(Text.literal(group)),
                         TooltipHandler.of(List.of()),
                         0,
@@ -848,8 +839,7 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
         DynamicListWidget listWidget = new DynamicListWidget(0, 0, width);
 
         listWidget.addDrawableChild(ExecutableWidget.instance(0, 0, width, layout.buttonHeight())
-                .setElementHandler(factory.createTitle(
-                        TextProvider.of(title), TooltipHandler.of(titleTooltips))));
+                .setElementHandler(factory.createTitle(TextProvider.of(title), TooltipHandler.of(titleTooltips))));
 
         for (var configWidget : configs) {
             SubScreenWidget keyValueRow =
@@ -865,9 +855,7 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
     }
 
     private static SubScreenWidget createKeyValueWidget(
-            BaseModule.WrapperConfigRef<?> wrapper,
-            WidgetUtils.ConfigScreenLayout layout,
-            ElementFactory factory) {
+            BaseModule.WrapperConfigRef<?> wrapper, WidgetUtils.ConfigScreenLayout layout, ElementFactory factory) {
         return WidgetUtils.createKeyValueWidget(wrapper.ref(), wrapper.keyName(), layout, factory);
     }
 
@@ -1020,8 +1008,8 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
             for (String entry : widgets.keySet()) {
                 String selecting = entry;
                 ElementHandler element = clickGui.guiElementFactory.createButton(
-                        TextProvider.of(Text.translatableWithFallback(
-                                "widget.click-gui.selection." + selecting, selecting)),
+                        TextProvider.of(
+                                Text.translatableWithFallback("widget.click-gui.selection." + selecting, selecting)),
                         TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
                                 "widget.click-gui.selection." + selecting + ".tooltips", "暂无介绍")),
                         ButtonAction.run(() -> this.setGlobal(selecting)),

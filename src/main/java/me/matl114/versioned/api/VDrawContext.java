@@ -1,9 +1,7 @@
 package me.matl114.versioned.api;
 
-import java.awt.*;
 import java.util.List;
 import java.util.Optional;
-import javax.annotation.Nonnull;
 import me.matl114.versioned.impl.DrawContext_v1_21_11;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -16,15 +14,14 @@ import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 public interface VDrawContext {
-    // MatrixStack will be deprecated in the future in GUI drawing, to compat old code, we have to use these wrappers
-    @Nonnull
-    public static VDrawContext of(DrawContext drawContext) {
-        return new DrawContext_v1_21_11(drawContext);
+    public static VDrawContext of(DrawContext context) {
+        return new DrawContext_v1_21_11(context);
     }
-    // These method push and pop DrawContext's matrixStack to ensure that it is same as getMatrices()
+    // MatrixStack will be deprecated in the future in GUI drawing, to compat old code, we have to use these wrappers
+    // Matrix changes stay local until a drawing operation needs the vanilla context.
     public DrawContext pushMatrix();
 
-    public DrawContext popMatrix();
+    public void popMatrix();
 
     public void pushLayer(int depth);
 
@@ -193,6 +190,7 @@ public interface VDrawContext {
     public void drawText(TextRenderer textRenderer, OrderedText text, int x, int y, int color, boolean shadow);
 
     public void drawText(TextRenderer textRenderer, @Nullable String text, int x, int y, int color, boolean shadow);
+
     // just pass the relative coord
     public void enableScissor(int x, int y, int width, int height);
 

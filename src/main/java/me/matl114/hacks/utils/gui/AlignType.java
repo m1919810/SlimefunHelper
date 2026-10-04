@@ -6,9 +6,11 @@ import me.matl114.managers.config.ConfigEnum;
 public enum AlignType implements ConfigEnum {
     LEFT(TextAlign.LEFT),
     MIDDLE(TextAlign.MIDDLE),
-    RIGHT(TextAlign.RIGHT),;
+    RIGHT(TextAlign.RIGHT),
+    ;
     final TextAlign mapping;
-    AlignType(TextAlign mapping){
+
+    AlignType(TextAlign mapping) {
         this.mapping = mapping;
     }
 

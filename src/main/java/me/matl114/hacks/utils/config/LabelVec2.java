@@ -38,10 +38,8 @@ public record LabelVec2(String xLabel, String yLabel, Vec2 data) implements NBTP
                 PairLikeFactory<Double, Double, LabelVec2> pairFactory = Vec2.PAIR_FACTORY.concat(wrapper);
                 return subScreenWidget
                         .addDrawableChild(factory.createLabel(
-                                () -> Text.translatableWithFallback(
-                                        originalLabel.xLabel(), originalLabel.xLabel()),
-                                () -> ChatUtils.parseTooltipsTranslation(
-                                        originalLabel.xLabel() + ".tooltips", ""),
+                                () -> Text.translatableWithFallback(originalLabel.xLabel(), originalLabel.xLabel()),
+                                () -> ChatUtils.parseTooltipsTranslation(originalLabel.xLabel() + ".tooltips", ""),
                                 0,
                                 0,
                                 2 * dy,
@@ -50,10 +48,8 @@ public record LabelVec2(String xLabel, String yLabel, Vec2 data) implements NBTP
                                         s, pairFactory.asFirstWrapper(s::get), NBTTypes.DOUBLE_TYPE)
                                 .generateValueWidget(factory, 2 * dy, 0, half - 2 * dy, dy))
                         .addDrawableChild(factory.createLabel(
-                                () -> Text.translatableWithFallback(
-                                        originalLabel.yLabel(), originalLabel.yLabel()),
-                                () -> ChatUtils.parseTooltipsTranslation(
-                                        originalLabel.yLabel() + ".tooltips", ""),
+                                () -> Text.translatableWithFallback(originalLabel.yLabel(), originalLabel.yLabel()),
+                                () -> ChatUtils.parseTooltipsTranslation(originalLabel.yLabel() + ".tooltips", ""),
                                 half,
                                 0,
                                 2 * dy,

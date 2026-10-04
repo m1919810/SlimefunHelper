@@ -1,8 +1,8 @@
 package me.matl114.renderer;
 
+import me.matl114.renderer.text.CustomFontTextRenderer;
 import me.matl114.renderer.text.TextRenderer;
 import me.matl114.renderer.text.VanillaTextRenderer;
-import me.matl114.renderer.text.CustomFontTextRenderer;
 
 public class TextRenderers {
     public static TextRenderer INSTANCE;

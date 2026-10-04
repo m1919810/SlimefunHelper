@@ -14,7 +14,6 @@ public interface TextProvider {
         return text == null ? null : text.asOrderedText();
     }
 
-
     default TextAlign getAlign(DrawableWidget element) {
         return TextAlign.MIDDLE;
     }
@@ -74,5 +73,4 @@ public interface TextProvider {
             }
         };
     }
-
 }

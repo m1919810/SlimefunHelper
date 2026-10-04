@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
@@ -13,7 +12,6 @@ import me.matl114.utils.ChatUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.text.Text;
-import net.minecraft.util.Colors;
 import net.minecraft.util.Formatting;
 
 public class KeyBindConfigurateWidget extends SubScreenWidget {
@@ -21,7 +19,9 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
     // todo: can not sync with attributeKeyValue
     MultiKeyBind keyBind;
     ElementFactory factory;
-    public KeyBindConfigurateWidget(ElementFactory factory, int x, int y, int dx, int dy, AttrKeyValue<MultiKeyBind> config) {
+
+    public KeyBindConfigurateWidget(
+            ElementFactory factory, int x, int y, int dx, int dy, AttrKeyValue<MultiKeyBind> config) {
         super(x, y, dx, dy);
         this.factory = factory;
         multiKeyBind = config;
@@ -34,61 +34,64 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
 
     private void init() {
         ExecutableWidget.instance(0, 1, dx - 3 * dy - 2, dy - 2)
-            .setElementHandler(
-                new AbstractElement()
-                    .withElement(factory.createExecuteButton(
-                        (TextProvider) this::createKeyDisplay,
-                        TooltipHandler.of( ChatUtils.parseTooltipsTranslation(
-                            "widget.gui.key-bind-configurate-widget.keycode-configure.tooltips", "")),
-                        (ButtonAction) ((element, widget, mouseButton) -> {
-                            // select the widget for the first press, and set code for the second
-                            if (this.isFocused() && widget == this.selected) {
-                                onAnyKeyPressed(KeyCode.getKeyCodeFromMouseAction(mouseButton));
-                            }
-                            return true;
-                        }),
-                        ()-> true
-                    ))
-                    .withInputHandler(
-                        InputHandler.keyboard((widget, keyCode, scanCode, modifiers, isPress) -> {
+                .setElementHandler(new AbstractElement()
+                        .withElement(factory.createExecuteButton(
+                                (TextProvider) this::createKeyDisplay,
+                                TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                        "widget.gui.key-bind-configurate-widget.keycode-configure.tooltips", "")),
+                                (ButtonAction) ((element, widget, mouseButton) -> {
+                                    // select the widget for the first press, and set code for the second
+                                    if (this.isFocused() && widget == this.selected) {
+                                        onAnyKeyPressed(KeyCode.getKeyCodeFromMouseAction(mouseButton));
+                                    }
+                                    return true;
+                                })))
+                        .withInputHandler(InputHandler.keyboard((widget, keyCode, scanCode, modifiers, isPress) -> {
                             if (this.isFocused() && widget == this.selected && isPress) {
                                 onAnyKeyPressed(keyCode);
                                 return true;
                             }
                             return false;
-                        })
-                    )
-                )
-            .addToSub(this);
+                        })))
+                .addToSub(this);
         factory.createToggleButton(
-            TextProvider.of(Text.literal("T")),
-            TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                "widget.gui.key-bind-configurate-widget.keycode-t.tooltips", "")),
-                ValueAccessor.of(()-> multiKeyBind.get().isToggleOnRelease(), (v) -> onSwitchToggleOnRelease()),
-            true,
-            dx - 3 * dy - 1, 1, dy - 2, dy - 2
-        ).addToSub(this);
+                        TextProvider.of(Text.literal("T")),
+                        TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.key-bind-configurate-widget.keycode-t.tooltips", "")),
+                        ValueAccessor.of(
+                                () -> multiKeyBind.get().isToggleOnRelease(), (v) -> onSwitchToggleOnRelease()),
+                        true,
+                        dx - 3 * dy - 1,
+                        1,
+                        dy - 2,
+                        dy - 2)
+                .addToSub(this);
         factory.createToggleButton(
-            TextProvider.of(Text.literal("V")),
-            TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                "widget.gui.key-bind-configurate-widget.keycode-v.tooltips", "")),
-            ValueAccessor.of(()-> multiKeyBind.get().isAllowVanilla(), (v) -> onSwitchAllowVanilla()),
-            true,
-            dx - 2 * dy - 1, 1, dy - 2, dy - 2
-        ).addToSub(this);
+                        TextProvider.of(Text.literal("V")),
+                        TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.key-bind-configurate-widget.keycode-v.tooltips", "")),
+                        ValueAccessor.of(() -> multiKeyBind.get().isAllowVanilla(), (v) -> onSwitchAllowVanilla()),
+                        true,
+                        dx - 2 * dy - 1,
+                        1,
+                        dy - 2,
+                        dy - 2)
+                .addToSub(this);
         factory.createExecuteButton(
-            TextProvider.of(Text.literal("D")),
-            TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                "widget.gui.key-bind-configurate-widget.keycode-d.tooltips", "")),
-            ((element, widget, mouseButton) -> {
-                clear();
-                // make it return false, do not unselect current
-                return false;
-            }),
-            ()-> true,
-            dx - dy - 1, 1, dy - 2, dy - 2
-        ).addToSub(this);
-
+                        TextProvider.of(Text.literal("D")),
+                        TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.key-bind-configurate-widget.keycode-d.tooltips", "")),
+                        ((element, widget, mouseButton) -> {
+                            clear();
+                            // make it return false, do not unselect current
+                            return false;
+                        }),
+                        () -> true,
+                        dx - dy - 1,
+                        1,
+                        dy - 2,
+                        dy - 2)
+                .addToSub(this);
     }
 
     @Override

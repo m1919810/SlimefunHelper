@@ -26,7 +26,8 @@ public class SplitterTextElement extends AbstractElement {
             float alpha,
             boolean shouldHighlight) {
         OrderedText label = text.getLabel(element);
-        int textWidth = label == null ? 0 : (int) mc.textRenderer.getTextHandler().getWidth(label);
+        int textWidth =
+                label == null ? 0 : (int) mc.textRenderer.getTextHandler().getWidth(label);
         int width = element.getTextureWidth();
         int sideWidth = Math.max(0, (width - textWidth - 2) / 2);
         int lineColor = color.getColorInt();

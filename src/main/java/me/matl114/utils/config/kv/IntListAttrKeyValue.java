@@ -33,8 +33,7 @@ public class IntListAttrKeyValue extends ListAttrKeyValue<Integer> {
         return str;
     }
 
-    public static final CustomWidgetGenerator<List<Integer>> LIST_WIDGET_FACTORY =
-            (factory, s, x, y, inputDx, dy) -> {
+    public static final CustomWidgetGenerator<List<Integer>> LIST_WIDGET_FACTORY = (factory, s, x, y, inputDx, dy) -> {
         return new SubScreenWidget(x, y, inputDx, dy)
                 .addDrawableChild(factory.createInput(s, 0, 0, inputDx - dy, dy))
                 .addDrawableChild(WidgetUtils.createOpenListModifyScreenButton(

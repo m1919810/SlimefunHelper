@@ -127,16 +127,16 @@ public class RegistryRegex<T> implements NBTParsable<RegistryRegex<T>>, Predicat
                                 originalCopy.addListener(s -> selectSubScreen.updateFilterList());
                                 SubScreenWidget subScreenWidget = selectSubScreen.getScrollableBorder();
                                 subScreenWidget.clearChildren();
-                                subScreenWidget.addDrawableChild(
-                                        regexWrapper.generateValueWidget(
-                                                factory, 0, -20, subScreenWidget.getWidth(), 20));
+                                subScreenWidget.addDrawableChild(regexWrapper.generateValueWidget(
+                                        factory, 0, -20, subScreenWidget.getWidth(), 20));
                                 subScreenWidget.addDrawableChild(generateInformationButton(subScreenWidget));
                             }
 
                             public DrawableWidget generateInformationButton(SubScreenWidget subScreenWidget) {
                                 return factory.createElement(
                                         IconElement.fixedGui(Constants.EDITOR_SPRITE, ButtonAction.run(() -> {}))
-                                                .withTooltips(TooltipHandler.of(original.get().getRules())),
+                                                .withTooltips(TooltipHandler.of(
+                                                        original.get().getRules())),
                                         null,
                                         null,
                                         subScreenWidget.getWidth(),

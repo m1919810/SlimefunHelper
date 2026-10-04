@@ -102,9 +102,8 @@ public interface NBTTypes {
     public NBTType<Registry<?>> REGISTRY_TYPE = new NBTType<>(
             "registry",
             (Codec<Registry<?>>) (Codec<?>) Registries.REGISTRIES.getCodec(),
-            (factory, s, x, y, dx, dy) ->
-                    RegistryAttrKeyValue.generateTextInputWithRegistrySearch(
-                            factory, Registries.REGISTRIES, s, x, y, dx, dy),
+            (factory, s, x, y, dx, dy) -> RegistryAttrKeyValue.generateTextInputWithRegistrySearch(
+                    factory, Registries.REGISTRIES, s, x, y, dx, dy),
             WrapperFactory.<String, Registry<?>>of(
                     s -> Registries.REGISTRIES.get(Identifier.tryParse(s)),
                     v -> ((Registry) Registries.REGISTRIES).getId(v).toString()),
@@ -160,14 +159,8 @@ public interface NBTTypes {
         SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, dx, dy);
         subScreenWidget.addDrawableChild(
                 BaseAttrKeyValue.generateTextInputValueWidget(factory, keyValue, 0, 0, dx - dy, dy));
-        subScreenWidget.addDrawableChild(factory.createElement(
-                new ColorSelectIcon(ValueAccessor.of(keyValue)),
-                null,
-                null,
-                dx - dy,
-                0,
-                dy,
-                dy));
+        subScreenWidget.addDrawableChild(
+                factory.createElement(new ColorSelectIcon(ValueAccessor.of(keyValue)), null, null, dx - dy, 0, dy, dy));
         return subScreenWidget;
     }
 
@@ -469,16 +462,7 @@ public interface NBTTypes {
             int listWidth,
             int listHeight) {
         return generateListModifyButton(
-                DefaultElementFactory.INSTANCE,
-                keyValue,
-                typeW,
-                supplier,
-                x,
-                y,
-                dx,
-                dy,
-                listWidth,
-                listHeight);
+                DefaultElementFactory.INSTANCE, keyValue, typeW, supplier, x, y, dx, dy, listWidth, listHeight);
     }
 
     public static <W> DrawableWidget generateListModifyButton(
@@ -496,14 +480,8 @@ public interface NBTTypes {
                 .addDrawableChild(elementFactory.createExecuteButton(
                         () -> Constants.OPEN_LIST_EDIT_TEXT,
                         Constants::openListEditTooltips,
-                ButtonAction.run(() -> {
-                    openListModifyScreen(
-                            elementFactory,
-                                    keyValue,
-                                    typeW,
-                                    supplier,
-                                    listWidth,
-                                    listHeight);
+                        ButtonAction.run(() -> {
+                            openListModifyScreen(elementFactory, keyValue, typeW, supplier, listWidth, listHeight);
                         }),
                         dy,
                         0,
@@ -590,13 +568,7 @@ public interface NBTTypes {
 
     public static <W> void openListModifyScreen(
             AttrKeyValue<List<W>> keyValue, NBTType<W> type, Supplier<W> supplier, int listWidth, int listHeight) {
-        openListModifyScreen(
-                DefaultElementFactory.INSTANCE,
-                keyValue,
-                type,
-                supplier,
-                listWidth,
-                listHeight);
+        openListModifyScreen(DefaultElementFactory.INSTANCE, keyValue, type, supplier, listWidth, listHeight);
     }
 
     public static <W> void openListModifyScreen(
@@ -607,13 +579,7 @@ public interface NBTTypes {
             int listWidth,
             int listHeight) {
         ScreenAccess.of(new NBTListModifyScreen<>(
-                        keyValue,
-                        type,
-                        elementFactory,
-                        supplier,
-                        (lst) -> keyValue.accept(lst),
-                        listWidth,
-                        listHeight))
+                        keyValue, type, elementFactory, supplier, (lst) -> keyValue.accept(lst), listWidth, listHeight))
                 .openFromCurrent();
     }
 
@@ -626,14 +592,7 @@ public interface NBTTypes {
             int listWidth,
             int listHeight) {
         openBoundedListModifyScreen(
-                DefaultElementFactory.INSTANCE,
-                keyValue,
-                bound,
-                type,
-                keyWidget,
-                keyLabelWidth,
-                listWidth,
-                listHeight);
+                DefaultElementFactory.INSTANCE, keyValue, bound, type, keyWidget, keyLabelWidth, listWidth, listHeight);
     }
 
     public static <T, W> void openBoundedListModifyScreen(

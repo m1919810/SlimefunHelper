@@ -93,7 +93,8 @@ public class StringFormat implements NBTParsable<StringFormat> {
                             IconElement.fixedGui(
                                             Constants.EDITOR_SPRITE,
                                             ButtonAction.run(StringFormat::openWikiColorString))
-                                    .withTooltips(TooltipHandler.of((el) -> s.get().generateColorStringPreview())),
+                                    .withTooltips(
+                                            TooltipHandler.of((el) -> s.get().generateColorStringPreview())),
                             null,
                             null,
                             width + dy,

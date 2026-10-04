@@ -6,7 +6,6 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import me.matl114.managers.config.NBTType;
-import me.matl114.utils.RuntimeAbort;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.WrapperFactory;
 
@@ -132,13 +131,13 @@ public class TypeConvertAttrKeyValue<W, T> implements AttrKeyValue<T>, Cloneable
         return validators;
     }
 
-
-    private W create0(T val){
-        if(validators.stream().anyMatch(s -> !s.test(val))){
+    private W create0(T val) {
+        if (validators.stream().anyMatch(s -> !s.test(val))) {
             throw WrapperFactory.PARSE_FAILURE;
         }
         return wrapperFactory.create(val);
     }
+
     @Override
     public CustomWidgetGenerator<T> getCustomWidgetFactory() {
         return factoryOverride;

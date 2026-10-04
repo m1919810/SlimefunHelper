@@ -101,9 +101,8 @@ public class WrapperAttrKeyValue<W, T> implements AttrKeyValue<T>, Cloneable {
         validators.add(validator);
     }
 
-
-    private W create0(T val){
-        if(validators.stream().anyMatch(s -> !s.test(val))){
+    private W create0(T val) {
+        if (validators.stream().anyMatch(s -> !s.test(val))) {
             throw WrapperFactory.PARSE_FAILURE;
         }
         return wrapperFactory.create(val);

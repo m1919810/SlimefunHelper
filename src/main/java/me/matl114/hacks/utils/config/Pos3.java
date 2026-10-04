@@ -50,8 +50,7 @@ public record Pos3(int x, int y, int z) implements NBTParsable<Pos3> {
                                 .generateValueWidget(factory, 2 * half, 0, half, dy))
                         .addDrawableChild(factory.createExecuteButton(
                                 () -> Text.translatableWithFallback("widget.nbt-parsable.pos3.here", "Here"),
-                                () -> ChatUtils.parseTooltipsTranslation(
-                                        "widget.nbt-parsable.pos3.here.tooltips", ""),
+                                () -> ChatUtils.parseTooltipsTranslation("widget.nbt-parsable.pos3.here.tooltips", ""),
                                 ButtonAction.run(() -> {
                                     var pl = MinecraftClient.getInstance().player;
                                     if (pl != null) {
@@ -64,8 +63,7 @@ public record Pos3(int x, int y, int z) implements NBTParsable<Pos3> {
                                 dy))
                         .addDrawableChild(factory.createExecuteButton(
                                 () -> Text.translatableWithFallback("widget.nbt-parsable.pos3.zero", "Zero"),
-                                () -> ChatUtils.parseTooltipsTranslation(
-                                        "widget.nbt-parsable.pos3.zero.tooltips", ""),
+                                () -> ChatUtils.parseTooltipsTranslation("widget.nbt-parsable.pos3.zero.tooltips", ""),
                                 ButtonAction.run(() -> s.accept(new Pos3(0, 0, 0))),
                                 4 * half - half / 2,
                                 0,

@@ -101,16 +101,7 @@ public class McWidgetHelpers {
             int height,
             boolean focus,
             ColorProvider borderColor) {
-        drawTextWidgetBox(
-                drawable,
-                context,
-                x,
-                y,
-                width,
-                height,
-                focus,
-                borderColor,
-                ColorSampler.of(-16777216));
+        drawTextWidgetBox(drawable, context, x, y, width, height, focus, borderColor, ColorSampler.of(-16777216));
     }
 
     public static void drawTextWidgetBox(

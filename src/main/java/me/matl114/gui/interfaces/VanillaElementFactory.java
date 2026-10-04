@@ -18,6 +18,7 @@ import me.matl114.gui.elements.SplitterTextElement;
 import me.matl114.gui.elements.TextFieldElement;
 import me.matl114.hacks.utils.gui.TextConfig;
 import me.matl114.utils.config.Value;
+import me.matl114.utils.config.ValueAccessor;
 import me.matl114.utils.config.WrapperFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,7 +56,9 @@ public final class VanillaElementFactory implements ElementFactory {
 
     @Override
     public ElementHandler createLabel(TextProvider provider, TooltipHandler handler) {
-        return new LabelElement(TextProvider.withAlign(provider, textAlign()), textColor().getColorInt())
+        return new LabelElement(
+                        TextProvider.withAlign(provider, textAlign()),
+                        textColor().getColorInt())
                 .withTooltips(handler);
     }
 
@@ -113,6 +116,17 @@ public final class VanillaElementFactory implements ElementFactory {
         ButtonElement button = new ButtonElement(provider, action, textColor());
         button.setActivePredicate(element -> active.getAsBoolean());
         return button.withTooltips(handler);
+    }
+
+    @Override
+    public ElementHandler createToggleButton(
+            TextProvider provider, TooltipHandler handler, ValueAccessor<Boolean> accessor, boolean frame) {
+        return createButton(
+                provider,
+                handler,
+                ButtonAction.run(() -> accessor.setValue(!accessor.getValue())),
+                accessor::getValue,
+                frame ? accessor::getValue : () -> false);
     }
 
     @Override

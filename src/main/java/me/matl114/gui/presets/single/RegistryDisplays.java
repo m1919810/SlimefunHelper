@@ -181,7 +181,15 @@ public class RegistryDisplays {
             icon.render(startIndexX, startIndexY, context, value);
             RenderHandler.drawScaledText0(context, mc.textRenderer, name, 20, 1, 200, 10, -16711936, TextAlign.LEFT);
             RenderHandler.drawScaledText0(
-                    context, mc.textRenderer, Text.literal(identifier.toString()), 20, 10, 200, 19, -16711936, TextAlign.LEFT);
+                    context,
+                    mc.textRenderer,
+                    Text.literal(identifier.toString()),
+                    20,
+                    10,
+                    200,
+                    19,
+                    -16711936,
+                    TextAlign.LEFT);
         }
     }
 

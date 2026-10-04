@@ -39,15 +39,7 @@ public class NBTBoundedListScreen<W, T> extends ConfirmingBigScreen {
             int dkey,
             int dx,
             int dy) {
-        this(
-                attrKeyValue,
-                type,
-                keyWidgetFactory,
-                DefaultElementFactory.INSTANCE,
-                callback,
-                dkey,
-                dx,
-                dy);
+        this(attrKeyValue, type, keyWidgetFactory, DefaultElementFactory.INSTANCE, callback, dkey, dx, dy);
     }
 
     public NBTBoundedListScreen(

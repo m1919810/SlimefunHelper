@@ -301,8 +301,7 @@ public class ChatTools extends BaseModule {
         this.basicSubScreenWidget = basicSubScreenWidget;
         toggleSpecialCharWidget(this.enableSpecialChars.get());
         this.delegateToolScreen = new ContentDelegateWidget<>(-250, -68, 0, 0);
-        this.delegateToolScreen.setContentDelegate(
-                this.enableChatScreenTools.get() ? this.basicSubScreenWidget : null);
+        this.delegateToolScreen.setContentDelegate(this.enableChatScreenTools.get() ? this.basicSubScreenWidget : null);
     }
 
     private void toggleSpecialCharWidget(boolean bl) {

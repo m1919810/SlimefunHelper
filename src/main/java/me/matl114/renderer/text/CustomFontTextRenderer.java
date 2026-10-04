@@ -49,8 +49,8 @@ public final class CustomFontTextRenderer extends VanillaTextRenderer {
     @Override
     public String trimToWidth(String text, int maxWidth, boolean backwards) {
         return backwards
-            ? delegate.getTextHandler().trimToWidthBackwards(text, maxWidth, UNICODE_STYLE)
-            : delegate.getTextHandler().trimToWidth(text, maxWidth, UNICODE_STYLE);
+                ? delegate.getTextHandler().trimToWidthBackwards(text, maxWidth, UNICODE_STYLE)
+                : delegate.getTextHandler().trimToWidth(text, maxWidth, UNICODE_STYLE);
     }
 
     @Override
@@ -69,30 +69,90 @@ public final class CustomFontTextRenderer extends VanillaTextRenderer {
     }
 
     @Override
-    public GlyphDrawable prepare(OrderedText text, float x, float y, int color, boolean shadow, boolean trackEmpty, int backgroundColor) {
+    public GlyphDrawable prepare(
+            OrderedText text, float x, float y, int color, boolean shadow, boolean trackEmpty, int backgroundColor) {
         return delegate.prepare(withUnicodeFont(text), x, y, color, shadow, trackEmpty, backgroundColor);
     }
 
     @Override
-    public void draw(String text, float x, float y, int color, boolean shadow, Matrix4f matrix, VertexConsumerProvider vertexConsumers, TextLayerType layerType, int backgroundColor, int light) {
+    public void draw(
+            String text,
+            float x,
+            float y,
+            int color,
+            boolean shadow,
+            Matrix4f matrix,
+            VertexConsumerProvider vertexConsumers,
+            TextLayerType layerType,
+            int backgroundColor,
+            int light) {
         if (text == null) {
             return;
         }
-        delegate.draw(formattedString(text, true), x, y, color, shadow, matrix, vertexConsumers, layerType, backgroundColor, light);
+        delegate.draw(
+                formattedString(text, true),
+                x,
+                y,
+                color,
+                shadow,
+                matrix,
+                vertexConsumers,
+                layerType,
+                backgroundColor,
+                light);
     }
 
     @Override
-    public void draw(net.minecraft.text.Text text, float x, float y, int color, boolean shadow, Matrix4f matrix, VertexConsumerProvider vertexConsumers, TextLayerType layerType, int backgroundColor, int light) {
-        delegate.draw(withUnicodeFont(text.asOrderedText()), x, y, color, shadow, matrix, vertexConsumers, layerType, backgroundColor, light);
+    public void draw(
+            net.minecraft.text.Text text,
+            float x,
+            float y,
+            int color,
+            boolean shadow,
+            Matrix4f matrix,
+            VertexConsumerProvider vertexConsumers,
+            TextLayerType layerType,
+            int backgroundColor,
+            int light) {
+        delegate.draw(
+                withUnicodeFont(text.asOrderedText()),
+                x,
+                y,
+                color,
+                shadow,
+                matrix,
+                vertexConsumers,
+                layerType,
+                backgroundColor,
+                light);
     }
 
     @Override
-    public void draw(OrderedText text, float x, float y, int color, boolean shadow, Matrix4f matrix, VertexConsumerProvider vertexConsumers, TextLayerType layerType, int backgroundColor, int light) {
-        delegate.draw(withUnicodeFont(text), x, y, color, shadow, matrix, vertexConsumers, layerType, backgroundColor, light);
+    public void draw(
+            OrderedText text,
+            float x,
+            float y,
+            int color,
+            boolean shadow,
+            Matrix4f matrix,
+            VertexConsumerProvider vertexConsumers,
+            TextLayerType layerType,
+            int backgroundColor,
+            int light) {
+        delegate.draw(
+                withUnicodeFont(text), x, y, color, shadow, matrix, vertexConsumers, layerType, backgroundColor, light);
     }
 
     @Override
-    public void drawWithOutline(OrderedText text, float x, float y, int color, int outlineColor, Matrix4f matrix, VertexConsumerProvider vertexConsumers, int light) {
+    public void drawWithOutline(
+            OrderedText text,
+            float x,
+            float y,
+            int color,
+            int outlineColor,
+            Matrix4f matrix,
+            VertexConsumerProvider vertexConsumers,
+            int light) {
         delegate.drawWithOutline(withUnicodeFont(text), x, y, color, outlineColor, matrix, vertexConsumers, light);
     }
 
@@ -103,7 +163,8 @@ public final class CustomFontTextRenderer extends VanillaTextRenderer {
 
     @Override
     public List<OrderedText> wrapLines(StringVisitable text, int width) {
-        return Language.getInstance().reorder(delegate.getTextHandler().wrapLines(withUnicodeFont(text), width, Style.EMPTY));
+        return Language.getInstance()
+                .reorder(delegate.getTextHandler().wrapLines(withUnicodeFont(text), width, Style.EMPTY));
     }
 
     @Override
@@ -119,7 +180,8 @@ public final class CustomFontTextRenderer extends VanillaTextRenderer {
     }
 
     private static OrderedText withUnicodeFont(OrderedText text) {
-        return visitor -> text.accept((index, style, codePoint) -> visitor.accept(index, withUnicodeFont(style), codePoint));
+        return visitor ->
+                text.accept((index, style, codePoint) -> visitor.accept(index, withUnicodeFont(style), codePoint));
     }
 
     private OrderedText formattedString(String text, boolean mirror) {
@@ -141,19 +203,20 @@ public final class CustomFontTextRenderer extends VanillaTextRenderer {
 
     private static StringVisitable withUnicodeFont(StringVisitable text) {
         List<StringVisitable> parts = new ArrayList<>();
-        text.visit((style, string) -> {
-            parts.add(StringVisitable.styled(string, withUnicodeFont(style)));
-            return java.util.Optional.empty();
-        }, Style.EMPTY);
+        text.visit(
+                (style, string) -> {
+                    parts.add(StringVisitable.styled(string, withUnicodeFont(style)));
+                    return java.util.Optional.empty();
+                },
+                Style.EMPTY);
         return StringVisitable.concat(parts);
     }
 
     private static Style withUnicodeFont(Style style) {
         return style.getFont() instanceof StyleSpriteSource.Font
-            ? style.withFont(new StyleSpriteSource.Font(UNICODE_FONT_ID))
-            : style;
+                ? style.withFont(new StyleSpriteSource.Font(UNICODE_FONT_ID))
+                : style;
     }
 
-    private record FormattedCharacter(int index, Style style, int codePoint) {
-    }
+    private record FormattedCharacter(int index, Style style, int codePoint) {}
 }

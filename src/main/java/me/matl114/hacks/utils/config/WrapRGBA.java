@@ -1,5 +1,6 @@
 package me.matl114.hacks.utils.config;
 
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.Optional;
 import me.matl114.gui.basic.SubScreenWidget;
@@ -13,7 +14,6 @@ import me.matl114.utils.config.WrapperFactory;
 import me.matl114.utils.config.kv.TypeConvertAttrKeyValue;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
-import com.mojang.serialization.Codec;
 
 public record WrapRGBA(TextColor textColor, int alpha) implements NBTParsable<WrapRGBA> {
     public static final NBTType<WrapRGBA> TYPE = new NBTType<>(
@@ -33,8 +33,7 @@ public record WrapRGBA(TextColor textColor, int alpha) implements NBTParsable<Wr
                 TypeConvertAttrKeyValue<WrapRGBA, Integer> alphaValue =
                         new TypeConvertAttrKeyValue<>(value, alphaFactory, NBTTypes.INT_TYPE);
                 alphaValue.addValidator(new NumberClamp<>(0, 255));
-                return widget
-                        .addDrawableChild(new TypeConvertAttrKeyValue<>(value, colorFactory, NBTTypes.COLOR_TYPE)
+                return widget.addDrawableChild(new TypeConvertAttrKeyValue<>(value, colorFactory, NBTTypes.COLOR_TYPE)
                                 .generateValueWidget(factory, 0, 0, colorWidth, dy))
                         .addDrawableChild(alphaValue.generateValueWidget(factory, colorWidth, 0, alphaWidth, dy));
             },
@@ -45,7 +44,7 @@ public record WrapRGBA(TextColor textColor, int alpha) implements NBTParsable<Wr
     }
 
     public WrapRGBA withAlpha(int alpha) {
-        if(alpha < 0 || alpha > 255){
+        if (alpha < 0 || alpha > 255) {
             throw new IllegalArgumentException();
         }
         return new WrapRGBA(textColor, alpha);
@@ -55,7 +54,7 @@ public record WrapRGBA(TextColor textColor, int alpha) implements NBTParsable<Wr
         this(color.color(), 255);
     }
 
-    public WrapRGBA(String value, int alpha){
+    public WrapRGBA(String value, int alpha) {
         this(ColorUtils.color(value), alpha);
     }
 
@@ -72,7 +71,7 @@ public record WrapRGBA(TextColor textColor, int alpha) implements NBTParsable<Wr
         return Optional.empty();
     }
 
-    public int color(){
+    public int color() {
         return ColorUtils.withAlphaInt(textColor.getRgb(), alpha);
     }
 }

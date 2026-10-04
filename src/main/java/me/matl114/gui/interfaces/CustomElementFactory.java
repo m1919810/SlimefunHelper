@@ -5,9 +5,9 @@ import java.util.function.Supplier;
 import me.matl114.gui.basic.ButtonAction;
 import me.matl114.gui.basic.ColorSampler;
 import me.matl114.gui.basic.ElementHandler;
+import me.matl114.gui.basic.TextAlign;
 import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.basic.TooltipHandler;
-import me.matl114.gui.basic.TextAlign;
 import me.matl114.gui.complex.BoxElement;
 import me.matl114.gui.complex.RawTextElement;
 import me.matl114.gui.elements.*;
@@ -50,10 +50,7 @@ public class CustomElementFactory implements ElementFactory {
     }
 
     protected ColorSampler buttonBackground(BooleanSupplier active) {
-        return () -> (active.getAsBoolean()
-                        ? colors().buttonActiveColor()
-                        : colors().buttonInactiveColor())
-                .color();
+        return () -> (active.getAsBoolean() ? colors().buttonActiveColor() : colors().buttonInactiveColor()).color();
     }
 
     protected TextAlign buttonTextAlign() {
@@ -80,7 +77,8 @@ public class CustomElementFactory implements ElementFactory {
     @Override
     public ElementHandler createBackground(ColorSampler overrideColor) {
         ColorSampler background = overrideColor == null ? backgroundColor() : overrideColor;
-        return new ColorLabelElement(background).withElement(new RawTextElement(TextProvider.of(Text.empty()), textColor()));
+        return new ColorLabelElement(background)
+                .withElement(new RawTextElement(TextProvider.of(Text.empty()), textColor()));
     }
 
     @Override
@@ -141,12 +139,17 @@ public class CustomElementFactory implements ElementFactory {
             ButtonAction action,
             BooleanSupplier active,
             BooleanSupplier enable) {
-        return new ColorBoxElement(action, TextProvider.withAlign(provider, buttonTextAlign()), buttonBackground(active), textColor(), (el, selected) -> {
-                    if (enable.getAsBoolean()) {
-                        return colors().frameColor().withAlpha(255).color();
-                    }
-                    return selected ? -1 : null;
-                })
+        return new ColorBoxElement(
+                        action,
+                        TextProvider.withAlign(provider, buttonTextAlign()),
+                        buttonBackground(active),
+                        textColor(),
+                        (el, selected) -> {
+                            if (enable.getAsBoolean()) {
+                                return colors().frameColor().color();
+                            }
+                            return selected ? -1 : null;
+                        })
                 .withTooltips(handler);
     }
 
@@ -172,8 +175,7 @@ public class CustomElementFactory implements ElementFactory {
     }
 
     @Override
-    public <T> ElementHandler createSlidingInput(
-            Value<T> value, WrapperFactory<Double, T> sliderFactory) {
+    public <T> ElementHandler createSlidingInput(Value<T> value, WrapperFactory<Double, T> sliderFactory) {
         return new SlidingInputElement<>(value, sliderFactory)
                 .setSliderColor(() -> colors().sliderColor().color())
                 .setBackgroundColor(() -> colors().textBackground().color())

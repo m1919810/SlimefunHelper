@@ -21,8 +21,8 @@ import me.matl114.gui.complex.config.DefaultedKeyValueInputWidget;
 import me.matl114.gui.interfaces.BaseModuleElementFactory;
 import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.hacks.utils.HotKeyUtils;
-import me.matl114.hacks.utils.gui.CustomGuiConfig;
 import me.matl114.hacks.utils.config.StringFormat;
+import me.matl114.hacks.utils.gui.CustomGuiConfig;
 import me.matl114.managers.*;
 import me.matl114.managers.command.MainCommand;
 import me.matl114.managers.config.*;
@@ -305,7 +305,8 @@ public abstract class BaseModule implements ModuleListProvider {
             }
             Class<?> clazz = this.getClass();
             try {
-                Method method = clazz.getMethod("addCustomWidgets", Consumer.class, int.class, int.class, int.class, ElementFactory.class);
+                Method method = clazz.getMethod(
+                        "addCustomWidgets", Consumer.class, int.class, int.class, int.class, ElementFactory.class);
                 if (method.getDeclaringClass() != BaseModule.class) {
                     showInGui = true;
                     return true;
@@ -462,7 +463,8 @@ public abstract class BaseModule implements ModuleListProvider {
     protected static final int indexWidth = 140;
     protected static final int blankWidth = 10;
     protected static ElementFactory ELEMENT_FACTORY = new BaseModuleElementFactory(() -> CustomGuiConfig.DEFAULT);
-    protected static ElementFactory CONFIG_FACTORY =  new BaseModuleElementFactory(() -> CustomGuiConfig.DEFAULT);
+    protected static ElementFactory CONFIG_FACTORY = new BaseModuleElementFactory(() -> CustomGuiConfig.DEFAULT);
+
     public static SubScreenWidget createSubWidget(int x, int y, int dx, int dy) {
         return new SubScreenWidget(x, y, dx, dy);
     }
@@ -482,7 +484,7 @@ public abstract class BaseModule implements ModuleListProvider {
 
     public static DrawableWidget createExecuteButton(
             String translationKey, ButtonAction action, int x, int y, int dx, int dy) {
-        return createExecuteButton(translationKey, action, () -> true, x, y, dx, dy);
+        return ELEMENT_FACTORY.createExecuteButton(translationKey, action, x, y, dx, dy);
     }
 
     public static DrawableWidget createExecuteButton(
@@ -504,12 +506,12 @@ public abstract class BaseModule implements ModuleListProvider {
 
     public static DrawableWidget createExecuteButton(
             Supplier<Text> text, Supplier<List<Text>> tooltips, ButtonAction action, int x, int y, int dx, int dy) {
-        return createExecuteButton(text, tooltips, action, () -> true, x, y, dx, dy);
+        return ELEMENT_FACTORY.createExecuteButton(text, tooltips, action, x, y, dx, dy);
     }
 
     public static DrawableWidget createToggleButton(
             String translationKey, ValueAccessor<Boolean> value, int x, int y, int dx, int dy) {
-        return createToggleButton(translationKey, value, x, y, dx, dy, true);
+        return ELEMENT_FACTORY.createToggleButton(translationKey, value, x, y, dx, dy);
     }
 
     public static DrawableWidget createToggleButton(
@@ -525,7 +527,7 @@ public abstract class BaseModule implements ModuleListProvider {
             int y,
             int dx,
             int dy) {
-        return createToggleButton(text, tooltips, value, x, y, dx, dy, true);
+        return ELEMENT_FACTORY.createToggleButton(text, tooltips, value, true, x, y, dx, dy);
     }
 
     public static DrawableWidget createToggleButton(
@@ -549,13 +551,7 @@ public abstract class BaseModule implements ModuleListProvider {
             int dx,
             int dy) {
         return ELEMENT_FACTORY.createElement(
-                elementHandler,
-                tooltips == null ? null : TooltipHandler.of(tooltips),
-                action,
-                x,
-                y,
-                dx,
-                dy);
+                elementHandler, tooltips == null ? null : TooltipHandler.of(tooltips), action, x, y, dx, dy);
     }
 
     public static DrawableWidget createElement(
@@ -567,13 +563,7 @@ public abstract class BaseModule implements ModuleListProvider {
             int dx,
             int dy) {
         return ELEMENT_FACTORY.createElement(
-                elementHandler,
-                tooltips == null ? null : TooltipHandler.of(tooltips),
-                action,
-                x,
-                y,
-                dx,
-                dy);
+                elementHandler, tooltips == null ? null : TooltipHandler.of(tooltips), action, x, y, dx, dy);
     }
 
     public static DrawableWidget createRefEditor(String path, Ref<?> ref, int x, int y, int dx, int dy) {

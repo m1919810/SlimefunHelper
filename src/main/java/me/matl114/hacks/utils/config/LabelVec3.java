@@ -45,8 +45,7 @@ public record LabelVec3(String xLabel, String yLabel, String zLabel, Vec3 data) 
                 return subScreenWidget
                         .addDrawableChild(factory.createLabel(
                                 () -> Text.translatableWithFallback(original.xLabel(), original.xLabel()),
-                                () -> ChatUtils.parseTooltipsTranslation(
-                                        original.xLabel() + ".tooltips", ""),
+                                () -> ChatUtils.parseTooltipsTranslation(original.xLabel() + ".tooltips", ""),
                                 0,
                                 0,
                                 label,
@@ -55,8 +54,7 @@ public record LabelVec3(String xLabel, String yLabel, String zLabel, Vec3 data) 
                                 .generateValueWidget(factory, label, 0, half - label, dy))
                         .addDrawableChild(factory.createLabel(
                                 () -> Text.translatableWithFallback(original.yLabel(), original.yLabel()),
-                                () -> ChatUtils.parseTooltipsTranslation(
-                                        original.yLabel() + ".tooltips", ""),
+                                () -> ChatUtils.parseTooltipsTranslation(original.yLabel() + ".tooltips", ""),
                                 half,
                                 0,
                                 label,
@@ -65,8 +63,7 @@ public record LabelVec3(String xLabel, String yLabel, String zLabel, Vec3 data) 
                                 .generateValueWidget(factory, half + label, 0, half - label, dy))
                         .addDrawableChild(factory.createLabel(
                                 () -> Text.translatableWithFallback(original.zLabel(), original.zLabel()),
-                                () -> ChatUtils.parseTooltipsTranslation(
-                                        original.zLabel() + ".tooltips", ""),
+                                () -> ChatUtils.parseTooltipsTranslation(original.zLabel() + ".tooltips", ""),
                                 2 * half,
                                 0,
                                 label,

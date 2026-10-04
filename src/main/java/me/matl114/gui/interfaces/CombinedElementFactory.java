@@ -22,7 +22,9 @@ public final class CombinedElementFactory implements ElementFactory {
 
     public CombinedElementFactory(Supplier<GuiSetting> settingSupplier) {
         this.settingSupplier = settingSupplier;
-        delegates.put(GuiStyle.VANILLA, new VanillaElementFactory(() -> settingSupplier.get().textConfig()));
+        delegates.put(
+                GuiStyle.VANILLA,
+                new VanillaElementFactory(() -> settingSupplier.get().textConfig()));
         delegates.put(GuiStyle.CUSTOM, new CustomElementFactory(settingSupplier::get));
     }
 

@@ -200,9 +200,8 @@ public class PrimitiveMap<T, W> implements NBTParsable<PrimitiveMap<T, W>> {
             Function<PrimitiveMap<T, W>, R> wrapper) {
         NBTType<PrimitiveMap<T, W>> delegateType = PrimitiveMap.TYPE.cast();
         WrapperFactory<PrimitiveMap<T, W>, R> wrapperFactory = WrapperFactory.of(wrapper, map -> map);
-        return (factory, attr, x, y, dx, dy) ->
-                new TypeConvertAttrKeyValue<>(attr, wrapperFactory, delegateType)
-                        .generateValueWidget(factory, x, y, dx, dy);
+        return (factory, attr, x, y, dx, dy) -> new TypeConvertAttrKeyValue<>(attr, wrapperFactory, delegateType)
+                .generateValueWidget(factory, x, y, dx, dy);
     }
 
     @Override

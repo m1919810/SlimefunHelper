@@ -88,14 +88,15 @@ public class WidgetUtils {
         }
 
         public ConfigScreenLayout forWidth(int width) {
-            return new ConfigScreenLayout(indexWidth, blankWidth, width - indexWidth - blankWidth, buttonHeight, buttonBlank);
+            return new ConfigScreenLayout(
+                    indexWidth, blankWidth, width - indexWidth - blankWidth, buttonHeight, buttonBlank);
         }
     }
 
     public static void addConditionalWidgets(DynamicListWidget list, List<ConditionalWidget> widgets) {
         for (var conditional : widgets) {
-            list.addDrawableChild(new DynamicContentWidget<>(
-                    () -> conditional.shouldShow() ? conditional.widget() : null, 0, 0));
+            list.addDrawableChild(
+                    new DynamicContentWidget<>(() -> conditional.shouldShow() ? conditional.widget() : null, 0, 0));
         }
     }
 
@@ -111,22 +112,17 @@ public class WidgetUtils {
             int arrowHeight) {
         int headerX = header.getX();
         int headerWidth = list.getWidth();
-        boolean hasAlwaysVisibleWidget = widgets.stream()
-                .anyMatch(widget -> widget.condition() == ConditionalWidget.ALWAYS_TRUE);
+        boolean hasAlwaysVisibleWidget =
+                widgets.stream().anyMatch(widget -> widget.condition() == ConditionalWidget.ALWAYS_TRUE);
 
-        SubScreenWidget headerSubScreen = new SubScreenWidget(
-                headerX, 0, headerWidth, arrowY + arrowHeight);
-        headerSubScreen.addDrawableChild(ExecutableWidget.instance(
-                        0, 0, headerWidth, arrowY + arrowHeight)
+        SubScreenWidget headerSubScreen = new SubScreenWidget(headerX, 0, headerWidth, arrowY + arrowHeight);
+        headerSubScreen.addDrawableChild(ExecutableWidget.instance(0, 0, headerWidth, arrowY + arrowHeight)
                 .setElementHandler(new AbstractElement()
-                        .withInputHandler(InputHandler.clickRun(
-                                () -> expanded.setValue(!expanded.getValue())))));
+                        .withInputHandler(InputHandler.clickRun(() -> expanded.setValue(!expanded.getValue())))));
         headerSubScreen.addDrawableChild(header);
-        headerSubScreen.addDrawableChild(ExecutableWidget.instance(
-                        arrowX, arrowY, arrowWidth, arrowHeight)
+        headerSubScreen.addDrawableChild(ExecutableWidget.instance(arrowX, arrowY, arrowWidth, arrowHeight)
                 .setRenderHandler(new AbstractElement()
-                        .combineRender(factory.createLabel(
-                                TextProvider.of(Text.empty()), TooltipHandler.of(List.of())))
+                        .combineRender(factory.createLabel(TextProvider.of(Text.empty()), TooltipHandler.of(List.of())))
                         .combineRender((element, context, mouseX, mouseY, delta, alpha, shouldHighlight) -> {
                             context.setShaderColor(Colors.WHITE);
                             context.drawGuiTexture(
@@ -148,18 +144,12 @@ public class WidgetUtils {
                 0));
         for (var conditional : widgets) {
             list.addDrawableChild(new DynamicContentWidget<>(
-                    () -> expanded.getValue() && conditional.shouldShow()
-                            ? conditional.widget()
-                            : null,
-                    0,
-                    0));
+                    () -> expanded.getValue() && conditional.shouldShow() ? conditional.widget() : null, 0, 0));
         }
     }
 
     public static DynamicListWidget createValueAccessorList(
-            List<Pair<String, ValueAccessor<?>>> accessors,
-            ConfigScreenLayout layout,
-            ElementFactory factory) {
+            List<Pair<String, ValueAccessor<?>>> accessors, ConfigScreenLayout layout, ElementFactory factory) {
         int width = layout.totalWidth();
         DynamicListWidget list = new DynamicListWidget(0, 0, width);
         for (var accessorEntry : accessors) {
@@ -171,8 +161,8 @@ public class WidgetUtils {
             keyValue.addListener(accessor::setValue);
             SubScreenWidget row = new SubScreenWidget(0, 0, width, layout.buttonHeight() + layout.buttonBlank());
             row.addDrawableChild(DisplayWidget.instance(0, 0, width, layout.buttonBlank() + layout.buttonHeight()));
-            row.addDrawableChild(createKeyValueWidget(
-                    Optional.ofNullable(accessor.getValue()), keyValue, layout, factory));
+            row.addDrawableChild(
+                    createKeyValueWidget(Optional.ofNullable(accessor.getValue()), keyValue, layout, factory));
             list.addDrawableChild(row);
         }
         return list;
@@ -184,10 +174,7 @@ public class WidgetUtils {
     }
 
     public static <T> KeyValueInputWidget<T> createKeyValueWidget(
-            Ref<T> ref,
-            String keyName,
-            ConfigScreenLayout layout,
-            ElementFactory factory) {
+            Ref<T> ref, String keyName, ConfigScreenLayout layout, ElementFactory factory) {
         return createKeyValueWidget(
                 ref.hasDefaultValue() ? Optional.of(ref.getDefaultValue()) : Optional.empty(),
                 ref.createKeyValue(keyName),
@@ -201,10 +188,7 @@ public class WidgetUtils {
     }
 
     public static <T> KeyValueInputWidget<T> createKeyValueWidget(
-            Optional<T> ref,
-            AttrKeyValue<T> attrKeyValue,
-            ConfigScreenLayout layout,
-            ElementFactory factory) {
+            Optional<T> ref, AttrKeyValue<T> attrKeyValue, ConfigScreenLayout layout, ElementFactory factory) {
         return new DefaultedKeyValueInputWidget<T>(
                 0,
                 layout.buttonBlank(),
@@ -220,8 +204,7 @@ public class WidgetUtils {
             public DrawableWidget createKeyLabel() {
                 return ExecutableWidget.instance(0, 0, layout.indexWidth(), layout.buttonHeight())
                         .setElementHandler(factory.createLabel(
-                                TextProvider.of(this.getTranslationName()),
-                                TooltipHandler.of(this::getTooltips)));
+                                TextProvider.of(this.getTranslationName()), TooltipHandler.of(this::getTooltips)));
             }
         };
     }
@@ -268,7 +251,8 @@ public class WidgetUtils {
             List<Pair<String, ValueAccessor<?>>> accessors,
             ConfigScreenLayout layout,
             boolean filter) {
-        return createValueAccessorsEditScreen(title, titleTooltips, accessors, layout, DefaultElementFactory.INSTANCE, filter);
+        return createValueAccessorsEditScreen(
+                title, titleTooltips, accessors, layout, DefaultElementFactory.INSTANCE, filter);
     }
 
     public static DrawableWidget createValueAccessorsEditScreen(
@@ -282,8 +266,7 @@ public class WidgetUtils {
         DynamicListWidget listWidget = new DynamicListWidget(0, 0, width);
 
         listWidget.addDrawableChild(ExecutableWidget.instance(0, 0, width, layout.buttonHeight())
-                .setElementHandler(factory.createTitle(
-                        TextProvider.of(title), TooltipHandler.of(titleTooltips))));
+                .setElementHandler(factory.createTitle(TextProvider.of(title), TooltipHandler.of(titleTooltips))));
         List<Pair<String, MutableBoolean>> showFlag = new ArrayList<>();
         if (filter) {
             // add filter,
@@ -442,9 +425,12 @@ public class WidgetUtils {
             ElementFactory factory, ListAttrKeyValue<T> s, int x, int y, int dx, int dy) {
         return ExecutableWidget.instance(x, y, dx, dy)
                 .setElementHandler(IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.run(() -> {
-                            ScreenAccess.of(new StringListModifyScreen<>(s, listAttrKeyValue -> {
-                                        s.setOriginValue(listAttrKeyValue.get());
-                                    }, factory))
+                            ScreenAccess.of(new StringListModifyScreen<>(
+                                            s,
+                                            listAttrKeyValue -> {
+                                                s.setOriginValue(listAttrKeyValue.get());
+                                            },
+                                            factory))
                                     .openFromCurrent();
                         }))
                         .withTooltips(TooltipHandler.of(Constants.openListEditTooltips())));
@@ -467,9 +453,12 @@ public class WidgetUtils {
         return ExecutableWidget.instance(x, y, dx, dy)
                 .setElementHandler(IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.run(() -> {
                             var s = attrCreator.get();
-                            ScreenAccess.of(new StringListModifyScreen<>(s, listAttrKeyValue -> {
-                                        listConsumer.accept(listAttrKeyValue.get());
-                                    }, factory))
+                            ScreenAccess.of(new StringListModifyScreen<>(
+                                            s,
+                                            listAttrKeyValue -> {
+                                                listConsumer.accept(listAttrKeyValue.get());
+                                            },
+                                            factory))
                                     .openFromCurrent();
                         }))
                         .withTooltips(TooltipHandler.of(Constants.openListEditTooltips())));

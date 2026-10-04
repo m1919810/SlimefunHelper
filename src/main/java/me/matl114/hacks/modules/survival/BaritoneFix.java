@@ -307,7 +307,11 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
 
     @Override
     public void addCustomWidgets(
-            Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank, me.matl114.gui.interfaces.ElementFactory factory) {
+            Consumer<DrawableWidget> acceptor,
+            int dx,
+            int dy,
+            int dblank,
+            me.matl114.gui.interfaces.ElementFactory factory) {
         acceptor.accept(factory.createTitle(
                 BaritoneHooks.getInstance().isBaritoneAPISupported()
                         ? "widget.baritone-fix.baritone-api-support"
