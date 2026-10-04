@@ -56,9 +56,6 @@ public abstract class TextFieldWidgetMixin extends ClickableWidget implements Te
     }
 
     @Shadow
-    public abstract void setChangedListener(Consumer<String> changedListener);
-
-    @Shadow
     private int selectionStart;
 
     @Shadow

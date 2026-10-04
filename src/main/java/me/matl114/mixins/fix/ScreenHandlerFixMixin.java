@@ -5,7 +5,6 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.matl114.hacks.InvTasks;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
@@ -15,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.At;
 @Environment(EnvType.CLIENT)
 @Mixin(ScreenHandler.class)
 public abstract class ScreenHandlerFixMixin {
+
     @WrapOperation(
             method = "onSlotClick",
             at =
@@ -22,23 +22,25 @@ public abstract class ScreenHandlerFixMixin {
                             value = "INVOKE",
                             target =
                                     "Lnet/minecraft/screen/ScreenHandler;internalOnSlotClick(IILnet/minecraft/screen/slot/SlotActionType;Lnet/minecraft/entity/player/PlayerEntity;)V"))
-    private void wrapSlotClick(
+    private void suppressDropItemSpawn(
             ScreenHandler instance,
             int slotIndex,
             int button,
             SlotActionType actionType,
             PlayerEntity player,
             Operation<Void> original) {
-        boolean isClient = MinecraftClient.getInstance().world != null && MinecraftClient.getInstance().world.isClient;
+        boolean clientWorld = player.getEntityWorld().isClient();
+        if (!clientWorld) {
+            original.call(instance, slotIndex, button, actionType, player);
+            return;
+        }
+
+        boolean previous = InvTasks.SUPPRESS_DROPITEM_SPAWN.get();
+        InvTasks.SUPPRESS_DROPITEM_SPAWN.set(true);
         try {
-            if (isClient) {
-                InvTasks.SUPPRESS_DROPITEM_SPAWN.set(true);
-            }
             original.call(instance, slotIndex, button, actionType, player);
         } finally {
-            if (isClient) {
-                InvTasks.SUPPRESS_DROPITEM_SPAWN.set(false);
-            }
+            InvTasks.SUPPRESS_DROPITEM_SPAWN.set(previous);
         }
     }
 }
