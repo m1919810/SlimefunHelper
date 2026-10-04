@@ -236,7 +236,7 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                             TextProvider.of(Text.literal("SlimefunHelper")),
                             TooltipHandler.of(List.of()),
                             ButtonAction.run(this::openClickGui),
-                            () -> false,
+                            () -> true,
                             () -> false));
             if (delegateWidget != null && delegateWidget.get() != null) {
                 ScreenAccess.of(mp).removeChildFrom(delegateWidget.get());
@@ -653,14 +653,19 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                         .withInputHandler(InputHandler.clickRun(() -> showFlag.setValue(!showFlag.booleanValue()))))
                 .addToSub(subScreen);
         guiElementFactory
-                .createTitle(
+                .createBackground(null, 0, 0, buttonWidth - buttonHeight, buttonHeight)
+                .addToSub(subScreen);
+        guiElementFactory
+                .createText(
                         TextProvider.of(Text.literal(group)),
                         TooltipHandler.of(List.of()),
                         0,
                         0,
                         buttonWidth - buttonHeight,
-                        buttonHeight)
+                        buttonHeight,
+                        true)
                 .addToSub(subScreen);
+
         ExecutableWidget.instance(buttonWidth - buttonHeight, 0, buttonHeight, buttonHeight)
                 .setRenderHandler(new AbstractElement()
                         .combineRender(guiElementFactory.createBackground())
