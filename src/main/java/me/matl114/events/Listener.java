@@ -286,7 +286,7 @@ public class Listener {
         }
     }
 
-    private static final Function<Class<? extends Screen>, Class<? extends Screen>> screenClassIdentifierMapper =
+    static final Function<Class<? extends Screen>, Class<? extends Screen>> screenClassIdentifierMapper =
             Util.memoize((clz -> {
                 Class<?> clzz = clz;
                 while (clzz != Screen.class && clzz.getSuperclass() != Screen.class) {

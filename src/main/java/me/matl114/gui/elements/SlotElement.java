@@ -17,7 +17,7 @@ public class SlotElement extends AbstractElement {
     final Inventory inventory;
     final int index;
     final SlotClickCallback callback;
-
+    protected final ColorSampler color;
     protected static final Identifier SLOT_RESOURCE =
             new Identifier("slimefunhelper", "textures/custom/recipecontainer.png");
     protected static final int u0 = 0;
@@ -26,7 +26,11 @@ public class SlotElement extends AbstractElement {
     protected static final int uheight = 18;
 
     public SlotElement(ItemStack itemStack) {
-        this(new SimpleInventory(itemStack), 0);
+        this(new SimpleInventory(itemStack), 0, ColorSampler.WHITE);
+    }
+
+    public SlotElement(ItemStack itemStack, ColorSampler sampler) {
+        this(new SimpleInventory(itemStack), 0, sampler);
     }
 
     public static SlotElement instance(ItemStack itemStack) {
@@ -38,7 +42,7 @@ public class SlotElement extends AbstractElement {
     }
 
     public SlotElement(ItemStack itemStack, SlotClickCallback callback) {
-        this(new SimpleInventory(itemStack), 0, callback);
+        this(new SimpleInventory(itemStack), 0, ColorSampler.WHITE, callback);
     }
 
     public SlotElement(Supplier<ItemStack> sup) {
@@ -46,21 +50,35 @@ public class SlotElement extends AbstractElement {
     }
 
     public SlotElement(Inventory inventory) {
-        this(inventory, 0, SlotClickCallback.DEFAULT);
+        this(inventory, 0, ColorSampler.WHITE, SlotClickCallback.DEFAULT);
     }
 
     public SlotElement(Inventory inventory, int index) {
-        this(inventory, index, SlotClickCallback.DEFAULT);
+        this(inventory, index, ColorSampler.WHITE, SlotClickCallback.DEFAULT);
+    }
+
+    public SlotElement(Inventory inventory, int index, ColorSampler color) {
+        this(inventory, index, color, SlotClickCallback.DEFAULT);
     }
 
     public SlotElement(Inventory inventory, int index, SlotClickCallback callback) {
+        this(inventory, index, ColorSampler.WHITE, callback);
+    }
+
+    public SlotElement(Inventory inventory, int index, ColorSampler color, SlotClickCallback callback) {
         this.inventory = inventory;
         this.index = index;
         this.callback = callback;
+        this.color = color;
     }
 
     protected void renderSlotFrame(VDrawContext context) {
-        context.drawTexture(SLOT_RESOURCE, 0, 0, u0, v0, uheight, vheight);
+        context.setShaderColor(this.color.getColorInt());
+        try {
+            context.drawTexture(SLOT_RESOURCE, 0, 0, u0, v0, uheight, vheight);
+        } finally {
+            context.setShaderColor(-1);
+        }
     }
 
     @Override
