@@ -7,11 +7,11 @@ import me.matl114.gui.basic.TextProvider;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.text.OrderedText;
 
-public class SplitterTextElement extends AbstractElement {
+public class TextSplitterElement extends AbstractElement {
     private final TextProvider text;
     private final ColorSampler color;
 
-    public SplitterTextElement(TextProvider text, ColorSampler color) {
+    public TextSplitterElement(TextProvider text, ColorSampler color) {
         this.text = text;
         this.color = color;
     }

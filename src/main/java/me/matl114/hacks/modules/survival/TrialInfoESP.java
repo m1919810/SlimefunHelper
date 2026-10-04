@@ -7,6 +7,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.events.impl.BlockUpdate;
+import me.matl114.events.impl.Render2D;
 import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -14,12 +15,10 @@ import me.matl114.hacks.utils.config.TracingOption;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hacks.utils.render.RenderElements;
+import me.matl114.hacks.utils.render.RenderMode;
 import me.matl114.hacks.utils.tasks.TimerExecutor;
 import me.matl114.managers.Configs;
-import me.matl114.managers.config.DoubleRef;
-import me.matl114.managers.config.FlagRef;
-import me.matl114.managers.config.KeyBindRef;
-import me.matl114.managers.config.NBTRef;
+import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.CommonUtils;
 import me.matl114.utils.RenderUtils;
@@ -66,6 +65,9 @@ public class TrialInfoESP extends BaseModule {
             .validator(Configs.doubleRange(0.1D, 4.0D))
             .build();
 
+    public final DoubleRef textOffset =
+            doubleBuilder(root.add("text-offset")).defaultValue(1.0D).build();
+
     public final NBTRef<TracingOption> traceOption = builder(root.add("trace-option"), TracingOption.class)
             .defaultValue(new TracingOption(true, false))
             .build();
@@ -73,15 +75,27 @@ public class TrialInfoESP extends BaseModule {
     public final FlagRef renderEnterPosition =
             flagBuilder(root.add("render-enter-position")).build();
 
-    public final NBTRef<WrapColor> color = builder(root.add("color"), WrapColor.class)
+    public final EnumRef<RenderMode> textMode = builder(root.add("text-mode"), RenderMode.class)
+            .defaultValue(RenderMode.RENDER_2D)
+            .build();
+
+    public final NBTRef<WrapColor> colorSpawner = builder(root.add("color-spawner"), WrapColor.class)
+            .defaultValue(new WrapColor(Formatting.YELLOW))
+            .build();
+
+    public final NBTRef<WrapColor> colorVaultSimple = builder(root.add("color-vault-simple"), WrapColor.class)
             .defaultValue(new WrapColor(Formatting.AQUA))
             .build();
 
-    public final NBTRef<WrapColor> color2 = builder(root.add("color2"), WrapColor.class)
+    public final NBTRef<WrapColor> colorVaultOminous = builder(root.add("color-vault-ominous"), WrapColor.class)
+            .defaultValue(new WrapColor(Formatting.GOLD))
+            .build();
+
+    public final NBTRef<WrapColor> colorNotActive = builder(root.add("color-not-active"), WrapColor.class)
             .defaultValue(new WrapColor(Formatting.RED))
             .build();
 
-    public final NBTRef<WrapColor> miscColor = builder(root.add("misc-color"), WrapColor.class)
+    public final NBTRef<WrapColor> colorMisc = builder(root.add("color-misc"), WrapColor.class)
             .defaultValue(new WrapColor(Formatting.YELLOW))
             .build();
 
@@ -93,11 +107,13 @@ public class TrialInfoESP extends BaseModule {
         registerListener(Listener.getWorldSwitchPoint(), this::onSwitchWorld);
         registerListener(
                 Listener.getBlockUpdateListener().getChannel(Blocks.TRIAL_SPAWNER), this::onTrialSpawnerActivated);
+        registerListener(RenderListener.getRender2DEvent(), this::onRender2D);
     }
 
     public final RenderCollector<RenderElements.Text> textCollector = RenderCollectors.createTextCollector();
     public final RenderCollector<List<Vec3d>> lineRenderCollector = RenderCollectors.createLinesCollector();
     public final RenderCollector<Box> boxCollector = RenderCollectors.createBoxCollector(true, false, false);
+    public final RenderCollector<Box> boxCollector2 = RenderCollectors.createBoxCollector(false, true, false);
     public final RenderCollector<Vec3d> traceCollector = RenderCollectors.createTracerCollector();
     private static final String TRIAL_MOB_METADATA_KEY = "slimefunhelper:trial_esp/trial_mob";
     private Map<ChunkPos, Set<BlockPos>> cachedVaultsAndTrials = new HashMap<>();
@@ -111,9 +127,10 @@ public class TrialInfoESP extends BaseModule {
         textCollector.clear();
         lineRenderCollector.clear();
         boxCollector.clear();
+        boxCollector2.clear();
         traceCollector.clear();
         TracingOption tracingOption = traceOption.get();
-        int miscRgb = miscColor.get().withAlpha(255);
+        int miscRgb = colorMisc.get().withAlpha(255);
         if (enterTrialPosition != null
                 && mc.player != null
                 && mc.player.squaredDistanceTo(enterTrialPosition.toCenterPos()) > 256.0D * 256.0D) {
@@ -141,11 +158,10 @@ public class TrialInfoESP extends BaseModule {
             for (var re : cachedVaultsAndTrials.values()) {
                 for (var bp : re) {
                     anyTrialNearby = true;
-                    boolean accept = false;
                     BlockEntity be = mc.world.getBlockEntity(bp);
                     List<Text> textLines = new ArrayList<>();
+                    WrapColor color;
                     if (be instanceof TrialSpawnerBlockEntity be1) {
-                        accept = true;
                         BlockState currentState = mc.world.getBlockState(bp);
                         TrialSpawnerState state = currentState.get(TrialSpawnerBlock.TRIAL_SPAWNER_STATE);
                         if (state == TrialSpawnerState.COOLDOWN) {
@@ -153,10 +169,13 @@ public class TrialInfoESP extends BaseModule {
                         }
                         if (state == TrialSpawnerState.ACTIVE) {
                             markTrialMobs(be1, bp);
+                            color = colorSpawner.get();
                         }
                         if (state == TrialSpawnerState.WAITING_FOR_PLAYERS) {
+                            color = colorSpawner.get();
                             textLines.add(Text.translatable("message.module.trial-info-esp.display.trial-ready"));
                         } else if (state == TrialSpawnerState.COOLDOWN) {
+                            color = colorNotActive.get();
                             OptionalLong cooldownLong = WorldManager.INSTANCE.getTrialSpawnerCooldownStartTime(be1);
                             String time;
                             if (cooldownLong.isPresent()) {
@@ -170,8 +189,8 @@ public class TrialInfoESP extends BaseModule {
                             }
                             textLines.add(
                                     Text.translatable("message.module.trial-info-esp.display.trial-cooldown", time));
-                            accept = false;
                         } else if (state != TrialSpawnerState.INACTIVE) {
+                            color = colorNotActive.get();
                             OptionalLong activeLong = WorldManager.INSTANCE.getTrialSpawnerActiveStartTime(be1);
                             String time;
                             if (activeLong.isPresent()) {
@@ -185,6 +204,8 @@ public class TrialInfoESP extends BaseModule {
                             }
                             textLines.add(
                                     Text.translatable("message.module.trial-info-esp.display.trial-active", time));
+                        } else {
+                            color = colorNotActive.get();
                         }
                         var entity = be1.getSpawner().getData().setDisplayEntity(be1.getSpawner(), mc.world, state);
                         if (entity != null) {
@@ -208,24 +229,32 @@ public class TrialInfoESP extends BaseModule {
                             openedPlayers = uid2;
                         }
                         if (!openedPlayers.contains(mc.player.getUuid())) {
-                            accept = true;
                             textLines.add(Text.translatable("message.module.trial-info-esp.display.vault-can-open"));
+                            color = omin ? colorVaultOminous.get() : colorVaultSimple.get();
                         } else {
                             textLines.add(
                                     Text.translatable("message.module.trial-info-esp.display.vault-can-not-open"));
+                            color = colorNotActive.get();
                         }
+                    } else {
+                        continue;
                     }
                     if (!textLines.isEmpty()) {
                         MutableText result = Text.empty().append(textLines.get(0));
                         for (int i = 1; i < textLines.size(); i++) {
                             result = result.append(Text.literal("\n")).append(textLines.get(i));
                         }
-                        Vec3d textPos = bp.toCenterPos().add(0.0D, 0.4, 0.0D);
+                        Vec3d textPos = bp.toCenterPos().add(0.0D, textOffset.get(), 0.0D);
                         textCollector.submit(
                                 new RenderElements.Text(result, textPos, (float) textScale.get()),
-                                accept
-                                        ? color.get().withAlpha(255)
-                                        : color2.get().withAlpha(255));
+                                color.withAlpha(255));
+                    }
+                    if (tracingOption.box()) {
+                        boxCollector.submit(new Box(bp), color.withAlpha(255));
+                        boxCollector2.submit(new Box(bp), color.withAlpha(64));
+                    }
+                    if (tracingOption.line()) {
+                        traceCollector.submit(bp.toCenterPos(), color.withAlpha(255));
                     }
                 }
             }
@@ -246,16 +275,30 @@ public class TrialInfoESP extends BaseModule {
         }
         RenderUtils.startDrawVirtual(event.context().stack());
         try {
-            textCollector.render3D(event.context().stack());
-            if (traceOption.get().line()) {
-                lineRenderCollector.render3D(event.context().stack());
-                traceCollector.render3D(event.context().stack());
+            if (textMode.get().isIn(RenderMode.RENDER_3D)) {
+                textCollector.render3D(event.context().stack());
             }
-            if (traceOption.get().box()) {
-                boxCollector.render3D(event.context().stack());
-            }
+            lineRenderCollector.render3D(event.context().stack());
+            traceCollector.render3D(event.context().stack());
+            boxCollector.render3D(event.context().stack());
+            boxCollector2.render3D(event.context().stack());
         } finally {
             RenderUtils.stopDrawVirtual(event.context().stack());
+        }
+    }
+
+    public void onRender2D(Event<Render2D> vdraw) {
+        if (checkNull()) return;
+        if (!enable.get()) {
+            return;
+        }
+        if (textMode.get().isIn(RenderMode.RENDER_2D)) {
+            vdraw.context.drawContext().pushMatrix();
+            try {
+                textCollector.render2D(vdraw.context.drawContext());
+            } finally {
+                vdraw.context.drawContext().popMatrix();
+            }
         }
     }
 

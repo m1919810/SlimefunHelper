@@ -106,7 +106,7 @@ public class CustomElementFactory implements ElementFactory {
     public ElementHandler createText(TextProvider provider, TooltipHandler handler, boolean splitter) {
         RawTextElement text = new RawTextElement(provider, textColor());
         if (splitter) {
-            text.combineRender(new SplitterTextElement(provider, textColor()));
+            text.combineRender(new TextSplitterElement(provider, textColor()));
         }
         return text.withTooltips(handler);
     }
@@ -125,10 +125,9 @@ public class CustomElementFactory implements ElementFactory {
             TextProvider provider, TooltipHandler handler, ColorSampler background, boolean splitter) {
         ColorLabelElement label = new ColorLabelElement(background);
         TextProvider alignedProvider = TextProvider.withAlign(provider, textAlign());
+        label.withElement(new RawTextElement(alignedProvider, textColor()));
         if (splitter) {
-            label.withElement(new SplitterTextElement(alignedProvider, textColor()));
-        } else {
-            label.withElement(new RawTextElement(alignedProvider, textColor()));
+            label.withElement(new TextSplitterElement(alignedProvider, textColor()));
         }
         return label.withTooltips(handler);
     }

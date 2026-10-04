@@ -112,6 +112,7 @@
 		"hack.PlayerEntityMixin",
 		"hack.PlayerEntityRendererMixin",
 		"hack.ResourcePackPositionMixin",
+		"hack.ScreenMixin",
 		"hack.SlimeBlockMixin",
 		"hack.SplashOverlayMixin",
 		"hack.VillagerTradeScreenMixin",

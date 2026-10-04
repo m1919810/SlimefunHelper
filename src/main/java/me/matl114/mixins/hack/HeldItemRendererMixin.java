@@ -19,8 +19,7 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(HeldItemRenderer.class)
 public abstract class HeldItemRendererMixin {
     @WrapOperation(
-            method =
-                    "renderFirstPersonItem(Lnet/minecraft/client/network/AbstractClientPlayerEntity;FFLnet/minecraft/util/Hand;FFLnet/minecraft/item/ItemStack;FLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;I)V",
+            method = "renderFirstPersonItem",
             at =
                     @At(
                             value = "INVOKE",
