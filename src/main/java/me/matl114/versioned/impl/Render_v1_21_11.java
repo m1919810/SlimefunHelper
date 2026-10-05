@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import java.awt.*;
 import java.util.List;
 import java.util.function.Function;
+import me.matl114.renderer.TextRenderers;
 import me.matl114.utils.render.ColorQuad;
 import me.matl114.utils.render.Quad;
 import me.matl114.utils.render.UV;
@@ -544,8 +545,6 @@ public class Render_v1_21_11 implements VRender, VRender.WrapRenderOperation {
         }
     }
 
-    private static final float TEXT_HEIGHT = 9.0f;
-
     @Override
     public void drawTextCameraCoord(
             OrderedText orderedText,
@@ -556,19 +555,20 @@ public class Render_v1_21_11 implements VRender, VRender.WrapRenderOperation {
             TextDisplay displayInfo) {
         int xAlign = displayPositionFlag % 3;
         int yAlign = displayPositionFlag / 3;
-        int width = mc.textRenderer.getWidth(orderedText);
+        var textDrawer = TextRenderers.get();
+        int width = textDrawer.getWidth(orderedText);
         float xStart = -((width * xAlign) / 2.0F);
-        float yStart = -((TEXT_HEIGHT * yAlign) / 2.0F);
+        float yStart = -((textDrawer.getTextHeight() * yAlign) / 2.0F);
         stack.push();
         stack.translate(vec3d.x, vec3d.y, vec3d.z);
         stack.scale(1, -1, 1);
         stack.translate(xStart, yStart, 0);
-        mc.textRenderer.draw(
+        textDrawer.draw(
                 orderedText,
                 0,
                 0,
                 color.getRGB(),
-                displayInfo.shadow(),
+                false,
                 stack.peek().getPositionMatrix(),
                 getVCP(),
                 displayInfo.layerType(),

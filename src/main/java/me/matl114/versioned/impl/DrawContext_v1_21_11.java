@@ -3,16 +3,23 @@ package me.matl114.versioned.impl;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import java.util.*;
 import java.util.List;
+import me.matl114.renderer.TextRenderers;
+import me.matl114.renderer.text.ResourceFontTextDrawer;
+import me.matl114.renderer.text.TextDrawer;
+import me.matl114.renderer.text.VanillaTextDrawer;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.versioned.accessors.GuiRendererStateAccess;
 import me.matl114.versioned.api.MatrixStack;
 import me.matl114.versioned.api.VDrawContext;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.font.TextRenderer.TextLayerType;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.ScreenRect;
 import net.minecraft.client.gui.render.state.GuiRenderState;
 import net.minecraft.client.gui.render.state.SimpleGuiElementRenderState;
+import net.minecraft.client.gui.render.state.TextGuiElementRenderState;
 import net.minecraft.client.gui.tooltip.HoveredTooltipPositioner;
 import net.minecraft.client.gui.tooltip.TooltipComponent;
 import net.minecraft.client.render.VertexConsumer;
@@ -206,23 +213,92 @@ public class DrawContext_v1_21_11 implements VDrawContext {
     }
 
     @Override
-    public void drawText(TextRenderer textRenderer, OrderedText text, int x, int y, int color, boolean shadow) {
+    public void drawText(TextDrawer textDrawer, OrderedText text, int x, int y, int color, boolean shadow) {
         var context = pushMatrix();
         try {
-            context.drawText(textRenderer, text, x, y, getShaderRGB(color), shadow);
+            TextDrawer currentDrawer = TextRenderers.resolve(textDrawer);
+            if (currentDrawer instanceof VanillaTextDrawer vanillaTextDrawer
+                    && currentDrawer.getClass() == VanillaTextDrawer.class) {
+                context.drawText(vanillaTextDrawer.unwrap(), text, x, y, getShaderRGB(color), false);
+            } else if (currentDrawer instanceof ResourceFontTextDrawer resourceFontTextDrawer) {
+                addTextState(
+                        resourceFontTextDrawer.unwrap(),
+                        resourceFontTextDrawer.withFont(text),
+                        x,
+                        y,
+                        getShaderRGB(color),
+                        false,
+                        resourceFontTextDrawer.getTextYOffset());
+            } else {
+                currentDrawer.draw(
+                        text,
+                        x,
+                        y,
+                        getShaderRGB(color),
+                        false,
+                        matrixStack.peek3D(),
+                        TextLayerType.NORMAL,
+                        0,
+                        15728880);
+            }
         } finally {
             popMatrix();
         }
     }
 
     @Override
-    public void drawText(TextRenderer textRenderer, @Nullable String text, int x, int y, int color, boolean shadow) {
+    public void drawText(TextDrawer textDrawer, @Nullable String text, int x, int y, int color, boolean shadow) {
+        if (text == null) {
+            return;
+        }
         var context = pushMatrix();
         try {
-            context.drawText(textRenderer, text, x, y, getShaderRGB(color), shadow);
+            TextDrawer currentDrawer = TextRenderers.resolve(textDrawer);
+            if (currentDrawer instanceof VanillaTextDrawer vanillaTextDrawer
+                    && currentDrawer.getClass() == VanillaTextDrawer.class) {
+                context.drawText(vanillaTextDrawer.unwrap(), text, x, y, getShaderRGB(color), false);
+            } else if (currentDrawer instanceof ResourceFontTextDrawer resourceFontTextDrawer) {
+                addTextState(
+                        resourceFontTextDrawer.unwrap(),
+                        resourceFontTextDrawer.formattedString(text, true),
+                        x,
+                        y,
+                        getShaderRGB(color),
+                        false,
+                        resourceFontTextDrawer.getTextYOffset());
+            } else {
+                currentDrawer.draw(
+                        text,
+                        x,
+                        y,
+                        getShaderRGB(color),
+                        false,
+                        matrixStack.peek3D(),
+                        TextLayerType.NORMAL,
+                        0,
+                        15728880);
+            }
         } finally {
             popMatrix();
         }
+    }
+
+    private void addTextState(
+            TextRenderer textRenderer, OrderedText text, int x, int y, int color, boolean shadow, float yOffset) {
+        if (ColorHelper.getAlpha(color) == 0) {
+            return;
+        }
+        drawContext.state.addText(new TextGuiElementRenderState(
+                textRenderer,
+                text,
+                new Matrix3x2f(drawContext.getMatrices()).translate(0.0F, yOffset),
+                x,
+                y,
+                color,
+                0,
+                shadow,
+                false,
+                drawContext.scissorStack.peekLast()));
     }
 
     @Override
@@ -471,31 +547,28 @@ public class DrawContext_v1_21_11 implements VDrawContext {
     }
 
     @Override
-    public void drawTooltip(TextRenderer textRenderer, List<Text> text, Optional<TooltipData> data, int x, int y) {
+    public void drawTooltip(List<Text> text, Optional<TooltipData> data, int x, int y) {
         var trans = matrixStack.peek3D();
         var point1 = new Vector4f(x, y, 0, 1).mul(trans);
         // Tooltips are draw in delay callback, so transfer before the call
-        List<TooltipComponent> list = (List)
-                text.stream().map(Text::asOrderedText).map(TooltipComponent::of).collect(Util.toArrayList());
-        data.ifPresent((datax) -> {
-            list.add(list.isEmpty() ? 0 : 1, TooltipComponent.of(datax));
-        });
-        if (!list.isEmpty()) {
-            addInternal(() -> {
-                var context = pushMatrix();
-                try {
-                    context.drawTooltipImmediately(
-                            textRenderer,
-                            list,
-                            (int) point1.x,
-                            (int) point1.y,
-                            HoveredTooltipPositioner.INSTANCE,
-                            null);
-                } finally {
-                    popMatrix();
-                }
-            });
+        if (text.isEmpty() && data.isEmpty()) {
+            return;
         }
+        addInternal(() -> {
+            TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
+            List<TooltipComponent> list = (List) text.stream()
+                    .map(Text::asOrderedText)
+                    .map(TooltipComponent::of)
+                    .collect(Util.toArrayList());
+            data.ifPresent((datax) -> list.add(list.isEmpty() ? 0 : 1, TooltipComponent.of(datax)));
+            var context = pushMatrix();
+            try {
+                context.drawTooltipImmediately(
+                        textRenderer, list, (int) point1.x, (int) point1.y, HoveredTooltipPositioner.INSTANCE, null);
+            } finally {
+                popMatrix();
+            }
+        });
     }
 
     @Override
@@ -518,13 +591,19 @@ public class DrawContext_v1_21_11 implements VDrawContext {
     }
 
     @Override
-    public void drawItemInSlot(
-            TextRenderer textRenderer, ItemStack stack, int x, int y, @Nullable String countOverride) {
+    public void drawItemInSlot(TextDrawer textDrawer, ItemStack stack, int x, int y, @Nullable String countOverride) {
         var context = pushMatrix();
         try {
-            context.drawStackOverlay(textRenderer, stack, x, y, countOverride);
+            context.drawStackOverlay(getTextRenderer(TextRenderers.resolve(textDrawer)), stack, x, y, countOverride);
         } finally {
             popMatrix();
         }
+    }
+
+    private TextRenderer getTextRenderer(TextDrawer textDrawer) {
+        if (textDrawer instanceof VanillaTextDrawer vanillaTextDrawer) {
+            return vanillaTextDrawer.unwrap();
+        }
+        throw new IllegalArgumentException("TextDrawer must expose a Minecraft TextRenderer");
     }
 }

@@ -42,7 +42,7 @@ public class ButtonElement extends IconElement.SimpleIconElement {
         if (a != null) {
             RenderHandler.drawScaledText0(
                     context,
-                    mc.textRenderer,
+                    context.getTextDrawer(),
                     a,
                     0,
                     0,

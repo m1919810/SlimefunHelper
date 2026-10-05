@@ -4223,5 +4223,20 @@
 	"widget.gui-settings.slider.slider_style": "滑动框组件风格",
 	"widget.gui-settings.slider.slider_color": "滑动条颜色",
 	"widget.gui-settings.slider.slider_text_align": "滑动框文本对齐",
-	"widget.gui.slider.tooltips": "左键输入编辑\n右键设置位置"
+	"widget.gui.slider.tooltips": "左键输入编辑\n右键设置位置",
+	"widget.text-font.system-fonts.title": "Available system fonts (click to select)",
+	"widget.text-font.system-fonts.empty": "No local TrueType fonts found",
+	"widget.text-font.resource-fonts.title": "Resource-pack fonts (click to select)",
+	"widget.text-font.resource-fonts.empty": "No resource-pack fonts found",
+	"widget.text-font.font-entry.selected": "[selected] %s",
+	"widget.text-font.font-entry.name": "%s",
+	"widget.text-font.font-entry.system-path": "%s",
+	"widget.text-font.font-entry.resource-path": "assets/%s/font/%s.json",
+	"text-fonts.style": "Text style",
+	"text-fonts.font-name": "System font",
+	"text-fonts.resource-font": "Resource-pack font",
+	"text-fonts.font-size": "Font size",
+	"configenum.text-style.vanilla": "Vanilla",
+	"configenum.text-style.system": "System font",
+	"configenum.text-style.font": "Resource-pack font"
 }

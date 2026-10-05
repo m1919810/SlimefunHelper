@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.function.Function;
 import lombok.val;
 import me.matl114.events.RenderListener;
+import me.matl114.renderer.TextRenderers;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.collections.IndexEntry;
@@ -325,14 +326,13 @@ public class RenderCollectors {
         };
     }
 
-    public static double HEIGHT = 9.0d;
-
     public static RenderCollector<RenderElements.Text> createTextCollector() {
         return new RenderCollector.Impl<>() {
             @Override
             public void render3D(MatrixStack stack) {
                 if (entries.isEmpty()) return;
                 Vec3d cameraNeg = getCameraPos().negate();
+                double textHeight = TextRenderers.get().getTextHeight();
                 for (IndexEntry<RenderElements.Text> entry : entries) {
                     var col = entry.index();
                     var vec3d = entry.val().position();
@@ -350,7 +350,7 @@ public class RenderCollectors {
                                 .drawTextCameraCoord(
                                         re.asOrderedText(),
                                         stack,
-                                        Vec3d.ZERO.add(0, -index * 9.0D, 0),
+                                        Vec3d.ZERO.add(0, -index * textHeight, 0),
                                         entry.val().offSetFlag(),
                                         new Color(col),
                                         VRender.DEFAULT_TEXT);
@@ -366,6 +366,7 @@ public class RenderCollectors {
                 Matrix4f cam = RenderListener.getWorldModelViewMatrix();
                 Matrix4f proj = RenderListener.getWorldBasicProjectionMatrix();
                 Function<Vec3d, Vector2d> projector = RenderUtils.createProjector(cam, proj);
+                float textHeight = vdraw.getTextDrawer().getTextHeight();
                 for (var entry : entries) {
                     var pair = entry.val();
                     Vec3d pos = pair.position();
@@ -384,13 +385,13 @@ public class RenderCollectors {
                             List<Text> listText = ChatUtils.splitToMultiLineText(text, Integer.MAX_VALUE);
                             int index = 0;
                             for (var re : listText) {
-                                double dd = mc.textRenderer.getTextHandler().getWidth(re);
+                                double dd = vdraw.getTextDrawer().getWidth(re);
                                 vdraw.getMatrices().pushMatrix();
                                 vdraw.getMatrices()
                                         .translate(
                                                 (float) (-((dd * xAlign) / 2.0D)),
-                                                (float) (-((HEIGHT * yAlign) / 2.0D)) + index * 9);
-                                vdraw.drawText(mc.textRenderer, re.asOrderedText(), 0, 0, color, true);
+                                                (float) (-((textHeight * yAlign) / 2.0D)) + index * textHeight);
+                                vdraw.drawText(vdraw.getTextDrawer(), re.asOrderedText(), 0, 0, color, false);
                                 vdraw.getMatrices().popMatrix();
                                 index += 1;
                             }

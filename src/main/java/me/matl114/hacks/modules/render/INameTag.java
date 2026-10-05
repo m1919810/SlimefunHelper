@@ -21,6 +21,7 @@ import me.matl114.hacks.utils.render.ItemStackDisplayUtils;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
+import me.matl114.renderer.TextRenderers;
 import me.matl114.utils.ChatUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.OtherClientPlayerEntity;
@@ -120,7 +121,6 @@ public abstract class INameTag extends BaseModule {
         EquipmentSlot.FEET,
         EquipmentSlot.OFFHAND
     };
-    protected static final float HEIGHT = 9.0F;
 
     @Override
     public void registerAll() {
@@ -296,15 +296,14 @@ public abstract class INameTag extends BaseModule {
                 Map<RegistryEntry<StatusEffect>, Text> effects) {
             this.player = player;
             this.nameDisplay = display;
-            this.nameLength =
-                    display == null ? 0.0F : mc.textRenderer.getTextHandler().getWidth(display);
+            this.nameLength = display == null ? 0.0F : TextRenderers.get().getWidth(display);
             if (this.nameLength <= 0.0F) {
                 this.nameDisplay = null;
             }
             this.equipments = equipments;
             this.otherInfoDisplay = otherInfo;
             this.otherInfoLength =
-                    otherInfo == null ? 0.0F : mc.textRenderer.getTextHandler().getWidth(otherInfo);
+                    otherInfo == null ? 0.0F : TextRenderers.get().getWidth(otherInfo);
             if (this.otherInfoLength <= 0.0F) {
                 this.otherInfoDisplay = null;
             }
