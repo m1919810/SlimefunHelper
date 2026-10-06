@@ -38,6 +38,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
+import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -51,6 +52,18 @@ public class InteractionTasks {
     public static void init() {}
 
     private static MinecraftClient mc = MinecraftClient.getInstance();
+    private static final Set<Block> weirdBoxes = Set.of(Blocks.LECTERN);
+    private static final Set<Block> buggyBoxes = Set.of(
+            Blocks.CHEST,
+            Blocks.TRAPPED_CHEST,
+            Blocks.CHORUS_PLANT,
+            Blocks.KELP,
+            Blocks.KELP_PLANT,
+            Blocks.TWISTING_VINES,
+            Blocks.TWISTING_VINES_PLANT,
+            Blocks.WEEPING_VINES,
+            Blocks.WEEPING_VINES_PLANT,
+            Blocks.REDSTONE_WIRE);
     //
     //    public static void placeBlock(int idx, BlockHitResult result){
     //
@@ -227,12 +240,57 @@ public class InteractionTasks {
         return interactExtra.getPotentialEyeHeights(playerPos).anyMatch(box::contains);
     }
 
+    private static boolean isSpecialPositionPlaceState(BlockState state) {
+        return state.isIn(BlockTags.FENCES)
+                || state.isIn(BlockTags.WALLS)
+                || state.isIn(BlockTags.DOORS)
+                || state.isIn(BlockTags.STAIRS)
+                || weirdBoxes.contains(state.getBlock())
+                || buggyBoxes.contains(state.getBlock());
+    }
+
+    private static Box getPositionPlaceBoundary(BlockPos pos, BlockState state) {
+        var shape = state.getOutlineShape(mc.world, pos, ShapeContext.of(mc.player));
+        if (shape.isEmpty()) {
+            shape = state.getCollisionShape(mc.world, pos);
+        }
+        if (shape.isEmpty()) {
+            return new Box(pos);
+        }
+
+        List<Box> shapeBoxes = shape.getBoundingBoxes();
+        Box boundary = new Box(pos);
+        for (Box localBox : shapeBoxes) {
+            Box box = localBox.offset(pos);
+            boundary = new Box(
+                    Math.max(boundary.minX, box.minX),
+                    Math.max(boundary.minY, box.minY),
+                    Math.max(boundary.minZ, box.minZ),
+                    Math.min(boundary.maxX, box.maxX),
+                    Math.min(boundary.maxY, box.maxY),
+                    Math.min(boundary.maxZ, box.maxZ));
+        }
+        return boundary;
+    }
+
     public static boolean checkPositionPlace(BlockPos pos, Direction face, Vec3d playerPos) {
         Vec3d plateCenter = pos.toCenterPos().offset(face, 0.5d);
+        BlockState state = mc.world.getBlockState(pos);
+        if (!state.isFullCube(mc.world, pos) || isSpecialPositionPlaceState(state)) {
+            Box boundary = getPositionPlaceBoundary(pos, state);
+            plateCenter = switch (face) {
+                case DOWN -> new Vec3d(pos.getX() + 0.5, boundary.minY, pos.getZ() + 0.5);
+                case UP -> new Vec3d(pos.getX() + 0.5, boundary.maxY, pos.getZ() + 0.5);
+                case NORTH -> new Vec3d(pos.getX() + 0.5, pos.getY() + 0.5, boundary.minZ);
+                case SOUTH -> new Vec3d(pos.getX() + 0.5, pos.getY() + 0.5, boundary.maxZ);
+                case WEST -> new Vec3d(boundary.minX, pos.getY() + 0.5, pos.getZ() + 0.5);
+                case EAST -> new Vec3d(boundary.maxX, pos.getY() + 0.5, pos.getZ() + 0.5);};
+        }
         Vec3d directionVec = Vec3d.of(face.getVector());
+        Vec3d finalPlaceCenter = plateCenter;
         return interactExtra
                 .getPotentialEyeHeights(playerPos)
-                .anyMatch(eye -> eye.subtract(plateCenter).dotProduct(directionVec) > 0);
+                .anyMatch(eye -> eye.subtract(finalPlaceCenter).dotProduct(directionVec) > 0);
     }
 
     public static boolean checkInteractRange(BlockPos interactBlockPos, Vec3d playerPos, double range) {
