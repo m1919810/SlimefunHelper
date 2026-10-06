@@ -28,6 +28,7 @@ import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.file.FileStorage;
+import me.matl114.renderer.TextRenderers;
 import me.matl114.utils.*;
 import me.matl114.utils.commands.CommandUtils;
 import me.matl114.utils.commands.commandGroup.CommandContext;
@@ -628,6 +629,7 @@ public class PathManager extends BaseModule {
                 float scaling = (float) delta.length();
                 stack.multiply(RenderUtils.getBillboardRotation(DisplayEntity.BillboardMode.CENTER, 0, 0));
                 stack.scale(0.002F * scaling, 0.002F * scaling, 1);
+                stack.translate(0, TextRenderers.getCompositeTextYOffset(), 0);
                 VRender.getInstance()
                         .drawTextCameraCoord(
                                 Text.literal("距离: %.1f".formatted(scaling)).asOrderedText(),

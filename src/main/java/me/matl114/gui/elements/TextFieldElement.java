@@ -13,6 +13,8 @@ import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.ExecutableWidget;
 import me.matl114.gui.basic.TextAlign;
 import me.matl114.gui.interfaces.InputElement;
+import me.matl114.renderer.TextRenderers;
+import me.matl114.renderer.text.TextDrawer;
 import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.config.Value;
 import me.matl114.utils.config.ValueAccessor;
@@ -40,7 +42,6 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
     public static final Style PLACEHOLDER_STYLE = Style.EMPTY.withColor(Formatting.DARK_GRAY);
     public static final Style SEARCH_STYLE = Style.EMPTY.withFormatting(Formatting.GRAY, Formatting.ITALIC);
 
-    private final TextRenderer textRenderer;
     private Text message;
     private ValueAccessor<String> text = ValueAccessor.holder("");
     private int maxLength = 32;
@@ -99,13 +100,11 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
     }
 
     public TextFieldElement(Text message) {
-        this.textRenderer = mc.textRenderer;
         this.message = message == null ? Text.empty() : message;
         this.updateTextPosition();
     }
 
     public TextFieldElement(ValueAccessor<String> text) {
-        this.textRenderer = mc.textRenderer;
         this.text = text == null ? ValueAccessor.holder("") : text;
         this.message = Text.empty();
         this.updateTextPosition();
@@ -510,7 +509,7 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
         int innerX = MathHelper.clamp(MathHelper.floor(mouseX) - this.textX, 0, this.getInnerWidth(textureWidth));
         String string = this.getText().substring(this.firstCharacterIndex);
         return this.firstCharacterIndex
-                + this.textRenderer.trimToWidth(string, innerX).length();
+                + TextRenderers.get().trimToWidth(string, innerX).length();
     }
 
     protected void selectWord(int cursor) {
@@ -563,10 +562,10 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
 
     protected void dragSelect(int mouseX, int mouseY, boolean shiftDownAction, int textureWidth) {
         int innerX = MathHelper.clamp(mouseX - this.textX, 0, this.getInnerWidth(textureWidth));
-        String string = this.textRenderer.trimToWidth(
-                this.getText().substring(this.firstCharacterIndex), this.getInnerWidth(textureWidth));
+        String string = TextRenderers.get()
+                .trimToWidth(this.getText().substring(this.firstCharacterIndex), this.getInnerWidth(textureWidth));
         this.setCursor(
-                this.textRenderer.trimToWidth(string, innerX).length() + this.firstCharacterIndex, shiftDownAction);
+                TextRenderers.get().trimToWidth(string, innerX).length() + this.firstCharacterIndex, shiftDownAction);
     }
 
     @Override
@@ -592,8 +591,9 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
             float alpha,
             boolean shouldHighlight) {
         syncWidgetState(element);
-        this.updateFirstCharacterIndex(this.selectionStart, element.getTextureWidth());
-        this.updateTextPosition(element.getTextureWidth(), element.getTextureHeight());
+        TextDrawer textDrawer = context.getTextDrawer();
+        this.updateFirstCharacterIndex(this.selectionStart, element.getTextureWidth(), textDrawer);
+        this.updateTextPosition(element.getTextureWidth(), element.getTextureHeight(), textDrawer);
         int translatedMouseX = translateRenderMouseX(element, mouseX);
         int translatedMouseY = translateRenderMouseY(element, mouseY);
         var drawContext = context.pushMatrix();
@@ -616,7 +616,7 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
             this.renderInputBackgroundOverlay(element, context, translatedMouseX, translatedMouseY);
             int color = this.textColor.getColorInt();
             int cursorOffset = this.selectionStart - this.firstCharacterIndex;
-            String visibleText = this.textRenderer.trimToWidth(
+            String visibleText = textDrawer.trimToWidth(
                     this.getText().substring(this.firstCharacterIndex), this.getInnerWidth(element.getTextureWidth()));
             boolean cursorInVisibleRange = cursorOffset >= 0 && cursorOffset <= visibleText.length();
             boolean showBlink = this.focused
@@ -628,8 +628,8 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
             if (!visibleText.isEmpty()) {
                 String beforeCursor = cursorInVisibleRange ? visibleText.substring(0, cursorOffset) : visibleText;
                 OrderedText orderedText = this.format(beforeCursor, this.firstCharacterIndex);
-                context.drawText(this.textRenderer, orderedText, drawX, this.textY, color, true);
-                drawX += this.textRenderer.getWidth(orderedText) + 1;
+                context.drawText(textDrawer, orderedText, drawX, this.textY, color, false);
+                drawX += textDrawer.getWidth(orderedText) + 1;
             }
 
             boolean hasMoreChars = this.selectionStart < this.getText().length()
@@ -644,20 +644,20 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
 
             if (!visibleText.isEmpty() && cursorInVisibleRange && cursorOffset < visibleText.length()) {
                 context.drawText(
-                        this.textRenderer,
+                        textDrawer,
                         this.format(visibleText.substring(cursorOffset), this.selectionStart),
                         drawX,
                         this.textY,
                         color,
-                        true);
+                        false);
             }
 
             if (this.placeholder != null && visibleText.isEmpty() && !this.focused) {
-                context.drawText(this.textRenderer, this.placeholder.asOrderedText(), drawX, this.textY, color, true);
+                context.drawText(textDrawer, this.placeholder.asOrderedText(), drawX, this.textY, color, false);
             }
 
             if (selectionOffset != cursorOffset) {
-                int selectionX = this.textX + this.textRenderer.getWidth(visibleText.substring(0, selectionOffset));
+                int selectionX = this.textX + textDrawer.getWidth(visibleText.substring(0, selectionOffset));
                 drawSelection(
                         drawContext,
                         Math.min(cursorX, element.getTextureWidth()),
@@ -671,7 +671,7 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
                 if (hasMoreChars) {
                     context.fill(cursorX, this.textY - 1, cursorX + 1, this.textY + 10, color);
                 } else {
-                    context.drawText(this.textRenderer, HORIZONTAL_CURSOR, cursorX, this.textY, color, true);
+                    context.drawText(textDrawer, HORIZONTAL_CURSOR, cursorX, this.textY, color, false);
                 }
             }
 
@@ -758,14 +758,18 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
     protected void updateTextPosition() {}
 
     protected void updateTextPosition(int textureWidth, int textureHeight) {
+        updateTextPosition(textureWidth, textureHeight, TextRenderers.get());
+    }
+
+    private void updateTextPosition(int textureWidth, int textureHeight, TextDrawer textDrawer) {
         String currentText = this.getText();
-        String visibleText = this.textRenderer.trimToWidth(
+        String visibleText = textDrawer.trimToWidth(
                 currentText.substring(this.firstCharacterIndex), this.getInnerWidth(textureWidth));
         int leftPadding = this.drawsBackground ? 4 : 0;
         int availableWidth = Math.max(0, textureWidth - leftPadding * 2);
         this.textX = switch (this.align) {
-            case MIDDLE -> leftPadding + (availableWidth - this.textRenderer.getWidth(visibleText)) / 2;
-            case RIGHT -> textureWidth - leftPadding - this.textRenderer.getWidth(visibleText);
+            case MIDDLE -> leftPadding + (availableWidth - textDrawer.getWidth(visibleText)) / 2;
+            case RIGHT -> textureWidth - leftPadding - textDrawer.getWidth(visibleText);
             case LEFT -> leftPadding;};
         this.textY = this.drawsBackground ? (textureHeight - 8) / 2 : 0;
     }
@@ -776,14 +780,18 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
     }
 
     protected void updateFirstCharacterIndex(int cursor, int textureWidth) {
+        updateFirstCharacterIndex(cursor, textureWidth, TextRenderers.get());
+    }
+
+    private void updateFirstCharacterIndex(int cursor, int textureWidth, TextDrawer textDrawer) {
         String currentText = this.getText();
         this.firstCharacterIndex = Math.min(this.firstCharacterIndex, currentText.length());
         int innerWidth = this.getInnerWidth(textureWidth);
-        String visibleText = this.textRenderer.trimToWidth(currentText.substring(this.firstCharacterIndex), innerWidth);
+        String visibleText = textDrawer.trimToWidth(currentText.substring(this.firstCharacterIndex), innerWidth);
         int visibleEnd = visibleText.length() + this.firstCharacterIndex;
         if (cursor == this.firstCharacterIndex) {
             this.firstCharacterIndex -=
-                    this.textRenderer.trimToWidth(currentText, innerWidth, true).length();
+                    textDrawer.trimToWidth(currentText, innerWidth, true).length();
         }
         if (cursor > visibleEnd) {
             this.firstCharacterIndex += cursor - visibleEnd;

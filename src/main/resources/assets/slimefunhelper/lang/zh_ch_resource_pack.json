@@ -248,5 +248,20 @@
 	"configenum.text-align-type.right": "右对齐",
 	"configenum.gui-style.vanilla": "原版",
 	"configenum.gui-style.custom": "自定义",
-	"widget.gui-settings.text-config.text_align": "文本对齐"
+	"widget.gui-settings.text-config.text_align": "文本对齐",
+	"widget.text-font.system-fonts.title": "可用系统字体（点击选择）",
+	"widget.text-font.system-fonts.empty": "未找到本地 TrueType 字体",
+	"widget.text-font.resource-fonts.title": "资源包字体（点击选择）",
+	"widget.text-font.resource-fonts.empty": "未找到资源包字体",
+	"widget.text-font.font-entry.selected": "[已选择] %s",
+	"widget.text-font.font-entry.name": "%s",
+	"widget.text-font.font-entry.system-path": "%s",
+	"widget.text-font.font-entry.resource-path": "assets/%s/font/%s.json",
+	"text-fonts.style": "字体样式",
+	"text-fonts.font-name": "系统字体",
+	"text-fonts.resource-font": "资源包字体",
+	"text-fonts.font-size": "字体大小",
+	"configenum.text-style.vanilla": "原版字体",
+	"configenum.text-style.system": "系统字体",
+	"configenum.text-style.font": "资源包字体"
 }

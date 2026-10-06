@@ -285,6 +285,9 @@ public class MainTasks {
     private static ClickGui clickGui;
 
     @Getter
+    private static TextFont textFont;
+
+    @Getter
     private static ConfigManager configManager;
 
     @Getter
@@ -305,6 +308,7 @@ public class MainTasks {
     private static void initModule(ModuleManager m) {
         moduleSettings = new ModuleSettings().register(m);
         clickGui = new ClickGui().register(m);
+        textFont = new TextFont().register(m);
         configManager = new ConfigManager().register(m);
         bindCommand = new BindCommand().register(m);
         eventCommand = new EventCommand().register(m);

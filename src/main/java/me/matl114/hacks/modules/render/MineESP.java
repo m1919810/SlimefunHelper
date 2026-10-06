@@ -451,17 +451,17 @@ public class MineESP extends BaseModule {
 
     private void drawCellProgress(VDrawContext vdraw, double centerX, double centerY, int progressPercentage) {
         String text = progressPercentage + "%";
-        int textWidth = mc.textRenderer.getWidth(text);
-        int fontHeight = mc.textRenderer.fontHeight;
+        int textWidth = vdraw.getTextDrawer().getWidth(text);
+        float textHeight = vdraw.getTextDrawer().getTextHeight() + 1;
         float maxSize = Math.max(1.0F, gridCellSize.get() - 2.0F);
-        float scale = Math.min(1.0F, Math.min(maxSize / textWidth, maxSize / fontHeight));
+        float scale = Math.min(1.0F, Math.min(maxSize / textWidth, maxSize / textHeight));
         int color = colorProgress.get().withAlpha(255);
 
         vdraw.pushMatrix();
         try {
             vdraw.getMatrices().translate((float) centerX, (float) centerY);
             vdraw.getMatrices().scale(scale, scale);
-            vdraw.drawText(mc.textRenderer, text, -textWidth / 2, -fontHeight / 2, color, true);
+            vdraw.drawText(vdraw.getTextDrawer(), text, -textWidth / 2, Math.round(-textHeight / 2.0F), color, false);
         } finally {
             vdraw.popMatrix();
         }

@@ -9,6 +9,7 @@ import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.RenderHandler;
 import me.matl114.gui.basic.TextAlign;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.renderer.TextRenderers;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.RegistryUtils;
 import me.matl114.versioned.api.VDrawContext;
@@ -179,10 +180,11 @@ public class RegistryDisplays {
             int startIndexX = (element.getTextureHeight() - 16) / 2;
             int startIndexY = startIndexX;
             icon.render(startIndexX, startIndexY, context, value);
-            RenderHandler.drawScaledText0(context, mc.textRenderer, name, 20, 1, 200, 10, -16711936, TextAlign.LEFT);
+            RenderHandler.drawScaledText0(
+                    context, TextRenderers.get(), name, 20, 1, 200, 10, -16711936, TextAlign.LEFT);
             RenderHandler.drawScaledText0(
                     context,
-                    mc.textRenderer,
+                    TextRenderers.get(),
                     Text.literal(identifier.toString()),
                     20,
                     10,
