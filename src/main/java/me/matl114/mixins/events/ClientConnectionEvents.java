@@ -56,6 +56,9 @@ public abstract class ClientConnectionEvents extends SimpleChannelInboundHandler
     @Shadow
     private int packetsSentCounter;
 
+    @Shadow
+    protected static <T extends PacketListener> void handlePacket(Packet<T> packet, PacketListener listener) {}
+
     @Unique
     NetworkState<?> currentInBoundState;
 
@@ -274,5 +277,10 @@ public abstract class ClientConnectionEvents extends SimpleChannelInboundHandler
         } catch (Throwable e) {
             throw e;
         }
+    }
+
+    @Override
+    public void applyPacket(Packet<?> packet, PacketListener listener) {
+        handlePacket(packet, listener);
     }
 }

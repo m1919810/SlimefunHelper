@@ -1,7 +1,5 @@
 package me.matl114.hacks.modules.move;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.Objects;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
@@ -20,8 +18,6 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.network.OffThreadException;
-import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
@@ -148,7 +144,6 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
 
     public int lastHurtTick = 0;
     public int canCancel = 0;
-    int lastGroundTick = 0;
 
     public void onEntityDamage(Event<EntityDamageS2CPacket> damage) {
         if (enable.get() && mc.player != null && damage.context.entityId() == mc.player.getId()) {
@@ -161,7 +156,6 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         }
     }
 
-    boolean shouldDelay = false;
     long lastSetBackNS = 0;
     long lastVelocityNS = 0;
     long lastCancelVelocityNS = 0;
@@ -354,27 +348,10 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         //        }
     }
 
-    Deque<Packet> packets = new ArrayDeque<>();
-
-    public void onPing(Event<CommonPingS2CPacket> pingEvent) {
-        if (shouldDelay) {
-            packets.add(pingEvent.context);
-            pingEvent.cancel();
-        }
-    }
+    public void onPing(Event<CommonPingS2CPacket> pingEvent) {}
 
     public void onSetPosition(Event<PlayerPositionLookS2CPacket> event) {
         lastSetBackNS = System.nanoTime();
-        if (shouldDelay) {
-            for (Packet packet : packets) {
-                try {
-                    packet.apply(mc.getNetworkHandler());
-                } catch (OffThreadException ex) {
-                    // ignore
-                }
-            }
-            packets.clear();
-        }
     }
     //    public void onPlayerSetBackPacket(Event<PlayerPositionLookS2CPacket> event){
     //        if(mode.get() == Configs.BypassMode.BYPASS_GRIM){
@@ -400,10 +377,6 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         if (skipTick) {
             sendFallFlying();
         }
-        if (shouldDelay) {
-            skipTick = true;
-            sendFallFlying();
-        }
     }
 
     private void sendFallFlying() {
@@ -424,10 +397,6 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
 
     @Override
     public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-        if (lastGroundTick + 5 < Tasks.getTick()) {
-            shouldDelay = false;
-            skipTick = false;
-        }
         return true;
     }
 

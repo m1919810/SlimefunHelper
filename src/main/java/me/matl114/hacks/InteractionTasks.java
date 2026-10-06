@@ -240,7 +240,7 @@ public class InteractionTasks {
         return interactExtra.getPotentialEyeHeights(playerPos).anyMatch(box::contains);
     }
 
-    private static boolean isSpecialPositionPlaceState(BlockState state) {
+    public static boolean isSpecialPositionPlaceState(BlockState state) {
         return state.isIn(BlockTags.FENCES)
                 || state.isIn(BlockTags.WALLS)
                 || state.isIn(BlockTags.DOORS)
@@ -249,7 +249,7 @@ public class InteractionTasks {
                 || buggyBoxes.contains(state.getBlock());
     }
 
-    private static Box getPositionPlaceBoundary(BlockPos pos, BlockState state) {
+    public static Box getPositionPlaceBoundary(BlockPos pos, BlockState state) {
         var shape = state.getOutlineShape(mc.world, pos, ShapeContext.of(mc.player));
         if (shape.isEmpty()) {
             shape = state.getCollisionShape(mc.world, pos);

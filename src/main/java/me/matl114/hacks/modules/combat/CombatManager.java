@@ -66,10 +66,8 @@ public class CombatManager extends BaseModule {
     public static CombatManager INSTANCE;
 
     public static final int SECTION_RADIUS = 1;
-    private static final double NEARBY_ENTITY_CACHE_RADIUS = 16.0D;
     private static final float BLAST_RESISTANCE_THRESHOLD = 600.0F;
-    private static final int DAMAGE_ESTIMATE_TTL = 7;
-    private static final int DAMAGE_PACKET_NETWORK_DELAY = 3;
+    private static final int DAMAGE_ESTIMATE_TTL = 10;
     private static final float UNKNOWN_DAMAGE_ESTIMATE = 1.0F;
     public static final String KEY_DAMAGE_TRACKER = "slimefunhelper:combat/damage_tracker";
     private static final Set<Block> MINEABLE_BLAST_RESISTANT_BLOCKS;
@@ -134,7 +132,8 @@ public class CombatManager extends BaseModule {
                 Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class),
                 this::onTrackPlayerAttack,
                 Integer.MAX_VALUE - 1);
-        registerListener(Listener.getPacketPoint().getChannel(EntityDamageS2CPacket.class), this::onDamagePacket);
+        registerListener(
+                Listener.getPacketPreHandlePoint().getChannel(EntityDamageS2CPacket.class), this::onDamagePacket);
         registerListener(
                 Listener.getPacketPreHandlePoint().getChannel(ExplosionS2CPacket.class), this::onExplosionPacket);
         registerListener(Listener.getEntityRemoveListener().getChannel(EntityType.END_CRYSTAL), this::onEntityRemoval);
@@ -600,7 +599,7 @@ public class CombatManager extends BaseModule {
             }
         }
         if (damage <= 0.0F) damage = UNKNOWN_DAMAGE_ESTIMATE;
-        tracker.onDamage(damage, Tasks.getTick(), DAMAGE_PACKET_NETWORK_DELAY);
+        tracker.onDamage(damage, Tasks.getTick(), 0);
     }
 
     public void cacheDamageEstimate(PlayerEntity player, RegistryKey<DamageType> damageType, float damage) {
@@ -690,11 +689,7 @@ public class CombatManager extends BaseModule {
         }
 
         private void onDamage(float damage, int tick, int networkDelay) {
-            if (getInvulnerabilityTicks() > 0) {
-                lastDamage = Math.max(lastDamage, damage);
-            } else {
-                lastDamage = damage;
-            }
+            lastDamage = damage;
             damageThreshold = lastDamage;
             int invulnerabilityTicks = Math.max(10 - networkDelay, 0);
             lastDamageTick = tick;

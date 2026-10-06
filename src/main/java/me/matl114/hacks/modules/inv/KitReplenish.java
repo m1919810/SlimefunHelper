@@ -1152,9 +1152,15 @@ public class KitReplenish extends BaseModule {
         ScreenHandler handler = mc.player.currentScreenHandler;
         from = Math.clamp(from, 0, Math.min(inventory.size(), InventoryUtils.getPlayerBackpackSize()));
         to = Math.clamp(to, from, Math.min(inventory.size(), InventoryUtils.getPlayerBackpackSize()));
-        Set<ReplenishTemplate> templates = InventoryUtils.streamInventory(trans.viewInventory)
-                .map(ReplenishTemplate::new)
-                .collect(Collectors.toSet());
+        Map<ReplenishTemplate, Integer> templates = new LinkedHashMap<>();
+        InventoryUtils.streamInventory(trans.viewInventory)
+                .forEach(s -> templates.merge(new ReplenishTemplate(s), s.getCount(), Integer::sum));
+        InventoryUtils.streamInventory(playerInventory).forEach(s -> {
+            var template = new ReplenishTemplate(s);
+            if (templates.containsKey(template)) {
+                templates.merge(template, -s.getCount(), Integer::sum);
+            }
+        });
         for (var i = from; i < to; ++i) {
             if (i == trans.leftEmptySlotForShulker) {
                 continue;
@@ -1164,9 +1170,12 @@ public class KitReplenish extends BaseModule {
                 continue;
             }
             ItemStack currentStack = playerInventory.getStack(i);
-            if (dropBlackListedItem.get().test(currentStack.getItem())) continue;
             ReplenishTemplate template = new ReplenishTemplate(currentStack);
-            if (templates.contains(template)) continue;
+            Integer currentCount = templates.get(template);
+            if (currentCount != null) {
+                templates.put(template, currentCount - currentStack.getCount());
+            }
+            if (dropBlackListedItem.get().test(currentStack.getItem())) continue;
             ;
             ItemStack templateStack = inventory.getStack(i);
             if (isShulker(templateStack)) {
@@ -1174,7 +1183,9 @@ public class KitReplenish extends BaseModule {
             }
 
             if (!template.match(templateStack)) {
-                drop(handler, targetSlot);
+                if (currentCount == null || (trans.rule.dropOverAmounts() && currentCount < 0)) {
+                    drop(handler, targetSlot);
+                }
             }
         }
     }
@@ -1494,7 +1505,7 @@ public class KitReplenish extends BaseModule {
 
         public void setInventory(@Nonnull Inventory inventory, String name) {
             this.name = name;
-            this.rule = new Rule(Type.GREEDY, 0, inventory.size(), false, false, false, true, false);
+            this.rule = new Rule(Type.GREEDY, 0, inventory.size(), false, false, false, true, false, false);
             this.inventory = inventory;
             createSummary();
         }
@@ -2030,9 +2041,18 @@ public class KitReplenish extends BaseModule {
             boolean autoClose,
             boolean postMine,
             boolean postReorder,
-            boolean postDrop) {
-        private static final List<String> KEYS =
-                List.of("type", "from", "to", "dump", "auto-close", "post-mine", "post-reorder", "post-drop");
+            boolean postDrop,
+            boolean dropOverAmounts) {
+        private static final List<String> KEYS = List.of(
+                "type",
+                "from",
+                "to",
+                "dump",
+                "auto-close",
+                "post-mine",
+                "post-reorder",
+                "post-drop",
+                "drop-over-amount-items");
         public static Rule DEFAULT = new Rule();
         static final MapCodec<Rule> MAP_CODEC = RecordCodecBuilder.mapCodec(oinstance -> oinstance
                 .group(
@@ -2045,11 +2065,14 @@ public class KitReplenish extends BaseModule {
                         Codec.BOOL.optionalFieldOf("auto-close", false).forGetter(Rule::autoClose),
                         Codec.BOOL.optionalFieldOf("post-mine", false).forGetter(Rule::postMine),
                         Codec.BOOL.optionalFieldOf("post-reorder", true).forGetter(Rule::postReorder),
-                        Codec.BOOL.optionalFieldOf("post-drop", false).forGetter(Rule::postDrop))
+                        Codec.BOOL.optionalFieldOf("post-drop", false).forGetter(Rule::postDrop),
+                        Codec.BOOL
+                                .optionalFieldOf("drop-over-amount-items", false)
+                                .forGetter(Rule::dropOverAmounts))
                 .apply(oinstance, Rule::new));
 
         public Rule() {
-            this(Type.GREEDY, 0, 36, false, false, false, true, false);
+            this(Type.GREEDY, 0, 36, false, false, false, true, false, false);
         }
     }
 

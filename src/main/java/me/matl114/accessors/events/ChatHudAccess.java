@@ -1,13 +1,13 @@
 package me.matl114.accessors.events;
 
-import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.hud.ChatHudLine;
 
 public interface ChatHudAccess {
     public void setUniqueMessageId(String id);
 
-    public ArrayList<ChatHudLine.Visible> getVisibleLines();
+    public List<ChatHudLine.Visible> getVisibleLines();
 
     public void clearUniqueMessages(String id);
 

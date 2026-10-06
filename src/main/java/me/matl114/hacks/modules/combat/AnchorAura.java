@@ -707,20 +707,24 @@ public class AnchorAura extends BaseModule {
     }
 
     private Map<PlayerEntity, Double> calculateInvulnerabilityDamageMap(Map<PlayerEntity, Double> damageMap) {
+        if (!considerInvulnerability.get()) return damageMap;
         Map<PlayerEntity, Double> adjustedDamageMap = new LinkedHashMap<>(damageMap);
-        for (PlayerEntity target : targetEntity) {
-            Double damage = damageMap.get(target);
-            CombatManager.DamageTracker tracker = CombatManager.INSTANCE.getDamageTracker(target);
-            int invulnerabilityTicks = tracker == null ? 0 : tracker.getInvulnerabilityTicks();
-            if (damage == null
-                    || tracker == null
-                    || invulnerabilityTicks <= 0
-                    || invulnerabilityTicks > invulnerabilityConsiderTicks.get()) {
+        for (var entry : adjustedDamageMap.entrySet()) {
+            CombatManager.DamageTracker tracker = CombatManager.INSTANCE.getDamageTracker(entry.getKey());
+            if (tracker == null
+                    || tracker.getInvulnerabilityTicks() <= 0
+                    || tracker.getInvulnerabilityTicks() <= 10 - invulnerabilityConsiderTicks.get()) {
                 continue;
             }
-            double adjustedDamage =
-                    Math.min((damage - tracker.lastDamage) * invulnerabilityDamageMultiplier.get(), damage);
-            adjustedDamageMap.put(target, adjustedDamage);
+            Double damage = entry.getValue();
+            if (damage == null) continue;
+            double adjustedDamage = Math.min(
+                    Math.min(
+                            (damage.floatValue() - DamageUtils.getRawDamageByDifficulty(mc.world, tracker.lastDamage))
+                                    * invulnerabilityDamageMultiplier.get(),
+                            damage),
+                    0);
+            entry.setValue(adjustedDamage);
         }
         return adjustedDamageMap;
     }
