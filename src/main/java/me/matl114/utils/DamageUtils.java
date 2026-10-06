@@ -233,6 +233,20 @@ public class DamageUtils {
         return amount;
     }
 
+    public static float getRawDamageByDifficulty(World world, float amount) {
+        if (world.getDifficulty() == Difficulty.PEACEFUL) {
+            amount = 0.0F;
+        }
+        if (world.getDifficulty() == Difficulty.EASY) {
+            amount = amount >= 2.0F ? (amount - 1.0F) * 2.0F : amount;
+        }
+
+        if (world.getDifficulty() == Difficulty.HARD) {
+            amount = amount * 2.0F / 3.0F;
+        }
+        return amount;
+    }
+
     public static DamageSource createDamageSource(
             RegistryKey<DamageType> type, @Nullable Entity source, @Nullable Entity attacker) {
         RegistryEntry<DamageType> re =

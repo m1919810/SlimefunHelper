@@ -349,7 +349,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             var pkt = cache;
             var stack = cachedHandStack;
             final Vec2f legacySnapTarget = useLegacySnap;
-            PacketManager.schedulePostCallback(event.context, () -> {
+            PacketManager.schedulePostScheduleCallback(event.context, () -> {
                 var weapon = mc.player.getStackInHand(Hand.MAIN_HAND);
                 // Debug.chat("Attack");
                 if (legacySnapTarget != null) {

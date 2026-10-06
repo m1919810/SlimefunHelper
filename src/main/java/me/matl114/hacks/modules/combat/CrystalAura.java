@@ -96,6 +96,11 @@ public class CrystalAura extends BaseModule {
             .validator(Configs.INT_POSITIVE)
             .build();
 
+    public final IntRef attackDelay = intBuilder(root.add("attack-delay"))
+            .defaultValue(2)
+            .validator(Configs.INT_POSITIVE)
+            .build();
+
     public final FlagRef placeAfterAttack = builder(root.add("place-after-attack"), Boolean.class)
             .defaultValue(true)
             .build();
@@ -231,6 +236,7 @@ public class CrystalAura extends BaseModule {
     TimerExecutor supplyEndCrystalExecutor = new TimerExecutor();
     TimerExecutor supplyBaseExecutor = new TimerExecutor();
     TimerExecutor supplyFillBlockExecutor = new TimerExecutor();
+    TimerExecutor tickAttackExecutor = new TimerExecutor();
     List<PlayerEntity> currentTarget = List.of();
     List<CrystalPlan> pendingBases = new ArrayList<>();
     Queue<CrystalPlan> delayQueue = new ArrayDeque<>();
@@ -409,24 +415,26 @@ public class CrystalAura extends BaseModule {
                 continue;
             }
             Map<PlayerEntity, Double> damageMap = calculateCrystalDamage(crystal.getPos());
-            Map<PlayerEntity, Double> attackDamageMap = calculateInvulnerabilityDamageMap(damageMap);
+            Map<PlayerEntity, Double> attackDamageMap =
+                    considerInvulnerability.get() ? calculateInvulnerabilityDamageMap(damageMap) : damageMap;
             if (isSuitableExplodePos(damageMap) && (skipTick || isSuitableAttackExplodePos(attackDamageMap))) {
                 candidates.add(Map.entry(crystal, attackDamageMap));
-            } else if (considerInvulnerability.get()
-                    && considerExistingDamage.get()
-                    && isSuitableExplodePos(damageMap)
-                    && getBestEnemyDamage(damageMap) >= targetDamageThreshold.get()) {
+            } else {
+                // use raw damage
                 maxExistingDamageValue = Math.max(maxExistingDamageValue, getBestEnemyDamage(damageMap));
             }
         }
-        candidates.sort(Map.Entry.comparingByValue(this::compareCrystalEntries));
-        for (var crystalEntry : candidates) {
-            EndCrystalEntity crystal = crystalEntry.getKey();
-            debugRender.submit(crystal.getBoundingBox(), ColorUtils.withAlphaInt(Color.MAGENTA, 255));
-            if (!CombatManager.INSTANCE.attackCrystal(crystal)) {
-                break;
+        if (tickAttackExecutor.canRun(attackDelay.get())) {
+            candidates.sort(Map.Entry.comparingByValue(this::compareCrystalEntries));
+            for (var crystalEntry : candidates) {
+                EndCrystalEntity crystal = crystalEntry.getKey();
+                debugRender.submit(crystal.getBoundingBox(), ColorUtils.withAlphaInt(Color.MAGENTA, 255));
+                tickAttackExecutor.mark();
+                if (!CombatManager.INSTANCE.attackCrystal(crystal)) {
+                    break;
+                }
+                attack = true;
             }
-            attack = true;
         }
         return attack;
     }
@@ -522,6 +530,8 @@ public class CrystalAura extends BaseModule {
                         .min(Double::compare)
                         .orElse(Double.POSITIVE_INFINITY)))
                 .toList();
+        // already has a targeting, just consider about invulerability
+        boolean shouldConsiderExisting = bestEnemyDamage >= targetDamageThreshold.get();
         for (BlockPos pos : searchBlockPos) {
             BlockPos crystalPos = pos.up();
             boolean canPlaceCrystal = isCrystalHasBase(crystalPos);
@@ -548,6 +558,10 @@ public class CrystalAura extends BaseModule {
             var result = CombatManager.INSTANCE.isCrystalConditionedBlockedByEntity(pos.up(), (check) -> {
                 // let entity test pass explosion-removing entities
                 if (check instanceof CombatManager.EntityBlock entity) {
+                    if (entity.entity() instanceof EndCrystalEntity end && new Box(pos.up()).contains(end.getPos())) {
+                        // crystal at here
+                        return true;
+                    }
                     if (entity.entity() instanceof EndCrystalEntity end
                             && TargetSelector.INSTANCE.isWithinAttackRange(mc.player.getPos(), end)
                             && isSuitableExplodePos(calculateCrystalDamage(end.getPos()))) {
@@ -557,6 +571,11 @@ public class CrystalAura extends BaseModule {
                         entitySet2.add(entity.entity());
                         return false;
                     }
+                }
+                // do not block
+                if (check instanceof CombatManager.PendingCrystal pendingCrystal
+                        && Objects.equals(pos, pendingCrystal.basePos())) {
+                    return true;
                 }
                 // let the dropping test pass glass
                 if (check instanceof CombatManager.PendingItemDrop drop && isTrackedGlassState(drop.dropState())) {
@@ -634,6 +653,12 @@ public class CrystalAura extends BaseModule {
                 }
                 nextHitSkipDamageTest = true;
             } else {
+                return false;
+            }
+        } else if (shouldConsiderExisting) {
+            // do not attack if player are during,
+            var invulnerable = calculateInvulnerabilityDamageMap(bestDamageMap);
+            if (!isSuitableAttackExplodePos(invulnerable)) {
                 return false;
             }
         }
@@ -915,19 +940,22 @@ public class CrystalAura extends BaseModule {
     private Map<PlayerEntity, Double> calculateInvulnerabilityDamageMap(Map<PlayerEntity, Double> damageMap) {
         if (!considerInvulnerability.get()) return damageMap;
         Map<PlayerEntity, Double> adjustedDamageMap = new LinkedHashMap<>(damageMap);
-        for (PlayerEntity target : currentTarget) {
-            Double damage = damageMap.get(target);
-            CombatManager.DamageTracker tracker = CombatManager.INSTANCE.getDamageTracker(target);
-            int invulnerabilityTicks = tracker == null ? 0 : tracker.getInvulnerabilityTicks();
-            if (damage == null
-                    || tracker == null
-                    || invulnerabilityTicks <= 0
-                    || invulnerabilityTicks > invulnerabilityConsiderTicks.get()) {
+        for (var entry : adjustedDamageMap.entrySet()) {
+            CombatManager.DamageTracker tracker = CombatManager.INSTANCE.getDamageTracker(entry.getKey());
+            if (tracker == null
+                    || tracker.getInvulnerabilityTicks() <= 0
+                    || tracker.getInvulnerabilityTicks() <= 10 - invulnerabilityConsiderTicks.get()) {
                 continue;
             }
-            double adjustedDamage =
-                    Math.min((damage - tracker.lastDamage) * invulnerabilityDamageMultiplier.get(), damage);
-            adjustedDamageMap.put(target, adjustedDamage);
+            Double damage = entry.getValue();
+            if (damage == null) continue;
+            double adjustedDamage = Math.min(
+                    Math.min(
+                            (damage.floatValue() - DamageUtils.getRawDamageByDifficulty(mc.world, tracker.lastDamage))
+                                    * invulnerabilityDamageMultiplier.get(),
+                            damage),
+                    0);
+            entry.setValue(adjustedDamage);
         }
         return adjustedDamageMap;
     }
