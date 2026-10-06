@@ -95,7 +95,7 @@ public class ConfigManager extends BaseModule {
                 .tabCompletor(TabResult.ofStreamSupplier(() -> Stream.of("<填写路径>")))
                 .tabCompletor(
                         TabResult.ofStreamSupplier(CommandUtils.fileSupplier(FileManager.CONFIG_SAVE_FOLDER, (sx) -> {
-                            return sx.endsWith(".nbt") || sx.endsWith(".dat");
+                            return sx.endsWith(".nbt") || sx.endsWith(".dat") || sx.endsWith(".json");
                         })))
                 .build();
         main.subBuilder(SubCommand.taskBuilder())
@@ -732,6 +732,7 @@ public class ConfigManager extends BaseModule {
 
         int suffixIndex = path.lastIndexOf('.');
         String baseName = suffixIndex > 0 ? path.substring(0, suffixIndex) : path;
+        String suffix = path.endsWith(".json") ? ".json" : ".nbt";
         if (baseName.isEmpty() || ".".equals(baseName) || "..".equals(baseName)) {
             throw new IllegalArgumentException("配置快照名称不是合法文件名");
         }
@@ -742,7 +743,7 @@ public class ConfigManager extends BaseModule {
                 throw new IllegalArgumentException("配置快照名称不是合法文件名: " + rawPath);
             }
         }
-        return baseName + ".nbt";
+        return baseName + suffix;
     }
 
     private static ConfigSnapshot portConfigs(ConfigSnapshot snapshot) {
