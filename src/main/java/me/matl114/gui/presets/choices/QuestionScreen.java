@@ -8,6 +8,7 @@ import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.LabelElement;
 import me.matl114.gui.elements.MultiLineTextElement;
+import me.matl114.renderer.TextRenderers;
 import me.matl114.utils.ChatUtils;
 import net.minecraft.text.Text;
 
@@ -31,7 +32,7 @@ public class QuestionScreen extends GenericBackGroundScreen {
     protected void init() {
         super.init();
         int background = this.backgroundWidth - 10;
-        var re = mc.textRenderer.wrapLines(this.q, background);
+        var re = TextRenderers.get().wrapLines(this.q, background);
         int height = Math.max(40, 10 * re.size());
         DisplayWidget.instance(this.x + 5, this.y + 30, background, height)
                 .setRenderHandler(LabelElement.instance(Text.empty()))

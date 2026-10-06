@@ -1,0 +1,12 @@
+{
+  "providers": [
+    {
+      "type": "ttf",
+      "file": "slimefunhelper:misans-bold.ttf",
+      "shift": [0, 0],
+      "size": 8,
+      "oversample": 10,
+      "skip": ""
+    }
+  ]
+}

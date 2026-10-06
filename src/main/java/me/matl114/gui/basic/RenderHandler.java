@@ -2,9 +2,10 @@ package me.matl114.gui.basic;
 
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import me.matl114.renderer.TextRenderers;
+import me.matl114.renderer.text.TextDrawer;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
@@ -250,7 +251,7 @@ public interface RenderHandler {
         return (element, context, mouseX, mouseY, delta, alpha, shouldHighlight) -> {
             drawScrollableText(
                     context,
-                    mc.textRenderer,
+                    TextRenderers.get(),
                     text,
                     0,
                     0,
@@ -264,7 +265,7 @@ public interface RenderHandler {
         return (element, context, mouseX, mouseY, delta, alpha, shouldHighlight) -> {
             RenderHandler.drawScaledText0(
                     context,
-                    mc.textRenderer,
+                    TextRenderers.get(),
                     text,
                     0,
                     0,
@@ -277,7 +278,7 @@ public interface RenderHandler {
 
     public static void drawScrollableText(
             VDrawContext context,
-            TextRenderer textRenderer,
+            TextDrawer textRenderer,
             Text text,
             int startX,
             int startY,
@@ -289,7 +290,7 @@ public interface RenderHandler {
 
     public static void drawScrollableText0(
             VDrawContext context,
-            TextRenderer textRenderer,
+            TextDrawer textRenderer,
             Text text,
             int centerX,
             int startX,
@@ -302,7 +303,7 @@ public interface RenderHandler {
 
     public static void drawScrollableText0(
             VDrawContext context,
-            TextRenderer textRenderer,
+            TextDrawer textRenderer,
             OrderedText text,
             int centerX,
             int startX,
@@ -312,7 +313,7 @@ public interface RenderHandler {
             int color) {
         int i = textRenderer.getWidth(text);
         int var10000 = startY + endY;
-        int j = (var10000 - 9) / 2 + 1;
+        int j = (int) ((var10000 - textRenderer.getTextHeight()) / 2.0F) + 1;
         int k = endX - startX;
         int l;
         if (i > k) {
@@ -322,7 +323,7 @@ public interface RenderHandler {
             double f = Math.sin(1.5707963267948966 * Math.cos(6.283185307179586 * d / e)) / 2.0 + 0.5;
             double g = MathHelper.lerp(f, 0.0, (double) l);
             context.enableScissor(startX, startY, endX, endY);
-            context.drawText(textRenderer, text, startX - (int) g, j, color, true);
+            context.drawText(textRenderer, text, startX - (int) g, j, color, false);
             context.disableScissor();
         } else {
             l = MathHelper.clamp(centerX, startX + i / 2, endX - i / 2);
@@ -332,12 +333,12 @@ public interface RenderHandler {
 
     public static void drawScaledText0(
             VDrawContext context,
-            TextRenderer textRenderer,
+            TextDrawer textRenderer,
             Text text,
             int startX,
-            int startY,
+            float startY,
             int endX,
-            int endY,
+            float endY,
             int color,
             TextAlign alignment) {
         drawScaledText0(context, textRenderer, text.asOrderedText(), startX, startY, endX, endY, color, alignment);
@@ -345,12 +346,12 @@ public interface RenderHandler {
 
     public static void drawScaledText0(
             VDrawContext context,
-            TextRenderer textRenderer,
+            TextDrawer textRenderer,
             OrderedText text,
             int startX,
-            int startY,
+            float startY,
             int endX,
-            int endY,
+            float endY,
             int color,
             TextAlign alignment) {
         TextAlign resolvedAlignment = alignment == null ? TextAlign.MIDDLE : alignment;
@@ -360,10 +361,11 @@ public interface RenderHandler {
             textStartX += 2;
             textEndX -= 2;
         }
-        float i = textRenderer.getTextHandler().getWidth(text);
+        float i = textRenderer.getWidth(text);
         int availableWidth = Math.max(0, textEndX - textStartX);
         // 居中位置
-        float j = (startY + endY - 9) / 2.0F;
+        float textHeight = textRenderer.getTextHeight();
+        float j = (startY + endY - textHeight) / 2.0F;
         if (availableWidth > i) {
             float l =
                     switch (resolvedAlignment) {
@@ -373,16 +375,16 @@ public interface RenderHandler {
                     };
             context.getMatrices().pushMatrix();
             context.getMatrices().translate(l, j);
-            context.drawText(textRenderer, text, 0, 0, color, true);
+            context.drawText(textRenderer, text, 0, 0, color, false);
             context.getMatrices().popMatrix();
         } else {
             float scale = ((float) availableWidth) / (float) i;
-            float scaledHeight = 9.0F * scale;
+            float scaledHeight = textHeight * scale;
             float newJ = (startY + endY - scaledHeight) / 2.0F;
             context.getMatrices().pushMatrix();
             context.getMatrices().translate(textStartX, newJ);
             context.getMatrices().scale(scale, scale);
-            context.drawText(textRenderer, text, 0, 0, color, true);
+            context.drawText(textRenderer, text, 0, 0, color, false);
             context.getMatrices().popMatrix();
         }
     }
@@ -408,7 +410,7 @@ public interface RenderHandler {
             context.getMatrices().pushMatrix();
             context.drawItem(stack, x, y, 114514, 0);
             if (inSlot) {
-                context.drawItemInSlot(mc.textRenderer, stack, x, y, null);
+                context.drawItemInSlot(context.getTextDrawer(), stack, x, y, null);
             }
             context.getMatrices().popMatrix();
         }

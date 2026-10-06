@@ -27,8 +27,6 @@ import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 
 public class PlayerStatistic extends IRender2DColoredModule {
-    private static final int ITEM_ROW_HEIGHT = 9;
-
     public PlayerStatistic() {
         super("Statistic");
     }
@@ -96,13 +94,19 @@ public class PlayerStatistic extends IRender2DColoredModule {
             if (!right.get()) {
                 vdraw.getMatrices().translate(9, 0);
             } else {
-                int textWidth = mc.textRenderer.getWidth(text);
+                int textWidth = vdraw.getTextDrawer().getWidth(text);
                 vdraw.getMatrices().translate(-textWidth, 0);
             }
         }
-        vdraw.drawText(mc.textRenderer, text, 0, 0, color.get().withAlpha(255), true);
+        vdraw.drawText(
+                vdraw.getTextDrawer(),
+                text,
+                0,
+                (int) ((9 - vdraw.getTextDrawer().getTextHeight()) / 2.0F),
+                color.get().withAlpha(255),
+                false);
         vdraw.popMatrix();
-        vdraw.getMatrices().translate(0, ITEM_ROW_HEIGHT);
+        vdraw.getMatrices().translate(0, 9);
     }
 
     public void handleItem(VDrawContext vdraw, Item itemType) {
@@ -160,10 +164,10 @@ public class PlayerStatistic extends IRender2DColoredModule {
             OrderedText timeText = StatusEffectUtil.getDurationText(
                             re, 1.0F, mc.world.getTickManager().getTickRate())
                     .asOrderedText();
-            float length = mc.textRenderer.getTextHandler().getWidth(timeText);
+            float length = vdraw.getTextDrawer().getWidth(timeText);
             vdraw.pushMatrix();
             if (right.get()) {
-                vdraw.getMatrices().translate(-length - HEIGHT, 0);
+                vdraw.getMatrices().translate(-length - 9, 0);
             }
             {
                 vdraw.pushMatrix();
@@ -174,16 +178,27 @@ public class PlayerStatistic extends IRender2DColoredModule {
                     int level = re.getAmplifier();
                     if (level > 0) {
                         String lv = String.valueOf(level + 1);
-                        vdraw.drawText(mc.textRenderer, lv, 17 - mc.textRenderer.getWidth(lv), 9, -1, true);
+                        vdraw.drawText(
+                                vdraw.getTextDrawer(),
+                                lv,
+                                17 - vdraw.getTextDrawer().getWidth(lv),
+                                (int) (9 + (9 - vdraw.getTextDrawer().getTextHeight()) / 2.0F),
+                                -1,
+                                false);
                     }
                 }
 
                 vdraw.popMatrix();
                 vdraw.drawText(
-                        mc.textRenderer, timeText, (int) HEIGHT, 0, color.get().withAlpha(255), true);
+                        vdraw.getTextDrawer(),
+                        timeText,
+                        9,
+                        (int) ((9 - vdraw.getTextDrawer().getTextHeight()) / 2.0F),
+                        color.get().withAlpha(255),
+                        false);
             }
             vdraw.popMatrix();
-            vdraw.getMatrices().translate(0, HEIGHT);
+            vdraw.getMatrices().translate(0, 9);
         }
     }
 }

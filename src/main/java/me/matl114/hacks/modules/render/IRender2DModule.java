@@ -88,6 +88,4 @@ public abstract class IRender2DModule extends BaseModule {
     }
 
     public abstract void render2D(VDrawContext vdraw, float partialTicks);
-
-    public static final float HEIGHT = 9;
 }

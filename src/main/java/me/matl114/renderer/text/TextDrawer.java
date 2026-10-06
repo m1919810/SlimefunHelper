@@ -11,8 +11,16 @@ import net.minecraft.text.StringVisitable;
 import net.minecraft.text.Text;
 import org.joml.Matrix4f;
 
-public interface TextRenderer {
+public interface TextDrawer {
     int fontHeight();
+
+    default net.minecraft.client.font.TextRenderer unwrap() {
+        return null;
+    }
+
+    default float getTextHeight() {
+        return fontHeight();
+    }
 
     String mirror(String text);
 
@@ -133,7 +141,7 @@ public interface TextRenderer {
         draw(text.asOrderedText(), x, y, color, shadow, matrix, layerType, backgroundColor, light);
     }
 
-    int getWrappedLinesHeight(StringVisitable text, int maxWidth);
+    float getWrappedLinesHeight(StringVisitable text, int maxWidth);
 
     List<OrderedText> wrapLines(StringVisitable text, int width);
 

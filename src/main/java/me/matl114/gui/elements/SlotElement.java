@@ -162,7 +162,6 @@ public class SlotElement extends AbstractElement {
             ItemStack stack = inventory.getStack(index);
             if (!stack.isEmpty()) {
                 context.drawTooltip(
-                        mc.textRenderer,
                         stack.getTooltip(Item.TooltipContext.create(mc.world), mc.player, TooltipType.ADVANCED),
                         stack.getTooltipData(),
                         mouseX,

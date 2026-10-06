@@ -26,14 +26,15 @@ public abstract class IRender2DColoredModule extends IRender2DModule {
     public FlagRef bold = flagBuilder(hud.add("bold")).defaultValue(true).build();
 
     public void drawText(VDrawContext vdraw, OrderedText text) {
+        float textHeight = vdraw.getTextDrawer().getTextHeight() + 1;
         int rgb = color.get().withAlpha(255);
         if (right.get()) {
-            int width = mc.textRenderer.getWidth(text);
-            vdraw.drawText(mc.textRenderer, text, -width, 0, rgb, true);
+            int width = vdraw.getTextDrawer().getWidth(text);
+            vdraw.drawText(vdraw.getTextDrawer(), text, -width, 0, rgb, false);
         } else {
-            vdraw.drawText(mc.textRenderer, text, 0, 0, rgb, true);
+            vdraw.drawText(vdraw.getTextDrawer(), text, 0, 0, rgb, false);
         }
-        vdraw.getMatrices().translate(0, HEIGHT);
+        vdraw.getMatrices().translate(0, textHeight);
     }
 
     public void drawText(VDrawContext vdraw, Text text) {

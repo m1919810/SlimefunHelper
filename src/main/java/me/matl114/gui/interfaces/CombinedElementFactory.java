@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 import me.matl114.gui.basic.ButtonAction;
 import me.matl114.gui.basic.ColorSampler;
 import me.matl114.gui.basic.ElementHandler;
+import me.matl114.gui.basic.TextAlign;
 import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.basic.TooltipHandler;
 import me.matl114.hacks.utils.config.GuiSetting;
@@ -68,6 +69,17 @@ public final class CombinedElementFactory implements ElementFactory {
     }
 
     @Override
+    public ElementHandler createText(TextProvider provider, TooltipHandler handler, @Nullable TextAlign overrideAlign) {
+        return delegate(ElementType.LABEL).createText(provider, handler, overrideAlign);
+    }
+
+    @Override
+    public ElementHandler createText(
+            TextProvider provider, TooltipHandler handler, boolean splitter, @Nullable TextAlign overrideAlign) {
+        return delegate(ElementType.LABEL).createText(provider, handler, splitter, overrideAlign);
+    }
+
+    @Override
     public ElementHandler createTitle(TextProvider provider, TooltipHandler handler) {
         return delegate(ElementType.TITLE).createTitle(provider, handler);
     }
@@ -115,7 +127,18 @@ public final class CombinedElementFactory implements ElementFactory {
     }
 
     @Override
+    public <T> ElementHandler createInput(Value<T> value, @Nullable TextAlign overrideAlign) {
+        return delegate(ElementType.INPUT).createInput(value, overrideAlign);
+    }
+
+    @Override
     public <T> ElementHandler createSlidingInput(Value<T> value, WrapperFactory<Double, T> sliderFactory) {
         return delegate(ElementType.SLIDER).createSlidingInput(value, sliderFactory);
+    }
+
+    @Override
+    public <T> ElementHandler createSlidingInput(
+            Value<T> value, WrapperFactory<Double, T> sliderFactory, @Nullable TextAlign overrideAlign) {
+        return delegate(ElementType.SLIDER).createSlidingInput(value, sliderFactory, overrideAlign);
     }
 }

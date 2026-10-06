@@ -84,7 +84,7 @@ public class CustomElementFactory implements ElementFactory {
     @Override
     public ElementHandler createPlate(boolean hasInteract, ColorSampler overrideColor) {
         ColorSampler plate = overrideColor == null ? plateColor() : overrideColor;
-        return new PlateElement(hasInteract, plate);
+        return new ColorPlateElement(hasInteract, plate);
     }
 
     @Override
@@ -99,14 +99,27 @@ public class CustomElementFactory implements ElementFactory {
 
     @Override
     public ElementHandler createText(TextProvider provider, TooltipHandler handler) {
-        return new RawTextElement(provider, textColor()).withTooltips(handler);
+        return createText(provider, handler, (TextAlign) null);
     }
 
     @Override
     public ElementHandler createText(TextProvider provider, TooltipHandler handler, boolean splitter) {
-        RawTextElement text = new RawTextElement(provider, textColor());
+        return createText(provider, handler, splitter, null);
+    }
+
+    @Override
+    public ElementHandler createText(TextProvider provider, TooltipHandler handler, @Nullable TextAlign overrideAlign) {
+        return createText(provider, handler, false, overrideAlign);
+    }
+
+    @Override
+    public ElementHandler createText(
+            TextProvider provider, TooltipHandler handler, boolean splitter, @Nullable TextAlign overrideAlign) {
+        TextProvider alignedProvider =
+                overrideAlign == null ? provider : TextProvider.withAlign(provider, overrideAlign);
+        RawTextElement text = new RawTextElement(alignedProvider, textColor());
         if (splitter) {
-            text.combineRender(new TextSplitterElement(provider, textColor()));
+            text.combineRender(new TextSplitterElement(alignedProvider, textColor()));
         }
         return text.withTooltips(handler);
     }
@@ -168,19 +181,30 @@ public class CustomElementFactory implements ElementFactory {
 
     @Override
     public <T> ElementHandler createInput(Value<T> value) {
+        return createInput(value, null);
+    }
+
+    @Override
+    public <T> ElementHandler createInput(Value<T> value, @Nullable TextAlign overrideAlign) {
         return TextFieldElement.ofValue(value)
                 .setBackgroundColor(() -> colors().textBackground().color())
                 .setTextColor(textColor())
-                .setAlign(inputTextAlign());
+                .setAlign(overrideAlign == null ? inputTextAlign() : overrideAlign);
     }
 
     @Override
     public <T> ElementHandler createSlidingInput(Value<T> value, WrapperFactory<Double, T> sliderFactory) {
+        return createSlidingInput(value, sliderFactory, null);
+    }
+
+    @Override
+    public <T> ElementHandler createSlidingInput(
+            Value<T> value, WrapperFactory<Double, T> sliderFactory, @Nullable TextAlign overrideAlign) {
         return new SlidingInputElement<>(value, sliderFactory)
                 .setSliderColor(() -> colors().sliderColor().color())
                 .setBackgroundColor(() -> colors().textBackground().color())
                 .setTextColor(textColor())
-                .setAlign(sliderTextAlign());
+                .setAlign(overrideAlign == null ? sliderTextAlign() : overrideAlign);
     }
 
     @Override

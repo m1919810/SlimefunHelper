@@ -56,6 +56,7 @@ public class NameList extends INameTag {
         }
         if (enable.get() && !event.context.hudHidden() && nameTagInfos != null) {
             var stack = event.context.drawContext();
+            float textHeight = stack.getTextDrawer().getTextHeight() + 1;
             stack.getMatrices().pushMatrix();
             handleRenderPosition(stack);
             int count = 0;
@@ -65,7 +66,7 @@ public class NameList extends INameTag {
                     break;
                 }
                 onRenderList(entry, stack, (event.context.partialTicks()));
-                stack.getMatrices().translate(0, HEIGHT);
+                stack.getMatrices().translate(0, textHeight);
                 count += 1;
             }
             stack.getMatrices().popMatrix();
@@ -102,7 +103,13 @@ public class NameList extends INameTag {
             if (right.get()) {
                 vdraw.getMatrices().translate(-length, 0);
             }
-            vdraw.drawText(mc.textRenderer, player.nameDisplay.asOrderedText(), (int) 0, 0, -1, true);
+            vdraw.drawText(
+                    vdraw.getTextDrawer(),
+                    player.nameDisplay.asOrderedText(),
+                    (int) 0,
+                    (int) ((9 - vdraw.getTextDrawer().getTextHeight()) / 2.0F),
+                    -1,
+                    false);
             if (!right.get()) {
                 vdraw.getMatrices().translate(length, 0);
             }
@@ -135,7 +142,7 @@ public class NameList extends INameTag {
                         stackOverride = stackOverride.copy();
                         stackOverride.setDamage(0);
                     }
-                    vdraw.drawItemInSlot(mc.textRenderer, stackOverride, i * 16, 0, countOverride);
+                    vdraw.drawItemInSlot(vdraw.getTextDrawer(), stackOverride, i * 16, 0, countOverride);
                 }
             }
             vdraw.getMatrices().popMatrix();
@@ -151,7 +158,13 @@ public class NameList extends INameTag {
             if (right.get()) {
                 vdraw.getMatrices().translate(-length, 0);
             }
-            vdraw.drawText(mc.textRenderer, player.otherInfoDisplay.asOrderedText(), (int) 0, 0, -1, true);
+            vdraw.drawText(
+                    vdraw.getTextDrawer(),
+                    player.otherInfoDisplay.asOrderedText(),
+                    (int) 0,
+                    (int) ((9 - vdraw.getTextDrawer().getTextHeight()) / 2.0F),
+                    -1,
+                    false);
             if (!right.get()) {
                 vdraw.getMatrices().translate(length, 0);
             }
@@ -165,7 +178,7 @@ public class NameList extends INameTag {
             int size = line.size();
             for (var i = 0; i < size; i++) {
                 var entry = line.get(i);
-                float len = mc.textRenderer.getTextHandler().getWidth(entry.getValue());
+                float len = vdraw.getTextDrawer().getWidth(entry.getValue());
                 if (right.get()) {
                     vdraw.getMatrices().translate(-9 - len, 0);
                 }
@@ -174,12 +187,12 @@ public class NameList extends INameTag {
                 statusEffectRenderer.render(0, 0, vdraw, entry.getKey().value());
                 vdraw.getMatrices().popMatrix();
                 vdraw.drawText(
-                        mc.textRenderer,
+                        vdraw.getTextDrawer(),
                         entry.getValue().asOrderedText(),
                         9,
-                        0,
+                        (int) ((9 - vdraw.getTextDrawer().getTextHeight()) / 2.0F),
                         potionColor.get().withAlpha(255),
-                        true);
+                        false);
 
                 if (!right.get()) {
                     vdraw.getMatrices().translate(9 + len, 0);
@@ -192,11 +205,17 @@ public class NameList extends INameTag {
         vdraw.pushMatrix();
         OrderedText display = Text.literal("......(" + (nameTagInfos.size() - playerListMaxLength.get()) + " more)")
                 .asOrderedText();
-        float length = mc.textRenderer.getTextHandler().getWidth(display);
+        float length = vdraw.getTextDrawer().getWidth(display);
         if (right.get()) {
             vdraw.getMatrices().translate(-length, 0);
         }
-        vdraw.drawText(mc.textRenderer, display, (int) 0, 0, -1, true);
+        vdraw.drawText(
+                vdraw.getTextDrawer(),
+                display,
+                (int) 0,
+                (int) ((9 - vdraw.getTextDrawer().getTextHeight()) / 2.0F),
+                -1,
+                false);
         vdraw.popMatrix();
     }
 }

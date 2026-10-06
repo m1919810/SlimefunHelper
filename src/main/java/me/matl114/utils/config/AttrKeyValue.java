@@ -16,6 +16,7 @@ import me.matl114.utils.config.kv.StringListAttrKeyValue;
 import net.minecraft.registry.Registry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import org.jetbrains.annotations.Nullable;
 
 public interface AttrKeyValue<T> extends KeyValue<T> {
 
@@ -56,8 +57,13 @@ public interface AttrKeyValue<T> extends KeyValue<T> {
         return new KeyValueInputWidget<>(x, y, keyDx + blankDx + inputDx, dy, keyDx, blankDx, inputDx, this, factory);
     }
 
+    default DrawableWidget generateValueWidget(
+            ElementFactory factory, @Nullable TextAlign overrideAlign, int x, int y, int inputDx, int dy) {
+        return getCustomWidgetFactory().generateWidget(factory, this, x, y, inputDx, dy, overrideAlign);
+    }
+
     default DrawableWidget generateValueWidget(ElementFactory factory, int x, int y, int inputDx, int dy) {
-        return getCustomWidgetFactory().generateWidget(factory, this, x, y, inputDx, dy);
+        return generateValueWidget(factory, null, x, y, inputDx, dy);
     }
 
     /**

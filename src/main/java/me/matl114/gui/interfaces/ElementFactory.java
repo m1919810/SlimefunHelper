@@ -11,6 +11,7 @@ import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.ElementHandler;
 import me.matl114.gui.basic.ExecutableWidget;
 import me.matl114.gui.basic.RenderHandler;
+import me.matl114.gui.basic.TextAlign;
 import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.basic.TooltipHandler;
 import me.matl114.gui.complex.BoxElement;
@@ -143,6 +144,16 @@ public interface ElementFactory {
     ElementHandler createText(TextProvider provider, TooltipHandler handler);
 
     ElementHandler createText(TextProvider provider, TooltipHandler handler, boolean splitter);
+
+    default ElementHandler createText(
+            TextProvider provider, TooltipHandler handler, @Nullable TextAlign overrideAlign) {
+        return createText(provider, handler);
+    }
+
+    default ElementHandler createText(
+            TextProvider provider, TooltipHandler handler, boolean splitter, @Nullable TextAlign overrideAlign) {
+        return createText(provider, handler, splitter);
+    }
 
     default DrawableWidget createBackground(int x, int y, int dx, int dy) {
         return DisplayWidget.instance(x, y, dx, dy).setRenderHandler(createBackground());
@@ -450,8 +461,17 @@ public interface ElementFactory {
 
     <T> ElementHandler createInput(Value<T> string);
 
+    default <T> ElementHandler createInput(Value<T> string, @Nullable TextAlign overrideAlign) {
+        return createInput(string);
+    }
+
     default <T> DrawableWidget createInput(Value<T> string, int x, int y, int dx, int dy) {
         return ExecutableWidget.instance(x, y, dx, dy).setElementHandler(createInput(string));
+    }
+
+    default <T> DrawableWidget createInput(
+            Value<T> string, @Nullable TextAlign overrideAlign, int x, int y, int dx, int dy) {
+        return ExecutableWidget.instance(x, y, dx, dy).setElementHandler(createInput(string, overrideAlign));
     }
 
     default <T> ElementHandler createSlidingInput(Value<T> string, Function<Double, T> slider) {
@@ -460,8 +480,18 @@ public interface ElementFactory {
 
     <T> ElementHandler createSlidingInput(Value<T> string, WrapperFactory<Double, T> sliderFactory);
 
+    default <T> ElementHandler createSlidingInput(
+            Value<T> string, WrapperFactory<Double, T> sliderFactory, @Nullable TextAlign overrideAlign) {
+        return createSlidingInput(string, sliderFactory);
+    }
+
     default <T> ElementHandler createSlider(Value<T> value, WrapperFactory<Double, T> sliderFactory) {
-        return createSlidingInput(value, sliderFactory)
+        return createSlider(value, sliderFactory, null);
+    }
+
+    default <T> ElementHandler createSlider(
+            Value<T> value, WrapperFactory<Double, T> sliderFactory, @Nullable TextAlign overrideAlign) {
+        return createSlidingInput(value, sliderFactory, overrideAlign)
                 .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
                         "widget.gui.slider.tooltips",
                         "\u5de6\u952e\u8f93\u5165\u7f16\u8f91\n\u53f3\u952e\u8bbe\u7f6e\u4f4d\u7f6e")));
@@ -469,8 +499,19 @@ public interface ElementFactory {
 
     default <T> DrawableWidget createSlider(
             Value<T> value, WrapperFactory<Double, T> sliderFactory, int x, int y, int dx, int dy) {
+        return createSlider(value, sliderFactory, null, x, y, dx, dy);
+    }
+
+    default <T> DrawableWidget createSlider(
+            Value<T> value,
+            WrapperFactory<Double, T> sliderFactory,
+            @Nullable TextAlign overrideAlign,
+            int x,
+            int y,
+            int dx,
+            int dy) {
         return ExecutableWidget.instance(x, y, dx, dy)
-                .setElementHandler(createSlidingInput(value, sliderFactory)
+                .setElementHandler(createSlidingInput(value, sliderFactory, overrideAlign)
                         .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
                                 "widget.gui.slider.tooltips",
                                 "\u5de6\u952e\u8f93\u5165\u7f16\u8f91\n\u53f3\u952e\u8bbe\u7f6e\u4f4d\u7f6e"))));

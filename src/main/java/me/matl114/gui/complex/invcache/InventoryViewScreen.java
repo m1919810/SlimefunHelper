@@ -146,7 +146,7 @@ public class InventoryViewScreen extends GenericBackGroundScreen {
                 .setRenderHandler(((element, context, mouseX, mouseY, delta, alpha, shouldHighlight) -> {
                     if (cursorStack != null && !cursorStack.isEmpty()) {
                         context.drawItem(cursorStack, mouseX - 8, mouseY - 8, 999, 0);
-                        context.drawItemInSlot(mc.textRenderer, cursorStack, mouseX - 8, mouseY - 8, null);
+                        context.drawItemInSlot(context.getTextDrawer(), cursorStack, mouseX - 8, mouseY - 8, null);
                     }
                 }))
                 .addTo(this);

@@ -32,6 +32,7 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.renderer.TextRenderers;
 import me.matl114.utils.*;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.collections.MutableEntry;
@@ -410,6 +411,7 @@ public class ChestHistory extends BaseModule {
                                     .append(Text.literal("(x%d)".formatted(items))
                                             .formatted(Formatting.YELLOW));
 
+                            stack.translate(0, TextRenderers.getCompositeTextYOffset(), 0);
                             VRender.getInstance()
                                     .drawTextCameraCoord(
                                             text.asOrderedText(),

@@ -999,12 +999,12 @@ public class ElytraBot extends BaseModule {
             vdraw.getMatrices().pushMatrix();
             vdraw.getMatrices().translate(200, 200);
             vdraw.drawText(
-                    mc.textRenderer,
+                    vdraw.getTextDrawer(),
                     "Action: %s, Combating: %s".formatted(currentAction, String.valueOf(currentInCombatRange)),
                     0,
                     0,
                     -1,
-                    true);
+                    false);
             vdraw.getMatrices().popMatrix();
         }
     }
