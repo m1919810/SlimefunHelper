@@ -38,7 +38,7 @@ public class PredictorImpl implements Predictor {
             while (positions.size() > MAX_HISTORY) {
                 positions.removeFirst();
             }
-            if (mc.player.getId() == this.ownerId) {
+            if (mc.player != null && mc.player.getId() == this.ownerId) {
                 // The local player is moved by client-side input between server packets.
                 // Keep the synchronised position in step with the client entity until a
                 // server position packet supplies a new base position.
@@ -79,7 +79,7 @@ public class PredictorImpl implements Predictor {
         EntityS2CPacket packet = event;
         if (packet.id == ownerId) {
             synchronized (this) {
-                if (mc.player.getId() == ownerId || packet.isPositionChanged()) {
+                if ((mc.player != null && mc.player.getId() == ownerId) || packet.isPositionChanged()) {
                     Vec3d position = currentTrackedPosition.withDelta(
                             (long) packet.getDeltaX(), (long) packet.getDeltaY(), (long) packet.getDeltaZ());
                     setSyncedPosition(position);

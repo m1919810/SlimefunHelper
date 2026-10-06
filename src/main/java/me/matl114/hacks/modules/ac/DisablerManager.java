@@ -161,6 +161,10 @@ public class DisablerManager extends BaseModule {
         return false;
     }
 
+    public void setACPlaceQueue(boolean has) {
+        hasAnyPlaceActionGrimQueue = has;
+    }
+
     private boolean flushACPlaceQueue0() {
         switch (currentAC.get()) {
             case GRIM -> {
@@ -223,6 +227,7 @@ public class DisablerManager extends BaseModule {
         }
         if (grimMultiplaceFix.get()
                 && grimMultiplace.get()
+                && ViaFabricPlusHooks.isSupportEndTick()
                 && hasPlaceThisTick
                 && enable.get()
                 && currentAC.get() == SupportAC.GRIM) {
@@ -230,7 +235,7 @@ public class DisablerManager extends BaseModule {
                     || !Objects.equals(cursor, lastCursor)
                     || !Objects.equals(blockPos, lastPos)) {
                 PlayerInteractBlockC2SPacket pkt = blockPlace.context;
-                PacketManager.schedulePostCallback(pkt, () -> {
+                PacketManager.schedulePostScheduleCallback(pkt, () -> {
                     Listener.sendPacketNoEvents(new PlayerInteractBlockC2SPacket(
                             pkt.getHand(), pkt.getBlockHitResult(), NetworkUtils.generateNextSequence()));
                 });

@@ -7,6 +7,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import me.matl114.accessors.access.PlayerInteractEntityC2SPacketAccess;
+import me.matl114.accessors.events.ClientConnectionAccess;
 import me.matl114.accessors.hacks.EntityInternalAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -40,6 +41,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
+import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
 import net.minecraft.network.packet.s2c.play.ExplosionS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKey;
@@ -100,7 +102,10 @@ public class FakePlayer extends BaseModule {
                 Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class),
                 this::onHit,
                 Integer.MAX_VALUE);
-        registerListener(Listener.getPacketPreHandlePoint().getChannel(ExplosionS2CPacket.class), this::onExplode);
+        registerListener(
+                Listener.getPacketPreHandlePoint().getChannel(ExplosionS2CPacket.class),
+                this::onExplode,
+                Integer.MIN_VALUE);
         registerListener(Listener.getPreGameTick(), this::onTickKinetic);
     }
 
@@ -236,17 +241,22 @@ public class FakePlayer extends BaseModule {
 
     public void onDamage(FakePlayerEntity fakePlayer, DamageSource source, float rawDamage) {
         float realDamage = fakePlayer.damage(rawDamage, source);
-        if (realDamage > 0 && logHit.get()) {
-            log(hitLog.get()
-                    .formatText(
-                            fakePlayer.getDisplayName(),
-                            source.getTypeRegistryEntry()
-                                    .getKey()
-                                    .get()
-                                    .getValue()
-                                    .getPath(),
-                            rawDamage,
-                            realDamage));
+        if (realDamage > 0) {
+            var packet = new EntityDamageS2CPacket(fakePlayer, source);
+            ClientConnectionAccess.of(mc.getNetworkHandler().getConnection())
+                    .applyPacket(packet, mc.getNetworkHandler());
+            if (logHit.get()) {
+                log(hitLog.get()
+                        .formatText(
+                                fakePlayer.getDisplayName(),
+                                source.getTypeRegistryEntry()
+                                        .getKey()
+                                        .get()
+                                        .getValue()
+                                        .getPath(),
+                                rawDamage,
+                                realDamage));
+            }
         }
     }
 

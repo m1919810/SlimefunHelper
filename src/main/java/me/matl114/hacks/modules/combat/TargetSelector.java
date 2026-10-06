@@ -193,11 +193,13 @@ public class TargetSelector extends BaseModule {
     }
 
     public boolean isWithinAttackRange(Vec3d pos, Entity entity, double range) {
-        Vec3d syncPos = PositionPredict.INSTANCE.getPredictor(entity).getCurrentSyncedPos();
-        Box syncBox = entity.dimensions.getBoxAt(syncPos);
-        if (syncBox.squaredMagnitude(pos.add(0, mc.player.dimensions.eyeHeight(), 0))
-                >= MathUtils.s2(range + realMaxExtraDistance.get())) {
-            return false;
+        if (!entity.getTrackedPosition().getPos().equals(Vec3d.ZERO)) {
+            Vec3d syncPos = PositionPredict.INSTANCE.getPredictor(entity).getCurrentSyncedPos();
+            Box syncBox = entity.dimensions.getBoxAt(syncPos);
+            if (syncBox.squaredMagnitude(pos.add(0, mc.player.dimensions.eyeHeight(), 0))
+                    >= MathUtils.s2(range + realMaxExtraDistance.get())) {
+                return false;
+            }
         }
         return isWithinAttackRange(pos, getEffectiveBox(entity), range);
     }

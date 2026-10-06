@@ -3,7 +3,6 @@ package me.matl114.mixins.events;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import me.matl114.accessors.events.ChatHudAccess;
@@ -47,8 +46,8 @@ public abstract class ChatHudEvents implements ChatHudAccess {
 
     @Unique
     @Override
-    public ArrayList<ChatHudLine.Visible> getVisibleLines() {
-        return (ArrayList<ChatHudLine.Visible>) this.visibleMessages;
+    public List<ChatHudLine.Visible> getVisibleLines() {
+        return this.visibleMessages;
     }
 
     @Inject(
