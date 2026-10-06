@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import me.matl114.SlimefunHelper;
 import me.matl114.managers.file.FileStorage;
+import me.matl114.managers.file.JsonFileStorageImpl;
 import me.matl114.managers.file.NBTFileStorageImpl;
 import me.matl114.utils.Debug;
 import me.matl114.utils.FileUtils;
@@ -204,12 +205,15 @@ public class FileManager {
     private FileStorage createFileStorage(File file) {
         String name = file.getName();
         // 简单根据扩展名判断是否为 NBT 文件（支持 .nbt, .dat）
+        if (name.endsWith(".json")) {
+            return new JsonFileStorageImpl(file);
+        }
         if (name.endsWith(".nbt") || name.endsWith(".dat")) {
             // 假设 NBTFileStorageImpl 构造函数接受 File
             return new NBTFileStorageImpl(file);
         } else {
             throw new UnsupportedOperationException(
-                    "Unsupported file type: " + name + " (only .nbt/.dat supported for now)");
+                    "Unsupported file type: " + name + " (only .nbt/.dat/.json supported)");
         }
     }
 
