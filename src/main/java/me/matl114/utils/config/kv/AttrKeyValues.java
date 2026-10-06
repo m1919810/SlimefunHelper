@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.function.Function;
 import lombok.Getter;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.BaseAttrKeyValue;
 import me.matl114.utils.config.NumberClamp;
@@ -30,14 +31,46 @@ public interface AttrKeyValues {
             };
 
     public static final AttrKeyValue.CustomWidgetGenerator<Integer> INT_WIDGET_FACTORY =
-            (factory, attrKeyValue, x, y, inputDx, dy) -> {
-                WrapperFactory<Double, Integer> sliderFactory = createIntSlider(attrKeyValue);
-                return factory.createSlider(attrKeyValue, sliderFactory, x, y, inputDx, dy);
+            new AttrKeyValue.CustomWidgetGenerator<>() {
+                @Override
+                public DrawableWidget generateWidget(
+                        ElementFactory factory, AttrKeyValue<Integer> attrKeyValue, int x, int y, int inputDx, int dy) {
+                    return generateWidget(factory, attrKeyValue, x, y, inputDx, dy, null);
+                }
+
+                @Override
+                public DrawableWidget generateWidget(
+                        ElementFactory factory,
+                        AttrKeyValue<Integer> attrKeyValue,
+                        int x,
+                        int y,
+                        int inputDx,
+                        int dy,
+                        TextAlign overrideAlign) {
+                    return factory.createSlider(
+                            attrKeyValue, createIntSlider(attrKeyValue), overrideAlign, x, y, inputDx, dy);
+                }
             };
     public static final AttrKeyValue.CustomWidgetGenerator<Double> DOUBLE_WIDGET_FACTORY =
-            (factory, attrKeyValue, x, y, inputDx, dy) -> {
-                WrapperFactory<Double, Double> sliderFactory = createDoubleSlider(attrKeyValue);
-                return factory.createSlider(attrKeyValue, sliderFactory, x, y, inputDx, dy);
+            new AttrKeyValue.CustomWidgetGenerator<>() {
+                @Override
+                public DrawableWidget generateWidget(
+                        ElementFactory factory, AttrKeyValue<Double> attrKeyValue, int x, int y, int inputDx, int dy) {
+                    return generateWidget(factory, attrKeyValue, x, y, inputDx, dy, null);
+                }
+
+                @Override
+                public DrawableWidget generateWidget(
+                        ElementFactory factory,
+                        AttrKeyValue<Double> attrKeyValue,
+                        int x,
+                        int y,
+                        int inputDx,
+                        int dy,
+                        TextAlign overrideAlign) {
+                    return factory.createSlider(
+                            attrKeyValue, createDoubleSlider(attrKeyValue), overrideAlign, x, y, inputDx, dy);
+                }
             };
 
     private static WrapperFactory<Double, Integer> createIntSlider(AttrKeyValue<?> attrKeyValue) {

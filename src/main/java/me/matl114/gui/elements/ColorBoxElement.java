@@ -44,7 +44,7 @@ public class ColorBoxElement extends BoxElement {
         if (text1 != null) {
             RenderHandler.drawScaledText0(
                     context,
-                    mc.textRenderer,
+                    context.getTextDrawer(),
                     text1,
                     0,
                     0,

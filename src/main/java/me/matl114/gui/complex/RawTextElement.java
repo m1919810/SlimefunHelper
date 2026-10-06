@@ -76,7 +76,7 @@ public class RawTextElement extends AbstractElement {
         OrderedText text1 = rawText.asOrderedText();
         RenderHandler.drawScaledText0(
                 context,
-                mc.textRenderer,
+                context.getTextDrawer(),
                 text1,
                 0,
                 0,
@@ -100,14 +100,15 @@ public class RawTextElement extends AbstractElement {
 
     private void renderMultiLine(DrawableWidget element, VDrawContext context, Text rawText) {
         int width = element.getTextureWidth();
-        List<OrderedText> lines = mc.textRenderer.wrapLines(rawText, width);
+        var textDrawer = context.getTextDrawer();
+        List<OrderedText> lines = textDrawer.wrapLines(rawText, width);
         int size = lines.size();
         if (size == 0) {
             return;
         }
-        int lineHeight = 9;
-        int estimated = lineHeight * size;
-        int startY = 0;
+        float lineHeight = textDrawer.getTextHeight();
+        float estimated = lineHeight * size;
+        float startY = 0;
         if (estimated < element.getTextureHeight()) {
             startY = (element.getTextureHeight() - estimated) / 2;
         } else {
@@ -116,7 +117,7 @@ public class RawTextElement extends AbstractElement {
         for (int index = 0; index < size; index++) {
             RenderHandler.drawScaledText0(
                     context,
-                    mc.textRenderer,
+                    textDrawer,
                     lines.get(index),
                     0,
                     index * lineHeight + startY,

@@ -4,6 +4,7 @@ import me.matl114.gui.basic.AbstractElement;
 import me.matl114.gui.basic.ColorSampler;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.TextProvider;
+import me.matl114.renderer.TextRenderers;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.text.OrderedText;
 
@@ -26,8 +27,7 @@ public class TextSplitterElement extends AbstractElement {
             float alpha,
             boolean shouldHighlight) {
         OrderedText label = text.getLabel(element);
-        int textWidth =
-                label == null ? 0 : (int) mc.textRenderer.getTextHandler().getWidth(label);
+        int textWidth = label == null ? 0 : TextRenderers.get().getWidth(label);
         int width = element.getTextureWidth();
         int sideWidth = Math.max(0, (width - textWidth - 2) / 2);
         int lineColor = color.getColorInt();

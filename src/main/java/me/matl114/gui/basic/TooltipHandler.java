@@ -52,7 +52,7 @@ public class TooltipHandler implements RenderHandler {
             if (provider != null) {
                 List<Text> texts = provider.getTooltips(element);
                 if (texts != null && !texts.isEmpty()) {
-                    context.drawTooltip(mc.textRenderer, texts, Optional.empty(), mouseX, mouseY);
+                    context.drawTooltip(texts, Optional.empty(), mouseX, mouseY);
                 }
             }
         }

@@ -106,7 +106,7 @@ public class InvHud extends BaseModule {
         int startX = right.get() ? (-18 * x - 18) : (18 * x);
         int startY = down.get() ? (-18 * totalLine + 18 * y) : (18 * y);
         vdraw.drawItem(stack, startX + 1, startY + 1, 999, 0);
-        vdraw.drawItemInSlot(mc.textRenderer, stack, startX + 1, startY + 1, null);
+        vdraw.drawItemInSlot(vdraw.getTextDrawer(), stack, startX + 1, startY + 1, null);
     }
 
     public void onRender2D(Event<Render2D> event) {

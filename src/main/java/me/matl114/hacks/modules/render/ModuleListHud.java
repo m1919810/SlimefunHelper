@@ -10,6 +10,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.managers.Configs;
 import me.matl114.managers.api.Displayable;
+import me.matl114.renderer.TextRenderers;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.versioned.api.VDrawContext;
@@ -47,8 +48,7 @@ public class ModuleListHud extends IRender2DColoredModule {
     }
 
     private void sortModuleEntries() {
-        moduleEntries.sort(Comparator.comparingDouble(
-                s -> -mc.textRenderer.getTextHandler().getWidth(s.getDisplay())));
+        moduleEntries.sort(Comparator.comparingDouble(s -> -TextRenderers.get().getWidth(s.getDisplay())));
     }
 
     public void onUpdate(Event<Void> event) {
@@ -62,7 +62,7 @@ public class ModuleListHud extends IRender2DColoredModule {
             }
             boolean val = false;
             for (var re : moduleEntries) {
-                if (re.tickUpdate()) {
+                if (re.tickUpdate(TextRenderers.get().getTextHeight())) {
                     val = true;
                 }
             }
@@ -98,11 +98,11 @@ public class ModuleListHud extends IRender2DColoredModule {
         Text lastDisplay;
         Text lastMeta;
 
-        public boolean tickUpdate() {
+        public boolean tickUpdate(float textHeight) {
             boolean update = false;
             if (lastState != moduleEntry.getActiveState()) {
                 lastState = moduleEntry.getActiveState();
-                switchCountDown = HEIGHT + 1.0D;
+                switchCountDown = textHeight + 1.0D;
                 update = true;
             }
             if (switchCountDown >= 0.0D) {
@@ -111,23 +111,22 @@ public class ModuleListHud extends IRender2DColoredModule {
 
             if (!Objects.equals(lastMeta, moduleEntry.getMetaData())) {
                 lastMeta = moduleEntry.getMetaData();
-                lastDisplay =
-                        ((lastMeta != null && mc.textRenderer.getTextHandler().getWidth(lastMeta) > 0.0F)
-                                ? (moduleEntry
-                                        .getDisplay()
-                                        .append(Text.literal("["))
-                                        .append(lastMeta)
-                                        .append(Text.literal("]")))
-                                : moduleEntry.getDisplay());
+                lastDisplay = ((lastMeta != null && TextRenderers.get().getWidth(lastMeta) > 0.0F)
+                        ? (moduleEntry
+                                .getDisplay()
+                                .append(Text.literal("["))
+                                .append(lastMeta)
+                                .append(Text.literal("]")))
+                        : moduleEntry.getDisplay());
                 update = true;
             }
             return update;
         }
 
-        public double getAnimationHeight() {
+        public double getAnimationHeight(float textHeight) {
             return switchCountDown < 0.0D
                     ? switchCountDown
-                    : (lastState ? (HEIGHT - switchCountDown) : switchCountDown);
+                    : (lastState ? (textHeight - switchCountDown) : switchCountDown);
         }
 
         public boolean shouldRender() {
@@ -141,6 +140,7 @@ public class ModuleListHud extends IRender2DColoredModule {
     }
 
     public void handleModuleList(VDrawContext vdraw) {
+        float textHeight = vdraw.getTextDrawer().getTextHeight() + 1;
         if (moduleListRender != null) {
             int cnt = 0;
             int size = moduleListRender.size();
@@ -150,7 +150,7 @@ public class ModuleListHud extends IRender2DColoredModule {
                     drawText(vdraw, "...%d more".formatted(moduleListRender.size() - cnt));
                     break;
                 }
-                double height = text.getAnimationHeight();
+                double height = text.getAnimationHeight(textHeight);
                 if (height < 0 || i == size - 1) {
                     if (text.lastState) {
                         Text display = text.getDisplay();

@@ -64,15 +64,28 @@ public final class VanillaElementFactory implements ElementFactory {
 
     @Override
     public ElementHandler createText(TextProvider provider, TooltipHandler handler) {
-        return new RawTextElement(provider, textColor()).withTooltips(handler);
+        return createText(provider, handler, (TextAlign) null);
     }
 
     @Override
     public ElementHandler createText(TextProvider provider, TooltipHandler handler, boolean splitter) {
+        return createText(provider, handler, splitter, null);
+    }
+
+    @Override
+    public ElementHandler createText(TextProvider provider, TooltipHandler handler, @Nullable TextAlign overrideAlign) {
+        return createText(provider, handler, false, overrideAlign);
+    }
+
+    @Override
+    public ElementHandler createText(
+            TextProvider provider, TooltipHandler handler, boolean splitter, @Nullable TextAlign overrideAlign) {
         ColorSampler textColor = textColor();
-        RawTextElement text = new RawTextElement(provider, textColor);
+        TextProvider alignedProvider =
+                overrideAlign == null ? provider : TextProvider.withAlign(provider, overrideAlign);
+        RawTextElement text = new RawTextElement(alignedProvider, textColor);
         if (splitter) {
-            text.combineRender(new TextSplitterElement(provider, textColor));
+            text.combineRender(new TextSplitterElement(alignedProvider, textColor));
         }
         return text.withTooltips(handler);
     }
@@ -144,11 +157,26 @@ public final class VanillaElementFactory implements ElementFactory {
 
     @Override
     public <T> ElementHandler createInput(Value<T> value) {
-        return TextFieldElement.ofValue(value);
+        return createInput(value, null);
+    }
+
+    @Override
+    public <T> ElementHandler createInput(Value<T> value, @Nullable TextAlign overrideAlign) {
+        TextFieldElement input = TextFieldElement.ofValue(value);
+        if (overrideAlign != null) {
+            input.setAlign(overrideAlign);
+        }
+        return input;
     }
 
     @Override
     public <T> ElementHandler createSlidingInput(Value<T> value, WrapperFactory<Double, T> sliderFactory) {
-        return createInput(value);
+        return createSlidingInput(value, sliderFactory, null);
+    }
+
+    @Override
+    public <T> ElementHandler createSlidingInput(
+            Value<T> value, WrapperFactory<Double, T> sliderFactory, @Nullable TextAlign overrideAlign) {
+        return createInput(value, overrideAlign);
     }
 }
