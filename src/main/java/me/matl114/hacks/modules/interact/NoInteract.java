@@ -207,7 +207,7 @@ public class NoInteract extends BaseModule {
             }
             RenderUtils.startDrawVirtual(stackEvent.context.stack());
             try {
-                failInteractPlace.render3D(stackEvent.context.stack());
+                failInteractPlace.render3D(stackEvent.context.stack(), stackEvent.context.partialTicks());
             } finally {
                 RenderUtils.stopDrawVirtual(stackEvent.context.stack());
             }

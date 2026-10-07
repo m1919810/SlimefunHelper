@@ -350,8 +350,8 @@ public class ItemESP extends BaseModule {
             MatrixStack stack = event.context().stack();
             RenderUtils.startDrawVirtual(stack);
             try {
-                boxCollector.render3D(stack);
-                tracerCollector.render3D(stack);
+                boxCollector.render3D(stack, event.context().partialTicks());
+                tracerCollector.render3D(stack, event.context().partialTicks());
             } finally {
                 RenderUtils.stopDrawVirtual(stack);
             }
@@ -360,8 +360,7 @@ public class ItemESP extends BaseModule {
 
     public void onRenderEntity2D(Event<Render2D> vdrawEvent) {
         if (enable.get()) {
-            // tracerCollector.render2D(vdrawEvent.drawContext);
-            textCollector.render2D(vdrawEvent.context.drawContext());
+            textCollector.render2D(vdrawEvent.context.drawContext(), vdrawEvent.context.partialTicks());
         }
     }
 }

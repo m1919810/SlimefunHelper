@@ -293,8 +293,8 @@ public class PearlFly extends BaseModule {
         if (pearlAimRender.get()) {
             RenderUtils.startDrawVirtual(event.context.stack());
             try {
-                lineCollector.render3D(event.context.stack());
-                hitBoxCollector.render3D(event.context.stack());
+                lineCollector.render3D(event.context.stack(), event.context.partialTicks());
+                hitBoxCollector.render3D(event.context.stack(), event.context.partialTicks());
             } finally {
                 RenderUtils.stopDrawVirtual(event.context.stack());
             }

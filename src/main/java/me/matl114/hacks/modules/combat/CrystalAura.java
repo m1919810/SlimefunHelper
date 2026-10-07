@@ -340,7 +340,7 @@ public class CrystalAura extends BaseModule {
         if (enable.get()) {
             RenderUtils.startDrawVirtual(event.context.stack());
             try {
-                debugRender.render3D(event.context.stack());
+                debugRender.render3D(event.context.stack(), event.context.partialTicks());
             } finally {
                 RenderUtils.stopDrawVirtual(event.context.stack());
             }

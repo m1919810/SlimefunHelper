@@ -193,7 +193,7 @@ public class BlockFarm extends BaseModule {
         if (enable.get() && render.get()) {
             vdraw.context.drawContext().pushMatrix();
             try {
-                textRenderer.render2D(vdraw.context.drawContext());
+                textRenderer.render2D(vdraw.context.drawContext(), vdraw.context.partialTicks());
             } finally {
                 vdraw.context.drawContext().popMatrix();
             }

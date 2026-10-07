@@ -246,13 +246,14 @@ public class TrialInfoESP extends BaseModule {
         }
         RenderUtils.startDrawVirtual(event.context().stack());
         try {
-            textCollector.render3D(event.context().stack());
+            textCollector.render3D(event.context().stack(), event.context().partialTicks());
             if (traceOption.get().line()) {
-                lineRenderCollector.render3D(event.context().stack());
-                traceCollector.render3D(event.context().stack());
+                lineRenderCollector.render3D(
+                        event.context().stack(), event.context().partialTicks());
+                traceCollector.render3D(event.context().stack(), event.context().partialTicks());
             }
             if (traceOption.get().box()) {
-                boxCollector.render3D(event.context().stack());
+                boxCollector.render3D(event.context().stack(), event.context().partialTicks());
             }
         } finally {
             RenderUtils.stopDrawVirtual(event.context().stack());

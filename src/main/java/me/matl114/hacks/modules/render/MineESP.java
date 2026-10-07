@@ -198,9 +198,9 @@ public class MineESP extends BaseModule {
         if (enable.get()) {
             RenderUtils.startDrawVirtual(event.context.stack());
             try {
-                frameRenderer.render3D(event.context.stack());
-                progressRenderer.render3D(event.context.stack());
-                textRenderer.render3D(event.context.stack());
+                frameRenderer.render3D(event.context.stack(), event.context.partialTicks());
+                progressRenderer.render3D(event.context.stack(), event.context.partialTicks());
+                textRenderer.render3D(event.context.stack(), event.context.partialTicks());
             } finally {
                 RenderUtils.stopDrawVirtual(event.context.stack());
             }
