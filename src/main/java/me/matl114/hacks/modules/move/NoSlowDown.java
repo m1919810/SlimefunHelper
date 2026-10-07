@@ -49,10 +49,12 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     public final ModulePath fakeSneakStatusPath = moveSpeed.add("fake-sneak-status");
 
     public static LegalMovementManager.DelegateMovementModifier instance;
+    public static NoSlowDown INSTANCE;
 
     public NoSlowDown() {
         super("NoSlowDown");
         // 哎我操GrimAC别修了，真没辙了，再修我还怎么打啊。。。
+        INSTANCE = this;
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
             // register at here for the first time
@@ -487,9 +489,9 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         // use MultiActionsC to create ghost inventory and bypass useItem NoSlow
         // pre, send sprint
         if (v3) {
-            PlayerStateManager.INSTANCE.sendSprintStatus(true);
+            PlayerStateManager.INSTANCE.sendSprintStatus(true, false);
         } else {
-            PlayerStateManager.INSTANCE.sendSprintStatus(mc.player.isSprinting());
+            PlayerStateManager.INSTANCE.sendSprintStatus(mc.player.isSprinting(), false);
         }
 
         postCallBack = null;
@@ -599,7 +601,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         }
         if (v3) {
             // mc.player.setSprinting();
-            PlayerStateManager.INSTANCE.sendSprintStatus(mc.player.isSprinting());
+            PlayerStateManager.INSTANCE.sendSprintStatus(mc.player.isSprinting(), false);
         }
     }
 
@@ -608,7 +610,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         // may use MultiActionsC to resync inventory, wierd
         if (postCallBack != null) {
             if (v3) {
-                PlayerStateManager.INSTANCE.sendSprintStatus(true);
+                PlayerStateManager.INSTANCE.sendSprintStatus(true, false);
                 ClientPlayerAccess.of(mc.player).setLastSprintFlag(true);
             }
             postCallBack.run();

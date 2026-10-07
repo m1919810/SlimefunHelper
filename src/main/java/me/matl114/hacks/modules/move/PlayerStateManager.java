@@ -766,7 +766,7 @@ public class PlayerStateManager extends BaseModule {
         setPlayerYawSafe(entity, newYaw);
     }
 
-    public void sendSprintStatus(boolean sprint) {
+    public void sendSprintStatus(boolean sprint, boolean vanillaResync) {
         if (sprint != lastSprint) {
             if (sprint) {
                 mc.getNetworkHandler()
@@ -776,6 +776,10 @@ public class PlayerStateManager extends BaseModule {
                         .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
             }
             ClientPlayerAccess.of(mc.player).setLastSprintFlag(sprint);
+            mc.player.setSprinting(sprint);
+            if (vanillaResync) {
+                PlayerInputManager.INSTANCE.addSprintModifier(0, !sprint, 1);
+            }
         }
     }
 
