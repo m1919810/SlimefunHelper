@@ -1,16 +1,19 @@
 package me.matl114.hacks.modules.ac;
 
 import java.util.Objects;
+import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
 import me.matl114.events.impl.EventContainer;
 import me.matl114.events.impl.SlotClickAction;
+import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.ConfigEnum;
@@ -19,11 +22,9 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.NetworkUtils;
+import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
+import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.hit.BlockHitResult;
@@ -31,7 +32,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
-public class DisablerManager extends BaseModule {
+public class DisablerManager extends BaseModule implements LegalMovementManager.MovementModifier {
     public static DisablerManager INSTANCE;
 
     public final ModulePath disablers = makePath(Configs.EXTRA_CONFIG, "disablers");
@@ -71,13 +72,29 @@ public class DisablerManager extends BaseModule {
             .defaultValue(true)
             .build();
 
+    public final FlagRef duplicatedSprintFix = builder(disablers.add("fix-duplicated-sprint-one-tick"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
+    static LegalMovementManager.DelegateMovementModifier instance;
+
     public DisablerManager() {
         super("Disabler");
         INSTANCE = this;
         bindFlag(enable);
+        if (instance == null) {
+            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
+            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
+        }
+        instance.setDelegate(this::cast);
     }
 
     boolean grimSelfCheckDisabler;
+
+    @Override
+    public int priority() {
+        return Integer.MAX_VALUE;
+    }
 
     @Override
     public void registerAll() {
@@ -101,6 +118,10 @@ public class DisablerManager extends BaseModule {
                 Listener.getPacketPoint().getChannel(UpdateSelectedSlotC2SPacket.class),
                 this::onGhostHandSwap,
                 Integer.MAX_VALUE - 1);
+        registerListener(
+                Listener.getPacketPoint().getChannel(ClientCommandC2SPacket.class),
+                this::onPacketSprint,
+                Integer.MAX_VALUE);
     }
     // already fixed ,
     public void onRespawn(Event<PlayerRespawnS2CPacket> respawn) {
@@ -112,7 +133,7 @@ public class DisablerManager extends BaseModule {
     Direction lastDirection;
     Vec3d lastCursor;
     BlockPos lastPos;
-    boolean hasPlaceThisTick;
+    public boolean hasPlaceThisTick;
 
     public boolean isGrimSelfCheckDisabled() {
         return enable.get() && currentAC.get() == SupportAC.GRIM && grimSelfCheck.get() && grimSelfCheckDisabler;
@@ -152,7 +173,8 @@ public class DisablerManager extends BaseModule {
         grimSelfCheckDisabler = false;
     }
 
-    boolean hasAnyPlaceActionGrimQueue = false;
+    public boolean hasAnyPlaceActionGrimQueue = false;
+    public boolean hasAnySprintPacketAlready = false;
 
     public boolean flushACPlaceQueue() {
         if (autoFlushPlaceQueue.get()) {
@@ -264,6 +286,11 @@ public class DisablerManager extends BaseModule {
     // see GrimAC handleQueuedPlaces
     public void onFlying(Event<PlayerMoveC2SPacket> playerMoveC2SPacket) {
         hasAnyPlaceActionGrimQueue = false;
+        var access = PlayerMoveC2SPacketAccess.of(playerMoveC2SPacket.context).getCause();
+        if (access != PlayerMoveC2SPacketAccess.Cause.SET_BACK
+                && access != PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP) {
+            hasAnySprintPacketAlready = false;
+        }
     }
 
     public void onPingPong(Event<CommonPongC2SPacket> eventTransaction) {
@@ -276,6 +303,28 @@ public class DisablerManager extends BaseModule {
 
     public void onTick(Event<Void> event) {
         hasPlaceThisTick = false;
+        hasAnySprintPacketAlready = false;
+    }
+
+    public void onPacketSprint(Event<ClientCommandC2SPacket> eventSprint) {
+        if (eventSprint.isCancelled()) return;
+        if (eventSprint.context.getMode() == ClientCommandC2SPacket.Mode.START_SPRINTING
+                || eventSprint.context.getMode() == ClientCommandC2SPacket.Mode.STOP_SPRINTING) {
+            hasAnySprintPacketAlready = true;
+        }
+    }
+
+    public void applyAfterInputTick(Event<LegalMovementManager> event) {
+        LegalMovementManager.MovementModifier.super.applyAfterInputTick(event);
+        var input = PlayerInputUtils.of(mc.player);
+        if (hasAnySprintPacketAlready && duplicatedSprintFix.get()) {
+            // better not change the idiot sprint state
+            if (!PlayerStateManager.INSTANCE.lastSprint && input.sprint()) {
+                input.sprint(false).applyInput(mc.player);
+            } else if (PlayerStateManager.INSTANCE.lastSprint && !input.sprint()) {
+                input.sprint(true).applyInput(mc.player);
+            }
+        }
     }
 
     public void onPresetReload(Event<EventContainer<ModulePreset>> event) {
@@ -289,6 +338,11 @@ public class DisablerManager extends BaseModule {
             default -> {
                 currentAC.set(SupportAC.NONE);
             }
+        }
+        if (event.context.getValue().hasAC()) {
+            duplicatedSprintFix.set(true);
+        } else {
+            duplicatedSprintFix.set(false);
         }
     }
 

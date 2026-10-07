@@ -8,11 +8,11 @@ loom {
 	accessWidenerPath = file("src/main/resources/overrideList.accesswidener")
 }
 
-version = project.mod_version
+version = "beta-${project.mod_version}"
 group = project.maven_group
 
 base {
-	archivesName = project.archives_base_name
+	archivesName = "${project.archives_base_name}-${project.minecraft_version}"
 }
 
 repositories {
@@ -89,7 +89,7 @@ dependencies {
 
 shadowJar {
 	minimize()
-	archiveFileName = "${project.properties["archives_base_name"]}-${project.version}-shadow-raw.jar"
+	archiveFileName = "${project.base.archivesName.get()}-${project.version}-shadow-raw.jar"
 	configurations = [project.configurations.runtimeClasspath]
 	dependencies {
 		include dependency('com.github.houbb:.*')
@@ -127,7 +127,7 @@ spotless {
 remapJar {
 	dependsOn shadowJar
 	inputFile = shadowJar.archiveFile.get().asFile
-	archiveFileName = "${project.properties["archives_base_name"]}-${project.version}.jar"
+	archiveFileName = "${project.base.archivesName.get()}-${project.version}.jar"
 }
 
 processResources {
@@ -214,7 +214,7 @@ build.dependsOn spotlessApply
 publishing {
 	publications {
 		create("mavenJava", MavenPublication) {
-			artifactId = project.archives_base_name
+			artifactId = project.base.archivesName.get()
 			from components.java
 		}
 	}

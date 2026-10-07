@@ -9,7 +9,6 @@ import me.matl114.accessors.events.ClientPlayerEntityAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
-import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.fabricmc.api.EnvType;
@@ -146,12 +145,6 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         this.movementManager = new LegalMovementManager();
     }
 
-    @Unique
-    private static Vec2f compatMovementVectorWithViaFabric(Vec2f vec2f) {
-        // shit,
-        return ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 4) ? vec2f : vec2f.normalize();
-    }
-
     @Inject(
             method = "tickMovement",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/input/Input;tick(ZF)V", shift = At.Shift.AFTER))
@@ -164,11 +157,9 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         getLegalMovementManager().postInputTick((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
         // changed, update movementVector
         PlayerInputUtils.Input newInput = PlayerInputUtils.of(this.input);
-        if (!Objects.equals(currentInput, newInput)) {
-            Vec2f movementVector =
-                    compatMovementVectorWithViaFabric(new Vec2f(newInput.sidewaysSpeed(), newInput.forwardSpeed()));
-            this.input.movementForward = movementVector.y;
-            this.input.movementSideways = movementVector.x;
+        if (!Objects.equals(currentInput, this.input.playerInput)) {
+            PlayerInputUtils.Input i0 = new PlayerInputUtils.Input(this.input.playerInput);
+            i0.syncMovementVector(this.input);
             if (this.shouldSlowDown()) {
                 this.input.movementForward *= f;
                 this.input.movementSideways *= f;

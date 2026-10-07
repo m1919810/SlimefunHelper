@@ -278,7 +278,8 @@ public class TrialInfoESP extends BaseModule {
             if (textMode.get().isIn(RenderMode.RENDER_3D)) {
                 textCollector.render3D(event.context().stack(), event.context().partialTicks());
             }
-            lineRenderCollector.render3D(event.context().stack(), event.context().partialTicks());
+            lineRenderCollector.render3D(
+                    event.context().stack(), event.context().partialTicks());
             traceCollector.render3D(event.context().stack(), event.context().partialTicks());
             boxCollector.render3D(event.context().stack(), event.context().partialTicks());
             boxCollector2.render3D(event.context().stack(), event.context().partialTicks());
@@ -295,7 +296,8 @@ public class TrialInfoESP extends BaseModule {
         if (textMode.get().isIn(RenderMode.RENDER_2D)) {
             vdraw.context.drawContext().pushMatrix();
             try {
-                textCollector.render2D(vdraw.context.drawContext());
+                textCollector.render2D(
+                        vdraw.context.drawContext(), vdraw.context().partialTicks());
             } finally {
                 vdraw.context.drawContext().popMatrix();
             }

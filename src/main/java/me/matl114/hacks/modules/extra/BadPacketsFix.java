@@ -84,19 +84,33 @@ public class BadPacketsFix extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPlayerInitConfiguration(), this::onPlayerInitialize);
-        registerListener(Listener.getPacketPoint().getChannel(ClientCommandC2SPacket.class), this::onSendSprint);
-        registerListener(Listener.getPacketPoint().getChannel(PlayerInputC2SPacket.class), this::onSendInput);
-        registerListener(Listener.getPacketPoint().getChannel(PlayerAbilitiesS2CPacket.class), this::onServerAbility);
+        registerListener(Listener.getPlayerRespawnPoint(), this::onPlayerInitialize);
         registerListener(
-                Listener.getPacketPoint().getChannel(UpdatePlayerAbilitiesC2SPacket.class), this::onAbilityUpdate);
+                Listener.getPacketPoint().getChannel(ClientCommandC2SPacket.class),
+                this::onSendSprint,
+                Integer.MIN_VALUE);
+        registerListener(
+                Listener.getPacketPoint().getChannel(PlayerInputC2SPacket.class), this::onSendInput, Integer.MIN_VALUE);
+        registerListener(
+                Listener.getPacketPoint().getChannel(PlayerAbilitiesS2CPacket.class),
+                this::onServerAbility,
+                Integer.MIN_VALUE);
+        registerListener(
+                Listener.getPacketPoint().getChannel(UpdatePlayerAbilitiesC2SPacket.class),
+                this::onAbilityUpdate,
+                Integer.MIN_VALUE);
         registerListener(Listener.getPacketPoint().getChannel(TeleportConfirmC2SPacket.class), this::onTeleportConfirm);
-        registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onPlayerRotation);
+        registerListener(
+                Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class),
+                this::onPlayerRotation,
+                Integer.MIN_VALUE);
         //        registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvent);
         //        registerListener(Listener.getPostHandleInputEvents(), this::onPostInputEvent);
         registerListener(Listener.getWorldSwitchPoint(), this::onWorldChange);
         registerListener(
-                Listener.getPacketPoint().getChannel(ChunkLoadDistanceS2CPacket.class), this::onRepackViewDistance);
+                Listener.getPacketPoint().getChannel(ChunkLoadDistanceS2CPacket.class),
+                this::onRepackViewDistance,
+                Integer.MIN_VALUE);
         registerListener(
                 Listener.getRegistryTagKeyReload().getChannel(Registries.BLOCK.getKey()), this::fixTagsBadPackets);
     }

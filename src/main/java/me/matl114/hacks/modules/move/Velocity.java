@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.move;
 
 import java.util.Objects;
 import me.matl114.accessors.access.ClientPlayerAccess;
+import me.matl114.accessors.events.ClientPlayerEntityAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.impl.EventContainer;
@@ -305,6 +306,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
             if (Objects.equals(lastBlockPos, pos)) {
                 if (!FakeBlockManager.INSTANCE.isCurrentlyFakeState(pos)) {
                     flagLegacy = false;
+                    ClientPlayerEntityAccess.of(mc.player).resyncPos();
                     return;
                 }
             } else {
@@ -313,6 +315,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
             }
             if (lastCancelVelocityTick + maxResetKBTick.get() <= Tasks.getTick()) {
                 flagLegacy = false;
+                ClientPlayerEntityAccess.of(mc.player).resyncPos();
                 // mc.player.setVelocity(Vec3d.ZERO);
             } else {
                 if (freezeIfWalk.get() || !PlayerInputUtils.of(mc.options).hasMovementControl()) {

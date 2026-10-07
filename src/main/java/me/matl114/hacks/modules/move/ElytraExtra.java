@@ -251,8 +251,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             .show(this.autoRescale::get)
             .build();
 
-    public final EnumRef<Al> autoRescaleAl = builder(
-                    customFireworksPath.add("auto-rescale-firework-algorithm"), Al.class)
+    public final EnumRef<Al> autoRescaleAl = builder(customFireworksPath.add("auto-rescale-firework-al"), Al.class)
             .defaultValue(Al.V1)
             .show(this.autoRescale::get)
             .build();
@@ -264,12 +263,12 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     @ApiStatus.Experimental
     public final KeyBindRef switchAlKey = hotkey(
-                    customFireworksPath.add("switch-auto-rescale-firework-algorithm-key"), new MultiKeyBind())
+                    customFireworksPath.add("switch-auto-rescale-firework-al-key"), new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(() -> {
                 this.autoRescaleAl.next();
                 logI18NSub(
                         "Firework",
-                        "message.module.elytra-extra.algorithm-switch",
+                        "message.module.elytra-extra.al-switch",
                         this.autoRescaleAl.get().getDisplay());
             }))
             .experimental()
@@ -2294,6 +2293,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             case V1 -> applyAxisLimit1(currentMotion, pitch, yaw, true);
             case V2 -> applyAxisLimit2(currentMotion, pitch, yaw, true);
             case V3 -> applyAxisLimit3(currentMotion, pitch, yaw);
+            case V3_PULLUP_ONLY -> applyAxisLimit3Pullup(currentMotion, pitch, yaw);
             case V4 -> applyAxisLimit4(currentMotion, pitch, yaw);
             case V5, V5_PULLUP_ONLY -> applyAxisLimit5(currentMotion, pitch, yaw);
         };
@@ -2527,6 +2527,14 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         return ElytraOptimizeUtils.applyAxisLimit3(currentMotion, pitch, yaw, autoRescaleAmount.get());
     }
 
+    public Vec3d applyAxisLimit3Pullup(Vec3d currentMotion, float pitch, float yaw) {
+        if (!autoRescale.get()) {
+            setOverridingFireworkVelocity(null);
+            return currentMotion;
+        }
+        return ElytraOptimizeUtils.applyAxisLimit3(currentMotion, pitch, yaw, autoRescaleAmount.get());
+    }
+
     public Vec3d applyAxisLimit4(Vec3d currentMotion, float pitch, float yaw) {
         if (!autoRescale.get()) {
             setOverridingFireworkVelocity(null);
@@ -2625,6 +2633,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         V1,
         V2,
         V3,
+        V3_PULLUP_ONLY,
         V4,
         V5,
         V5_PULLUP_ONLY;

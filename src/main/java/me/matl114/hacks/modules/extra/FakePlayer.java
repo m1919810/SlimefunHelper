@@ -39,7 +39,6 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
 import net.minecraft.network.packet.s2c.play.ExplosionS2CPacket;
@@ -267,9 +266,7 @@ public class FakePlayer extends BaseModule {
             if (PlayerInteractEntityC2SPacketAccess.of(interactEntity.context).isAttack()) {
                 onAttack(fake);
             }
-            mc.getNetworkHandler()
-                    .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
-            mc.player.setSprinting(false);
+            PlayerStateManager.INSTANCE.sendSprintStatus(false, false);
         }
     }
 

@@ -53,7 +53,7 @@ public class TextFont extends BaseModule {
             .build();
 
     public final DoubleRef fontSize = doubleBuilder(root.add("font-size"))
-            .defaultValue((double) LocalFontTextDrawer.DEFAULT_FONT_SIZE)
+            .defaultValue(7.0D)
             .validator(Configs.doubleRange(1.0D, 96.0D))
             .show(() -> textStyle.get().isIn(TextStyle.SYSTEM))
             .updateListener(size -> updateTextFont())

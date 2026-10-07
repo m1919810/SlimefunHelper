@@ -8,13 +8,12 @@ import lombok.Getter;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.hacks.*;
+import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.extra.BadPacketsFix;
 import me.matl114.hacks.modules.inv.InvExtra;
-import me.matl114.hacks.modules.move.MoveTimer;
-import me.matl114.hacks.modules.move.PlayerStateManager;
-import me.matl114.hacks.modules.move.Sprint;
-import me.matl114.hacks.modules.move.Velocity;
+import me.matl114.hacks.modules.move.*;
 import me.matl114.hacks.modules.render.NoRender;
+import me.matl114.utils.entity.PlayerInputUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -36,6 +35,7 @@ import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -210,7 +210,17 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
             method = "tickMovement",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z"))
     private boolean noSlowUsingItem(boolean original) {
-        if (MovTasks.getNoSlowDown().workNoSlowItemThisTick) {
+        if (NoSlowDown.INSTANCE.workNoSlowItemThisTick) {
+            return false;
+        }
+        return original;
+    }
+
+    @ModifyExpressionValue(
+            method = "shouldStopSprinting",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z"))
+    private boolean noSlowUsingItemDoNotBlockSprint(boolean original) {
+        if (NoSlowDown.INSTANCE.workNoSlowItemThisTick) {
             return false;
         }
         return original;
@@ -222,9 +232,78 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
                     @At(
                             value = "INVOKE",
                             target = "Lnet/minecraft/client/network/ClientPlayerEntity;canStartSprinting()Z"))
-    private boolean noSlowUsingItemDoNotBlockSprint1(ClientPlayerEntity instance, Operation<Boolean> original) {
+    private boolean canStartSprintAddConditionWrapperBecauseOfViaFabricShit(
+            ClientPlayerEntity instance, Operation<Boolean> original) {
+        if (DisablerManager.INSTANCE.duplicatedSprintFix.get()
+                && DisablerManager.INSTANCE.hasAnySprintPacketAlready
+                && !PlayerStateManager.INSTANCE.lastSprint) {
+            return false;
+        }
         // fix viafabric
-        if (MovTasks.getNoSlowDown().workNoSlowItemThisTick) {
+        boolean v = usingItem;
+        if (NoSlowDown.INSTANCE.workNoSlowItemThisTick) {
+            usingItem = false;
+        }
+        PlayerInputUtils.Input playerInput = PlayerInputUtils.of(this.input);
+        Vec2f movementVector = this.input.movementVector;
+        if (shouldDirectionalSprint()) {
+            playerInput
+                    .clone()
+                    .forward(true)
+                    .backward(false)
+                    .applyInput(this.input)
+                    .syncMovementVector(this.input);
+        }
+        try {
+            return original.call(instance);
+        } finally {
+            usingItem = v;
+            playerInput.applyInput(this.input);
+            this.input.movementVector = movementVector;
+        }
+    }
+
+    @WrapOperation(
+            method = "tickMovement",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/client/network/ClientPlayerEntity;shouldStopSprinting()Z"))
+    private boolean canStopSprintAddConditionWrapperBecauseOfViaFabricShit(
+            ClientPlayerEntity instance, Operation<Boolean> original) {
+        // fix viafabric
+        boolean v = usingItem;
+        if (NoSlowDown.INSTANCE.workNoSlowItemThisTick) {
+            usingItem = false;
+        }
+        PlayerInputUtils.Input playerInput = PlayerInputUtils.of(this.input);
+        Vec2f movementVector = this.input.movementVector;
+        if (shouldDirectionalSprint()) {
+            playerInput
+                    .clone()
+                    .forward(true)
+                    .backward(false)
+                    .applyInput(this.input)
+                    .syncMovementVector(this.input);
+        }
+        try {
+            return original.call(instance);
+        } finally {
+            usingItem = v;
+            playerInput.applyInput(this.input);
+            this.input.movementVector = movementVector;
+        }
+    }
+
+    @WrapOperation(
+            method = "tickMovement",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/client/network/ClientPlayerEntity;shouldStopSwimSprinting()Z"))
+    private boolean nnoSlowUsingItemDoNotBlockSprint3(ClientPlayerEntity instance, Operation<Boolean> original) {
+        // fix viafabric
+        if (NoSlowDown.INSTANCE.workNoSlowItemThisTick) {
             boolean v = usingItem;
             usingItem = false;
             try {
@@ -240,7 +319,7 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
             method = "tickMovement",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;shouldSlowDown()Z"))
     private boolean noSlowSneak(boolean original) {
-        if (MovTasks.getNoSlowDown().shouldNoSlowSneak()) {
+        if (NoSlowDown.INSTANCE.shouldNoSlowSneak()) {
             return false;
         }
         return original;
@@ -248,7 +327,7 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
 
     @Override
     protected float getVelocityMultiplier() {
-        if (MovTasks.getNoSlowDown().blockSlow.get()) {
+        if (NoSlowDown.INSTANCE.blockSlow.get()) {
             return 1.0f;
         }
         return super.getVelocityMultiplier();
@@ -258,69 +337,6 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
     protected void grantAllClientPermissions(CallbackInfoReturnable<Integer> cir) {
         cir.setReturnValue(4);
     }
-
-    //
-    //    @Override
-    //    public double getEntityInteractionRange() {
-    //
-    //        if(HotKeys.getHotkeyToggleManager().getState(HotKeys.REACH)){
-    //            return super.getEntityInteractionRange() + 1.0;
-    //        }
-    //        return super.getEntityInteractionRange();
-    //    }
-
-    @Unique
-    @Override
-    public void resyncPos() {
-        this.lastX = 0;
-        this.lastZ = 0;
-        this.lastBaseY = 0;
-    }
-
-    @Unique
-    @Override
-    public void resyncRot() {
-        this.lastPitch = 0;
-        this.lastYaw = 0;
-    }
-
-    //    @Unique
-    //    public void syncLocationPackets(){
-    //        double d = this.getX() - this.lastX;
-    //        double e = this.getY() - this.lastBaseY;
-    //        double f = this.getZ() - this.lastZ;
-    //        double g = (double)(this.getYaw() - this.lastYaw);
-    //        double h = (double)(this.getPitch() - this.lastPitch);
-    //
-    //        boolean bl2 = MathHelper.squaredMagnitude(d, e, f) > MathHelper.square(2.0E-4) ||
-    // this.ticksSinceLastPositionPacketSent > 20;
-    //        boolean bl3 = g != 0.0 || h != 0.0;
-    //        if (bl2 && bl3) {
-    //            this.networkHandler.sendPacket(new PlayerMoveC2SPacket.Full(this.getX(), this.getY(), this.getZ(),
-    // this.getYaw(), this.getPitch(), this.isOnGround()));
-    //        } else if (bl2) {
-    //            this.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(this.getX(), this.getY(),
-    // this.getZ(), this.isOnGround()));
-    //        } else if (bl3) {
-    //            this.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(this.getYaw(), this.getPitch(),
-    // this.isOnGround()));
-    //        } else if (this.lastOnGround != this.isOnGround()) {
-    //            this.networkHandler.sendPacket(new PlayerMoveC2SPacket.OnGroundOnly(this.isOnGround()));
-    //        }
-    //
-    //        if (bl2) {
-    //            this.lastX = this.getX();
-    //            this.lastBaseY = this.getY();
-    //            this.lastZ = this.getZ();
-    //            this.ticksSinceLastPositionPacketSent = 0;
-    //        }
-    //
-    //        if (bl3) {
-    //            this.lastYaw = this.getYaw();
-    //            this.lastPitch = this.getPitch();
-    //        }
-    //        this.lastOnGround = this.isOnGround();
-    //    }
 
     @WrapOperation(
             method = "tickMovement",
@@ -348,7 +364,7 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
 
     @Unique
     private boolean shouldDirectionalSprint() {
-        Sprint sprintModule = MovTasks.getSprint();
+        Sprint sprintModule = Sprint.INSTANCE;
         return sprintModule.directionalSprint.get()
                 && this.input.movementForward <= -0.8
                 && sprintModule.enableSprintDirectionalThisTick;
