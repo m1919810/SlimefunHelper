@@ -247,7 +247,7 @@ public class AutoPlate extends BaseModule {
         if (enable.get() && render.get()) {
             RenderUtils.startDrawVirtual(eventVDraw.context.stack());
             try {
-                drawOutlines.render3D(eventVDraw.context.stack());
+                drawOutlines.render3D(eventVDraw.context.stack(), eventVDraw.context.partialTicks());
             } finally {
                 RenderUtils.stopDrawVirtual(eventVDraw.context.stack());
             }

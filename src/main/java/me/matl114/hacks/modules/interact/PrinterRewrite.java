@@ -630,7 +630,7 @@ public class PrinterRewrite extends BaseModule {
         if (enable.get() && render.get()) {
             RenderUtils.startDrawVirtual(stack.stack());
             try {
-                drawOutlines.render3D(stack.stack());
+                drawOutlines.render3D(stack.stack(), stack.partialTicks());
             } finally {
                 RenderUtils.stopDrawVirtual(stack.stack());
             }

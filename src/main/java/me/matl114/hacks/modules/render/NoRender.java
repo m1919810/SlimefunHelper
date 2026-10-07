@@ -110,7 +110,13 @@ public class NoRender extends BaseModule {
             .defaultValue(new EntityTypeRegex(new Regex("^()$")))
             .build();
 
-    public final FlagRef noArmor = flagBuilder(entity.add("armor")).build();
+    public final FlagRef noArmorRender = flagBuilder(entity.add("armor-model")).build();
+
+    public final FlagRef noArmorTrimRender =
+            flagBuilder(entity.add("armor-trim")).build();
+
+    public final FlagRef noArmorGlintRender =
+            flagBuilder(entity.add("armor-glint")).build();
 
     public final FlagRef invisibility = flagBuilder(entity.add("invisibility")).build();
 
@@ -257,7 +263,15 @@ public class NoRender extends BaseModule {
         return isActive() && invisibility.get();
     }
 
-    public boolean noArmor() {
-        return isActive() && noArmor.get();
+    public boolean noArmorRender() {
+        return isActive() && noArmorRender.get();
+    }
+
+    public boolean noArmorTrimRender() {
+        return isActive() && noArmorTrimRender.get();
+    }
+
+    public boolean noArmorGlintRender() {
+        return isActive() && noArmorGlintRender.get();
     }
 }

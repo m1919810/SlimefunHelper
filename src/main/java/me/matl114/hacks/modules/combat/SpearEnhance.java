@@ -176,7 +176,7 @@ public class SpearEnhance extends BaseModule {
                         }
                     }
                 }
-                render.render3D(event.context.stack());
+                render.render3D(event.context.stack(), event.context.partialTicks());
                 render.clear();
             } finally {
                 RenderUtils.stopDrawVirtual(event.context.stack());

@@ -272,9 +272,9 @@ public class WorldScanner extends BaseModule {
             MatrixStack stack = event.context().stack();
             RenderUtils.startDrawVirtual(stack);
             try {
-                boxSolidCollector.render3D(stack);
-                boxOutlineCollector.render3D(stack);
-                traceLineCollector.render3D(stack);
+                boxSolidCollector.render3D(stack, event.context().partialTicks());
+                boxOutlineCollector.render3D(stack, event.context().partialTicks());
+                traceLineCollector.render3D(stack, event.context().partialTicks());
             } finally {
                 RenderUtils.stopDrawVirtual(stack);
             }

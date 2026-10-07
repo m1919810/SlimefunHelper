@@ -866,7 +866,7 @@ public class PathingSchedular {
         }
         RenderUtils.startDrawVirtual(event.context.stack());
         try {
-            renderCollector.render3D(event.context.stack());
+            renderCollector.render3D(event.context.stack(), event.context.partialTicks());
         } finally {
             RenderUtils.stopDrawVirtual(event.context.stack());
         }

@@ -116,3 +116,5 @@ accessible method net/minecraft/enchantment/EnchantmentHelper forEachEnchantment
 accessible class net/minecraft/client/network/PendingUpdateManager$PendingUpdate
 accessible field net/minecraft/client/network/PendingUpdateManager$PendingUpdate blockState Lnet/minecraft/block/BlockState;
 accessible field net/minecraft/client/network/PendingUpdateManager$PendingUpdate sequence I
+accessible field net/minecraft/client/render/RenderSetup textures Ljava/util/Map;
+accessible method net/minecraft/client/render/RenderSetup$TextureSpec location ()Lnet/minecraft/util/Identifier;
