@@ -236,7 +236,7 @@ public class AutoSlab extends BaseModule {
         if (enable.get() && render.get()) {
             RenderUtils.startDrawVirtual(event.context.stack());
             try {
-                boxCollector.render3D(event.context.stack());
+                boxCollector.render3D(event.context.stack(), event.context.partialTicks());
             } finally {
                 RenderUtils.stopDrawVirtual(event.context.stack());
             }

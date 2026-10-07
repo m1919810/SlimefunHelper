@@ -11,9 +11,9 @@ public interface RenderCollector<B> {
 
     void clear();
 
-    void render3D(MatrixStack matrices);
+    void render3D(MatrixStack matrices, float partialTick);
 
-    void render2D(VDrawContext vDrawContext);
+    void render2D(VDrawContext vDrawContext, float partialTick);
 
     public abstract static class Impl<B> implements RenderCollector<B> {
         protected List<IndexEntry<B>> entries = new ArrayList<>();

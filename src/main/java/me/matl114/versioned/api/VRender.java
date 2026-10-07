@@ -49,6 +49,9 @@ public interface VRender {
     @LimitOperation(layer = "TexturedGui", format = "PositionTextureColor")
     public void createSpriteTexturedLayer(Sprite sprite, RenderCallback callback);
 
+    @LimitOperation(layer = "EntityHighlight", format = "PositionTextureColor")
+    public void createEntityHighlightLayer(Identifier path, RenderCallback callback);
+
     @LimitOperation(layer = "Gui", format = "PositionColor")
     public void createGuiLayer(RenderCallback callback);
 

@@ -289,6 +289,7 @@
 	"render.no-render.entity.force-no": "隐藏实体",
 	"render.no-render.entity.types": "实体类型",
 	"render.no-render.entity.armor": "隐藏实体盔甲",
+	"render.no-render.entity.trim": "隐藏实体盔甲纹饰",
 	"render.no-render.entity.invisibility": "隐形实体",
 	"render.no-render.particle.force-no": "隐藏粒子",
 	"render.no-render.particle.types": "粒子类型",

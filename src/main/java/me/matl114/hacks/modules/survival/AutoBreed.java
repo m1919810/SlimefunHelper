@@ -234,7 +234,7 @@ public class AutoBreed extends BaseModule {
                     }
                 }
             }
-            collector.render3D(event.context.stack());
+            collector.render3D(event.context.stack(), event.context.partialTicks());
         } finally {
             RenderUtils.stopDrawVirtual(event.context.stack());
         }

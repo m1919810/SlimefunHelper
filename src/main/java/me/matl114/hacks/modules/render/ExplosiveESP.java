@@ -23,7 +23,6 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.damage.DamageTypes;
-import net.minecraft.entity.decoration.EndCrystalEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Box;
@@ -63,6 +62,7 @@ public class ExplosiveESP extends BaseModule {
             flagBuilder(root.add("highlight-crystal")).build();
 
     private final RenderCollector<Box> boxOutlineCollector = RenderCollectors.createBoxCollector(true, false, false);
+    private final RenderCollector<Entity> faceCollector = RenderCollectors.createEntityFaceCollector();
     private final RenderCollector<RenderElements.Text> textCollector = RenderCollectors.createTextCollector();
     private final RenderCollector<Vec3d> traceCollector = RenderCollectors.createTracerCollector();
 
@@ -76,6 +76,7 @@ public class ExplosiveESP extends BaseModule {
 
     public void onTick(Event<ClientPlayerEntity> event) {
         boxOutlineCollector.clear();
+        faceCollector.clear();
         textCollector.clear();
         traceCollector.clear();
         if (checkNull() || !enable.get()) {
@@ -108,6 +109,9 @@ public class ExplosiveESP extends BaseModule {
             }
             if (tracingOption.box()) {
                 boxOutlineCollector.submit(crystal.getBoundingBox(), ColorUtils.withAlphaInt(crystalRgb, 160));
+            }
+            if (highlightCrystal.get()) {
+                faceCollector.submit(crystal, ColorUtils.withAlphaInt(crystalRgb, 64));
             }
             if (tracingOption.line()) {
                 traceCollector.submit(crystal.getBoundingBox().getCenter(), ColorUtils.withAlphaInt(crystalRgb, 255));
@@ -145,9 +149,10 @@ public class ExplosiveESP extends BaseModule {
         MatrixStack stack = event.context().stack();
         RenderUtils.startDrawVirtual(stack);
         try {
-            textCollector.render3D(stack);
-            boxOutlineCollector.render3D(stack);
-            traceCollector.render3D(stack);
+            textCollector.render3D(stack, event.context().partialTicks());
+            faceCollector.render3D(stack, event.context().partialTicks());
+            boxOutlineCollector.render3D(stack, event.context().partialTicks());
+            traceCollector.render3D(stack, event.context().partialTicks());
         } finally {
             RenderUtils.stopDrawVirtual(stack);
         }
@@ -155,24 +160,5 @@ public class ExplosiveESP extends BaseModule {
 
     private void onRequestCombatService(Event<CombatManager.Service> event) {
         event.context().enableExplosiveSearch(enable.get());
-    }
-
-    public Integer getHighlightColor(Entity entity) {
-        if (!enable.get() || entity == null || mc.player == null) {
-            return null;
-        }
-
-        double maxDistanceSq = MathUtils.s2(distance.get());
-        if (entity.squaredDistanceTo(mc.player) > maxDistanceSq) {
-            return null;
-        }
-
-        if (highlightCrystal.get()
-                && entity instanceof EndCrystalEntity crystal
-                && CombatManager.INSTANCE.trackedEndCrystals.contains(crystal)) {
-            return crystalColor.get().withAlpha(255);
-        }
-
-        return null;
     }
 }

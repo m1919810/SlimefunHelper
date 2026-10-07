@@ -101,7 +101,7 @@ public class VillagerEsp extends BaseModule {
         }
         RenderUtils.startDrawVirtual(event.context().stack());
         try {
-            textCollector.render3D(event.context().stack());
+            textCollector.render3D(event.context().stack(), event.context().partialTicks());
         } finally {
             RenderUtils.stopDrawVirtual(event.context().stack());
         }

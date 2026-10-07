@@ -190,7 +190,7 @@ public class QueueMine extends BaseModule {
         if (render.get()) {
             RenderUtils.startDrawVirtual(eventRender.context.stack());
             try {
-                outline.render3D(eventRender.context.stack());
+                outline.render3D(eventRender.context.stack(), eventRender.context.partialTicks());
             } finally {
                 RenderUtils.stopDrawVirtual(eventRender.context.stack());
             }

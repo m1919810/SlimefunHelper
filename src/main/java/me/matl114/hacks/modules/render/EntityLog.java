@@ -392,8 +392,8 @@ public class EntityLog extends BaseModule {
         if (enable.get() && renderLogPosition.get()) {
             RenderUtils.startDrawVirtual(eventMatrixStack.context.stack());
             try {
-                boxing.render3D(eventMatrixStack.context.stack());
-                tracing.render3D(eventMatrixStack.context.stack());
+                boxing.render3D(eventMatrixStack.context.stack(), eventMatrixStack.context.partialTicks());
+                tracing.render3D(eventMatrixStack.context.stack(), eventMatrixStack.context.partialTicks());
             } finally {
                 RenderUtils.stopDrawVirtual(eventMatrixStack.context.stack());
             }
@@ -402,7 +402,7 @@ public class EntityLog extends BaseModule {
 
     public void onRender2D(Event<Render2D> eventVDraw) {
         if (enable.get() && renderLogPosition.get()) {
-            texting.render2D(eventVDraw.context.drawContext());
+            texting.render2D(eventVDraw.context.drawContext(), eventVDraw.context.partialTicks());
         }
     }
 
