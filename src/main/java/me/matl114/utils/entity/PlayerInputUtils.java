@@ -7,15 +7,21 @@ import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.hooks.ViaProtocols;
 import me.matl114.versioned.SupportVersion;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.input.Input;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.network.packet.PlayPackets;
 import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.util.PlayerInput;
+import net.minecraft.util.math.Vec2f;
 
 public class PlayerInputUtils {
     public static Input of(ClientPlayerEntity player) {
         return new Input(player.input.playerInput);
+    }
+
+    public static Input of(net.minecraft.client.input.Input input) {
+        return new Input(input.playerInput);
     }
 
     public static Input of(PlayerInput input) {
@@ -189,9 +195,21 @@ public class PlayerInputUtils {
             return this;
         }
 
-        protected Input applyInput(net.minecraft.client.input.Input input) {
+        private static Vec2f compatMovementVectorWithViaFabric(Vec2f vec2f) {
+            // shit,
+            return ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 4)
+                    ? vec2f
+                    : vec2f.normalize();
+        }
+
+        public Input applyInput(net.minecraft.client.input.Input input) {
             input.playerInput = toPlayerInput();
             return this;
+        }
+
+        public void syncMovementVector(net.minecraft.client.input.Input input) {
+            input.movementVector =
+                    compatMovementVectorWithViaFabric(new Vec2f(this.sidewaysSpeed(), this.forwardSpeed()));
         }
 
         public Input applyInput(GameOptions options) {

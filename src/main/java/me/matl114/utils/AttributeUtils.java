@@ -23,12 +23,17 @@ public class AttributeUtils {
         return player.getAttributeValue(EntityAttributes.BLOCK_INTERACTION_RANGE);
     }
 
-    public static AttributeContainer getAttributeWith(
-            LivingEntity living, Map<EquipmentSlot, ItemStack> equipmentOverrides) {
-        Map<EquipmentSlot, ItemStack> filterMap = new LinkedHashMap<>(equipmentOverrides);
+    public static AttributeContainer copyAttributes(LivingEntity living) {
         AttributeContainer attributeContainer = new AttributeContainer(
                 DefaultAttributeRegistry.get((EntityType<? extends LivingEntity>) living.getType()));
         attributeContainer.setFrom(living.getAttributes());
+        return attributeContainer;
+    }
+
+    public static AttributeContainer getAttributeWith(
+            LivingEntity living, Map<EquipmentSlot, ItemStack> equipmentOverrides) {
+        Map<EquipmentSlot, ItemStack> filterMap = new LinkedHashMap<>(equipmentOverrides);
+        AttributeContainer attributeContainer = copyAttributes(living);
         for (Map.Entry<EquipmentSlot, ItemStack> entry : filterMap.entrySet()) {
             var slot = entry.getKey();
             var itemStack2 = entry.getValue();

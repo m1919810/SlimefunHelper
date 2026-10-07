@@ -36,7 +36,6 @@ import me.matl114.versioned.api.VPacket;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
@@ -198,12 +197,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             case PACKET -> {
                 // do not influence tp
                 if (!CombatTasks.getAttack().canUseTp()) {
-                    if (mc.player.isSprinting()) {
-                        mc.getNetworkHandler()
-                                .sendPacket(new ClientCommandC2SPacket(
-                                        mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
-                        ClientPlayerAccess.of(mc.player).setLastSprintFlag(false);
-                    }
+                    PlayerStateManager.INSTANCE.sendSprintStatus(false, true);
                     mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(x, y + 5.0E-4, z, false, false));
                     mc.getNetworkHandler().sendPacket(VPacket.newPositionAndOnGround(x, y + 1.0E-4, z, false, false));
                 }
@@ -241,12 +235,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             }
             case GRIM_GROUND_SIMULATION -> {
                 if (mc.player.isOnGround()) {
-                    if (mc.player.isSprinting()) {
-                        mc.getNetworkHandler()
-                                .sendPacket(new ClientCommandC2SPacket(
-                                        mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
-                        ClientPlayerAccess.of(mc.player).setLastSprintFlag(false);
-                    }
+                    PlayerStateManager.INSTANCE.sendSprintStatus(false, true);
                     if (!shouldApplyGrimGroundSimulationAutoFakeGround()) {
                         mc.getNetworkHandler()
                                 .sendPacket(VPacket.newPositionAndOnGround(x, y + MIN_HEIGHT_DELTA, z, true, false));

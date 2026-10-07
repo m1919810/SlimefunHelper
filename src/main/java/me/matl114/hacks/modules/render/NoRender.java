@@ -102,6 +102,8 @@ public class NoRender extends BaseModule {
 
     public final FlagRef noSpeedFov = flagBuilder(fovEffect.add("speed-up")).build();
 
+    public final FlagRef noSprintFov = flagBuilder(fovEffect.add("sprint")).build();
+
     public final FlagRef noUseItemFov = flagBuilder(fovEffect.add("use-bow")).build();
 
     public final FlagRef ignoreSpawn = flagBuilder(entity.add("force-no")).build();
@@ -240,6 +242,10 @@ public class NoRender extends BaseModule {
 
     public boolean noSpeedFov() {
         return isActive() && noSpeedFov.get();
+    }
+
+    public boolean noSprintFov() {
+        return isActive() && noSprintFov.get();
     }
 
     public boolean noUseItemFov() {

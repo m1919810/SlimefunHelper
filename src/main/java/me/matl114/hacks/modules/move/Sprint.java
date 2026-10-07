@@ -22,9 +22,11 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     public final ModulePath sprint = moveSpeed.add("sprint");
 
     public static LegalMovementManager.DelegateMovementModifier instance;
+    public static Sprint INSTANCE;
     // todo: 顶头跑 here
     public Sprint() {
         super("Sprint");
+        INSTANCE = this;
         if (instance == null) {
             instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
             // register at here for the first time

@@ -88,11 +88,7 @@ public class MovExtra extends BaseModule {
         if (fuckGrimACSprint.get()) {
             ClientPlayerEntity player = mc.player;
             // only sprint need to be toggled
-            if (PlayerStateManager.INSTANCE.lastSprint) {
-                mc.getNetworkHandler()
-                        .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
-                ClientPlayerAccess.of(player).setLastSprintFlag(false);
-            }
+            PlayerStateManager.INSTANCE.sendSprintStatus(false, true);
         }
     }
 
