@@ -27,15 +27,18 @@ public class ElytraOptimizeUtils {
     private static final double V5_FALLBACK_REQUEST_SPEED = 1.7D;
     private static final double V5_EPSILON = 1E-9D;
 
-    public static Vec3d calculateBestPullupSpeed(Vec3d vec3d) {
+    public static Vec3d calculateBestPullupSpeed(Vec3d vec3d, ElytraExtra.Al al) {
 
-        if (ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V3)) {
+        if (al.isIn(ElytraExtra.Al.V3)) {
             return calculateBestV3ClimbingSpeed(vec3d);
         }
-        if (ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V4)) {
+        if (al.isIn(ElytraExtra.Al.V4)) {
             return calculateBestV4ClimbingSpeed(vec3d);
         }
-        if (ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V5)) {
+        if (al.isIn(ElytraExtra.Al.V5)) {
+            if (!ViaFabricPlusHooks.isSupportDupRot()) {
+                return calculateBestV3ClimbingSpeed(vec3d);
+            }
             Vec2f py = EntityUtils.rotationToPitchYaw(vec3d.normalize());
             if (py.x < V5_PITCH) {
                 return vec3d;
@@ -46,7 +49,7 @@ public class ElytraOptimizeUtils {
             }
             return EntityUtils.pitchYawToRotation(V5_PITCH, py.y);
         }
-        if (ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V5_PULLUP_ONLY)) {
+        if (al.isIn(ElytraExtra.Al.V5_PULLUP_ONLY)) {
             return calculateBestV5ClimbingSpeed(vec3d);
         }
 
@@ -55,7 +58,7 @@ public class ElytraOptimizeUtils {
             vec3d = vec3d.withAxis(Direction.Axis.X, 5);
             horizontal = vec3d.horizontalLength();
         }
-        double pitchDeg = ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V1) ? -36 : -54.5;
+        double pitchDeg = al.isIn(ElytraExtra.Al.V1) ? -36 : -54.5;
         double pitchRad = Math.toRadians(pitchDeg);
         // 使用 -tan(pitch) 来抵消符号，或者直接用 tan(54.5)
         double newY = -horizontal * Math.tan(pitchRad);
@@ -65,8 +68,8 @@ public class ElytraOptimizeUtils {
         return vec3d.withAxis(Direction.Axis.Y, newY);
     }
 
-    public static float calculateBestPullUpAngle(float yaw) {
-        Vec3d bestRotation = calculateBestPullupSpeed(EntityUtils.pitchYawToRotation(-45, yaw));
+    public static float calculateBestPullUpAngle(float yaw, ElytraExtra.Al al) {
+        Vec3d bestRotation = calculateBestPullupSpeed(EntityUtils.pitchYawToRotation(-45, yaw), al);
         return EntityUtils.rotationToPitchYaw(bestRotation).x;
     }
 
@@ -101,15 +104,16 @@ public class ElytraOptimizeUtils {
         double cosY = Math.abs(Math.cos(yawRad));
         double m = Math.max(sinY, cosY);
 
-        // applyAxisLimit4 refreshes lastLook via snapAt(...), so the climb-side
-        // horizontal saturation boundary changes from cos(pitch)=0.5/M to
-        // cos(pitch)=1/M-1.
-        double cosPitchCrit = Math.max(-1.0, Math.min(1.0, 1.0 / m - 1.0));
+        double cosPitchCrit =
+                ViaFabricPlusHooks.isSupportDupRot() ? Math.max(-1.0, Math.min(1.0, 1.0 / m - 1.0)) : 0.5 / m;
         float newPitchDeg = (float) -Math.toDegrees(Math.acos(cosPitchCrit));
         return EntityUtils.pitchYawToRotation(Math.clamp(newPitchDeg, -88, 88), yawDeg);
     }
 
     public static Vec3d calculateBestV5ClimbingSpeed(Vec3d rotation) {
+        if (!ViaFabricPlusHooks.isSupportDupRot()) {
+            return calculateBestV3ClimbingSpeed(rotation);
+        }
         Vec2f py = EntityUtils.rotationToPitchYaw(rotation);
         double requestSpeed = getV5RequestSpeed();
         double autoRescaleAmount = ElytraExtra.INSTANCE.autoRescaleAmount.get();
@@ -248,14 +252,15 @@ public class ElytraOptimizeUtils {
         return bestExtraYaw;
     }
 
-    public static Vec3d calculateBestDownForwardSpeed(Vec3d vec3d, boolean natural, boolean downward) {
-        if (ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V3)) {
+    public static Vec3d calculateBestDownForwardSpeed(
+            Vec3d vec3d, ElytraExtra.Al al, boolean natural, boolean downward) {
+        if (al.isIn(ElytraExtra.Al.V3)) {
             return calculateBestV3DownForwardSpeed(vec3d, natural, downward);
         }
-        if (ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V4, ElytraExtra.Al.V5)) {
+        if (al.isIn(ElytraExtra.Al.V4, ElytraExtra.Al.V5)) {
             return calculateBestV4DownForwardSpeed(vec3d, natural, downward);
         }
-        if (ElytraExtra.INSTANCE.autoRescaleAl.get().isIn(ElytraExtra.Al.V1)) {
+        if (al.isIn(ElytraExtra.Al.V1)) {
             Vec2f py = EntityUtils.rotationToPitchYaw(vec3d.normalize());
             if (downward && py.x > 75) {
                 return vec3d;
@@ -301,6 +306,9 @@ public class ElytraOptimizeUtils {
     }
 
     public static Vec3d calculateBestV4DownForwardSpeed(Vec3d vec3d, boolean natural, boolean downward) {
+        if (!ViaFabricPlusHooks.isSupportDupRot()) {
+            return calculateBestV3DownForwardSpeed(vec3d, natural, downward);
+        }
         double horizontal = vec3d.horizontalLength();
         if (horizontal < 1E-6) {
             vec3d = vec3d.withAxis(Direction.Axis.X, 5);
