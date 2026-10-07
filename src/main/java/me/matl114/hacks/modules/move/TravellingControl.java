@@ -16,8 +16,8 @@ import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
+import me.matl114.hacks.utils.move.ElytraMotion;
 import me.matl114.hacks.utils.move.ElytraOptimizeUtils;
-import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.command.MainCommand;
@@ -227,7 +227,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
     public void registerAll() {
         super.registerAll();
         registerCommandBootstrap(this::bootStrapTravelCommand);
-        registerListener(Listener.getCustomListener().getChannel(FlightVelocity.class), this::onElytraVelocity);
+        registerListener(Listener.getCustomListener().getChannel(ElytraMotion.class), this::onElytraVelocity);
         registerListener(
                 Listener.getPacketPreHandlePoint().getChannel(EnterReconfigurationS2CPacket.class),
                 this::onReconfiguration);
@@ -659,20 +659,20 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             return false;
         }
 
-        public void onElytra(Event<EventContainer<FlightVelocity>> event) {
+        public void onElytra(Event<EventContainer<ElytraMotion>> event) {
             if (elytraRotation == null) {
                 return;
             }
-            EventContainer<FlightVelocity> eventContainer = event.context();
-            if (eventContainer.getValue().mode() != FlightVelocity.Mode.ELYTRA_FLIGHT) return;
-            FlightVelocity velocity = eventContainer.getValue();
+            EventContainer<ElytraMotion> eventContainer = event.context();
+            ElytraMotion motion = eventContainer.getValue();
+            if (motion.algorithm() == null) return;
             Vec3d rotation = elytraRotation;
             if (MovTasks.getElytraFlight().useAutoRescale.get() && ElytraExtra.INSTANCE.autoRescale.get()) {
                 rotation = pullingUp
-                        ? ElytraOptimizeUtils.calculateBestPullupSpeed(rotation)
-                        : ElytraOptimizeUtils.calculateBestDownForwardSpeed(rotation, false, true);
+                        ? ElytraOptimizeUtils.calculateBestPullupSpeed(rotation, motion.algorithm())
+                        : ElytraOptimizeUtils.calculateBestDownForwardSpeed(rotation, motion.algorithm(), false, true);
             }
-            velocity.velocity(rotation.normalize().multiply(velocity.maxVelocity()));
+            motion.rotation(rotation.normalize());
         }
     }
 
@@ -1308,7 +1308,8 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             }
             double diagonalYaw = Math.floor((mc.player.getYaw() + 45.0) / 90.0) * 90.0 + 45.0;
             PlayerStateManager.setPlayerYawSafe(mc.player, (float) diagonalYaw);
-            float pitch = ElytraOptimizeUtils.calculateBestPullUpAngle((float) diagonalYaw);
+            float pitch = ElytraOptimizeUtils.calculateBestPullUpAngle(
+                    (float) diagonalYaw, ElytraExtra.INSTANCE.autoRescaleAl.get());
             EntityUtils.setEntityPitchSafe(mc.player, pitch);
             return pitch;
         }
@@ -1519,7 +1520,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
         }
     }
 
-    private void onElytraVelocity(Event<EventContainer<FlightVelocity>> event) {
+    private void onElytraVelocity(Event<EventContainer<ElytraMotion>> event) {
         if (travelDelegate instanceof TravelMoveVelocity velocity) {
             velocity.onElytra(event);
         }

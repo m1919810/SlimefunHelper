@@ -13,8 +13,8 @@ import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
+import me.matl114.hacks.utils.move.ElytraMotion;
 import me.matl114.hacks.utils.move.ElytraOptimizeUtils;
-import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -245,9 +245,11 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                                 && movementInput.horizontalLength() > 0) {
                             if (movementInput.y > 0 && velocity.y > 0) {
 
-                                velocity = ElytraOptimizeUtils.calculateBestPullupSpeed(velocity);
+                                velocity = ElytraOptimizeUtils.calculateBestPullupSpeed(
+                                        velocity, ElytraExtra.INSTANCE.autoRescaleAl.get());
                             } else if (movementInput.y < 0 && velocity.y < 0) {
-                                velocity = ElytraOptimizeUtils.calculateBestDownForwardSpeed(velocity, false, true);
+                                velocity = ElytraOptimizeUtils.calculateBestDownForwardSpeed(
+                                        velocity, ElytraExtra.INSTANCE.autoRescaleAl.get(), false, true);
                             }
                         }
                         if (movementInput.horizontalLengthSquared() > 0.0D) {
@@ -306,7 +308,8 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                                 && velocity.y > 0
                                 && useAutoRescale.get()
                                 && autoRescaleBestClimbingSpeed.get()) {
-                            velocity = ElytraOptimizeUtils.calculateBestPullupSpeed(velocity);
+                            velocity = ElytraOptimizeUtils.calculateBestPullupSpeed(
+                                    velocity, ElytraExtra.INSTANCE.autoRescaleAl.get());
                         }
 
                         if (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS) {
@@ -347,10 +350,12 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     }
                 }
                 // add custom elytra event for bot to control elytra
-                FlightVelocity velocity =
-                        new FlightVelocity(realVector, motionAmount, FlightVelocity.Mode.ELYTRA_FLIGHT);
-                Listener.getCustomListener().broadcast(new EventContainer<>(FlightVelocity.class, velocity));
-                realVector = velocity.toVelocity();
+                ElytraMotion motion = new ElytraMotion(
+                        ElytraExtra.INSTANCE.autoRescale.get() ? ElytraExtra.INSTANCE.autoRescaleAl.get() : null,
+                        realVector.normalize(),
+                        motionAmount);
+                Listener.getCustomListener().broadcast(new EventContainer<>(ElytraMotion.class, motion));
+                realVector = motion.rotation().multiply(motion.speed());
                 lastVelocity = realVector;
                 if (lastVelocity.length() < 0.1 * motionAmount) {
                     lastVelocity = Vec3d.ZERO;

@@ -133,6 +133,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public final FlagRef autoTakeOffWhenJoinServer =
             flagBuilder(elytraTweaks.add("auto-start-fly-join-server")).build();
 
+    public final FlagRef timeoutReflight =
+            flagBuilder(elytraTweaks.add("timeout-reflight")).build();
+
     public final FlagRef fireworkSpeedLimitWeb =
             flagBuilder(elytraTweaks.add("firwork-speed-limit-web")).build();
 
@@ -248,7 +251,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             .show(this.autoRescale::get)
             .build();
 
-    public final EnumRef<Al> autoRescaleAl = builder(customFireworksPath.add("auto-rescale-firework-al"), Al.class)
+    public final EnumRef<Al> autoRescaleAl = builder(
+                    customFireworksPath.add("auto-rescale-firework-algorithm"), Al.class)
             .defaultValue(Al.V1)
             .show(this.autoRescale::get)
             .build();
@@ -260,12 +264,12 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     @ApiStatus.Experimental
     public final KeyBindRef switchAlKey = hotkey(
-                    customFireworksPath.add("switch-auto-rescale-firework-al-key"), new MultiKeyBind())
+                    customFireworksPath.add("switch-auto-rescale-firework-algorithm-key"), new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(() -> {
                 this.autoRescaleAl.next();
                 logI18NSub(
                         "Firework",
-                        "message.module.elytra-extra.al-switch",
+                        "message.module.elytra-extra.algorithm-switch",
                         this.autoRescaleAl.get().getDisplay());
             }))
             .experimental()
@@ -354,6 +358,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         registerListener(
                 Listener.getPacketPoint().getChannel(TeleportConfirmC2SPacket.class), this::onAcceptTeleportation);
         registerListener(Listener.getPostGameTick(), this::onArmorStateTick);
+        registerListener(Listener.getPostGameTick(), this::onFallFlyingSyncTimeout);
         registerListener(PacketManager.getPacketQueueInEvent(), this::onFireworkRemoval);
         registerListener(PacketManager.getPacketQueueInEvent(), this::onArmorGlideDelay);
         registerListener(PacketManager.getQueueShutdownEvent(), this::onPacketQueueFlush);
@@ -595,15 +600,18 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     private boolean delayResetFallFlyingFlag = false;
     // may cause fake gliding !!! must be careful
     public void handleEntityDataUpdate(Event<MetadataUpdate> event) {
-        if (event.isCancelled()) return;
         // only when elytra unbreakable do
         var serializedEntryUpdateEvent = event.context;
         if (serializedEntryUpdateEvent.entity() instanceof ClientPlayerEntity player
                 && player == mc.player
-                && serializedEntryUpdateEvent.metadata().id() == VDataFlag.ID_FLAGS
-                && player.isFallFlying()) {
+                && serializedEntryUpdateEvent.metadata().id() == VDataFlag.ID_FLAGS) {
             var entry = serializedEntryUpdateEvent.metadata();
             byte data = (byte) entry.value();
+            boolean fallFlyingSyncState = (data & (1 << VDataFlag.FALL_FLYING_FLAG_INDEX)) != 0;
+            fallFlyingSyncStartTick = -1;
+            if (event.isCancelled() || !player.isFallFlying()) {
+                return;
+            }
             boolean canRunElytraUnbreakable = false;
             boolean canRunArmorGlide = false;
             if ((data & (1 << VDataFlag.FALL_FLYING_FLAG_INDEX)) == 0) {
@@ -1033,7 +1041,34 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         if (booleanEvent.isCancelled()) return;
         if (booleanEvent.context) {
             manuallySwitchTick = Tasks.getTick();
+            if (!(Boolean) booleanEvent.getArgs(0) && timeoutReflight.get()) {
+                fallFlyingSyncStartTick = Tasks.getTick();
+            }
         }
+    }
+
+    private static final int FALL_FLYING_SYNC_TIMEOUT_TICKS = 40;
+    private int fallFlyingSyncStartTick = -1;
+
+    public void onFallFlyingSyncTimeout(Event<ClientPlayerEntity> event) {
+        if (!timeoutReflight.get()) {
+            fallFlyingSyncStartTick = -1;
+            return;
+        }
+        if (fallFlyingSyncStartTick == -1) {
+            return;
+        }
+        if (checkNull() || event.context != mc.player || !mc.player.isFallFlying()) {
+            fallFlyingSyncStartTick = -1;
+            return;
+        }
+        if (Tasks.getTick() - fallFlyingSyncStartTick < FALL_FLYING_SYNC_TIMEOUT_TICKS) {
+            return;
+        }
+
+        fallFlyingSyncStartTick = -1;
+        EntityInternalAccess.of(mc.player).setDataFlag(VDataFlag.FALL_FLYING_FLAG_INDEX, false);
+        Tasks.scheduleDelayedPre(this::autoTakeoff, 0);
     }
 
     public boolean onSwitchItemArmorFallFlying() {
@@ -1709,6 +1744,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         recordedWorldFireworkRockets.clear();
         lastOneFireworkRemovalTime = 0;
         delayQueue.clear();
+        fallFlyingSyncStartTick = -1;
     }
 
     private void onRemoveFirework(FireworkRocketEntity rocket) {
