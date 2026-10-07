@@ -1,5 +1,6 @@
 package me.matl114.versioned.impl;
 
+import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.vertex.VertexFormat;
@@ -115,6 +116,25 @@ public class Render_v1_21_11 implements VRender, VRender.WrapRenderOperation {
                     .withCull(false)
                     .build());
 
+    public static final RenderPipeline ENTITY_HIGHLIGHT =
+            RenderPipelines.register(RenderPipeline.builder(RenderPipelines.RENDERTYPE_OUTLINE_SNIPPET)
+                    .withLocation(Identifier.tryParse("slimefunhelper:pipeline/entity_highlight"))
+                    .withFragmentShader(Identifier.tryParse("slimefunhelper:core/entity_highlight"))
+                    .withBlend(BlendFunction.TRANSLUCENT)
+                    .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
+                    .withDepthWrite(false)
+                    .withCull(false)
+                    .withVertexFormat(VertexFormats.POSITION_TEXTURE_COLOR, VertexFormat.DrawMode.QUADS)
+                    .build());
+
+    public static Function<Identifier, RenderLayer> ENTITY_HIGHLIGHT_FACTORY =
+            Util.memoize(identifier -> RenderLayer.of(
+                    "slimefunhelper:entity_highlight/" + identifier,
+                    RenderSetup.builder(ENTITY_HIGHLIGHT)
+                            .texture("Sampler0", identifier)
+                            .translucent()
+                            .build()));
+
     public static final RenderLayer QUADS_NO_CULL = RenderLayer.of(
             "slimefunhelper:debug_quads",
             RenderSetup.builder(DEBUG_QUADS_NO_CULL).translucent().build());
@@ -189,6 +209,11 @@ public class Render_v1_21_11 implements VRender, VRender.WrapRenderOperation {
 
     public void createSpriteTexturedLayer(Sprite sprite, RenderCallback callback) {
         createLayer(GUI_SPRITE_TEXTURE_3D_FACTORY.apply(sprite.getAtlasId()), callback);
+    }
+
+    @Override
+    public void createEntityHighlightLayer(Identifier path, RenderCallback callback) {
+        createLayer(ENTITY_HIGHLIGHT_FACTORY.apply(path), callback);
     }
 
     public void createGuiLayer(RenderCallback callback) {

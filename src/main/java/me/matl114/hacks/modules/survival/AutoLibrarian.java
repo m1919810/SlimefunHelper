@@ -292,7 +292,7 @@ public class AutoLibrarian extends BaseModule {
                     collector.submit(
                             new Box(targetWorkStationBase.add(0, 1, 0)),
                             renderColor.get().withAlpha(255));
-                    collector.render3D(event.context.stack());
+                    collector.render3D(event.context.stack(), event.context.partialTicks());
                 } finally {
                     RenderUtils.stopDrawVirtual(event.context.stack());
                 }

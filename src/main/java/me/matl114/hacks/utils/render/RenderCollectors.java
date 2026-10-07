@@ -14,11 +14,16 @@ import me.matl114.utils.ChatUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.render.ColorQuad;
+import me.matl114.utils.render.EntityBoxCollector;
+import me.matl114.utils.render.EntityFaceCollector;
+import me.matl114.utils.render.EntityFrameCollector;
+import me.matl114.utils.render.EntityOutlineCollector;
 import me.matl114.utils.render.RenderCollector;
 import me.matl114.versioned.api.VDrawContext;
 import me.matl114.versioned.api.VRender;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Box;
@@ -33,7 +38,7 @@ public class RenderCollectors {
             boolean drawOutline, boolean drawSolid, boolean drawTraceLine) {
         return new RenderCollector.Impl<Box>() {
             @Override
-            public void render3D(MatrixStack matrices) {
+            public void render3D(MatrixStack matrices, float partialTick) {
                 if (entries.isEmpty()) return;
                 Vec3d cameraPos = getCameraPos().negate();
                 if (drawSolid) {
@@ -63,7 +68,7 @@ public class RenderCollectors {
                             }
                         }
                         if (drawTraceLine) {
-                            Vec3d traceOrigin = RenderUtils.getTracerOrigin(0.0F);
+                            Vec3d traceOrigin = RenderUtils.getTracerOrigin(partialTick);
                             for (var re : entries) {
                                 var box = re.val().getCenter().add(cameraPos);
                                 op.drawLine(matrices, vtx, traceOrigin, box, re.index());
@@ -74,7 +79,7 @@ public class RenderCollectors {
             }
 
             @Override
-            public void render2D(VDrawContext vdraw) {
+            public void render2D(VDrawContext vdraw, float partialTick) {
                 if (entries.isEmpty()) return;
                 Matrix4f camMatrix = RenderListener.getWorldModelViewMatrix();
                 Matrix4f projMatrix = RenderListener.getWorldBasicProjectionMatrix();
@@ -191,7 +196,7 @@ public class RenderCollectors {
             }
 
             @Override
-            public void render3D(MatrixStack matrices) {
+            public void render3D(MatrixStack matrices, float partialTick) {
                 if (lines.isEmpty()) return;
                 Vec3d cameraPos = getCameraPos().negate();
                 VRender.getInstance().createLinesLayer((op, vtx) -> {
@@ -208,7 +213,7 @@ public class RenderCollectors {
             }
 
             @Override
-            public void render2D(VDrawContext vDrawContext) {}
+            public void render2D(VDrawContext vDrawContext, float partialTick) {}
         };
     }
 
@@ -237,7 +242,7 @@ public class RenderCollectors {
             }
 
             @Override
-            public void render3D(MatrixStack matrices) {
+            public void render3D(MatrixStack matrices, float partialTick) {
                 if (quads.isEmpty()) return;
                 Vec3d cameraPos = getCameraPos().negate();
                 VRender.getInstance()
@@ -253,17 +258,34 @@ public class RenderCollectors {
             }
 
             @Override
-            public void render2D(VDrawContext vDrawContext) {}
+            public void render2D(VDrawContext vDrawContext, float partialTick) {}
         };
+    }
+
+    public static RenderCollector<Entity> createEntityOutlineCollector() {
+        return new EntityOutlineCollector();
+    }
+
+    public static RenderCollector<Entity> createEntityFaceCollector() {
+        return new EntityFaceCollector();
+    }
+
+    public static RenderCollector<Entity> createEntityFrameCollector() {
+        return new EntityFrameCollector();
+    }
+
+    public static RenderCollector<Entity> createEntityBoxCollector(
+            boolean drawOutline, boolean drawSolid, boolean drawTraceLine) {
+        return new EntityBoxCollector(drawOutline, drawSolid, drawTraceLine);
     }
 
     public static RenderCollector<Vec3d> createTracerCollector() {
         return new RenderCollector.Impl<Vec3d>() {
             @Override
-            public void render3D(MatrixStack matrices) {
+            public void render3D(MatrixStack matrices, float partialTick) {
                 if (entries.isEmpty()) return;
                 Vec3d cameraPos = getCameraPos().negate();
-                Vec3d traceOrigin = RenderUtils.getTracerOrigin(0.0F);
+                Vec3d traceOrigin = RenderUtils.getTracerOrigin(partialTick);
                 VRender.getInstance().createLinesLayer((op, vtx) -> {
                     for (var re : entries) {
                         var box = re.val().add(cameraPos);
@@ -273,7 +295,7 @@ public class RenderCollectors {
             }
 
             @Override
-            public void render2D(VDrawContext vdraw) {
+            public void render2D(VDrawContext vdraw, float partialTick) {
                 if (entries.isEmpty()) return;
                 Matrix4f cam = RenderListener.getWorldModelViewMatrix();
                 Matrix4f proj = RenderListener.getWorldBasicProjectionMatrix();
@@ -308,7 +330,7 @@ public class RenderCollectors {
         return new RenderCollector.Impl<List<Vec3d>>() {
 
             @Override
-            public void render3D(MatrixStack matrices) {
+            public void render3D(MatrixStack matrices, float partialTick) {
                 if (entries.isEmpty()) return;
                 Vec3d cameraPos = getCameraPos().negate();
                 VRender.getInstance().createLinesLayer((op, vtx) -> {
@@ -320,7 +342,7 @@ public class RenderCollectors {
             }
 
             @Override
-            public void render2D(VDrawContext vDrawContext) {
+            public void render2D(VDrawContext vDrawContext, float partialTick) {
                 // not implemented yet
             }
         };
@@ -329,7 +351,7 @@ public class RenderCollectors {
     public static RenderCollector<RenderElements.Text> createTextCollector() {
         return new RenderCollector.Impl<>() {
             @Override
-            public void render3D(MatrixStack stack) {
+            public void render3D(MatrixStack stack, float partialTick) {
                 if (entries.isEmpty()) return;
                 Vec3d cameraNeg = getCameraPos().negate();
                 double textHeight = TextRenderers.get().getTextHeight();
@@ -361,7 +383,7 @@ public class RenderCollectors {
             }
 
             @Override
-            public void render2D(VDrawContext vdraw) {
+            public void render2D(VDrawContext vdraw, float partialTick) {
                 if (entries.isEmpty()) return;
                 Matrix4f cam = RenderListener.getWorldModelViewMatrix();
                 Matrix4f proj = RenderListener.getWorldBasicProjectionMatrix();

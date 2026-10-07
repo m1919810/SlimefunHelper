@@ -112,9 +112,9 @@ public class ChestESP extends BaseModule {
             MatrixStack stack = render.context().stack();
             RenderUtils.startDrawVirtual(stack);
             try {
-                boxSolidCollector.render3D(stack);
-                boxOutlineCollector.render3D(stack);
-                boxTraceLineCollector.render3D(stack);
+                boxSolidCollector.render3D(stack, render.context().partialTicks());
+                boxOutlineCollector.render3D(stack, render.context().partialTicks());
+                boxTraceLineCollector.render3D(stack, render.context().partialTicks());
             } finally {
                 RenderUtils.stopDrawVirtual(stack);
             }
