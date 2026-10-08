@@ -59,6 +59,7 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 import org.jetbrains.annotations.ApiStatus;
@@ -497,12 +498,7 @@ public class ElytraBot extends BaseModule {
 
     public final FlagRef angleOptimizeRadicalPullup = flagBuilder(
                     angleOptimize.add("combat-angle-optimize-radical-pullup"))
-            .show(() -> mode.get().isIn(Mode.MACE_ARUA)
-                    && ElytraExtra.INSTANCE.autoRescale.get()
-                    && ElytraExtra.INSTANCE
-                            .autoRescaleAl
-                            .get()
-                            .isIn(ElytraExtra.Al.V2, ElytraExtra.Al.V3, ElytraExtra.Al.V4))
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA) && ElytraExtra.INSTANCE.autoRescale.get())
             .build();
     // 直接往外拉
 
@@ -510,12 +506,7 @@ public class ElytraBot extends BaseModule {
                     angleOptimize.add("combat-angle-optimize-radical-pull-up-optimize-range"),
                     OptionalPrimitive.DOUBLE_TYPE)
             .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 20.0D))
-            .show(() -> mode.get().isIn(Mode.MACE_ARUA)
-                    && ElytraExtra.INSTANCE.autoRescale.get()
-                    && ElytraExtra.INSTANCE
-                            .autoRescaleAl
-                            .get()
-                            .isIn(ElytraExtra.Al.V2, ElytraExtra.Al.V3, ElytraExtra.Al.V4))
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA) && ElytraExtra.INSTANCE.autoRescale.get())
             .build();
 
     public final FlagRef angleOptimizeFollow = builder(angleOptimize.add("combat-angle-optimize-follow"), Boolean.class)
@@ -859,8 +850,9 @@ public class ElytraBot extends BaseModule {
             updateTargetAction();
             currentBehaviour.movementDirection = new ElytraMotion(
                     ElytraExtra.INSTANCE.autoRescale.get() ? ElytraExtra.INSTANCE.autoRescaleAl.get() : null,
-                    mc.player.getRotationVector(),
-                    0);
+                    new Vec2f(mc.player.getPitch(), mc.player.getYaw()),
+                    0,
+                    10.0D);
             currentBehaviour.onUpdate();
         }
     }
@@ -1113,7 +1105,7 @@ public class ElytraBot extends BaseModule {
         // todo： add target anaylsis
 
         ElytraBot base;
-        ElytraMotion movementDirection = new ElytraMotion(null, new Vec3d(0, 1, 0), 0);
+        ElytraMotion movementDirection = new ElytraMotion(null, new Vec3d(0, 1, 0), 0, 10.0D);
         // todo: update target considering blocks , can we async calculate to let
         // use pitch search
 
@@ -1122,19 +1114,29 @@ public class ElytraBot extends BaseModule {
             if (movementDirection != null && movementDirection.speed() != 0) {
                 ElytraMotion motion = event.context.getValue();
                 motion.algorithm(movementDirection.algorithm())
-                        .rotation(movementDirection.rotation())
-                        .speed(Math.min(movementDirection.speed(), motion.speed()));
+                        .rotation(movementDirection.rotationAngles())
+                        .speed(movementDirection.speed());
             }
         }
 
         protected void setRotation(Vec3d movement) {
-            movementDirection.rotation(movement.normalize());
+            Vec2f rotation = movement.horizontalLengthSquared() < 1E-12
+                    ? new Vec2f(movement.y >= 0.0 ? -90.0F : 90.0F, mc.player.getYaw())
+                    : EntityUtils.rotationToPitchYaw(movement.normalize());
+            movementDirection.rotation(rotation);
+        }
+
+        protected void setRotation(Vec2f rotation) {
+            movementDirection.rotation(rotation);
+        }
+
+        protected void setRotation(float pitch, float yaw) {
+            movementDirection.rotation(pitch, yaw);
         }
 
         protected void setMovement(Vec3d movement, double speed) {
-            movementDirection
-                    .rotation(movement.length() == 0 ? new Vec3d(0, 1, 0) : movement.normalize())
-                    .speed(speed);
+            setRotation(movement);
+            movementDirection.speed(speed);
         }
 
         protected void setSpeed(double speed) {
@@ -1151,23 +1153,23 @@ public class ElytraBot extends BaseModule {
             }
         }
 
-        protected void update(Function<Vec3d, Vec3d> updater) {
-            Vec3d rotation = updater.apply(movementDirection.rotation());
-            movementDirection.rotation(rotation.normalize());
+        protected void update(Function<Vec2f, Vec2f> updater) {
+            movementDirection.rotation(updater.apply(movementDirection.rotationAngles()));
         }
 
-        protected Vec3d calculateBestPullupSpeed(ElytraMotion movement) {
+        protected Vec2f calculateBestPullupSpeed(ElytraMotion movement) {
             ElytraExtra.Al al = movement.algorithm();
             return al == null
-                    ? movement.rotation()
-                    : ElytraOptimizeUtils.calculateBestPullupSpeed(movement.rotation(), al);
+                    ? movement.rotationAngles()
+                    : ElytraOptimizeUtils.calculateBestPullupSpeed(movement.pitch(), movement.yaw(), al);
         }
 
-        protected Vec3d calculateBestDownForwardSpeed(ElytraMotion movement, boolean natural, boolean downward) {
+        protected Vec2f calculateBestDownForwardSpeed(ElytraMotion movement, boolean natural, boolean downward) {
             ElytraExtra.Al al = movement.algorithm();
             return al == null
-                    ? movement.rotation()
-                    : ElytraOptimizeUtils.calculateBestDownForwardSpeed(movement.rotation(), al, natural, downward);
+                    ? movement.rotationAngles()
+                    : ElytraOptimizeUtils.calculateBestDownForwardSpeed(
+                            movement.pitch(), movement.yaw(), al, natural, downward);
         }
 
         protected Vec3d calculateTargetDirection(Vec3d predictorPos) {
@@ -1187,10 +1189,12 @@ public class ElytraBot extends BaseModule {
                 if (SpearEnhance.isHoldingSpear(mc.player)) {
                     Vec3d targetPos = predictorPos.add(0, base.target.dimensions.height() * 2 / 3, 0);
                     legacy = targetPos.subtract(mc.player.getEyePos());
-                    forward = ElytraOptimizeUtils.calculateLookTowardsTargetV3Direction(legacy, 1.7);
+                    forward = ElytraOptimizeUtils.calculateLookTowardsTargetV3Direction(
+                            movementDirection.algorithm(), legacy, 1.7);
                 } else {
                     legacy = predictorPos.subtract(mc.player.getPos());
-                    forward = ElytraOptimizeUtils.calculateTowardsTargetV3Direction(legacy, 1.7);
+                    forward = ElytraOptimizeUtils.calculateTowardsTargetV3Direction(
+                            movementDirection.algorithm(), legacy, 1.7);
                 }
                 if (legacy.dotProduct(forward) < 0) {
                     return legacy;
@@ -1206,7 +1210,7 @@ public class ElytraBot extends BaseModule {
             } else {
                 var pitchYaw = EntityUtils.rotationToPitchYaw(motion.rotation().normalize());
                 return ElytraOptimizeUtils.simulateAxisLimitSpeed(
-                        motion.rotation().multiply(1.7), pitchYaw.x, pitchYaw.y);
+                        motion.algorithm(), motion.rotation().multiply(1.7), pitchYaw.x, pitchYaw.y);
             }
         }
 
@@ -1542,10 +1546,12 @@ public class ElytraBot extends BaseModule {
                         Vec3d targetPos = predictorPos.add(0, base.target.dimensions.height() * 2 / 3, 0);
                         legacy = targetPos.subtract(
                                 mc.player.getPos().add(0, mc.player.getEyeHeight(EntityPose.STANDING), 0));
-                        forward = ElytraOptimizeUtils.calculateLookTowardsTargetV3Direction(legacy, 1.7);
+                        forward = ElytraOptimizeUtils.calculateLookTowardsTargetV3Direction(
+                                movementDirection.algorithm(), legacy, 1.7);
                     } else {
                         legacy = predictorPos.subtract(mc.player.getPos());
-                        forward = ElytraOptimizeUtils.calculateTowardsTargetV3Direction(legacy, 1.7);
+                        forward = ElytraOptimizeUtils.calculateTowardsTargetV3Direction(
+                                movementDirection.algorithm(), legacy, 1.7);
                     }
                     if (legacy.dotProduct(forward) < 0) {
                         return legacy;

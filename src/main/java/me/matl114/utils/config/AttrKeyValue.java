@@ -163,7 +163,7 @@ public interface AttrKeyValue<T> extends KeyValue<T> {
                 return (elementFactory, s111, x, y, dx, dy) -> {
                     SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, dx, dy);
                     subScreenWidget.addDrawableChild(
-                            elementFactory.createLabel(() -> label, List::of, 0, 0, dy * 2, dy));
+                            elementFactory.createLabel(() -> label, List::of, 0, 0, dy * 2 - 1, dy));
 
                     subScreenWidget.addDrawableChild(
                             w.generateWidget(elementFactory, s111, dy * 2, 0, dx - dy * 2, dy));
