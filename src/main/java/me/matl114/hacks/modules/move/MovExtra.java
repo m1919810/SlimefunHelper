@@ -107,7 +107,8 @@ public class MovExtra extends BaseModule {
                     .forward(false)
                     .backward(false)
                     .jump(false)
-                    .sprint(false);
+                    .sprint(false)
+                    .sneak(false);
             if (!Objects.equals(PlayerStateManager.INSTANCE.lastInput, input)) {
                 input.sendPlayerInputPacket();
                 ClientPlayerAccess.of(player).resyncInput();

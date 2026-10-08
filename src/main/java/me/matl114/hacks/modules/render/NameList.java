@@ -61,6 +61,9 @@ public class NameList extends INameTag {
             handleRenderPosition(stack);
             int count = 0;
             for (var entry : nameTagInfos) {
+                if (hideSelf.get() && entry.player == mc.getCameraEntity()) {
+                    continue;
+                }
                 if (count >= playerListMaxLength.get()) {
                     handleTooManyPlayerList(stack);
                     break;

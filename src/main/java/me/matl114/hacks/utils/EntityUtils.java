@@ -458,6 +458,24 @@ public class EntityUtils {
         }
     }
 
+    public static Vec2f movementInputToRotation(Vec3d movementInput, float yaw) {
+        double horizontal = Math.sqrt(movementInput.x * movementInput.x + movementInput.z * movementInput.z);
+
+        if (horizontal < 1.0E-7) {
+            if (Math.abs(movementInput.y) < 1.0E-7) {
+                return new Vec2f(0.0F, yaw);
+            }
+
+            return new Vec2f(movementInput.y > 0.0 ? -90.0F : 90.0F, yaw);
+        }
+
+        float inputYaw = (float) Math.toDegrees(Math.atan2(-movementInput.x, movementInput.z));
+
+        float pitch = (float) Math.toDegrees(-Math.atan2(movementInput.y, horizontal));
+
+        return new Vec2f(pitch, yaw + inputYaw);
+    }
+
     public static void smoothPlayerInputState() {}
 
     public static Text getEntityDisplayable(Entity target) {

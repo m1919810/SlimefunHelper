@@ -64,7 +64,7 @@ public class NameTag extends INameTag {
             Matrix4f proj = RenderListener.getWorldBasicProjectionMatrix();
             Function<Vec3d, Vector2d> projector = RenderUtils.createProjector(cam, proj);
             for (var entity : nameTagInfos) {
-                if (entity.player != mc.getCameraEntity()) {
+                if (!hideSelf.get() || entity.player != mc.getCameraEntity()) {
                     onRenderPlayer(entity, stack, projector, (event.context.partialTicks()));
                 }
             }
