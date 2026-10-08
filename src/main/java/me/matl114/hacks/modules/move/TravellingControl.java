@@ -39,6 +39,7 @@ import net.minecraft.network.packet.s2c.play.EnterReconfigurationS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Vector3d;
 
@@ -666,13 +667,14 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             EventContainer<ElytraMotion> eventContainer = event.context();
             ElytraMotion motion = eventContainer.getValue();
             if (motion.algorithm() == null) return;
-            Vec3d rotation = elytraRotation;
+            Vec2f rotation = EntityUtils.rotationToPitchYaw(elytraRotation);
             if (MovTasks.getElytraFlight().useAutoRescale.get() && ElytraExtra.INSTANCE.autoRescale.get()) {
                 rotation = pullingUp
-                        ? ElytraOptimizeUtils.calculateBestPullupSpeed(rotation, motion.algorithm())
-                        : ElytraOptimizeUtils.calculateBestDownForwardSpeed(rotation, motion.algorithm(), false, true);
+                        ? ElytraOptimizeUtils.calculateBestPullupSpeed(rotation.x, rotation.y, motion.algorithm())
+                        : ElytraOptimizeUtils.calculateBestDownForwardSpeed(
+                                rotation.x, rotation.y, motion.algorithm(), false, true);
             }
-            motion.rotation(rotation.normalize());
+            motion.rotation(rotation);
         }
     }
 
@@ -1308,8 +1310,10 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             }
             double diagonalYaw = Math.floor((mc.player.getYaw() + 45.0) / 90.0) * 90.0 + 45.0;
             PlayerStateManager.setPlayerYawSafe(mc.player, (float) diagonalYaw);
-            float pitch = ElytraOptimizeUtils.calculateBestPullUpAngle(
+            Vec2f boostRotation = ElytraOptimizeUtils.calculateBestPullUpRotation(
                     (float) diagonalYaw, ElytraExtra.INSTANCE.autoRescaleAl.get());
+            PlayerStateManager.setPlayerYawSafe(mc.player, boostRotation.y);
+            float pitch = boostRotation.x;
             EntityUtils.setEntityPitchSafe(mc.player, pitch);
             return pitch;
         }

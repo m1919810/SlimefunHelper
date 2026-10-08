@@ -313,13 +313,22 @@ public class EventCommand extends BaseModule {
     //
     public void onWorldChange(Event<World> event) {
         if (enable.get()) {
-            onEvent(EventType.WORLD_CHANGE, null);
+            Tasks.scheduleDelayedPre(
+                    () -> {
+                        onEvent(EventType.WORLD_CHANGE, null);
+                    },
+                    0);
         }
     }
     //
     public void onGameJoin(Event<ClientPlayerEntity> event) {
+        conditionCommand.clear();
         if (enable.get()) {
-            onEvent(EventType.JOIN_GAME, null);
+            Tasks.scheduleDelayedPre(
+                    () -> {
+                        onEvent(EventType.JOIN_GAME, null);
+                    },
+                    0);
         }
     }
 
@@ -390,13 +399,21 @@ public class EventCommand extends BaseModule {
 
     public void onEnterVisualRange(Event<CombatPlayer> event) {
         if (enable.get() && event.context.player() != mc.player) {
-            onEvent(EventType.OTHER_ENTER_VISUAL_RANGE, event.context.player());
+            Tasks.scheduleDelayedPre(
+                    () -> {
+                        onEvent(EventType.OTHER_ENTER_VISUAL_RANGE, event.context.player());
+                    },
+                    0);
         }
     }
 
     public void onLeftVisualRange(Event<CombatPlayer> event) {
         if (enable.get() && event.context.player() != mc.player) {
-            onEvent(EventType.OTHER_LEAVE_VISUAL_RANGE, event.context.player());
+            Tasks.scheduleDelayedPre(
+                    () -> {
+                        onEvent(EventType.OTHER_LEAVE_VISUAL_RANGE, event.context.player());
+                    },
+                    0);
         }
     }
 

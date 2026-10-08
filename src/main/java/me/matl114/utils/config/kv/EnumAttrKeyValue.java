@@ -182,10 +182,10 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                         integer.set(index0);
                         indexUpdater.run();
                     }),
-                    1,
-                    1,
-                    mainDx - 2,
-                    dy - 2));
+                    0,
+                    0,
+                    mainDx,
+                    dy));
             if (needSwitch) {
                 MutableBoolean show = new MutableBoolean(false);
                 subScreen.addDrawableChild(factory.createElement(
@@ -238,10 +238,10 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                     () -> Text.empty(),
                     () -> List.of(Text.translatable(ex.getKeyName())),
                     ButtonAction.empty(),
-                    x + 1,
-                    y + 1,
-                    dx - 2,
-                    dy - 2);
+                    x,
+                    y,
+                    dx,
+                    dy);
         }
     }
 }

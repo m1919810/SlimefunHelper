@@ -1534,6 +1534,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                         pitchYaw = BaritoneHooks.getInstance().getBaritoneCurrentMoveRot(mc.player);
                     }
                     mc.player.setVelocity(applyAxisLimit(
+                            autoRescaleAl.get(),
                             currentTarget.normalize().multiply(rocketBoostSpeed.get()),
                             pitchYaw.x,
                             pitchYaw.y,
@@ -1554,6 +1555,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                     float newYaw = mc.player.getYaw() + ((Tasks.getTick() % 2 == 0) ? 0.01F : -0.01F);
                     mc.player.setYaw(newYaw);
                     mc.player.setVelocity(applyAxisLimit(
+                            autoRescaleAl.get(),
                             currentTarget.normalize().multiply(rocketBoostSpeed.get()),
                             mc.player.getPitch(),
                             newYaw,
@@ -2083,13 +2085,14 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     @Override
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-        if (armorGlideTransactionSlot != -1) {
+        if (isCurrentArmorGliding()) {
             // fix grimac multiaction c, fix grimac elytra c,
             // ??
             if (MovExtra.INSTANCE.fuckGrimACSprint.get()) {
                 PlayerInputUtils.of(player).sprint(false).applyInput(player);
                 player.setSprinting(false);
             }
+            PlayerInputUtils.of(player).sneak(false).applyInput(player);
         }
         if (autoTakeOffFlag) {
             if (player.isFallFlying()) {
@@ -2287,9 +2290,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         return null;
     }
 
-    public Vec3d applyAxisLimit(Vec3d currentMotion, float pitch, float yaw, boolean applyGravity) {
+    public Vec3d applyAxisLimit(Al al, Vec3d currentMotion, float pitch, float yaw, boolean applyGravity) {
         if (!autoRescale.get()) return currentMotion;
-        return switch (autoRescaleAl.get()) {
+        return switch (al) {
             case V1 -> applyAxisLimit1(currentMotion, pitch, yaw, true);
             case V2 -> applyAxisLimit2(currentMotion, pitch, yaw, true);
             case V3 -> applyAxisLimit3(currentMotion, pitch, yaw);
@@ -2532,7 +2535,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             setOverridingFireworkVelocity(null);
             return currentMotion;
         }
-        return ElytraOptimizeUtils.applyAxisLimit3(currentMotion, pitch, yaw, autoRescaleAmount.get());
+        return ElytraOptimizeUtils.applyAxisLimit3Pullup(currentMotion, pitch, yaw, autoRescaleAmount.get());
     }
 
     public Vec3d applyAxisLimit4(Vec3d currentMotion, float pitch, float yaw) {
