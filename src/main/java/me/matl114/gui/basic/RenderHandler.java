@@ -423,6 +423,34 @@ public interface RenderHandler {
         }
     }
 
+    public static void drawScrollingText(
+            VDrawContext context,
+            TextDrawer textRenderer,
+            OrderedText text,
+            int startX,
+            int startY,
+            int endX,
+            int endY,
+            int color,
+            TextAlign alignment) {
+        int textWidth = textRenderer.getWidth(text);
+        int availableWidth = Math.max(0, endX - startX - 4);
+        int textY = startY + (int) ((endY - startY - textRenderer.getTextHeight()) / 2) + 1;
+        if (textWidth <= availableWidth) {
+            drawScaledText0(context, textRenderer, text, startX, startY, endX, endY, color, alignment);
+            return;
+        }
+
+        int overflow = textWidth - availableWidth;
+        double period = Math.max(overflow * 0.5, 3.0);
+        double phase = (double) Util.getMeasuringTimeMs() / 1000.0;
+        int offset =
+                (int) (Math.sin(Math.PI * Math.cos(2.0 * Math.PI * phase / period)) / 2.0 * overflow + overflow / 2.0);
+        context.enableScissor(startX + 2, startY, endX - 2, endY);
+        context.drawText(textRenderer, text, startX + 2 - offset, textY, color, false);
+        context.disableScissor();
+    }
+
     public static RenderHandler ofSingleItem(Supplier<ItemStack> item, int x, int y, boolean inSlot) {
         return new RenderHandler() {
             @Override

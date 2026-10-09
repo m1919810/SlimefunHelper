@@ -12,7 +12,6 @@ import me.matl114.gui.complex.config.DefaultedKeyValueInputWidget;
 import me.matl114.gui.complex.config.KeyValueInputWidget;
 import me.matl114.gui.elements.AdvancedScrollElement;
 import me.matl114.gui.elements.IconElement;
-import me.matl114.gui.interfaces.DefaultElementFactory;
 import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.gui.interfaces.InputElement;
 import me.matl114.gui.presets.lists.StringListModifyScreen;
@@ -88,8 +87,14 @@ public class WidgetUtils {
         }
 
         public ConfigScreenLayout forWidth(int width) {
+            int availableWidth = Math.max(1, width - blankWidth);
+            int adjustedIndexWidth = Math.min(indexWidth, Math.max(1, (availableWidth * 2) / 3));
             return new ConfigScreenLayout(
-                    indexWidth, blankWidth, width - indexWidth - blankWidth, buttonHeight, buttonBlank);
+                    adjustedIndexWidth,
+                    blankWidth,
+                    Math.max(1, width - adjustedIndexWidth - blankWidth),
+                    buttonHeight,
+                    buttonBlank);
         }
     }
 
@@ -169,22 +174,12 @@ public class WidgetUtils {
     }
 
     public static <T> KeyValueInputWidget<T> createKeyValueWidget(
-            Ref<T> ref, String keyName, ConfigScreenLayout layout) {
-        return createKeyValueWidget(ref, keyName, layout, DefaultElementFactory.INSTANCE);
-    }
-
-    public static <T> KeyValueInputWidget<T> createKeyValueWidget(
             Ref<T> ref, String keyName, ConfigScreenLayout layout, ElementFactory factory) {
         return createKeyValueWidget(
                 ref.hasDefaultValue() ? Optional.of(ref.getDefaultValue()) : Optional.empty(),
                 ref.createKeyValue(keyName),
                 layout,
                 factory);
-    }
-
-    public static <T> KeyValueInputWidget<T> createKeyValueWidget(
-            Optional<T> ref, AttrKeyValue<T> attrKeyValue, ConfigScreenLayout layout) {
-        return createKeyValueWidget(ref, attrKeyValue, layout, DefaultElementFactory.INSTANCE);
     }
 
     public static <T> KeyValueInputWidget<T> createKeyValueWidget(
@@ -214,16 +209,6 @@ public class WidgetUtils {
             Supplier<List<Text>> titleTooltips,
             MutableRecord configs,
             Function<String, String> translationKeyFunction,
-            ConfigScreenLayout layout) {
-        return createMutableRecordEditScreen(
-                title, titleTooltips, configs, translationKeyFunction, layout, DefaultElementFactory.INSTANCE);
-    }
-
-    public static DrawableWidget createMutableRecordEditScreen(
-            Text title,
-            Supplier<List<Text>> titleTooltips,
-            MutableRecord configs,
-            Function<String, String> translationKeyFunction,
             ConfigScreenLayout layout,
             ElementFactory factory) {
         List<Pair<String, ValueAccessor<?>>> accessors = new ArrayList<>();
@@ -243,16 +228,6 @@ public class WidgetUtils {
             ConfigScreenLayout layout,
             ElementFactory factory) {
         return createValueAccessorsEditScreen(title, titleTooltips, accessors, layout, factory, false);
-    }
-
-    public static DrawableWidget createValueAccessorsEditScreen(
-            Text title,
-            Supplier<List<Text>> titleTooltips,
-            List<Pair<String, ValueAccessor<?>>> accessors,
-            ConfigScreenLayout layout,
-            boolean filter) {
-        return createValueAccessorsEditScreen(
-                title, titleTooltips, accessors, layout, DefaultElementFactory.INSTANCE, filter);
     }
 
     public static DrawableWidget createValueAccessorsEditScreen(
@@ -417,11 +392,6 @@ public class WidgetUtils {
     }
 
     public static <T> DrawableWidget createOpenListModifyScreenButton(
-            ListAttrKeyValue<T> s, int x, int y, int dx, int dy) {
-        return createOpenListModifyScreenButton(DefaultElementFactory.INSTANCE, s, x, y, dx, dy);
-    }
-
-    public static <T> DrawableWidget createOpenListModifyScreenButton(
             ElementFactory factory, ListAttrKeyValue<T> s, int x, int y, int dx, int dy) {
         return ExecutableWidget.instance(x, y, dx, dy)
                 .setElementHandler(IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.run(() -> {
@@ -434,12 +404,6 @@ public class WidgetUtils {
                                     .openFromCurrent();
                         }))
                         .withTooltips(TooltipHandler.of(Constants.openListEditTooltips())));
-    }
-
-    public static <T> DrawableWidget createOpenListModifyScreenButton(
-            Supplier<ListAttrKeyValue<T>> attrCreator, Consumer<List<T>> listConsumer, int x, int y, int dx, int dy) {
-        return createOpenListModifyScreenButton(
-                DefaultElementFactory.INSTANCE, attrCreator, listConsumer, x, y, dx, dy);
     }
 
     public static <T> DrawableWidget createOpenListModifyScreenButton(

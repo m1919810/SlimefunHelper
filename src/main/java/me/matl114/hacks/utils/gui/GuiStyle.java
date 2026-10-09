@@ -1,13 +1,11 @@
 package me.matl114.hacks.utils.gui;
 
-import me.matl114.managers.config.ConfigEnum;
+import net.minecraft.util.Identifier;
 
-public enum GuiStyle implements ConfigEnum {
-    VANILLA,
-    CUSTOM;
+/** Built in GUI style identifiers. Additional styles are registered in ElementFactories. */
+public final class GuiStyle {
+    public static final Identifier VANILLA = Identifier.of("slimefunhelper", "vanilla");
+    public static final Identifier CUSTOM = Identifier.of("slimefunhelper", "custom");
 
-    @Override
-    public String getConfigEnumType() {
-        return "gui_style";
-    }
+    private GuiStyle() {}
 }

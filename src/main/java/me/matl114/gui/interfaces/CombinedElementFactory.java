@@ -1,6 +1,6 @@
 package me.matl114.gui.interfaces;
 
-import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -11,26 +11,24 @@ import me.matl114.gui.basic.TextAlign;
 import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.basic.TooltipHandler;
 import me.matl114.hacks.utils.config.GuiSetting;
-import me.matl114.hacks.utils.gui.GuiStyle;
 import me.matl114.utils.config.Value;
 import me.matl114.utils.config.ValueAccessor;
 import me.matl114.utils.config.WrapperFactory;
+import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 public final class CombinedElementFactory implements ElementFactory {
     private final Supplier<GuiSetting> settingSupplier;
-    private final Map<GuiStyle, ElementFactory> delegates = new EnumMap<>(GuiStyle.class);
+    private final Map<Identifier, ElementFactory> delegates = new HashMap<>();
 
     public CombinedElementFactory(Supplier<GuiSetting> settingSupplier) {
         this.settingSupplier = settingSupplier;
-        delegates.put(
-                GuiStyle.VANILLA,
-                new VanillaElementFactory(() -> settingSupplier.get().textConfig()));
-        delegates.put(GuiStyle.CUSTOM, new CustomElementFactory(settingSupplier::get));
     }
 
     private ElementFactory delegate(ElementType type) {
-        return delegates.get(settingSupplier.get().style(type));
+        Identifier id = settingSupplier.get().style(type);
+        ElementStyle style = ElementFactories.getOrCustom(id);
+        return delegates.computeIfAbsent(style.id(), ignored -> style.factory().apply(settingSupplier));
     }
 
     @Override

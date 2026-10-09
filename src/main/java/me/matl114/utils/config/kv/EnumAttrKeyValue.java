@@ -196,10 +196,10 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                                 (eee) -> show.booleanValue()),
                         null,
                         null,
-                        dx - dy + 2,
-                        2,
-                        dy - 4,
-                        dy - 4));
+                        dx - dy,
+                        0,
+                        dy,
+                        dy));
                 Supplier<SubScreenWidget> subScreenSupplier = Suppliers.memoize(() -> {
                     SubScreenWidget selectors = new SubScreenWidget(0, 0, 0, 0).setPriority(1);
                     int height = 0;
@@ -221,7 +221,7 @@ public class EnumAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                                 },
                                 0,
                                 height,
-                                dx - dy - 4,
+                                dx - dy,
                                 dy));
                         height += dy;
                     }

@@ -22,8 +22,8 @@ import me.matl114.gui.*;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.config.ConfigMultiLevelListScreen;
 import me.matl114.gui.elements.IconElement;
-import me.matl114.gui.interfaces.ClickGuiElementFactory;
 import me.matl114.gui.interfaces.CombinedElementFactory;
+import me.matl114.gui.interfaces.CustomElementFactory;
 import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.gui.interfaces.VanillaElementFactory;
 import me.matl114.gui.presets.single.CenterScreen;
@@ -67,7 +67,6 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
     public static ClickGui INSTANCE;
 
     public final NBTType<GuiSetting> configInputWidget = GuiSetting.TYPE;
-    private final ClickGuiElementFactory guiElementFactory = new ClickGuiElementFactory(this);
 
     public ElementFactory getGuiElementFactory() {
         return guiElementFactory;
@@ -161,21 +160,29 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                         }
                         expanded.setValue(!expanded.getValue());
                     }),
-                    () -> true,
-                    () -> bindFlag != null && bindFlag.get());
+                    () -> bindFlag != null && bindFlag.get(),
+                    () -> true);
             DynamicListWidget module = new DynamicListWidget(0, 0, width);
             SubScreenWidget moduleRow = new SubScreenWidget(0, 0, width, height);
             moduleRow.addDrawableChild(
                     ExecutableWidget.instance(0, 0, width, height).setElementHandler(moduleElement));
             moduleRow.addDrawableChild(createSliderText(
-                    TextProvider.of(getModuleName(baseModule), TextAlign.RIGHT), TextAlign.RIGHT, 0, 0, width, height));
+                    TextProvider.of(getModuleName(baseModule), TextAlign.LEFT),
+                    TextAlign.LEFT,
+                    0,
+                    0,
+                    width - height,
+                    height));
             moduleRow.addDrawableChild(createSliderText(
-                    TextProvider.of(Text.literal("+"), TextAlign.LEFT), TextAlign.LEFT, 0, 0, width, height));
+                    TextProvider.of(() -> Text.literal(expanded.getValue() ? "-" : "+"), TextAlign.RIGHT),
+                    TextAlign.RIGHT,
+                    width - height,
+                    0,
+                    height,
+                    height));
             module.addDrawableChild(moduleRow);
             module.addDrawableChild(new DynamicContentWidget<>(
-                    lazyInitialize(expanded::getValue, () -> createSliderModuleContent(baseModule, metaData)),
-                    0,
-                    sliderHeight()));
+                    lazyInitialize(expanded::getValue, () -> createSliderModuleContent(baseModule, metaData)), 0, 0));
             return module;
         }
 
@@ -237,119 +244,139 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
 
         private DrawableWidget createSliderText(
                 TextProvider provider, TextAlign align, int x, int y, int width, int height) {
-            return ExecutableWidget.instance(x, y, width, height)
-                    .setElementHandler(guiElementFactory.createText(provider, TooltipHandler.of(List.of()), align));
+            return createSliderText(provider, align, x, y, width, height, false);
+        }
+
+        private DrawableWidget createSliderText(
+                TextProvider provider, TextAlign align, int x, int y, int width, int height, boolean splitter) {
+            ElementHandler text = guiElementFactory.createText(provider, TooltipHandler.of(List.of()), splitter, align);
+            return ExecutableWidget.instance(x, y, width, height).setElementHandler(text);
+        }
+
+        private DrawableWidget createSliderConfigText(
+                TextProvider provider, TextAlign align, int x, int y, int width, int height) {
+            return createSliderText(provider, align, x, y + height / 6, width, height * 2 / 3, false);
         }
 
         private ConditionalWidget createSliderConfigRow(WrapperConfigRef<?> configWidget) {
             int width = sliderWidth();
             int height = sliderHeight();
-            int keyWidth = Math.max(height * 2, width / 2);
-            int valueWidth = Math.max(1, width - keyWidth);
             Ref<?> ref = configWidget.ref();
             DynamicListWidget row = new DynamicListWidget(0, 0, width);
             TextProvider key = TextProvider.of(
                     () -> Text.translatableWithFallback(configWidget.keyName(), configWidget.keyName()),
                     TextAlign.LEFT);
             if (ref instanceof FlagRef flag) {
+                var keyValue = configWidget.createKeyValue();
                 SubScreenWidget line = createSliderConfigLine(
                         key,
-                        ExecutableWidget.instance(width - height, 0, height, height)
-                                .setElementHandler(guiElementFactory.createToggleButton(
-                                        TextProvider.of(Text.empty()),
-                                        TooltipHandler.of(List.of()),
-                                        ValueAccessor.of(flag::get, flag::set))),
+                        keyValue.generateValueWidget(BaseModule.CONFIG_FACTORY, width - height, 0, height, height),
                         width,
-                        height,
-                        width - height);
+                        height);
                 row.addDrawableChild(line);
-            } else if (ref instanceof IntRef) {
-                AttrKeyValue<Integer> keyValue = (AttrKeyValue<Integer>) configWidget.createKeyValue();
+            } else if (ref instanceof IntRef
+                    || ref instanceof DoubleRef
+                    || ref instanceof FloatRef
+                    || ref instanceof LongRef) {
+                ValueAccessor<Boolean> editorOpen = ValueAccessor.holder(false);
                 row.addDrawableChild(createSliderConfigLine(
                         key,
-                        keyValue.generateValueWidget(
-                                guiElementFactory, TextAlign.RIGHT, keyWidth, 0, valueWidth, height),
+                        createSliderConfigText(
+                                TextProvider.of(() -> createSliderSpecialDisplay(ref), TextAlign.RIGHT),
+                                TextAlign.RIGHT,
+                                0,
+                                0,
+                                width,
+                                height),
                         width,
                         height,
-                        keyWidth));
-            } else if (ref instanceof DoubleRef) {
-                AttrKeyValue<Double> keyValue = (AttrKeyValue<Double>) configWidget.createKeyValue();
-                row.addDrawableChild(createSliderConfigLine(
-                        key,
-                        keyValue.generateValueWidget(
-                                guiElementFactory, TextAlign.RIGHT, keyWidth, 0, valueWidth, height),
-                        width,
-                        height,
-                        keyWidth));
-            } else if (ref instanceof FloatRef || ref instanceof LongRef || ref instanceof StringRef) {
-                row.addDrawableChild(createSliderConfigLine(
-                        key,
-                        ExecutableWidget.instance(keyWidth, 0, valueWidth, height)
-                                .setElementHandler(
-                                        guiElementFactory.createInput(configWidget.createKeyValue(), TextAlign.RIGHT)),
-                        width,
-                        height,
-                        keyWidth));
-            } else if (ref instanceof NBTRef<?>) {
+                        () -> editorOpen.setValue(!editorOpen.getValue())));
+                row.addDrawableChild(new DynamicContentWidget<>(
+                        lazyInitialize(editorOpen::getValue, () -> createSliderEditor(configWidget)), 0, 0));
+            } else {
                 ValueAccessor<Boolean> editorOpen = ValueAccessor.holder(false);
                 SubScreenWidget line = createSliderConfigLine(
                         key,
-                        guiElementFactory.createElement(
-                                IconElement.fixedGui(
-                                        Constants.EDITOR_SPRITE,
-                                        ButtonAction.run(() -> editorOpen.setValue(!editorOpen.getValue()))),
-                                null,
-                                null,
-                                width - height,
-                                0,
-                                height,
-                                height),
+                        getSpecificTypeSprite(ref, width, height),
                         width,
                         height,
-                        width - height);
+                        () -> editorOpen.setValue(!editorOpen.getValue()));
                 row.addDrawableChild(line);
                 row.addDrawableChild(new DynamicContentWidget<>(
                         lazyInitialize(editorOpen::getValue, () -> createSliderEditor(configWidget)), 0, 0));
-            } else if (ref instanceof EnumRef<?>
-                    || ref instanceof ListRef
-                    || ref instanceof MapRef
-                    || ref instanceof KeyBindRef
-                    || ref instanceof ObjectRef<?>) {
-                row.addDrawableChild(createSliderConfigLine(
-                        key,
-                        createSliderText(
-                                TextProvider.of(() -> createSliderSpecialDisplay(ref), TextAlign.RIGHT),
-                                TextAlign.RIGHT,
-                                keyWidth,
-                                0,
-                                valueWidth,
-                                height),
-                        width,
-                        height,
-                        keyWidth));
-                row.addDrawableChild(new DynamicContentWidget<>(
-                        lazyInitialize(() -> true, () -> createSliderEditor(configWidget)), 0, 0));
-            } else {
-                throw new IllegalArgumentException(
-                        "Unsupported Slider config type: " + ref.getClass().getName());
             }
             return new ConditionalWidget(configWidget::shouldShow, row);
         }
 
+        private DrawableWidget getSpecificTypeSprite(Ref<?> ref, int width, int height) {
+            if (ref instanceof ListRef || ref instanceof MapRef) {
+                return guiElementFactory.createElement(
+                        IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.empty()),
+                        null,
+                        null,
+                        width - height,
+                        0,
+                        height,
+                        height);
+            }
+            if (ref instanceof NBTRef) {
+                return guiElementFactory.createElement(
+                        IconElement.fixedGui(Constants.FORMATTING_TEXTURE_SPRITE, ButtonAction.empty()),
+                        null,
+                        null,
+                        width - height,
+                        0,
+                        height,
+                        height);
+            }
+            return guiElementFactory.createElement(
+                    IconElement.fixedGui(Constants.EDIT_SPRITE, ButtonAction.empty()),
+                    null,
+                    null,
+                    width - height + height / 4,
+                    height / 4,
+                    height / 2,
+                    height / 2);
+        }
+
+        private SubScreenWidget createSliderConfigLine(TextProvider key, DrawableWidget value, int width, int height) {
+            return createSliderConfigLine(key, value, width, height, null);
+        }
+
         private SubScreenWidget createSliderConfigLine(
-                TextProvider key, DrawableWidget value, int width, int height, int keyWidth) {
-            return new SubScreenWidget(0, 0, width, height)
-                    .addDrawableChild(guiElementFactory.createBackground(0, 0, width, height))
-                    .addDrawableChild(createSliderText(key, TextAlign.LEFT, 0, 0, keyWidth, height))
+                TextProvider key, DrawableWidget value, int width, int height, Runnable clickAction) {
+            SubScreenWidget line = new SubScreenWidget(0, 0, width, height);
+            if (clickAction != null) {
+                line.addDrawableChild(ExecutableWidget.instance(0, 0, width, height)
+                        .setElementHandler(new AbstractElement().withInputHandler(InputHandler.clickRun(clickAction))));
+            }
+            line.addDrawableChild(guiElementFactory.createBackground(0, 0, width, height))
+                    .addDrawableChild(createSliderConfigText(key, TextAlign.LEFT, 0, 0, width - height, height))
                     .addDrawableChild(value);
+
+            return line;
         }
 
         private Text createSliderSpecialDisplay(Ref<?> ref) {
+            if (ref instanceof IntRef intRef) {
+                return Text.literal(String.valueOf(intRef.get()));
+            }
+            if (ref instanceof DoubleRef doubleRef) {
+                return Text.literal(String.valueOf(doubleRef.get()));
+            }
             if (ref instanceof EnumRef<?> enumRef) {
-                return enumRef.get().getDisplay();
+                if (!enumRef.resolved) {
+                    return Text.literal(enumRef.enumType + ":" + enumRef.enumValue);
+                }
+                ConfigEnum value = enumRef.get();
+                return value.getDisplay();
             }
             if (ref instanceof KeyBindRef keyBindRef) {
-                return Text.literal(keyBindRef.get().asString());
+                MultiKeyBind keyBind = keyBindRef.get();
+                List<String> keyCodes =
+                        keyBind == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(keyBind.getKeys()));
+                String context = keyCodes.isEmpty() ? "None" : String.join(",", keyCodes);
+                return Text.literal(context);
             }
             if (ref instanceof ListRef listRef) {
                 return Text.literal(String.join(", ", listRef.get()));
@@ -364,11 +391,10 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                     "Unsupported Slider config type: " + ref.getClass().getName());
         }
 
-        @SuppressWarnings({"rawtypes", "unchecked"})
         private DrawableWidget createSliderEditor(WrapperConfigRef<?> configWidget) {
             try {
                 AttrKeyValue keyValue = configWidget.createKeyValue();
-                return keyValue.generateValueWidget(guiElementFactory, 0, 0, sliderWidth(), sliderHeight());
+                return keyValue.generateValueWidget(BaseModule.CONFIG_FACTORY, 0, 0, sliderWidth(), sliderHeight());
             } catch (UnsupportedOperationException | IllegalStateException exception) {
                 return new SubScreenWidget(0, 0, sliderWidth(), sliderHeight());
             }
@@ -401,13 +427,13 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                                         return element.isMouseOver(mouseX, mouseY);
                                     }
                                     if (type == Type.MOUSE_DRAG) {
-                                        int deltaX = (int) (mouseX - startMouseX);
-                                        int deltaY = (int) (mouseY - startMouseY);
-                                        if (deltaX != 0 || deltaY != 0) {
-                                            groupMeta.setX(groupMeta.getX() + deltaX);
-                                            groupMeta.setY(groupMeta.getY() + deltaY);
-                                            startMouseX = mouseX;
-                                            startMouseY = mouseY;
+                                        int currentX = groupMeta.getX();
+                                        int currentY = groupMeta.getY();
+                                        int nextX = (int) Math.round(currentX + mouseX - startMouseX);
+                                        int nextY = (int) Math.round(currentY + mouseY - startMouseY);
+                                        if (nextX != currentX || nextY != currentY) {
+                                            groupMeta.setX(nextX);
+                                            groupMeta.setY(nextY);
                                             move = true;
                                         }
                                         return true;
@@ -446,25 +472,33 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
         private DrawableWidget createSliderHeader(Text title, BooleanSupplier expanded, Runnable toggle) {
             int width = sliderWidth();
             int height = sliderHeight();
-            return ExecutableWidget.instance(0, 0, width, height)
+            int textWidth = Math.max(1, width - height);
+            int textY = height / 6;
+            int textHeight = height * 2 / 3;
+            SubScreenWidget header = new SubScreenWidget(0, 0, width, height);
+            header.addDrawableChild(guiElementFactory.createBackground(0, 0, width, height));
+            header.addDrawableChild(ExecutableWidget.instance(0, 0, width, height)
+                    .setElementHandler(new AbstractElement().withInputHandler(InputHandler.clickRun(toggle))));
+            header.addDrawableChild(
+                    createSliderText(TextProvider.of(title), TextAlign.LEFT, 0, textY, textWidth, textHeight, true));
+            header.addDrawableChild(ExecutableWidget.instance(width - height, 0, height, height)
                     .setElementHandler(new AbstractElement()
                             .withInputHandler(InputHandler.clickRun(toggle))
-                            .combineRender(
-                                    guiElementFactory.createTitle(TextProvider.of(title), TooltipHandler.of(List.of())))
-                            .combineRender(((element, context, mouseX, mouseY, delta, alpha, shouldHighlight) -> {
+                            .combineRender((element, context, mouseX, mouseY, delta, alpha, shouldHighlight) -> {
                                 context.setShaderColor(
                                         textColor().withAlpha(255).color());
                                 context.drawGuiTexture(
                                         expanded.getAsBoolean()
                                                 ? Constants.EXPAND_GUI_ON_SPRITE
                                                 : Constants.EXPAND_GUI_OFF_SPRITE,
-                                        element.getTextureWidth() - element.getTextureHeight() + 2,
+                                        2,
                                         2,
                                         0,
-                                        element.getTextureHeight() - 4,
-                                        element.getTextureHeight() - 4);
+                                        Math.max(1, element.getTextureWidth() - 4),
+                                        Math.max(1, element.getTextureHeight() - 4));
                                 context.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
                             })));
+            return header;
         }
 
         private DrawableWidget createSearchGroup(
@@ -862,8 +896,13 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
     }
 
     @Override
-    public WrapRGBA frameColor() {
-        return clickGuiConfig.get().frameColor();
+    public WrapRGBA activeFrameColor() {
+        return clickGuiConfig.get().activeFrameColor();
+    }
+
+    @Override
+    public WrapRGBA inactiveFrameColor() {
+        return clickGuiConfig.get().inactiveFrameColor();
     }
 
     @Override
@@ -964,7 +1003,18 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
 
     public final NBTRef<GuiSetting> widgetGuiConfig = builder(widgetType.add("setting"), GuiSetting.class)
             .defaultValue(GuiSetting.DEFAULT)
+            .show(() -> guiStyle.get() == ClickGuiStyle.SUB_SCREEN)
             .build();
+
+    public final ModulePath sliderWidgetType = clickGui.add("slider-widget-style");
+
+    public final NBTRef<GuiSetting> sliderWidgetGuiConfig = builder(sliderWidgetType.add("setting"), GuiSetting.class)
+            .defaultValue(GuiSetting.SLIDER_DEFAULT)
+            .show(() -> guiStyle.get() == ClickGuiStyle.SLIDER)
+            .build();
+
+    private final CustomElementFactory guiElementFactory = new CustomElementFactory(
+            () -> guiStyle.get() == ClickGuiStyle.SLIDER ? sliderWidgetGuiConfig.get() : widgetGuiConfig.get());
 
     private boolean onHotkey(IHotKey iHotKey, IInputManager manager) {
         if (HotKeyUtils.isValidState()) {
