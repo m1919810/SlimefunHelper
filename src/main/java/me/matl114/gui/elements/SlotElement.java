@@ -3,6 +3,7 @@ package me.matl114.gui.elements;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import me.matl114.gui.basic.*;
+import me.matl114.plugins.MainPlugin;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.inventory.Inventory;
@@ -17,8 +18,7 @@ public class SlotElement extends AbstractElement {
     final int index;
     final SlotClickCallback callback;
     protected final ColorSampler color;
-    protected static final Identifier SLOT_RESOURCE =
-            new Identifier("slimefunhelper", "textures/custom/recipecontainer.png");
+    protected static final Identifier SLOT_RESOURCE = MainPlugin.identifier("textures/custom/recipecontainer.png");
     protected static final int u0 = 0;
     protected static final int v0 = 222;
     protected static final int vheight = 18;

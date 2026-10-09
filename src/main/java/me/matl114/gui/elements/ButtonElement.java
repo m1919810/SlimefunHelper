@@ -1,5 +1,6 @@
 package me.matl114.gui.elements;
 
+import me.matl114.gui.Constants;
 import me.matl114.gui.basic.ButtonAction;
 import me.matl114.gui.basic.ColorSampler;
 import me.matl114.gui.basic.DrawableWidget;
@@ -7,23 +8,18 @@ import me.matl114.gui.basic.RenderHandler;
 import me.matl114.gui.basic.TextProvider;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.text.OrderedText;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 public class ButtonElement extends IconElement.SimpleIconElement {
     private final TextProvider provider;
     private final ColorSampler textColor;
 
-    public static final Identifier BUTTON = new Identifier("slimefunhelper", "gui/button");
-    public static final Identifier BUTTON_HIGHLIGHT = new Identifier("slimefunhelper", "gui/button_highlighted");
-    public static final Identifier BUTTON_INACTIVE = new Identifier("slimefunhelper", "gui/button_disabled");
-
     public ButtonElement(TextProvider provider, ButtonAction action) {
         this(provider, action, ColorSampler.WHITE);
     }
 
     public ButtonElement(TextProvider provider, ButtonAction action, ColorSampler textColor) {
-        super(BUTTON_INACTIVE, BUTTON, true, action);
+        super(Constants.BUTTON_INACTIVE_SPRITE, Constants.BUTTON_SPRITE, true, action);
         this.provider = provider;
         this.textColor = textColor;
     }

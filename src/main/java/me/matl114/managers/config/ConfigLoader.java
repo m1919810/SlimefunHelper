@@ -6,8 +6,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import me.matl114.SlimefunHelper;
 import me.matl114.managers.FileManager;
+import me.matl114.plugins.MainPlugin;
 import me.matl114.utils.Debug;
 import net.fabricmc.loader.api.FabricLoader;
 import org.yaml.snakeyaml.Yaml;
@@ -22,9 +22,7 @@ public class ConfigLoader {
                 if (!file.getParentFile().exists()) {
                     Files.createDirectories(file.toPath().getParent());
                 }
-                Files.copy(
-                        SlimefunHelper.getInstance().getClass().getResourceAsStream("/" + internalFileName),
-                        file.toPath());
+                Files.copy(MainPlugin.class.getResourceAsStream("/" + internalFileName), file.toPath());
             } catch (Throwable e) {
                 Debug.info("创建配置文件时找不到相关默认配置文件,即将生成空文件");
                 try {
@@ -40,8 +38,7 @@ public class ConfigLoader {
     public static Config loadInternalConfig(String internalFileName, String customName) {
         try {
             return new Config(customName, null, loadYamlConfig((Reader) (new InputStreamReader(
-                    SlimefunHelper.getInstance().getClass().getResourceAsStream("/" + internalFileName),
-                    Charsets.UTF_8))));
+                    MainPlugin.class.getResourceAsStream("/" + internalFileName), Charsets.UTF_8))));
         } catch (Throwable e) {
             Debug.info("failed to load internal config " + internalFileName + ".yml, Error: " + e.getMessage());
             return null;

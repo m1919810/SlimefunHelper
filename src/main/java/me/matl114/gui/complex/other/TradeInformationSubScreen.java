@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import javax.annotation.Nullable;
 import me.matl114.accessors.access.MerchantScreenAccess;
+import me.matl114.gui.Constants;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.IconElement;
@@ -31,7 +32,6 @@ public class TradeInformationSubScreen extends SubScreenWidget {
     private static final int TRADE_ICON_HEIGHT = 9;
     private static final Identifier TRADE_ARROW_OUT_OF_STOCK_TEXTURE =
             Identifier.ofVanilla("container/villager/out_of_stock");
-    private static final Identifier TRADE_ARROW_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/trade_arrow");
     private static final MinecraftClient mc = MinecraftClient.getInstance();
     private MerchantScreen screen;
 
@@ -91,7 +91,7 @@ public class TradeInformationSubScreen extends SubScreenWidget {
                 .addToSub(this);
         DisplayWidget.instance(2 * (SLOT_WIDTH + 2), 5, TRADE_ICON_WIDTH, TRADE_ICON_HEIGHT)
                 .setRenderHandler(IconElement.statedGuiPredicate(
-                                TRADE_ARROW_TEXTURE_SPRITE,
+                                Constants.TRADE_ARROW_SPRITE,
                                 TRADE_ARROW_OUT_OF_STOCK_TEXTURE,
                                 ButtonAction.empty(),
                                 (el) -> {

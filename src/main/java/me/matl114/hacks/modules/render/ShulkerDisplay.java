@@ -1,7 +1,6 @@
 package me.matl114.hacks.modules.render;
 
 import com.mojang.datafixers.util.Pair;
-import java.awt.*;
 import java.util.*;
 import java.util.List;
 import me.matl114.accessors.access.HandledScreenAccess;
