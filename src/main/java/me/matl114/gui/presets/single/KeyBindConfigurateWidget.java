@@ -1,10 +1,14 @@
 package me.matl114.gui.presets.single;
 
+import com.mojang.datafixers.util.Pair;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import me.matl114.gui.Constants;
+import me.matl114.gui.WidgetUtils;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.elements.IconElement;
 import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
@@ -30,10 +34,9 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
     }
 
     ExecutableWidget keyInputWidget;
-    ExecutableWidget deleteKeyInputWidget;
 
     private void init() {
-        ExecutableWidget.instance(0, 1, dx - 3 * dy - 2, dy - 2)
+        ExecutableWidget.instance(0, 0, dx - dy, dy)
                 .setElementHandler(new AbstractElement()
                         .withElement(factory.createExecuteButton(
                                 (TextProvider) this::createKeyDisplay,
@@ -54,44 +57,40 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
                             return false;
                         })))
                 .addToSub(this);
-        factory.createToggleButton(
-                        TextProvider.of(Text.literal("T")),
-                        TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                "widget.gui.key-bind-configurate-widget.keycode-t.tooltips", "")),
-                        ValueAccessor.of(
-                                () -> multiKeyBind.get().isToggleOnRelease(), (v) -> onSwitchToggleOnRelease()),
-                        true,
-                        dx - 3 * dy - 1,
-                        1,
-                        dy - 2,
-                        dy - 2)
-                .addToSub(this);
-        factory.createToggleButton(
-                        TextProvider.of(Text.literal("V")),
-                        TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                "widget.gui.key-bind-configurate-widget.keycode-v.tooltips", "")),
-                        ValueAccessor.of(() -> multiKeyBind.get().isAllowVanilla(), (v) -> onSwitchAllowVanilla()),
-                        true,
-                        dx - 2 * dy - 1,
-                        1,
-                        dy - 2,
-                        dy - 2)
-                .addToSub(this);
-        factory.createExecuteButton(
-                        TextProvider.of(Text.literal("D")),
+        factory.createElement(
+                        IconElement.fixedGui(Constants.EDITOR_SPRITE, ButtonAction.isLeft(left -> {
+                            if (left) {
+                                clear();
+                            } else {
+                                openEditor();
+                            }
+                        })),
                         TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
                                 "widget.gui.key-bind-configurate-widget.keycode-d.tooltips", "")),
-                        ((element, widget, mouseButton) -> {
-                            clear();
-                            // make it return false, do not unselect current
-                            return false;
-                        }),
-                        () -> true,
-                        dx - dy - 1,
-                        1,
-                        dy - 2,
-                        dy - 2)
+                        null,
+                        dx - dy,
+                        0,
+                        dy,
+                        dy)
                 .addToSub(this);
+    }
+
+    private void openEditor() {
+        List<Pair<String, ValueAccessor<?>>> accessors = List.of(
+                Pair.of(
+                        "widget.gui.key-bind-configurate-widget.keycode-t",
+                        ValueAccessor.of(
+                                () -> multiKeyBind.get().isToggleOnRelease(), value -> onSwitchToggleOnRelease())),
+                Pair.of(
+                        "widget.gui.key-bind-configurate-widget.keycode-v",
+                        ValueAccessor.of(() -> multiKeyBind.get().isAllowVanilla(), value -> onSwitchAllowVanilla())));
+        DrawableWidget editor = WidgetUtils.createValueAccessorsEditScreen(
+                Text.translatable("widget.gui.key-bind-configurate-widget.editor"),
+                List::of,
+                accessors,
+                WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT,
+                factory);
+        new CenterScreen(editor).access().openFromCurrent();
     }
 
     @Override

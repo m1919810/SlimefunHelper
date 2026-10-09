@@ -15,8 +15,6 @@ import me.matl114.gui.Constants;
 import me.matl114.gui.WidgetUtils;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.config.ListModifyWidget;
-import me.matl114.gui.elements.ButtonElement;
-import me.matl114.gui.elements.IconElement;
 import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.gui.presets.lists.ListEntryWidgetController;
 import me.matl114.gui.presets.single.CenterScreen;
@@ -133,9 +131,9 @@ public class ConnectionProxy extends BaseModule {
             MutableRecord argsMap, MutableObject<MutableRecord> index, ElementFactory factory) {
         SubScreenWidget subScreen = new SubScreenWidget(0, 0, 220, 20);
         ExecutableWidget.instance(2, 2, 16, 16)
-                .setElementHandler(IconElement.statedGuiPredicate(
-                        ButtonElement.BUTTON,
-                        ButtonElement.BUTTON_INACTIVE,
+                .setElementHandler(factory.createButton(
+                        TextProvider.of(Text.empty()),
+                        TooltipHandler.of(List.of()),
                         ButtonAction.run(() -> {
                             if (argsMap != index.getValue()) {
                                 index.setValue(argsMap);
@@ -143,9 +141,8 @@ public class ConnectionProxy extends BaseModule {
                                 index.setValue(null);
                             }
                         }),
-                        (bl) -> {
-                            return argsMap == index.getValue();
-                        }))
+                        () -> true,
+                        () -> argsMap == index.getValue()))
                 .addToSub(subScreen);
         DisplayWidget.instance(45, 0, 100, 20)
                 .setRenderHandler(ClickGui.INSTANCE.getGuiElementFactory().createBackground())
@@ -170,7 +167,8 @@ public class ConnectionProxy extends BaseModule {
                                     List::of,
                                     argsMap,
                                     s -> "widget.connection-proxy." + s,
-                                    WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT);
+                                    WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT,
+                                    factory);
                             new CenterScreen(re).access().openFromCurrent();
                         })))
                 .addToSub(subScreen);

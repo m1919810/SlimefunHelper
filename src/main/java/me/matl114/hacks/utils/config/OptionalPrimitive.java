@@ -88,7 +88,7 @@ public class OptionalPrimitive<T> implements NBTParsable<OptionalPrimitive<T>> {
 
                 TypeConvertAttrKeyValue<OptionalPrimitive, ?> valueWidget =
                         new TypeConvertAttrKeyValue<>(s, pairFactory.asSecondWrapper(s::get), type);
-                var widget = valueWidget.generateValueWidget(factory, dy + 2, 0, dx - dy - 2, dy);
+                var widget = valueWidget.generateValueWidget(factory, dy, 0, dx - dy, dy);
                 DynamicContentWidget<?> widget2 = new DynamicContentWidget<>(
                         () -> {
                             if (s.get().isPresent()) {

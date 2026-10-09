@@ -26,6 +26,8 @@ public interface Constants {
 
     public static final Identifier EDITOR_SPRITE = new Identifier("slimefunhelper", "gui/editor");
 
+    public static final Identifier EDIT_SPRITE = new Identifier("slimefunhelper", "gui/edit");
+
     public static final Identifier REMOVE_SPRITE = new Identifier("slimefunhelper", "gui/remove");
 
     public static final Identifier SHIFT_UP_SPRITE = new Identifier("slimefunhelper", "gui/move_up");

@@ -70,34 +70,33 @@ public class ListModifyWidget extends ScrollableListWidget {
         int buttonMiddle = 0;
         return new SubScreenWidget(startX, curHeight, width, height)
                 .addDrawableChild(wrap1)
-                .addDrawableChild(ExecutableWidget.instance(width + 1, 1 + buttonMiddle, buttonSize - 2, buttonSize - 2)
+                .addDrawableChild(ExecutableWidget.instance(width, buttonMiddle, buttonSize, buttonSize)
                         .setElementHandler(IconElement.fixedGui(SHIFT_UP_TEXTURE_SPRITE, ButtonAction.run(() -> {
                                     this.controller.shiftUp(listIndex);
                                 }))
                                 .setActive(listIndex != 0)
                                 .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
                                         "widget.gui.list-modify-widget.shift-up.tooltips", "")))))
-                .addDrawableChild(ExecutableWidget.instance(
-                                width + buttonSize + 1, 1 + buttonMiddle, buttonSize - 2, buttonSize - 2)
+                .addDrawableChild(ExecutableWidget.instance(width + buttonSize, buttonMiddle, buttonSize, buttonSize)
                         .setElementHandler(IconElement.fixedGui(SHIFT_DOWN_TEXTURE_SPRITE, ButtonAction.run(() -> {
                                     this.controller.shiftDown(listIndex);
                                 }))
                                 .setActive(listIndex != controller.size() - 1)
                                 .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
                                         "widget.gui.list-modify-widget.shift-down.tooltips", "")))))
-                .addDrawableChild(ExecutableWidget.instance(
-                                width + 2 * buttonSize + 1, 1 + buttonMiddle, buttonSize - 2, buttonSize - 2)
-                        .setElementHandler(IconElement.fixedGui(DEL_TEXTURE_SPRITE, ButtonAction.run(() -> {
-                                    this.controller.del(listIndex);
-                                }))
-                                .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                        "widget.gui.list-modify-widget.delete.tooltips", "")))))
-                .addDrawableChild(ExecutableWidget.instance(
-                                width + 3 * buttonSize + 1, 1 + buttonMiddle, buttonSize - 2, buttonSize - 2)
-                        .setElementHandler(IconElement.fixedGui(NEW_TEXTURE_SPRITE, ButtonAction.run(() -> {
-                                    this.controller.insert(listIndex);
-                                }))
-                                .withTooltips(TooltipHandler.of(ListModifyWidget.insertTooltips()))));
+                .addDrawableChild(
+                        ExecutableWidget.instance(width + 2 * buttonSize, buttonMiddle, buttonSize, buttonSize)
+                                .setElementHandler(IconElement.fixedGui(DEL_TEXTURE_SPRITE, ButtonAction.run(() -> {
+                                            this.controller.del(listIndex);
+                                        }))
+                                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                                "widget.gui.list-modify-widget.delete.tooltips", "")))))
+                .addDrawableChild(
+                        ExecutableWidget.instance(width + 3 * buttonSize, buttonMiddle, buttonSize, buttonSize)
+                                .setElementHandler(IconElement.fixedGui(NEW_TEXTURE_SPRITE, ButtonAction.run(() -> {
+                                            this.controller.insert(listIndex);
+                                        }))
+                                        .withTooltips(TooltipHandler.of(ListModifyWidget.insertTooltips()))));
     }
 
     protected ExecutableWidget getListEndAdd(int startX, int startY) {

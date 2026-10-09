@@ -47,7 +47,7 @@ public interface ValueAccessor<T> {
     }
 
     public static <T> ValueAccessor<T> of(AttrKeyValue<T> keyValue) {
-        return of(keyValue::get, keyValue::setOriginValue);
+        return of(keyValue, keyValue);
     }
 
     public static <T> void unsupportWrite(T val) {
