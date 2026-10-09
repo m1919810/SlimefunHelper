@@ -18,7 +18,7 @@ import lombok.experimental.Accessors;
 import me.matl114.events.channels.ListenerPoint;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.config.DefaultedKeyValueInputWidget;
-import me.matl114.gui.interfaces.BaseModuleElementFactory;
+import me.matl114.gui.interfaces.CustomElementFactory;
 import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.StringFormat;
@@ -462,8 +462,8 @@ public abstract class BaseModule implements ModuleListProvider {
 
     protected static final int indexWidth = 140;
     protected static final int blankWidth = 10;
-    protected static ElementFactory ELEMENT_FACTORY = new BaseModuleElementFactory(() -> CustomGuiConfig.DEFAULT);
-    protected static ElementFactory CONFIG_FACTORY = new BaseModuleElementFactory(() -> CustomGuiConfig.DEFAULT);
+    protected static ElementFactory ELEMENT_FACTORY = new CustomElementFactory(() -> CustomGuiConfig.DEFAULT);
+    protected static ElementFactory CONFIG_FACTORY = new CustomElementFactory(() -> CustomGuiConfig.DEFAULT);
 
     public static SubScreenWidget createSubWidget(int x, int y, int dx, int dy) {
         return new SubScreenWidget(x, y, dx, dy);

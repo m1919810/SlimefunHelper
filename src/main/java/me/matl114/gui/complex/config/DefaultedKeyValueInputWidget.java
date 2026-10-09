@@ -75,7 +75,7 @@ public class DefaultedKeyValueInputWidget<W> extends KeyValueInputWidget<W> {
         super.init();
         BooleanSupplier canReset =
                 () -> this.reference.isPresent() && !Objects.equals(this.keyValueHolder.get(), this.reference.get());
-        ExecutableWidget.instance(this.dkey + this.dblank + this.dvalue + 1, 1, dy - 2, dy - 2)
+        ExecutableWidget.instance(this.dkey + this.dblank + this.dvalue, 0, dy, dy)
                 .setElementHandler((ElementHandler) elementFactory
                         .createButton(
                                 TextProvider.of(Text.empty()),

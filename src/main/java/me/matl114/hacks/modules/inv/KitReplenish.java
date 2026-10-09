@@ -1831,10 +1831,10 @@ public class KitReplenish extends BaseModule {
                                     : Text.translatable("widget.kit-manager.open-kit-list.rule.dump.false"));
                 },
                 List::of,
-                30 + 1,
-                23 + 1,
-                150 - 2,
-                20 - 2));
+                30,
+                23,
+                150,
+                20));
         widget.addDrawableChild(createExecuteButton(
                 "widget.kit-manager.open-kit-list.rule.edit",
                 ButtonAction.run(() -> {
@@ -1845,7 +1845,8 @@ public class KitReplenish extends BaseModule {
                             List::of,
                             mut,
                             (id) -> "widget.kit-manager.open-kit-list.rule." + id,
-                            WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT);
+                            WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT,
+                            factory);
                     var screen = new CenterScreen(wd);
                     screen.access().addCloseFuture(() -> {
                         Rule rule2 = mut.toRecord(Rule.class);
@@ -1853,10 +1854,10 @@ public class KitReplenish extends BaseModule {
                     });
                     screen.access().openFromCurrent();
                 }),
-                180 + 1,
-                23 + 1,
-                70 - 2,
-                20 - 2));
+                180,
+                23,
+                70,
+                20));
         //        AttrKeyValue<Type> rulesType =
         //                AttrKeyValue.enumMap("widget.kit-manager.open-kit-list.rule.type", currentRule.type(),
         // Type.class);
@@ -1896,10 +1897,10 @@ public class KitReplenish extends BaseModule {
                         Kit temporaryKit = record.toRecord(Kit.class);
                         openViewScreen.apply(temporaryKit).run();
                     }),
-                    170 + 1,
-                    1 + 1,
-                    40 - 2,
-                    20 - 2));
+                    170,
+                    1,
+                    40,
+                    20));
             widget.addDrawableChild(createExecuteButton(
                     "widget.kit-manager.open-kit-list.items.import",
                     ButtonAction.run(() -> {
@@ -1912,13 +1913,12 @@ public class KitReplenish extends BaseModule {
                             openViewScreen.apply(saveKit).run();
                         }
                     }),
-                    210 + 1,
-                    1 + 1,
-                    40 - 2,
-                    20 - 2));
+                    210,
+                    1,
+                    40,
+                    20));
         } else {
-            widget.addDrawableChild(
-                    createLabel("widget.kit-manager.open-kit-list.items.error", 180 + 1, 1 + 1, 70 - 2, 20 - 2));
+            widget.addDrawableChild(createLabel("widget.kit-manager.open-kit-list.items.error", 180, 1, 70, 20));
         }
         return widget;
     }

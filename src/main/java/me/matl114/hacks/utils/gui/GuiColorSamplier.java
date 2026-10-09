@@ -3,7 +3,9 @@ package me.matl114.hacks.utils.gui;
 import me.matl114.hacks.utils.config.WrapRGBA;
 
 public interface GuiColorSamplier {
-    WrapRGBA frameColor();
+    WrapRGBA activeFrameColor();
+
+    WrapRGBA inactiveFrameColor();
 
     WrapRGBA backgroundColor();
 
