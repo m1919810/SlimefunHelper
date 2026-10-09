@@ -2,6 +2,7 @@ package me.matl114.gui.complex.config;
 
 import com.mojang.datafixers.util.Pair;
 import java.util.*;
+import me.matl114.gui.Constants;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
@@ -93,8 +94,8 @@ public class ConfigureListWidget
         return new ButtonElement(
                         TextProvider.of(Text.translatable("config.index." + str.getFirst())),
                         ButtonAction.run(() -> this.setGlobal(str)))
-                .setInactiveId(ButtonElement.BUTTON)
-                .setActiveId(ButtonElement.BUTTON_HIGHLIGHT)
+                .setInactiveId(Constants.BUTTON_SPRITE)
+                .setActiveId(Constants.BUTTON_HIGHLIGHT_SPRITE)
                 .setActivePredicate((el) ->
                         Objects.equals(cachedConfigUserSelectIndex.get(this.config.getConfigName()), str.getFirst()))
                 .withTooltips(TooltipHandler.of(

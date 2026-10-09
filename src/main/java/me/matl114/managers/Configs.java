@@ -2,7 +2,9 @@ package me.matl114.managers;
 
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -12,6 +14,16 @@ import me.matl114.utils.config.NumberClamp;
 import net.minecraft.util.Identifier;
 
 public class Configs {
+    private static final Set<Config> PLUGIN_CONFIGS = new LinkedHashSet<>();
+
+    /** Registers a config supplied by a plugin for the global config lifecycle. */
+    public static void registerConfig(Config config) {
+        Objects.requireNonNull(config, "config");
+        if (PLUGIN_CONFIGS.add(config) && init) {
+            config.registerGlobal();
+        }
+    }
+
     public static void loadConfigs() {
         if (true) {
             MINE_CONFIG.registerGlobal();
@@ -35,6 +47,7 @@ public class Configs {
             MISC_CONFIG.registerGlobal();
             TOGGLE_CONFIG.registerGlobal();
         }
+        PLUGIN_CONFIGS.forEach(Config::registerGlobal);
         if (init) {
             Config.reloadAll();
         } else {

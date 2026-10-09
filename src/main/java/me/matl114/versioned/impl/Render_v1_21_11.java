@@ -7,6 +7,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import java.awt.*;
 import java.util.List;
 import java.util.function.Function;
+import me.matl114.plugins.MainPlugin;
 import me.matl114.renderer.TextRenderers;
 import me.matl114.utils.render.ColorQuad;
 import me.matl114.utils.render.Quad;
@@ -45,12 +46,12 @@ public class Render_v1_21_11 implements VRender, VRender.WrapRenderOperation {
 
     public static final RenderPipeline DEBUG_LINES =
             RenderPipelines.register(RenderPipeline.builder(RenderPipelines.RENDERTYPE_LINES_SNIPPET)
-                    .withLocation(Identifier.tryParse("slimefunhelper:pipeline/debug_lines"))
+                    .withLocation(MainPlugin.identifier("pipeline/debug_lines"))
                     .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
                     .build());
 
     public static final RenderLayer LINES = RenderLayer.of(
-            "slimefunhelper:debug_lines",
+            MainPlugin.ID + ":debug_lines",
             RenderSetup.builder(DEBUG_LINES)
                     .layeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
                     .outputTarget(OutputTarget.ITEM_ENTITY_TARGET)
@@ -59,7 +60,7 @@ public class Render_v1_21_11 implements VRender, VRender.WrapRenderOperation {
 
     public static final RenderPipeline DEBUG_LINES_STRIP = RenderPipelines.register(RenderPipeline.builder(
                     RenderPipelines.RENDERTYPE_LINES_SNIPPET)
-            .withLocation(Identifier.tryParse("slimefunhelper:pipeline/debug_lines_strip"))
+            .withLocation(MainPlugin.identifier("pipeline/debug_lines_strip"))
             .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
             .withVertexFormat(VertexFormats.POSITION_COLOR_NORMAL_LINE_WIDTH, VertexFormat.DrawMode.DEBUG_LINE_STRIP)
             .withCull(false)
@@ -67,7 +68,7 @@ public class Render_v1_21_11 implements VRender, VRender.WrapRenderOperation {
 
     @ApiStatus.Experimental
     public static final RenderLayer LINES_STRIP = RenderLayer.of(
-            "slimefunhelper:debug_lines_strip",
+            MainPlugin.ID + ":debug_lines_strip",
             RenderSetup.builder(DEBUG_LINES_STRIP)
                     .layeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
                     .outputTarget(OutputTarget.ITEM_ENTITY_TARGET)
@@ -76,7 +77,7 @@ public class Render_v1_21_11 implements VRender, VRender.WrapRenderOperation {
 
     public static final RenderPipeline DEBUG_QUADS =
             RenderPipelines.register(RenderPipeline.builder(RenderPipelines.POSITION_COLOR_SNIPPET)
-                    .withLocation(Identifier.tryParse("slimefunhelper:pipeline/debug_quads"))
+                    .withLocation(MainPlugin.identifier("pipeline/debug_quads"))
                     .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
                     .build());
 
@@ -85,41 +86,41 @@ public class Render_v1_21_11 implements VRender, VRender.WrapRenderOperation {
 
     public static final RenderPipeline DEBUG_RECTS =
             RenderPipelines.register(RenderPipeline.builder(RenderPipelines.POSITION_COLOR_SNIPPET)
-                    .withLocation(Identifier.tryParse("slimefunhelper:pipeline/debug_rects"))
+                    .withLocation(MainPlugin.identifier("pipeline/debug_rects"))
                     .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
                     .withVertexFormat(VertexFormats.POSITION_COLOR, VertexFormat.DrawMode.TRIANGLES)
                     .build());
 
     public static final RenderLayer RECTS = RenderLayer.of(
-            "slimefunhelper:debug_rects",
+            MainPlugin.ID + ":debug_rects",
             RenderSetup.builder(DEBUG_RECTS).translucent().build());
 
     public static final RenderPipeline DEBUG_RECTS_STRIP =
             RenderPipelines.register(RenderPipeline.builder(RenderPipelines.POSITION_COLOR_SNIPPET)
-                    .withLocation(Identifier.tryParse("slimefunhelper:pipeline/debug_rects"))
+                    .withLocation(MainPlugin.identifier("pipeline/debug_rects"))
                     .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
                     .withVertexFormat(VertexFormats.POSITION_COLOR, VertexFormat.DrawMode.TRIANGLE_STRIP)
                     .build());
 
     public static final RenderLayer RECTS_STRIP = RenderLayer.of(
-            "slimefunhelper:debug_rects",
+            MainPlugin.ID + ":debug_rects",
             RenderSetup.builder(DEBUG_RECTS_STRIP).translucent().build());
 
     public static final RenderLayer QUADS = RenderLayer.of(
-            "slimefunhelper:debug_quads",
+            MainPlugin.ID + ":debug_quads",
             RenderSetup.builder(DEBUG_QUADS).translucent().build());
 
     public static final RenderPipeline DEBUG_QUADS_NO_CULL =
             RenderPipelines.register(RenderPipeline.builder(RenderPipelines.POSITION_COLOR_SNIPPET)
-                    .withLocation(Identifier.tryParse("slimefunhelper:pipeline/debug_quads"))
+                    .withLocation(MainPlugin.identifier("pipeline/debug_quads"))
                     .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
                     .withCull(false)
                     .build());
 
     public static final RenderPipeline ENTITY_HIGHLIGHT =
             RenderPipelines.register(RenderPipeline.builder(RenderPipelines.RENDERTYPE_OUTLINE_SNIPPET)
-                    .withLocation(Identifier.tryParse("slimefunhelper:pipeline/entity_highlight"))
-                    .withFragmentShader(Identifier.tryParse("slimefunhelper:core/entity_highlight"))
+                    .withLocation(MainPlugin.identifier("pipeline/entity_highlight"))
+                    .withFragmentShader(MainPlugin.identifier("core/entity_highlight"))
                     .withBlend(BlendFunction.TRANSLUCENT)
                     .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
                     .withDepthWrite(false)
@@ -129,24 +130,24 @@ public class Render_v1_21_11 implements VRender, VRender.WrapRenderOperation {
 
     public static Function<Identifier, RenderLayer> ENTITY_HIGHLIGHT_FACTORY =
             Util.memoize(identifier -> RenderLayer.of(
-                    "slimefunhelper:entity_highlight/" + identifier,
+                    MainPlugin.ID + ":entity_highlight/" + identifier,
                     RenderSetup.builder(ENTITY_HIGHLIGHT)
                             .texture("Sampler0", identifier)
                             .translucent()
                             .build()));
 
     public static final RenderLayer QUADS_NO_CULL = RenderLayer.of(
-            "slimefunhelper:debug_quads",
+            MainPlugin.ID + ":debug_quads",
             RenderSetup.builder(DEBUG_QUADS_NO_CULL).translucent().build());
 
     public static final RenderPipeline DEBUG_GUI_3D =
             RenderPipelines.register(RenderPipeline.builder(RenderPipelines.GUI_SNIPPET)
-                    .withLocation(Identifier.tryParse("slimefunhelper:pipeline/gui_3d"))
+                    .withLocation(MainPlugin.identifier("pipeline/gui_3d"))
                     .withCull(false)
                     .build());
 
     public static final RenderLayer GUI_3D = RenderLayer.of(
-            "slimefunhelper:gui_3d",
+            MainPlugin.ID + ":gui_3d",
             RenderSetup.builder(DEBUG_GUI_3D).translucent().build());
 
     public static RenderPipeline DEBUG_GUI_TEXTURE_3D =
@@ -157,7 +158,7 @@ public class Render_v1_21_11 implements VRender, VRender.WrapRenderOperation {
 
     public static Function<Identifier, RenderLayer> GUI_TEXTURE_3D_FACTORY = Util.memoize((identifier -> {
         return RenderLayer.of(
-                "slimefunhelper:gui_textured_3d/" + identifier.toString(),
+                MainPlugin.ID + ":gui_textured_3d/" + identifier.toString(),
                 RenderSetup.builder(DEBUG_GUI_TEXTURE_3D)
                         .texture("Sampler0", identifier)
                         .build());
@@ -165,7 +166,7 @@ public class Render_v1_21_11 implements VRender, VRender.WrapRenderOperation {
 
     public static Function<Identifier, RenderLayer> GUI_SPRITE_TEXTURE_3D_FACTORY = Util.memoize((identifier -> {
         return RenderLayer.of(
-                "slimefunhelper:gui_textured_3d/" + identifier.toString(),
+                MainPlugin.ID + ":gui_textured_3d/" + identifier.toString(),
                 RenderSetup.builder(DEBUG_GUI_TEXTURE_3D)
                         .texture("Sampler0", identifier, RenderLayers.BLOCK_SAMPLER)
                         .build());

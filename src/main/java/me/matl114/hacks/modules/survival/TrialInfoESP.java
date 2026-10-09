@@ -278,7 +278,8 @@ public class TrialInfoESP extends BaseModule {
             if (textMode.get().isIn(RenderMode.RENDER_3D)) {
                 textCollector.render3D(event.context().stack(), event.context().partialTicks());
             }
-            lineRenderCollector.render3D(event.context().stack(), event.context().partialTicks());
+            lineRenderCollector.render3D(
+                    event.context().stack(), event.context().partialTicks());
             traceCollector.render3D(event.context().stack(), event.context().partialTicks());
             boxCollector.render3D(event.context().stack(), event.context().partialTicks());
             boxCollector2.render3D(event.context().stack(), event.context().partialTicks());

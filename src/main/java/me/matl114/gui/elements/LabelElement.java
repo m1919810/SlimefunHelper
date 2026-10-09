@@ -5,6 +5,7 @@ import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.TextAlign;
 import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.complex.RawTextElement;
+import me.matl114.plugins.MainPlugin;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
@@ -14,7 +15,7 @@ public class LabelElement extends AbstractElement {
     private final RawTextElement textElement;
 
     protected static final Identifier BACKGROUND_RESOURCE =
-            new Identifier("slimefunhelper", "textures/custom/recipecontainer.png");
+            MainPlugin.identifier("textures/custom/recipecontainer.png");
 
     public static LabelElement instance(Text text) {
         return new LabelElement(text, Colors.WHITE);
