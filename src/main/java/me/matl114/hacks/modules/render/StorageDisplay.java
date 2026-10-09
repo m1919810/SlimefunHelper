@@ -26,6 +26,7 @@ import me.matl114.managers.Tasks;
 import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.plugins.MainPlugin;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.ResourceUtils;
 import me.matl114.utils.inventory.ItemStackSample;
@@ -296,7 +297,7 @@ public class StorageDisplay extends BaseModule {
             if (optionalChicken != null) {
                 String val = dnaInfo.get(optionalChicken);
                 if (val != null) {
-                    Identifier id = new Identifier("slimefunhelper", "gce/" + val);
+                    Identifier id = MainPlugin.identifier("gce/" + val);
                     RenderListener.getModModel(id).ifPresent((v) -> IItemModelEvent.context(id));
                 }
             }

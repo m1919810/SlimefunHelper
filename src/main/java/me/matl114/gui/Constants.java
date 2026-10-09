@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import java.awt.*;
 import java.util.List;
 import java.util.Map;
+import me.matl114.plugins.MainPlugin;
 import me.matl114.utils.ChatUtils;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.text.Text;
@@ -18,20 +19,38 @@ public interface Constants {
     Color SLOT_HIGHLIGHT_COLOR = new Color(128, 128, 128);
     int SLOT_HIGHLIGHT_INT = -2130706433;
 
-    public static final Identifier SEARCH_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/search");
+    public static final Identifier SEARCH_TEXTURE_SPRITE = MainPlugin.identifier("gui/search");
 
-    public static final Identifier FORMATTING_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/format");
+    public static final Identifier FORMATTING_TEXTURE_SPRITE = MainPlugin.identifier("gui/format");
 
-    public static final Identifier LIST_TAG_SPRITE = new Identifier("slimefunhelper", "gui/list_tag");
+    public static final Identifier LIST_TAG_SPRITE = MainPlugin.identifier("gui/list_tag");
 
-    public static final Identifier EDITOR_SPRITE = new Identifier("slimefunhelper", "gui/editor");
+    public static final Identifier EDITOR_SPRITE = MainPlugin.identifier("gui/editor");
 
-    public static final Identifier REMOVE_SPRITE = new Identifier("slimefunhelper", "gui/remove");
+    public static final Identifier REMOVE_SPRITE = MainPlugin.identifier("gui/remove");
 
-    public static final Identifier SHIFT_UP_SPRITE = new Identifier("slimefunhelper", "gui/move_up");
-    public static final Identifier SHIFT_DOWN_SPRITE = new Identifier("slimefunhelper", "gui/move_down");
+    public static final Identifier SHIFT_UP_SPRITE = MainPlugin.identifier("gui/move_up");
+    public static final Identifier SHIFT_DOWN_SPRITE = MainPlugin.identifier("gui/move_down");
 
-    public static final Identifier ADD_SPRITE = new Identifier("slimefunhelper", "gui/add");
+    public static final Identifier ADD_SPRITE = MainPlugin.identifier("gui/add");
+
+    public static final Identifier RESET_BUTTON_SPRITE = MainPlugin.identifier("gui/reset");
+
+    public static final Identifier SAVE_SPRITE = MainPlugin.identifier("gui/save");
+    public static final Identifier COPY_COMMAND_SPRITE = MainPlugin.identifier("gui/copy_command");
+    public static final Identifier SNBT_EDITOR_SPRITE = MainPlugin.identifier("gui/snbt_editor");
+
+    public static final Identifier TRADE_ARROW_SPRITE = MainPlugin.identifier("gui/trade_arrow");
+
+    public static final Identifier ARROW_LEFT_SPRITE = MainPlugin.identifier("gui/arrow_left");
+    public static final Identifier ARROW_RIGHT_SPRITE = MainPlugin.identifier("gui/arrow_right");
+
+    public static final Identifier BUTTON_SPRITE = MainPlugin.identifier("gui/button");
+    public static final Identifier BUTTON_HIGHLIGHT_SPRITE = MainPlugin.identifier("gui/button_highlighted");
+    public static final Identifier BUTTON_INACTIVE_SPRITE = MainPlugin.identifier("gui/button_disabled");
+
+    public static final Identifier LOCK_ENABLE_SPRITE = MainPlugin.identifier("gui/lock_enable");
+    public static final Identifier LOCK_DISABLE_SPRITE = MainPlugin.identifier("gui/lock_disable");
 
     public static List<Text> searchRegistryTooltips() {
         return ChatUtils.parseTooltipsTranslation("widget.gui.constants.search-registry.tooltips", "");
@@ -49,16 +68,16 @@ public interface Constants {
         return ChatUtils.parseTooltipsTranslation("widget.gui.constants.open-list-preview.tooltips", "");
     }
 
-    public static final Identifier EXPAND_GUI_ON_SPRITE = new Identifier("slimefunhelper", "gui/triangle");
-    public static final Identifier EXPAND_GUI_OFF_SPRITE = new Identifier("slimefunhelper", "gui/triangle_90");
+    public static final Identifier EXPAND_GUI_ON_SPRITE = MainPlugin.identifier("gui/triangle");
+    public static final Identifier EXPAND_GUI_OFF_SPRITE = MainPlugin.identifier("gui/triangle_90");
 
     public static final Map<EquipmentSlot, Identifier> EMPTY_SLOT_TO_SPRITE =
             ImmutableMap.<EquipmentSlot, Identifier>builder()
-                    .put(EquipmentSlot.MAINHAND, new Identifier("slimefunhelper", "gui/empty_main_hand_slot"))
-                    .put(EquipmentSlot.OFFHAND, new Identifier("slimefunhelper", "gui/empty_armor_slot_shield"))
-                    .put(EquipmentSlot.FEET, new Identifier("slimefunhelper", "gui/empty_armor_slot_boots"))
-                    .put(EquipmentSlot.LEGS, new Identifier("slimefunhelper", "gui/empty_armor_slot_leggings"))
-                    .put(EquipmentSlot.CHEST, new Identifier("slimefunhelper", "gui/empty_armor_slot_chestplate"))
-                    .put(EquipmentSlot.HEAD, new Identifier("slimefunhelper", "gui/empty_armor_slot_helmet"))
+                    .put(EquipmentSlot.MAINHAND, MainPlugin.identifier("gui/empty_main_hand_slot"))
+                    .put(EquipmentSlot.OFFHAND, MainPlugin.identifier("gui/empty_armor_slot_shield"))
+                    .put(EquipmentSlot.FEET, MainPlugin.identifier("gui/empty_armor_slot_boots"))
+                    .put(EquipmentSlot.LEGS, MainPlugin.identifier("gui/empty_armor_slot_leggings"))
+                    .put(EquipmentSlot.CHEST, MainPlugin.identifier("gui/empty_armor_slot_chestplate"))
+                    .put(EquipmentSlot.HEAD, MainPlugin.identifier("gui/empty_armor_slot_helmet"))
                     .build();
 }

@@ -4,13 +4,14 @@ import me.matl114.gui.basic.AbstractElement;
 import me.matl114.gui.basic.ColorSampler;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.ExecutableWidget;
+import me.matl114.plugins.MainPlugin;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.util.Identifier;
 
 public class PlateElement extends AbstractElement {
     private static final int xTextureOffset = 0;
     private static final int yTextureOffset = 66;
-    public static final Identifier TEXTURE = new Identifier("slimefunhelper", "textures/custom/recipecontainer.png");
+    public static final Identifier TEXTURE = MainPlugin.identifier("textures/custom/recipecontainer.png");
     private final ColorSampler color;
     private final boolean catchInteract;
 

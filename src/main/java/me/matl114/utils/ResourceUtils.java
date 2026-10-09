@@ -3,6 +3,7 @@ package me.matl114.utils;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Predicate;
+import me.matl114.plugins.MainPlugin;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
@@ -35,12 +36,12 @@ public class ResourceUtils {
 
     public static Set<Identifier> lookupOurModelResources(ResourceManager m, String prefix) {
         return ResourceUtils.lookupResources(
-                m, "slimefunhelper", "slimefunhelper", "models", ".json", s -> s.startsWith(prefix));
+                m, MainPlugin.ID, MainPlugin.ID, "models", ".json", s -> s.startsWith(prefix));
     }
 
     public static Set<Identifier> lookupOurTextureResources(ResourceManager m, String prefix) {
         return ResourceUtils.lookupResources(
-                m, "slimefunhelper", "slimefunhelper", "textures", ".png", s -> s.startsWith(prefix));
+                m, MainPlugin.ID, MainPlugin.ID, "textures", ".png", s -> s.startsWith(prefix));
     }
 
     public static Identifier ofAtlasTexture(String type) {

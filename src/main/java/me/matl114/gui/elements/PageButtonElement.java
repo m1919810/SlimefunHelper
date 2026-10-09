@@ -4,13 +4,13 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
+import me.matl114.gui.Constants;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.basic.TooltipHandler;
 import me.matl114.utils.ChatUtils;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 public class PageButtonElement extends ButtonElement {
@@ -35,9 +35,6 @@ public class PageButtonElement extends ButtonElement {
                 set,
                 1);
     }
-
-    protected static final Identifier ARROW_LEFT_SPRITE = new Identifier("slimefunhelper", "gui/arrow_left");
-    protected static final Identifier ARROW_RIGHT_SPRITE = new Identifier("slimefunhelper", "gui/arrow_right");
 
     public PageButtonElement(List<Text> pageSwitch, int maxPage, AtomicInteger page, boolean left) {
         this(pageSwitch, maxPage, page::get, page::set, left ? -1 : 1);
@@ -66,7 +63,9 @@ public class PageButtonElement extends ButtonElement {
         int tobe = pageGetter.getAsInt() + delta;
         boolean inactive = tobe <= 0 || tobe > maxPage.getAsInt();
         context.drawGuiTexture(
-                (inactive ? BUTTON_INACTIVE : (highlight ? BUTTON_HIGHLIGHT : BUTTON)),
+                (inactive
+                        ? Constants.BUTTON_INACTIVE_SPRITE
+                        : (highlight ? Constants.BUTTON_HIGHLIGHT_SPRITE : Constants.BUTTON_SPRITE)),
                 0,
                 0,
                 element.getTextureWidth(),
@@ -74,7 +73,7 @@ public class PageButtonElement extends ButtonElement {
         float x = (0.125f * element.getTextureWidth());
         float y = (0.125f * element.getTextureHeight());
         context.drawGuiTexture(
-                delta < 0 ? ARROW_LEFT_SPRITE : ARROW_RIGHT_SPRITE,
+                delta < 0 ? Constants.ARROW_LEFT_SPRITE : Constants.ARROW_RIGHT_SPRITE,
                 (int) x,
                 (int) y,
                 0,

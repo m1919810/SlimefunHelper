@@ -48,7 +48,6 @@ import me.matl114.gui.Constants;
 import me.matl114.gui.WidgetUtils;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.config.ListModifyWidget;
-import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.IconElement;
 import me.matl114.gui.elements.MultiLineTextElement;
 import me.matl114.gui.interfaces.ElementFactory;
@@ -183,8 +182,8 @@ public class EncryptChat extends BaseModule {
         SubScreenWidget subScreen = new SubScreenWidget(0, 0, 220, 20);
         ExecutableWidget.instance(2, 2, 16, 16)
                 .setElementHandler(IconElement.statedGuiPredicate(
-                        ButtonElement.BUTTON,
-                        ButtonElement.BUTTON_INACTIVE,
+                        Constants.BUTTON_SPRITE,
+                        Constants.BUTTON_INACTIVE_SPRITE,
                         ButtonAction.run(() -> {
                             if (entry == index.getValue()) {
                                 index.setValue(null);
