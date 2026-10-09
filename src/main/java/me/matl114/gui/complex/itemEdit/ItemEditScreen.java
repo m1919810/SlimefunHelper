@@ -154,13 +154,6 @@ public class ItemEditScreen extends ConfirmingBigScreen {
     ExecutableWidget snbt;
     ExecutableWidget guide;
 
-    protected static final Identifier SAVE_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/save");
-
-    protected static final Identifier COPYCMD_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/copy_command");
-    protected static final Identifier EDITOR_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/editor");
-
-    protected static final Identifier SNBT_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/snbt_editor");
-    protected static final Identifier GUIDE_TEXTURE_SPRITE = new Identifier("slimefunhelper", "gui/list_tag");
     protected ItemProcessingSubScreen currentSubScreen;
 
     ContentDelegateWidget<EditBoxWidget> optionalMultiLine;
@@ -226,31 +219,32 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                 .addTo(this);
         // 生成切换按钮
         this.saveItem = ExecutableWidget.instance(this.x + CONTENT_START_X + 1, this.y + CONTENT_START_Y + 1, 18, 18)
-                .setElementHandler(IconElement.fixedGui(SAVE_TEXTURE_SPRITE, ButtonAction.run(this::executeSave))
+                .setElementHandler(IconElement.fixedGui(Constants.SAVE_SPRITE, ButtonAction.run(this::executeSave))
                         .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
                                 "widget.gui.item-edit-screen.operate.save-item.tooltips", ""))))
                 .addTo(this);
         this.copyCommand = ExecutableWidget.instance(
                         this.x + CONTENT_START_X + 21, this.y + CONTENT_START_Y + 1, 18, 18)
-                .setElementHandler(IconElement.fixedGui(COPYCMD_TEXTURE_SPRITE, ButtonAction.run(this::executeCmdCopy))
-                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                "widget.gui.item-edit-screen.operate.copy-give-command.tooltips", ""))))
+                .setElementHandler(
+                        IconElement.fixedGui(Constants.COPY_COMMAND_SPRITE, ButtonAction.run(this::executeCmdCopy))
+                                .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                        "widget.gui.item-edit-screen.operate.copy-give-command.tooltips", ""))))
                 .addTo(this);
         this.editor = ExecutableWidget.instance(this.x + CONTENT_START_X + 41, this.y + CONTENT_START_Y + 1, 18, 18)
-                .setElementHandler(
-                        IconElement.fixedGui(EDITOR_TEXTURE_SPRITE, ButtonAction.run(() -> this.setState(State.EDITOR)))
-                                .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                        "widget.gui.item-edit-screen.operate.switch-to-nbt-editor.tooltips", ""))))
+                .setElementHandler(IconElement.fixedGui(
+                                Constants.EDITOR_SPRITE, ButtonAction.run(() -> this.setState(State.EDITOR)))
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.item-edit-screen.operate.switch-to-nbt-editor.tooltips", ""))))
                 .addTo(this);
         this.snbt = ExecutableWidget.instance(this.x + CONTENT_START_X + 61, this.y + CONTENT_START_Y + 1, 18, 18)
-                .setElementHandler(
-                        IconElement.fixedGui(SNBT_TEXTURE_SPRITE, ButtonAction.run(() -> this.setState(State.SNBT)))
-                                .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                        "widget.gui.item-edit-screen.operate.switch-to-snbt-editor.tooltips", ""))))
+                .setElementHandler(IconElement.fixedGui(
+                                Constants.SNBT_EDITOR_SPRITE, ButtonAction.run(() -> this.setState(State.SNBT)))
+                        .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                "widget.gui.item-edit-screen.operate.switch-to-snbt-editor.tooltips", ""))))
                 .addTo(this);
         this.guide = ExecutableWidget.instance(this.x + CONTENT_START_X + 81, this.y + CONTENT_START_Y + 1, 18, 18)
                 .setElementHandler(IconElement.fixedGui(
-                                GUIDE_TEXTURE_SPRITE,
+                                Constants.LIST_TAG_SPRITE,
                                 ButtonAction.run(SlimefunTasks.getSlimefunGuide()::openMainGuideMenu))
                         .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
                                 "widget.gui.item-edit-screen.operate.open-slimefun-guide.tooltips", ""))))
@@ -504,8 +498,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
                         subScreenWidget.addDrawableChild(ExecutableWidget.instance(
                                         50 + 1 + 20 * index, 1, 20 - 2, 20 - 2)
                                 .setElementHandler(IconElement.statedGuiPredicate(
-                                                ButtonElement.BUTTON,
-                                                ButtonElement.BUTTON_INACTIVE,
+                                                Constants.BUTTON_SPRITE,
+                                                Constants.BUTTON_INACTIVE_SPRITE,
                                                 ButtonAction.run(() -> sec.setHideFlag(sample, !sec.isHide(sample))),
                                                 (bl) -> sec.isHide(sample))
                                         .withTooltips(TooltipHandler.of(List.of(Text.literal(sec.displayName()))))));

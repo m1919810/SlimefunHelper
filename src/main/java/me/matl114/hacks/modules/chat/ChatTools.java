@@ -6,6 +6,7 @@ import me.matl114.accessors.access.ChatScreenAccess;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.gui.Constants;
 import me.matl114.gui.McWidgetHelpers;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.IconElement;
@@ -30,7 +31,6 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 public class ChatTools extends BaseModule {
@@ -126,8 +126,6 @@ public class ChatTools extends BaseModule {
         }
     }
 
-    private static final Identifier LOCK_ENABLE_SPRITE = Identifier.tryParse("slimefunhelper:gui/lock_enable");
-    private static final Identifier LOCK_DISABLE_SPRITE = Identifier.tryParse("slimefunhelper:gui/lock_disable");
     private static final List<Text> TOOLTIPS_CHAT_TOOLS = List.of(Text.literal("点击展开/关闭聊天框小工具栏"));
 
     private static final List<Text> TOOLTIPS_SPECIAL_CHARS =
@@ -242,8 +240,8 @@ public class ChatTools extends BaseModule {
                 .addToSub(basicSubScreenWidget);
         createElement(
                         IconElement.statedGuiPredicate(
-                                LOCK_ENABLE_SPRITE,
-                                LOCK_DISABLE_SPRITE,
+                                Constants.LOCK_ENABLE_SPRITE,
+                                Constants.LOCK_DISABLE_SPRITE,
                                 ButtonAction.empty(),
                                 (el) -> ChatTasks.getEncryptChat().shouldEncryptSendMessage()),
                         () -> ChatUtils.parseTooltipsTranslation("widget.chat-tools.toggle-encrypt.tooltips", ""),

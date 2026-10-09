@@ -8,6 +8,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import me.matl114.gui.Constants;
 import me.matl114.gui.basic.ButtonAction;
 import me.matl114.gui.basic.ColorProvider;
 import me.matl114.gui.basic.ColorSampler;
@@ -16,7 +17,6 @@ import me.matl114.gui.basic.InputHandler;
 import me.matl114.gui.basic.RenderHandler;
 import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.basic.TooltipHandler;
-import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.IconElement;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
@@ -185,8 +185,8 @@ public interface ElementSupplier {
 
         public ButtonBuilder() {
             this.guiTexture = true;
-            this.inactiveId = ButtonElement.BUTTON_INACTIVE;
-            this.activeId = ButtonElement.BUTTON;
+            this.inactiveId = Constants.BUTTON_INACTIVE_SPRITE;
+            this.activeId = Constants.BUTTON_SPRITE;
         }
 
         public ButtonBuilder text(Text text) {

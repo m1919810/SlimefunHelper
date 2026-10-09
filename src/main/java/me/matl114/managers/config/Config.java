@@ -15,13 +15,13 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.Setter;
-import me.matl114.SlimefunHelper;
 import me.matl114.managers.*;
 import me.matl114.managers.api.AutoRegisterType;
 import me.matl114.managers.input.IHotKey;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.managers.input.SimpleHotKey;
 import me.matl114.managers.input.SimpleInputManager;
+import me.matl114.plugins.MainPlugin;
 import me.matl114.utils.FileUtils;
 import me.matl114.utils.ReflectUtils;
 import net.minecraft.registry.RegistryKey;
@@ -37,7 +37,7 @@ public class Config implements RefMap {
     private static final Logger logger;
 
     static {
-        logger = Logger.getLogger(SlimefunHelper.MOD_ID);
+        logger = Logger.getLogger(MainPlugin.ID);
     }
 
     protected Map<String, Object> fileMap;
@@ -47,8 +47,8 @@ public class Config implements RefMap {
     @Getter
     private static final Set<Config> configs = new LinkedHashSet<>();
 
-    public static final SimpleRegistry<Config> REGISTRY = new SimpleRegistry<>(
-            RegistryKey.ofRegistry(Identifier.of("slimefunhelper", "configs")), Lifecycle.stable());
+    public static final SimpleRegistry<Config> REGISTRY =
+            new SimpleRegistry<>(RegistryKey.ofRegistry(MainPlugin.identifier("configs")), Lifecycle.stable());
     private static final Set<Config> allConfigInternal = new LinkedHashSet<>();
 
     @Getter
@@ -60,8 +60,7 @@ public class Config implements RefMap {
             RegistryKey<Config> registryKey = RegistryKey.of(
                     REGISTRY.getKey(),
                     Identifier.of(
-                            "slimefunhelper",
-                            configName.toLowerCase(Locale.ROOT).replace(" ", "_")));
+                            MainPlugin.ID, configName.toLowerCase(Locale.ROOT).replace(" ", "_")));
             this.registryKey = registryKey;
             REGISTRY.add(this.registryKey, this, RegistryEntryInfo.DEFAULT);
         }

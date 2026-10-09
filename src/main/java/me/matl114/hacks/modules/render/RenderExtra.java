@@ -1,6 +1,7 @@
 package me.matl114.hacks.modules.render;
 
 import java.util.*;
+import java.net.URI;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;

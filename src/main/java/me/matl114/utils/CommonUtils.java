@@ -2,11 +2,9 @@ package me.matl114.utils;
 
 import java.io.File;
 import java.util.List;
-import me.matl114.SlimefunHelper;
 import me.matl114.utils.world.ChunkIterator;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.registry.RegistryKey;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.chunk.Chunk;
@@ -21,10 +19,6 @@ public class CommonUtils {
         } catch (Throwable e) {
             return defaultValue;
         }
-    }
-
-    public static Identifier getNamespaceKey(String id) {
-        return new Identifier(SlimefunHelper.MOD_ID, id);
     }
 
     private static final MinecraftClient mc = MinecraftClient.getInstance();

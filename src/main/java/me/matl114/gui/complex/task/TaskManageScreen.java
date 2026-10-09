@@ -3,6 +3,7 @@ package me.matl114.gui.complex.task;
 import com.mojang.datafixers.util.Pair;
 import java.util.Map;
 import java.util.Objects;
+import me.matl114.gui.Constants;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.presets.index.IndexedScreen;
@@ -34,8 +35,8 @@ public class TaskManageScreen extends IndexedScreen<Pair<String, TaskManager>, L
     protected ElementHandler createIndexHandler(Pair<String, TaskManager> val) {
         return new ButtonElement(
                         TextProvider.of(Text.literal(val.getFirst())), ButtonAction.run(() -> this.setGlobal(val)))
-                .setInactiveId(ButtonElement.BUTTON)
-                .setActiveId(ButtonElement.BUTTON_HIGHLIGHT)
+                .setInactiveId(Constants.BUTTON_SPRITE)
+                .setActiveId(Constants.BUTTON_HIGHLIGHT_SPRITE)
                 .setActivePredicate((el) -> Objects.equals(selectingTaskManager, val.getFirst()));
     }
 

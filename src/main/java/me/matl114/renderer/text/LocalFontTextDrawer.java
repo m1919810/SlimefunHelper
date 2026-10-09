@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import me.matl114.plugins.MainPlugin;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.EffectGlyph;
 import net.minecraft.client.font.Font;
@@ -39,7 +40,7 @@ import net.minecraft.util.Util;
 
 public final class LocalFontTextDrawer extends ResourceFontTextDrawer implements AutoCloseable {
     private static final AtomicLong FONT_INSTANCES = new AtomicLong();
-    private static final Identifier FONT_LOCATION = Identifier.of("slimefunhelper", "local-font.ttf");
+    private static final Identifier FONT_LOCATION = MainPlugin.identifier("local-font.ttf");
     public static final float DEFAULT_FONT_SIZE = 11.0F;
     private static final float OVERSAMPLE = 4.0F;
     private static final net.minecraft.client.font.TrueTypeFontLoader.Shift SHIFT =
@@ -54,7 +55,7 @@ public final class LocalFontTextDrawer extends ResourceFontTextDrawer implements
     }
 
     public LocalFontTextDrawer(Path path, float fontSize) {
-        this(load(path, fontSize, Identifier.of("slimefunhelper", "local-font/" + FONT_INSTANCES.getAndIncrement())));
+        this(load(path, fontSize, MainPlugin.identifier("local-font/" + FONT_INSTANCES.getAndIncrement())));
     }
 
     private LocalFontTextDrawer(LoadedFont loadedFont) {

@@ -3,13 +3,13 @@ package me.matl114.gui.complex.config;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
+import me.matl114.gui.Constants;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.managers.config.Ref;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 
 public class DefaultedKeyValueInputWidget<W> extends KeyValueInputWidget<W> {
     Optional<W> reference;
@@ -70,8 +70,6 @@ public class DefaultedKeyValueInputWidget<W> extends KeyValueInputWidget<W> {
         this.reference = kv;
     }
 
-    public static final Identifier RESET_BUTTON = new Identifier("slimefunhelper", "gui/reset");
-
     @Override
     protected void init() {
         super.init();
@@ -95,7 +93,8 @@ public class DefaultedKeyValueInputWidget<W> extends KeyValueInputWidget<W> {
                             int height = element.getTextureHeight();
                             int hhw = width / 4;
                             int hhh = height / 4;
-                            context.drawGuiTexture(RESET_BUTTON, hhw, hhh, width - 2 * hhw, height - 2 * hhh);
+                            context.drawGuiTexture(
+                                    Constants.RESET_BUTTON_SPRITE, hhw, hhh, width - 2 * hhw, height - 2 * hhh);
                         }))
                 .addToSub(this);
     }
