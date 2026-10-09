@@ -116,6 +116,12 @@ public abstract class IconElement extends BoxElement {
 
     public IconElement(ButtonAction action) {
         super(action);
+        withRenderer(new FrameElement((element, highlight) -> {
+            ColorProvider provider = highLightColor;
+            return provider == null
+                    ? (highlight ? Integer.valueOf(Colors.WHITE) : null)
+                    : provider.provideTextColor(element, highlight);
+        }));
     }
 
     @Nullable
@@ -132,13 +138,6 @@ public abstract class IconElement extends BoxElement {
                 context.drawTexturedQuad(
                         id, 0, element.getTextureWidth(), 0, element.getTextureHeight(), 0, 0, 1, 0, 1);
             }
-        }
-        Integer color = (highLightColor == null)
-                ? (highlight ? Integer.valueOf(Colors.WHITE) : null)
-                : highLightColor.provideTextColor(element, highlight);
-        if (color != null) {
-            RenderHandler.drawHighlightFrame(
-                    context, 0, 0, element.getTextureWidth(), element.getTextureHeight(), color);
         }
     }
 

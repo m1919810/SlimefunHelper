@@ -159,7 +159,10 @@ public class CustomElementFactory implements ElementFactory {
                         textColor(),
                         (el, selected) -> {
                             if (enable.getAsBoolean()) {
-                                return colors().frameColor().color();
+                                return (active.getAsBoolean()
+                                                ? colors().activeFrameColor()
+                                                : colors().inactiveFrameColor())
+                                        .color();
                             }
                             return selected ? -1 : null;
                         })
@@ -221,6 +224,6 @@ public class CustomElementFactory implements ElementFactory {
                 handler,
                 ButtonAction.run(() -> accessor.setValue(!accessor.getValue())),
                 accessor::getValue,
-                frame ? accessor::getValue : () -> false);
+                frame ? () -> true : () -> false);
     }
 }

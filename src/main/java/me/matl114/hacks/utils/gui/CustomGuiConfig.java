@@ -13,7 +13,8 @@ public record CustomGuiConfig(
         WrapRGBA plateColor,
         WrapRGBA buttonActiveColor,
         WrapRGBA buttonInactiveColor,
-        WrapRGBA frameColor,
+        WrapRGBA activeFrameColor,
+        WrapRGBA inactiveFrameColor,
         WrapRGBA textColor,
         WrapRGBA textBackground,
         WrapRGBA sliderColor)
@@ -24,6 +25,8 @@ public record CustomGuiConfig(
     public static final WrapRGBA DEFAULT_BACKGROUND_COLOR = new WrapRGBA("#323232", 192);
     public static final WrapRGBA DEFAULT_BUTTON_ACTIVE_COLOR = new WrapRGBA("#323232", 216);
     public static final WrapRGBA DEFAULT_BUTTON_INACTIVE_COLOR = new WrapRGBA("#323232", 128);
+    public static final WrapRGBA DEFAULT_FRAME_COLOR = new WrapRGBA("#984FDB", 255);
+    public static final WrapRGBA DEFAULT_INACTIVE_FRAME_COLOR = new WrapRGBA("#D3D3D3", 40);
     public static final WrapRGBA DEFAULT_TEXT_COLOR = new WrapRGBA("#FFFFFF", 255);
     public static final WrapRGBA DEFAULT_TEXT_BACKGROUND = new WrapRGBA("#000000", 255);
     public static final WrapRGBA DEFAULT_SLIDER_COLOR = DEFAULT_TITLE_COLOR.withAlpha(192);
@@ -35,7 +38,8 @@ public record CustomGuiConfig(
             DEFAULT_TEXT_COLOR,
             DEFAULT_BUTTON_ACTIVE_COLOR,
             DEFAULT_BUTTON_INACTIVE_COLOR,
-            DEFAULT_MODULE_LIST_COLOR,
+            DEFAULT_FRAME_COLOR,
+            DEFAULT_INACTIVE_FRAME_COLOR,
             DEFAULT_TEXT_COLOR,
             DEFAULT_TEXT_BACKGROUND,
             DEFAULT_SLIDER_COLOR);
@@ -67,8 +71,12 @@ public record CustomGuiConfig(
                             .forGetter(CustomGuiConfig::buttonInactiveColor),
                     WrapRGBA.TYPE
                             .typeCodec()
-                            .optionalFieldOf("frame_color", DEFAULT_MODULE_LIST_COLOR)
-                            .forGetter(CustomGuiConfig::frameColor),
+                            .optionalFieldOf("active_frame_color", DEFAULT_FRAME_COLOR)
+                            .forGetter(CustomGuiConfig::activeFrameColor),
+                    WrapRGBA.TYPE
+                            .typeCodec()
+                            .optionalFieldOf("inactive_frame_color", DEFAULT_INACTIVE_FRAME_COLOR)
+                            .forGetter(CustomGuiConfig::inactiveFrameColor),
                     WrapRGBA.TYPE
                             .typeCodec()
                             .optionalFieldOf("text_color", DEFAULT_TEXT_COLOR)

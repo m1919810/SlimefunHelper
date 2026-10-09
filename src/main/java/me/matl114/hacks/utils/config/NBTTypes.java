@@ -66,6 +66,8 @@ public interface NBTTypes {
 
     public NBTType<String> STRING_TYPE = new NBTType<>("string", Codec.STRING, getWidgetFactory(), STRING_FACTORY, "");
 
+    public NBTType<StringEnum> STRING_ENUM_TYPE = StringEnum.TYPE;
+
     public NBTType<TextColor> COLOR_TYPE = new NBTType<>(
             "color",
             Codec.withAlternative(

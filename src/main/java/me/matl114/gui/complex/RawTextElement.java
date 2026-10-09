@@ -10,13 +10,20 @@ import net.minecraft.util.Colors;
 
 @Accessors(chain = true)
 public class RawTextElement extends AbstractElement {
-    protected final TextProvider text;
+    protected TextProvider text;
 
-    protected final ColorSampler color;
-    private final boolean multiLine;
+    protected ColorSampler color;
+    private boolean multiLine;
+    private boolean autoRescale = true;
 
     public RawTextElement setAlignment(TextAlign alignment) {
-        return new RawTextElement(TextProvider.withAlign(this.text, alignment), this.color, this.multiLine);
+        this.text = TextProvider.withAlign(this.text, alignment);
+        return this;
+    }
+
+    public RawTextElement setAutoRescale(boolean autoRescale) {
+        this.autoRescale = autoRescale;
+        return this;
     }
 
     public static RawTextElement instance(Text text) {
@@ -69,21 +76,52 @@ public class RawTextElement extends AbstractElement {
         if (rawText == null) {
             return;
         }
-        if (multiLine) {
-            renderMultiLine(element, context, rawText);
+        float fontHeight = context.getTextDrawer().getTextHeight();
+        float scale = fontHeight > 0 ? Math.max(1, fontHeight) / fontHeight : 1;
+        context.getMatrices().pushMatrix();
+        try {
+            context.getMatrices().scale(scale, scale);
+            renderText(
+                    element,
+                    context,
+                    rawText,
+                    Math.round(element.getTextureWidth() / scale),
+                    Math.round(element.getTextureHeight() / scale));
+        } finally {
+            context.getMatrices().popMatrix();
+        }
+    }
+
+    private void renderText(DrawableWidget element, VDrawContext context, Text rawText, int width, int height) {
+        if (multiLine || rawText.getString().indexOf('\n') >= 0) {
+            renderMultiLine(element, context, rawText, width, height);
             return;
         }
         OrderedText text1 = rawText.asOrderedText();
-        RenderHandler.drawScaledText0(
-                context,
-                context.getTextDrawer(),
-                text1,
-                0,
-                0,
-                element.getTextureWidth(),
-                element.getTextureHeight(),
-                color.getColorInt(),
-                text.getAlign(element));
+        if (!autoRescale) {
+            RenderHandler.drawScrollingText(
+                    context,
+                    context.getTextDrawer(),
+                    text1,
+                    0,
+                    0,
+                    width,
+                    height,
+                    color.getColorInt(),
+                    text.getAlign(element));
+            return;
+        } else {
+            RenderHandler.drawScaledText0(
+                    context,
+                    context.getTextDrawer(),
+                    text1,
+                    0,
+                    0,
+                    width,
+                    height,
+                    color.getColorInt(),
+                    text.getAlign(element));
+        }
     }
 
     @Override
@@ -98,8 +136,7 @@ public class RawTextElement extends AbstractElement {
         renderText(element, context, getText(element));
     }
 
-    private void renderMultiLine(DrawableWidget element, VDrawContext context, Text rawText) {
-        int width = element.getTextureWidth();
+    private void renderMultiLine(DrawableWidget element, VDrawContext context, Text rawText, int width, int height) {
         var textDrawer = context.getTextDrawer();
         List<OrderedText> lines = textDrawer.wrapLines(rawText, width);
         int size = lines.size();
@@ -109,10 +146,10 @@ public class RawTextElement extends AbstractElement {
         float lineHeight = textDrawer.getTextHeight();
         float estimated = lineHeight * size;
         float startY = 0;
-        if (estimated < element.getTextureHeight()) {
-            startY = (element.getTextureHeight() - estimated) / 2;
+        if (estimated < height) {
+            startY = (height - estimated) / 2;
         } else {
-            lineHeight = Math.min(lineHeight, element.getTextureHeight() / size);
+            lineHeight = Math.min(lineHeight, height / size);
         }
         for (int index = 0; index < size; index++) {
             RenderHandler.drawScaledText0(
@@ -121,7 +158,7 @@ public class RawTextElement extends AbstractElement {
                     lines.get(index),
                     0,
                     index * lineHeight + startY,
-                    element.getTextureWidth(),
+                    width,
                     (index + 1) * lineHeight + startY,
                     color.getColorInt(),
                     text.getAlign(element));

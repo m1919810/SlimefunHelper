@@ -37,6 +37,6 @@ public class IntListAttrKeyValue extends ListAttrKeyValue<Integer> {
         return new SubScreenWidget(x, y, inputDx, dy)
                 .addDrawableChild(factory.createInput(s, 0, 0, inputDx - dy, dy))
                 .addDrawableChild(WidgetUtils.createOpenListModifyScreenButton(
-                        factory, (IntListAttrKeyValue) s, inputDx - dy + 1, 0, dy - 1, dy));
+                        factory, (IntListAttrKeyValue) s, inputDx - dy, 0, dy, dy));
     };
 }

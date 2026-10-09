@@ -71,7 +71,7 @@ public class KeyValueInputWidget<T> extends SubScreenWidget {
     }
 
     public DrawableWidget createKeyLabel() {
-        return elementFactory.createLabel(this::getTranslationName, this::getTooltips, 1, 1, dkey - 2, dy - 2);
+        return elementFactory.createLabel(this::getTranslationName, this::getTooltips, 0, 0, dkey, dy);
     }
 
     protected void init() {

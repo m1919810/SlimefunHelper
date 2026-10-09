@@ -39,7 +39,7 @@ public class StringListModifyScreen<T> extends ConfirmingBigScreen {
         this.controller = ListEntryWidgetController.mutable(
                 this.list,
                 this.listAttrKeyValue::createNewAttrKeyValueElement,
-                stringAttrKeyValue -> stringAttrKeyValue.generateValueWidget(elementFactory, 0, 1, WIDTH, 18),
+                stringAttrKeyValue -> stringAttrKeyValue.generateValueWidget(elementFactory, 0, 0, WIDTH, 20),
                 20,
                 WIDTH);
     }

@@ -3,7 +3,9 @@ package me.matl114.hacks.utils.config;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -17,7 +19,9 @@ import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.DynamicListWidget;
 import me.matl114.gui.basic.SubScreenWidget;
 import me.matl114.gui.elements.IconElement;
+import me.matl114.gui.interfaces.ElementFactories;
 import me.matl114.gui.interfaces.ElementFactory;
+import me.matl114.gui.interfaces.ElementStyle;
 import me.matl114.gui.interfaces.ElementType;
 import me.matl114.gui.presets.single.CenterScreen;
 import me.matl114.hacks.utils.gui.*;
@@ -25,28 +29,37 @@ import me.matl114.managers.config.Config;
 import me.matl114.managers.config.NBTParsable;
 import me.matl114.managers.config.NBTType;
 import me.matl114.utils.ChatUtils;
-import me.matl114.utils.CodecUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
 @With
 public record GuiSetting(
         TextConfig textConfig,
-        CustomGuiConfig customConfig,
+        Map<Identifier, CustomGuiConfig> customConfig,
         AlignConfig alignConfig,
-        GuiStyle backgroundStyle,
-        GuiStyle titleStyle,
-        GuiStyle labelStyle,
-        GuiStyle buttonStyle,
-        GuiStyle inputStyle,
-        GuiStyle sliderStyle,
+        Identifier backgroundStyle,
+        Identifier titleStyle,
+        Identifier labelStyle,
+        Identifier buttonStyle,
+        Identifier inputStyle,
+        Identifier sliderStyle,
         boolean enableSlider)
         implements NBTParsable<GuiSetting>, GuiColorSamplier {
 
+    public GuiSetting {
+        Map<Identifier, CustomGuiConfig> configs = new LinkedHashMap<>();
+        if (customConfig != null) configs.putAll(customConfig);
+        for (ElementStyle style : ElementFactories.values()) {
+            if (style.useConfig()) configs.putIfAbsent(style.id(), style.defaultedConfig());
+        }
+        customConfig = Map.copyOf(configs);
+    }
+
     public static final GuiSetting DEFAULT = new GuiSetting(
             TextConfig.DEFAULT,
-            CustomGuiConfig.DEFAULT,
+            defaultConfigs(),
             AlignConfig.DEFAULT,
             GuiStyle.CUSTOM,
             GuiStyle.CUSTOM,
@@ -56,32 +69,39 @@ public record GuiSetting(
             GuiStyle.CUSTOM,
             true);
 
+    public static final GuiSetting SLIDER_DEFAULT = DEFAULT.withCustomConfig(Map.of(
+            GuiStyle.CUSTOM,
+            CustomGuiConfig.DEFAULT.withInactiveFrameColor(CustomGuiConfig.DEFAULT_INACTIVE_FRAME_COLOR)));
+
+    private static final Codec<Map<Identifier, CustomGuiConfig>> CUSTOM_CONFIG_CODEC =
+            Codec.unboundedMap(Identifier.CODEC, CustomGuiConfig.CODEC);
+
     public static final Codec<GuiSetting> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                     TextConfig.CODEC
                             .optionalFieldOf("text_config", TextConfig.DEFAULT)
                             .forGetter(GuiSetting::textConfig),
-                    CustomGuiConfig.CODEC
-                            .optionalFieldOf("custom_config", CustomGuiConfig.DEFAULT)
+                    CUSTOM_CONFIG_CODEC
+                            .optionalFieldOf("custom_config", defaultConfigs())
                             .forGetter(GuiSetting::customConfig),
                     AlignConfig.CODEC
                             .optionalFieldOf("align_config", AlignConfig.DEFAULT)
                             .forGetter(GuiSetting::alignConfig),
-                    CodecUtils.enumCodec(GuiStyle.class)
+                    Identifier.CODEC
                             .optionalFieldOf("background_style", GuiStyle.CUSTOM)
                             .forGetter(GuiSetting::backgroundStyle),
-                    CodecUtils.enumCodec(GuiStyle.class)
+                    Identifier.CODEC
                             .optionalFieldOf("title_style", GuiStyle.CUSTOM)
                             .forGetter(GuiSetting::titleStyle),
-                    CodecUtils.enumCodec(GuiStyle.class)
+                    Identifier.CODEC
                             .optionalFieldOf("label_style", GuiStyle.CUSTOM)
                             .forGetter(GuiSetting::labelStyle),
-                    CodecUtils.enumCodec(GuiStyle.class)
+                    Identifier.CODEC
                             .optionalFieldOf("button_style", GuiStyle.CUSTOM)
                             .forGetter(GuiSetting::buttonStyle),
-                    CodecUtils.enumCodec(GuiStyle.class)
+                    Identifier.CODEC
                             .optionalFieldOf("input_style", GuiStyle.CUSTOM)
                             .forGetter(GuiSetting::inputStyle),
-                    CodecUtils.enumCodec(GuiStyle.class)
+                    Identifier.CODEC
                             .optionalFieldOf("slider_style", GuiStyle.CUSTOM)
                             .forGetter(GuiSetting::sliderStyle),
                     Codec.BOOL.optionalFieldOf("enable_slider", true).forGetter(GuiSetting::enableSlider))
@@ -95,7 +115,36 @@ public record GuiSetting(
         return TYPE;
     }
 
-    public GuiStyle style(ElementType type) {
+    private static Map<Identifier, CustomGuiConfig> defaultConfigs() {
+        Map<Identifier, CustomGuiConfig> result = new LinkedHashMap<>();
+        for (ElementStyle style : ElementFactories.values()) {
+            if (style.useConfig()) result.put(style.id(), style.defaultedConfig());
+        }
+        return result;
+    }
+
+    public CustomGuiConfig customConfig(Identifier id) {
+        ElementStyle style = ElementFactories.get(id);
+        CustomGuiConfig fallback = style == null ? CustomGuiConfig.DEFAULT : style.defaultedConfig();
+        return customConfig.getOrDefault(id, fallback);
+    }
+
+    public GuiSetting withCustomConfig(Identifier id, CustomGuiConfig config) {
+        Map<Identifier, CustomGuiConfig> configs = new LinkedHashMap<>(customConfig);
+        configs.put(id, config);
+        return withCustomConfig(configs);
+    }
+
+    public GuiSetting normalizeStyles() {
+        GuiSetting result = this;
+        for (ElementType type : ElementType.values()) {
+            Identifier style = result.style(type);
+            if (ElementFactories.get(style) == null) result = result.withStyle(type, GuiStyle.CUSTOM);
+        }
+        return result;
+    }
+
+    public Identifier style(ElementType type) {
         return switch (type) {
             case BACKGROUND -> backgroundStyle;
             case TITLE -> titleStyle;
@@ -107,53 +156,58 @@ public record GuiSetting(
     }
 
     @Override
-    public WrapRGBA frameColor() {
-        return customConfig.frameColor();
+    public WrapRGBA activeFrameColor() {
+        return customConfig(buttonStyle).activeFrameColor();
+    }
+
+    @Override
+    public WrapRGBA inactiveFrameColor() {
+        return customConfig(buttonStyle).inactiveFrameColor();
     }
 
     @Override
     public WrapRGBA backgroundColor() {
-        return customConfig.backgroundColor();
+        return customConfig(backgroundStyle).backgroundColor();
     }
 
     @Override
     public WrapRGBA plateColor() {
-        return customConfig.plateColor();
+        return customConfig(backgroundStyle).plateColor();
     }
 
     @Override
     public WrapRGBA titleColor() {
-        return customConfig.titleColor();
+        return customConfig(titleStyle).titleColor();
     }
 
     @Override
     public WrapRGBA labelColor() {
-        return customConfig.labelColor();
+        return customConfig(labelStyle).labelColor();
     }
 
     @Override
     public WrapRGBA buttonActiveColor() {
-        return customConfig.buttonActiveColor();
+        return customConfig(buttonStyle).buttonActiveColor();
     }
 
     @Override
     public WrapRGBA buttonInactiveColor() {
-        return customConfig.buttonInactiveColor();
+        return customConfig(buttonStyle).buttonInactiveColor();
     }
 
     @Override
     public WrapRGBA textColor() {
-        return customConfig.textColor();
+        return customConfig(inputStyle).textColor();
     }
 
     @Override
     public WrapRGBA textBackground() {
-        return customConfig.textBackground();
+        return customConfig(inputStyle).textBackground();
     }
 
     @Override
     public WrapRGBA sliderColor() {
-        return customConfig.sliderColor();
+        return customConfig(sliderStyle).sliderColor();
     }
 
     @Override
@@ -176,7 +230,7 @@ public record GuiSetting(
         return alignConfig.sliderTextAlign();
     }
 
-    private GuiSetting withStyle(ElementType type, GuiStyle value) {
+    private GuiSetting withStyle(ElementType type, Identifier value) {
         return switch (type) {
             case BACKGROUND -> withBackgroundStyle(value);
             case TITLE -> withTitleStyle(value);
@@ -189,7 +243,7 @@ public record GuiSetting(
 
     private static <T> ValueAccessor<T> accessor(
             AttrKeyValue<GuiSetting> source, Supplier<T> getter, Function<T, GuiSetting> updater) {
-        return ValueAccessor.of(getter, value -> source.setOriginValue(updater.apply(value)));
+        return ValueAccessor.of(getter, value -> source.accept(updater.apply(value)));
     }
 
     private static <T> ConditionalWidget field(
@@ -231,6 +285,7 @@ public record GuiSetting(
     }
 
     private static void openEditorScreen(ElementFactory factory, AttrKeyValue<GuiSetting> source) {
+        source.accept(source.get().normalizeStyles());
         int width = WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT.totalWidth();
         DrawableWidget widget = createEditorWidget(factory, source, 0, 0, width, 0);
         CenterScreen screen = new CenterScreen(widget);
@@ -238,24 +293,48 @@ public record GuiSetting(
         ScreenAccess.of(screen).openFromCurrent();
     }
 
+    private static ValueAccessor<StringEnum> styleAccessor(AttrKeyValue<GuiSetting> source, ElementType type) {
+        List<String> values =
+                ElementFactories.ids().stream().map(Identifier::toString).toList();
+        return accessor(source, () -> new StringEnum(source.get().style(type).toString(), values), value -> {
+            Identifier id = Identifier.tryParse(value.value());
+            return source.get().withStyle(type, id == null ? GuiStyle.CUSTOM : id);
+        });
+    }
+
+    private static Identifier styleId(ValueAccessor<StringEnum> style) {
+        Identifier id = Identifier.tryParse(style.getValue().value());
+        return id == null ? GuiStyle.CUSTOM : id;
+    }
+
+    private static boolean usesConfig(ValueAccessor<StringEnum> style) {
+        ElementStyle entry = ElementFactories.get(styleId(style));
+        return entry != null && entry.useConfig();
+    }
+
+    private static CustomGuiConfig selectedConfig(AttrKeyValue<GuiSetting> source, ValueAccessor<StringEnum> style) {
+        return source.get().customConfig(styleId(style));
+    }
+
+    private static GuiSetting updateConfig(
+            AttrKeyValue<GuiSetting> source,
+            ValueAccessor<StringEnum> style,
+            Function<CustomGuiConfig, CustomGuiConfig> updater) {
+        Identifier id = styleId(style);
+        return source.get().withCustomConfig(id, updater.apply(source.get().customConfig(id)));
+    }
+
     private static DrawableWidget createEditorWidget(
             ElementFactory factory, AttrKeyValue<GuiSetting> source, int x, int y, int dx, int dy) {
         WidgetUtils.ConfigScreenLayout layout = WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT.forWidth(dx);
         DynamicListWidget list = new DynamicListWidget(x, y, Math.max(1, dx));
 
-        ValueAccessor<GuiStyle> backgroundStyle =
-                accessor(source, () -> source.get().backgroundStyle(), value -> source.get()
-                        .withStyle(ElementType.BACKGROUND, value));
-        ValueAccessor<GuiStyle> titleStyle = accessor(
-                source, () -> source.get().titleStyle(), value -> source.get().withStyle(ElementType.TITLE, value));
-        ValueAccessor<GuiStyle> labelStyle = accessor(
-                source, () -> source.get().labelStyle(), value -> source.get().withStyle(ElementType.LABEL, value));
-        ValueAccessor<GuiStyle> buttonStyle = accessor(
-                source, () -> source.get().buttonStyle(), value -> source.get().withStyle(ElementType.BUTTON, value));
-        ValueAccessor<GuiStyle> inputStyle = accessor(
-                source, () -> source.get().inputStyle(), value -> source.get().withStyle(ElementType.INPUT, value));
-        ValueAccessor<GuiStyle> sliderStyle = accessor(
-                source, () -> source.get().sliderStyle(), value -> source.get().withStyle(ElementType.SLIDER, value));
+        ValueAccessor<StringEnum> backgroundStyle = styleAccessor(source, ElementType.BACKGROUND);
+        ValueAccessor<StringEnum> titleStyle = styleAccessor(source, ElementType.TITLE);
+        ValueAccessor<StringEnum> labelStyle = styleAccessor(source, ElementType.LABEL);
+        ValueAccessor<StringEnum> buttonStyle = styleAccessor(source, ElementType.BUTTON);
+        ValueAccessor<StringEnum> inputStyle = styleAccessor(source, ElementType.INPUT);
+        ValueAccessor<StringEnum> sliderStyle = styleAccessor(source, ElementType.SLIDER);
         ValueAccessor<Boolean> enableSlider = accessor(
                 source, () -> source.get().enableSlider(), value -> source.get().withEnableSlider(value));
 
@@ -307,12 +386,11 @@ public record GuiSetting(
                                 "widget.gui-settings.background.background_color",
                                 colorAccessor(
                                         source,
-                                        () -> source.get().customConfig().backgroundColor(),
-                                        value -> source.get()
-                                                .withCustomConfig(source.get()
-                                                        .customConfig()
-                                                        .withBackgroundColor(value))),
-                                () -> backgroundStyle.getValue() == GuiStyle.CUSTOM,
+                                        () -> selectedConfig(source, backgroundStyle)
+                                                .backgroundColor(),
+                                        value -> updateConfig(
+                                                source, backgroundStyle, config -> config.withBackgroundColor(value))),
+                                () -> usesConfig(backgroundStyle),
                                 layout,
                                 factory)),
                 layout,
@@ -326,12 +404,10 @@ public record GuiSetting(
                                 "widget.gui-settings.title.title_color",
                                 colorAccessor(
                                         source,
-                                        () -> source.get().customConfig().titleColor(),
-                                        value -> source.get()
-                                                .withCustomConfig(source.get()
-                                                        .customConfig()
-                                                        .withTitleColor(value))),
-                                () -> titleStyle.getValue() == GuiStyle.CUSTOM,
+                                        () -> selectedConfig(source, titleStyle).titleColor(),
+                                        value -> updateConfig(
+                                                source, titleStyle, config -> config.withTitleColor(value))),
+                                () -> usesConfig(titleStyle),
                                 layout,
                                 factory)),
                 layout,
@@ -345,12 +421,10 @@ public record GuiSetting(
                                 "widget.gui-settings.label.label_color",
                                 colorAccessor(
                                         source,
-                                        () -> source.get().customConfig().labelColor(),
-                                        value -> source.get()
-                                                .withCustomConfig(source.get()
-                                                        .customConfig()
-                                                        .withLabelColor(value))),
-                                () -> labelStyle.getValue() == GuiStyle.CUSTOM,
+                                        () -> selectedConfig(source, labelStyle).labelColor(),
+                                        value -> updateConfig(
+                                                source, labelStyle, config -> config.withLabelColor(value))),
+                                () -> usesConfig(labelStyle),
                                 layout,
                                 factory)),
                 layout,
@@ -361,39 +435,47 @@ public record GuiSetting(
                 List.of(
                         field("widget.gui-settings.button.button_style", buttonStyle, () -> true, layout, factory),
                         field(
-                                "widget.gui-settings.button.frame_color",
+                                "widget.gui-settings.button.active_frame_color",
                                 colorAccessor(
                                         source,
-                                        () -> source.get().customConfig().frameColor(),
-                                        value -> source.get()
-                                                .withCustomConfig(source.get()
-                                                        .customConfig()
-                                                        .withFrameColor(value))),
-                                () -> buttonStyle.getValue() == GuiStyle.CUSTOM,
+                                        () -> selectedConfig(source, buttonStyle)
+                                                .activeFrameColor(),
+                                        value -> updateConfig(
+                                                source, buttonStyle, config -> config.withActiveFrameColor(value))),
+                                () -> usesConfig(buttonStyle),
+                                layout,
+                                factory),
+                        field(
+                                "widget.gui-settings.button.inactive_frame_color",
+                                colorAccessor(
+                                        source,
+                                        () -> selectedConfig(source, buttonStyle)
+                                                .inactiveFrameColor(),
+                                        value -> updateConfig(
+                                                source, buttonStyle, config -> config.withInactiveFrameColor(value))),
+                                () -> usesConfig(buttonStyle),
                                 layout,
                                 factory),
                         field(
                                 "widget.gui-settings.button.button_active_color",
                                 colorAccessor(
                                         source,
-                                        () -> source.get().customConfig().buttonActiveColor(),
-                                        value -> source.get()
-                                                .withCustomConfig(source.get()
-                                                        .customConfig()
-                                                        .withButtonActiveColor(value))),
-                                () -> buttonStyle.getValue() == GuiStyle.CUSTOM,
+                                        () -> selectedConfig(source, buttonStyle)
+                                                .buttonActiveColor(),
+                                        value -> updateConfig(
+                                                source, buttonStyle, config -> config.withButtonActiveColor(value))),
+                                () -> usesConfig(buttonStyle),
                                 layout,
                                 factory),
                         field(
                                 "widget.gui-settings.button.button_inactive_color",
                                 colorAccessor(
                                         source,
-                                        () -> source.get().customConfig().buttonInactiveColor(),
-                                        value -> source.get()
-                                                .withCustomConfig(source.get()
-                                                        .customConfig()
-                                                        .withButtonInactiveColor(value))),
-                                () -> buttonStyle.getValue() == GuiStyle.CUSTOM,
+                                        () -> selectedConfig(source, buttonStyle)
+                                                .buttonInactiveColor(),
+                                        value -> updateConfig(
+                                                source, buttonStyle, config -> config.withButtonInactiveColor(value))),
+                                () -> usesConfig(buttonStyle),
                                 layout,
                                 factory),
                         field(
@@ -405,7 +487,7 @@ public record GuiSetting(
                                                 .withAlignConfig(source.get()
                                                         .alignConfig()
                                                         .withButtonTextAlign(value))),
-                                () -> buttonStyle.getValue() == GuiStyle.CUSTOM,
+                                () -> usesConfig(buttonStyle),
                                 layout,
                                 factory)),
                 layout,
@@ -419,24 +501,20 @@ public record GuiSetting(
                                 "widget.gui-settings.input.text_color",
                                 colorAccessor(
                                         source,
-                                        () -> source.get().customConfig().textColor(),
-                                        value -> source.get()
-                                                .withCustomConfig(source.get()
-                                                        .customConfig()
-                                                        .withTextColor(value))),
-                                () -> inputStyle.getValue() == GuiStyle.CUSTOM,
+                                        () -> selectedConfig(source, inputStyle).textColor(),
+                                        value -> updateConfig(
+                                                source, inputStyle, config -> config.withTextColor(value))),
+                                () -> usesConfig(inputStyle),
                                 layout,
                                 factory),
                         field(
                                 "widget.gui-settings.input.text_background",
                                 colorAccessor(
                                         source,
-                                        () -> source.get().customConfig().textBackground(),
-                                        value -> source.get()
-                                                .withCustomConfig(source.get()
-                                                        .customConfig()
-                                                        .withTextBackground(value))),
-                                () -> inputStyle.getValue() == GuiStyle.CUSTOM,
+                                        () -> selectedConfig(source, inputStyle).textBackground(),
+                                        value -> updateConfig(
+                                                source, inputStyle, config -> config.withTextBackground(value))),
+                                () -> usesConfig(inputStyle),
                                 layout,
                                 factory),
                         field(
@@ -446,7 +524,7 @@ public record GuiSetting(
                                                 .withAlignConfig(source.get()
                                                         .alignConfig()
                                                         .withInputTextAlign(value))),
-                                () -> inputStyle.getValue() == GuiStyle.CUSTOM,
+                                () -> usesConfig(inputStyle),
                                 layout,
                                 factory)),
                 layout,
@@ -466,12 +544,11 @@ public record GuiSetting(
                                 "widget.gui-settings.slider.slider_color",
                                 colorAccessor(
                                         source,
-                                        () -> source.get().customConfig().sliderColor(),
-                                        value -> source.get()
-                                                .withCustomConfig(source.get()
-                                                        .customConfig()
-                                                        .withSliderColor(value))),
-                                () -> enableSlider.getValue() && sliderStyle.getValue() == GuiStyle.CUSTOM,
+                                        () -> selectedConfig(source, sliderStyle)
+                                                .sliderColor(),
+                                        value -> updateConfig(
+                                                source, sliderStyle, config -> config.withSliderColor(value))),
+                                () -> enableSlider.getValue() && usesConfig(sliderStyle),
                                 layout,
                                 factory),
                         field(
@@ -483,7 +560,7 @@ public record GuiSetting(
                                                 .withAlignConfig(source.get()
                                                         .alignConfig()
                                                         .withSliderTextAlign(value))),
-                                () -> enableSlider.getValue() && sliderStyle.getValue() == GuiStyle.CUSTOM,
+                                () -> enableSlider.getValue() && usesConfig(sliderStyle),
                                 layout,
                                 factory)),
                 layout,
