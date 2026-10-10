@@ -7,7 +7,6 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
-import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.RayCastCalculator;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
@@ -127,27 +126,8 @@ public class InteractExtra extends BaseModule implements RayCastCalculator<Block
     }
 
     @Override
-    public Vec3d getRaycast(Vec3d pos, BlockPos target) {
-        Box box = getEffectiveBox(target);
-        double range = getBlockReachDistance();
-        Vec3d fallbackEye = pos.add(0, mc.player.dimensions.eyeHeight(), 0);
-        return getPotentialEyeHeights(pos)
-                .filter(eyePos -> box.squaredMagnitude(eyePos) < MathUtils.s2(range))
-                .map(eyePos -> raycastDirection(box, eyePos, range))
-                .findFirst()
-                .orElseGet(() -> raycastDirection(box, fallbackEye, range));
-    }
-
-    @Override
-    public boolean canRayCast(Vec3d pos, BlockPos target, float pitch, float yaw) {
-        Box box = getEffectiveBox(target);
-        double range = getBlockReachDistance();
-        Vec3d direction = EntityUtils.pitchYawToRotation(pitch, yaw).normalize();
-        return getPotentialEyeHeights(pos).anyMatch(eyePos -> {
-            return box.squaredMagnitude(eyePos) < MathUtils.s2(range)
-                    && box.raycast(eyePos, eyePos.add(direction.multiply(range)))
-                            .isPresent();
-        });
+    public double getReachDistance(BlockPos val) {
+        return getBlockReachDistance();
     }
 
     private final double[] FALL_FLYING_EYE_HEIGHTS = {0.4D, 1.62D, 1.27D};

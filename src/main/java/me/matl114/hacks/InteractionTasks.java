@@ -6,7 +6,6 @@ import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import lombok.Getter;
 import me.matl114.events.Listener;
-import me.matl114.events.PacketManager;
 import me.matl114.events.impl.UseItemOnBlock;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
@@ -113,53 +112,6 @@ public class InteractionTasks {
         RotationManager.INSTANCE.request(RotationManager.ofBlock(() -> pos).postTick(callback));
     }
 
-    public static void addPostRotationCorrectTask(Vec3d look3d, Vec3d eyePos, Runnable callback) {
-        RotationManager.INSTANCE.request(RotationManager.ofBox(() -> new Box(look3d, look3d).expand(1.0E-5))
-                .postTick(callback));
-    }
-
-    public static void addPostRotationCorrectTask(Vec3d direction, Runnable callback) {
-        RotationManager.INSTANCE.request(
-                RotationManager.ofDirection(() -> EntityUtils.rotationToPitchYaw(direction.normalize()))
-                        .postTick(callback));
-    }
-
-    //    public static void addPostRotationCorrectTask(Vec3d rotationVec, Runnable callback) {
-    //        //        RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
-    //        //            RenderTasks.DEBUG_TICK, new RenderTasks.BoxObject(look3d.add(-0.1, -0.1, -0.1),
-    // look3d.add(0.1,
-    //        // 0.1, 0.1), Color.MAGENTA)));
-    //        ClientPlayerAccess.of(mc.player)
-    //                .getLegalMovementManager()
-    //                .addMovementModifier(new LegalMovementManager.MovementModifier() {
-    //                    @Override
-    //                    public int priority() {
-    //                        return PRIORITY_LOW;
-    //                    }
-    //
-    //                    @Override
-    //                    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
-    //                        ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-    //
-    //                        Vec2f rotation = EntityUtils.rotationToPitchYaw(rotationVec.normalize());
-    //                        movementManagerEvent.context.pushImportantRotation(true, true);
-    //                        PlayerStateManager.setPlayerYawSafe(player, rotation.y);
-    //                        EntityUtils.setEntityPitchSafe(player, rotation.x);
-    //                        //                        py = rotation;
-    //                        movementManagerEvent.context.tryMarkForMoveFix();
-    //                        movementManagerEvent.context.markForResetRot();
-    //                        // RenderTasks.drawBox(MathUtils.createBox(look3d, 0.2D), 300, Color.MAGENTA);
-    //                    }
-    //
-    //                    @Override
-    //                    public boolean postModify(
-    //                            Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-    //                        callback.run();
-    //                        return false;
-    //                    }
-    //                });
-    //    }
-
     public static Vec3d createBlockRayCastDirection(BlockPos pos) {
         return createBlockRayCastDirection(pos, mc.player.getPos());
     }
@@ -196,7 +148,7 @@ public class InteractionTasks {
                     if (!RotationManager.INSTANCE.request(RotationManager.ofBlock(result::getBlockPos))) {
                         return false;
                     }
-                    PacketManager.beginOutboundCapture();
+                    RotationManager.INSTANCE.startQueuePacket();
                 }
                 InteractionTasks.interactBlock(hand, result, swingHand);
                 return true;

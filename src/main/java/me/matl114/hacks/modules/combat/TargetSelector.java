@@ -16,7 +16,6 @@ import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
-import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.RayCastCalculator;
 import me.matl114.hacks.utils.config.*;
@@ -184,6 +183,10 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
         return entity.getBoundingBox();
     }
 
+    public Stream<Vec3d> getPotentialEyeHeights(Vec3d pos) {
+        return getPotentialEyeHeights().mapToObj(i -> pos.add(0, i, 0));
+    }
+
     public boolean isWithinAttackRange(Vec3d pos, Entity entity) {
         // add real place check if more than 3
         Vec3d syncPos = PositionPredict.INSTANCE.getPredictor(entity).getCurrentSyncedPos();
@@ -224,29 +227,8 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
     }
 
     @Override
-    public Vec3d getRaycast(Vec3d pos, Entity entity) {
-        Box box = getEffectiveBox(entity);
-        double range = CombatExtra.INSTANCE.getAttackAtTargetRange(entity);
-        Vec3d fallbackEye = pos.add(0, mc.player.dimensions.eyeHeight(), 0);
-        return getPotentialEyeHeights()
-                .mapToObj(height -> pos.add(0, height, 0))
-                .filter(eyePos -> box.squaredMagnitude(eyePos) < MathUtils.s2(range))
-                .map(eyePos -> raycastDirection(box, eyePos, range))
-                .filter(Objects::nonNull)
-                .findFirst()
-                .orElseGet(() -> raycastDirection(box, fallbackEye, range));
-    }
-
-    @Override
-    public boolean canRayCast(Vec3d pos, Entity entity, float pitch, float yaw) {
-        Box box = getEffectiveBox(entity);
-        double range = CombatExtra.INSTANCE.getAttackAtTargetRange(entity);
-        Vec3d direction = EntityUtils.pitchYawToRotation(pitch, yaw).normalize();
-        return getPotentialEyeHeights()
-                .mapToObj(height -> pos.add(0, height, 0))
-                .anyMatch(eyePos -> box.squaredMagnitude(eyePos) < MathUtils.s2(range)
-                        && box.raycast(eyePos, eyePos.add(direction.multiply(range)))
-                                .isPresent());
+    public double getReachDistance(Entity val) {
+        return CombatExtra.INSTANCE.getAttackAtTargetRange(val);
     }
 
     public Vec3d getBestAttackEyePos(Vec3d pos, Entity entity) {
