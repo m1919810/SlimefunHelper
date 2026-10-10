@@ -7,7 +7,6 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.impl.EventContainer;
 import me.matl114.events.impl.MetadataUpdate;
-import me.matl114.hacks.ACTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -379,22 +378,26 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                                         }
                                         PlayerInputUtils.Input input = PlayerInputUtils.of(mc.player);
 
-                                        ACTasks.addPostTransactionAction(han -> {
-                                            // to trigger plugin events
-                                            input.sneak(true).sendPlayerSneakUpdatePacket();
-                                            input.sneak(false).sendPlayerSneakUpdatePacket();
-                                            mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-                                            mc.interactionManager.sendSequencedPacket(mc.world, (seq) -> {
-                                                return new PlayerInteractEntityC2SPacket(
-                                                        target.getId(),
-                                                        true,
-                                                        new PlayerInteractEntityC2SPacket.InteractAtHandler(
-                                                                Hand.MAIN_HAND, mc.player.getPos()));
-                                            });
-                                            mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-                                            Debug.chat("[NoSlow] 成功伪造状态");
-                                            sneakStatus = true;
-                                        });
+                                        Tasks.scheduleDelayedPre(
+                                                () -> {
+                                                    // to trigger plugin events
+                                                    input.sneak(true).sendPlayerSneakUpdatePacket();
+                                                    input.sneak(false).sendPlayerSneakUpdatePacket();
+                                                    mc.getNetworkHandler()
+                                                            .sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                                                    mc.interactionManager.sendSequencedPacket(mc.world, (seq) -> {
+                                                        return new PlayerInteractEntityC2SPacket(
+                                                                target.getId(),
+                                                                true,
+                                                                new PlayerInteractEntityC2SPacket.InteractAtHandler(
+                                                                        Hand.MAIN_HAND, mc.player.getPos()));
+                                                    });
+                                                    mc.getNetworkHandler()
+                                                            .sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                                                    Debug.chat("[NoSlow] 成功伪造状态");
+                                                    sneakStatus = true;
+                                                },
+                                                0);
                                         // return do not kept
                                         return false;
                                     }

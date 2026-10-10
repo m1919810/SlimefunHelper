@@ -10,7 +10,6 @@ import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.events.impl.EventContainer;
 import me.matl114.events.impl.Render3D;
-import me.matl114.hacks.ACTasks;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -22,6 +21,7 @@ import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.managers.Configs;
+import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
@@ -381,9 +381,11 @@ public class BowEnhance extends BaseModule {
                         // add post packets
                         // mc.getNetworkHandler().sendPacket(actionPacket);
                         if (true)
-                            ACTasks.addPostTransactionAction((handler) -> {
-                                Listener.sendPacketNoEvents(handler.getConnection(), delayedPacket);
-                            });
+                            Tasks.scheduleDelayedPre(
+                                    () -> {
+                                        Listener.sendPacketNoEvents(delayedPacket);
+                                    },
+                                    0);
                         return false;
                     }
                 });

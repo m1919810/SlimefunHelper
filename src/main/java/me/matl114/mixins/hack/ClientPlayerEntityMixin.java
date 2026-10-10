@@ -204,7 +204,7 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
     private boolean canStartSprintAddConditionWrapperBecauseOfViaFabricShit(
             ClientPlayerEntity instance, Operation<Boolean> original) {
         if (DisablerManager.INSTANCE.duplicatedSprintFix.get()
-                && DisablerManager.INSTANCE.hasAnySprintPacketAlready
+                && DisablerManager.INSTANCE.hasAnySprintPacketAlreadyOrPending
                 && !PlayerStateManager.INSTANCE.lastSprint) {
             return false;
         }

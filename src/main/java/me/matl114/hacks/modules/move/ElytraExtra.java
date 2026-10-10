@@ -15,13 +15,13 @@ import me.matl114.events.impl.EventContainer;
 import me.matl114.events.impl.MetadataUpdate;
 import me.matl114.events.packets.PacketStorage;
 import me.matl114.events.packets.PacketStorageImpl;
-import me.matl114.hacks.ACTasks;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.ac.PacketOrderManager;
+import me.matl114.hacks.modules.ac.PostManager;
 import me.matl114.hacks.modules.interact.SequencedActionManager;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.EntityUtils;
@@ -2054,7 +2054,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         // avoid packet Order conflict
         rocketFlush.state(false, () -> {
             if (ViaFabricPlusHooks.isSupportEndTick() && PacketOrderManager.INSTANCE.sprinting) {
-                ACTasks.addPostTransactionAction((s) -> {
+                PostManager.INSTANCE.addNextTransactionAction((v) -> {
                     flushRockets();
                 });
             } else {

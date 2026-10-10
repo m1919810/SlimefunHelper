@@ -1,10 +1,7 @@
 package me.matl114.hacks.modules.inv;
 
 import com.google.common.util.concurrent.Runnables;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Locale;
-import java.util.OptionalInt;
+import java.util.*;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
@@ -16,6 +13,8 @@ import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.ac.PostManager;
+import me.matl114.hacks.modules.move.MovExtra;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hooks.ViaFabricPlusHooks;
@@ -124,10 +123,45 @@ public class InvExtra extends BaseModule {
         }
     }
 
+    List<Runnable> inventoryCallbacks = new ArrayList<>();
+    List<Integer> hotBarCallbacks = new ArrayList<>();
+
     private void onClientTickEnd(Event<ClientTickEndC2SPacket> event) {
         if (event.isCancelled()) return;
         // Movement-post actions may add inventory callbacks during this packet's post-schedule phase.
-        PacketManager.schedulePostScheduleCallback(event.context, this::drainGhostHandCallbacks);
+        duringCallback = true;
+        try {
+            drainGhostHandCallbacks();
+        } finally {
+            duringCallback = false;
+        }
+        if (!inventoryCallbacks.isEmpty()) {
+            try {
+                MovTasks.getMovExtra().sendSprintPacketsForInventoryAction();
+                List<Runnable> inventoryTasks = new ArrayList<>(inventoryCallbacks);
+                PacketManager.schedulePostScheduleCallback(event.context, () -> {
+                    for (Runnable r : inventoryTasks) {
+                        r.run();
+                    }
+                    syncAttr();
+                });
+
+            } finally {
+                inventoryCallbacks.clear();
+            }
+        }
+        if (!hotBarCallbacks.isEmpty()) {
+            try {
+                int lastSelected = hotBarCallbacks.getLast();
+                mc.player.getInventory().setSelectedSlot(lastSelected);
+                PostManager.INSTANCE.addNextTransactionAction((ch2) -> {
+                    PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(lastSelected);
+                    syncAttr();
+                });
+            } finally {
+                hotBarCallbacks.clear();
+            }
+        }
     }
 
     public void pushGhostHandCallback(Runnable callback) {
@@ -152,16 +186,13 @@ public class InvExtra extends BaseModule {
             if (hand < 9) {
                 PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(hand);
                 syncAttr();
-                return () -> {
-                    PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(selected);
-                    syncAttr();
-                };
+                return wrapHotbarTask(selected);
             } else {
                 OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), hand);
                 if (slotIndex.isPresent()) {
                     int swapped = slotIndex.getAsInt();
                     if (swapped >= 0) {
-                        MovTasks.getMovExtra().sendPacketsForInventoryAction();
+                        MovExtra.INSTANCE.sendPacketsForInventoryAction();
                         mc.interactionManager.clickSlot(
                                 mc.player.currentScreenHandler.syncId,
                                 swapped,
@@ -169,16 +200,14 @@ public class InvExtra extends BaseModule {
                                 SlotActionType.SWAP,
                                 mc.player);
                         syncAttr();
-                        return () -> {
-                            MovTasks.getMovExtra().sendPacketsForInventoryAction();
+                        return wrapInvTask(() -> {
                             mc.interactionManager.clickSlot(
                                     mc.player.currentScreenHandler.syncId,
                                     swapped,
                                     selected,
                                     SlotActionType.SWAP,
                                     mc.player);
-                            syncAttr();
-                        };
+                        });
                     } else {
                         return null;
                     }
@@ -220,16 +249,14 @@ public class InvExtra extends BaseModule {
                     mc.interactionManager.clickSlot(
                             mc.player.currentScreenHandler.syncId, swapped, selected, SlotActionType.SWAP, mc.player);
                     syncAttr();
-                    return () -> {
-                        MovTasks.getMovExtra().sendPacketsForInventoryAction();
+                    return wrapInvTask(() -> {
                         mc.interactionManager.clickSlot(
                                 mc.player.currentScreenHandler.syncId,
                                 swapped,
                                 selected,
                                 SlotActionType.SWAP,
                                 mc.player);
-                        syncAttr();
-                    };
+                    });
                 } else {
                     return null;
                 }
@@ -252,12 +279,10 @@ public class InvExtra extends BaseModule {
                 mc.interactionManager.clickSlot(
                         mc.player.currentScreenHandler.syncId, swapped, 40, SlotActionType.SWAP, mc.player);
                 syncAttr();
-                return () -> {
-                    MovTasks.getMovExtra().sendPacketsForInventoryAction();
+                return wrapInvTask(() -> {
                     mc.interactionManager.clickSlot(
                             mc.player.currentScreenHandler.syncId, swapped, 40, SlotActionType.SWAP, mc.player);
-                    syncAttr();
-                };
+                });
             } else {
                 return null;
             }
@@ -274,10 +299,7 @@ public class InvExtra extends BaseModule {
         }
         PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(hand);
         syncAttr();
-        return () -> {
-            PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(selected);
-            syncAttr();
-        };
+        return wrapHotbarTask(selected);
     }
 
     //    public Runnable swapInventoryIndex(int a, int b){
@@ -330,11 +352,9 @@ public class InvExtra extends BaseModule {
             int target = targetSlotInstance.getIndex();
             mc.interactionManager.clickSlot(handler.syncId, armorSlot, target, SlotActionType.SWAP, mc.player);
             syncAttr();
-            return () -> {
-                MovTasks.getMovExtra().sendPacketsForInventoryAction();
+            return wrapInvTask(() -> {
                 mc.interactionManager.clickSlot(handler.syncId, armorSlot, target, SlotActionType.SWAP, mc.player);
-                syncAttr();
-            };
+            });
         } else {
             var armorSlotInstance = handler.slots.get(armorSlot);
             if (armorSlotInstance.inventory instanceof PlayerInventory
@@ -342,20 +362,16 @@ public class InvExtra extends BaseModule {
                 int target = armorSlotInstance.getIndex();
                 mc.interactionManager.clickSlot(handler.syncId, targetSlot, target, SlotActionType.SWAP, mc.player);
                 syncAttr();
-                return () -> {
-                    MovTasks.getMovExtra().sendPacketsForInventoryAction();
+                return wrapInvTask(() -> {
                     mc.interactionManager.clickSlot(handler.syncId, targetSlot, target, SlotActionType.SWAP, mc.player);
-                    syncAttr();
-                };
+                });
             } else {
                 // fuck, do not kick me.
                 swapTwoIdiotSlot(handler, targetSlot, armorSlot);
                 syncAttr();
-                return () -> {
-                    MovTasks.getMovExtra().sendPacketsForInventoryAction();
+                return wrapInvTask(() -> {
                     swapTwoIdiotSlot(handler, targetSlot, armorSlot);
-                    syncAttr();
-                };
+                });
             }
         }
     }
@@ -406,6 +422,31 @@ public class InvExtra extends BaseModule {
                 handler.syncId, targetSlot, fuckingHotbar114514, SlotActionType.SWAP, mc.player);
     }
 
+    boolean duringCallback = false;
+
+    private Runnable wrapInvTask(Runnable runnable) {
+        return () -> {
+            if (duringCallback) {
+                inventoryCallbacks.add(runnable);
+            } else {
+                MovTasks.getMovExtra().sendPacketsForInventoryAction();
+                runnable.run();
+                syncAttr();
+            }
+        };
+    }
+
+    private Runnable wrapHotbarTask(int swap) {
+        return () -> {
+            if (duringCallback) {
+                hotBarCallbacks.add(swap);
+            } else {
+                PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(swap);
+                syncAttr();
+            }
+        };
+    }
+
     public boolean onPickItem() {
 
         if (mc.player == null) return false;
@@ -445,12 +486,16 @@ public class InvExtra extends BaseModule {
     }
 
     public void clearKeep() {
-
         ClientPlayerEntity player = MinecraftClient.getInstance().player;
         if (player != null) {
             ClientPlayerAccess access = ClientPlayerAccess.of(player);
             access.clearKeepedInventory(true);
             Debug.chat(Text.literal("已清除界面历史记录"));
         }
+    }
+
+    public enum ActionType {
+        INV,
+        HOT_BAR;
     }
 }
