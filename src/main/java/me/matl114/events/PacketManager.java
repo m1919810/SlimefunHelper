@@ -249,8 +249,9 @@ public class PacketManager {
                 startFlushOut = true;
                 try {
                     for (var packet : packetQueueOut) {
-                        packet.send();
+                        packet.send(false);
                     }
+                    mc.getNetworkHandler().getConnection().flush();
                 } finally {
                     startFlushOut = false;
                 }
@@ -267,11 +268,13 @@ public class PacketManager {
             startFlushOut = true;
             var iter = packetQueueOut.iterator();
             try {
+                boolean sendAny = false;
                 while (iter.hasNext()) {
                     var packet = iter.next();
                     switch (pdd.apply(packet)) {
                         case FLUSH -> {
-                            packet.send();
+                            packet.send(false);
+                            sendAny = true;
                             iter.remove();
                         }
                         case DROP -> {
@@ -279,6 +282,7 @@ public class PacketManager {
                         }
                     }
                 }
+                if (sendAny) mc.getNetworkHandler().getConnection().flush();
             } finally {
                 startFlushOut = false;
             }

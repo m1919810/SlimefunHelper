@@ -45,16 +45,20 @@ public class Misc extends BaseModule implements LegalMovementManager.MovementMod
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         LegalMovementManager.MovementModifier.super.applyPreTickModify(movementManagerEvent);
+        boolean tickRotate = false;
+        int tick = Tasks.getTick() % 10;
         if (friendsWineEnable.get() && !mc.player.isFallFlying()) {
-            int tick = Tasks.getTick() % 10;
             if (sneak.get()) {
                 PlayerInputManager.INSTANCE.addSneakModifier(0, tick <= 4, 1);
             }
+            tickRotate = true;
+        }
+        if (tickRotate) {
             if (!movementManagerEvent.context.hasImportantRotation()) {
                 PlayerStateManager.setPlayerYawSafe(mc.player, mc.player.getYaw() + 36 * tick);
+                movementManagerEvent.context.markForResetRot();
+                movementManagerEvent.context.markForMoveFix();
             }
-            movementManagerEvent.context.markForResetRot();
-            movementManagerEvent.context.markForMoveFix();
         }
     }
 }
