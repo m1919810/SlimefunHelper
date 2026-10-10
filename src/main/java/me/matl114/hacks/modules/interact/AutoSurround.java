@@ -168,6 +168,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
 
     public void onInput(Event<Void> inputEvent) {
         if (enable.get()) {
+            if (!InteractionTasks.canHandleInteract(mode.get())) return;
             boolean bl = mc.player.isSneaking();
             if (++delayTicks >= delay.get()) {
                 if (!eatingAbort.get() || !mc.player.isUsingItem()) {
@@ -370,13 +371,13 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                             offhandOk |= supply.index() == 40;
                             invCallback = InvExtra.INSTANCE.swapItemToHand(supply.index(), offhandOk, ghostHand.get());
                         }
-                        InteractionTasks.handlePlaceMode(
+                        boolean completed = InteractionTasks.handlePlaceMode(
                                 mode.get(),
                                 hitResult.val(),
                                 offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND,
                                 swingHand.get());
                         placeCnt += 1;
-                        if (placeCnt >= mul) {
+                        if (!completed || placeCnt >= mul) {
                             break;
                         }
                     }
@@ -390,7 +391,7 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                 pendingMine.add(test);
             }
         }
-        if (placeCnt < mul && !mc.player.isUsingItem()) {
+        if (placeCnt < mul && InteractionTasks.canHandleInteract(mode.get()) && !mc.player.isUsingItem()) {
             for (var test : pendingMine) {
                 BlockHitResult selfHitResult = InteractionTasks.createHitResult(test, mc.player.getPos());
                 if (placeCnt == 0) {
@@ -402,16 +403,16 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                     offhandOk |= supply.index() == 40;
                     invCallback = InvExtra.INSTANCE.swapItemToHand(supply.index(), offhandOk, ghostHand.get());
                 }
-                InteractionTasks.handlePlaceMode(
+                boolean completed = InteractionTasks.handlePlaceMode(
                         mode.get(), selfHitResult, offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND, swingHand.get());
                 placeCnt += 1;
-                if (placeCnt >= mul) {
+                if (!completed || placeCnt >= mul) {
                     break;
                 }
             }
         }
         if (invCallback != null) {
-            invCallback.run();
+            InteractionTasks.finishGhostHand(mode.get(), invCallback);
         }
         return placeCnt > 0 || !pendingRemoval.isEmpty();
     }

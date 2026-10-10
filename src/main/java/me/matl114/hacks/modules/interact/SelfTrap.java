@@ -204,6 +204,7 @@ public class SelfTrap extends BaseModule {
     }
 
     public boolean checkSelfTrap() {
+        if (!InteractionTasks.canHandleInteract(mode.get())) return false;
         if (onlyGround.get() && !mc.player.isOnGround() && !CollisionUtil.isEntitySupported(mc.player, 1.5D)) {
             return false;
         }
@@ -258,16 +259,16 @@ public class SelfTrap extends BaseModule {
                 }
             }
 
-            InteractionTasks.handlePlaceMode(
+            boolean completed = InteractionTasks.handlePlaceMode(
                     mode.get(), hitResult.val(), offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND, swingHand.get());
             placeCount++;
-            if (placeCount >= maxPlace) {
+            if (!completed || placeCount >= maxPlace) {
                 break;
             }
         }
 
         if (inventoryCallback != null) {
-            inventoryCallback.run();
+            InteractionTasks.finishGhostHand(mode.get(), inventoryCallback);
         }
         return placeCount > 0;
     }

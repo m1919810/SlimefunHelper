@@ -192,6 +192,7 @@ public class PrinterRewrite extends BaseModule {
     }
 
     public void onPreInputEvent(Event<Void> event) {
+        if (!InteractionTasks.canHandleInteract(mode.get())) return;
         if (++countDown >= delay.get()) {
             countDown = 0;
         } else {
@@ -355,7 +356,7 @@ public class PrinterRewrite extends BaseModule {
                 handlePlace(result.val());
                 // sb grimac
                 if (returnBlock.get()) {
-                    callback.run();
+                    InteractionTasks.finishGhostHand(mode.get(), callback);
                 }
                 putSuccessPlace(pos);
                 return true;
@@ -429,7 +430,7 @@ public class PrinterRewrite extends BaseModule {
                     suc = true;
                     desyncWaitBlocks.put(pos, Tasks.getTick() + 20);
                     if (returnBlock.get()) {
-                        callback.run();
+                        InteractionTasks.finishGhostHand(mode.get(), callback);
                     }
                 }
             }
@@ -589,7 +590,7 @@ public class PrinterRewrite extends BaseModule {
                             desyncWaitBlocks.put(pos, Tasks.getTick() + 20);
                         }
                         if (returnBlock.get()) {
-                            runnable.run();
+                            InteractionTasks.finishGhostHand(mode.get(), runnable);
                         }
                         return true;
                     }

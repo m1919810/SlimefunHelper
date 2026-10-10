@@ -110,12 +110,11 @@ public class Scaffold extends BaseModule {
             return false;
         }
         try {
-            InteractionTasks.handlePlaceMode(
+            return InteractionTasks.handlePlaceMode(
                     legalMode.get(), result, offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND, swingHand.get());
         } finally {
-            callback.run();
+            InteractionTasks.finishGhostHand(legalMode.get(), callback);
         }
-        return true;
     }
 
     private Set<Item> availableItemBlocks;
@@ -148,6 +147,7 @@ public class Scaffold extends BaseModule {
         if (checkNull()) {
             return;
         }
+        if (!InteractionTasks.canHandleInteract(legalMode.get())) return;
         if (mc.player.isOnGround()) {
             lastOnGroundY = mc.player.getBlockY();
         }
@@ -212,8 +212,9 @@ public class Scaffold extends BaseModule {
             }
             BlockHitResult hit = hitResult.val();
             if (hit != null) {
-                placeBlock(hand, hit);
+                boolean completed = placeBlock(hand, hit);
                 ccc++;
+                if (!completed) break;
             }
         }
         return ccc > 0;

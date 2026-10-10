@@ -1,6 +1,8 @@
 package me.matl114.hacks.modules.inv;
 
 import com.google.common.util.concurrent.Runnables;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Locale;
 import java.util.OptionalInt;
 import me.matl114.accessors.access.ClientPlayerAccess;
@@ -8,6 +10,7 @@ import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.PacketManager;
 import me.matl114.events.impl.SlotClickAction;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.MovTasks;
@@ -35,6 +38,7 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
@@ -43,6 +47,7 @@ import net.minecraft.text.Text;
 
 public class InvExtra extends BaseModule {
     public static InvExtra INSTANCE;
+    private final Deque<Runnable> ghostHandCallbacks = new ArrayDeque<>();
     public final ModulePath inventory = makePath(Configs.INV_CONFIG, "inventory");
 
     public InvExtra() {
@@ -82,6 +87,11 @@ public class InvExtra extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPreClickSlot(), this::onClickSlot);
         registerListener(Listener.getPacketPoint().getChannel(CloseHandledScreenC2SPacket.class), this::onCloseScreen);
+        registerListener(
+                Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class),
+                this::onClientTickEnd,
+                Integer.MAX_VALUE);
+        registerListener(Listener.getServerLeavePoint(), event -> ghostHandCallbacks.clear());
         TaskManagers.getToggleManager().register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + "keep-inv", enableKeepInv);
         TaskManagers.getTaskManager().register(TaskManagers.PREFIX_BUTTON_TASKS + "." + CLEAR_KEEP, this::clearKeep);
     }
@@ -111,6 +121,22 @@ public class InvExtra extends BaseModule {
     public void onCloseScreen(Event<CloseHandledScreenC2SPacket> closeS2C) {
         if (expandInventory.get() && closeS2C.context.getSyncId() == mc.player.playerScreenHandler.syncId) {
             closeS2C.cancel();
+        }
+    }
+
+    private void onClientTickEnd(Event<ClientTickEndC2SPacket> event) {
+        if (event.isCancelled()) return;
+        // Movement-post actions may add inventory callbacks during this packet's post-schedule phase.
+        PacketManager.schedulePostScheduleCallback(event.context, this::drainGhostHandCallbacks);
+    }
+
+    public void pushGhostHandCallback(Runnable callback) {
+        if (callback != null) ghostHandCallbacks.push(callback);
+    }
+
+    public void drainGhostHandCallbacks() {
+        while (!ghostHandCallbacks.isEmpty()) {
+            ghostHandCallbacks.pop().run();
         }
     }
 

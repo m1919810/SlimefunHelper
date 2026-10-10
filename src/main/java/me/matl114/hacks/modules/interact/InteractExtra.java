@@ -7,17 +7,18 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.RayCastCalculator;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.utils.MathUtils;
 import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.*;
 import org.joml.Vector2i;
 
-public class InteractExtra extends BaseModule {
+public class InteractExtra extends BaseModule implements RayCastCalculator<BlockPos> {
     public final ModulePath interactFix = makePath(Configs.INTERACT_CONFIG, "interact-fix");
     public static InteractExtra INSTANCE;
 
@@ -120,6 +121,35 @@ public class InteractExtra extends BaseModule {
                 + (mc.player.hasVehicle() ? ridingReachDistance.get() : reachDistance.get());
     }
 
+    @Override
+    public Box getEffectiveBox(BlockPos target) {
+        return new Box(target);
+    }
+
+    @Override
+    public Vec3d getRaycast(Vec3d pos, BlockPos target) {
+        Box box = getEffectiveBox(target);
+        double range = getBlockReachDistance();
+        Vec3d fallbackEye = pos.add(0, mc.player.dimensions.eyeHeight(), 0);
+        return getPotentialEyeHeights(pos)
+                .filter(eyePos -> box.squaredMagnitude(eyePos) < MathUtils.s2(range))
+                .map(eyePos -> raycastDirection(box, eyePos, range))
+                .findFirst()
+                .orElseGet(() -> raycastDirection(box, fallbackEye, range));
+    }
+
+    @Override
+    public boolean canRayCast(Vec3d pos, BlockPos target, float pitch, float yaw) {
+        Box box = getEffectiveBox(target);
+        double range = getBlockReachDistance();
+        Vec3d direction = EntityUtils.pitchYawToRotation(pitch, yaw).normalize();
+        return getPotentialEyeHeights(pos).anyMatch(eyePos -> {
+            return box.squaredMagnitude(eyePos) < MathUtils.s2(range)
+                    && box.raycast(eyePos, eyePos.add(direction.multiply(range)))
+                            .isPresent();
+        });
+    }
+
     private final double[] FALL_FLYING_EYE_HEIGHTS = {0.4D, 1.62D, 1.27D};
     private final double[] STANDING_EYE_HEIGHTS = {1.62D, 1.27D, 0.4D};
 
@@ -161,23 +191,6 @@ public class InteractExtra extends BaseModule {
             return false;
         }
         return getPotentialEyeHeights(pos).anyMatch(ps -> box.squaredMagnitude(ps) < MathUtils.s2(range));
-    }
-
-    public Vec3d getBestInteractEyePos(Vec3d pos, BlockHitResult blockHitResult) {
-        BlockPos blockPos = blockHitResult.getBlockPos();
-        //        Vec3d plateCenter = blockPos.toCenterPos().offset(direction, 0.5);
-        //        Vec3d directionVector = Vec3d.of(direction.getVector());
-        return getBestInteractEyePos(pos, blockPos);
-    }
-
-    public Vec3d getBestInteractEyePos(Vec3d pos, BlockPos blockPos) {
-        //        Vec3d plateCenter = blockPos.toCenterPos().offset(direction, 0.5);
-        //        Vec3d directionVector = Vec3d.of(direction.getVector());
-        Box blockBox = new Box(blockPos);
-        return getPotentialEyeHeights(pos)
-                .sorted(Comparator.comparingDouble(blockBox::squaredMagnitude))
-                .findFirst()
-                .orElseGet(() -> pos.add(mc.player.getEyePos().subtract(mc.player.getPos())));
     }
 
     public void onCooldown(Event<Integer> event) {

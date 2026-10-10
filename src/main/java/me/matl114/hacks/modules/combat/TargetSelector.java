@@ -16,7 +16,9 @@ import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.RayCastCalculator;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.managers.Configs;
 import me.matl114.managers.FileManager;
@@ -52,7 +54,7 @@ import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
-public class TargetSelector extends BaseModule {
+public class TargetSelector extends BaseModule implements RayCastCalculator<Entity> {
     public static TargetSelector INSTANCE;
     public final ModulePath attack = makePath(Configs.COMBAT_CONFIG, "attack");
 
@@ -174,6 +176,7 @@ public class TargetSelector extends BaseModule {
         return DoubleStream.of(mc.player.dimensions.eyeHeight());
     }
 
+    @Override
     public Box getEffectiveBox(Entity entity) {
         if (grimInterpolateBox.get() && entity instanceof OtherClientPlayerEntity) {
             return CombatExtra.INSTANCE.getTracker(entity).getInteractBox(entity);
@@ -220,6 +223,32 @@ public class TargetSelector extends BaseModule {
                 .anyMatch(ps -> box.squaredMagnitude(ps) < MathUtils.s2(range));
     }
 
+    @Override
+    public Vec3d getRaycast(Vec3d pos, Entity entity) {
+        Box box = getEffectiveBox(entity);
+        double range = CombatExtra.INSTANCE.getAttackAtTargetRange(entity);
+        Vec3d fallbackEye = pos.add(0, mc.player.dimensions.eyeHeight(), 0);
+        return getPotentialEyeHeights()
+                .mapToObj(height -> pos.add(0, height, 0))
+                .filter(eyePos -> box.squaredMagnitude(eyePos) < MathUtils.s2(range))
+                .map(eyePos -> raycastDirection(box, eyePos, range))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElseGet(() -> raycastDirection(box, fallbackEye, range));
+    }
+
+    @Override
+    public boolean canRayCast(Vec3d pos, Entity entity, float pitch, float yaw) {
+        Box box = getEffectiveBox(entity);
+        double range = CombatExtra.INSTANCE.getAttackAtTargetRange(entity);
+        Vec3d direction = EntityUtils.pitchYawToRotation(pitch, yaw).normalize();
+        return getPotentialEyeHeights()
+                .mapToObj(height -> pos.add(0, height, 0))
+                .anyMatch(eyePos -> box.squaredMagnitude(eyePos) < MathUtils.s2(range)
+                        && box.raycast(eyePos, eyePos.add(direction.multiply(range)))
+                                .isPresent());
+    }
+
     public Vec3d getBestAttackEyePos(Vec3d pos, Entity entity) {
         Box box = getEffectiveBox(entity);
         var poses = getPotentialEyeHeights().mapToObj(s -> pos.add(0, s, 0)).toList();
@@ -250,24 +279,7 @@ public class TargetSelector extends BaseModule {
     }
 
     public Vec3d getEntityRayCast(Vec3d pos, Entity entity) {
-        Box box = getEffectiveBox(entity);
-        Vec3d eyePos = getBestAttackEyePos(pos, entity);
-        double attackAt = CombatExtra.INSTANCE.getAttackAtTargetRange(entity);
-        return fixRayCastBigBox(eyePos, box, box.getCenter().subtract(eyePos), attackAt);
-    }
-
-    private Vec3d fixRayCastBigBox(Vec3d usingEyePos, Box targetBox, Vec3d currentRayCast, double currentAttackRange) {
-        Vec3d rayCastTest = currentRayCast.normalize().multiply(currentAttackRange - 0.009178);
-        var ray = targetBox.raycast(usingEyePos, usingEyePos.add(rayCastTest));
-        if (ray.isPresent()) {
-            return currentRayCast;
-        } else {
-            // ?
-            Box shrinkedBox = targetBox.expand(-1E-7, -1E-7, -1E-7);
-
-            Vec3d targetingPos = MathUtils.magnitudePoint(shrinkedBox, usingEyePos);
-            return targetingPos.subtract(usingEyePos).normalize();
-        }
+        return getRaycast(pos, entity);
     }
 
     public Optional<Vec3d> getBestAttackEyePos(Vec3d pos, Box box, double range) {
