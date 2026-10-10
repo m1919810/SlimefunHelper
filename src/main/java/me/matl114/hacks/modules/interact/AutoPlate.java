@@ -158,6 +158,7 @@ public class AutoPlate extends BaseModule {
 
     public void onInput(Event<Void> event) {
         if (checkNull()) return;
+        if (!InteractionTasks.canHandleInteract(mode.get())) return;
         if (enable.get()) {
             if (++timer >= delay.get()) {
                 timer = 0;
@@ -181,6 +182,7 @@ public class AutoPlate extends BaseModule {
     }
 
     public void tickPlace() {
+        if (!InteractionTasks.canHandleInteract(mode.get())) return;
         int cnt = 0;
         int multiply = ((DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled(
                         mode.get().canMultiRotPlace())))
@@ -227,10 +229,13 @@ public class AutoPlate extends BaseModule {
                 if (useBlockRotate.get()) {
                     BlockRotate.INSTANCE.addTempStateSchematic(bp, state);
                 }
-                InteractionTasks.handlePlaceMode(mode.get(), blockHitResult.val(), Hand.MAIN_HAND, swingHand.get());
-                mc.world.setBlockState(bp, state, WorldUtils.UPDATE_BLOCK_NO_PHYSICS);
+                boolean completed = InteractionTasks.handlePlaceMode(
+                        mode.get(), blockHitResult.val(), Hand.MAIN_HAND, swingHand.get());
+                if (completed) {
+                    mc.world.setBlockState(bp, state, WorldUtils.UPDATE_BLOCK_NO_PHYSICS);
+                }
                 cnt += 1;
-                if (cnt >= multiply) {
+                if (!completed || cnt >= multiply) {
                     break;
                 }
             }
@@ -238,7 +243,7 @@ public class AutoPlate extends BaseModule {
         if (returnBlock.get()) {
             int size = stack.size();
             for (var i = size - 1; i >= 0; i--) {
-                stack.get(i).run();
+                InteractionTasks.finishGhostHand(mode.get(), stack.get(i));
             }
         }
     }

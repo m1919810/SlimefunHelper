@@ -494,6 +494,7 @@ public class CrystalAura extends BaseModule {
     }
 
     public boolean tickPlace() {
+        if (!InteractionTasks.canHandleInteract(mode.get())) return false;
         if (currentTarget.isEmpty()) {
             return false;
         }
@@ -1130,7 +1131,7 @@ public class CrystalAura extends BaseModule {
                 offhand.get() ? Hand.OFF_HAND : Hand.MAIN_HAND,
                 swingHand.get());
         CombatManager.INSTANCE.markCrystalPlace(basePos);
-        callback.run();
+        InteractionTasks.finishGhostHand(mode.get(), callback);
         return true;
     }
 
@@ -1146,13 +1147,14 @@ public class CrystalAura extends BaseModule {
         if (callback == null) {
             return false;
         }
-        InteractionTasks.handlePlaceMode(
+        boolean completed = InteractionTasks.handlePlaceMode(
                 mode.get(),
                 autoBase.basePlaceResult(),
                 offhand.get() ? Hand.OFF_HAND : Hand.MAIN_HAND,
                 swingHand.get());
-        callback.run();
-        if (zeroTickBase.get()
+        InteractionTasks.finishGhostHand(mode.get(), callback);
+        if (completed
+                && zeroTickBase.get()
                 && DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled(
                         mode.get().canMultiRotPlace())) {
             placeBlockingAndCrystal(plan);
@@ -1188,7 +1190,7 @@ public class CrystalAura extends BaseModule {
             return false;
         }
         InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
-        callback.run();
+        InteractionTasks.finishGhostHand(mode.get(), callback);
         return true;
     }
 
@@ -1352,7 +1354,7 @@ public class CrystalAura extends BaseModule {
             return false;
         }
         InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
-        callback.run();
+        InteractionTasks.finishGhostHand(mode.get(), callback);
         return true;
     }
 
@@ -1368,7 +1370,7 @@ public class CrystalAura extends BaseModule {
         mc.world.setBlockState(pos, Blocks.AIR.getDefaultState());
         InteractionTasks.handlePlaceMode(
                 mode.get(), hitResult, offhand.get() ? Hand.OFF_HAND : Hand.MAIN_HAND, swingHand.get());
-        callback.run();
+        InteractionTasks.finishGhostHand(mode.get(), callback);
         trackedGlasses.put(pos, Tasks.getTick());
         return true;
     }

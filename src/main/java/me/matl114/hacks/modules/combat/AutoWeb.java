@@ -114,6 +114,7 @@ public class AutoWeb extends BaseModule {
         if (checkNull() || !enable.get()) {
             return;
         }
+        if (!InteractionTasks.canHandleInteract(mode.get())) return;
         if (eatingAbort.get() && mc.player.isUsingItem()) return;
         BlockHitResult option = searchPlaceOption();
         if (option == null) {
@@ -152,10 +153,10 @@ public class AutoWeb extends BaseModule {
         if (callback == null) {
             return false;
         }
-        InteractionTasks.handlePlaceMode(
+        boolean completed = InteractionTasks.handlePlaceMode(
                 mode.get(), hitResult, offhand.get() ? Hand.OFF_HAND : Hand.MAIN_HAND, swingHand.get());
-        callback.run();
-        return true;
+        InteractionTasks.finishGhostHand(mode.get(), callback);
+        return completed;
     }
 
     private BlockHitResult searchPlaceOption() {

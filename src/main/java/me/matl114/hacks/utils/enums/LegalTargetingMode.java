@@ -6,12 +6,11 @@ import me.matl114.managers.config.ConfigEnum;
 public enum LegalTargetingMode implements ConfigEnum {
     NONE,
     DELAY_MOVEMENT,
-    // PRE_MOVEMENT,
-    // USEITEM_PACKET,
+    MOVEMENT_POST,
     LEGACY_SLIENT_ROT;
 
     public boolean isMovement() {
-        return this == LegalTargetingMode.DELAY_MOVEMENT; // || this == LegalTargetingMode.PRE_MOVEMENT;
+        return this == LegalTargetingMode.DELAY_MOVEMENT || this == LegalTargetingMode.MOVEMENT_POST;
     }
 
     public boolean isLegal() {
