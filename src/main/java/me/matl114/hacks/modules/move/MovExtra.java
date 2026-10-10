@@ -9,6 +9,7 @@ import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
@@ -89,6 +90,7 @@ public class MovExtra extends BaseModule {
             ClientPlayerEntity player = mc.player;
             // only sprint need to be toggled
             PlayerStateManager.INSTANCE.sendSprintStatus(false, true);
+            DisablerManager.INSTANCE.hasAnySprintPacketAlreadyOrPending = true;
         }
     }
 

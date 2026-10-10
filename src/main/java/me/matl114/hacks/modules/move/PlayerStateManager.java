@@ -16,9 +16,9 @@ import me.matl114.events.Listener;
 import me.matl114.events.impl.CombatPlayer;
 import me.matl114.events.impl.MetadataUpdate;
 import me.matl114.events.impl.SlotClickAction;
-import me.matl114.hacks.ACTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.modules.ac.PostManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Tasks;
@@ -326,7 +326,7 @@ public class PlayerStateManager extends BaseModule {
             return;
         }
         Vec3d velocity = VPacket.getVelocity(eventVC.context);
-        ACTasks.addPostTransactionAction(s -> lastKnownClientVelocity = velocity);
+        PostManager.INSTANCE.addNextTransactionAction(s -> lastKnownClientVelocity = velocity);
     }
 
     public void onPostPlayerExplosion(Event<ExplosionS2CPacket> eventBoom) {
@@ -334,7 +334,8 @@ public class PlayerStateManager extends BaseModule {
         var exp = eventBoom.context;
         if (exp.playerKnockback().isPresent()) {
             Vec3d knockBack = exp.playerKnockback().get();
-            ACTasks.addPostTransactionAction(s -> lastKnownClientVelocity = lastKnownClientVelocity.add(knockBack));
+            PostManager.INSTANCE.addNextTransactionAction(
+                    s -> lastKnownClientVelocity = lastKnownClientVelocity.add(knockBack));
         }
     }
 

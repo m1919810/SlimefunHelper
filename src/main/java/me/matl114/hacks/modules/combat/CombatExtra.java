@@ -247,7 +247,7 @@ public class CombatExtra extends BaseModule {
                 oldPacketLocation = newPacketLocation;
                 newPacketLocation = new InterpolationData(
                         oldPacketLocation.possiblePositions(), trackedPosition, interpolationSteps, maySkipTick);
-                PostManager.INSTANCE.addNextPreTickAction((ch) -> oldPacketLocation = null);
+                PostManager.INSTANCE.addNextTransactionAction((ch) -> oldPacketLocation = null);
             }
         }
         // 傻逼grim又发力了。依旧跳刻大法

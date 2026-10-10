@@ -174,7 +174,7 @@ public class DisablerManager extends BaseModule implements LegalMovementManager.
     }
 
     public boolean hasAnyPlaceActionGrimQueue = false;
-    public boolean hasAnySprintPacketAlready = false;
+    public boolean hasAnySprintPacketAlreadyOrPending = false;
 
     public boolean flushACPlaceQueue() {
         if (autoFlushPlaceQueue.get()) {
@@ -289,7 +289,7 @@ public class DisablerManager extends BaseModule implements LegalMovementManager.
         var access = PlayerMoveC2SPacketAccess.of(playerMoveC2SPacket.context).getCause();
         if (access != PlayerMoveC2SPacketAccess.Cause.SET_BACK
                 && access != PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP) {
-            hasAnySprintPacketAlready = false;
+            hasAnySprintPacketAlreadyOrPending = false;
         }
     }
 
@@ -303,21 +303,21 @@ public class DisablerManager extends BaseModule implements LegalMovementManager.
 
     public void onTick(Event<Void> event) {
         hasPlaceThisTick = false;
-        hasAnySprintPacketAlready = false;
+        hasAnySprintPacketAlreadyOrPending = false;
     }
 
     public void onPacketSprint(Event<ClientCommandC2SPacket> eventSprint) {
         if (eventSprint.isCancelled()) return;
         if (eventSprint.context.getMode() == ClientCommandC2SPacket.Mode.START_SPRINTING
                 || eventSprint.context.getMode() == ClientCommandC2SPacket.Mode.STOP_SPRINTING) {
-            hasAnySprintPacketAlready = true;
+            hasAnySprintPacketAlreadyOrPending = true;
         }
     }
 
     public void applyAfterInputTick(Event<LegalMovementManager> event) {
         LegalMovementManager.MovementModifier.super.applyAfterInputTick(event);
         var input = PlayerInputUtils.of(mc.player);
-        if (hasAnySprintPacketAlready && duplicatedSprintFix.get()) {
+        if (hasAnySprintPacketAlreadyOrPending && duplicatedSprintFix.get()) {
             // better not change the idiot sprint state
             if (!PlayerStateManager.INSTANCE.lastSprint && input.sprint()) {
                 input.sprint(false).applyInput(mc.player);
