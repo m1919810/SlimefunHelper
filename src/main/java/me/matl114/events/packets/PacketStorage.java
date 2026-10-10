@@ -12,7 +12,7 @@ public interface PacketStorage {
 
     NetworkSide side();
 
-    void send();
+    void send(boolean forceFlush);
 
     void handle();
 }

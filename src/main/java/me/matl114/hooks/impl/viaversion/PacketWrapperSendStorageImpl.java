@@ -53,7 +53,7 @@ public class PacketWrapperSendStorageImpl implements PacketStorage {
     }
 
     @Override
-    public void send() {
+    public void send(boolean forceFlush) {
         this.sendOperation.accept(channel.eventLoop().inEventLoop());
     }
 
