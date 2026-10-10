@@ -146,7 +146,6 @@ public class LegalMovementManager {
             // one cannot sprint if forward is not pressed
             if (input.forwardSpeed() < 1E-2 && (input.sprint() || player.isSprinting())) {
                 input.sprint(false);
-                player.setSprinting(false);
             }
             input.applyInput(player);
         }

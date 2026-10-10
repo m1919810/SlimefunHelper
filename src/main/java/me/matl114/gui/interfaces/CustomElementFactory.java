@@ -13,7 +13,6 @@ import me.matl114.gui.complex.RawTextElement;
 import me.matl114.gui.elements.*;
 import me.matl114.hacks.utils.gui.GuiColorSamplier;
 import me.matl114.utils.config.Value;
-import me.matl114.utils.config.ValueAccessor;
 import me.matl114.utils.config.WrapperFactory;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
@@ -159,12 +158,9 @@ public class CustomElementFactory implements ElementFactory {
                         textColor(),
                         (el, selected) -> {
                             if (enable.getAsBoolean()) {
-                                return (active.getAsBoolean()
-                                                ? colors().activeFrameColor()
-                                                : colors().inactiveFrameColor())
-                                        .color();
+                                return colors().activeFrameColor().color();
                             }
-                            return selected ? -1 : null;
+                            return selected ? -1 : colors().inactiveFrameColor().color();
                         })
                 .withTooltips(handler);
     }
@@ -208,22 +204,5 @@ public class CustomElementFactory implements ElementFactory {
                 .setBackgroundColor(() -> colors().textBackground().color())
                 .setTextColor(textColor())
                 .setAlign(overrideAlign == null ? sliderTextAlign() : overrideAlign);
-    }
-
-    @Override
-    public ElementHandler createToggleButton(
-            TextProvider provider, TooltipHandler handler, ValueAccessor<Boolean> accessor) {
-        return createToggleButton(provider, handler, accessor, true);
-    }
-
-    @Override
-    public ElementHandler createToggleButton(
-            TextProvider provider, TooltipHandler handler, ValueAccessor<Boolean> accessor, boolean frame) {
-        return createButton(
-                provider,
-                handler,
-                ButtonAction.run(() -> accessor.setValue(!accessor.getValue())),
-                accessor::getValue,
-                frame ? () -> true : () -> false);
     }
 }

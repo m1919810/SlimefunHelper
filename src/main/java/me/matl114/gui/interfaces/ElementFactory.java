@@ -349,8 +349,15 @@ public interface ElementFactory {
         return createToggleButton(provider, handler, accessor, true);
     }
 
-    ElementHandler createToggleButton(
-            TextProvider provider, TooltipHandler handler, ValueAccessor<Boolean> accessor, boolean frame);
+    default ElementHandler createToggleButton(
+            TextProvider provider, TooltipHandler handler, ValueAccessor<Boolean> accessor, boolean frame) {
+        return createButton(
+                provider,
+                handler,
+                ButtonAction.run(() -> accessor.setValue(!accessor.getValue())),
+                accessor::getValue,
+                frame ? accessor::getValue : () -> false);
+    }
 
     default ElementHandler createToggleButton(
             Supplier<Text> text, Supplier<List<Text>> tooltips, ValueAccessor<Boolean> accessor) {

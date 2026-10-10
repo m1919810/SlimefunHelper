@@ -9,7 +9,6 @@ import lombok.Getter;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.events.catchers.PacketCatcherImpl;
 import me.matl114.events.impl.UseItemOnBlock;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
@@ -35,7 +34,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.registry.tag.BlockTags;
@@ -46,7 +44,6 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
 import net.minecraft.world.RaycastContext;
-import org.apache.commons.lang3.mutable.MutableObject;
 
 public class InteractionTasks {
     public static void init() {}
@@ -114,14 +111,7 @@ public class InteractionTasks {
         }
     }
 
-    public static void addPostRotationCorrectTask(Vec3d look3d, Vec3d eyePos, Runnable callback) {
-        addPostRotationCorrectTask(look3d.subtract(eyePos), callback);
-    }
-
-    public static void addPostRotationCorrectTask(Vec3d rotationVec, Runnable callback) {
-        //        RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
-        //            RenderTasks.DEBUG_TICK, new RenderTasks.BoxObject(look3d.add(-0.1, -0.1, -0.1), look3d.add(0.1,
-        // 0.1, 0.1), Color.MAGENTA)));
+    public static void addPostRotationCorrectTask(BlockPos pos, Runnable callback) {
         ClientPlayerAccess.of(mc.player)
                 .getLegalMovementManager()
                 .addMovementModifier(new LegalMovementManager.MovementModifier() {
@@ -133,9 +123,9 @@ public class InteractionTasks {
                     @Override
                     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
                         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-
-                        Vec2f rotation =
-                                EntityUtils.rotationToPitchYaw(rotationVec).normalize();
+                        Vec3d predictingPos = player.getPos().add(PlayerStateManager.INSTANCE.lastKnownClientVelocity);
+                        Vec3d rayCast = createBlockRayCastDirection(pos, predictingPos);
+                        Vec2f rotation = EntityUtils.rotationToPitchYaw(rayCast.normalize());
                         movementManagerEvent.context.pushImportantRotation(true, true);
                         PlayerStateManager.setPlayerYawSafe(player, rotation.y);
                         EntityUtils.setEntityPitchSafe(player, rotation.x);
@@ -143,6 +133,12 @@ public class InteractionTasks {
                         movementManagerEvent.context.tryMarkForMoveFix();
                         movementManagerEvent.context.markForResetRot();
                         // RenderTasks.drawBox(MathUtils.createBox(look3d, 0.2D), 300, Color.MAGENTA);
+                    }
+
+                    @Override
+                    public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
+                        LegalMovementManager.MovementModifier.super.applyBeforeMovementPacketModify(
+                                movementManagerEvent);
                     }
 
                     @Override
@@ -154,12 +150,52 @@ public class InteractionTasks {
                 });
     }
 
+    //    public static void addPostRotationCorrectTask(Vec3d rotationVec, Runnable callback) {
+    //        //        RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
+    //        //            RenderTasks.DEBUG_TICK, new RenderTasks.BoxObject(look3d.add(-0.1, -0.1, -0.1),
+    // look3d.add(0.1,
+    //        // 0.1, 0.1), Color.MAGENTA)));
+    //        ClientPlayerAccess.of(mc.player)
+    //                .getLegalMovementManager()
+    //                .addMovementModifier(new LegalMovementManager.MovementModifier() {
+    //                    @Override
+    //                    public int priority() {
+    //                        return PRIORITY_LOW;
+    //                    }
+    //
+    //                    @Override
+    //                    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+    //                        ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
+    //
+    //                        Vec2f rotation = EntityUtils.rotationToPitchYaw(rotationVec.normalize());
+    //                        movementManagerEvent.context.pushImportantRotation(true, true);
+    //                        PlayerStateManager.setPlayerYawSafe(player, rotation.y);
+    //                        EntityUtils.setEntityPitchSafe(player, rotation.x);
+    //                        //                        py = rotation;
+    //                        movementManagerEvent.context.tryMarkForMoveFix();
+    //                        movementManagerEvent.context.markForResetRot();
+    //                        // RenderTasks.drawBox(MathUtils.createBox(look3d, 0.2D), 300, Color.MAGENTA);
+    //                    }
+    //
+    //                    @Override
+    //                    public boolean postModify(
+    //                            Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+    //                        callback.run();
+    //                        return false;
+    //                    }
+    //                });
+    //    }
+
     public static Vec3d createBlockRayCastDirection(BlockPos pos) {
-        Vec3d bestEyePos = InteractExtra.INSTANCE.getBestInteractEyePos(mc.player.getPos(), pos);
-        return createBlockRayCastDirection(pos, bestEyePos);
+        return createBlockRayCastDirection(pos, mc.player.getPos());
     }
 
-    public static Vec3d createBlockRayCastDirection(BlockPos pos, Vec3d bestEyePos) {
+    public static Vec3d createBlockRayCastDirection(BlockPos pos, Vec3d playerPos) {
+        Vec3d bestEyePos = InteractExtra.INSTANCE.getBestInteractEyePos(playerPos, pos);
+        return createBlockRayCastDirectionFromEye(pos, bestEyePos);
+    }
+
+    private static Vec3d createBlockRayCastDirectionFromEye(BlockPos pos, Vec3d bestEyePos) {
         Vec3d center = pos.toCenterPos();
         Box box = new Box(pos);
         var raycastDirection1 =
@@ -197,26 +233,14 @@ public class InteractionTasks {
             case DELAY_MOVEMENT -> {
                 InteractionTasks.interactBlock(hand, result, swingHand);
                 if (!directlyHit) {
-                    InteractionTasks.addPostRotationCorrectTask(
-                            result.getBlockPos().toCenterPos(), bestEyePos, Runnables.doNothing());
+                    InteractionTasks.addPostRotationCorrectTask(result.getBlockPos(), Runnables.doNothing());
                 }
             }
             case MOVEMENT_POST -> {
                 if (!directlyHit) {
-                    MutableObject<PlayerInteractBlockC2SPacket> catcher = new MutableObject<>();
-                    Listener.addPrePacketCatcher(new PacketCatcherImpl<>(PlayerInteractBlockC2SPacket.class, (eve) -> {
-                        if (eve.isCancelled()) return true;
-                        catcher.setValue(eve.context);
-                        eve.cancel();
-                        return true;
-                    }));
-                    InteractionTasks.interactBlock(hand, result, swingHand);
-                    if (catcher.getValue() != null) {
-                        var pkt = catcher.getValue();
-                        InteractionTasks.addPostRotationCorrectTask(
-                                result.getBlockPos().toCenterPos(), bestEyePos, () -> mc.getNetworkHandler()
-                                        .sendPacket(pkt));
-                    }
+                    InteractionTasks.addPostRotationCorrectTask(result.getBlockPos(), () -> {
+                        InteractionTasks.interactBlock(hand, result, swingHand);
+                    });
                 } else {
                     InteractionTasks.interactBlock(hand, result, swingHand);
                 }

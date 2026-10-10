@@ -1405,7 +1405,7 @@ public class ElytraBot extends BaseModule {
         @Override
         public synchronized void onUpdate() {
             super.onUpdate();
-            this.thisTickStartFallFlying = ElytraExtra.INSTANCE.isThisTickArmoGlideMovementServerSideGlide();
+            this.thisTickStartFallFlying = ElytraExtra.INSTANCE.isThisTickGlideMovementServerSideGlide();
             if (mc.player.isFallFlying() || mc.player.getAbilities().flying) {
                 maxHeightInAttack = Math.max(maxHeightInAttack, mc.player.getY());
                 stateMachine.step();

@@ -597,7 +597,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         return stack.getDamage() < stack.getMaxDamage() - 1;
     }
 
-    private boolean delayResetFallFlyingFlag = false;
+    private boolean delayResetFallFlyingTransaction = false;
     // may cause fake gliding !!! must be careful
     public void handleEntityDataUpdate(Event<MetadataUpdate> event) {
         // only when elytra unbreakable do
@@ -630,12 +630,12 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                     data = (byte) (data | (1 << VDataFlag.FALL_FLYING_FLAG_INDEX));
                     serializedEntryUpdateEvent.metadata(
                             new DataTracker.SerializedEntry(entry.id(), entry.handler(), data));
-                    delayResetFallFlyingFlag = true;
+                    delayResetFallFlyingTransaction = true;
                     canRunArmorGlide = false;
                     canRunElytraUnbreakable = false;
                 }
             } else {
-                delayResetFallFlyingFlag = false;
+                delayResetFallFlyingTransaction = false;
             }
 
             // reset important flag even if module is off or can not work
@@ -661,7 +661,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                         mc.getNetworkHandler()
                                 .sendPacket(new ClientCommandC2SPacket(
                                         mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                        currentTickStartArmorGlideTransaction = true;
+                        currentTickStartGlideTransaction = true;
                         // we delayed the packets here to ensure that rockets are usable
                         // these rockets may not work,
                         flushRockets();
@@ -684,7 +684,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                         mc.getNetworkHandler()
                                 .sendPacket(new ClientCommandC2SPacket(
                                         mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                        currentTickStartArmorGlideTransaction = true;
+                        currentTickStartGlideTransaction = true;
                         flushRockets();
                     } else {
                         clearRockets();
@@ -1082,7 +1082,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 switchSlotToArmor(elytraIndex);
                 postTickSwapWithChestSlot = elytraIndex;
                 armorGlideTransactionSlot = postTickSwapWithChestSlot;
-                currentTickStartArmorGlideTransaction = true;
+                currentTickStartGlideTransaction = true;
                 // mc.player.input.playerInput =
                 // PlayerInputUtils.of(mc.player.input.playerInput).sprint(false).sneak(false).jump(true).forward(false).backward(false).right(false).left(false).toPlayerInput();
                 return true;
@@ -1224,7 +1224,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 // ARMOR FLIGHT
                 autoSwitchTransactionSlot = elytraIndex;
                 switchSlotToArmor(elytraIndex);
-                currentTickStartArmorGlideTransaction = true;
+                currentTickStartGlideTransaction = true;
                 return true;
             }
             return false;
@@ -1239,10 +1239,13 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public boolean armorGlideTransactionAbort = false;
     public int autoSwitchTransactionSlot = -1;
     public boolean pendingArmorGlideTransaction = false;
-    boolean currentTickStartArmorGlideTransaction = false;
+    boolean currentTickStartGlideTransaction = false;
 
-    public boolean isThisTickArmoGlideMovementServerSideGlide() {
-        return pendingArmorGlideTransaction || currentTickStartArmorGlideTransaction;
+    public boolean isThisTickGlideMovementServerSideGlide() {
+        return pendingArmorGlideTransaction
+                || pendingHandleElytraUnbreakableTransaction
+                || delayResetFallFlyingTransaction
+                || currentTickStartGlideTransaction;
     }
 
     StateExecutor rocketFlush = new StateExecutor();
@@ -1352,8 +1355,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         tickElytraSimulation();
         // resetFallFly
         reset_fallfly:
-        if (delayResetFallFlyingFlag) {
-            delayResetFallFlyingFlag = false;
+        if (delayResetFallFlyingTransaction) {
+            delayResetFallFlyingTransaction = false;
             while (!nextPacketResetFallFlying.isEmpty()) {
                 var it = nextPacketResetFallFlying.poll();
                 if (it > Tasks.getTick()) {
@@ -1364,6 +1367,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                             mc.getNetworkHandler()
                                     .sendPacket(new ClientCommandC2SPacket(
                                             mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                            currentTickStartGlideTransaction = true;
                             flushRockets();
                             MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
 
@@ -1376,6 +1380,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                                 mc.getNetworkHandler()
                                         .sendPacket(new ClientCommandC2SPacket(
                                                 mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                                currentTickStartGlideTransaction = true;
                                 flushRockets();
                                 MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
                                 break reset_fallfly;
@@ -1408,7 +1413,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                         mc.getNetworkHandler()
                                 .sendPacket(new ClientCommandC2SPacket(
                                         mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                        currentTickStartArmorGlideTransaction = true;
+                        currentTickStartGlideTransaction = true;
                         flushRockets();
                         MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
                         if (armorFlyBadPacketFix.get()) {
@@ -1459,7 +1464,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                     EntityInternalAccess.of(mc.player).setDataFlag(VDataFlag.FALL_FLYING_FLAG_INDEX, true);
                 }
 
-                currentTickStartArmorGlideTransaction = true;
+                currentTickStartGlideTransaction = true;
                 if (elytraUnbreakableTransactionSlot != -1) {
                     flushRockets();
                 }
@@ -1485,7 +1490,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                     mc.getNetworkHandler()
                             .sendPacket(new ClientCommandC2SPacket(
                                     mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                    currentTickStartArmorGlideTransaction = true;
+                    currentTickStartGlideTransaction = true;
                     if (elytraUnbreakableTransactionSlot != -1) {
                         flushRockets();
                     }
@@ -2086,7 +2091,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     @Override
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-        if (isCurrentArmorGliding()) {
+        if (isCurrentArmorGliding() && isThisTickGlideMovementServerSideGlide()) {
             // fix grimac multiaction c, fix grimac elytra c,
             // ??
             if (MovExtra.INSTANCE.fuckGrimACSprint.get()) {
@@ -2168,14 +2173,14 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
         if (player.isFallFlying()) {
             player.horizontalCollision = false;
-            if (fuckGrimAC.get() && currentTickStartArmorGlideTransaction) {
+            if (fuckGrimAC.get() && currentTickStartGlideTransaction) {
                 var input = PlayerInputUtils.of(player);
                 input.forward(false).backward(false).left(false).right(false).jump(true);
                 input.applyInput(player);
             }
         }
         if (player.isFallFlying()) {
-            if (isThisTickArmoGlideMovementServerSideGlide() && antiKick.get()) {
+            if (isThisTickGlideMovementServerSideGlide() && antiKick.get()) {
                 // must send packet to reset flight, which is a common case when player is not freezing or player is
                 // freezing using FUtils
                 ClientPlayerAccess.of(player).resyncPos();
@@ -2186,7 +2191,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             }
         }
 
-        currentTickStartArmorGlideTransaction = false;
+        currentTickStartGlideTransaction = false;
         NoFall noFallModule = MovTasks.getNoFall();
         // handle nofall
         boolean handleNoFall = false;

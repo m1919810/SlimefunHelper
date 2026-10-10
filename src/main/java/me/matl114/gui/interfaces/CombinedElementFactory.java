@@ -12,7 +12,6 @@ import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.basic.TooltipHandler;
 import me.matl114.hacks.utils.config.GuiSetting;
 import me.matl114.utils.config.Value;
-import me.matl114.utils.config.ValueAccessor;
 import me.matl114.utils.config.WrapperFactory;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
@@ -105,12 +104,6 @@ public final class CombinedElementFactory implements ElementFactory {
             BooleanSupplier active,
             BooleanSupplier enable) {
         return delegate(ElementType.BUTTON).createButton(provider, handler, action, active, enable);
-    }
-
-    @Override
-    public ElementHandler createToggleButton(
-            TextProvider provider, TooltipHandler handler, ValueAccessor<Boolean> accessor, boolean frame) {
-        return delegate(ElementType.BUTTON).createToggleButton(provider, handler, accessor, frame);
     }
 
     @Override

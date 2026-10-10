@@ -1,8 +1,6 @@
 package me.matl114.plugins;
 
-import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModuleGroup;
-import me.matl114.hacks.api.ModuleManager;
 import me.matl114.managers.config.Config;
 import net.fabricmc.loader.api.ModContainer;
 
@@ -29,16 +27,6 @@ public interface SlimefunHelperPlugin {
     }
 
     public ModContainer getContainer();
-
-    /** Registers a module in an existing module manager and returns the registered instance. */
-    default <T extends BaseModule> T registerModule(ModuleManager manager, T module) {
-        return PluginManager.getInstance().registerModule(manager, module);
-    }
-
-    /** Registers a module in an existing module manager and returns the registered instance. */
-    default <T extends BaseModule> T registerModule(T module, ModuleManager manager) {
-        return registerModule(manager, module);
-    }
 
     /** Registers a plugin module group in the global module registry. */
     default void registerModuleGroup(ModuleGroup group) {

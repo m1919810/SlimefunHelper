@@ -2264,9 +2264,6 @@ public class MovTasks {
     private static FloatingUtils floatingUtils;
 
     @Getter
-    private static MovTest movTest;
-
-    @Getter
     private static TpaCommand tpaCommand;
 
     @Getter
@@ -2302,7 +2299,6 @@ public class MovTasks {
         // elytraFlightLegit = new ElytraFlightLegit().register(m);
         velocity = new Velocity().register(m);
         floatingUtils = new FloatingUtils().register(m);
-        movTest = new MovTest().register(m);
         tpaCommand = new TpaCommand().register(m);
         targetCommand = new TargetCommand().register(m);
         travellingControl = new TravellingControl().register(m);

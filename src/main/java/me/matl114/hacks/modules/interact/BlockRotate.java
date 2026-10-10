@@ -133,7 +133,7 @@ public class BlockRotate extends BaseModule {
                 //
                 Vec2f currentPy = new Vec2f(PlayerStateManager.INSTANCE.lastPitch, PlayerStateManager.INSTANCE.lastYaw);
                 PitchYawDeceive deceivePy = null;
-                Vec3d lookRot = null;
+                BlockPos lookRot = null;
                 if (paccess.hasUseContext()) {
                     Event<PitchYawDeceive> yawDeceive = new Event<>(new PitchYawDeceive(), false, true);
                     Event<BlockPos> playerLookAt = new Event<>(null, false, true);
@@ -159,7 +159,7 @@ public class BlockRotate extends BaseModule {
                         deceivePy = yawDeceive.context;
                     }
                     if (playerLookAt.context != null) {
-                        lookRot = InteractionTasks.createBlockRayCastDirection(playerLookAt.context);
+                        lookRot = playerLookAt.context;
                     }
                 }
                 if (deceivePy != null
@@ -190,7 +190,8 @@ public class BlockRotate extends BaseModule {
                                                 .getCurrentVersion()
                                                 .isLowerOrEqualTo(20, 8)))) {
                     if (ViaFabricPlusHooks.isSupportDupRot()) {
-                        var packet = LegacySnapRotManager.INSTANCE.createSnapAt(lookRot);
+                        var packet = LegacySnapRotManager.INSTANCE.createSnapAt(
+                                InteractionTasks.createBlockRayCastDirection(lookRot));
                         PacketManager.schedulePostSendPacket(e.context, packet);
                     } else {
                         InteractionTasks.addPostRotationCorrectTask(lookRot, Runnables.doNothing());
