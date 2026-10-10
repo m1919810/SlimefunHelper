@@ -10,11 +10,13 @@ import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.accessors.hacks.KeyBindAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.EntityUtils;
@@ -132,6 +134,12 @@ public class InteractManager extends BaseModule {
         registerListener(Listener.getPlayerRespawnPoint(), this::onWorldSwitch);
         registerListener(Listener.getPostHandleInputEvents(), this::onPostInputEvent, Integer.MIN_VALUE);
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onPlayerMoveC2SPacket);
+        registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
+    }
+
+    public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        ModulePreset preset = event.context.getValue();
+        if (preset.isSwingPlacePreset()) swing.set(preset.getSwingPlace(swing.get()));
     }
 
     public boolean duringInputEvent = false;

@@ -354,6 +354,7 @@ public class BlockRotate extends BaseModule {
     }
 
     public void onPresetLoad(Event<EventContainer<ModulePreset>> e) {
+        if (e.context().getValue().isOptionPreset()) return;
         switch (e.context.getValue()) {
             case AC_GRIM, AC_GRIM_LEGACY -> bypassMode.set(BypassMode.BYPASS_GRIM);
             default -> bypassMode.set(BypassMode.NO_BYPASS);

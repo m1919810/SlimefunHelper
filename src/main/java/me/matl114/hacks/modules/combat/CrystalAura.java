@@ -1548,8 +1548,14 @@ public class CrystalAura extends BaseModule {
     }
 
     public void onPreset(Event<EventContainer<ModulePreset>> event) {
-        mode.set(LegalInteractMode.getFromPreset(event.context.getValue()));
-        airplaceBase.set(!event.context.getValue().hasAC());
+        ModulePreset preset = event.context.getValue();
+        if (preset.isAirplacePreset()) airplaceBase.set(preset.getAirplace(airplaceBase.get()));
+        if (preset.isSwingPlacePreset()) swingHand.set(preset.getSwingPlace(swingHand.get()));
+        if (preset.isMultitaskPreset()) eatingAbort.set(preset.getEatingAbort(eatingAbort.get()));
+        if (!preset.isOptionPreset()) {
+            mode.set(LegalInteractMode.getFromPreset(preset));
+            airplaceBase.set(!preset.hasAC());
+        }
     }
 
     public record CrystalPlan(EndCrystalOption option, Optional<BlockPos> blockingPos) {}

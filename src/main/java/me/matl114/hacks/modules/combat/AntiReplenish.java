@@ -8,11 +8,13 @@ import java.util.function.Consumer;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.impl.BlockUpdate;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.interact.Interact;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.interact.SequencedActionManager;
@@ -92,6 +94,12 @@ public class AntiReplenish extends BaseModule {
         registerListener(Listener.getPreHandleInputEvents(), this::onPreHandleEvent);
         registerListener(Listener.getBlockUpdateListener(), this::onBlockUpdate);
         registerListener(Listener.getWorldSwitchPoint(), this::onSwitchWorld);
+        registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
+    }
+
+    public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        ModulePreset preset = event.context.getValue();
+        if (preset.isMultitaskPreset()) eatingAbort.set(preset.getEatingAbort(eatingAbort.get()));
     }
 
     @Override

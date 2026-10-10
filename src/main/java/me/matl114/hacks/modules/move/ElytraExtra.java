@@ -2598,14 +2598,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {
-        //        switch (presetEvent.drawContext.getValue()) {
-        //            case HACKING, VANILLA, AC_COMMON-> {
-        //                armorMode.set(ArmorFlyMode.LAZY);
-        //            }
-        //            case AC_MATRIX, AC_VULCAN, AC_GRIM, AC_GRIM_LEGACY -> {
-        //                armorMode.set(ArmorFlyMode.TICK);
-        //            }
-        //        }
+        if (presetEvent.context().getValue().isOptionPreset()) return;
         switch (presetEvent.context.getValue()) {
             case AC_GRIM, AC_GRIM_LEGACY -> noKineticMode.set(
                     noKineticMode.get().withValue(new WrapEnum<>(BypassMode.BYPASS_GRIM)));

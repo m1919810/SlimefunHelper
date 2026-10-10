@@ -145,6 +145,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             .build();
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        if (event.context().getValue().isOptionPreset()) return;
         ModulePreset preset = event.context().getValue();
         switch (preset) {
             case HACKING -> {

@@ -328,6 +328,7 @@ public class DisablerManager extends BaseModule implements LegalMovementManager.
     }
 
     public void onPresetReload(Event<EventContainer<ModulePreset>> event) {
+        if (event.context().getValue().isOptionPreset()) return;
         switch (event.context.getValue()) {
             case AC_GRIM, AC_GRIM_LEGACY -> {
                 currentAC.set(SupportAC.GRIM);

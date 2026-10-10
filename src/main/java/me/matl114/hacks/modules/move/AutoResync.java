@@ -253,6 +253,7 @@ public class AutoResync extends BaseModule {
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        if (event.context().getValue().isOptionPreset()) return;
         switch (event.context.getValue()) {
             case HACKING, VANILLA, AC_VULCAN -> {
                 if (autoResyncPosDistance.get() < 0) {
