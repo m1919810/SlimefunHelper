@@ -1113,6 +1113,7 @@ public class Attack extends BaseModule {
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        if (event.context().getValue().isOptionPreset()) return;
         ModulePreset preset = event.context().getValue();
         legalTargetingMode.set(LegalTargetingMode.getFromPreset(preset));
         switch (preset) {

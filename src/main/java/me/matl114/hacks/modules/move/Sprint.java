@@ -226,6 +226,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        if (event.context().getValue().isOptionPreset()) return;
         ModulePreset preset = event.context().getValue();
         switch (preset) {
             case HACKING, VANILLA -> {

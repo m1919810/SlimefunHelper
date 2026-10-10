@@ -133,8 +133,13 @@ public class AutoWeb extends BaseModule {
 
     private void onPreset(Event<EventContainer<ModulePreset>> event) {
         ModulePreset preset = event.context.getValue();
-        mode.set(LegalInteractMode.getFromPreset(preset));
-        airplace.set(!preset.hasAC());
+        if (preset.isAirplacePreset()) airplace.set(preset.getAirplace(airplace.get()));
+        if (preset.isSwingPlacePreset()) swingHand.set(preset.getSwingPlace(swingHand.get()));
+        if (preset.isMultitaskPreset()) eatingAbort.set(preset.getEatingAbort(eatingAbort.get()));
+        if (!preset.isOptionPreset()) {
+            mode.set(LegalInteractMode.getFromPreset(preset));
+            airplace.set(!preset.hasAC());
+        }
     }
 
     private IndexEntry<ItemStack> supplyWeb() {

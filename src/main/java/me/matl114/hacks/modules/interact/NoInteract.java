@@ -228,7 +228,12 @@ public class NoInteract extends BaseModule {
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
-        correctMode.set(LegalInteractMode.getFromPreset(event.context.getValue()));
-        correctAirPlace.set(!event.context.getValue().hasAC());
+        ModulePreset preset = event.context.getValue();
+        if (preset.isAirplacePreset()) correctAirPlace.set(preset.getAirplace(correctAirPlace.get()));
+        if (preset.isSwingPlacePreset()) swingHand.set(preset.getSwingPlace(swingHand.get()));
+        if (!preset.isOptionPreset()) {
+            correctMode.set(LegalInteractMode.getFromPreset(preset));
+            correctAirPlace.set(!preset.hasAC());
+        }
     }
 }

@@ -560,6 +560,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> eventModule) {
+        if (eventModule.context().getValue().isOptionPreset()) return;
         switch (eventModule.context.getValue()) {
             case AC_GRIM_LEGACY -> {
                 if (mode.get().isIn(Mode.PACKET)) {

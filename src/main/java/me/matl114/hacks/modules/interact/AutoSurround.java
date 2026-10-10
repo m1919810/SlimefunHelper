@@ -488,7 +488,13 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
-        this.mode.set(LegalInteractMode.getFromPreset(event.context.getValue()));
-        this.airplace.set(!event.context.getValue().hasAC());
+        ModulePreset preset = event.context.getValue();
+        if (preset.isAirplacePreset()) airplace.set(preset.getAirplace(airplace.get()));
+        if (preset.isSwingPlacePreset()) swingHand.set(preset.getSwingPlace(swingHand.get()));
+        if (preset.isMultitaskPreset()) eatingAbort.set(preset.getEatingAbort(eatingAbort.get()));
+        if (!preset.isOptionPreset()) {
+            mode.set(LegalInteractMode.getFromPreset(preset));
+            airplace.set(!preset.hasAC());
+        }
     }
 }

@@ -1954,6 +1954,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
     }
 
     public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {
+        if (presetEvent.context().getValue().isOptionPreset()) return;
         var modulePreset = presetEvent.context().getValue();
         switch (modulePreset) {
             case AC_GRIM, AC_GRIM_LEGACY -> {

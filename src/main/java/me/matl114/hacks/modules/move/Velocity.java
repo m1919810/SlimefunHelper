@@ -404,6 +404,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        if (event.context().getValue().isOptionPreset()) return;
         switch (event.context.getValue()) {
             case AC_GRIM_LEGACY, AC_GRIM -> mode.set(Mode.GRIM_LEGACY_GROUND);
             case AC_MATRIX -> mode.set(Mode.GRIM_NEW_GROUND);
