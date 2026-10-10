@@ -283,6 +283,7 @@ public class TpInteract extends BaseModule {
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        if (event.context().getValue().isOptionPreset()) return;
         switch (event.context().getValue()) {
             case HACKING, VANILLA -> enable.set(true);
             default -> enable.set(false);

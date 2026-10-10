@@ -9,8 +9,10 @@ import me.matl114.events.Listener;
 import me.matl114.events.annotations.Cancelable;
 import me.matl114.events.channels.EventChannelDispatcher;
 import me.matl114.events.impl.BlockBreak;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.FloatingUtils;
@@ -108,6 +110,12 @@ public class PacketMine extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPreGameTick(), this::onTick);
         registerListener(Listener.getMineBlockAction(), this::onMineBlockAction);
+        registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
+    }
+
+    public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        ModulePreset preset = event.context.getValue();
+        if (preset.isMultitaskPreset()) eatingAbort.set(preset.getEatingAbort(eatingAbort.get()));
     }
 
     public boolean hasMiningTarget() {

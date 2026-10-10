@@ -85,6 +85,7 @@ public class MultiBlockHelper extends BaseModule {
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        if (event.context().getValue().isOptionPreset()) return;
         legalMode.set(LegalInteractMode.getFromPreset(event.context.getValue()));
     }
 
