@@ -124,7 +124,7 @@ public class AntiChunkLag extends BaseModule implements LegalMovementManager.Mov
                         // fix armorGlide
                         if (mc.player.isFallFlying()) {
                             if (ElytraExtra.INSTANCE.isCurrentArmorGliding()) {
-                                if (ElytraExtra.INSTANCE.isThisTickArmoGlideMovementServerSideGlide()) {
+                                if (ElytraExtra.INSTANCE.isThisTickGlideMovementServerSideGlide()) {
                                     FloatingUtils.INSTANCE.setForceSilent(false);
                                 } else {
                                     FloatingUtils.INSTANCE.setForceSilent(true);

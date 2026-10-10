@@ -504,7 +504,7 @@ public class AnchorAura extends BaseModule {
             if (!isTargetDamageAcceptable(damageMap)) {
                 continue;
             }
-            double bestMayOptionValue = getBestOptionValue(damageMap);
+            double bestMayOptionValue = getMaxPlanValue(damageMap);
             // pass
             if (bestMayOptionValue < bestOptionValue) {
                 continue;
@@ -588,8 +588,8 @@ public class AnchorAura extends BaseModule {
         return bestOption;
     }
 
-    private double getBestOptionValue(Map<PlayerEntity, Double> damageMap) {
-        double value = getBestOptionValue(damageMap);
+    private double getMaxPlanValue(Map<PlayerEntity, Double> damageMap) {
+        double value = getBestEnemyDamage(damageMap);
         return Math.max(value, value * blockReduce.get());
     }
 

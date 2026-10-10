@@ -102,6 +102,22 @@ public class PlayerInputManager extends BaseModule implements LegalMovementManag
         addInputModifier(Modifier.empty(priority).sprint(sprint), startTicks, ticks);
     }
 
+    public void addYawModifier(int priority, float yaw, int ticks) {
+        addYawModifier(priority, yaw, 0, ticks);
+    }
+
+    public void addYawModifier(int priority, float yaw, int startTicks, int ticks) {
+        addInputModifier(Modifier.empty(priority).yaw(yaw), startTicks, ticks);
+    }
+
+    public void addPitchModifier(int priority, float pitch, int ticks) {
+        addPitchModifier(priority, pitch, 0, ticks);
+    }
+
+    public void addPitchModifier(int priority, float pitch, int startTicks, int ticks) {
+        addInputModifier(Modifier.empty(priority).pitch(pitch), startTicks, ticks);
+    }
+
     private void addTimedModifier(TimedModifier timedModifier) {
         int index = 0;
         while (index < priorityQueue.size() && priorityQueue.get(index).compareTo(timedModifier) <= 0) {

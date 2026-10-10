@@ -90,27 +90,6 @@ public class MineExtra extends BaseModule {
             .validator(Configs.INT_NONNEGATIVE)
             .build();
 
-    public final FlagRef fasterVanillaBreak = builder(fastbreak.add("vanilla-break"), Boolean.class)
-            .defaultValue(true)
-            .build();
-
-    public final FlagRef vanillaFastBreakFix = builder(fastbreak.add("vanilla-fast-break-fix"), Boolean.class)
-            .defaultValue(false)
-            .build();
-
-    //    public final FlagRef enableReach = toggle(REACH_TOGGLE).showConfig().build();
-    //
-    //    public final KeyBindRef reachKeybind = toggleHotkey(
-    //                    REACH_TOGGLE, new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_R))
-    //            .build();
-
-    public final FlagRef doubleBreak =
-            flagBuilder(fastbreak.add("double-break")).build();
-
-    public final FlagRef doubleBreakVanilla = builder(fastbreak.add("use-double-break-in-vanilla"), Boolean.class)
-            .defaultValue(true)
-            .build();
-
     public final FlagRef optimizeOneBlock =
             flagBuilder(fastbreak.add("same-block-optimize")).build();
 
@@ -121,42 +100,83 @@ public class MineExtra extends BaseModule {
             .show(ghostHandMine::get)
             .build();
 
+    public final FlagRef silent = flagBuilder(fastbreak.add("silent-break")).build();
+
+    public final ModulePath vanillaBreak = fastbreak.add("vanilla-break");
+
+    {
+        portConfigs(fastbreak.add("vanilla-break"), vanillaBreak.add("vanilla-break"));
+        portConfigs(fastbreak.add("vanilla-fast-break-fix"), vanillaBreak.add("vanilla-fast-break-fix"));
+        portConfigs(fastbreak.add("no-swing-for-vanilla-break"), vanillaBreak.add("no-swing-for-vanilla-break"));
+    }
+
+    public final FlagRef fasterVanillaBreak = builder(vanillaBreak.add("faster-vanilla-break"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
+    public final FlagRef vanillaFastBreakFix = builder(vanillaBreak.add("vanilla-fast-break-fix"), Boolean.class)
+            .defaultValue(false)
+            .build();
+
+    public final FlagRef noSwing =
+            flagBuilder(vanillaBreak.add("no-swing-for-vanilla-break")).build();
+
+    public final ModulePath doubleBreakMine = fastbreak.add("double-break-mine");
+
+    {
+        portConfigs(fastbreak.add("double-break"), doubleBreakMine.addEnable());
+        portConfigs(fastbreak.add("ghost-hand-fail-break"), doubleBreakMine.add("ghost-hand"));
+    }
+
+    public final FlagRef doubleBreak = flagBuilder(doubleBreakMine.addEnable()).build();
+
+    public final FlagRef doubleBreakVanilla = builder(doubleBreakMine.add("enable-vanilla-behavior"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     public final FlagRef ghostHandFailBreak =
-            flagBuilder(fastbreak.add("ghost-hand-fail-break")).build();
+            flagBuilder(doubleBreakMine.add("ghost-hand")).build();
+
+    public final FlagRef ghostHandFailBreakEatingAbort =
+            flagBuilder(doubleBreakMine.add("eating-abort")).build();
+
+    public final ModulePath badPackets = fastbreak.add("packet-fix");
 
     public final FlagRef multiBreakFix =
-            flagBuilder(fastbreak.add("fix-multi-break")).build();
+            flagBuilder(badPackets.add("fix-multi-break")).build();
 
     public final NBTRef<OptionalPrimitive<Integer>> cooldownFix = builder(
-                    fastbreak.add("cooldown-punishment-fix"), OptionalPrimitive.INT_TYPE)
+                    badPackets.add("cooldown-punishment-fix"), OptionalPrimitive.INT_TYPE)
             .defaultValue(new OptionalPrimitive<>(true, NBTTypes.INT_TYPE, 5))
+            .show(() -> quickMine.get() && this.fastBreakBypassMode.get().isIn(Mode.BYPASS_GRIM_BAD_PACKETS))
             .build();
 
     public final FlagRef swingFix =
-            flagBuilder(fastbreak.add("fix-swing-packet")).build();
+            flagBuilder(badPackets.add("fix-swing-packet")).build();
 
-    public final FlagRef noSwing =
-            flagBuilder(fastbreak.add("no-swing-for-vanilla-break")).build();
+    public final ModulePath render = fastbreak.add("render");
 
-    public final FlagRef silent = flagBuilder(fastbreak.add("silent-break")).build();
+    {
+        portConfigs(fastbreak.add("render-current-break-pos"), render.add("render-current-break-pos"));
+    }
 
     public final FlagRef mineRender =
-            flagBuilder(fastbreak.add("render-current-break-pos")).build();
+            flagBuilder(render.add("render-current-break-pos")).build();
 
-    public final NBTRef<WrapColor> frameColor = builder(fastbreak.add("render-frame-color"), WrapColor.class)
+    public final NBTRef<WrapColor> frameColor = builder(render.add("render-frame-color"), WrapColor.class)
             .defaultValue(new WrapColor((Color.BLUE)))
             .build();
 
-    public final NBTRef<WrapColor> progressColor = builder(fastbreak.add("render-progress-color"), WrapColor.class)
+    public final NBTRef<WrapColor> progressColor = builder(render.add("render-progress-color"), WrapColor.class)
             .defaultValue(new WrapColor((Color.YELLOW)))
             .build();
 
-    public final NBTRef<WrapColor> doubleBreakColor = builder(fastbreak.add("double-break-color"), WrapColor.class)
+    public final NBTRef<WrapColor> doubleBreakColor = builder(render.add("double-break-color"), WrapColor.class)
             .defaultValue(new WrapColor((Color.MAGENTA)))
             .build();
 
     public final FlagRef renderOnlyWhenMine =
-            flagBuilder(fastbreak.add("render-only-when-mine")).build();
+            flagBuilder(render.add("render-only-when-mine")).build();
 
     private IndexEntry<ItemStack> getBestMiningToFor(BlockState currentState) {
         IndexEntry<ItemStack> defaultEntry = InventoryUtils.getSelectedItem();
@@ -426,6 +446,9 @@ public class MineExtra extends BaseModule {
         }
         if (PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos() != null
                 && ghostHandFailBreak.get()) {
+            if (mc.player.isUsingItem() && ghostHandFailBreakEatingAbort.get()) {
+                return;
+            }
             tickGhostHandDoubleBreak(null, false);
         }
     }
