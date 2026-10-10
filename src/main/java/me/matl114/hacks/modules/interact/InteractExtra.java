@@ -7,6 +7,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.RayCastCalculator;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
@@ -16,7 +17,7 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.util.math.*;
 import org.joml.Vector2i;
 
-public class InteractExtra extends BaseModule {
+public class InteractExtra extends BaseModule implements RayCastCalculator<BlockPos> {
     public final ModulePath interactFix = makePath(Configs.INTERACT_CONFIG, "interact-fix");
     public static InteractExtra INSTANCE;
 
@@ -117,6 +118,16 @@ public class InteractExtra extends BaseModule {
     public double getBlockReachDistance() {
         return mc.player.getAttributeValue(EntityAttributes.PLAYER_BLOCK_INTERACTION_RANGE)
                 + (mc.player.hasVehicle() ? ridingReachDistance.get() : reachDistance.get());
+    }
+
+    @Override
+    public Box getEffectiveBox(BlockPos target) {
+        return new Box(target);
+    }
+
+    @Override
+    public double getReachDistance(BlockPos val) {
+        return getBlockReachDistance();
     }
 
     private final double[] FALL_FLYING_EYE_HEIGHTS = {0.4D, 1.62D, 1.27D};

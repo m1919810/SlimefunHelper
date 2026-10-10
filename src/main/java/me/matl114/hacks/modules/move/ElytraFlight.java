@@ -164,6 +164,19 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetLoad);
+        registerListener(Listener.getPreGameTick(), this::onPreGameTick);
+    }
+
+    private void onPreGameTick(Event<ClientPlayerEntity> event) {
+        if (shouldControlFlight() && PlayerInputUtils.of(mc.options).hasMovementControl()) {
+            if (motionMode.get().isIn(ElytraExtra.MotionMode.FIRE_WORKS)) {
+                if (ElytraExtra.INSTANCE.canFireworkControlMotion(fireworksRotationLastingTicks.get())) {
+                    RotationManager.INSTANCE.request(RotationManager.EMPTY);
+                }
+            } else if (motionMode.get().isIn(ElytraExtra.MotionMode.VOID)) {
+                RotationManager.INSTANCE.request(RotationManager.EMPTY);
+            }
+        }
     }
 
     public boolean toggleMode() {

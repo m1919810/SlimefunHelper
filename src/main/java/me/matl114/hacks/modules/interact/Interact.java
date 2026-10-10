@@ -235,6 +235,7 @@ public class Interact extends BaseModule {
     }
 
     public void onPreTick(Event<ClientPlayerEntity> event) {
+        if (!InteractionTasks.canHandleInteract(blockMode.get())) return;
         currentInteractTarget = null;
         if (enable.get()) {
             HitResult currentCrosshairTarget = mc.crosshairTarget;
@@ -332,7 +333,7 @@ public class Interact extends BaseModule {
 
         // mace attack, use item attack, need, delay
         return switch (entityMode.get()) {
-            case DELAY_MOVEMENT -> processDelayMovementInteract(target);
+            case DELAY_MOVEMENT, MOVEMENT_POST -> processDelayMovementInteract(target);
             case LEGACY_SLIENT_ROT -> processLegacySnapInteract(target);
             case NONE -> {
                 InteractionTasks.interactEntity(mc.player, target, Hand.MAIN_HAND, swingHandEntity.get());
@@ -786,8 +787,8 @@ public class Interact extends BaseModule {
             }
             default -> {
                 if (isWithinDistance) {
-                    InteractionTasks.handlePlaceMode(blockMode.get(), hitResult, Hand.MAIN_HAND, swingHandBlock.get());
-                    return true;
+                    return InteractionTasks.handlePlaceMode(
+                            blockMode.get(), hitResult, Hand.MAIN_HAND, swingHandBlock.get());
                 }
                 return false;
             }
