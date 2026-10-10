@@ -157,11 +157,12 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                         }
                         if (left && bindFlag != null) {
                             bindFlag.toggle();
+                            return;
                         }
                         expanded.setValue(!expanded.getValue());
                     }),
-                    () -> bindFlag != null && bindFlag.get(),
-                    () -> true);
+                    () -> false,
+                    () -> bindFlag != null && bindFlag.get());
             DynamicListWidget module = new DynamicListWidget(0, 0, width);
             SubScreenWidget moduleRow = new SubScreenWidget(0, 0, width, height);
             moduleRow.addDrawableChild(
@@ -266,7 +267,7 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
             TextProvider key = TextProvider.of(
                     () -> Text.translatableWithFallback(configWidget.keyName(), configWidget.keyName()),
                     TextAlign.LEFT);
-            if (ref instanceof FlagRef flag) {
+            if (ref instanceof FlagRef) {
                 var keyValue = configWidget.createKeyValue();
                 SubScreenWidget line = createSliderConfigLine(
                         key,
@@ -480,7 +481,7 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
             header.addDrawableChild(ExecutableWidget.instance(0, 0, width, height)
                     .setElementHandler(new AbstractElement().withInputHandler(InputHandler.clickRun(toggle))));
             header.addDrawableChild(
-                    createSliderText(TextProvider.of(title), TextAlign.LEFT, 0, textY, textWidth, textHeight, true));
+                    createSliderText(TextProvider.of(title), TextAlign.MIDDLE, 0, textY, textWidth, textHeight, true));
             header.addDrawableChild(ExecutableWidget.instance(width - height, 0, height, height)
                     .setElementHandler(new AbstractElement()
                             .withInputHandler(InputHandler.clickRun(toggle))
@@ -508,7 +509,7 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                     ValueAccessor.of(groupMeta::getY, groupMeta::setY));
             group.addDrawableChild(createSliderGroupHeader(SEARCH_MODULE, slideMeta, groupMeta));
             group.addDrawableChild(new DynamicContentWidget<>(
-                    lazyInitialize(slideMeta::isSlidingDown, () -> createSearchContent(metaData)), 0, 0));
+                    lazyInitialize(slideMeta::isSlidingDown, () -> createSearchContent(metaData)), 0, sliderHeight()));
             return group;
         }
 

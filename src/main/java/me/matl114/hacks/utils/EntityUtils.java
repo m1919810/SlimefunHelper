@@ -267,6 +267,7 @@ public class EntityUtils {
     }
 
     public static float rotationToYaw(Vec3d vec) {
+        vec = vec.normalize();
         return (float) Math.toDegrees(Math.atan2(-vec.x, vec.z));
     }
 
@@ -287,6 +288,7 @@ public class EntityUtils {
     }
 
     public static float rotationToPitch(Vec3d vec) {
+        vec = vec.normalize();
         return (float) Math.toDegrees(Math.asin(-vec.y));
     }
 

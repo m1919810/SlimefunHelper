@@ -59,6 +59,9 @@ public class ExtraTasks {
     public static GrimIdiots grimIdiots;
 
     @Getter
+    public static Misc misc;
+
+    @Getter
     public static SkinBlink skinBlink;
 
     @Getter
@@ -94,6 +97,7 @@ public class ExtraTasks {
         warps = new Warps().register(m);
         boatVClip = new BoatVClip().register(m);
         grimIdiots = new GrimIdiots().register(m);
+        misc = new Misc().register(m);
         skinBlink = new SkinBlink().register(m);
         eventNotify = new EventNotify().register(m);
         soundNotify = new SoundNotify().register(m);

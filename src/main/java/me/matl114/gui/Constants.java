@@ -36,7 +36,7 @@ public interface Constants {
 
     public static final Identifier RESET_BUTTON_SPRITE = MainPlugin.identifier("gui/reset");
 
-    public static final Identifier EDIT_SPRITE = new Identifier("slimefunhelper", "gui/edit");
+    public static final Identifier EDIT_SPRITE = MainPlugin.identifier("gui/edit");
 
     public static final Identifier SAVE_SPRITE = MainPlugin.identifier("gui/save");
     public static final Identifier COPY_COMMAND_SPRITE = MainPlugin.identifier("gui/copy_command");

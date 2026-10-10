@@ -203,7 +203,7 @@ public class EntityESP extends BaseModule {
             renderOutline.submit(entity, color.getRGB());
         }
         if (highLightSettings.get().getEntryValueOr(entity.getType(), false)) {
-            renderFace.submit(entity, ColorUtils.withAlphaInt(color.getRGB(), 64));
+            renderFace.submit(entity, ColorUtils.withAlphaInt(color.getRGB(), 32));
         }
         if (renderTraceSettings.get().getEntryValueOr(entity.getType(), false)) {
             renderTrace.submit(RenderUtils.getLerpedBox(entity, 0.0F).getCenter(), color.getRGB());

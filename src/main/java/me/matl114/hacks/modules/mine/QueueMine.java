@@ -57,9 +57,9 @@ public class QueueMine extends BaseModule {
 
     public final FlagRef supportDoubleBreakGhostHand =
             flagBuilder(packetMine.add("double-break-ghost-hand")).build();
-    //
-    //    public final FlagRef rotate = flagBuilder(packetMine.add("rotate-when-break"))
-    //        .build();
+
+    public final FlagRef eatingAbort =
+            flagBuilder(packetMine.add("eating-abort")).build();
 
     public final FlagRef render = flagBuilder(packetMine.add("render")).build();
 
@@ -82,14 +82,18 @@ public class QueueMine extends BaseModule {
     public void onPostInputEvent(Event<Void> eventVoid) {
         outline.clear();
         if (checkNull()) return;
-        if (lastSumitTick != Tasks.getTick()) {
-            tickQueue();
+
+        if (!(mc.player.isUsingItem() && eatingAbort.get())) {
+            if (lastSumitTick != Tasks.getTick()) {
+                tickQueue();
+            }
+            if (useDoubleBreak.get()
+                    && supportDoubleBreakGhostHand.get()
+                    && PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos() != null) {
+                MineExtra.INSTANCE.tickGhostHandDoubleBreak(null, false);
+            }
         }
-        if (useDoubleBreak.get()
-                && supportDoubleBreakGhostHand.get()
-                && PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos() != null) {
-            MineExtra.INSTANCE.tickGhostHandDoubleBreak(null, false);
-        }
+
         for (var re : breakRequest) {
             outline.submit(new Box(re).expand(-0.2), color.get().withAlpha(255));
         }
@@ -160,13 +164,14 @@ public class QueueMine extends BaseModule {
         if (enable.get()) {
             HitResult hitResult = event.context;
             if (hitResult.getType() == HitResult.Type.BLOCK) {
-                boolean att = event.getArgs(0);
                 BlockHitResult blockHitResult = (BlockHitResult) hitResult;
                 BlockPos pos = blockHitResult.getBlockPos().toImmutable();
                 event.cancel();
                 if (sumitMine(pos)) {
-                    lastSumitTick = Tasks.getTick();
-                    tickQueue();
+                    if (!(mc.player.isUsingItem() && eatingAbort.get())) {
+                        lastSumitTick = Tasks.getTick();
+                        tickQueue();
+                    }
                     if (breakRequest.size() > queueSize.get()) {
                         breakRequest.poll();
                     }

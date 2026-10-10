@@ -523,7 +523,7 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
                 cir.setReturnValue(true);
             } else {
                 float predictedProgress = getCurrentMiningProgress(null);
-                if (mineExtra.shouldTryDoubleBreak(predictedProgress)) {
+                if (mineExtra.shouldTryDoubleBreak(predictedProgress) && mineExtra.doubleBreakVanilla.get()) {
                     sendFailBreakCurrentPos(direction);
                 }
             }
@@ -539,7 +539,7 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
                                     "Lnet/minecraft/client/network/ClientPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V"))
     private void onDoubleBreak(ClientPlayNetworkHandler instance, Packet packet, Operation<Void> original) {
 
-        if (!MineExtra.INSTANCE.optimizeOneBlock.get()) {
+        if (!MineExtra.INSTANCE.optimizeOneBlock.get() && MineExtra.INSTANCE.doubleBreakVanilla.get()) {
             // we make optimizeOneBlockMine delay its destroy packet to changing the currentPosition in method
             // sameBlockOptimize
             if (sendFailBreakCurrentPos(null)) {
@@ -585,7 +585,7 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
             @Local(argsOnly = true) Direction direction) {
         // conflict with optimizeOneBlock
 
-        if (!MineExtra.INSTANCE.optimizeOneBlock.get()) {
+        if (!MineExtra.INSTANCE.optimizeOneBlock.get() && MineExtra.INSTANCE.doubleBreakVanilla.get()) {
             // we make optimizeOneBlockMine delay its destroy packet to check onDoubleBreakAbort() and  changing the
             // currentPosition in method sameBlockOptimize
             if (sendFailBreakCurrentPos(direction)) {
