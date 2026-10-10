@@ -221,6 +221,7 @@ public class AutoSlab extends BaseModule {
 
     public void onPreInputEvent(Event<Void> event) {
         if (checkNull()) return;
+        if (!InteractionTasks.canHandleInteract(mode.get())) return;
         boxCollector.clear();
         if (enable.get()) {
             refreshBlocks();
@@ -266,9 +267,10 @@ public class AutoSlab extends BaseModule {
                     if (useBlockRotate.get()) {
                         BlockRotate.INSTANCE.addTempStateSchematic(testPos, targetState);
                     }
-                    InteractionTasks.handlePlaceMode(mode.get(), hitResult.val(), Hand.MAIN_HAND, swingHand.get());
+                    boolean completed = InteractionTasks.handlePlaceMode(
+                            mode.get(), hitResult.val(), Hand.MAIN_HAND, swingHand.get());
                     cnt += 1;
-                    if (cnt >= multiply) {
+                    if (!completed || cnt >= multiply) {
                         break;
                     }
                 }
@@ -277,7 +279,7 @@ public class AutoSlab extends BaseModule {
         if (returnBlock.get()) {
             int size = stack.size();
             for (var i = size - 1; i >= 0; i--) {
-                stack.get(i).run();
+                InteractionTasks.finishGhostHand(mode.get(), stack.get(i));
             }
         }
     }

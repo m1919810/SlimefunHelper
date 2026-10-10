@@ -381,12 +381,14 @@ public class AnchorAura extends BaseModule {
     }
 
     public boolean tickAnchorExplode() {
+        if (!InteractionTasks.canHandleInteract(mode.get())) return false;
         maxExistingDamageValue = Double.NEGATIVE_INFINITY;
         List<Map.Entry<BlockPos, AnchorCache>> entries = new ArrayList<>(trackedAnchorPositions.entrySet());
         entries.sort(Map.Entry.comparingByValue(this::compareAnchorEntries));
         int multiply = mul.get();
         int success = 0;
         for (var i = 0; i < entries.size() && success < multiply; ++i) {
+            if (!InteractionTasks.canHandleInteract(mode.get())) break;
             BlockPos targetPos = entries.get(i).getKey();
             if (InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), targetPos)) {
                 AnchorCache cache = entries.get(i).getValue();
@@ -430,12 +432,13 @@ public class AnchorAura extends BaseModule {
                 if (callback == null) {
                     return interactCount;
                 }
-                InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
+                boolean completed =
+                        InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
                 interactCount++;
                 level = 1;
                 cache.powerLevel = level;
-                callback.run();
-                if (!use0TickSupply.get()) {
+                InteractionTasks.finishGhostHand(mode.get(), callback);
+                if (!completed || !use0TickSupply.get()) {
                     return interactCount;
                 }
             }
@@ -445,12 +448,13 @@ public class AnchorAura extends BaseModule {
                 if (callback == null) {
                     return interactCount;
                 }
-                InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
+                boolean completed =
+                        InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
                 interactCount++;
                 level = 0;
                 cache.powerLevel = level;
-                callback.run();
-                if (place0TickSupply.get()) {
+                InteractionTasks.finishGhostHand(mode.get(), callback);
+                if (completed && place0TickSupply.get()) {
                     var anchor = supplyItem(Items.RESPAWN_ANCHOR);
                     if (anchor == null) {
                         return interactCount;
@@ -462,8 +466,8 @@ public class AnchorAura extends BaseModule {
                     mc.world.setBlockState(targetPos, Blocks.AIR.getDefaultState());
                     InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
                     interactCount++;
-                    callback2.run();
-                } else {
+                    InteractionTasks.finishGhostHand(mode.get(), callback2);
+                } else if (completed) {
                     trackedAnchorPositions.remove(targetPos);
                 }
             }
@@ -472,6 +476,7 @@ public class AnchorAura extends BaseModule {
     }
 
     public boolean tickAnchorPlace() {
+        if (!InteractionTasks.canHandleInteract(mode.get())) return false;
         if (targetEntity.isEmpty()) {
             return false;
         }
@@ -615,7 +620,7 @@ public class AnchorAura extends BaseModule {
         var runnable = InvExtra.INSTANCE.swapItemToHand(entry.index(), false, ghostHand.get());
         if (runnable == null) return false;
         InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
-        runnable.run();
+        InteractionTasks.finishGhostHand(mode.get(), runnable);
         return true;
     }
 
@@ -659,7 +664,7 @@ public class AnchorAura extends BaseModule {
             return false;
         }
         InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
-        runnable.run();
+        InteractionTasks.finishGhostHand(mode.get(), runnable);
         return true;
     }
 
