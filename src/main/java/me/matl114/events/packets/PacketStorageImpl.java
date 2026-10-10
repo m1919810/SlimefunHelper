@@ -19,9 +19,9 @@ public record PacketStorageImpl(Packet<?> packet, long timestampMS, ClientConnec
     }
 
     @Override
-    public void send() {
+    public void send(boolean flush) {
         try {
-            connection.send(packet);
+            connection.send(packet, null, flush);
         } catch (Throwable throwable) {
         }
     }

@@ -13,7 +13,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.utils.MathUtils;
 import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.*;
 import org.joml.Vector2i;
 
@@ -161,23 +160,6 @@ public class InteractExtra extends BaseModule {
             return false;
         }
         return getPotentialEyeHeights(pos).anyMatch(ps -> box.squaredMagnitude(ps) < MathUtils.s2(range));
-    }
-
-    public Vec3d getBestInteractEyePos(Vec3d pos, BlockHitResult blockHitResult) {
-        BlockPos blockPos = blockHitResult.getBlockPos();
-        //        Vec3d plateCenter = blockPos.toCenterPos().offset(direction, 0.5);
-        //        Vec3d directionVector = Vec3d.of(direction.getVector());
-        return getBestInteractEyePos(pos, blockPos);
-    }
-
-    public Vec3d getBestInteractEyePos(Vec3d pos, BlockPos blockPos) {
-        //        Vec3d plateCenter = blockPos.toCenterPos().offset(direction, 0.5);
-        //        Vec3d directionVector = Vec3d.of(direction.getVector());
-        Box blockBox = new Box(blockPos);
-        return getPotentialEyeHeights(pos)
-                .sorted(Comparator.comparingDouble(blockBox::squaredMagnitude))
-                .findFirst()
-                .orElseGet(() -> pos.add(mc.player.getEyePos().subtract(mc.player.getPos())));
     }
 
     public void onCooldown(Event<Integer> event) {

@@ -19,6 +19,7 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.StringRef;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.network.packet.Packet;
@@ -207,6 +208,14 @@ public class PacketDebugger extends BaseModule {
                     debug("Send", simplifyId(type.getPacketId().id()), ", Id:", confirm.getTeleportId(), timeStr);
                 } else if (type instanceof CommonPongC2SPacket pong) {
                     debug("Send", simplifyId(type.getPacketId().id()), ", Id:", pong.getParameter(), timeStr);
+                } else if (type instanceof PlayerInteractBlockC2SPacket packet) {
+                    debug(
+                            "Send",
+                            simplifyId(type.getPacketId().id()),
+                            ", Pos:",
+                            ChatUtils.getDisplayedLocation(
+                                    Vec3d.of(packet.getBlockHitResult().getBlockPos())),
+                            timeStr);
                 } else {
                     debug("Send", simplifyId(type.getPacketId().id()), timeStr);
                 }

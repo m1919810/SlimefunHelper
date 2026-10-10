@@ -9,7 +9,9 @@ import lombok.Getter;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.PacketManager;
 import me.matl114.events.impl.UseItemOnBlock;
+import me.matl114.events.packets.PacketStorage;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
@@ -111,6 +113,18 @@ public class InteractionTasks {
         }
     }
 
+    public static int queueTick = 0;
+
+    public static void onQueuePacket(Event<PacketStorage> storage) {
+        if (queueTick == Tasks.getTick()) {
+            storage.cancel();
+        }
+    }
+
+    static {
+        PacketManager.getPacketQueueOutEvent().registerHandler(InteractionTasks::onQueuePacket);
+    }
+
     public static void addPostRotationCorrectTask(BlockPos pos, Runnable callback) {
         ClientPlayerAccess.of(mc.player)
                 .getLegalMovementManager()
@@ -122,8 +136,9 @@ public class InteractionTasks {
 
                     @Override
                     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+                        queueTick = Tasks.getTick();
                         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-                        Vec3d predictingPos = player.getPos().add(PlayerStateManager.INSTANCE.lastKnownClientVelocity);
+                        Vec3d predictingPos = player.getPos();
                         Vec3d rayCast = createBlockRayCastDirection(pos, predictingPos);
                         Vec2f rotation = EntityUtils.rotationToPitchYaw(rayCast.normalize());
                         movementManagerEvent.context.pushImportantRotation(true, true);
@@ -145,6 +160,8 @@ public class InteractionTasks {
                     public boolean postModify(
                             Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
                         callback.run();
+                        queueTick = 0;
+                        PacketManager.flushOutBound();
                         return false;
                     }
                 });
@@ -191,8 +208,22 @@ public class InteractionTasks {
     }
 
     public static Vec3d createBlockRayCastDirection(BlockPos pos, Vec3d playerPos) {
-        Vec3d bestEyePos = InteractExtra.INSTANCE.getBestInteractEyePos(playerPos, pos);
-        return createBlockRayCastDirectionFromEye(pos, bestEyePos);
+        return InteractExtra.INSTANCE
+                .getPotentialEyeHeights(playerPos)
+                .map(s -> {
+                    Vec3d ray = createBlockRayCastDirectionFromEye(pos, s);
+                    double range = InteractExtra.INSTANCE.getBlockReachDistance();
+                    return new Box(pos)
+                                    .raycast(s, s.add(ray.normalize().multiply(range)))
+                                    .isPresent()
+                            ? ray
+                            : null;
+                })
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElseGet(() -> pos.toCenterPos()
+                        .subtract(playerPos.add(0, mc.player.dimensions.eyeHeight(), 0))
+                        .normalize());
     }
 
     private static Vec3d createBlockRayCastDirectionFromEye(BlockPos pos, Vec3d bestEyePos) {
@@ -214,7 +245,6 @@ public class InteractionTasks {
     }
 
     public static void handlePlaceMode(LegalInteractMode mode, BlockHitResult result, Hand hand, boolean swingHand) {
-        Vec3d bestEyePos = InteractExtra.INSTANCE.getBestInteractEyePos(mc.player.getPos(), result);
         boolean directlyHit = RaycastUtils.canRaycastHit(
                 mc.player,
                 PlayerStateManager.INSTANCE.lastPitch,
@@ -223,16 +253,18 @@ public class InteractionTasks {
                 InteractExtra.INSTANCE.getBlockReachDistance());
         switch (mode) {
             case USEITEM_PACKET -> {
-                Vec2f rotation =
-                        EntityUtils.rotationToPitchYaw(createBlockRayCastDirection(result.getBlockPos(), bestEyePos)
-                                .normalize());
+                Vec2f rotation = EntityUtils.rotationToPitchYaw(
+                        createBlockRayCastDirection(result.getBlockPos()).normalize());
                 mc.interactionManager.sendSequencedPacket(
                         mc.world, (i) -> new PlayerInteractItemC2SPacket(hand, i, rotation.y, rotation.x));
                 InteractionTasks.interactBlock(hand, result, swingHand);
             }
             case DELAY_MOVEMENT -> {
-                InteractionTasks.interactBlock(hand, result, swingHand);
-                if (!directlyHit) {
+                if (directlyHit) {
+                    InteractionTasks.interactBlock(hand, result, swingHand);
+                } else {
+                    queueTick = Tasks.getTick();
+                    InteractionTasks.interactBlock(hand, result, swingHand);
                     InteractionTasks.addPostRotationCorrectTask(result.getBlockPos(), Runnables.doNothing());
                 }
             }
@@ -247,8 +279,7 @@ public class InteractionTasks {
             }
             case LEGACY_SLIENT_ROT -> {
                 if (!directlyHit) {
-                    Vec2f rotation = EntityUtils.rotationToPitchYaw(
-                            createBlockRayCastDirection(result.getBlockPos(), bestEyePos));
+                    Vec2f rotation = EntityUtils.rotationToPitchYaw(createBlockRayCastDirection(result.getBlockPos()));
                     LegacySnapRotManager.INSTANCE.snapAt(rotation.x, rotation.y, false);
                 }
                 InteractionTasks.interactBlock(hand, result, swingHand);
