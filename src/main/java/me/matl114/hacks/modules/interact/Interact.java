@@ -830,7 +830,12 @@ public class Interact extends BaseModule {
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
-        entityMode.set(LegalTargetingMode.getFromPreset(event.context.getValue()));
-        blockMode.set(LegalInteractMode.getFromPreset(event.context.getValue()));
+        ModulePreset preset = event.context.getValue();
+        if (preset.isAirplacePreset()) blockAirPlace.set(preset.getAirplace(blockAirPlace.get()));
+        if (preset.isSwingPlacePreset()) swingHandBlock.set(preset.getSwingPlace(swingHandBlock.get()));
+        if (!preset.isOptionPreset()) {
+            entityMode.set(LegalTargetingMode.getFromPreset(preset));
+            blockMode.set(LegalInteractMode.getFromPreset(preset));
+        }
     }
 }

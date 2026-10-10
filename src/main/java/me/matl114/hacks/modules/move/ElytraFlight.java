@@ -471,6 +471,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     }
 
     public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {
+        if (presetEvent.context().getValue().isOptionPreset()) return;
         switch (presetEvent.context.getValue()) {
             case HACKING, VANILLA, AC_COMMON -> {
                 motionMode.set(ElytraExtra.MotionMode.VOID);

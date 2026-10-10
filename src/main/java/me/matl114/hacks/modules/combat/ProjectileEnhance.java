@@ -87,6 +87,7 @@ public class ProjectileEnhance extends BaseModule {
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        if (event.context().getValue().isOptionPreset()) return;
         mode.set(LegalInteractMode.getFromPreset(event.context.getValue()));
     }
 

@@ -137,6 +137,7 @@ public class MovExtra extends BaseModule {
     }
 
     public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {
+        if (presetEvent.context().getValue().isOptionPreset()) return;
         switch (presetEvent.context.getValue()) {
                 // check 1.21.2+
             case AC_GRIM, AC_GRIM_LEGACY -> fuckGrimAC.set(true);
