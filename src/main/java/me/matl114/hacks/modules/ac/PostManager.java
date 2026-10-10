@@ -36,46 +36,9 @@ public class PostManager extends BaseModule {
         registerListener(Listener.getPostGameTick(), this::onWatchPingLongTimeNoSent);
         registerListener(Listener.getPreTick(), this::onPreTick);
     }
-    // failure:
-    // rewrite pong packets to avoid post check
-    // origin:
-    // last tick
-    // client tick end
-    //  <- ping
-    // pong ->
-    // our post task
-    // <- ping
-    // pong ->
-    // this tick
-    //
-    // we rewrite as
-    // last tick
-    // client tick end
-    //  <- ping
-    // pong ->
-    // our post task
-    // <- ping
-    // pong -> (supressed)
-    // this tick
-    // this client tick end
-    // supressed pong send
-    //
-    // shit, it doesn't work
-    // private boolean hasHandledPongPacket = false;
-    private Deque<CommonPongC2SPacket> delayedPingPackets = new ArrayDeque<>(33);
 
-    public void addPostTickAction(Consumer<ClientPlayNetworkHandler> handler) {
-        postTickHandlers.add(handler);
-    }
-
-    public void addNextPreTickAction(Consumer<ClientPlayNetworkHandler> packet) {
-        if (lastPingTick < Tasks.getTick() - 10) {
-            if (mc.getNetworkHandler() != null) {
-                packet.accept(mc.getNetworkHandler());
-            }
-        } else {
-            queuePackets.addLast(packet);
-        }
+    public void addNextTransactionAction(Consumer<ClientPlayNetworkHandler> packet) {
+        queuePackets.addLast(packet);
     }
 
     public void onPreTick(Event<Void> tick) {
@@ -88,14 +51,21 @@ public class PostManager extends BaseModule {
         //        Debug.info("in", packetPing.getPacketId(), peekPingRequest);
     }
 
-    public void postTickEnd(Event<ClientPlayerEntity> event) {
-        runAllPostTickPackets(mc.getNetworkHandler());
-        // flush pong packets
-        //        for(var pongPacket : delayedPingPackets) {
-        //            Listener.sendPacketNoEvents(pongPacket);
-        //        }
-        //        delayedPingPackets.clear();
-        //        hasHandledPongPacket = false;
+    private final Deque<Integer> transactionIds = new ArrayDeque<>(50);
+
+    private boolean isTransactionId(int id) {
+        if (id > 0 || id < -32767) return false;
+
+        if (!transactionIds.isEmpty()) {
+            int last = transactionIds.peekLast();
+            int gap = ((-id) - (-last) + 32768) % 32768;
+
+            if (gap == 0 || gap > 16) return false;
+        }
+
+        transactionIds.addLast(id);
+        if (transactionIds.size() > 50) transactionIds.removeFirst();
+        return true;
     }
 
     public void postPongPacketOut(Event<CommonPingS2CPacket> event) {
@@ -109,7 +79,17 @@ public class PostManager extends BaseModule {
         // fix anything wrong wtf
         if (peekPingRequest < 0) peekPingRequest = 0;
         // anyway ,flush
-        // runAllQueuePackets(mc.getNetworkHandler());
+
+        var id = event.context.getParameter();
+        if (id == 0) {
+            transactionIds.clear();
+            transactionIds.addLast(id);
+        } else if (id < 0 && id >= -64) {
+            transactionIds.addLast(id);
+        } else if (!isTransactionId(id)) { // we only use negative ids
+            return;
+        }
+        runAllQueuePackets(mc.getNetworkHandler());
     }
 
     private void runAllPostTickPackets(ClientPlayNetworkHandler handler) {

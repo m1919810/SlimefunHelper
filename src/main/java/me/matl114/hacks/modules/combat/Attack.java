@@ -69,7 +69,7 @@ public class Attack extends BaseModule {
     //    public final FlagRef legalMode = flagBuilder(attack.add("legal-mode")).build();
     public final EnumRef<LegalTargetingMode> legalTargetingMode = builder(
                     attack.add("legal-targeting"), LegalTargetingMode.class)
-            .defaultValue(LegalTargetingMode.DELAY_MOVEMENT)
+            .defaultValue(LegalTargetingMode.MOVEMENT_POST)
             .build();
 
     public final NBTRef<OptionalPrimitive<Double>> tpRange = builder(
@@ -638,33 +638,40 @@ public class Attack extends BaseModule {
         private void restoreMaceSwap() {
             ElytraExtra elytraExtra = MovTasks.getElytraExtra();
             if (armorFly) {
-                ACTasks.addPostTransactionAction((ch) -> {
-                    if (elytraExtra.onSwitchItemArmorFallFlying()) {
-                        mc.getNetworkHandler()
-                                .sendPacket(new ClientCommandC2SPacket(
-                                        mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                        elytraExtra.switchSlotToArmor(elytraExtra.armorGlideTransactionSlot);
-                        elytraExtra.postTickSwapWithChestSlot = -1;
-                        EntityInternalAccess.of(mc.player).setDataFlag(VDataFlag.FALL_FLYING_FLAG_INDEX, true);
-                    }
-                });
+                Tasks.scheduleDelayedPre(
+                        () -> {
+                            if (elytraExtra.onSwitchItemArmorFallFlying()) {
+                                mc.getNetworkHandler()
+                                        .sendPacket(new ClientCommandC2SPacket(
+                                                mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                                elytraExtra.switchSlotToArmor(elytraExtra.armorGlideTransactionSlot);
+                                elytraExtra.postTickSwapWithChestSlot = -1;
+                                EntityInternalAccess.of(mc.player).setDataFlag(VDataFlag.FALL_FLYING_FLAG_INDEX, true);
+                            }
+                        },
+                        0);
             } else if (elytraSlot != -1) {
-                ACTasks.addPostTransactionAction((ch) -> {
-                    elytraExtra.switchSlotToArmor(elytraSlot);
-                    if (!mc.player.isFallFlying()) {
-                        ch.sendPacket(
-                                new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                    }
-                });
+                Tasks.scheduleDelayedPre(
+                        () -> {
+                            elytraExtra.switchSlotToArmor(elytraSlot);
+                            if (!mc.player.isFallFlying()) {
+                                mc.getNetworkHandler()
+                                        .sendPacket(new ClientCommandC2SPacket(
+                                                mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                            }
+                        },
+                        0);
             }
         }
     }
 
     private void applyPostAttack(Entity target, AttackSettings settings) {
         if (postFix.get()) {
-            ACTasks.addPostTransactionAction((ch) -> {
-                attackWithSettings(mc.player, target, settings);
-            });
+            Tasks.scheduleDelayedPre(
+                    () -> {
+                        attackWithSettings(mc.player, target, settings);
+                    },
+                    0);
         } else {
             attackWithSettings(mc.player, target, settings);
         }

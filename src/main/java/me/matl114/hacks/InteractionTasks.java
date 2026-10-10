@@ -6,9 +6,7 @@ import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import lombok.Getter;
 import me.matl114.events.Listener;
-import me.matl114.events.PacketManager;
 import me.matl114.events.impl.UseItemOnBlock;
-import me.matl114.events.packets.PacketStorage;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
@@ -110,18 +108,6 @@ public class InteractionTasks {
         }
     }
 
-    public static int queueTick = 0;
-
-    public static void onQueuePacket(Event<PacketStorage> storage) {
-        if (queueTick == Tasks.getTick()) {
-            storage.cancel();
-        }
-    }
-
-    static {
-        PacketManager.getPacketQueueOutEvent().registerHandler(InteractionTasks::onQueuePacket);
-    }
-
     public static void addPostRotationCorrectTask(BlockPos pos, Runnable callback) {
         RotationManager.INSTANCE.request(RotationManager.ofBlock(() -> pos).postTick(callback));
     }
@@ -139,9 +125,9 @@ public class InteractionTasks {
     }
 
     public static boolean handlePlaceMode(LegalInteractMode mode, BlockHitResult result, Hand hand, boolean swingHand) {
-            if (!canHandleInteract(mode)) {
-                return false;
-            }
+        if (!canHandleInteract(mode)) {
+            return false;
+        }
         boolean directlyHit = RaycastUtils.canRaycastHit(
                 mc.player,
                 PlayerStateManager.INSTANCE.lastPitch,
