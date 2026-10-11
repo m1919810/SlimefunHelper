@@ -1,27 +1,20 @@
 package me.matl114.hacks.modules.extra;
 
+import java.util.Optional;
 import me.matl114.events.Event;
-import me.matl114.hacks.MovTasks;
+import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.PlayerInputManager;
-import me.matl114.hacks.modules.move.PlayerStateManager;
-import me.matl114.hacks.utils.entity.LegalMovementManager;
+import me.matl114.hacks.modules.move.RotationManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import net.minecraft.client.network.ClientPlayerEntity;
 
-public class Misc extends BaseModule implements LegalMovementManager.MovementModifier {
-    static LegalMovementManager.DelegateMovementModifier instance;
-
+public class Misc extends BaseModule {
     public Misc() {
         super("Misc");
-        if (instance == null) {
-            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
-        }
-        instance.setDelegate(this::cast);
     }
 
     public final ModulePath root = makePath(Configs.EXTRA_CONFIG, "misc");
@@ -36,29 +29,23 @@ public class Misc extends BaseModule implements LegalMovementManager.MovementMod
     @Override
     public void registerAll() {
         super.registerAll();
+        registerListener(Listener.getPreGameTick(), this::onPreGameTick);
     }
 
     public void onPostTick(Event<ClientPlayerEntity> event) {
         if (checkNull()) return;
     }
 
-    @Override
-    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
-        LegalMovementManager.MovementModifier.super.applyPreTickModify(movementManagerEvent);
-        boolean tickRotate = false;
+    public void onPreGameTick(Event<ClientPlayerEntity> event) {
+        if (checkNull()) return;
         int tick = Tasks.getTick() % 10;
         if (friendsWineEnable.get() && !mc.player.isFallFlying()) {
             if (sneak.get()) {
                 PlayerInputManager.INSTANCE.addSneakModifier(0, tick <= 4, 1);
             }
-            tickRotate = true;
-        }
-        if (tickRotate) {
-            if (!movementManagerEvent.context.hasImportantRotation()) {
-                PlayerStateManager.setPlayerYawSafe(mc.player, mc.player.getYaw() + 36 * tick);
-                movementManagerEvent.context.markForResetRot();
-                movementManagerEvent.context.markForMoveFix();
-            }
+            RotationManager.INSTANCE.request(
+                    RotationManager.ofDirection(Optional.empty(), Optional.of(mc.player.getYaw() + 36 * tick))
+                            .occupied(false));
         }
     }
 }

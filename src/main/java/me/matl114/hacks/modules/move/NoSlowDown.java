@@ -337,69 +337,26 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                             return;
                         }
                         Entity target = Objects.requireNonNull(entity);
-                        ClientPlayerAccess.of(mc.player)
-                                .getLegalMovementManager()
-                                .addMovementModifier(new LegalMovementManager.MovementModifier() {
-                                    Vec3d velocity;
-
-                                    @Override
-                                    public int priority() {
-                                        return PRIORITY_LOW;
-                                    }
-
-                                    @Override
-                                    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
-                                        ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
-                                        // step back our position
-                                        velocity = args.getVelocity();
-
-                                        Vec3d eyePos = target.getEyePos();
-                                        Vec3d targetPos = target.getPos();
-                                        Vec3d attackOffsetted = targetPos.add(
-                                                eyePos.subtract(targetPos).multiply(0.8));
-                                        Vec3d cacheDirection = attackOffsetted
-                                                .subtract(args.getEyePos())
-                                                .normalize();
-                                        movementManagerEvent.context.pushImportantRotation(true, true);
-                                        PlayerStateManager.setPlayerRotationSafe(args, cacheDirection);
-                                        // restore velocity after collide
-                                        args.setVelocity(velocity);
-                                        movementManagerEvent.context.markForResetRot();
-                                    }
-
-                                    @Override
-                                    public boolean postModify(
-                                            Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-                                        if (!enabledThisTick) {
-                                            // rare,,, maybe
-                                            return false;
-                                        }
-                                        PlayerInputUtils.Input input = PlayerInputUtils.of(mc.player);
-
-                                        Tasks.scheduleDelayedPre(
-                                                () -> {
-                                                    // to trigger plugin events
-                                                    input.sneak(true).sendPlayerSneakUpdatePacket();
-                                                    input.sneak(false).sendPlayerSneakUpdatePacket();
-                                                    mc.getNetworkHandler()
-                                                            .sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-                                                    mc.interactionManager.sendSequencedPacket(mc.world, (seq) -> {
-                                                        return new PlayerInteractEntityC2SPacket(
-                                                                target.getId(),
-                                                                true,
-                                                                new PlayerInteractEntityC2SPacket.InteractAtHandler(
-                                                                        Hand.MAIN_HAND, mc.player.getPos()));
-                                                    });
-                                                    mc.getNetworkHandler()
-                                                            .sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-                                                    Debug.chat("[NoSlow] 成功伪造状态");
-                                                    sneakStatus = true;
-                                                },
-                                                0);
-                                        // return do not kept
-                                        return false;
-                                    }
-                                });
+                        PlayerInputUtils.Input input = PlayerInputUtils.of(mc.player);
+                        RotationManager.INSTANCE.request(RotationManager.ofEntity(() -> target)
+                                .postTick(() -> Tasks.scheduleDelayedPre(
+                                        () -> {
+                                            // to trigger plugin events
+                                            input.sneak(true).sendPlayerSneakUpdatePacket();
+                                            input.sneak(false).sendPlayerSneakUpdatePacket();
+                                            mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                                            mc.interactionManager.sendSequencedPacket(
+                                                    mc.world,
+                                                    (seq) -> new PlayerInteractEntityC2SPacket(
+                                                            target.getId(),
+                                                            true,
+                                                            new PlayerInteractEntityC2SPacket.InteractAtHandler(
+                                                                    Hand.MAIN_HAND, mc.player.getPos())));
+                                            mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                                            Debug.chat("[NoSlow] 成功伪造状态");
+                                            sneakStatus = true;
+                                        },
+                                        0)));
                     }
                 }
             }
