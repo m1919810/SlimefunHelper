@@ -73,8 +73,8 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
             .validator(Configs.doubleRange(1.0D, 10.0D))
             .build();
 
-    public final NBTRef<EntityTypeRegex> whiteListTypes = builder(attack.add("whitelist"), EntityTypeRegex.class)
-            .defaultValue(new EntityTypeRegex(new Regex("^(monster|!endermite|player)$")))
+    public final NBTRef<EntityTypeEntrySet> whiteListTypes = builder(attack.add("whitelist"), EntityTypeEntrySet.class)
+            .defaultValue(new EntityTypeEntrySet(new Regex("^(monster|!endermite|player)$")))
             .build();
 
     public final NBTRef<Regex> friendNameRegex = builder(attack.add("friends"), Regex.class)

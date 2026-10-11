@@ -161,8 +161,8 @@ public interface NBTTypes {
         SubScreenWidget subScreenWidget = new SubScreenWidget(x, y, dx, dy);
         subScreenWidget.addDrawableChild(
                 BaseAttrKeyValue.generateTextInputValueWidget(factory, keyValue, 0, 0, dx - dy, dy));
-        subScreenWidget.addDrawableChild(
-                factory.createElement(new ColorSelectIcon(ValueAccessor.of(keyValue)), null, null, dx - dy, 0, dy, dy));
+        subScreenWidget.addDrawableChild(factory.createElement(
+                new ColorSelectIcon(ValueAccessor.of(keyValue), factory), null, null, dx - dy, 0, dy, dy));
         return subScreenWidget;
     }
 

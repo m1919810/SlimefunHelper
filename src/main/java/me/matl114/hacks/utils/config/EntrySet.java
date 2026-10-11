@@ -102,7 +102,7 @@ public class EntrySet<T> implements NBTParsable<EntrySet<T>>, Predicate<T> {
                 .addDrawableChild(factory.createExecuteButton(
                         () -> Constants.OPEN_LIST_EDIT_TEXT,
                         Constants::openListEditTooltips,
-                        ButtonAction.run(() -> openRegistrySelectScreen(attr)),
+                        ButtonAction.run(() -> openRegistrySelectScreen(factory, attr)),
                         dy,
                         0,
                         dx - dy,
@@ -117,13 +117,18 @@ public class EntrySet<T> implements NBTParsable<EntrySet<T>>, Predicate<T> {
                         dy));
     }
 
-    private static <T> void openRegistrySelectScreen(me.matl114.utils.config.AttrKeyValue<EntrySet<T>> attr) {
+    private static <T> void openRegistrySelectScreen(
+            ElementFactory factory, me.matl114.utils.config.AttrKeyValue<EntrySet<T>> attr) {
         EntrySet<T> current = attr.get();
-        ScreenAccess.of(new RegistrySelectScreen<>(current.registry, current.set, selected -> {
-                    if (selected != null) {
-                        attr.accept(new EntrySet<>(current.registry, selected));
-                    }
-                }))
+        ScreenAccess.of(new RegistrySelectScreen<>(
+                        current.registry,
+                        current.set,
+                        selected -> {
+                            if (selected != null) {
+                                attr.accept(new EntrySet<>(current.registry, selected));
+                            }
+                        },
+                        factory))
                 .openFromCurrent();
     }
 

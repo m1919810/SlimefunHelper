@@ -5,6 +5,8 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.interfaces.DefaultElementFactory;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.gui.presets.single.RegistryDisplays;
 import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.registry.Registry;
@@ -38,7 +40,20 @@ public class ListRegistrySelectWidget<T> extends ListSelectWidget<Triplet<Text, 
             int dx,
             int dy,
             int height) {
-        super(list, renderFactory, filterInput, (BiPredicate) filter, x, y, dx, dy, height);
+        this(list, renderFactory, filterInput, x, y, dx, dy, height, DefaultElementFactory.INSTANCE);
+    }
+
+    public ListRegistrySelectWidget(
+            List<Triplet<Text, Identifier, T>> list,
+            Function<Triplet<Text, Identifier, T>, RenderHandler> renderFactory,
+            ValueAccessor<String> filterInput,
+            int x,
+            int y,
+            int dx,
+            int dy,
+            int height,
+            ElementFactory elementFactory) {
+        super(list, renderFactory, filterInput, (BiPredicate) filter, x, y, dx, dy, height, elementFactory);
     }
 
     public static <T> List<T> listRegistry(Registry<T> registry) {
@@ -54,6 +69,18 @@ public class ListRegistrySelectWidget<T> extends ListSelectWidget<Triplet<Text, 
 
     public static <T> ListRegistrySelectWidget<T> registry(
             Registry<T> registry, ValueAccessor<String> filterInput, int x, int y, int dx, int dy, int height) {
+        return registry(registry, filterInput, x, y, dx, dy, height, DefaultElementFactory.INSTANCE);
+    }
+
+    public static <T> ListRegistrySelectWidget<T> registry(
+            Registry<T> registry,
+            ValueAccessor<String> filterInput,
+            int x,
+            int y,
+            int dx,
+            int dy,
+            int height,
+            ElementFactory elementFactory) {
         return new ListRegistrySelectWidget<>(
                 list(listRegistry(registry), registry, RegistryDisplays::getDisplay),
                 (trp) -> RegistryDisplays.of(registry, trp.getC(), trp.getA(), trp.getB()),
@@ -62,7 +89,8 @@ public class ListRegistrySelectWidget<T> extends ListSelectWidget<Triplet<Text, 
                 y,
                 dx,
                 dy,
-                height);
+                height,
+                elementFactory);
     }
 
     public static <T> ListRegistrySelectWidget<T> registry(
@@ -74,6 +102,19 @@ public class ListRegistrySelectWidget<T> extends ListSelectWidget<Triplet<Text, 
             int dx,
             int dy,
             int height) {
+        return registry(data, registry, filterInput, x, y, dx, dy, height, DefaultElementFactory.INSTANCE);
+    }
+
+    public static <T> ListRegistrySelectWidget<T> registry(
+            List<T> data,
+            Registry<T> registry,
+            ValueAccessor<String> filterInput,
+            int x,
+            int y,
+            int dx,
+            int dy,
+            int height,
+            ElementFactory elementFactory) {
         return new ListRegistrySelectWidget<>(
                 list(data, registry, RegistryDisplays::getDisplay),
                 (trp) -> RegistryDisplays.of(registry, trp.getC(), trp.getA(), trp.getB()),
@@ -82,6 +123,7 @@ public class ListRegistrySelectWidget<T> extends ListSelectWidget<Triplet<Text, 
                 y,
                 dx,
                 dy,
-                height);
+                height,
+                elementFactory);
     }
 }

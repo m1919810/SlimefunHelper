@@ -10,6 +10,8 @@ import me.matl114.gui.Constants;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.IconElement;
+import me.matl114.gui.interfaces.DefaultElementFactory;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.ValueAccessor;
@@ -26,8 +28,10 @@ public class ListMultiSelectWidget<W> extends ScrollableListWidget {
     BiFunction<W, AttrKeyValue<Boolean>, RenderHandler> renderFactory;
     FilterService.Filter<W> filter;
     ValueAccessor<String> filterInput;
+    ValueAccessor<Boolean> regexFilterInput;
+    boolean showFilter = true;
     boolean modifiable = true;
-    boolean useRegexFilter = false;
+    protected ElementFactory elementFactory;
 
     public Set<W> buildSelected() {
         return list.entrySet().stream()
@@ -62,6 +66,65 @@ public class ListMultiSelectWidget<W> extends ScrollableListWidget {
             int dx,
             int dy,
             int height) {
+        this(
+                lst,
+                currentSelection,
+                renderFactory,
+                filterInput,
+                filter,
+                x,
+                y,
+                dx,
+                dy,
+                height,
+                ValueAccessor.holder(false),
+                true,
+                DefaultElementFactory.INSTANCE);
+    }
+
+    public ListMultiSelectWidget(
+            List<W> lst,
+            Set<W> currentSelection,
+            BiFunction<W, AttrKeyValue<Boolean>, RenderHandler> renderFactory,
+            ValueAccessor<String> filterInput,
+            FilterService.Filter<W> filter,
+            int x,
+            int y,
+            int dx,
+            int dy,
+            int height,
+            ValueAccessor<Boolean> regexFilterInput,
+            boolean showFilter) {
+        this(
+                lst,
+                currentSelection,
+                renderFactory,
+                filterInput,
+                filter,
+                x,
+                y,
+                dx,
+                dy,
+                height,
+                regexFilterInput,
+                showFilter,
+                DefaultElementFactory.INSTANCE);
+    }
+
+    public ListMultiSelectWidget(
+            List<W> lst,
+            Set<W> currentSelection,
+            BiFunction<W, AttrKeyValue<Boolean>, RenderHandler> renderFactory,
+            ValueAccessor<String> filterInput,
+            FilterService.Filter<W> filter,
+            int x,
+            int y,
+            int dx,
+            int dy,
+            int height,
+            ValueAccessor<Boolean> regexFilterInput,
+            boolean showFilter,
+            ElementFactory elementFactory) {
         super(x, y, dx, dy);
         this.list = new LinkedHashMap<>();
         for (var shit : lst) {
@@ -72,7 +135,10 @@ public class ListMultiSelectWidget<W> extends ScrollableListWidget {
         this.entryHeight = height;
         this.filter = filter;
         this.filterInput = filterInput;
+        this.regexFilterInput = regexFilterInput;
+        this.showFilter = showFilter;
         this.renderFactory = renderFactory;
+        this.elementFactory = elementFactory;
         init();
     }
 
@@ -87,30 +153,39 @@ public class ListMultiSelectWidget<W> extends ScrollableListWidget {
     protected DrawableWidget generateEntry(int index) {
         Map.Entry<W, AttrKeyValue<Boolean>> triplet = this.filterList.get(index);
         var attrKeyValue = triplet.getValue();
-        ExecutableWidget shitWidget = ExecutableWidget.instance(0, this.entryHeight * index, this.dx, this.entryHeight);
+        int buttonSize = Math.min(11, Math.max(1, this.entryHeight - 2));
+        int contentX = buttonSize + 2;
         RenderHandler renderHandler = renderFactory.apply(triplet.getKey(), attrKeyValue);
         renderHandler =
                 renderHandler.combineRender((element, context, mouseX, mouseY, delta, alpha, shouldHighlight) -> {
                     if (attrKeyValue.get() == Boolean.TRUE) {
-                        RenderHandler.drawHighLightBox(context, 0, 0, this.dx, this.entryHeight, Colors.WHITE);
+                        RenderHandler.drawHighLightBox(context, -contentX, 0, this.dx, this.entryHeight, Colors.WHITE);
                     }
                 });
-        InputHandler mouseHandler = InputHandler.run(() -> {
+        Runnable toggleSelection = () -> {
             if (modifiable) {
-                if (attrKeyValue.get() == Boolean.TRUE) {
-                    attrKeyValue.setInput("false");
-                } else {
-                    attrKeyValue.setInput("true");
-                }
+                attrKeyValue.accept(attrKeyValue.get() != Boolean.TRUE);
             }
-            // do not resort when value change
-            // because player may do it accidentally
-        });
-        shitWidget.setInputHandler(mouseHandler).setRenderHandler(renderHandler);
-        return shitWidget;
+            // Do not resort when the value changes because the player may click accidentally.
+        };
+        ValueAccessor<Boolean> selectionValue = ValueAccessor.of(attrKeyValue::get, attrKeyValue::accept);
+        DrawableWidget selectionButton = ExecutableWidget.instance(
+                        1, (this.entryHeight - buttonSize) / 2, buttonSize, buttonSize)
+                .setElementHandler(elementFactory.createToggleButton(
+                        () -> Text.empty(),
+                        () -> List.of(Text.literal(
+                                attrKeyValue.get() == Boolean.TRUE ? "Remove selection" : "Add selection")),
+                        selectionValue))
+                .setPriority(1);
+        DrawableWidget entry = ExecutableWidget.instance(contentX, 0, this.dx - contentX, this.entryHeight)
+                .setInputHandler(InputHandler.run(toggleSelection))
+                .setRenderHandler(renderHandler);
+        return new SubScreenWidget(0, this.entryHeight * index, this.dx, this.entryHeight)
+                .addDrawableChild(selectionButton)
+                .addDrawableChild(entry);
     }
 
-    protected void updateFilterList() {
+    public void updateFilterList() {
         Comparator<Map.Entry<W, AttrKeyValue<Boolean>>> comparator = (o1, o2) -> {
             if (o1.getValue().get() && !o2.getValue().get()) {
                 return -1;
@@ -121,45 +196,72 @@ public class ListMultiSelectWidget<W> extends ScrollableListWidget {
             }
         };
         filterList = list.entrySet().stream()
-                .filter(i -> filter == null || filter.isAccepted(i.getKey(), filterInput.getValue(), useRegexFilter))
+                .filter(i -> filter == null
+                        || filter.isAccepted(i.getKey(), filterInput.getValue(), regexFilterInput.getValue()))
                 .sorted(comparator)
                 .toList();
 
         refreshList();
     }
 
-    protected void selectAllShown() {
+    public void selectAllShown() {
         this.filterList.forEach(s -> s.getValue().accept(true));
     }
 
-    protected void unselectAllShown() {
+    public void unselectAllShown() {
         this.filterList.forEach(s -> s.getValue().accept(false));
     }
 
     protected void init() {
         int textHeight = Math.min(20, this.entryHeight);
-        this.scrollableBorder.addDrawableChild(FilterService.createFilterWithRegex(
-                filterInput,
-                ValueAccessor.of(() -> this.useRegexFilter, (bl) -> this.useRegexFilter = bl),
-                this::updateFilterList,
-                1,
-                -textHeight + 1,
-                dx - 1 - 2 * textHeight,
-                textHeight - 2));
-        SubScreenWidget widget =
-                new SubScreenWidget(dx - 2 * textHeight, -textHeight + 1, 2 * textHeight, textHeight - 2);
-        widget.addDrawableChild(ExecutableWidget.instance(1, 0, textHeight - 2, textHeight - 2)
-                .setElementHandler(
-                        IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.run(this::selectAllShown))
-                                .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                        "widget.gui.list-multi-select-widget.select-all.tooltips", "")))));
-
-        widget.addDrawableChild(ExecutableWidget.instance(1 + textHeight, 0, textHeight - 2, textHeight - 2)
-                .setElementHandler(
-                        IconElement.fixedGui(Constants.REMOVE_SPRITE, ButtonAction.run(this::unselectAllShown))
-                                .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                                        "widget.gui.list-multi-select-widget.unselect-all.tooltips", "")))));
-        this.scrollableBorder.addDrawableChild(widget);
+        if (showFilter) {
+            var filterValue = FilterService.createFilterValue(filterInput, this::updateFilterList);
+            this.scrollableBorder.addDrawableChild(
+                    ExecutableWidget.instance(1, -textHeight + 1, dx - 1 - 4 * textHeight, textHeight - 2)
+                            .setElementHandler(elementFactory.createInput(filterValue)));
+            this.scrollableBorder.addDrawableChild(elementFactory.createExecuteButton(
+                    () -> Text.literal("×"),
+                    () -> ChatUtils.parseTooltipsTranslation("widget.gui.filter-service.reset-filter.tooltips", ""),
+                    ButtonAction.run(() -> filterValue.setInput("")),
+                    dx - 4 * textHeight,
+                    -textHeight + 1,
+                    textHeight - 2,
+                    textHeight - 2));
+            ValueAccessor<Boolean> regexAccessor = ValueAccessor.of(regexFilterInput::getValue, value -> {
+                regexFilterInput.setValue(value);
+                updateFilterList();
+            });
+            this.scrollableBorder.addDrawableChild(
+                    ExecutableWidget.instance(dx - 3 * textHeight, -textHeight + 1, textHeight - 2, textHeight - 2)
+                            .setElementHandler(elementFactory.createToggleButton(
+                                    () -> Text.literal("(.*)"),
+                                    () -> ChatUtils.parseTooltipsTranslation(
+                                            "widget.gui.filter-service.use-regex.tooltips", ""),
+                                    regexAccessor)));
+            SubScreenWidget widget =
+                    new SubScreenWidget(dx - 2 * textHeight, -textHeight + 1, 2 * textHeight, textHeight - 2);
+            widget.addDrawableChild(elementFactory.createElement(
+                    IconElement.fixedGui(Constants.LIST_TAG_SPRITE, ButtonAction.run(this::selectAllShown))
+                            .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                    "widget.gui.list-multi-select-widget.select-all.tooltips", ""))),
+                    null,
+                    null,
+                    1,
+                    0,
+                    textHeight - 2,
+                    textHeight - 2));
+            widget.addDrawableChild(elementFactory.createElement(
+                    IconElement.fixedGui(Constants.REMOVE_SPRITE, ButtonAction.run(this::unselectAllShown))
+                            .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                    "widget.gui.list-multi-select-widget.unselect-all.tooltips", ""))),
+                    null,
+                    null,
+                    1 + textHeight,
+                    0,
+                    textHeight - 2,
+                    textHeight - 2));
+            this.scrollableBorder.addDrawableChild(widget);
+        }
         this.updateFilterList();
     }
 }
