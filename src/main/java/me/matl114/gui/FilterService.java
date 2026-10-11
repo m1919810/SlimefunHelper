@@ -13,6 +13,7 @@ import me.matl114.gui.elements.ButtonElement;
 import me.matl114.gui.elements.IconElement;
 import me.matl114.hacks.utils.recipes.RecipeEntry;
 import me.matl114.utils.ChatUtils;
+import me.matl114.utils.config.Value;
 import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
@@ -20,6 +21,54 @@ import net.minecraft.util.Colors;
 import net.minecraft.util.Identifier;
 
 public class FilterService {
+    public static Value<String> createFilterValue(ValueAccessor<String> accessor, Runnable updateListener) {
+        return createFilterValue(accessor, value -> updateListener.run());
+    }
+
+    public static Value<String> createFilterValue(ValueAccessor<String> accessor, Consumer<String> updateListener) {
+        return new Value<>() {
+            @Override
+            public String getInput() {
+                return accessor.getValue();
+            }
+
+            @Override
+            public String get() {
+                return accessor.getValue();
+            }
+
+            @Override
+            public boolean setOriginValue(String value) {
+                setInput(value);
+                return true;
+            }
+
+            @Override
+            public boolean isValueValid(String value) {
+                return value != null;
+            }
+
+            @Override
+            public boolean isValidate() {
+                return true;
+            }
+
+            @Override
+            public String toInput(String value) {
+                return value == null ? "" : value;
+            }
+
+            @Override
+            public void setInput(String value) {
+                String normalized = value == null ? "" : value;
+                if (!Objects.equals(accessor.getValue(), normalized)) {
+                    accessor.setValue(normalized);
+                    updateListener.accept(normalized);
+                }
+            }
+        };
+    }
+
     public static BiPredicate<String, RecipeEntry> RECIPE_FILTER = (str, i) -> {
         if (str == null || str.isEmpty()) return true;
         if (str.startsWith("@")) {

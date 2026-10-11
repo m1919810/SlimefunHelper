@@ -3,11 +3,10 @@ package me.matl114.gui.presets.single;
 import java.util.function.Consumer;
 import me.matl114.gui.GenericScreen;
 import me.matl114.gui.WidgetUtils;
-import me.matl114.gui.basic.DisplayWidget;
 import me.matl114.gui.basic.ExecutableWidget;
 import me.matl114.gui.basic.InputHandler;
-import me.matl114.gui.basic.TextAlign;
-import me.matl114.gui.complex.RawTextElement;
+import me.matl114.gui.interfaces.DefaultElementFactory;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.utils.collections.FPoint;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
@@ -16,23 +15,38 @@ import net.minecraft.util.Formatting;
 public class WidgetPosSelectScreen extends GenericScreen {
     Consumer<FPoint> predicate;
     FPoint selected;
+    ElementFactory elementFactory;
 
     public WidgetPosSelectScreen(int backgroundWidth, FPoint initializePoint, Consumer<FPoint> pointAcceptor) {
+        this(backgroundWidth, initializePoint, pointAcceptor, DefaultElementFactory.INSTANCE);
+    }
+
+    public WidgetPosSelectScreen(
+            int backgroundWidth,
+            FPoint initializePoint,
+            Consumer<FPoint> pointAcceptor,
+            ElementFactory elementFactory) {
         super(
                 Text.translatable("widget.gui.widget-select-screen.title").formatted(Formatting.GREEN),
                 backgroundWidth,
                 60);
         this.predicate = pointAcceptor;
         this.selected = initializePoint;
+        this.elementFactory = elementFactory;
     }
 
     @Override
     protected void init() {
         super.init();
-        DisplayWidget.instance(this.x, this.y, this.backgroundWidth, this.backgroundHeight)
-                .setRenderHandler(new RawTextElement(this::getTitleLabel, -1, TextAlign.MIDDLE))
+        elementFactory
+                .createTitle(
+                        () -> this.titleLabel,
+                        java.util.List::of,
+                        this.x,
+                        this.y,
+                        this.backgroundWidth,
+                        this.backgroundHeight)
                 .addTo(this);
-        ;
         InputHandler selectHandler = WidgetUtils.createGridPosSelectInputHandler(selected::setX, selected::setY);
 
         ExecutableWidget.instance(0, 0, this.width, this.height)

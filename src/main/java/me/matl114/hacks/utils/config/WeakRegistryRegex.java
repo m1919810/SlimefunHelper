@@ -140,9 +140,12 @@ public class WeakRegistryRegex<T> implements NBTParsable<WeakRegistryRegex<T>>, 
                 WrapperFactory.<Regex, W>of(originalValue::withParent, WeakRegistryRegex::parent),
                 Regex.TYPE);
         ScreenAccess.of(
-                        new RegistryChooseScreen<T>(registry, (v) -> {
-                            original.setInput(originalCopy.getInput());
-                        }) {
+                        new RegistryChooseScreen<T>(
+                                registry,
+                                (v) -> {
+                                    original.setInput(originalCopy.getInput());
+                                },
+                                factory) {
                             {
                                 selectSubScreen.modifiable(false);
                                 selectSubScreen.filter((v) -> originalCopy.isValidate()

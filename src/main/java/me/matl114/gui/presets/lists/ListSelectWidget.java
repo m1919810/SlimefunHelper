@@ -9,7 +9,10 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.*;
+import me.matl114.gui.interfaces.DefaultElementFactory;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.utils.config.ValueAccessor;
+import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 
 @Getter
@@ -24,6 +27,7 @@ public class ListSelectWidget<W> extends ScrollableListWidget {
     BiPredicate<W, String> filter;
     boolean modifiable = true;
     ValueAccessor<String> filterInput;
+    protected ElementFactory elementFactory;
 
     public ListSelectWidget(
             List<W> lst,
@@ -35,12 +39,27 @@ public class ListSelectWidget<W> extends ScrollableListWidget {
             int dx,
             int dy,
             int height) {
+        this(lst, renderFactory, filterInput, filter, x, y, dx, dy, height, DefaultElementFactory.INSTANCE);
+    }
+
+    public ListSelectWidget(
+            List<W> lst,
+            Function<W, RenderHandler> renderFactory,
+            ValueAccessor<String> filterInput,
+            BiPredicate<W, String> filter,
+            int x,
+            int y,
+            int dx,
+            int dy,
+            int height,
+            ElementFactory elementFactory) {
         super(x, y, dx, dy);
         this.list = lst;
         this.entryHeight = height;
         this.filter = filter;
         this.renderFactory = renderFactory;
         this.filterInput = filterInput;
+        this.elementFactory = elementFactory;
         init();
     }
 
@@ -96,8 +115,19 @@ public class ListSelectWidget<W> extends ScrollableListWidget {
 
     protected void init() {
         int textHeight = Math.min(20, this.entryHeight);
-        this.scrollableBorder.addDrawableChild(FilterService.createFilter(
-                this.filterInput, this::updateFilterList, 1, -textHeight + 1, dx - 2, textHeight - 2));
+        var filterValue = FilterService.createFilterValue(this.filterInput, this::updateFilterList);
+        this.scrollableBorder.addDrawableChild(
+                ExecutableWidget.instance(1, -textHeight + 1, dx - 2 - textHeight, textHeight - 2)
+                        .setElementHandler(elementFactory.createInput(filterValue)));
+        this.scrollableBorder.addDrawableChild(elementFactory.createExecuteButton(
+                () -> Text.literal("×"),
+                () -> me.matl114.utils.ChatUtils.parseTooltipsTranslation(
+                        "widget.gui.filter-service.reset-filter.tooltips", ""),
+                ButtonAction.run(() -> filterValue.setInput("")),
+                dx - 1 - textHeight,
+                -textHeight + 1,
+                textHeight,
+                textHeight - 2));
         this.updateFilterList();
     }
 }

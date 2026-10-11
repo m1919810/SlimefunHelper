@@ -117,9 +117,12 @@ public class RegistryRegex<T> implements NBTParsable<RegistryRegex<T>>, Predicat
                 WrapperFactory.<Regex, W>of(originalValue::<W>withParent, RegistryRegex::getParent),
                 Regex.TYPE);
         ScreenAccess.of(
-                        new RegistryChooseScreen<T>(registry, (v) -> {
-                            original.setInput(originalCopy.getInput());
-                        }) {
+                        new RegistryChooseScreen<T>(
+                                registry,
+                                (v) -> {
+                                    original.setInput(originalCopy.getInput());
+                                },
+                                factory) {
                             {
                                 selectSubScreen.modifiable(false);
                                 selectSubScreen.filter((v) -> originalCopy.isValidate()

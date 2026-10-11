@@ -11,6 +11,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import me.matl114.gui.FilterService;
 import me.matl114.gui.basic.RenderHandler;
+import me.matl114.gui.interfaces.DefaultElementFactory;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.gui.presets.single.RegistryDisplays;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.ValueAccessor;
@@ -72,25 +74,90 @@ public class ListRegistryMultiSelectWidget<T> extends ListMultiSelectWidget<Trip
             int dy,
             int height) {
         this(
-                buildPairInternal(registry, currentSelection, localization),
+                registry,
+                currentSelection,
+                localization,
                 renderFactory,
                 filterInput,
+                ValueAccessor.holder(false),
                 x,
                 y,
                 dx,
                 dy,
-                height);
+                height,
+                true,
+                DefaultElementFactory.INSTANCE);
+    }
+
+    public ListRegistryMultiSelectWidget(
+            Registry<T> registry,
+            Set<T> currentSelection,
+            Function<T, Text> localization,
+            BiFunction<Triplet<Text, Identifier, T>, AttrKeyValue<Boolean>, RenderHandler> renderFactory,
+            ValueAccessor<String> filterInput,
+            ValueAccessor<Boolean> regexFilterInput,
+            int x,
+            int y,
+            int dx,
+            int dy,
+            int height,
+            boolean showFilter) {
+        this(
+                registry,
+                currentSelection,
+                localization,
+                renderFactory,
+                filterInput,
+                regexFilterInput,
+                x,
+                y,
+                dx,
+                dy,
+                height,
+                showFilter,
+                DefaultElementFactory.INSTANCE);
+    }
+
+    public ListRegistryMultiSelectWidget(
+            Registry<T> registry,
+            Set<T> currentSelection,
+            Function<T, Text> localization,
+            BiFunction<Triplet<Text, Identifier, T>, AttrKeyValue<Boolean>, RenderHandler> renderFactory,
+            ValueAccessor<String> filterInput,
+            ValueAccessor<Boolean> regexFilterInput,
+            int x,
+            int y,
+            int dx,
+            int dy,
+            int height,
+            boolean showFilter,
+            ElementFactory elementFactory) {
+        this(
+                buildPairInternal(registry, currentSelection, localization),
+                renderFactory,
+                filterInput,
+                regexFilterInput,
+                x,
+                y,
+                dx,
+                dy,
+                height,
+                showFilter,
+                elementFactory);
     }
 
     private ListRegistryMultiSelectWidget(
             Pair<List<Triplet<Text, Identifier, T>>, Set<Triplet<Text, Identifier, T>>> pairData,
             BiFunction<Triplet<Text, Identifier, T>, AttrKeyValue<Boolean>, RenderHandler> renderFactory,
             ValueAccessor<String> filterInput,
+            ValueAccessor<Boolean> regexFilterInput,
             int x,
             int y,
             int dx,
             int dy,
-            int height) {
+            int height,
+            boolean showFilter,
+            ElementFactory elementFactory) {
         super(
                 pairData.getFirst(),
                 pairData.getSecond(),
@@ -101,7 +168,10 @@ public class ListRegistryMultiSelectWidget<T> extends ListMultiSelectWidget<Trip
                 y,
                 dx,
                 dy,
-                height);
+                height,
+                regexFilterInput,
+                showFilter,
+                elementFactory);
     }
 
     public static <T> ListRegistryMultiSelectWidget<T> registry(
@@ -113,6 +183,70 @@ public class ListRegistryMultiSelectWidget<T> extends ListMultiSelectWidget<Trip
             int dx,
             int dy,
             int height) {
+        return registry(registry, currentSelect, filterInput, x, y, dx, dy, height, DefaultElementFactory.INSTANCE);
+    }
+
+    public static <T> ListRegistryMultiSelectWidget<T> registry(
+            Registry<T> registry,
+            Set<T> currentSelect,
+            ValueAccessor<String> filterInput,
+            int x,
+            int y,
+            int dx,
+            int dy,
+            int height,
+            ElementFactory elementFactory) {
+        return registry(
+                registry,
+                currentSelect,
+                filterInput,
+                ValueAccessor.holder(false),
+                x,
+                y,
+                dx,
+                dy,
+                height,
+                true,
+                elementFactory);
+    }
+
+    public static <T> ListRegistryMultiSelectWidget<T> registry(
+            Registry<T> registry,
+            Set<T> currentSelect,
+            ValueAccessor<String> filterInput,
+            ValueAccessor<Boolean> regexFilterInput,
+            int x,
+            int y,
+            int dx,
+            int dy,
+            int height,
+            boolean showFilter) {
+        return registry(
+                registry,
+                currentSelect,
+                filterInput,
+                regexFilterInput,
+                x,
+                y,
+                dx,
+                dy,
+                height,
+                showFilter,
+                DefaultElementFactory.INSTANCE);
+    }
+
+    public static <T> ListRegistryMultiSelectWidget<T> registry(
+            Registry<T> registry,
+            Set<T> currentSelect,
+            ValueAccessor<String> filterInput,
+            ValueAccessor<Boolean> regexFilterInput,
+            int x,
+            int y,
+            int dx,
+            int dy,
+            int height,
+            boolean showFilter,
+            ElementFactory elementFactory) {
 
         return new ListRegistryMultiSelectWidget<>(
                 registry,
@@ -120,10 +254,13 @@ public class ListRegistryMultiSelectWidget<T> extends ListMultiSelectWidget<Trip
                 RegistryDisplays::getDisplay,
                 (trp, attr) -> RegistryDisplays.of(registry, trp.getC(), trp.getA(), trp.getB()),
                 filterInput,
+                regexFilterInput,
                 x,
                 y,
                 dx,
                 dy,
-                height);
+                height,
+                showFilter,
+                elementFactory);
     }
 }
