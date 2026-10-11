@@ -148,7 +148,6 @@ public class AutoWeb extends BaseModule {
     }
 
     private boolean placeWeb(IndexEntry<ItemStack> web, BlockHitResult hitResult) {
-        if (!InteractionTasks.canHandleInteract(mode.get())) return false;
         Runnable callback = InvExtra.INSTANCE.swapItemToHand(web.index(), offhand.get(), ghostHand.get());
         if (callback == null) {
             return false;

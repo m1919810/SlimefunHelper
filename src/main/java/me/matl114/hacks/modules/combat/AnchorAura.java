@@ -399,9 +399,7 @@ public class AnchorAura extends BaseModule {
                         continue;
                     }
                 }
-                if (InteractionTasks.canHandleInteract(mode.get())) {
-                    success += litBlockPos(targetPos, cache);
-                }
+                success += litBlockPos(targetPos, cache);
             }
         }
         return success >= multiply;
@@ -614,16 +612,13 @@ public class AnchorAura extends BaseModule {
     }
 
     public boolean placeAnchor(BlockHitResult hitResult) {
-        if (!InteractionTasks.canHandleInteract(mode.get())) {
-            return false;
-        }
         var entry = supplyItem(Items.RESPAWN_ANCHOR);
         if (entry == null) return false;
         var runnable = InvExtra.INSTANCE.swapItemToHand(entry.index(), false, ghostHand.get());
         if (runnable == null) return false;
-        InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
+        boolean finished = InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
         InteractionTasks.finishGhostHand(mode.get(), runnable);
-        return true;
+        return finished;
     }
 
     private IndexEntry<ItemStack> supplyBlockingBlock() {

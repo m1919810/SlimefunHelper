@@ -125,9 +125,6 @@ public class InteractionTasks {
     }
 
     public static boolean handlePlaceMode(LegalInteractMode mode, BlockHitResult result, Hand hand, boolean swingHand) {
-        if (!canHandleInteract(mode)) {
-            return false;
-        }
         boolean directlyHit = RaycastUtils.canRaycastHit(
                 mc.player,
                 PlayerStateManager.INSTANCE.lastPitch,
@@ -187,16 +184,6 @@ public class InteractionTasks {
         } else {
             callback.run();
         }
-    }
-
-    public static boolean canHandleInteract(LegalInteractMode mode) {
-        if (mode == null || (mode.canMultiRotPlace())) {
-            return true;
-        }
-        return RotationManager.INSTANCE != null
-                && !RotationManager.INSTANCE.isOccupied()
-                && mc.player != null
-                && mc.world != null;
     }
 
     public static boolean checkInHead(BlockPos targetPos, Vec3d playerPos) {

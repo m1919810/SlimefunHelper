@@ -257,9 +257,6 @@ public class SelfTrap extends BaseModule {
                     break;
                 }
             }
-            if (!InteractionTasks.canHandleInteract(mode.get())) {
-                continue;
-            }
             boolean completed = InteractionTasks.handlePlaceMode(
                     mode.get(), hitResult.val(), offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND, swingHand.get());
             placeCount++;
