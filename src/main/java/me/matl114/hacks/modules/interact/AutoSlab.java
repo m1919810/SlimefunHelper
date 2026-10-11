@@ -114,6 +114,14 @@ public class AutoSlab extends BaseModule {
     public final Set<Block> availableBlocks = new HashSet<>();
     public final RenderCollector<Box> boxCollector = RenderCollectors.createBoxCollector(true, false, false);
 
+    private void updateRenderCollector(Event<net.minecraft.client.network.ClientPlayerEntity> event) {
+        boxCollector.clear();
+        if (!enable.get() || !render.get()) return;
+        for (BlockPos pos : fillBlockPoses) {
+            boxCollector.submit(new Box(pos), color.get().withAlpha(255));
+        }
+    }
+
     public void onServerLeave(Event<Void> eventLeave) {
         availableBlocks.clear();
     }
@@ -137,6 +145,7 @@ public class AutoSlab extends BaseModule {
         super.registerAll();
         registerListener(Listener.getServerLeavePoint(), this::onServerLeave);
         registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvent);
+        registerListener(Listener.getPostGameTick(), this::updateRenderCollector);
         registerListener(RenderListener.getRender3DEvent(), this::onRender3D);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
     }
@@ -212,7 +221,6 @@ public class AutoSlab extends BaseModule {
             BlockState testState = mc.world.getBlockState(testPos);
             if (testState.isAir() || testState.isLiquid() || testState.isReplaceable()) {
                 if (WorldUtils.canEntitySpawnAt(mc.world, testPos, EntityType.CREEPER)) {
-                    boxCollector.submit(new Box(testPos), color.get().withAlpha(255));
                     fillBlockPoses.add(testPos);
                 }
             }
@@ -221,7 +229,6 @@ public class AutoSlab extends BaseModule {
 
     public void onPreInputEvent(Event<Void> event) {
         if (checkNull()) return;
-        boxCollector.clear();
         if (enable.get()) {
             refreshBlocks();
             if (++timer >= delay.get()) {

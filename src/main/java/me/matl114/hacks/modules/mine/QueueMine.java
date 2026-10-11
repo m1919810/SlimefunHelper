@@ -72,6 +72,7 @@ public class QueueMine extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPostHandleInputEvents(), this::onPostInputEvent);
+        registerListener(Listener.getPostGameTick(), this::updateRenderCollector);
         registerListener(Listener.getMineBlockAction(), this::handleQueueSumbit);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
     }
@@ -79,8 +80,15 @@ public class QueueMine extends BaseModule {
     int lastSumitTick = 0;
     RenderCollector<Box> outline = RenderCollectors.createBoxCollector(true, false, false);
 
-    public void onPostInputEvent(Event<Void> eventVoid) {
+    private void updateRenderCollector(Event<net.minecraft.client.network.ClientPlayerEntity> event) {
         outline.clear();
+        if (!enable.get() || !render.get()) return;
+        for (var pos : breakRequest) {
+            outline.submit(new Box(pos).expand(-0.2), color.get().withAlpha(255));
+        }
+    }
+
+    public void onPostInputEvent(Event<Void> eventVoid) {
         if (checkNull()) return;
         if (lastSumitTick != Tasks.getTick()) {
             tickQueue();
@@ -89,9 +97,6 @@ public class QueueMine extends BaseModule {
                 && supportDoubleBreakGhostHand.get()
                 && PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos() != null) {
             MineExtra.INSTANCE.tickGhostHandDoubleBreak(null, false);
-        }
-        for (var re : breakRequest) {
-            outline.submit(new Box(re).expand(-0.2), color.get().withAlpha(255));
         }
     }
 

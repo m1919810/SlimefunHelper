@@ -13,12 +13,13 @@ import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.*;
 import me.matl114.utils.containers.MetaData;
-import net.minecraft.client.util.math.MatrixStack;
+import me.matl114.utils.render.RenderCollector;
 import net.minecraft.entity.CrossbowUser;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -66,11 +67,15 @@ public class ProjectileESP extends BaseModule {
     public final FlagRef renderArrow =
             flagBuilder(detectEntity.add("render-projectile")).build();
 
+    private final RenderCollector<List<Vec3d>> trajectoryCollector = RenderCollectors.createLinesCollector();
+    private final RenderCollector<Box> impactCollector = RenderCollectors.createBoxCollector(false, true, false);
+
     @Override
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getEntityClientVelocityUpdate(), this::onVelocityFireball);
         registerListener(Listener.getEntityClientVelocityUpdate(), this::onVelocityArrow);
+        registerListener(Listener.getPostGameTick(), this::updateRenderCollectors);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(Listener.getServerEntitySpawnListener(), this::onEntitySpawn);
     }
@@ -207,41 +212,76 @@ public class ProjectileESP extends BaseModule {
         }
     }
 
-    public void onRender(Event<Render3D> stackE) {
-        if (mc.world == null || mc.player == null) return;
-        // no render arrow
-        //        var whitelist = getWhitelisted();
-        // remove whitelist whitelist
+    private void updateRenderCollectors(Event<net.minecraft.client.network.ClientPlayerEntity> event) {
+        trajectoryCollector.clear();
+        impactCollector.clear();
+        if (checkNull() || !enable.get()) return;
 
-        // if(!arrowItem)return;
-        if (enable.get()) {
-            var stack = stackE.context.stack();
-            boolean arrowFlag = renderArrow.get();
-            boolean fireballFlag = renderFireball.get();
-            float tickDelta = stackE.context.partialTicks();
-            RenderUtils.startDrawVirtual(stack);
-            try {
-                for (var fireball : mc.world.getEntities()) {
-                    if (fireball instanceof ExplosiveProjectileEntity explosive) {
-                        if (fireballFlag) {
-                            RenderUtils.drawStripLineVirtual(stack, predictFireballTrace(explosive), Color.RED);
-                        }
-                    }
-                    if (arrowFlag
-                            && fireball instanceof AbstractSkeletonEntity arrow
-                            && !(arrow instanceof WitherSkeletonEntity)) {
-                        renderSkeletonProjectile(stack, arrow, tickDelta);
-                    } else if (arrowFlag && fireball instanceof PlayerEntity player) {
-                        renderPlayerProjectile(stack, player, tickDelta);
-                    } else if (arrowFlag && fireball instanceof CrossbowUser user) {
-                        renderCrossbowProjectile(stack, user, tickDelta);
-                    } else if (arrowFlag && fireball instanceof PersistentProjectileEntity arrow) {
-                        renderArrowProjectile(stack, arrow, tickDelta);
+        for (var entity : mc.world.getEntities()) {
+            if (entity instanceof ExplosiveProjectileEntity explosive && renderFireball.get()) {
+                submitTrajectory(predictFireballTrace(explosive), Color.RED, false);
+            }
+            if (!renderArrow.get()) continue;
+            if (entity instanceof AbstractSkeletonEntity skeleton && !(skeleton instanceof WitherSkeletonEntity)) {
+                if (skeleton.isUsingItem() && skeleton.getActiveItem().getItem() instanceof BowItem) {
+                    submitTrajectory(ArrowPredictor.of(skeleton, 0.0F).predictLine(400), Color.YELLOW, true);
+                }
+            } else if (entity instanceof PlayerEntity player) {
+                submitPlayerTrajectory(player);
+            } else if (entity instanceof CrossbowUser crossbow) {
+                if (crossbow instanceof LivingEntity living
+                        && living.isUsingItem()
+                        && living.getActiveItem().getItem() instanceof RangedWeaponItem) {
+                    submitTrajectory(ArrowPredictor.of(crossbow, 0.0F).predictLine(400), Color.YELLOW, true);
+                }
+            } else if (entity instanceof PersistentProjectileEntity projectile
+                    && !projectile.isOnGround()
+                    && projectile.getVelocity().lengthSquared() > 1e-5) {
+                submitTrajectory(ArrowPredictor.of(projectile, 0.0F).predictLine(400), Color.RED, true);
+            }
+        }
+    }
+
+    private void submitPlayerTrajectory(PlayerEntity player) {
+        for (var hand : Hand.values()) {
+            if (player.getStackInHand(hand).getItem() instanceof RangedWeaponItem item) {
+                var data = ArrowPredictor.of(player, item, hand, 0.0F).predictLineWithHitResult(400);
+                if (data.getFirst().size() > 3) {
+                    trajectoryCollector.submit(data.getFirst(), Color.RED.getRGB());
+                    if (data.getSecond() instanceof EntityHitResult hit) {
+                        impactCollector.submit(
+                                RenderUtils.getLerpedBox(hit.getEntity(), 0.0F),
+                                ColorUtils.withAlpha(Color.GREEN, 0.25F).getRGB());
+                    } else {
+                        submitImpact(data.getFirst().getLast());
                     }
                 }
-            } finally {
-                RenderUtils.stopDrawVirtual(stack);
+                return;
             }
+        }
+    }
+
+    private void submitTrajectory(List<Vec3d> trajectory, Color color, boolean submitImpact) {
+        if (trajectory.size() <= 3) return;
+        trajectoryCollector.submit(trajectory, color.getRGB());
+        if (submitImpact) submitImpact(trajectory.getLast());
+    }
+
+    private void submitImpact(Vec3d position) {
+        impactCollector.submit(
+                new Box(position.add(RenderTasks.SMALL_FROM), position.add(RenderTasks.SMALL_TO)),
+                ColorUtils.withAlpha(Color.GREEN, 0.25F).getRGB());
+    }
+
+    public void onRender(Event<Render3D> stackE) {
+        if (!enable.get()) return;
+        var stack = stackE.context.stack();
+        RenderUtils.startDrawVirtual(stack);
+        try {
+            trajectoryCollector.render3D(stack, stackE.context.partialTicks());
+            impactCollector.render3D(stack, stackE.context.partialTicks());
+        } finally {
+            RenderUtils.stopDrawVirtual(stack);
         }
     }
 
@@ -440,78 +480,6 @@ public class ProjectileESP extends BaseModule {
                 }
             }
             return Pair.of(path, result);
-        }
-    }
-
-    private static void renderSkeletonProjectile(MatrixStack stack, AbstractSkeletonEntity entity, float tickDelta) {
-        if (entity.isUsingItem() && entity.getActiveItem().getItem() instanceof BowItem) {
-            drawClassicArrowTrajectory(
-                    stack, ArrowPredictor.of(entity, tickDelta).predictLine(400), Color.YELLOW);
-        }
-    }
-
-    private static void renderCrossbowProjectile(MatrixStack stack, CrossbowUser pillagerEntity, float tickDelta) {
-        if (pillagerEntity instanceof LivingEntity entity
-                && entity.isUsingItem()
-                && entity.getActiveItem().getItem() instanceof RangedWeaponItem crossbow) {
-            drawClassicArrowTrajectory(
-                    stack, ArrowPredictor.of(pillagerEntity, tickDelta).predictLine(400), Color.YELLOW);
-            return;
-        }
-    }
-
-    private static void renderPlayerProjectile(MatrixStack stack, PlayerEntity player, float tickDelta) {
-        for (var hand : Hand.values()) {
-            if (player.getStackInHand(hand).getItem() instanceof RangedWeaponItem item) {
-                var data = ArrowPredictor.of(player, item, hand, tickDelta).predictLineWithHitResult(400);
-                drawArrowTrajectoryWithHitResult(stack, data.getFirst(), data.getSecond(), tickDelta);
-                // drawClassicArrowTrajectory(stack, ArrowPredictor.of(player, item, hand).predictLine(400));
-                return;
-            }
-        }
-    }
-
-    private static void renderArrowProjectile(MatrixStack stack, PersistentProjectileEntity arrow, float tickDelta) {
-        // filter on ground arrows
-        if (!arrow.isOnGround() && arrow.getVelocity().lengthSquared() > 1e-5) {
-            // fix? velocity does not change
-            drawClassicArrowTrajectory(
-                    stack, ArrowPredictor.of(arrow, tickDelta).predictLine(400), Color.RED);
-        }
-    }
-
-    private static void drawClassicArrowTrajectory(MatrixStack stack, List<Vec3d> vec3ds, Color clr) {
-        // escape little traj
-        if (vec3ds.size() <= 3) return;
-        RenderUtils.drawStripLineVirtual(stack, vec3ds, clr);
-        if (!vec3ds.isEmpty()) {
-            Vec3d finalPosition = vec3ds.get(vec3ds.size() - 1);
-            RenderUtils.drawSolidBox(
-                    stack,
-                    finalPosition.add(RenderTasks.SMALL_FROM),
-                    finalPosition.add(RenderTasks.SMALL_TO),
-                    ColorUtils.withAlpha(Color.GREEN, 0.25F));
-        }
-    }
-
-    private static void drawArrowTrajectoryWithHitResult(
-            MatrixStack stack, List<Vec3d> vec3ds, HitResult result, float tickDelta) {
-        if (vec3ds.size() <= 3) return;
-        RenderUtils.drawStripLineVirtual(stack, vec3ds, Color.RED);
-        if (!vec3ds.isEmpty()) {
-            if (result == null || result.getType() != HitResult.Type.ENTITY) {
-                Vec3d finalPosition = vec3ds.get(vec3ds.size() - 1);
-                RenderUtils.drawSolidBox(
-                        stack,
-                        finalPosition.add(RenderTasks.SMALL_FROM),
-                        finalPosition.add(RenderTasks.SMALL_TO),
-                        ColorUtils.withAlpha(Color.GREEN, 0.25F));
-            } else {
-                Entity hitEntity = ((EntityHitResult) result).getEntity();
-                Box box = RenderUtils.getLerpedBox(hitEntity, tickDelta);
-                RenderUtils.drawSolidBox(
-                        stack, box.getMinPos(), box.getMaxPos(), ColorUtils.withAlpha(Color.GREEN, 0.25F));
-            }
         }
     }
 
