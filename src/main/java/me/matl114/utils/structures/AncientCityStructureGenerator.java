@@ -25,9 +25,7 @@ public final class AncientCityStructureGenerator {
     private AncientCityStructureGenerator() {}
 
     public static Optional<Result> generate(
-            long seed,
-            StructurePosition candidate,
-            CubiomesOverworldBiomeSampler sampler) {
+            long seed, StructurePosition candidate, CubiomesOverworldBiomeSampler sampler) {
         Objects.requireNonNull(candidate);
         Objects.requireNonNull(sampler);
         if (!candidate.config().containsStructure(ANCIENT_CITY)) {
@@ -46,8 +44,7 @@ public final class AncientCityStructureGenerator {
 
         StructureTemplateManager templates = DefaultStructureTemplateResources.templates();
         HeightLimitView heightLimit = sampler.heightLimitView();
-        ChunkPos chunk = new ChunkPos(
-                Math.toIntExact(candidate.chunkX()), Math.toIntExact(candidate.chunkZ()));
+        ChunkPos chunk = new ChunkPos(Math.toIntExact(candidate.chunkX()), Math.toIntExact(candidate.chunkZ()));
         Structure.Context context = new Structure.Context(
                 registries,
                 sampler.terrainGenerator(),
@@ -64,7 +61,8 @@ public final class AncientCityStructureGenerator {
         }
 
         StructurePiecesCollector collector = generated.get().generate();
-        List<net.minecraft.structure.StructurePiece> generatedPieces = collector.toList().pieces();
+        List<net.minecraft.structure.StructurePiece> generatedPieces =
+                collector.toList().pieces();
         if (generatedPieces.isEmpty()) {
             return Optional.empty();
         }
@@ -94,24 +92,11 @@ public final class AncientCityStructureGenerator {
                             AncientCityChestTemplateData.worldChests(template, origin, rotation));
                 })
                 .toList();
-        return Optional.of(new Result(
-                candidate,
-                generated.get().position(),
-                minX,
-                minZ,
-                maxX,
-                maxZ,
-                pieces));
+        return Optional.of(new Result(candidate, generated.get().position(), minX, minZ, maxX, maxZ, pieces));
     }
 
     public record Result(
-            StructurePosition candidate,
-            BlockPos origin,
-            int minX,
-            int minZ,
-            int maxX,
-            int maxZ,
-            List<Piece> pieces) {
+            StructurePosition candidate, BlockPos origin, int minX, int minZ, int maxX, int maxZ, List<Piece> pieces) {
         public Result {
             origin = origin.toImmutable();
             pieces = List.copyOf(pieces);

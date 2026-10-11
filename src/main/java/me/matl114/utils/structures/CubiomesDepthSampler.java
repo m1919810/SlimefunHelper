@@ -64,8 +64,7 @@ final class CubiomesDepthSampler {
         return root;
     }
 
-    private static Node createLandSpline(
-            float f, float g, float h, float i, float j, float k, boolean peaks) {
+    private static Node createLandSpline(float f, float g, float h, float i, float j, float k, boolean peaks) {
         Node sp1 = createSpline38219(lerp(i, 0.6F, 1.5F), peaks);
         Node sp2 = createSpline38219(lerp(i, 0.6F, 1.0F), peaks);
         Node sp3 = createSpline38219(i, peaks);

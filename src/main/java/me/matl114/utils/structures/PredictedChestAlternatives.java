@@ -8,10 +8,10 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
 
 /** A known chest loot invocation whose world position has multiple possible Y values. */
-public record PredictedChestAlternatives(
-        List<BlockPos> possiblePositions, Identifier lootTable, long lootSeed) {
+public record PredictedChestAlternatives(List<BlockPos> possiblePositions, Identifier lootTable, long lootSeed) {
     public PredictedChestAlternatives {
-        possiblePositions = possiblePositions.stream().map(BlockPos::toImmutable).distinct().toList();
+        possiblePositions =
+                possiblePositions.stream().map(BlockPos::toImmutable).distinct().toList();
         if (possiblePositions.isEmpty()) {
             throw new IllegalArgumentException("At least one possible chest position is required");
         }

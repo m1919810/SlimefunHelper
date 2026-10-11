@@ -42,11 +42,10 @@ public record RuinedPortalVariant(
             "windswept_hills",
             "windswept_savanna",
             "wooded_badlands");
-    private static final Set<String> NETHER_BIOMES = Set.of(
-            "basalt_deltas", "crimson_forest", "nether_wastes", "soul_sand_valley", "warped_forest");
+    private static final Set<String> NETHER_BIOMES =
+            Set.of("basalt_deltas", "crimson_forest", "nether_wastes", "soul_sand_valley", "warped_forest");
 
-    public static RuinedPortalVariant generate(
-            long seed, StructurePosition structure, Identifier biomeId) {
+    public static RuinedPortalVariant generate(long seed, StructurePosition structure, Identifier biomeId) {
         JavaLegacyRandom random = StructureStartRandom.forCandidate(seed, structure);
         String family = biomeVariant(biomeId.getPath());
         boolean underground = false;
@@ -64,24 +63,24 @@ public record RuinedPortalVariant(
     }
 
     /** Generates the actual 1.21.11 vanilla variant, including its Nether air-pocket draw. */
-    public static RuinedPortalVariant generateVanilla(
-            long seed, StructurePosition structure, Identifier biomeId) {
+    public static RuinedPortalVariant generateVanilla(long seed, StructurePosition structure, Identifier biomeId) {
         return generateVanillaForStructure(seed, structure, structureIdForBiome(biomeId));
     }
 
     /** Generates one vanilla portal type before its final-height biome-tag check. */
     public static RuinedPortalVariant generateVanillaForStructure(
             long seed, StructurePosition structure, Identifier structureId) {
-        String family = switch (structureId.getPath()) {
-            case "ruined_portal" -> "plains";
-            case "ruined_portal_desert" -> "desert";
-            case "ruined_portal_jungle" -> "jungle";
-            case "ruined_portal_swamp" -> "swamp";
-            case "ruined_portal_ocean" -> "ocean";
-            case "ruined_portal_mountain" -> "mountains";
-            case "ruined_portal_nether" -> "nether_wastes";
-            default -> throw new IllegalArgumentException("Not a ruined portal structure: " + structureId);
-        };
+        String family =
+                switch (structureId.getPath()) {
+                    case "ruined_portal" -> "plains";
+                    case "ruined_portal_desert" -> "desert";
+                    case "ruined_portal_jungle" -> "jungle";
+                    case "ruined_portal_swamp" -> "swamp";
+                    case "ruined_portal_ocean" -> "ocean";
+                    case "ruined_portal_mountain" -> "mountains";
+                    case "ruined_portal_nether" -> "nether_wastes";
+                    default -> throw new IllegalArgumentException("Not a ruined portal structure: " + structureId);
+                };
         JavaLegacyRandom random = StructureStartRandom.forCandidate(seed, structure);
         boolean underground = false;
         boolean airPocket = false;
@@ -104,18 +103,15 @@ public record RuinedPortalVariant(
         int rotation = random.nextInt(4);
         boolean mirrored = random.nextFloat() >= 0.5F;
         String templateName = (giant ? "giant_portal_" : "portal_") + start;
-        VerticalPlacement placement = switch (family) {
-            case "desert" -> VerticalPlacement.PARTLY_BURIED;
-            case "jungle" -> VerticalPlacement.ON_LAND_SURFACE;
-            case "swamp", "ocean" -> VerticalPlacement.ON_OCEAN_FLOOR;
-            case "nether_wastes" -> VerticalPlacement.IN_NETHER;
-            case "mountains" -> underground
-                    ? VerticalPlacement.IN_MOUNTAIN
-                    : VerticalPlacement.ON_LAND_SURFACE;
-            default -> underground
-                    ? VerticalPlacement.UNDERGROUND
-                    : VerticalPlacement.ON_LAND_SURFACE;
-        };
+        VerticalPlacement placement =
+                switch (family) {
+                    case "desert" -> VerticalPlacement.PARTLY_BURIED;
+                    case "jungle" -> VerticalPlacement.ON_LAND_SURFACE;
+                    case "swamp", "ocean" -> VerticalPlacement.ON_OCEAN_FLOOR;
+                    case "nether_wastes" -> VerticalPlacement.IN_NETHER;
+                    case "mountains" -> underground ? VerticalPlacement.IN_MOUNTAIN : VerticalPlacement.ON_LAND_SURFACE;
+                    default -> underground ? VerticalPlacement.UNDERGROUND : VerticalPlacement.ON_LAND_SURFACE;
+                };
         return new RuinedPortalVariant(
                 Identifier.ofVanilla("ruined_portal/" + templateName),
                 family,
@@ -131,10 +127,7 @@ public record RuinedPortalVariant(
     /** Returns the template-relative chest offset after vanilla mirror/rotation. */
     public BlockPos chestPosition(BlockPos structureOrigin) {
         int[] transformed = transformTemplatePoint(
-                templateData.chestX(),
-                templateData.chestZ(),
-                templateData.sizeX() / 2,
-                templateData.sizeZ() / 2);
+                templateData.chestX(), templateData.chestZ(), templateData.sizeX() / 2, templateData.sizeZ() / 2);
         return structureOrigin.add(transformed[0], templateData.chestY(), transformed[1]);
     }
 
@@ -142,8 +135,7 @@ public record RuinedPortalVariant(
         int pivotX = templateData.sizeX() / 2;
         int pivotZ = templateData.sizeZ() / 2;
         int[] first = transformTemplatePoint(0, 0, pivotX, pivotZ);
-        int[] opposite = transformTemplatePoint(
-                templateData.sizeX() - 1, templateData.sizeZ() - 1, pivotX, pivotZ);
+        int[] opposite = transformTemplatePoint(templateData.sizeX() - 1, templateData.sizeZ() - 1, pivotX, pivotZ);
         int originX = Math.toIntExact(structure.blockX());
         int originZ = Math.toIntExact(structure.blockZ());
         return new HorizontalBounds(
@@ -161,15 +153,16 @@ public record RuinedPortalVariant(
 
     /** Registry member whose vanilla biome tag matches this portal biome family. */
     public Identifier structureId() {
-        String suffix = switch (biomeCategory) {
-            case "desert" -> "desert";
-            case "jungle" -> "jungle";
-            case "swamp" -> "swamp";
-            case "ocean" -> "ocean";
-            case "mountains" -> "mountain";
-            case "nether_wastes" -> "nether";
-            default -> null;
-        };
+        String suffix =
+                switch (biomeCategory) {
+                    case "desert" -> "desert";
+                    case "jungle" -> "jungle";
+                    case "swamp" -> "swamp";
+                    case "ocean" -> "ocean";
+                    case "mountains" -> "mountain";
+                    case "nether_wastes" -> "nether";
+                    default -> null;
+                };
         return Identifier.ofVanilla(suffix == null ? "ruined_portal" : "ruined_portal_" + suffix);
     }
 
@@ -177,8 +170,7 @@ public record RuinedPortalVariant(
         return terrain.getRuinedPortalOriginY(this, structure, seed);
     }
 
-    public BlockPos chestPosition(
-            long seed, StructurePosition structure, CubiomesOverworldBiomeSampler terrain) {
+    public BlockPos chestPosition(long seed, StructurePosition structure, CubiomesOverworldBiomeSampler terrain) {
         BlockPos origin = new BlockPos(
                 Math.toIntExact(structure.blockX()),
                 originY(seed, structure, terrain),
@@ -186,8 +178,7 @@ public record RuinedPortalVariant(
         return chestPosition(origin);
     }
 
-    public BlockPos chestPosition(
-            long seed, StructurePosition structure, CubiomesNetherBiomeSampler terrain) {
+    public BlockPos chestPosition(long seed, StructurePosition structure, CubiomesNetherBiomeSampler terrain) {
         BlockPos origin = new BlockPos(
                 Math.toIntExact(structure.blockX()),
                 terrain.getRuinedPortalOriginY(this, structure, seed),
@@ -231,9 +222,7 @@ public record RuinedPortalVariant(
         if (biome.equals("desert")) {
             return "desert";
         }
-        if (biome.equals("jungle")
-                || biome.equals("sparse_jungle")
-                || biome.equals("bamboo_jungle")) {
+        if (biome.equals("jungle") || biome.equals("sparse_jungle") || biome.equals("bamboo_jungle")) {
             return "jungle";
         }
         if (biome.equals("swamp") || biome.equals("mangrove_swamp")) {
@@ -252,15 +241,16 @@ public record RuinedPortalVariant(
     }
 
     public static Identifier structureIdForBiome(Identifier biomeId) {
-        String suffix = switch (biomeVariant(biomeId.getPath())) {
-            case "desert" -> "desert";
-            case "jungle" -> "jungle";
-            case "swamp" -> "swamp";
-            case "ocean" -> "ocean";
-            case "mountains" -> "mountain";
-            case "nether_wastes" -> "nether";
-            default -> null;
-        };
+        String suffix =
+                switch (biomeVariant(biomeId.getPath())) {
+                    case "desert" -> "desert";
+                    case "jungle" -> "jungle";
+                    case "swamp" -> "swamp";
+                    case "ocean" -> "ocean";
+                    case "mountains" -> "mountain";
+                    case "nether_wastes" -> "nether";
+                    default -> null;
+                };
         return Identifier.ofVanilla(suffix == null ? "ruined_portal" : "ruined_portal_" + suffix);
     }
 

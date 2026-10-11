@@ -57,10 +57,7 @@ public final class Populator {
             return Optional.empty();
         }
         return Optional.of(MinecraftWorldgenRandom.forDecorationChunk(
-                seed,
-                Math.toIntExact(decorationChunkX),
-                Math.toIntExact(decorationChunkZ),
-                index));
+                seed, Math.toIntExact(decorationChunkX), Math.toIntExact(decorationChunkZ), index));
     }
 
     public Optional<AncientCityVariant> generateAncientCity(StructurePosition structure) {
@@ -104,9 +101,7 @@ public final class Populator {
      * Vanilla's LongOpenHashSet reference order is reproduced for chunks with overlapping starts.
      */
     public List<PredictedChest> generateAncientCityChests(
-            StructureConfig config,
-            ChunkRange targetChunkRange,
-            CubiomesOverworldBiomeSampler terrain) {
+            StructureConfig config, ChunkRange targetChunkRange, CubiomesOverworldBiomeSampler terrain) {
         Objects.requireNonNull(config);
         Objects.requireNonNull(targetChunkRange);
         Objects.requireNonNull(terrain);
@@ -131,11 +126,7 @@ public final class Populator {
         for (AncientCityStructureGenerator.Result start : nearbyStarts) {
             int startChunkX = Math.toIntExact(start.candidate().chunkX());
             int startChunkZ = Math.toIntExact(start.candidate().chunkZ());
-            references.add(new StructureReferenceOrder.Start(
-                    startChunkX,
-                    startChunkZ,
-                    start.referenceBounds(),
-                    start));
+            references.add(new StructureReferenceOrder.Start(startChunkX, startChunkZ, start.referenceBounds(), start));
             for (AncientCityStructureGenerator.Piece piece : start.pieces()) {
                 for (AncientCityChestTemplateData.WorldChest chest : piece.chests()) {
                     int chunkX = Math.floorDiv(chest.position().getX(), 16);
@@ -172,8 +163,8 @@ public final class Populator {
                         }
                         long lootSeed = random.get().nextLootSeed();
                         chest.lootTable()
-                                .ifPresent(lootTable -> predicted.add(new PredictedChest(
-                                        chest.position(), lootTable, lootSeed)));
+                                .ifPresent(lootTable ->
+                                        predicted.add(new PredictedChest(chest.position(), lootTable, lootSeed)));
                     }
                 }
             }
@@ -188,8 +179,7 @@ public final class Populator {
         if (!chest.protectedBlocksProcessor()) {
             return true;
         }
-        return placeableChestCache.computeIfAbsent(
-                chest.position(), terrain::canPlaceGeneratedStructureBlock);
+        return placeableChestCache.computeIfAbsent(chest.position(), terrain::canPlaceGeneratedStructureBlock);
     }
 
     public Optional<DesertPyramidVariant> generateDesertPyramid(StructurePosition structure) {
@@ -214,8 +204,8 @@ public final class Populator {
         if (variant.isEmpty()) {
             return Optional.empty();
         }
-        Optional<MinecraftWorldgenRandom> firstPostProcessRandom = decorationRandom(
-                firstPostProcessChunkX, firstPostProcessChunkZ, DESERT_PYRAMID);
+        Optional<MinecraftWorldgenRandom> firstPostProcessRandom =
+                decorationRandom(firstPostProcessChunkX, firstPostProcessChunkZ, DESERT_PYRAMID);
         if (firstPostProcessRandom.isEmpty()) {
             return Optional.empty();
         }
@@ -230,8 +220,7 @@ public final class Populator {
             ChunkPos chunkKey = new ChunkPos(chunkX, chunkZ);
             MinecraftWorldgenRandom chestRandom = chestChunkRandoms.get(chunkKey);
             if (chestRandom == null) {
-                Optional<MinecraftWorldgenRandom> chunkRandom =
-                        decorationRandom(chunkX, chunkZ, DESERT_PYRAMID);
+                Optional<MinecraftWorldgenRandom> chunkRandom = decorationRandom(chunkX, chunkZ, DESERT_PYRAMID);
                 if (chunkRandom.isEmpty()) {
                     return Optional.empty();
                 }
@@ -266,8 +255,7 @@ public final class Populator {
         LinkedHashSet<Integer> heightOffsets = new LinkedHashSet<>();
         for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
             for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
-                Optional<MinecraftWorldgenRandom> random =
-                        decorationRandom(chunkX, chunkZ, DESERT_PYRAMID);
+                Optional<MinecraftWorldgenRandom> random = decorationRandom(chunkX, chunkZ, DESERT_PYRAMID);
                 if (random.isEmpty()) {
                     return Optional.empty();
                 }
@@ -279,19 +267,18 @@ public final class Populator {
                 .map(offset -> pyramid.chestPositions(terrain, offset))
                 .toList();
         Map<ChunkPos, MinecraftWorldgenRandom> chestChunkRandoms = new HashMap<>();
-        List<PredictedChestAlternatives> predictions = new ArrayList<>(positionsByOffset.getFirst().size());
+        List<PredictedChestAlternatives> predictions =
+                new ArrayList<>(positionsByOffset.getFirst().size());
         for (int chestIndex = 0; chestIndex < positionsByOffset.getFirst().size(); chestIndex++) {
             List<BlockPos> possiblePositions = new ArrayList<>(positionsByOffset.size());
             for (List<BlockPos> positions : positionsByOffset) {
                 possiblePositions.add(positions.get(chestIndex));
             }
             BlockPos position = possiblePositions.getFirst();
-            ChunkPos chunkKey = new ChunkPos(
-                    Math.floorDiv(position.getX(), 16), Math.floorDiv(position.getZ(), 16));
+            ChunkPos chunkKey = new ChunkPos(Math.floorDiv(position.getX(), 16), Math.floorDiv(position.getZ(), 16));
             MinecraftWorldgenRandom chestRandom = chestChunkRandoms.get(chunkKey);
             if (chestRandom == null) {
-                Optional<MinecraftWorldgenRandom> random =
-                        decorationRandom(chunkKey.x, chunkKey.z, DESERT_PYRAMID);
+                Optional<MinecraftWorldgenRandom> random = decorationRandom(chunkKey.x, chunkKey.z, DESERT_PYRAMID);
                 if (random.isEmpty()) {
                     return Optional.empty();
                 }
@@ -300,14 +287,13 @@ public final class Populator {
                 chestRandom.nextInt(3);
                 chestChunkRandoms.put(chunkKey, chestRandom);
             }
-            predictions.add(new PredictedChestAlternatives(
-                    possiblePositions, DESERT_PYRAMID_LOOT, chestRandom.nextLootSeed()));
+            predictions.add(
+                    new PredictedChestAlternatives(possiblePositions, DESERT_PYRAMID_LOOT, chestRandom.nextLootSeed()));
         }
         return Optional.of(List.copyOf(predictions));
     }
 
-    public Optional<RuinedPortalVariant> generateRuinedPortal(
-            StructurePosition structure, Identifier biomeId) {
+    public Optional<RuinedPortalVariant> generateRuinedPortal(StructurePosition structure, Identifier biomeId) {
         Objects.requireNonNull(structure);
         Objects.requireNonNull(biomeId);
         if (structure.config().structureIds().stream()
@@ -332,12 +318,9 @@ public final class Populator {
     }
 
     public Optional<BlockPos> generateRuinedPortalChestPosition(
-            StructurePosition structure,
-            Identifier biomeId,
-            CubiomesOverworldBiomeSampler terrain) {
+            StructurePosition structure, Identifier biomeId, CubiomesOverworldBiomeSampler terrain) {
         Objects.requireNonNull(terrain);
-        return generateRuinedPortal(structure, biomeId)
-                .map(variant -> variant.chestPosition(seed, structure, terrain));
+        return generateRuinedPortal(structure, biomeId).map(variant -> variant.chestPosition(seed, structure, terrain));
     }
 
     public Optional<BlockPos> generateRuinedPortalChestPosition(
@@ -436,8 +419,8 @@ public final class Populator {
             }
             RuinedPortalVariant portal = RuinedPortalVariant.generateVanillaForStructure(seed, structure, structureId);
             int originY = originHeight.applyAsInt(portal);
-            BlockPos origin = new BlockPos(
-                    Math.toIntExact(structure.blockX()), originY, Math.toIntExact(structure.blockZ()));
+            BlockPos origin =
+                    new BlockPos(Math.toIntExact(structure.blockX()), originY, Math.toIntExact(structure.blockZ()));
             if (!biomeCheck.test(structureId, origin)) {
                 continue;
             }
@@ -452,7 +435,8 @@ public final class Populator {
             }
             // The portal NBT chest has no seed. StructureTemplate writes the next shared stream
             // long before loading it; portal processors use per-position placement RNGs.
-            return List.of(new PredictedChest(chest, RUINED_PORTAL_LOOT, random.get().nextLootSeed()));
+            return List.of(
+                    new PredictedChest(chest, RUINED_PORTAL_LOOT, random.get().nextLootSeed()));
         }
         return List.of();
     }
@@ -501,9 +485,7 @@ public final class Populator {
     }
 
     public List<EndCityResult> generateEndCities(
-            StructureConfig config,
-            ChunkRange range,
-            EndCityTemplateData templateData) {
+            StructureConfig config, ChunkRange range, EndCityTemplateData templateData) {
         Objects.requireNonNull(templateData);
         if (!config.containsStructure(END_CITY)) {
             return List.of();
@@ -555,10 +537,14 @@ public final class Populator {
             if (start.pieces().isEmpty()) {
                 continue;
             }
-            int minX = start.pieces().stream().mapToInt(EndCityPiece::minX).min().orElseThrow();
-            int minZ = start.pieces().stream().mapToInt(EndCityPiece::minZ).min().orElseThrow();
-            int maxX = start.pieces().stream().mapToInt(EndCityPiece::maxX).max().orElseThrow();
-            int maxZ = start.pieces().stream().mapToInt(EndCityPiece::maxZ).max().orElseThrow();
+            int minX =
+                    start.pieces().stream().mapToInt(EndCityPiece::minX).min().orElseThrow();
+            int minZ =
+                    start.pieces().stream().mapToInt(EndCityPiece::minZ).min().orElseThrow();
+            int maxX =
+                    start.pieces().stream().mapToInt(EndCityPiece::maxX).max().orElseThrow();
+            int maxZ =
+                    start.pieces().stream().mapToInt(EndCityPiece::maxZ).max().orElseThrow();
             references.add(new StructureReferenceOrder.Start(
                     Math.toIntExact(start.structure().chunkX()),
                     Math.toIntExact(start.structure().chunkZ()),
@@ -589,7 +575,9 @@ public final class Populator {
                             && Math.floorDiv(marker.position().getX(), 16) == chunk.x
                             && Math.floorDiv(marker.position().getZ(), 16) == chunk.z) {
                         predicted.add(new PredictedChest(
-                                marker.position(), END_CITY_LOOT, chunkRandom.get().nextLootSeed()));
+                                marker.position(),
+                                END_CITY_LOOT,
+                                chunkRandom.get().nextLootSeed()));
                     }
                 }
             }
@@ -597,16 +585,12 @@ public final class Populator {
         return Optional.of(List.copyOf(predicted));
     }
 
-    public Optional<EndCityResult> generateEndCity(
-            StructurePosition position,
-            EndCityTemplateData templateData) {
+    public Optional<EndCityResult> generateEndCity(StructurePosition position, EndCityTemplateData templateData) {
         return generateEndCity(position, templateData, new CubiomesEndNoise(seed));
     }
 
     private Optional<EndCityResult> generateEndCity(
-            StructurePosition position,
-            EndCityTemplateData templateData,
-            CubiomesEndNoise endNoise) {
+            StructurePosition position, EndCityTemplateData templateData, CubiomesEndNoise endNoise) {
         Objects.requireNonNull(position);
         Objects.requireNonNull(templateData);
         if (!position.config().containsStructure(END_CITY)) {
@@ -623,5 +607,4 @@ public final class Populator {
         }
         return VanillaEndCityStructureGenerator.generate(seed, position, templateData);
     }
-
 }

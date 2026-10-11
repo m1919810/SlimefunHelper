@@ -29,8 +29,7 @@ final class VanillaEndCityStructureGenerator {
 
     private VanillaEndCityStructureGenerator() {}
 
-    static Optional<EndCityResult> generate(
-            long seed, StructurePosition candidate, EndCityTemplateData templateData) {
+    static Optional<EndCityResult> generate(long seed, StructurePosition candidate, EndCityTemplateData templateData) {
         DynamicRegistryManager.Immutable registries = DefaultWorldgenRegistryManager.registry();
         Registry<Structure> structures = registries.getWrapperOrThrow(RegistryKeys.STRUCTURE);
         Structure structure = structures.get(END_CITY);
@@ -39,16 +38,17 @@ final class VanillaEndCityStructureGenerator {
         }
 
         var biomeSource = TheEndBiomeSource.createVanilla(registries.getWrapperOrThrow(RegistryKeys.BIOME));
-        RegistryEntry<ChunkGeneratorSettings> settings = registries.getWrapperOrThrow(RegistryKeys.CHUNK_GENERATOR_SETTINGS)
+        RegistryEntry<ChunkGeneratorSettings> settings = registries
+                .getWrapperOrThrow(RegistryKeys.CHUNK_GENERATOR_SETTINGS)
                 .getOrThrow(ChunkGeneratorSettings.END);
-        NoiseConfig noiseConfig = NoiseConfig.create(
-                settings.value(), registries.getWrapperOrThrow(RegistryKeys.NOISE_PARAMETERS), seed);
+        NoiseConfig noiseConfig =
+                NoiseConfig.create(settings.value(), registries.getWrapperOrThrow(RegistryKeys.NOISE_PARAMETERS), seed);
         NoiseChunkGenerator generator = new NoiseChunkGenerator(biomeSource, settings);
         HeightLimitView heightLimit = HeightLimitView.create(-64, 384);
-        ChunkPos chunk = new ChunkPos(
-                Math.toIntExact(candidate.chunkX()), Math.toIntExact(candidate.chunkZ()));
+        ChunkPos chunk = new ChunkPos(Math.toIntExact(candidate.chunkX()), Math.toIntExact(candidate.chunkZ()));
         StructureStart start = structure.createStructureStart(
-                registries.getWrapperOrThrow(RegistryKeys.STRUCTURE)
+                registries
+                        .getWrapperOrThrow(RegistryKeys.STRUCTURE)
                         .getOrThrow(RegistryKey.of(RegistryKeys.STRUCTURE, END_CITY)),
                 World.END,
                 registries,
@@ -116,7 +116,8 @@ final class VanillaEndCityStructureGenerator {
                         position,
                         generated,
                         marker.type() == EndCityMarker.Type.CHEST
-                                ? Identifier.ofVanilla("chests/end_city_treasure").toString()
+                                ? Identifier.ofVanilla("chests/end_city_treasure")
+                                        .toString()
                                 : null));
             }
         }
@@ -124,7 +125,8 @@ final class VanillaEndCityStructureGenerator {
         long blockX = candidate.blockX();
         long blockZ = candidate.blockZ();
         boolean outsideCentralIsland = blockX * blockX + blockZ * blockZ >= 1008L * 1008L;
-        boolean shipGenerated = pieces.stream().anyMatch(piece -> piece.template().equals("ship"));
+        boolean shipGenerated =
+                pieces.stream().anyMatch(piece -> piece.template().equals("ship"));
         return Optional.of(new EndCityResult(
                 candidate,
                 rotation,

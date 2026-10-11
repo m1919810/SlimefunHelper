@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.Set;
-
 import net.minecraft.util.Identifier;
 import net.minecraft.world.gen.chunk.placement.SpreadType;
 
@@ -44,13 +43,7 @@ public final class StructureConfig {
             int spacing,
             int separation,
             SpreadType spreadType) {
-        return new StructureConfig(
-                structureSetId,
-                structureIds,
-                salt,
-                spacing,
-                separation,
-                spreadType);
+        return new StructureConfig(structureSetId, structureIds, salt, spacing, separation, spreadType);
     }
 
     public static Map<Identifier, StructureConfig> vanillaConfigs() {
@@ -59,41 +52,49 @@ public final class StructureConfig {
 
     private static Map<Identifier, StructureConfig> createVanillaConfigs() {
         Map<Identifier, StructureConfig> configs = new LinkedHashMap<>();
-        configs.put(Identifier.ofVanilla("end_cities"), of(
+        configs.put(
                 Identifier.ofVanilla("end_cities"),
-                Set.of(Identifier.ofVanilla("end_city")),
-                10387313,
-                20,
-                11,
-                SpreadType.TRIANGULAR));
-        configs.put(Identifier.ofVanilla("ancient_cities"), of(
+                of(
+                        Identifier.ofVanilla("end_cities"),
+                        Set.of(Identifier.ofVanilla("end_city")),
+                        10387313,
+                        20,
+                        11,
+                        SpreadType.TRIANGULAR));
+        configs.put(
                 Identifier.ofVanilla("ancient_cities"),
-                Set.of(Identifier.ofVanilla("ancient_city")),
-                20083232,
-                24,
-                8,
-                SpreadType.LINEAR));
-        configs.put(Identifier.ofVanilla("desert_pyramids"), of(
+                of(
+                        Identifier.ofVanilla("ancient_cities"),
+                        Set.of(Identifier.ofVanilla("ancient_city")),
+                        20083232,
+                        24,
+                        8,
+                        SpreadType.LINEAR));
+        configs.put(
                 Identifier.ofVanilla("desert_pyramids"),
-                Set.of(Identifier.ofVanilla("desert_pyramid")),
-                14357617,
-                32,
-                8,
-                SpreadType.LINEAR));
-        configs.put(Identifier.ofVanilla("ruined_portals"), of(
+                of(
+                        Identifier.ofVanilla("desert_pyramids"),
+                        Set.of(Identifier.ofVanilla("desert_pyramid")),
+                        14357617,
+                        32,
+                        8,
+                        SpreadType.LINEAR));
+        configs.put(
                 Identifier.ofVanilla("ruined_portals"),
-                Set.of(
-                        Identifier.ofVanilla("ruined_portal"),
-                        Identifier.ofVanilla("ruined_portal_desert"),
-                        Identifier.ofVanilla("ruined_portal_jungle"),
-                        Identifier.ofVanilla("ruined_portal_swamp"),
-                        Identifier.ofVanilla("ruined_portal_mountain"),
-                        Identifier.ofVanilla("ruined_portal_ocean"),
-                        Identifier.ofVanilla("ruined_portal_nether")),
-                34222645,
-                40,
-                15,
-                SpreadType.LINEAR));
+                of(
+                        Identifier.ofVanilla("ruined_portals"),
+                        Set.of(
+                                Identifier.ofVanilla("ruined_portal"),
+                                Identifier.ofVanilla("ruined_portal_desert"),
+                                Identifier.ofVanilla("ruined_portal_jungle"),
+                                Identifier.ofVanilla("ruined_portal_swamp"),
+                                Identifier.ofVanilla("ruined_portal_mountain"),
+                                Identifier.ofVanilla("ruined_portal_ocean"),
+                                Identifier.ofVanilla("ruined_portal_nether")),
+                        34222645,
+                        40,
+                        15,
+                        SpreadType.LINEAR));
         return Map.copyOf(configs);
     }
 
@@ -128,8 +129,7 @@ public final class StructureConfig {
     StructureChunk getStartChunk(long seed, long regionX, long regionZ) {
         // regionX/Z are region indices, not chunk coordinates. Java long overflow
         // intentionally preserves the low 64 bits used by cubiomes' uint64_t math.
-        JavaLegacyRandom random = new JavaLegacyRandom(
-                seed + regionX * 341873128712L + regionZ * 132897987541L + salt);
+        JavaLegacyRandom random = new JavaLegacyRandom(seed + regionX * 341873128712L + regionZ * 132897987541L + salt);
         int range = spacing - separation;
         int offsetX = randomOffset(random, range);
         int offsetZ = randomOffset(random, range);

@@ -32,21 +32,23 @@ final class DefaultStructureTemplateResources {
         try {
             Path cacheDirectory = Files.createTempDirectory("slimefunhelper-structure-templates-");
             cacheDirectory.toFile().deleteOnExit();
-            session = LevelStorage.create(cacheDirectory)
-                    .createSessionWithoutSymlinkCheck("template-cache");
+            session = LevelStorage.create(cacheDirectory).createSessionWithoutSymlinkCheck("template-cache");
             StructureTemplateManager templates = new StructureTemplateManager(
                     resourceManager,
                     session,
                     Schemas.getFixer(),
                     DefaultWorldgenRegistryManager.registry().getWrapperOrThrow(RegistryKeys.BLOCK));
             LevelStorage.Session openSession = session;
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                try {
-                    openSession.close();
-                } catch (IOException ignored) {
-                }
-                resourceManager.close();
-            }, "slimefunhelper-template-cache-close"));
+            Runtime.getRuntime()
+                    .addShutdownHook(new Thread(
+                            () -> {
+                                try {
+                                    openSession.close();
+                                } catch (IOException ignored) {
+                                }
+                                resourceManager.close();
+                            },
+                            "slimefunhelper-template-cache-close"));
             return new Resources(resourceManager, templates);
         } catch (Throwable throwable) {
             if (session != null) {

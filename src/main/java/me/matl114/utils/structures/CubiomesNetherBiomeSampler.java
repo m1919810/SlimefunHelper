@@ -43,10 +43,10 @@ public final class CubiomesNetherBiomeSampler {
 
     public static CubiomesNetherBiomeSampler create(long seed) {
         RegistryWrapper.WrapperLookup registries = DefaultWorldgenRegistryManager.registry();
-        RegistryEntry<MultiNoiseBiomeSourceParameterList> biomeParameters = RegistryUtils.getRegistryEntry(
-                registries, MultiNoiseBiomeSourceParameterLists.NETHER);
-        RegistryEntry<ChunkGeneratorSettings> generatorSettings = RegistryUtils.getRegistryEntry(
-                registries, ChunkGeneratorSettings.NETHER);
+        RegistryEntry<MultiNoiseBiomeSourceParameterList> biomeParameters =
+                RegistryUtils.getRegistryEntry(registries, MultiNoiseBiomeSourceParameterLists.NETHER);
+        RegistryEntry<ChunkGeneratorSettings> generatorSettings =
+                RegistryUtils.getRegistryEntry(registries, ChunkGeneratorSettings.NETHER);
         if (biomeParameters == null || generatorSettings == null) {
             throw new IllegalStateException("Vanilla Nether worldgen entries are unavailable");
         }
@@ -64,7 +64,8 @@ public final class CubiomesNetherBiomeSampler {
     public net.minecraft.util.Identifier getRuinedPortalBiomeId(StructurePosition structure) {
         int quartX = Math.toIntExact(structure.chunkX() * 4L + 2L);
         int quartZ = Math.toIntExact(structure.chunkZ() * 4L + 2L);
-        RegistryKey<Biome> biomeKey = biomeSource.getBiome(quartX, 0, quartZ, biomeNoise)
+        RegistryKey<Biome> biomeKey = biomeSource
+                .getBiome(quartX, 0, quartZ, biomeNoise)
                 .getKey()
                 .orElseThrow(() -> new IllegalStateException("Sampled biome has no registry key"));
         return biomeKey.getValue();
@@ -84,8 +85,7 @@ public final class CubiomesNetherBiomeSampler {
     }
 
     /** Reproduces RuinedPortalStructure.findSuitableY for the IN_NETHER placement. */
-    public int getRuinedPortalOriginY(
-            RuinedPortalVariant variant, StructurePosition structure, long seed) {
+    public int getRuinedPortalOriginY(RuinedPortalVariant variant, StructurePosition structure, long seed) {
         if (variant.verticalPlacement() != RuinedPortalVariant.VerticalPlacement.IN_NETHER) {
             throw new IllegalArgumentException("The selected portal setup is not the Nether placement");
         }

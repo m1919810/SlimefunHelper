@@ -24,11 +24,7 @@ public final class AncientCityChestTemplateData {
             template("ancient_city/structures/chamber_1", "chests/ancient_city", pos(14, 3, 11)),
             template("ancient_city/structures/chamber_2", "chests/ancient_city", pos(10, 2, 5)),
             template("ancient_city/structures/chamber_3", "chests/ancient_city", pos(7, 1, 5)),
-            template(
-                    "ancient_city/structures/ice_box_1",
-                    "chests/ancient_city_ice_box",
-                    false,
-                    pos(12, 1, 7)),
+            template("ancient_city/structures/ice_box_1", "chests/ancient_city_ice_box", false, pos(12, 1, 7)),
             template(
                     "ancient_city/structures/sauna_1",
                     "chests/ancient_city",
@@ -36,11 +32,7 @@ public final class AncientCityChestTemplateData {
                     pos(21, 1, 18),
                     pos(25, 1, 10)),
             template("ancient_city/structures/tall_ruin_1", "chests/ancient_city", pos(8, 16, 8)),
-            template(
-                    "ancient_city/structures/tall_ruin_2",
-                    "chests/ancient_city",
-                    pos(7, 1, 5),
-                    pos(13, 7, 9)),
+            template("ancient_city/structures/tall_ruin_2", "chests/ancient_city", pos(7, 1, 5), pos(13, 7, 9)),
             template("ancient_city/structures/tall_ruin_3", "chests/ancient_city", pos(10, 14, 7)),
             template("ancient_city/structures/tall_ruin_4", "chests/ancient_city", pos(8, 7, 13)));
     private static final Map<Identifier, TemplateChests> BY_TEMPLATE = createLookup();
@@ -56,12 +48,11 @@ public final class AncientCityChestTemplateData {
     }
 
     /** Maps a piece's local chest markers using the same rotation transform as vanilla templates. */
-    public static List<WorldChest> worldChests(
-            Identifier template, BlockPos pieceOrigin, BlockRotation rotation) {
-        return get(template)
-                .stream()
+    public static List<WorldChest> worldChests(Identifier template, BlockPos pieceOrigin, BlockRotation rotation) {
+        return get(template).stream()
                 .flatMap(data -> data.chests().stream()
-                        .sorted(Comparator.comparingInt((Chest chest) -> chest.position().getY())
+                        .sorted(Comparator.comparingInt(
+                                        (Chest chest) -> chest.position().getY())
                                 .thenComparingInt(chest -> chest.position().getX())
                                 .thenComparingInt(chest -> chest.position().getZ()))
                         .map(chest -> new WorldChest(
@@ -80,8 +71,7 @@ public final class AncientCityChestTemplateData {
         return Map.copyOf(lookup);
     }
 
-    private static TemplateChests template(
-            String template, String lootTable, BlockPos... positions) {
+    private static TemplateChests template(String template, String lootTable, BlockPos... positions) {
         return template(template, lootTable, true, positions);
     }
 
@@ -92,15 +82,12 @@ public final class AncientCityChestTemplateData {
                 templateId,
                 Arrays.stream(positions)
                         .map(position -> new Chest(
-                                position,
-                                Optional.ofNullable(lootTable).map(Identifier::ofVanilla),
-                                List.of()))
+                                position, Optional.ofNullable(lootTable).map(Identifier::ofVanilla), List.of()))
                         .toList(),
                 protectedBlocksProcessor);
     }
 
-    private static TemplateChests fixedChestTemplate(
-            String template, BlockPos position, StaticStack... contents) {
+    private static TemplateChests fixedChestTemplate(String template, BlockPos position, StaticStack... contents) {
         return new TemplateChests(
                 Identifier.ofVanilla(template),
                 List.of(new Chest(position, Optional.empty(), Arrays.asList(contents))),
@@ -111,8 +98,7 @@ public final class AncientCityChestTemplateData {
         return new BlockPos(x, y, z);
     }
 
-    public record TemplateChests(
-            Identifier template, List<Chest> chests, boolean protectedBlocksProcessor) {
+    public record TemplateChests(Identifier template, List<Chest> chests, boolean protectedBlocksProcessor) {
         public TemplateChests {
             chests = List.copyOf(chests);
         }

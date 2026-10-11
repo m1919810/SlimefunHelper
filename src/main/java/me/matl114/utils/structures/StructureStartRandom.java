@@ -7,9 +7,7 @@ final class StructureStartRandom {
         int chunkX = Math.toIntExact(structure.chunkX());
         int chunkZ = Math.toIntExact(structure.chunkZ());
         JavaLegacyRandom worldRandom = new JavaLegacyRandom(seed);
-        long chunkSeed = worldRandom.nextLong() * chunkX
-                ^ worldRandom.nextLong() * chunkZ
-                ^ seed;
+        long chunkSeed = worldRandom.nextLong() * chunkX ^ worldRandom.nextLong() * chunkZ ^ seed;
         return new JavaLegacyRandom(chunkSeed);
     }
 }

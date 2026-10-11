@@ -24,17 +24,14 @@ public final class DefaultWorldgenRegistryManager {
             CombinedDynamicRegistries<ServerDynamicRegistryType> combined =
                     ServerDynamicRegistryType.createCombinedDynamicRegistries();
             List<net.minecraft.registry.Registry.PendingTagLoad<?>> pendingTags =
-                    TagGroupLoader.startReload(
-                            resources, combined.get(ServerDynamicRegistryType.STATIC));
+                    TagGroupLoader.startReload(resources, combined.get(ServerDynamicRegistryType.STATIC));
             DynamicRegistryManager.Immutable preceding =
                     combined.getPrecedingRegistryManagers(ServerDynamicRegistryType.WORLDGEN);
-            List<RegistryWrapper.Impl<?>> registryLookups =
-                    TagGroupLoader.collectRegistries(preceding, pendingTags);
-            DynamicRegistryManager.Immutable worldgen = RegistryLoader.loadFromResource(
-                    resources, registryLookups, RegistryLoader.DYNAMIC_REGISTRIES);
+            List<RegistryWrapper.Impl<?>> registryLookups = TagGroupLoader.collectRegistries(preceding, pendingTags);
+            DynamicRegistryManager.Immutable worldgen =
+                    RegistryLoader.loadFromResource(resources, registryLookups, RegistryLoader.DYNAMIC_REGISTRIES);
             pendingTags.forEach(net.minecraft.registry.Registry.PendingTagLoad::apply);
-            return combined.with(ServerDynamicRegistryType.WORLDGEN, worldgen)
-                    .getCombinedRegistryManager();
+            return combined.with(ServerDynamicRegistryType.WORLDGEN, worldgen).getCombinedRegistryManager();
         } catch (Exception exception) {
             throw new IllegalStateException("Unable to load default vanilla worldgen registries", exception);
         }

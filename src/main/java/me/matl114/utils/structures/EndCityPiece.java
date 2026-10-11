@@ -13,9 +13,7 @@ public record EndCityPiece(
         int maxY,
         int maxZ) {
     public boolean contains(int blockX, int blockY, int blockZ) {
-        return blockX >= minX && blockX <= maxX
-                && blockY >= minY && blockY <= maxY
-                && blockZ >= minZ && blockZ <= maxZ;
+        return blockX >= minX && blockX <= maxX && blockY >= minY && blockY <= maxY && blockZ >= minZ && blockZ <= maxZ;
     }
 
     public EndCityPiece offsetY(int offset) {

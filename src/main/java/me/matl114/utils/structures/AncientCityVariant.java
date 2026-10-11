@@ -79,10 +79,8 @@ public record AncientCityVariant(
 
         long quartX = ((long) chunkX * 32L + 2L * minX + sizeX - 1L) / 2L >> 2;
         long quartZ = ((long) chunkZ * 32L + 2L * minZ + sizeZ - 1L) / 2L >> 2;
-        BlockPos biomeSample = new BlockPos(
-                Math.toIntExact(quartX << 2),
-                (-27 >> 2) << 2,
-                Math.toIntExact(quartZ << 2));
+        BlockPos biomeSample =
+                new BlockPos(Math.toIntExact(quartX << 2), (-27 >> 2) << 2, Math.toIntExact(quartZ << 2));
         return new AncientCityVariant(
                 Identifier.ofVanilla("ancient_city/city_center_" + start),
                 rotation,

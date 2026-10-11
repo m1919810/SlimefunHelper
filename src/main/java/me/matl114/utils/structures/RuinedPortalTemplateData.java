@@ -1,8 +1,7 @@
 package me.matl114.utils.structures;
 
 /** Vanilla 1.21.11 template dimensions and unopened chest block positions. */
-public record RuinedPortalTemplateData(
-        int sizeX, int sizeY, int sizeZ, int chestX, int chestY, int chestZ) {
+public record RuinedPortalTemplateData(int sizeX, int sizeY, int sizeZ, int chestX, int chestY, int chestZ) {
     public static RuinedPortalTemplateData get(boolean giant, int start) {
         if (giant) {
             return switch (start) {

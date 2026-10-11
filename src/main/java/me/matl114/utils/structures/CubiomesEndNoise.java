@@ -61,8 +61,7 @@ public final class CubiomesEndNoise {
                 long rsq = rx * rx + rz * rz;
                 int value = 0;
                 if (rsq > 4096L && sampleSimplex2D(endBiomeNoise, rx, rz) < (double) -0.9F) {
-                    float island = Math.abs((float) rx) * 3439.0F
-                            + Math.abs((float) rz) * 147.0F;
+                    float island = Math.abs((float) rx) * 3439.0F + Math.abs((float) rz) * 147.0F;
                     value = ((int) island % 13) + 9;
                     value *= value;
                 }
@@ -93,8 +92,7 @@ public final class CubiomesEndNoise {
         sampleNoiseColumnEnd(columns[1][1], cellX + 1, cellZ + 1);
 
         int h00 = getSurfaceHeight(
-                columns[0][0], columns[0][1], columns[1][0], columns[1][1],
-                (blockX & 7) / 8.0D, (blockZ & 7) / 8.0D);
+                columns[0][0], columns[0][1], columns[1][0], columns[1][1], (blockX & 7) / 8.0D, (blockZ & 7) / 8.0D);
         int h01;
         int h10;
         int h11;
@@ -108,51 +106,99 @@ public final class CubiomesEndNoise {
                 sampleNoiseColumnEnd(columns[2][1], cellX + 2, cellZ + 1);
                 sampleNoiseColumnEnd(columns[2][2], cellX + 2, cellZ + 2);
                 h01 = getSurfaceHeight(
-                        columns[0][1], columns[0][2], columns[1][1], columns[1][2],
-                        (blockX & 7) / 8.0D, ((blockZ + 5) & 7) / 8.0D);
+                        columns[0][1],
+                        columns[0][2],
+                        columns[1][1],
+                        columns[1][2],
+                        (blockX & 7) / 8.0D,
+                        ((blockZ + 5) & 7) / 8.0D);
                 h10 = getSurfaceHeight(
-                        columns[1][0], columns[1][1], columns[2][0], columns[2][1],
-                        ((blockX + 5) & 7) / 8.0D, (blockZ & 7) / 8.0D);
+                        columns[1][0],
+                        columns[1][1],
+                        columns[2][0],
+                        columns[2][1],
+                        ((blockX + 5) & 7) / 8.0D,
+                        (blockZ & 7) / 8.0D);
                 h11 = getSurfaceHeight(
-                        columns[1][1], columns[1][2], columns[2][1], columns[2][2],
-                        ((blockX + 5) & 7) / 8.0D, ((blockZ + 5) & 7) / 8.0D);
+                        columns[1][1],
+                        columns[1][2],
+                        columns[2][1],
+                        columns[2][2],
+                        ((blockX + 5) & 7) / 8.0D,
+                        ((blockZ + 5) & 7) / 8.0D);
             }
             case 1 -> {
                 sampleNoiseColumnEnd(columns[0][2], cellX, cellZ + 2);
                 sampleNoiseColumnEnd(columns[1][2], cellX + 1, cellZ + 2);
                 h01 = getSurfaceHeight(
-                        columns[0][1], columns[0][2], columns[1][1], columns[1][2],
-                        (blockX & 7) / 8.0D, ((blockZ + 5) & 7) / 8.0D);
+                        columns[0][1],
+                        columns[0][2],
+                        columns[1][1],
+                        columns[1][2],
+                        (blockX & 7) / 8.0D,
+                        ((blockZ + 5) & 7) / 8.0D);
                 h10 = getSurfaceHeight(
-                        columns[0][0], columns[0][1], columns[1][0], columns[1][1],
-                        ((blockX - 5) & 7) / 8.0D, (blockZ & 7) / 8.0D);
+                        columns[0][0],
+                        columns[0][1],
+                        columns[1][0],
+                        columns[1][1],
+                        ((blockX - 5) & 7) / 8.0D,
+                        (blockZ & 7) / 8.0D);
                 h11 = getSurfaceHeight(
-                        columns[0][1], columns[0][2], columns[1][1], columns[1][2],
-                        ((blockX - 5) & 7) / 8.0D, ((blockZ + 5) & 7) / 8.0D);
+                        columns[0][1],
+                        columns[0][2],
+                        columns[1][1],
+                        columns[1][2],
+                        ((blockX - 5) & 7) / 8.0D,
+                        ((blockZ + 5) & 7) / 8.0D);
             }
             case 2 -> {
                 h01 = getSurfaceHeight(
-                        columns[0][0], columns[0][1], columns[1][0], columns[1][1],
-                        (blockX & 7) / 8.0D, ((blockZ - 5) & 7) / 8.0D);
+                        columns[0][0],
+                        columns[0][1],
+                        columns[1][0],
+                        columns[1][1],
+                        (blockX & 7) / 8.0D,
+                        ((blockZ - 5) & 7) / 8.0D);
                 h10 = getSurfaceHeight(
-                        columns[0][0], columns[0][1], columns[1][0], columns[1][1],
-                        ((blockX - 5) & 7) / 8.0D, (blockZ & 7) / 8.0D);
+                        columns[0][0],
+                        columns[0][1],
+                        columns[1][0],
+                        columns[1][1],
+                        ((blockX - 5) & 7) / 8.0D,
+                        (blockZ & 7) / 8.0D);
                 h11 = getSurfaceHeight(
-                        columns[0][0], columns[0][1], columns[1][0], columns[1][1],
-                        ((blockX - 5) & 7) / 8.0D, ((blockZ - 5) & 7) / 8.0D);
+                        columns[0][0],
+                        columns[0][1],
+                        columns[1][0],
+                        columns[1][1],
+                        ((blockX - 5) & 7) / 8.0D,
+                        ((blockZ - 5) & 7) / 8.0D);
             }
             case 3 -> {
                 sampleNoiseColumnEnd(columns[2][0], cellX + 2, cellZ);
                 sampleNoiseColumnEnd(columns[2][1], cellX + 2, cellZ + 1);
                 h01 = getSurfaceHeight(
-                        columns[0][0], columns[0][1], columns[1][0], columns[1][1],
-                        (blockX & 7) / 8.0D, ((blockZ - 5) & 7) / 8.0D);
+                        columns[0][0],
+                        columns[0][1],
+                        columns[1][0],
+                        columns[1][1],
+                        (blockX & 7) / 8.0D,
+                        ((blockZ - 5) & 7) / 8.0D);
                 h10 = getSurfaceHeight(
-                        columns[1][0], columns[1][1], columns[2][0], columns[2][1],
-                        ((blockX + 5) & 7) / 8.0D, (blockZ & 7) / 8.0D);
+                        columns[1][0],
+                        columns[1][1],
+                        columns[2][0],
+                        columns[2][1],
+                        ((blockX + 5) & 7) / 8.0D,
+                        (blockZ & 7) / 8.0D);
                 h11 = getSurfaceHeight(
-                        columns[1][0], columns[1][1], columns[2][0], columns[2][1],
-                        ((blockX + 5) & 7) / 8.0D, ((blockZ - 5) & 7) / 8.0D);
+                        columns[1][0],
+                        columns[1][1],
+                        columns[2][0],
+                        columns[2][1],
+                        ((blockX + 5) & 7) / 8.0D,
+                        ((blockZ - 5) & 7) / 8.0D);
             }
             default -> throw new AssertionError("nextInt(4) returned outside its range");
         }
@@ -193,12 +239,10 @@ public final class CubiomesEndNoise {
                 long rx = (long) hx + i;
                 long rz = (long) hz + j;
                 long radiusSquared = rx * rx + rz * rz;
-                if (radiusSquared <= 4096L
-                        || sampleSimplex2D(endBiomeNoise, rx, rz) >= (double) -0.9F) {
+                if (radiusSquared <= 4096L || sampleSimplex2D(endBiomeNoise, rx, rz) >= (double) -0.9F) {
                     continue;
                 }
-                float island = Math.abs((float) rx) * 3439.0F
-                        + Math.abs((float) rz) * 147.0F;
+                float island = Math.abs((float) rx) * 3439.0F + Math.abs((float) rz) * 147.0F;
                 int v = ((int) island % 13) + 9;
                 rx = oddX - i * 2L;
                 rz = oddZ - j * 2L;
@@ -220,9 +264,7 @@ public final class CubiomesEndNoise {
         };
         int xOffset = hx < 0 ? 1 : 0;
         int zOffset = hz < 0 ? 1 : 0;
-        int height = Math.abs(hx) <= 15 && Math.abs(hz) <= 15
-                ? 64 * (hx * hx + hz * hz)
-                : 14_401;
+        int height = Math.abs(hx) <= 15 && Math.abs(hz) <= 15 ? 64 * (hx * hx + hz * hz) : 14_401;
         int startX = (int) (hx / 2L - chunkX);
         int startZ = (int) (hz / 2L - chunkZ);
         for (int j = 0; j < 25; j++) {
@@ -295,8 +337,7 @@ public final class CubiomesEndNoise {
     }
 
     private static int getSurfaceHeight(
-            double[] ncol00, double[] ncol01, double[] ncol10, double[] ncol11,
-            double dx, double dz) {
+            double[] ncol00, double[] ncol01, double[] ncol10, double[] ncol11, double dx, double dz) {
         for (int cellY = 17; cellY >= 15; cellY--) {
             int index = cellY - 15;
             double v000 = ncol00[index];
@@ -309,10 +350,7 @@ public final class CubiomesEndNoise {
             double v111 = ncol11[index + 1];
             for (int y = 3; y >= 0; y--) {
                 double dy = y / 4.0D;
-                double value = lerp3(
-                        dy, dx, dz,
-                        v000, v010, v100, v110,
-                        v001, v011, v101, v111);
+                double value = lerp3(dy, dx, dz, v000, v010, v100, v110, v001, v011, v101, v111);
                 if (value > 0.0D) {
                     return cellY * 4 + y;
                 }
@@ -340,9 +378,10 @@ public final class CubiomesEndNoise {
         gi0 = noise.permutation[255 & (gi0 + hx)];
         gi1 = noise.permutation[255 & (gi1 + hx + offX)];
         gi2 = noise.permutation[255 & (gi2 + hx + 1)];
-        return 70.0D * (simplexGradient(gi0 % 12, x0, y0)
-                + simplexGradient(gi1 % 12, x1, y1)
-                + simplexGradient(gi2 % 12, x2, y2));
+        return 70.0D
+                * (simplexGradient(gi0 % 12, x0, y0)
+                        + simplexGradient(gi1 % 12, x1, y1)
+                        + simplexGradient(gi2 % 12, x2, y2));
     }
 
     private static double simplexGradient(int index, double x, double y) {
@@ -440,9 +479,17 @@ public final class CubiomesEndNoise {
     }
 
     private static double lerp3(
-            double dx, double dy, double dz,
-            double v000, double v100, double v010, double v110,
-            double v001, double v101, double v011, double v111) {
+            double dx,
+            double dy,
+            double dz,
+            double v000,
+            double v100,
+            double v010,
+            double v110,
+            double v001,
+            double v101,
+            double v011,
+            double v111) {
         double first = lerp(dy, lerp(dx, v000, v100), lerp(dx, v010, v110));
         double second = lerp(dy, lerp(dx, v001, v101), lerp(dx, v011, v111));
         return lerp(dz, first, second);

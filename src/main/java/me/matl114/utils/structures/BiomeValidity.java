@@ -11,7 +11,8 @@ final class BiomeValidity {
 
     static boolean contains(RegistryEntryList<Biome> allowedBiomes, RegistryEntry<Biome> biome) {
         RegistryKey<Biome> biomeKey = biome.getKey().orElse(null);
-        return biomeKey != null && allowedBiomes.stream().anyMatch(entry ->
-                entry.getKey().map(biomeKey::equals).orElse(false));
+        return biomeKey != null
+                && allowedBiomes.stream()
+                        .anyMatch(entry -> entry.getKey().map(biomeKey::equals).orElse(false));
     }
 }

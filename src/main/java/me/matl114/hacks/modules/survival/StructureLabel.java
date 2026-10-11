@@ -10,10 +10,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
@@ -32,9 +36,9 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.utils.Debug;
 import me.matl114.utils.render.RenderCollector;
+import me.matl114.utils.structures.ChunkRange;
 import me.matl114.utils.structures.CubiomesNetherBiomeSampler;
 import me.matl114.utils.structures.CubiomesOverworldBiomeSampler;
-import me.matl114.utils.structures.ChunkRange;
 import me.matl114.utils.structures.EndCityResult;
 import me.matl114.utils.structures.Populator;
 import me.matl114.utils.structures.PredictedChest;
@@ -64,16 +68,20 @@ public class StructureLabel extends BaseModule {
     private static final long CACHE_BLOCK_SIZE = 1024L;
     private static final int ANCIENT_LOOT_SEARCH_MARGIN = 256;
     private static final int CACHE_CHUNK_SIZE = 64;
-    private static final int LOOT_PREDICTION_BATCH_SIZE = 8;
-    private static final ScheduledExecutorService structureExecutor =
-            Executors.newSingleThreadScheduledExecutor(
-                    task -> daemonThread(task, "StructureSearch", Thread.NORM_PRIORITY));
-    private static final ScheduledExecutorService ancientLootExecutor =
-            Executors.newScheduledThreadPool(
-                    2, task -> daemonThread(task, "AncientLootPrediction", Thread.NORM_PRIORITY));
-    private static final ScheduledExecutorService otherLootExecutor =
-            Executors.newSingleThreadScheduledExecutor(
-                    task -> daemonThread(task, "OtherLootPrediction", Thread.MIN_PRIORITY));
+    private static final int STRUCTURE_EXECUTOR_THREAD_COUNT =
+            Math.max(1, Runtime.getRuntime().availableProcessors() / 4);
+    private static final int LOOT_EXECUTOR_THREAD_COUNT =
+            Math.max(1, Runtime.getRuntime().availableProcessors() / 2);
+    private static final ScheduledExecutorService structureExecutor = Executors.newScheduledThreadPool(
+            STRUCTURE_EXECUTOR_THREAD_COUNT, task -> daemonThread(task, "StructureSearch", Thread.NORM_PRIORITY));
+    private static final ThreadPoolExecutor lootExecutor = new ThreadPoolExecutor(
+            LOOT_EXECUTOR_THREAD_COUNT,
+            LOOT_EXECUTOR_THREAD_COUNT,
+            0L,
+            TimeUnit.MILLISECONDS,
+            new PriorityBlockingQueue<>(),
+            task -> daemonThread(task, "LootPrediction", Thread.NORM_PRIORITY));
+    private static final AtomicLong lootTaskSequence = new AtomicLong();
     private static final Identifier END_CITIES = Identifier.ofVanilla("end_cities");
     private static final Identifier ANCIENT_CITIES = Identifier.ofVanilla("ancient_cities");
     private static final Identifier DESERT_PYRAMIDS = Identifier.ofVanilla("desert_pyramids");
@@ -93,21 +101,13 @@ public class StructureLabel extends BaseModule {
         return structureExecutor.schedule(task, 0, TimeUnit.MILLISECONDS);
     }
 
-    private static ScheduledFuture<?> scheduleAncientLootTask(Runnable task) {
-        return ancientLootExecutor.schedule(task, 0, TimeUnit.MILLISECONDS);
-    }
-
-    private static ScheduledFuture<?> scheduleOtherLootTask(Runnable task) {
-        return otherLootExecutor.schedule(task, 0, TimeUnit.MILLISECONDS);
-    }
     public final ModulePath root = makePath(Configs.SURVIVAL_CONFIG, "structure-label");
 
     public final FlagRef enable = flagBuilder(root.addEnable()).build();
 
-    public final FlagRef labelNonElytraEndCities =
-            flagBuilder(root.add("label-non-elytra-end-cities"))
-                    .updateListener(this::refreshWaypoints)
-                    .build();
+    public final FlagRef labelNonElytraEndCities = flagBuilder(root.add("label-non-elytra-end-cities"))
+            .updateListener(this::refreshWaypoints)
+            .build();
 
     public final FlagRef labelElytraEndCities = flagBuilder(root.add("label-elytra-end-cities"))
             .updateListener(this::refreshWaypoints)
@@ -117,10 +117,10 @@ public class StructureLabel extends BaseModule {
             .updateListener(this::refreshWaypoints)
             .build();
 
-    public final FlagRef labelOtherEnchantedGoldStructures =
-            flagBuilder(root.add("label-other-enchanted-gold-structures"))
-                    .updateListener(this::onOtherLootPredictionSettingChanged)
-                    .build();
+    public final FlagRef labelOtherEnchantedGoldStructures = flagBuilder(
+                    root.add("label-other-enchanted-gold-structures"))
+            .updateListener(this::onOtherLootPredictionSettingChanged)
+            .build();
 
     public final FlagRef labelEnchantedGoldenAppleChests =
             flagBuilder(root.add("label-enchanted-golden-apple-chests")).build();
@@ -175,15 +175,12 @@ public class StructureLabel extends BaseModule {
 
     private final Map<AreaKey, List<EndCityResult>> cachedAreas = new ConcurrentHashMap<>();
     private final Map<AreaKey, List<StructurePosition>> cachedStructures = new ConcurrentHashMap<>();
-    private final Map<AreaKey, List<PredictedChestAlternatives>> cachedPredictedAppleChests =
-            new ConcurrentHashMap<>();
+    private final Map<AreaKey, List<PredictedChestAlternatives>> cachedPredictedAppleChests = new ConcurrentHashMap<>();
     private final Map<AreaKey, List<PredictedChestAlternatives>> cachedOtherPredictedAppleChests =
             new ConcurrentHashMap<>();
     private final Map<AreaKey, List<PredictedChest>> cachedAncientCityChests = new ConcurrentHashMap<>();
-    private final Map<AreaKey, List<PredictedChestContents>> cachedAncientCityLootContents =
-            new ConcurrentHashMap<>();
-    private final Map<AreaKey, List<PredictedChestContents>> cachedOtherLootContents =
-            new ConcurrentHashMap<>();
+    private final Map<AreaKey, List<PredictedChestContents>> cachedAncientCityLootContents = new ConcurrentHashMap<>();
+    private final Map<AreaKey, List<PredictedChestContents>> cachedOtherLootContents = new ConcurrentHashMap<>();
     private final Set<StructureKey> checkedAncientCities = ConcurrentHashMap.newKeySet();
     private final Set<StructureKey> viableAncientCities = ConcurrentHashMap.newKeySet();
     private final Set<StructureKey> checkedDesertPyramids = ConcurrentHashMap.newKeySet();
@@ -193,21 +190,22 @@ public class StructureLabel extends BaseModule {
     private final Set<AreaKey> pendingOtherLootAreas = ConcurrentHashMap.newKeySet();
     private final Set<AreaKey> checkedOtherLootAreas = ConcurrentHashMap.newKeySet();
     private final Set<AreaKey> pendingAncientChestAreas = ConcurrentHashMap.newKeySet();
-    private final Set<ScheduledFuture<?>> pendingTasks = ConcurrentHashMap.newKeySet();
+    private final Set<LootAreaTaskKey> pendingLootAreaTasks = ConcurrentHashMap.newKeySet();
+    private final Set<Future<?>> pendingTasks = ConcurrentHashMap.newKeySet();
     private final Map<CityKey, EndCityResult> cachedCities = new ConcurrentHashMap<>();
+    private final ThreadLocal<LootBiomeSamplers> lootBiomeSamplerCache = new ThreadLocal<>();
     private final Map<StructureKey, IXWaypoint> waypoints = new ConcurrentHashMap<>();
     private final Map<StructureKey, WaypointSpec> committedWaypointSpecs = new ConcurrentHashMap<>();
     private final Map<AppleChestWaypointKey, IXWaypoint> appleChestWaypoints = new ConcurrentHashMap<>();
-    private final Map<AppleChestWaypointKey, WaypointSpec> committedAppleChestWaypointSpecs =
-            new ConcurrentHashMap<>();
+    private final Map<AppleChestWaypointKey, WaypointSpec> committedAppleChestWaypointSpecs = new ConcurrentHashMap<>();
     private final Set<ChunkPos> dirtyPos = ConcurrentHashMap.newKeySet();
-    private final AtomicBoolean otherLootRefreshNeeded = new AtomicBoolean();
-    private final AtomicBoolean otherLootRefreshScheduled = new AtomicBoolean();
 
     @Nullable
     private volatile GenerationContext context;
+
     @Nullable
     private volatile ContextRequest pendingContextRequest;
+
     private volatile long generation;
     private volatile long otherLootGeneration;
     private long waypointSyncTicks;
@@ -221,13 +219,19 @@ public class StructureLabel extends BaseModule {
 
     private void onOtherLootPredictionSettingChanged(Boolean enabled) {
         otherLootGeneration++;
-        otherLootRefreshScheduled.set(false);
         pendingOtherLootAreas.clear();
         checkedOtherLootAreas.clear();
         cachedOtherPredictedAppleChests.clear();
         cachedOtherLootContents.clear();
-        otherLootRefreshNeeded.set(enabled);
         waypointDirty = true;
+        GenerationContext current = context;
+        AreaKey center = lastPlayerArea;
+        if (enabled && current != null && center != null) {
+            long predictionGeneration = otherLootGeneration;
+            Future<?> future = scheduleLootTask(
+                    center, () -> requestOtherLootPredictionsForCachedAreas(current, predictionGeneration));
+            pendingTasks.add(future);
+        }
     }
 
     public StructureLabel() {
@@ -272,7 +276,6 @@ public class StructureLabel extends BaseModule {
             }
             return;
         }
-        boolean otherLootPredictionEnabled = labelOtherEnchantedGoldStructures.get();
         if (!prepareContextAsync()) {
             return;
         }
@@ -293,29 +296,6 @@ public class StructureLabel extends BaseModule {
         }
         markNearbyStructuresVisited(mc.player.getBlockPos());
         requestAncientCityChestsNearPlayer(mc.player.getBlockPos());
-        if (otherLootPredictionEnabled
-                && otherLootRefreshNeeded.get()
-                && otherLootRefreshScheduled.compareAndSet(false, true)) {
-            GenerationContext current = context;
-            long predictionGeneration = otherLootGeneration;
-            ScheduledFuture<?> future = scheduleStructureTask(() -> {
-                try {
-                    if (isCurrentOtherLootPrediction(current, predictionGeneration)) {
-                        otherLootRefreshNeeded.set(false);
-                        requestOtherLootPredictionsForCachedAreas(current, predictionGeneration);
-                    }
-                } finally {
-                    if (predictionGeneration != otherLootGeneration
-                            && labelOtherEnchantedGoldStructures.get()) {
-                        otherLootRefreshNeeded.set(true);
-                    }
-                    if (predictionGeneration == otherLootGeneration) {
-                        otherLootRefreshScheduled.set(false);
-                    }
-                }
-            });
-            pendingTasks.add(future);
-        }
         if (++waypointSyncTicks >= 20) {
             waypointSyncTicks = 0;
             if (waypointDirty) {
@@ -356,11 +336,8 @@ public class StructureLabel extends BaseModule {
                     }
                 }
                 CubiomesOverworldBiomeSampler biomeSampler = null;
-                CubiomesNetherBiomeSampler netherBiomeSampler = null;
                 if (World.OVERWORLD.equals(worldKey)) {
                     biomeSampler = CubiomesOverworldBiomeSampler.create(seed);
-                } else if (World.NETHER.equals(worldKey)) {
-                    netherBiomeSampler = CubiomesNetherBiomeSampler.create(seed);
                 }
                 Map<Identifier, StructureDecorationIndex.Index> structureIndices =
                         StructureDecorationIndex.collectDefault();
@@ -368,13 +345,7 @@ public class StructureLabel extends BaseModule {
                     return;
                 }
                 context = new GenerationContext(
-                        request.generation(),
-                        seed,
-                        worldKey,
-                        Map.copyOf(configs),
-                        structureIndices,
-                        biomeSampler,
-                        netherBiomeSampler);
+                        request.generation(), seed, worldKey, Map.copyOf(configs), structureIndices, biomeSampler);
                 pendingContextRequest = null;
                 waypointDirty = true;
                 waypointSyncTicks = 0;
@@ -406,12 +377,15 @@ public class StructureLabel extends BaseModule {
                 }
             }
         }
-        areas.sort((left, right) -> Long.compare(areaDistanceSquared(left, center), areaDistanceSquared(right, center)));
+        areas.sort(
+                (left, right) -> Long.compare(areaDistanceSquared(left, center), areaDistanceSquared(right, center)));
         if (areas.isEmpty()) {
             return;
         }
-        ScheduledFuture<?> future = scheduleStructureTask(() -> requestAreaBatch(List.copyOf(areas), current));
-        pendingTasks.add(future);
+        for (AreaKey area : areas) {
+            ScheduledFuture<?> future = scheduleStructureTask(() -> requestAreaBatch(List.of(area), current));
+            pendingTasks.add(future);
+        }
     }
 
     private static long areaDistanceSquared(AreaKey area, AreaKey center) {
@@ -443,8 +417,7 @@ public class StructureLabel extends BaseModule {
                 && isCurrent(current);
     }
 
-    private boolean isCurrentOtherLootArea(
-            AreaKey area, GenerationContext current, long predictionGeneration) {
+    private boolean isCurrentOtherLootArea(AreaKey area, GenerationContext current, long predictionGeneration) {
         return isCurrentOtherLootPrediction(current, predictionGeneration)
                 && isWithinCurrentCache(area)
                 && cachedStructures.containsKey(area);
@@ -452,9 +425,7 @@ public class StructureLabel extends BaseModule {
 
     private void requestAreaBatch(List<AreaKey> areas, GenerationContext current) {
         Populator populator = new Populator(current.seed(), current.structureIndices());
-        Map<AreaKey, AreaWork> work = new java.util.LinkedHashMap<>();
-
-        // Discover every Ancient City candidate in the batch before processing other structure sets.
+        List<AreaKey> completedAreas = new ArrayList<>();
         for (AreaKey area : areas) {
             try {
                 if (!isCurrentArea(area, current)) {
@@ -462,42 +433,15 @@ public class StructureLabel extends BaseModule {
                     continue;
                 }
                 ChunkRange range = areaChunkRange(area);
-                StructureConfig config = current.configs().get(ANCIENT_CITIES);
-                List<StructurePosition> cities = config == null ? List.of() : populator.generate(config, range);
-                if (!isCurrentArea(area, current)) {
-                    pendingAreas.remove(area);
-                    continue;
-                }
-                cacheAncientCityViability(area, cities, current);
-                if (!isCurrentArea(area, current)) {
-                    pendingAreas.remove(area);
-                    continue;
-                }
-                work.put(area, new AreaWork(range, cities));
-            } catch (Throwable throwable) {
-                Debug.getLogger().debug("Unable to generate Ancient City candidates", throwable);
-                if (context == current) {
-                    pendingAreas.remove(area);
-                }
-            }
-        }
-
-        Map<AreaKey, List<StructurePosition>> structuresByArea = new java.util.LinkedHashMap<>();
-        for (Map.Entry<AreaKey, AreaWork> entry : work.entrySet()) {
-            AreaKey area = entry.getKey();
-            AreaWork areaWork = entry.getValue();
-            try {
-                if (!isCurrentArea(area, current)) {
-                    pendingAreas.remove(area);
-                    continue;
-                }
-                List<StructurePosition> structures = new ArrayList<>(areaWork.ancientCities());
+                List<StructurePosition> structures = new ArrayList<>();
                 for (StructureConfig config : current.configs().values()) {
                     if (!isCurrentArea(area, current)) {
                         break;
                     }
-                    if (!ANCIENT_CITIES.equals(config.structureSetId())) {
-                        structures.addAll(populator.generate(config, areaWork.range()));
+                    List<StructurePosition> generated = populator.generate(config, range);
+                    structures.addAll(generated);
+                    if (ANCIENT_CITIES.equals(config.structureSetId())) {
+                        cacheAncientCityViability(area, generated, current);
                     }
                 }
                 if (!isCurrentArea(area, current)) {
@@ -511,7 +455,10 @@ public class StructureLabel extends BaseModule {
                     continue;
                 }
                 completeAreaStructures(area, current, immutableStructures);
-                structuresByArea.put(area, immutableStructures);
+                if (labelOtherEnchantedGoldStructures.get()) {
+                    requestOtherLootPredictions(area, immutableStructures, current, otherLootGeneration);
+                }
+                completedAreas.add(area);
             } catch (Throwable throwable) {
                 Debug.getLogger().debug("Unable to generate structure positions", throwable);
                 if (context == current) {
@@ -520,23 +467,26 @@ public class StructureLabel extends BaseModule {
             }
         }
 
-        // Queue detailed structure work after candidate positions have been cached.
-        for (Map.Entry<AreaKey, List<StructurePosition>> entry : structuresByArea.entrySet()) {
-            if (!isCurrentArea(entry.getKey(), current)) {
-                pendingAreas.remove(entry.getKey());
+        for (AreaKey area : completedAreas) {
+            if (!isCurrentArea(area, current)) {
+                pendingAreas.remove(area);
                 continue;
             }
-            AreaWork areaWork = work.get(entry.getKey());
-            requestAreaDetails(entry.getKey(), areaWork.range(), current);
+            requestAreaDetails(area, areaChunkRange(area), current);
         }
     }
 
-    private void requestOtherLootPredictionsForCachedAreas(
-            GenerationContext current, long predictionGeneration) {
+    private void requestOtherLootPredictionsForCachedAreas(GenerationContext current, long predictionGeneration) {
         if (current == null || !isCurrentOtherLootPrediction(current, predictionGeneration)) {
             return;
         }
-        for (Map.Entry<AreaKey, List<StructurePosition>> entry : cachedStructures.entrySet()) {
+        AreaKey center = lastPlayerArea;
+        List<Map.Entry<AreaKey, List<StructurePosition>>> entries = new ArrayList<>(cachedStructures.entrySet());
+        if (center != null) {
+            entries.sort((left, right) -> Long.compare(
+                    areaDistanceSquared(left.getKey(), center), areaDistanceSquared(right.getKey(), center)));
+        }
+        for (Map.Entry<AreaKey, List<StructurePosition>> entry : entries) {
             if (!isCurrentOtherLootPrediction(current, predictionGeneration)) {
                 return;
             }
@@ -579,29 +529,33 @@ public class StructureLabel extends BaseModule {
     }
 
     private void requestOtherLootPredictions(
-            AreaKey area,
-            List<StructurePosition> structures,
-            GenerationContext current,
-            long predictionGeneration) {
+            AreaKey area, List<StructurePosition> structures, GenerationContext current, long predictionGeneration) {
         if (!isCurrentOtherLootArea(area, current, predictionGeneration)) {
+            return;
+        }
+        boolean hasLootStructure = structures.stream().anyMatch(structure -> {
+            Identifier structureSet = structure.config().structureSetId();
+            return RUINED_PORTALS.equals(structureSet)
+                    || (DESERT_PYRAMIDS.equals(structureSet)
+                            && viableDesertPyramids.contains(StructureKey.of(structure)));
+        });
+        if (!hasLootStructure) {
+            checkedOtherLootAreas.add(area);
             return;
         }
         if (checkedOtherLootAreas.contains(area) || !pendingOtherLootAreas.add(area)) {
             return;
         }
-        ScheduledFuture<?> future = scheduleOtherLootTask(() -> {
+        Future<?> future = scheduleLootTask(area, () -> {
             try {
                 if (!isCurrentOtherLootArea(area, current, predictionGeneration)) {
                     return;
                 }
                 Populator populator = new Populator(current.seed(), current.structureIndices());
                 List<PredictedChestAlternatives> chests = new ArrayList<>();
-                CubiomesOverworldBiomeSampler overworldSampler = current.biomeSampler() == null
-                        ? null
-                        : CubiomesOverworldBiomeSampler.create(current.seed());
-                CubiomesNetherBiomeSampler netherSampler = current.netherBiomeSampler() == null
-                        ? null
-                        : CubiomesNetherBiomeSampler.create(current.seed());
+                LootBiomeSamplers samplers = getLootBiomeSamplers(current);
+                CubiomesOverworldBiomeSampler overworldSampler = samplers.overworld();
+                CubiomesNetherBiomeSampler netherSampler = samplers.nether();
                 if (!isCurrentOtherLootArea(area, current, predictionGeneration)) {
                     return;
                 }
@@ -660,7 +614,9 @@ public class StructureLabel extends BaseModule {
 
     private void requestAncientCityChestsNearPlayer(BlockPos playerPos) {
         GenerationContext current = context;
-        if (current == null || current.biomeSampler() == null || !current.configs().containsKey(ANCIENT_CITIES)) {
+        if (current == null
+                || current.biomeSampler() == null
+                || !current.configs().containsKey(ANCIENT_CITIES)) {
             return;
         }
         long margin = ANCIENT_LOOT_SEARCH_MARGIN;
@@ -668,15 +624,22 @@ public class StructureLabel extends BaseModule {
         long maxAreaX = Math.floorDiv((long) playerPos.getX() + margin, CACHE_BLOCK_SIZE);
         long minAreaZ = Math.floorDiv((long) playerPos.getZ() - margin, CACHE_BLOCK_SIZE);
         long maxAreaZ = Math.floorDiv((long) playerPos.getZ() + margin, CACHE_BLOCK_SIZE);
+        List<AreaKey> areas = new ArrayList<>();
         for (long areaX = minAreaX; areaX <= maxAreaX; areaX++) {
             for (long areaZ = minAreaZ; areaZ <= maxAreaZ; areaZ++) {
                 AreaKey area = new AreaKey(areaX, areaZ);
                 if (isWithinCurrentCache(area)
                         && cachedStructures.containsKey(area)
                         && !cachedAncientCityChests.containsKey(area)) {
-                    requestAncientCityChests(area, current);
+                    areas.add(area);
                 }
             }
+        }
+        AreaKey center = AreaKey.fromBlock(playerPos);
+        areas.sort(
+                (left, right) -> Long.compare(areaDistanceSquared(left, center), areaDistanceSquared(right, center)));
+        for (AreaKey area : areas) {
+            requestAncientCityChests(area, current);
         }
     }
 
@@ -718,10 +681,7 @@ public class StructureLabel extends BaseModule {
     }
 
     private void scheduleAppleChestMarking(
-            AreaKey area,
-            GenerationContext current,
-            List<PredictedChestAlternatives> chests,
-            boolean lowPriority) {
+            AreaKey area, GenerationContext current, List<PredictedChestAlternatives> chests, boolean lowPriority) {
         scheduleAppleChestMarking(area, current, chests, lowPriority, false);
     }
 
@@ -744,96 +704,116 @@ public class StructureLabel extends BaseModule {
         if (chests.isEmpty()) {
             return;
         }
-        for (int start = 0; start < chests.size(); start += LOOT_PREDICTION_BATCH_SIZE) {
-            List<PredictedChestAlternatives> batch = List.copyOf(chests.subList(
-                    start, Math.min(start + LOOT_PREDICTION_BATCH_SIZE, chests.size())));
-            Runnable predictionTask = () -> {
-                try {
+        LootAreaTaskKey taskKey =
+                new LootAreaTaskKey(area, current.generation(), lowPriority ? predictionGeneration : 0L, lowPriority);
+        if (!pendingLootAreaTasks.add(taskKey)) {
+            return;
+        }
+        List<PredictedChestAlternatives> areaChests = List.copyOf(chests);
+        Runnable predictionTask = () -> {
+            try {
+                if (lowPriority
+                        ? !isCurrentOtherLootArea(area, current, predictionGeneration)
+                        : !isCurrentArea(area, current)) {
+                    return;
+                }
+                List<PredictedChestAlternatives> appleChests = new ArrayList<>();
+                List<PredictedChestContents> contents = new ArrayList<>();
+                for (PredictedChestAlternatives chest : areaChests) {
                     if (lowPriority
                             ? !isCurrentOtherLootArea(area, current, predictionGeneration)
                             : !isCurrentArea(area, current)) {
                         return;
                     }
-                    List<PredictedChestAlternatives> appleChests = new ArrayList<>();
-                    List<PredictedChestContents> contents = new ArrayList<>();
-                    for (PredictedChestAlternatives chest : batch) {
-                        if (lowPriority
-                                ? !isCurrentOtherLootArea(area, current, predictionGeneration)
-                                : !isCurrentArea(area, current)) {
-                            return;
-                        }
-                        if (cacheContents) {
-                            Optional<List<ItemStack>> generated = chest.generateInventoryContents();
-                            contents.add(new PredictedChestContents(
-                                    chest.possiblePositions().getFirst(), generated));
-                            if (generated.stream()
-                                    .flatMap(List::stream)
-                                    .anyMatch(stack -> stack.isOf(Items.ENCHANTED_GOLDEN_APPLE))) {
-                                appleChests.add(chest);
-                            }
-                        } else if (chest.containsEnchantedGoldenApple().orElse(false)) {
+                    if (cacheContents) {
+                        Optional<List<ItemStack>> generated = chest.generateInventoryContents();
+                        contents.add(new PredictedChestContents(
+                                chest.possiblePositions().getFirst(), generated));
+                        if (generated.stream()
+                                .flatMap(List::stream)
+                                .anyMatch(stack -> stack.isOf(Items.ENCHANTED_GOLDEN_APPLE))) {
                             appleChests.add(chest);
                         }
+                    } else if (chest.containsEnchantedGoldenApple().orElse(false)) {
+                        appleChests.add(chest);
                     }
-                    if (!contents.isEmpty()
-                            && (lowPriority
-                                    ? isCurrentOtherLootArea(area, current, predictionGeneration)
-                                    : isCurrentArea(area, current))) {
-                        Map<AreaKey, List<PredictedChestContents>> lootContentsCache = lowPriority
-                                ? cachedOtherLootContents
-                                : cachedAncientCityLootContents;
-                        lootContentsCache.compute(area, (key, cached) -> {
-                            if (lowPriority && !isCurrentOtherLootArea(area, current, predictionGeneration)) {
-                                return cached;
-                            }
-                            List<PredictedChestContents> combined = new ArrayList<>(
-                                    cached == null ? List.of() : cached);
-                            combined.addAll(contents);
-                            return List.copyOf(combined);
-                        });
-                    }
-                    if (!appleChests.isEmpty()
-                            && (lowPriority
-                                    ? isCurrentOtherLootArea(area, current, predictionGeneration)
-                                    : isCurrentArea(area, current))) {
-                        Map<AreaKey, List<PredictedChestAlternatives>> appleCache = lowPriority
-                                ? cachedOtherPredictedAppleChests
-                                : cachedPredictedAppleChests;
-                        appleCache.compute(area, (key, cached) -> {
-                            if (lowPriority && !isCurrentOtherLootArea(area, current, predictionGeneration)) {
-                                return cached;
-                            }
-                            List<PredictedChestAlternatives> combined = new ArrayList<>(
-                                    cached == null ? List.of() : cached);
-                            combined.addAll(appleChests);
-                            return List.copyOf(combined);
-                        });
-                        if (lowPriority) {
-                            waypointDirty = true;
-                        }
-                    }
-                } catch (Throwable throwable) {
-                    Debug.getLogger().debug("Unable to mark enchanted golden apple chests", throwable);
                 }
-            };
-            ScheduledFuture<?> future = lowPriority
-                    ? scheduleOtherLootTask(predictionTask)
-                    : scheduleAncientLootTask(predictionTask);
-            pendingTasks.add(future);
+                if (!contents.isEmpty()
+                        && (lowPriority
+                                ? isCurrentOtherLootArea(area, current, predictionGeneration)
+                                : isCurrentArea(area, current))) {
+                    Map<AreaKey, List<PredictedChestContents>> lootContentsCache =
+                            lowPriority ? cachedOtherLootContents : cachedAncientCityLootContents;
+                    lootContentsCache.compute(area, (key, cached) -> {
+                        if (lowPriority && !isCurrentOtherLootArea(area, current, predictionGeneration)) {
+                            return cached;
+                        }
+                        List<PredictedChestContents> combined = new ArrayList<>(cached == null ? List.of() : cached);
+                        combined.addAll(contents);
+                        return List.copyOf(combined);
+                    });
+                }
+                if (!appleChests.isEmpty()
+                        && (lowPriority
+                                ? isCurrentOtherLootArea(area, current, predictionGeneration)
+                                : isCurrentArea(area, current))) {
+                    Map<AreaKey, List<PredictedChestAlternatives>> appleCache =
+                            lowPriority ? cachedOtherPredictedAppleChests : cachedPredictedAppleChests;
+                    appleCache.compute(area, (key, cached) -> {
+                        if (lowPriority && !isCurrentOtherLootArea(area, current, predictionGeneration)) {
+                            return cached;
+                        }
+                        List<PredictedChestAlternatives> combined =
+                                new ArrayList<>(cached == null ? List.of() : cached);
+                        combined.addAll(appleChests);
+                        return List.copyOf(combined);
+                    });
+                    if (lowPriority) {
+                        waypointDirty = true;
+                    }
+                }
+            } catch (Throwable throwable) {
+                Debug.getLogger().debug("Unable to mark enchanted golden apple chests", throwable);
+            } finally {
+                pendingLootAreaTasks.remove(taskKey);
+            }
+        };
+        Future<?> future = scheduleLootTask(area, predictionTask);
+        pendingTasks.add(future);
+    }
+
+    private Future<?> scheduleLootTask(AreaKey area, Runnable task) {
+        AreaKey center = lastPlayerArea;
+        long distance = center == null ? Long.MAX_VALUE : areaDistanceSquared(area, center);
+        PrioritizedLootTask future = new PrioritizedLootTask(task, distance, lootTaskSequence.getAndIncrement());
+        lootExecutor.execute(future);
+        return future;
+    }
+
+    private final class PrioritizedLootTask extends FutureTask<Void> implements Comparable<PrioritizedLootTask> {
+        private final long distance;
+        private final long sequence;
+
+        private PrioritizedLootTask(Runnable task, long distance, long sequence) {
+            super(task, null);
+            this.distance = distance;
+            this.sequence = sequence;
+        }
+
+        @Override
+        public int compareTo(PrioritizedLootTask other) {
+            int distanceOrder = Long.compare(distance, other.distance);
+            return distanceOrder != 0 ? distanceOrder : Long.compare(sequence, other.sequence);
         }
     }
 
-    private void completeAreaStructures(
-            AreaKey area, GenerationContext current, List<StructurePosition> structures) {
+    private void completeAreaStructures(AreaKey area, GenerationContext current, List<StructurePosition> structures) {
         if (!isCurrentArea(area, current)) {
             pendingAreas.remove(area);
             return;
         }
         cachedStructures.put(area, List.copyOf(structures));
         pendingAreas.remove(area);
-        if (labelOtherEnchantedGoldStructures.get()) {
-            otherLootRefreshNeeded.set(true);
-        }
         if (structures.stream().anyMatch(structure -> {
             Identifier structureSet = structure.config().structureSetId();
             return END_CITIES.equals(structureSet) || ANCIENT_CITIES.equals(structureSet);
@@ -860,11 +840,7 @@ public class StructureLabel extends BaseModule {
     private static ChunkRange areaChunkRange(AreaKey area) {
         long minChunkX = Math.multiplyExact(area.x(), CACHE_CHUNK_SIZE);
         long minChunkZ = Math.multiplyExact(area.z(), CACHE_CHUNK_SIZE);
-        return new ChunkRange(
-                minChunkX,
-                minChunkZ,
-                minChunkX + CACHE_CHUNK_SIZE - 1,
-                minChunkZ + CACHE_CHUNK_SIZE - 1);
+        return new ChunkRange(minChunkX, minChunkZ, minChunkX + CACHE_CHUNK_SIZE - 1, minChunkZ + CACHE_CHUNK_SIZE - 1);
     }
 
     private void cacheAncientCityViability(
@@ -952,22 +928,20 @@ public class StructureLabel extends BaseModule {
             pendingAncientChestAreas.remove(area);
             waypointDirty = true;
         }
-        checkedAncientCities.removeIf(key -> Objects.equals(lastPlayerArea, center)
-                && !isWithinCurrentCache(areaForStructure(key)));
-        viableAncientCities.removeIf(key -> Objects.equals(lastPlayerArea, center)
-                && !isWithinCurrentCache(areaForStructure(key)));
-        checkedDesertPyramids.removeIf(key -> Objects.equals(lastPlayerArea, center)
-                && !isWithinCurrentCache(areaForStructure(key)));
-        viableDesertPyramids.removeIf(key -> Objects.equals(lastPlayerArea, center)
-                && !isWithinCurrentCache(areaForStructure(key)));
+        checkedAncientCities.removeIf(
+                key -> Objects.equals(lastPlayerArea, center) && !isWithinCurrentCache(areaForStructure(key)));
+        viableAncientCities.removeIf(
+                key -> Objects.equals(lastPlayerArea, center) && !isWithinCurrentCache(areaForStructure(key)));
+        checkedDesertPyramids.removeIf(
+                key -> Objects.equals(lastPlayerArea, center) && !isWithinCurrentCache(areaForStructure(key)));
+        viableDesertPyramids.removeIf(
+                key -> Objects.equals(lastPlayerArea, center) && !isWithinCurrentCache(areaForStructure(key)));
     }
 
     private static AreaKey areaForStructure(StructureKey key) {
         return new AreaKey(
-                Math.floorDiv(key.chunkX(), CACHE_CHUNK_SIZE),
-                Math.floorDiv(key.chunkZ(), CACHE_CHUNK_SIZE));
+                Math.floorDiv(key.chunkX(), CACHE_CHUNK_SIZE), Math.floorDiv(key.chunkZ(), CACHE_CHUNK_SIZE));
     }
-
 
     private void rebuildWaypoints() {
         if (mc.world == null) {
@@ -1001,15 +975,16 @@ public class StructureLabel extends BaseModule {
         }
         for (Map.Entry<StructureKey, WaypointSpec> entry : desired.entrySet()) {
             ChunkPos chunkPos = new ChunkPos(
-                    Math.toIntExact(entry.getKey().chunkX()), Math.toIntExact(entry.getKey().chunkZ()));
+                    Math.toIntExact(entry.getKey().chunkX()),
+                    Math.toIntExact(entry.getKey().chunkZ()));
             ensureWaypoint(helper, entry.getKey(), entry.getValue(), dirtyPos.contains(chunkPos));
         }
         Map<AppleChestWaypointKey, WaypointSpec> desiredAppleChests = new java.util.LinkedHashMap<>();
         for (List<PredictedChestAlternatives> predictions : cachedOtherPredictedAppleChests.values()) {
             for (PredictedChestAlternatives prediction : predictions) {
                 BlockPos position = prediction.possiblePositions().getFirst();
-                AppleChestWaypointKey key = new AppleChestWaypointKey(
-                        prediction.lootTable(), position.getX(), position.getZ());
+                AppleChestWaypointKey key =
+                        new AppleChestWaypointKey(prediction.lootTable(), position.getX(), position.getZ());
                 desiredAppleChests.put(key, createAppleChestWaypointSpec(prediction));
             }
         }
@@ -1021,7 +996,9 @@ public class StructureLabel extends BaseModule {
             }
         }
         for (Map.Entry<AppleChestWaypointKey, WaypointSpec> entry : desiredAppleChests.entrySet()) {
-            ensureAppleChestWaypoint(helper, entry.getKey(), entry.getValue());
+            ChunkPos chunkPos =
+                    new ChunkPos(entry.getKey().x() >> 4, entry.getKey().z() >> 4);
+            ensureAppleChestWaypoint(helper, entry.getKey(), entry.getValue(), dirtyPos.contains(chunkPos));
         }
         dirtyPos.clear();
     }
@@ -1038,18 +1015,26 @@ public class StructureLabel extends BaseModule {
                 z,
                 desertPyramid ? "Desert Pyramid Apple Chest" : "Ruined Portal Apple Chest",
                 desertPyramid ? "DP" : "RP",
-                desertPyramid ? desertPyramidColorId.get() : ruinedPortalColorId.get(),
+                isVisitedChunk(new ChunkPos(position))
+                        ? Formatting.GRAY.ordinal()
+                        : desertPyramid ? desertPyramidColorId.get() : ruinedPortalColorId.get(),
                 0,
                 true,
                 true);
     }
 
     private void ensureAppleChestWaypoint(
-            XaeroHelper helper, AppleChestWaypointKey key, WaypointSpec spec) {
+            XaeroHelper helper, AppleChestWaypointKey key, WaypointSpec spec, boolean forceReadd) {
         IXWaypoint waypoint = appleChestWaypoints.get(key);
         WaypointSpec previous = committedAppleChestWaypointSpecs.get(key);
-        if (spec.equals(previous)) {
+        if (!forceReadd && spec.equals(previous)) {
             return;
+        }
+        if (forceReadd && waypoint != null) {
+            helper.removeWaypoint(waypoint);
+            appleChestWaypoints.remove(key);
+            committedAppleChestWaypointSpecs.remove(key);
+            waypoint = null;
         }
         if (waypoint != null && previous != null && !previous.initials().equals(spec.initials())) {
             helper.removeWaypoint(waypoint);
@@ -1070,8 +1055,15 @@ public class StructureLabel extends BaseModule {
             return;
         }
         waypoint = helper.createWaypoint(
-                spec.x(), spec.y(), spec.z(), spec.name(), spec.initials(), spec.color(),
-                spec.purpose(), spec.temp(), spec.yIncluded());
+                spec.x(),
+                spec.y(),
+                spec.z(),
+                spec.name(),
+                spec.initials(),
+                spec.color(),
+                spec.purpose(),
+                spec.temp(),
+                spec.yIncluded());
         if (waypoint != null) {
             appleChestWaypoints.put(key, waypoint);
             committedAppleChestWaypointSpecs.put(key, spec);
@@ -1094,12 +1086,12 @@ public class StructureLabel extends BaseModule {
         int color = isVisitedStructure(structure)
                 ? Formatting.GRAY.ordinal()
                 : END_CITIES.equals(structureSet)
-                ? elytra ? elytraColorId.get() : endCityColorId.get()
-                : ANCIENT_CITIES.equals(structureSet)
-                        ? ancientCityColorId.get()
-                        : DESERT_PYRAMIDS.equals(structureSet)
-                                ? desertPyramidColorId.get()
-                                : ruinedPortalColorId.get();
+                        ? elytra ? elytraColorId.get() : endCityColorId.get()
+                        : ANCIENT_CITIES.equals(structureSet)
+                                ? ancientCityColorId.get()
+                                : DESERT_PYRAMIDS.equals(structureSet)
+                                        ? desertPyramidColorId.get()
+                                        : ruinedPortalColorId.get();
         boolean ancientCity = ANCIENT_CITIES.equals(structureSet);
         String name = ancientCity
                 ? "Ancient City"
@@ -1110,9 +1102,9 @@ public class StructureLabel extends BaseModule {
                                 : elytra ? "Elytra End City" : "End City";
         String initials = ancientCity
                 ? "AC"
-                        : DESERT_PYRAMIDS.equals(structureSet)
-                                ? "DP"
-                                : RUINED_PORTALS.equals(structureSet) ? "RP" : elytra ? "E" : "C";
+                : DESERT_PYRAMIDS.equals(structureSet)
+                        ? "DP"
+                        : RUINED_PORTALS.equals(structureSet) ? "RP" : elytra ? "E" : "C";
         double scale = mc.world.getDimension().coordinateScale();
         int x = (int) Math.round((structure.blockX() + 8) * scale);
         int z = (int) Math.round((structure.blockZ() + 8) * scale);
@@ -1139,16 +1131,24 @@ public class StructureLabel extends BaseModule {
                 if (dx * dx + dz * dz >= 128L * 128L) {
                     continue;
                 }
-                ChunkPos chunkPos = new ChunkPos(
-                        Math.toIntExact(structure.chunkX()), Math.toIntExact(structure.chunkZ()));
-                ChunkStorage storage = ServerStorage.getOrCreateChunkStorage(chunkPos);
-                if (storage == null
-                        || Boolean.TRUE.equals(storage.get(VISITED_STRUCTURE_KEY, Codec.BOOL))) {
+                ChunkPos chunkPos =
+                        new ChunkPos(Math.toIntExact(structure.chunkX()), Math.toIntExact(structure.chunkZ()));
+                if (markChunkVisited(chunkPos)) {
+                    changed = true;
+                }
+            }
+        }
+        for (List<PredictedChestAlternatives> predictions : cachedOtherPredictedAppleChests.values()) {
+            for (PredictedChestAlternatives prediction : predictions) {
+                BlockPos position = prediction.possiblePositions().getFirst();
+                long dx = (long) position.getX() - playerPos.getX();
+                long dz = (long) position.getZ() - playerPos.getZ();
+                if (dx * dx + dz * dz >= 128L * 128L) {
                     continue;
                 }
-                storage.put(VISITED_STRUCTURE_KEY, true, Codec.BOOL);
-                dirtyPos.add(chunkPos);
-                changed = true;
+                if (markChunkVisited(new ChunkPos(position))) {
+                    changed = true;
+                }
             }
         }
         if (changed) {
@@ -1156,9 +1156,22 @@ public class StructureLabel extends BaseModule {
         }
     }
 
+    private boolean markChunkVisited(ChunkPos chunkPos) {
+        ChunkStorage storage = ServerStorage.getOrCreateChunkStorage(chunkPos);
+        if (storage == null || Boolean.TRUE.equals(storage.get(VISITED_STRUCTURE_KEY, Codec.BOOL))) {
+            return false;
+        }
+        storage.put(VISITED_STRUCTURE_KEY, true, Codec.BOOL);
+        dirtyPos.add(chunkPos);
+        return true;
+    }
+
     private boolean isVisitedStructure(StructurePosition structure) {
-        ChunkPos chunkPos = new ChunkPos(
-                Math.toIntExact(structure.chunkX()), Math.toIntExact(structure.chunkZ()));
+        ChunkPos chunkPos = new ChunkPos(Math.toIntExact(structure.chunkX()), Math.toIntExact(structure.chunkZ()));
+        return isVisitedChunk(chunkPos);
+    }
+
+    private boolean isVisitedChunk(ChunkPos chunkPos) {
         ChunkStorage storage = ServerStorage.getChunkStorage(chunkPos);
         return storage != null && Boolean.TRUE.equals(storage.get(VISITED_STRUCTURE_KEY, Codec.BOOL));
     }
@@ -1194,8 +1207,15 @@ public class StructureLabel extends BaseModule {
             return;
         }
         waypoint = helper.createWaypoint(
-                spec.x(), spec.y(), spec.z(), spec.name(), spec.initials(), spec.color(),
-                spec.purpose(), spec.temp(), spec.yIncluded());
+                spec.x(),
+                spec.y(),
+                spec.z(),
+                spec.name(),
+                spec.initials(),
+                spec.color(),
+                spec.purpose(),
+                spec.temp(),
+                spec.yIncluded());
         if (waypoint != null) {
             waypoints.put(key, waypoint);
             committedWaypointSpecs.put(key, spec);
@@ -1288,17 +1308,17 @@ public class StructureLabel extends BaseModule {
                 int maxY = positions.stream().mapToInt(BlockPos::getY).max().orElseThrow();
                 if (rendered.add(first)) {
                     rendered.addAll(positions);
-                    boxCollector.submit(new Box(
-                            first.getX() + 0.375,
-                            minY,
-                            first.getZ() + 0.375,
-                            first.getX() + 0.625,
-                            maxY + 1,
-                            first.getZ() + 0.625), chestColor);
-                    tracerCollector.submit(new Vec3d(
-                            first.getX() + 0.5,
-                            (minY + maxY + 1) * 0.5,
-                            first.getZ() + 0.5), chestColor);
+                    boxCollector.submit(
+                            new Box(
+                                    first.getX() + 0.375,
+                                    minY,
+                                    first.getZ() + 0.375,
+                                    first.getX() + 0.625,
+                                    maxY + 1,
+                                    first.getZ() + 0.625),
+                            chestColor);
+                    tracerCollector.submit(
+                            new Vec3d(first.getX() + 0.5, (minY + maxY + 1) * 0.5, first.getZ() + 0.5), chestColor);
                 }
             }
         }
@@ -1315,8 +1335,7 @@ public class StructureLabel extends BaseModule {
     }
 
     private static PredictedChestAlternatives asAlternatives(PredictedChest chest) {
-        return new PredictedChestAlternatives(
-                List.of(chest.position()), chest.lootTable(), chest.lootSeed());
+        return new PredictedChestAlternatives(List.of(chest.position()), chest.lootTable(), chest.lootSeed());
     }
 
     private boolean containsEnchantedGoldenApple(BlockEntity blockEntity) {
@@ -1334,8 +1353,7 @@ public class StructureLabel extends BaseModule {
     }
 
     private boolean containsSynchronizedApple(BlockPos pos) {
-        if (mc.world == null
-                || !mc.world.getChunkManager().isChunkLoaded(pos.getX() >> 4, pos.getZ() >> 4)) {
+        if (mc.world == null || !mc.world.getChunkManager().isChunkLoaded(pos.getX() >> 4, pos.getZ() >> 4)) {
             return false;
         }
         BlockEntity blockEntity = mc.world.getBlockEntity(pos);
@@ -1399,13 +1417,27 @@ public class StructureLabel extends BaseModule {
     }
 
     private boolean isCurrent(ContextRequest request) {
-        return enable.get()
-                && pendingContextRequest == request
-                && generation == request.generation();
+        return enable.get() && pendingContextRequest == request && generation == request.generation();
     }
 
     private void cleanupFinishedTasks() {
-        pendingTasks.removeIf(ScheduledFuture::isDone);
+        pendingTasks.removeIf(Future::isDone);
+    }
+
+    private LootBiomeSamplers getLootBiomeSamplers(GenerationContext current) {
+        LootBiomeSamplers cached = lootBiomeSamplerCache.get();
+        if (cached != null && cached.matches(current)) {
+            return cached;
+        }
+        CubiomesOverworldBiomeSampler overworldSampler = World.OVERWORLD.equals(current.worldKey())
+                ? CubiomesOverworldBiomeSampler.create(current.seed())
+                : null;
+        CubiomesNetherBiomeSampler netherSampler =
+                World.NETHER.equals(current.worldKey()) ? CubiomesNetherBiomeSampler.create(current.seed()) : null;
+        LootBiomeSamplers created =
+                new LootBiomeSamplers(current.seed(), current.worldKey(), overworldSampler, netherSampler);
+        lootBiomeSamplerCache.set(created);
+        return created;
     }
 
     private void resetState() {
@@ -1415,8 +1447,6 @@ public class StructureLabel extends BaseModule {
     private void resetState(boolean worldSwitch, boolean removeWaypoints) {
         generation++;
         otherLootGeneration++;
-        otherLootRefreshNeeded.set(false);
-        otherLootRefreshScheduled.set(false);
         context = null;
         pendingContextRequest = null;
         lastPlayerArea = null;
@@ -1438,11 +1468,13 @@ public class StructureLabel extends BaseModule {
         pendingOtherLootAreas.clear();
         checkedOtherLootAreas.clear();
         pendingAncientChestAreas.clear();
+        pendingLootAreaTasks.clear();
         boxCollector.clear();
         tracerCollector.clear();
-        for (ScheduledFuture<?> future : pendingTasks) {
+        for (Future<?> future : pendingTasks) {
             future.cancel(true);
         }
+        lootExecutor.purge();
         pendingTasks.clear();
         XaeroHelper helper = XaeroHelper.INSTANCE;
         if (worldSwitch) {
@@ -1479,12 +1511,14 @@ public class StructureLabel extends BaseModule {
         }
     }
 
-    private record AreaWork(ChunkRange range, List<StructurePosition> ancientCities) {}
+    private record LootAreaTaskKey(
+            AreaKey area, long structureGeneration, long predictionGeneration, boolean lowPriority) {}
 
     private record PredictedChestContents(BlockPos position, Optional<List<ItemStack>> contents) {
         private PredictedChestContents {
             position = position.toImmutable();
-            contents = contents.map(stacks -> stacks.stream().map(ItemStack::copy).toList());
+            contents =
+                    contents.map(stacks -> stacks.stream().map(ItemStack::copy).toList());
         }
     }
 
@@ -1518,13 +1552,21 @@ public class StructureLabel extends BaseModule {
             RegistryKey<World> worldKey,
             Map<Identifier, StructureConfig> configs,
             Map<Identifier, StructureDecorationIndex.Index> structureIndices,
-            @Nullable CubiomesOverworldBiomeSampler biomeSampler,
-            @Nullable CubiomesNetherBiomeSampler netherBiomeSampler) {}
+            @Nullable CubiomesOverworldBiomeSampler biomeSampler) {}
+
+    private record LootBiomeSamplers(
+            long seed,
+            RegistryKey<World> worldKey,
+            @Nullable CubiomesOverworldBiomeSampler overworld,
+            @Nullable CubiomesNetherBiomeSampler nether) {
+        private boolean matches(GenerationContext current) {
+            return seed == current.seed() && worldKey.equals(current.worldKey());
+        }
+    }
 
     private record StructureKey(Identifier structureSet, long chunkX, long chunkZ) {
         private static StructureKey of(StructurePosition position) {
-            return new StructureKey(
-                    position.config().structureSetId(), position.chunkX(), position.chunkZ());
+            return new StructureKey(position.config().structureSetId(), position.chunkX(), position.chunkZ());
         }
     }
 

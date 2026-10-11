@@ -53,10 +53,10 @@ public final class CubiomesOverworldBiomeSampler {
 
     public static CubiomesOverworldBiomeSampler create(long seed) {
         RegistryWrapper.WrapperLookup registries = DefaultWorldgenRegistryManager.registry();
-        RegistryEntry<MultiNoiseBiomeSourceParameterList> biomeParameters = RegistryUtils.getRegistryEntry(
-                registries, MultiNoiseBiomeSourceParameterLists.OVERWORLD);
-        RegistryEntry<ChunkGeneratorSettings> generatorSettings = RegistryUtils.getRegistryEntry(
-                registries, ChunkGeneratorSettings.OVERWORLD);
+        RegistryEntry<MultiNoiseBiomeSourceParameterList> biomeParameters =
+                RegistryUtils.getRegistryEntry(registries, MultiNoiseBiomeSourceParameterLists.OVERWORLD);
+        RegistryEntry<ChunkGeneratorSettings> generatorSettings =
+                RegistryUtils.getRegistryEntry(registries, ChunkGeneratorSettings.OVERWORLD);
         if (biomeParameters == null || generatorSettings == null) {
             throw new IllegalStateException("Vanilla Overworld worldgen entries are unavailable");
         }
@@ -129,7 +129,8 @@ public final class CubiomesOverworldBiomeSampler {
         Heightmap.Type startHeightmap = Heightmap.Type.WORLD_SURFACE_WG;
         int minCornerHeight = Math.min(
                 Math.min(
-                        terrainGenerator.getHeightInGround(startX, startZ, startHeightmap, heightLimitView, noiseConfig),
+                        terrainGenerator.getHeightInGround(
+                                startX, startZ, startHeightmap, heightLimitView, noiseConfig),
                         terrainGenerator.getHeightInGround(
                                 startX + variant.sizeX(), startZ, startHeightmap, heightLimitView, noiseConfig)),
                 Math.min(
@@ -153,8 +154,8 @@ public final class CubiomesOverworldBiomeSampler {
         }
         int centerX = Math.toIntExact(structure.chunkX() * 16L + 8L);
         int centerZ = Math.toIntExact(structure.chunkZ() * 16L + 8L);
-        int centerY = terrainGenerator.getHeightInGround(
-                centerX, centerZ, startHeightmap, heightLimitView, noiseConfig);
+        int centerY =
+                terrainGenerator.getHeightInGround(centerX, centerZ, startHeightmap, heightLimitView, noiseConfig);
         RegistryEntry<Biome> startBiome = biomeAtQuart(centerX >> 2, centerY >> 2, centerZ >> 2);
         return BiomeValidity.contains(desertPyramid.getValidBiomes(), startBiome);
     }
@@ -199,8 +200,7 @@ public final class CubiomesOverworldBiomeSampler {
     }
 
     /** Returns the lowest raw-noise height over a structure footprint, inclusive. */
-    public int getLowestHeight(
-            int minBlockX, int minBlockZ, int sizeX, int sizeZ, Heightmap.Type heightmap) {
+    public int getLowestHeight(int minBlockX, int minBlockZ, int sizeX, int sizeZ, Heightmap.Type heightmap) {
         int lowest = Integer.MAX_VALUE;
         for (int x = 0; x < sizeX; x++) {
             for (int z = 0; z < sizeZ; z++) {
@@ -210,14 +210,10 @@ public final class CubiomesOverworldBiomeSampler {
         return lowest;
     }
 
-    public int getRuinedPortalOriginY(
-        RuinedPortalVariant variant, StructurePosition structure, long seed) {
+    public int getRuinedPortalOriginY(RuinedPortalVariant variant, StructurePosition structure, long seed) {
         RuinedPortalVariant.HorizontalBounds bounds = variant.horizontalBounds(structure);
-        boolean oceanFloor = variant.verticalPlacement()
-                == RuinedPortalVariant.VerticalPlacement.ON_OCEAN_FLOOR;
-        Heightmap.Type heightmap = oceanFloor
-                ? Heightmap.Type.OCEAN_FLOOR_WG
-                : Heightmap.Type.WORLD_SURFACE_WG;
+        boolean oceanFloor = variant.verticalPlacement() == RuinedPortalVariant.VerticalPlacement.ON_OCEAN_FLOOR;
+        Heightmap.Type heightmap = oceanFloor ? Heightmap.Type.OCEAN_FLOOR_WG : Heightmap.Type.WORLD_SURFACE_WG;
         int height = getHeight(bounds.centerX(), bounds.centerZ(), heightmap) - 1;
         int templateHeight = variant.templateData().sizeY();
         JavaLegacyRandom random = variant.randomAtOriginHeight(seed, structure);
@@ -235,10 +231,7 @@ public final class CubiomesOverworldBiomeSampler {
     }
 
     private int lowerPortalToThreeGroundCorners(
-            RuinedPortalVariant.HorizontalBounds bounds,
-            int height,
-            Heightmap.Type heightmap,
-            int minimumHeight) {
+            RuinedPortalVariant.HorizontalBounds bounds, int height, Heightmap.Type heightmap, int minimumHeight) {
         VerticalBlockSample[] columns = {
             terrainGenerator.getColumnSample(bounds.minX(), bounds.minZ(), heightLimitView, noiseConfig),
             terrainGenerator.getColumnSample(bounds.maxX(), bounds.minZ(), heightLimitView, noiseConfig),
