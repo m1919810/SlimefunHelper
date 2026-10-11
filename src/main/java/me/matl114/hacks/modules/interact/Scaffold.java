@@ -105,6 +105,9 @@ public class Scaffold extends BaseModule {
 
     private boolean placeBlock(int hand, BlockHitResult result) {
         boolean offhandOk = offhand.get() || hand == 40;
+        if (!InteractionTasks.canHandleInteract(legalMode.get(), result)) {
+            return false;
+        }
         Runnable callback = InvExtra.INSTANCE.swapItemToHand(hand, offhandOk, ghostHand.get());
         if (callback == null) {
             return false;

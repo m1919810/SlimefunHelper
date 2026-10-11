@@ -124,13 +124,28 @@ public class InteractionTasks {
         return handlePlaceMode(mode, result, hand, true);
     }
 
-    public static boolean handlePlaceMode(LegalInteractMode mode, BlockHitResult result, Hand hand, boolean swingHand) {
-        boolean directlyHit = RaycastUtils.canRaycastHit(
+    public static boolean canHandleInteract(LegalInteractMode mode, BlockHitResult result) {
+        if (canDirectHit(result)) {
+            return true;
+        }
+        return switch (mode) {
+            case USEITEM_PACKET, LEGACY_SLIENT_ROT, NONE -> true;
+            case DELAY_MOVEMENT -> !RotationManager.INSTANCE.isOccupied();
+            case MOVEMENT_POST -> false;
+        };
+    }
+
+    private static boolean canDirectHit(BlockHitResult result) {
+        return RaycastUtils.canRaycastHit(
                 mc.player,
                 PlayerStateManager.INSTANCE.lastPitch,
                 PlayerStateManager.INSTANCE.lastYaw,
                 result.getBlockPos(),
                 InteractExtra.INSTANCE.getBlockReachDistance());
+    }
+
+    public static boolean handlePlaceMode(LegalInteractMode mode, BlockHitResult result, Hand hand, boolean swingHand) {
+        boolean directlyHit = canDirectHit(result);
         switch (mode) {
             case USEITEM_PACKET -> {
                 Vec2f rotation = EntityUtils.rotationToPitchYaw(

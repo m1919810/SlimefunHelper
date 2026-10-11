@@ -123,7 +123,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
                                 Optional.of(0.0F),
                                 rotateYaw ? Optional.of(mc.player.getYaw() + 180.0F) : Optional.empty())
                         .applyMoveFix(false)
-                        .occupied(false));
+                        .priority(0));
             }
         }
     }

@@ -114,7 +114,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
                                         }
                                         PlayerInputManager.INSTANCE.addSprintModifier(0, true, 1);
                                     })
-                                    .occupied(false));
+                                    .priority(0));
                 }
             }
         }
