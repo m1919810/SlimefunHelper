@@ -209,7 +209,7 @@ public class AutoSurround extends BaseModule {
                                 PlayerInputManager.INSTANCE.addBackwardModifier(0, false, 1);
                             })
                             .applyMoveFix(false)
-                            .occupied(false));
+                            .priority(0));
                 }
             } else {
                 lastCenter = null;
@@ -377,6 +377,9 @@ public class AutoSurround extends BaseModule {
                             if (supply == null) {
                                 break;
                             }
+                            if (!InteractionTasks.canHandleInteract(mode.get(), hitResult.val())) {
+                                break;
+                            }
                             mul = Math.min(mul, supply.val().getCount());
                             offhandOk |= supply.index() == 40;
                             invCallback = InvExtra.INSTANCE.swapItemToHand(supply.index(), offhandOk, ghostHand.get());
@@ -407,6 +410,9 @@ public class AutoSurround extends BaseModule {
                 if (placeCnt == 0) {
                     var supply = supplyBlocks();
                     if (supply == null) {
+                        break;
+                    }
+                    if (!InteractionTasks.canHandleInteract(mode.get(), selfHitResult)) {
                         break;
                     }
                     mul = Math.min(mul, supply.val().getCount());

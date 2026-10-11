@@ -347,12 +347,20 @@ public class PrinterRewrite extends BaseModule {
             }
             enableRot.set(BypassMode.NO_BYPASS);
             try {
+                if (!InteractionTasks.canHandleInteract(mode.get(), result.val())) {
+                    putCanNotPlace(pos);
+                    return false;
+                }
                 Runnable callback = InvExtra.INSTANCE.swapItemToHand(idx, false, GhostHandMode.INV_SWAP);
                 if (callback == null) {
                     putCanNotPlace(pos);
                     return false;
                 }
-                handlePlace(result.val());
+                if (!handlePlace(result.val())) {
+                    InteractionTasks.finishGhostHand(mode.get(), callback);
+                    putCanNotPlace(pos);
+                    return false;
+                }
                 // sb grimac
                 if (returnBlock.get()) {
                     InteractionTasks.finishGhostHand(mode.get(), callback);
@@ -581,9 +589,17 @@ public class PrinterRewrite extends BaseModule {
                     hitResult = new FlagEntry<>(false, InteractionTasks.createHitResult(pos, mc.player.getPos()));
                 }
                 if (InteractUtils.canInteractAndPlace(mc.player, hitResult)) {
+                    if (!InteractionTasks.canHandleInteract(mode.get(), hitResult.val())) {
+                        putCanNotPlace(pos);
+                        return false;
+                    }
                     Runnable runnable = InvExtra.INSTANCE.swapItemToHand(re.index(), false, GhostHandMode.INV_SWAP);
                     if (runnable != null) {
-                        InteractionTasks.handlePlaceMode(mode.get(), hitResult.val(), Hand.MAIN_HAND);
+                        if (!InteractionTasks.handlePlaceMode(mode.get(), hitResult.val(), Hand.MAIN_HAND)) {
+                            InteractionTasks.finishGhostHand(mode.get(), runnable);
+                            putCanNotPlace(pos);
+                            return false;
+                        }
                         putSuccessPlace(pos);
                         if (isDesyncStateInteractTransition(currentState, targetState)) {
                             desyncWaitBlocks.put(pos, Tasks.getTick() + 20);
@@ -616,11 +632,12 @@ public class PrinterRewrite extends BaseModule {
 
     public void tickTryDrainWater() {}
 
-    public void handlePlace(BlockHitResult result) {
+    public boolean handlePlace(BlockHitResult result) {
         if (!mode.get().isLegal()) {
             InteractionTasks.interactBlock(Hand.MAIN_HAND, result, swingHand.get());
+            return true;
         } else {
-            InteractionTasks.handlePlaceMode(mode.get(), result, Hand.MAIN_HAND, swingHand.get());
+            return InteractionTasks.handlePlaceMode(mode.get(), result, Hand.MAIN_HAND, swingHand.get());
         }
     }
 
