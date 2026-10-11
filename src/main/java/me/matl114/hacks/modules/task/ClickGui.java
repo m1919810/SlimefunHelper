@@ -453,7 +453,8 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                             .combineRender(guiElementFactory.createTitle(
                                     TextProvider.of(Text.translatableWithFallback(
                                             "widget.click-gui.module-group-name." + module, module)),
-                                    TooltipHandler.of(List.of())))
+                                    TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                            "widget.click-gui.module-group.header.tooltips", ""))))
                             .combineRender(((element, context, mouseX, mouseY, delta, alpha, shouldHighlight) -> {
                                 context.setShaderColor(
                                         textColor().withAlpha(255).color());
@@ -877,7 +878,8 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                             .combineRender(guiElementFactory.createTitle(
                                     TextProvider.of(Text.translatableWithFallback(
                                             "widget.click-gui.module-group-name." + module, module)),
-                                    TooltipHandler.of(List.of())))
+                                    TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
+                                            "widget.click-gui.module-group.header.tooltips", ""))))
                             .combineRender(((element, context, mouseX, mouseY, delta, alpha, shouldHighlight) -> {
                                 context.setShaderColor(
                                         textColor().withAlpha(255).color());
@@ -891,8 +893,7 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                                         element.getTextureHeight() - 4,
                                         element.getTextureHeight() - 4);
                                 context.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-                            }))
-                            .withTooltips(TooltipHandler.of(List.of(Text.literal("鎷栧姩鎴栭紶鏍囨粴杞互淇敼浣嶇疆")))));
+                            })));
         }
     }
 

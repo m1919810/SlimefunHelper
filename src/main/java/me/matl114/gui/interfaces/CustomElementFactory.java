@@ -2,12 +2,7 @@ package me.matl114.gui.interfaces;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
-import me.matl114.gui.basic.ButtonAction;
-import me.matl114.gui.basic.ColorSampler;
-import me.matl114.gui.basic.ElementHandler;
-import me.matl114.gui.basic.TextAlign;
-import me.matl114.gui.basic.TextProvider;
-import me.matl114.gui.basic.TooltipHandler;
+import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.BoxElement;
 import me.matl114.gui.complex.RawTextElement;
 import me.matl114.gui.elements.*;
@@ -168,12 +163,13 @@ public class CustomElementFactory implements ElementFactory {
     @Override
     public ElementHandler createElement(
             ElementHandler handler, @Nullable TooltipHandler tooltips, @Nullable ButtonAction action) {
-        ElementHandler element = handler;
+        AbstractElement element = new AbstractElement();
+        element = element.withElement(handler);
         if (tooltips != null) {
             element = element.withTooltips(tooltips);
         }
         if (action != null) {
-            element = new BoxElement(action).withElement(element);
+            element = element.withInputHandler(new BoxElement(action));
         }
         return element;
     }

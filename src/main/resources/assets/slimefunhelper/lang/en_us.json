@@ -2067,6 +2067,7 @@
 	"widget.fast-trade.trade-info.special-price": "§a%s",
 	"widget.click-gui.open-full-config": "配置界面",
 	"widget.click-gui.open-full-config.tooltips": "打开单一模块配置界面",
+	"widget.click-gui.module-group.header.tooltips": "拖动或鼠标滚轮以修改位置",
 	"widget.click-gui.selection.Module": "模块设置",
 	"widget.click-gui.selection.Module.tooltips": "ClickGui形态的配置界面\n配置以模块组织",
 	"widget.click-gui.selection.Config": "全配置",

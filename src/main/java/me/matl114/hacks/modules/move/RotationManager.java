@@ -30,6 +30,7 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
     private final List<RotationRequest> currentTickRequests = new ArrayList<>();
     RotationRequest currentTickRequest;
     private int queueTick = 0;
+    private boolean currentInQueue = false;
     static LegalMovementManager.DelegateMovementModifier instance;
 
     public RotationManager() {
@@ -62,9 +63,6 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
         if (isOccupied()) {
             return false;
         }
-        if (isOccupied()) {
-            return false;
-        }
         currentTickRequests.add(request);
         return true;
     }
@@ -73,14 +71,21 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
         return currentTickRequests.stream().anyMatch(request -> request.priority() == Integer.MIN_VALUE);
     }
 
-    private void onQueuePacket(Event<PacketStorage> event) {
-        if (queueTick == Tasks.getTick()) {
+    private void onQueuePacket(Event<PacketStorage.Send> event) {
+        if (queueTick < Tasks.getTick() - 5) {
+            currentInQueue = false;
+        }
+        if (currentInQueue) {
             event.cancel();
         }
     }
 
     public void startQueuePacket() {
         queueTick = Tasks.getTick();
+        PacketManager.schedule(() -> {
+            queueTick = Tasks.getTick();
+            currentInQueue = true;
+        });
     }
 
     @Override
@@ -137,9 +142,11 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
         if (request != null) {
             request.tickPost();
         }
-        if (queueTick != 0) {
-            queueTick = 0;
-            PacketManager.flushOutBound();
+        if (queueTick != 0 || currentInQueue) {
+            PacketManager.flushOutBound(() -> {
+                queueTick = 0;
+                currentInQueue = false;
+            });
         }
         return true;
     }

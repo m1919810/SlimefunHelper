@@ -1,8 +1,6 @@
 package me.matl114.events;
 
 import com.google.common.collect.ImmutableSet;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelPipeline;
 import java.lang.reflect.Modifier;
@@ -464,10 +462,6 @@ public class Listener {
     @Getter
     @ExtraArgs({ClientConnection.class})
     public static final PacketEventChannel packetPostScheduleSendPoint = new PacketEventChannel();
-
-    @Getter
-    @ExtraArgs({ClientConnection.class})
-    private static final PacketEventChannel packetPostSendPoint = new PacketEventChannel();
 
     @Getter // packet accept or send
     @Cancelable
@@ -938,20 +932,15 @@ public class Listener {
     // make a method to send packet without event
     public static void sendPacketNoEvents(ClientConnection connection, Packet<?> packet) {
         connection.submit((con) -> {
-            Channel channel = con.channel;
+            var channel = con.channel;
             if (channel.eventLoop().inEventLoop()) {
-                sendInternal(channel, packet);
+                con.sendInternal(packet, ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE, true);
             } else {
                 channel.eventLoop().execute(() -> {
-                    sendInternal(channel, packet);
+                    con.sendInternal(packet, ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE, true);
                 });
             }
         });
-    }
-
-    private static void sendInternal(Channel channel, Packet<?> packet) {
-        ChannelFuture channelFuture = channel.writeAndFlush(packet);
-        channelFuture.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
     }
 
     public static void onClientConnectionEstablish(Event<ClientConnection> event) {
@@ -985,7 +974,7 @@ public class Listener {
         Listener.getPacketPostHandlePoint()
                 .registerHandler(
                         (Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(postCatchers, ev), Integer.MIN_VALUE);
-        Listener.getPacketPostSendPoint()
+        Listener.getPacketPostScheduleSendPoint()
                 .registerHandler(
                         (Consumer<Event<Packet<?>>>) ev -> onPacketEventCatch(postCatchers, ev), Integer.MIN_VALUE);
         Listener.getConnectionEstablish()

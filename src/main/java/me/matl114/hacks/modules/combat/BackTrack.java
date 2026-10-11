@@ -7,7 +7,7 @@ import me.matl114.events.*;
 import me.matl114.events.Event;
 import me.matl114.events.impl.Render3D;
 import me.matl114.events.packets.PacketStorage;
-import me.matl114.events.packets.PacketStorageImpl;
+import me.matl114.events.packets.PacketStorageRecvImpl;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
@@ -147,7 +147,7 @@ public class BackTrack extends BaseModule {
         movePlayerEntityTypes.add(PlayPackets.MOVE_ENTITY_POS_ROT);
     }
 
-    public void onQueuePlayerPosition(Event<PacketStorage> event) {
+    public void onQueuePlayerPosition(Event<PacketStorage.Recv> event) {
         if (shouldDelay) {
             long currentMs = System.currentTimeMillis();
             if (event.context.timestampMS() + maxDelay.get() < currentMs) {
@@ -157,7 +157,7 @@ public class BackTrack extends BaseModule {
         }
         if (enable.get() && currentTarget != null && event.<Boolean>getArgs(1)) {
             var storage = event.context;
-            if (storage instanceof PacketStorageImpl impl) {
+            if (storage instanceof PacketStorageRecvImpl impl) {
                 var packet = impl.packet();
                 if (PacketManager.isAsyncOrNotTransactionS2CPacket(packet)) return;
                 if (packet instanceof EntityPositionSyncS2CPacket positionSync

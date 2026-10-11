@@ -111,9 +111,9 @@ public class ExplosiveESP extends BaseModule {
 
             submitDamageText(crystal.getPos(), 6.0F, crystalRgb);
         }
-        if (highlightCrystal.get()) {
-            for (var crystal : mc.world.getEntities()) {
-                if (crystal instanceof EndCrystalEntity end) {
+        for (var crystal : mc.world.getEntities()) {
+            if (crystal instanceof EndCrystalEntity end) {
+                if (highlightCrystal.get()) {
                     faceCollector.submit(crystal, ColorUtils.withAlphaInt(crystalRgb, 64));
                 }
                 if (tracingOption.box()) {

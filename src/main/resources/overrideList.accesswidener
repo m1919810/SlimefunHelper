@@ -112,3 +112,4 @@ accessible field net/minecraft/client/network/PendingUpdateManager$PendingUpdate
 accessible field net/minecraft/client/network/PendingUpdateManager$PendingUpdate sequence I
 accessible field net/minecraft/client/render/RenderSetup textures Ljava/util/Map;
 accessible method net/minecraft/client/render/RenderSetup$TextureSpec location ()Lnet/minecraft/util/Identifier;
+accessible method net/minecraft/network/ClientConnection sendInternal (Lnet/minecraft/network/packet/Packet;Lio/netty/channel/ChannelFutureListener;Z)V

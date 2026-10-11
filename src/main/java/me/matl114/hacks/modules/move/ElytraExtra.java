@@ -14,7 +14,7 @@ import me.matl114.events.PacketManager;
 import me.matl114.events.impl.EventContainer;
 import me.matl114.events.impl.MetadataUpdate;
 import me.matl114.events.packets.PacketStorage;
-import me.matl114.events.packets.PacketStorageImpl;
+import me.matl114.events.packets.PacketStorageRecvImpl;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -1353,6 +1353,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
         tickElytraSimulation();
+        // queue packets, so that fallflying and movement can be sent together
+        if (antiKick.get() && isThisTickGlideMovementServerSideGlide()) {
+            RotationManager.INSTANCE.startQueuePacket();
+        }
         // resetFallFly
         reset_fallfly:
         if (delayResetFallFlyingTransaction) {
@@ -1860,11 +1864,11 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     volatile Integer currentDelayingLastTransaction = null;
     boolean acceptFireworkRemovalDuringDelay = false;
 
-    public void onArmorGlideDelay(Event<PacketStorage> event) {
+    public void onArmorGlideDelay(Event<PacketStorage.Recv> event) {
         if (PacketManager.isAsyncOrNotTransactionS2CPacket(event.context.packetType())) {
             return;
         }
-        if (event.context instanceof PacketStorageImpl impl
+        if (event.context instanceof PacketStorageRecvImpl impl
                 && impl.packet() instanceof CommonPingS2CPacket pingPacket) {
             lastTransactionRecv = pingPacket.getParameter();
         }
@@ -1874,7 +1878,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         if (currentDelayingArmorGlide) {
             event.cancel();
 
-            if (event.context instanceof PacketStorageImpl impl
+            if (event.context instanceof PacketStorageRecvImpl impl
                     && event.<Boolean>getArgs(1)
                     && containsFireworkRemoval(impl.packet())) {
                 acceptFireworkRemovalDuringDelay = true;
@@ -1882,7 +1886,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             if (notWorking
                     || (Tasks.getTick() - PlayerStateManager.INSTANCE.lastStartGlidingTick
                                     >= armorGlideMaxDelayTicks.get().getValue()
-                            || (event.context instanceof PacketStorageImpl impl
+                            || (event.context instanceof PacketStorageRecvImpl impl
                                     && impl.packet() instanceof EntityStatusS2CPacket status
                                     && status.getEntity(mc.world) == mc.player
                                     && status.getStatus() == EntityStatuses.USE_TOTEM_OF_UNDYING))) {
@@ -1903,7 +1907,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         }
         if (Tasks.getTick() - PlayerStateManager.INSTANCE.lastStartGlidingTick
                         < armorGlideMaxDelayTicks.get().getValue()
-                && event.context instanceof PacketStorageImpl impl) {
+                && event.context instanceof PacketStorageRecvImpl impl) {
             Iterable<EntityTrackerUpdateS2CPacket> list;
             if (impl.packet() instanceof EntityTrackerUpdateS2CPacket update && update.id() == mc.player.getId()) {
                 list = List.of(update);
@@ -1931,7 +1935,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             if (finalGlidingOverrideState == Boolean.FALSE) {
                 currentDelayingArmorGlide = true;
                 if (lastTransactionRecv != null) {
-                    PacketManager.handleQueueIn(new PacketStorageImpl(
+                    PacketManager.handleQueueIn(new PacketStorageRecvImpl(
                             new CommonPingS2CPacket(lastTransactionRecv),
                             event.context.timestampMS(),
                             impl.connection()));
@@ -2003,7 +2007,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         return destroyS2C != null;
     }
 
-    public void onFireworkRemoval(Event<PacketStorage> eventRemoval) {
+    public void onFireworkRemoval(Event<PacketStorage.Recv> eventRemoval) {
         if (eventRemoval.isCancelled()) return;
         if (PacketManager.isAsyncOrNotTransactionS2CPacket(eventRemoval.context.packetType())) {
             return;
@@ -2026,7 +2030,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
         // restart a lock
         if (eventRemoval.context.timestampMS() > lastStartDelayOrReleaseMs + fireworksDelayMS.get() + 50
-                && eventRemoval.context instanceof PacketStorageImpl impl
+                && eventRemoval.context instanceof PacketStorageRecvImpl impl
                 && recordedWorldFireworkRockets.stream()
                                 .filter(EntityUtils::isEntityValid)
                                 .count()

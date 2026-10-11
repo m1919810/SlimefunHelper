@@ -224,7 +224,8 @@ public class MineExtra extends BaseModule {
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onGrimSBFastBreakExplode);
         registerListener(Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onSilentBreak);
-        registerListener(Listener.getPacketPostSendPoint().getChannel(HandSwingC2SPacket.class), this::onLastSwing);
+        registerListener(
+                Listener.getPacketPostScheduleSendPoint().getChannel(HandSwingC2SPacket.class), this::onLastSwing);
         registerListener(Listener.getPreGameTick(), this::onGrimCooldownResetPackets);
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onPlayerMove);
         registerListener(Listener.getPreGameTick(), this::onTickGhostHandFailBreak);
