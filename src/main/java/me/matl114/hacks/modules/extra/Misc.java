@@ -45,7 +45,7 @@ public class Misc extends BaseModule {
             }
             RotationManager.INSTANCE.request(
                     RotationManager.ofDirection(Optional.empty(), Optional.of(mc.player.getYaw() + 36 * tick))
-                            .occupied(false));
+                            .priority(-114514));
         }
     }
 }
