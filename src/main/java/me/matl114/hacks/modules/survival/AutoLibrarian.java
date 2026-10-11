@@ -113,6 +113,7 @@ public class AutoLibrarian extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvent);
+        registerListener(Listener.getPostGameTick(), this::updateRenderCollector);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
     }
 
@@ -196,6 +197,19 @@ public class AutoLibrarian extends BaseModule {
 
     VillagerEntity targetVillager;
     BlockPos targetWorkStationBase;
+    private final RenderCollector<Box> renderCollector = RenderCollectors.createBoxCollector(true, false, false);
+
+    private void updateRenderCollector(Event<net.minecraft.client.network.ClientPlayerEntity> event) {
+        renderCollector.clear();
+        if (checkNull() || !enable.get() || !render.get() || targetVillager == null || targetWorkStationBase == null) {
+            return;
+        }
+        renderCollector.submit(
+                RenderUtils.getLerpedBox(targetVillager, 0.0F),
+                renderColor.get().withAlpha(255));
+        renderCollector.submit(
+                new Box(targetWorkStationBase.add(0, 1, 0)), renderColor.get().withAlpha(255));
+    }
 
     @Override
     public void onDisableModule() {
@@ -282,17 +296,9 @@ public class AutoLibrarian extends BaseModule {
     public void onRender(Event<Render3D> event) {
         if (enable.get() && render.get()) {
             if (targetVillager != null && targetWorkStationBase != null) {
-                float partialTicks = event.context.partialTicks();
                 RenderUtils.startDrawVirtual(event.context.stack());
                 try {
-                    RenderCollector<Box> collector = RenderCollectors.createBoxCollector(true, false, false);
-                    collector.submit(
-                            RenderUtils.getLerpedBox(targetVillager, partialTicks),
-                            renderColor.get().withAlpha(255));
-                    collector.submit(
-                            new Box(targetWorkStationBase.add(0, 1, 0)),
-                            renderColor.get().withAlpha(255));
-                    collector.render3D(event.context.stack(), event.context.partialTicks());
+                    renderCollector.render3D(event.context.stack(), event.context.partialTicks());
                 } finally {
                     RenderUtils.stopDrawVirtual(event.context.stack());
                 }

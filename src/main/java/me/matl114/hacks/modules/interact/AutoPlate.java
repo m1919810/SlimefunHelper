@@ -108,6 +108,7 @@ public class AutoPlate extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreHandleInputEvents(), this::onInput);
+        registerListener(Listener.getPostGameTick(), this::updateRenderCollector);
         registerListener(RenderListener.getRender3DEvent(), this::onRender3D);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetReload);
     }
@@ -116,8 +117,13 @@ public class AutoPlate extends BaseModule {
     Optional<BlockState> placeState = Optional.empty();
     final RenderCollector<Box> drawOutlines = RenderCollectors.createBoxCollector(true, false, false);
 
-    public void refreshState() {
+    private void updateRenderCollector(Event<net.minecraft.client.network.ClientPlayerEntity> event) {
         drawOutlines.clear();
+        if (!enable.get() || !render.get()) return;
+        placeList.forEach(pos -> drawOutlines.submit(new Box(pos), color.get().withAlpha(255)));
+    }
+
+    public void refreshState() {
         placeList.clear();
         placeState = Optional.empty();
         Box playerBox = mc.player.getBoundingBox().expand(expandRange.get(), 0, expandRange.get());
@@ -139,8 +145,6 @@ public class AutoPlate extends BaseModule {
                         .mapToObj(j -> new BlockPos(
                                 s.getX() + mc.player.getBlockX(), maxY - j, s.getZ() + mc.player.getBlockZ())))
                 .toList());
-        placeList.forEach(s -> drawOutlines.submit(new Box(s), color.get().withAlpha(255)));
-
         if (copyState.get()) {
             List<BlockPos> filteredPos =
                     collisions.stream().filter(s -> s.getY() == maxY).toList();

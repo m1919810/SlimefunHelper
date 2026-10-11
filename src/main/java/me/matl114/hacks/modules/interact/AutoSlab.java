@@ -221,7 +221,6 @@ public class AutoSlab extends BaseModule {
 
     public void onPreInputEvent(Event<Void> event) {
         if (checkNull()) return;
-        if (!InteractionTasks.canHandleInteract(mode.get())) return;
         boxCollector.clear();
         if (enable.get()) {
             refreshBlocks();
