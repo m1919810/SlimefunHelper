@@ -68,6 +68,8 @@ public class ProjectileESP extends BaseModule {
             flagBuilder(detectEntity.add("render-projectile")).build();
 
     private final RenderCollector<List<Vec3d>> trajectoryCollector = RenderCollectors.createLinesCollector();
+    private final RenderCollector<Entity> entityImpactCollector =
+            RenderCollectors.createEntityBoxCollector(false, true, false);
     private final RenderCollector<Box> impactCollector = RenderCollectors.createBoxCollector(false, true, false);
 
     @Override
@@ -214,6 +216,7 @@ public class ProjectileESP extends BaseModule {
 
     private void updateRenderCollectors(Event<net.minecraft.client.network.ClientPlayerEntity> event) {
         trajectoryCollector.clear();
+        entityImpactCollector.clear();
         impactCollector.clear();
         if (checkNull() || !enable.get()) return;
 
@@ -249,8 +252,8 @@ public class ProjectileESP extends BaseModule {
                 if (data.getFirst().size() > 3) {
                     trajectoryCollector.submit(data.getFirst(), Color.RED.getRGB());
                     if (data.getSecond() instanceof EntityHitResult hit) {
-                        impactCollector.submit(
-                                RenderUtils.getLerpedBox(hit.getEntity(), 0.0F),
+                        entityImpactCollector.submit(
+                                hit.getEntity(),
                                 ColorUtils.withAlpha(Color.GREEN, 0.25F).getRGB());
                     } else {
                         submitImpact(data.getFirst().getLast());
@@ -279,6 +282,7 @@ public class ProjectileESP extends BaseModule {
         RenderUtils.startDrawVirtual(stack);
         try {
             trajectoryCollector.render3D(stack, stackE.context.partialTicks());
+            entityImpactCollector.render3D(stack, stackE.context.partialTicks());
             impactCollector.render3D(stack, stackE.context.partialTicks());
         } finally {
             RenderUtils.stopDrawVirtual(stack);

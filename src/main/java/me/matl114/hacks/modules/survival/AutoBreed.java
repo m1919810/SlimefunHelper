@@ -36,6 +36,7 @@ import me.matl114.utils.annotations.NeedTest;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.ShapeContext;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Formatting;
@@ -101,6 +102,8 @@ public class AutoBreed extends BaseModule {
     private AnimalEntity targetAnimal;
     private AnimalPen targetPen;
     private int lastInteractTick;
+    private final RenderCollector<Entity> entityRenderCollector =
+            RenderCollectors.createEntityBoxCollector(true, false, false);
     private final RenderCollector<Box> renderCollector = RenderCollectors.createBoxCollector(true, false, false);
 
     @Override
@@ -180,17 +183,16 @@ public class AutoBreed extends BaseModule {
     }
 
     private void updateRenderCollector(Event<net.minecraft.client.network.ClientPlayerEntity> event) {
+        entityRenderCollector.clear();
         renderCollector.clear();
         if (checkNull() || !enable.get() || !render.get() || targetAnimal == null) return;
-        renderCollector.submit(
-                RenderUtils.getLerpedBox(targetAnimal, 0.0F), renderColor.get().withAlpha(255));
+        entityRenderCollector.submit(targetAnimal, renderColor.get().withAlpha(255));
         if (targetPen != null && targetPen.innerBox().contains(targetAnimal.getPos())) {
             renderCollector.submit(targetPen.outerBox(), renderPenColor.get().withAlpha(255));
             for (AnimalEntity animal : getBreedTargetsInPen(targetPen)) {
                 if (animal != targetAnimal) {
-                    renderCollector.submit(
-                            RenderUtils.getLerpedBox(animal, 0.0F),
-                            renderOtherAnimalColor.get().withAlpha(255));
+                    entityRenderCollector.submit(
+                            animal, renderOtherAnimalColor.get().withAlpha(255));
                 }
             }
         }
@@ -238,6 +240,7 @@ public class AutoBreed extends BaseModule {
         }
         RenderUtils.startDrawVirtual(event.context.stack());
         try {
+            entityRenderCollector.render3D(event.context.stack(), event.context.partialTicks());
             renderCollector.render3D(event.context.stack(), event.context.partialTicks());
         } finally {
             RenderUtils.stopDrawVirtual(event.context.stack());
