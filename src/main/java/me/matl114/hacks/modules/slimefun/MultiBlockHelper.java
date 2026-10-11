@@ -6,7 +6,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import me.matl114.accessors.access.ClientAccess;
-import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.accessors.interfaces.TileInventory;
 import me.matl114.events.Event;
@@ -20,9 +19,8 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
-import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.modules.move.RotationManager;
 import me.matl114.hacks.utils.EntityUtils;
-import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.hacks.utils.multiblock.BlockMatcher;
 import me.matl114.managers.Configs;
@@ -243,39 +241,15 @@ public class MultiBlockHelper extends BaseModule {
     }
 
     public void clickDelayMovement(BlockHitResult result, Vec2f pitchYaw, int clickRate) {
-        ClientPlayerAccess.of(mc.player)
-                .getLegalMovementManager()
-                .addMovementModifier(new LegalMovementManager.MovementModifier() {
-                    @Override
-                    public int priority() {
-                        return PRIORITY_LOW;
+        RotationManager.INSTANCE.request(
+                RotationManager.ofDirection(() -> pitchYaw).applyMoveFix(false).postTick(() -> {
+                    for (int i = 0; i < clickRate; ++i) {
+                        mc.interactionManager.sendSequencedPacket(
+                                mc.world,
+                                (sequence -> new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, result, sequence)));
                     }
-
-                    @Override
-                    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
-                        ClientPlayerEntity args = movementManagerEvent.context().playerStatus.entity;
-                        //                        float pitch = args.getPitch();
-                        //                        float yaw = args.getYaw();
-                        movementManagerEvent.context.pushImportantRotation(true, true);
-                        EntityUtils.setEntityPitchSafe(args, pitchYaw.x);
-                        PlayerStateManager.setPlayerYawSafe(args, pitchYaw.y);
-                        movementManagerEvent.context.markForResetRot();
-                    }
-
-                    @Override
-                    public boolean postModify(
-                            Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-                        // enable delay execute!
-                        if (!enabledThisTick) return true;
-                        for (int i = 0; i < clickRate; ++i) {
-                            mc.interactionManager.sendSequencedPacket(
-                                    mc.world,
-                                    (sequence -> new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, result, sequence)));
-                        }
-                        ClientAccess.of(mc).setItemUseCooldown(0);
-                        return false;
-                    }
-                });
+                    ClientAccess.of(mc).setItemUseCooldown(0);
+                }));
     }
 
     public void clickSnap(BlockHitResult result, Vec2f pitchYaw, int clickRate) {

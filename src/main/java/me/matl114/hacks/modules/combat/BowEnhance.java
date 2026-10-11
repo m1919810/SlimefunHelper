@@ -4,7 +4,6 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
-import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
@@ -16,9 +15,8 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
-import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.modules.move.RotationManager;
 import me.matl114.hacks.utils.EntityUtils;
-import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -346,49 +344,23 @@ public class BowEnhance extends BaseModule {
         if (entity == null) return;
         event.cancel();
         PlayerActionC2SPacket delayedPacket = event.context();
-        ClientPlayerAccess.of(mc.player)
-                .getLegalMovementManager()
-                .addMovementModifier(new LegalMovementManager.MovementModifier() {
-                    @Override
-                    public int priority() {
-                        return PRIORITY_LOW;
+        RotationManager.INSTANCE.request(RotationManager.ofDirection(() -> {
+                    ClientPlayerEntity player = mc.player;
+                    Vec3d targetAt =
+                            CombatTasks.getPositionPredict().predictAimPositionForEntity(entity, initialVelocity);
+                    Vec3d targetAtFacing = targetAt.subtract(player.getEyePos());
+                    Vec2f pitchYaw =
+                            CombatTasks.calculatePitchYawPredict(initialVelocity, player.getVelocity(), targetAtFacing);
+                    if (Float.isNaN(pitchYaw.x)
+                            || Float.isInfinite(pitchYaw.x)
+                            || Float.isNaN(pitchYaw.y)
+                            || Float.isInfinite(pitchYaw.y)) {
+                        Debug.chat("[Bow Aim] Arrow failed to reach the target");
+                        return null;
                     }
-
-                    @Override
-                    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
-                        ClientPlayerEntity player = movementManagerEvent.context().playerStatus.entity;
-                        Vec3d targetAt =
-                                CombatTasks.getPositionPredict().predictAimPositionForEntity(entity, initialVelocity);
-                        Vec3d targetAtFacing = targetAt.subtract(player.getEyePos());
-                        Vec2f pitchYaw = CombatTasks.calculatePitchYawPredict(
-                                (float) (initialVelocity), player.getVelocity(), targetAtFacing);
-                        if (Float.isNaN(pitchYaw.x)
-                                || Float.isInfinite(pitchYaw.x)
-                                || Float.isNaN(pitchYaw.y)
-                                || Float.isInfinite(pitchYaw.y)) {
-                            Debug.chat("[Bow Aim] Arrow failed to reach the target");
-                            return;
-                        }
-                        movementManagerEvent.context.pushImportantRotation(true, true);
-                        EntityUtils.setEntityPitchSafe(player, pitchYaw.x);
-                        PlayerStateManager.setPlayerYawSafe(player, pitchYaw.y);
-                        movementManagerEvent.context.markForResetRot();
-                    }
-
-                    @Override
-                    public boolean postModify(
-                            Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-                        // add post packets
-                        // mc.getNetworkHandler().sendPacket(actionPacket);
-                        if (true)
-                            Tasks.scheduleDelayedPre(
-                                    () -> {
-                                        Listener.sendPacketNoEvents(delayedPacket);
-                                    },
-                                    0);
-                        return false;
-                    }
-                });
+                    return pitchYaw;
+                })
+                .postTick(() -> Tasks.scheduleDelayedPre(() -> Listener.sendPacketNoEvents(delayedPacket), 0)));
     }
 
     public void bowActionInteractItem(
