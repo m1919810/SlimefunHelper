@@ -371,8 +371,7 @@ public class AutoSurround extends BaseModule {
                                     }
                                 });
                     }
-                    if (canCubePlace(mc.player, test, pendingRemoval)
-                            && InteractionTasks.canHandleInteract(mode.get())) {
+                    if (canCubePlace(mc.player, test, pendingRemoval)) {
                         if (placeCnt == 0) {
                             var supply = supplyBlocks();
                             if (supply == null) {
@@ -402,7 +401,7 @@ public class AutoSurround extends BaseModule {
                 pendingMine.add(test);
             }
         }
-        if (placeCnt < mul && InteractionTasks.canHandleInteract(mode.get()) && !mc.player.isUsingItem()) {
+        if (placeCnt < mul && !mc.player.isUsingItem()) {
             for (var test : pendingMine) {
                 BlockHitResult selfHitResult = InteractionTasks.createHitResult(test, mc.player.getPos());
                 if (placeCnt == 0) {
