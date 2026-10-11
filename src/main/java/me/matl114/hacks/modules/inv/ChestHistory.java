@@ -25,6 +25,8 @@ import me.matl114.hacks.modules.task.ServerStorage;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.gui.InventorySelectScreen;
+import me.matl114.hacks.utils.render.RenderCollectors;
+import me.matl114.hacks.utils.render.RenderElements;
 import me.matl114.hacks.utils.world.BlockStorage;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
@@ -32,11 +34,11 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.renderer.TextRenderers;
 import me.matl114.utils.*;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.collections.MutableEntry;
 import me.matl114.utils.inventory.ImmutableListInventory;
+import me.matl114.utils.render.RenderCollector;
 import me.matl114.utils.world.BlockLocation;
 import me.matl114.utils.world.ContainerPosition;
 import me.matl114.versioned.api.VRender;
@@ -49,7 +51,6 @@ import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.BlockItem;
@@ -107,6 +108,7 @@ public class ChestHistory extends BaseModule {
                 Listener.getPacketPoint().getChannel(PlayerInteractBlockC2SPacket.class), this::onPlaceShulkerBox);
         registerListener(Listener.getGameJoinPoint(), this::onServerJoin);
         registerListener(Listener.getPostGameTick(), this::onTick);
+        registerListener(Listener.getPostGameTick(), this::updateTitleCollector);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(ServerStorage.getServerStorageLoad(), this::onLoad);
         registerListener(ServerStorage.getServerStorageSave(), this::onSave);
@@ -373,61 +375,41 @@ public class ChestHistory extends BaseModule {
     }
 
     private static final int POSITION_FLAG = VRender.createTextPositionFlag(0, 1);
+    private final RenderCollector<RenderElements.Text> titleCollector = RenderCollectors.createTextCollector();
+
+    private void updateTitleCollector(Event<ClientPlayerEntity> event) {
+        titleCollector.clear();
+        if (!enableTitle.get() || mc.player == null || mc.world == null) return;
+        BlockLocation location = BlockLocation.of(mc.player);
+        Set<Vec3d> renderedPositions = new HashSet<>();
+        for (var entry : screens.entrySet()) {
+            if (!entry.getKey().isInRenderRange(location, AUTO_REFRESH_RANGE)) continue;
+            Vec3d renderPos = entry.getKey().getCenterPosition();
+            if (!renderedPositions.add(renderPos)) continue;
+            int items =
+                    (int) InventoryUtils.streamInventory(entry.getValue().value.getInventory())
+                            .filter(s -> !s.isEmpty())
+                            .count();
+            Text text = entry.getValue()
+                    .getValue()
+                    .getTitle()
+                    .orElse(Text.empty())
+                    .copy()
+                    .append(Text.literal("(x%d)".formatted(items)).formatted(Formatting.YELLOW));
+            titleCollector.submit(
+                    new RenderElements.Text(text, renderPos.add(0, 0.25, 0), POSITION_FLAG, 1.0F),
+                    Color.WHITE.getRGB());
+        }
+    }
 
     public void onRender(Event<Render3D> event) {
+        if (!enableTitle.get()) return;
         var stack = event.context().stack();
-        // todo: make it a render
-        if (enableTitle.get()) {
-            if (mc.player != null) {
-                RenderUtils.startDrawVirtual(stack);
-                try {
-                    BlockLocation location = BlockLocation.of(mc.player);
-                    Vec3d cameraPos = RenderUtils.getCameraPos();
-                    Set<Vec3d> bigChestsPositions = new HashSet<>();
-                    for (var entry : screens.entrySet()) {
-                        if (entry.getKey().isInRenderRange(location, AUTO_REFRESH_RANGE)) {
-                            Vec3d renderPos = entry.getKey().getCenterPosition();
-                            if (bigChestsPositions.contains(renderPos)) {
-                                continue;
-                            } else {
-                                bigChestsPositions.add(renderPos);
-                            }
-                            Vec3d delta = renderPos.add(0, 0.25, 0).subtract(cameraPos);
-                            stack.push();
-                            stack.translate(delta.x, delta.y, delta.z);
-                            // title的高度是9 我们希望这个9在 0.75 ~ 1.0之间
-                            // 我希望他看向我
-                            stack.multiply(RenderUtils.getBillboardRotation(DisplayEntity.BillboardMode.CENTER, 0, 0));
-                            stack.scale(0.03125F, 0.03125F, 1);
-                            int items = (int) InventoryUtils.streamInventory(
-                                            entry.getValue().value.getInventory())
-                                    .filter(s -> !s.isEmpty())
-                                    .count();
-                            Text text = entry.getValue()
-                                    .getValue()
-                                    .getTitle()
-                                    .orElse(Text.empty())
-                                    .copy()
-                                    .append(Text.literal("(x%d)".formatted(items))
-                                            .formatted(Formatting.YELLOW));
-
-                            stack.translate(0, TextRenderers.getCompositeTextYOffset(), 0);
-                            VRender.getInstance()
-                                    .drawTextCameraCoord(
-                                            text.asOrderedText(),
-                                            stack,
-                                            Vec3d.ZERO,
-                                            POSITION_FLAG,
-                                            Color.WHITE,
-                                            VRender.DEFAULT_TEXT);
-
-                            stack.pop();
-                        }
-                    }
-                } finally {
-                    RenderUtils.stopDrawVirtual(stack);
-                }
-            }
+        RenderUtils.startDrawVirtual(stack);
+        try {
+            titleCollector.render3D(stack, event.context().partialTicks());
+        } finally {
+            RenderUtils.stopDrawVirtual(stack);
         }
     }
 

@@ -1,10 +1,13 @@
 package me.matl114.hacks.modules.render;
 
+import java.awt.Color;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.Vec3;
+import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.NBTRef;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Hand;
@@ -23,6 +26,17 @@ public class HandView extends BaseModule {
     }
 
     public final FlagRef enable = flagBuilder(handView.addEnable()).build();
+
+    public final FlagRef glow = flagBuilder(handView.add("glow")).build();
+
+    public final NBTRef<WrapColor> glowColor = builder(handView.add("glow-color"), WrapColor.class)
+            .defaultValue(new WrapColor(Color.CYAN))
+            .build();
+
+    public final IntRef glowAlpha = builder(handView.add("glow-alpha"), IntRef.TYPE)
+            .defaultValue(32)
+            .validator(Configs.intRange(0, 255))
+            .build();
 
     public final NBTRef<Vec3> mainHandScale = builder(mainHand.add("scale"), Vec3.class)
             .defaultValue(new Vec3(1, 1, 1))

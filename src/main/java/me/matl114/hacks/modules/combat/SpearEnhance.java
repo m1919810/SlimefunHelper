@@ -27,6 +27,7 @@ import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.NetworkUtils;
 import me.matl114.utils.RenderUtils;
+import me.matl114.utils.render.RenderCollector;
 import me.matl114.versioned.SupportVersion;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
@@ -52,6 +53,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -70,6 +72,8 @@ public class SpearEnhance extends BaseModule {
 
     public final FlagRef renderKineticPlayers =
             flagBuilder(spearModule.add("render-kinetic-players")).build();
+
+    private final RenderCollector<Box> kineticPlayerCollector = RenderCollectors.createBoxCollector(false, true, false);
 
     public final FlagRef replaceSpearModel = builder(spearModule.add("replace-via-spear-model"), Boolean.class)
             .defaultValue(true)
@@ -116,6 +120,7 @@ public class SpearEnhance extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreGameTick(), this::onPreTick);
+        registerListener(Listener.getPostGameTick(), this::updateKineticPlayerCollector);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(RenderListener.getCustomModelOverride(), this::onReplaceSpearModel);
         registerListener(Listener.getClientPlayerPostSendMovementPoint(), this::onPostTick);
@@ -156,21 +161,22 @@ public class SpearEnhance extends BaseModule {
         }
     }
 
+    private void updateKineticPlayerCollector(Event<ClientPlayerEntity> event) {
+        kineticPlayerCollector.clear();
+        if (checkNull() || !renderKineticPlayers.get()) return;
+        int color = renderColor.get().withAlpha(64);
+        for (var player : mc.world.getPlayers()) {
+            if (player != mc.getCameraEntity() && canSpearKineticAttack(player)) {
+                kineticPlayerCollector.submit(player.getBoundingBox(), color);
+            }
+        }
+    }
+
     public void onRender(Event<Render3D> event) {
         if (renderKineticPlayers.get()) {
             RenderUtils.startDrawVirtual(event.context.stack());
             try {
-                int color = renderColor.get().withAlpha(64);
-                var render = RenderCollectors.createBoxCollector(false, true, false);
-                for (var re : mc.world.getPlayers()) {
-                    if (re != mc.getCameraEntity()) {
-                        if (canSpearKineticAttack(re)) {
-                            render.submit(re.getBoundingBox(), color);
-                        }
-                    }
-                }
-                render.render3D(event.context.stack(), event.context.partialTicks());
-                render.clear();
+                kineticPlayerCollector.render3D(event.context.stack(), event.context.partialTicks());
             } finally {
                 RenderUtils.stopDrawVirtual(event.context.stack());
             }
