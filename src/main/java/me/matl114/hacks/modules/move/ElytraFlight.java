@@ -255,11 +255,11 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                         Vec2f rotation = EntityUtils.movementInputToRotation(movementInput, player.getYaw());
                         motionRotation = rotation;
                         if (useAutoRescale.get() && autoRescaleBestClimbingSpeed.get()) {
-                            if (movementInput.y > 0 && rotation.x < 0) {
+                            if (movementInput.y > 0 && rotation.x < 0 && rotation.x > -60) {
                                 Vec2f best =
                                         ElytraOptimizeUtils.calculateBestPullupSpeed(rotation.x, rotation.y, algorithm);
                                 motionRotation = best;
-                            } else if (movementInput.y < 0 && rotation.x > 0) {
+                            } else if (movementInput.y < 0 && rotation.x > 0 && rotation.x < 60) {
                                 Vec2f best = ElytraOptimizeUtils.calculateBestDownForwardSpeed(
                                         rotation.x, rotation.y, algorithm, false, true);
                                 motionRotation = best;

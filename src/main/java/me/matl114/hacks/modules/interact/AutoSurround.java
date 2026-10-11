@@ -19,6 +19,7 @@ import me.matl114.hacks.modules.mine.PacketMine;
 import me.matl114.hacks.modules.move.PlayerInputManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.modules.move.RotationManager;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
@@ -201,15 +202,14 @@ public class AutoSurround extends BaseModule {
                 PlayerInputUtils.Input inputUtils = PlayerInputUtils.of(mc.options);
                 if (!inputUtils.hasMovement()) {
                     Vec3d lookHorizontal = blockPos.toCenterPos().subtract(mc.player.getPos());
-                    float yaw = (float) Math.toDegrees(Math.atan2(-lookHorizontal.x, lookHorizontal.z));
-                    boolean accepted = RotationManager.INSTANCE.request(
-                            RotationManager.ofDirection(Optional.empty(), Optional.of(yaw))
-                                    .applyMoveFix(false)
-                                    .occupied(false));
-                    if (accepted) {
-                        PlayerInputManager.INSTANCE.addForwardModifier(0, true, 1);
-                        PlayerInputManager.INSTANCE.addBackwardModifier(0, false, 1);
-                    }
+                    float yaw = EntityUtils.rotationToYaw(lookHorizontal);
+                    RotationManager.INSTANCE.request(RotationManager.ofDirection(Optional.empty(), Optional.of(yaw))
+                            .preTick(() -> {
+                                PlayerInputManager.INSTANCE.addForwardModifier(0, true, 1);
+                                PlayerInputManager.INSTANCE.addBackwardModifier(0, false, 1);
+                            })
+                            .applyMoveFix(false)
+                            .occupied(false));
                 }
             } else {
                 lastCenter = null;

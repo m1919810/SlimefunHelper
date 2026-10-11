@@ -381,14 +381,12 @@ public class AnchorAura extends BaseModule {
     }
 
     public boolean tickAnchorExplode() {
-        if (!InteractionTasks.canHandleInteract(mode.get())) return false;
         maxExistingDamageValue = Double.NEGATIVE_INFINITY;
         List<Map.Entry<BlockPos, AnchorCache>> entries = new ArrayList<>(trackedAnchorPositions.entrySet());
         entries.sort(Map.Entry.comparingByValue(this::compareAnchorEntries));
         int multiply = mul.get();
         int success = 0;
         for (var i = 0; i < entries.size() && success < multiply; ++i) {
-            if (!InteractionTasks.canHandleInteract(mode.get())) break;
             BlockPos targetPos = entries.get(i).getKey();
             if (InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), targetPos)) {
                 AnchorCache cache = entries.get(i).getValue();
@@ -401,7 +399,9 @@ public class AnchorAura extends BaseModule {
                         continue;
                     }
                 }
-                success += litBlockPos(targetPos, cache);
+                if (InteractionTasks.canHandleInteract(mode.get())) {
+                    success += litBlockPos(targetPos, cache);
+                }
             }
         }
         return success >= multiply;
@@ -476,7 +476,6 @@ public class AnchorAura extends BaseModule {
     }
 
     public boolean tickAnchorPlace() {
-        if (!InteractionTasks.canHandleInteract(mode.get())) return false;
         if (targetEntity.isEmpty()) {
             return false;
         }
@@ -615,6 +614,9 @@ public class AnchorAura extends BaseModule {
     }
 
     public boolean placeAnchor(BlockHitResult hitResult) {
+        if (!InteractionTasks.canHandleInteract(mode.get())) {
+            return false;
+        }
         var entry = supplyItem(Items.RESPAWN_ANCHOR);
         if (entry == null) return false;
         var runnable = InvExtra.INSTANCE.swapItemToHand(entry.index(), false, ghostHand.get());

@@ -192,7 +192,6 @@ public class PrinterRewrite extends BaseModule {
     }
 
     public void onPreInputEvent(Event<Void> event) {
-        if (!InteractionTasks.canHandleInteract(mode.get())) return;
         if (++countDown >= delay.get()) {
             countDown = 0;
         } else {

@@ -147,7 +147,6 @@ public class Scaffold extends BaseModule {
         if (checkNull()) {
             return;
         }
-        if (!InteractionTasks.canHandleInteract(legalMode.get())) return;
         if (mc.player.isOnGround()) {
             lastOnGroundY = mc.player.getBlockY();
         }

@@ -23,6 +23,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.damage.DamageTypes;
+import net.minecraft.entity.decoration.EndCrystalEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Box;
@@ -107,16 +108,23 @@ public class ExplosiveESP extends BaseModule {
             if (crystal.getPos().squaredDistanceTo(mc.player.getPos()) > maxDistanceSq) {
                 continue;
             }
-            if (tracingOption.box()) {
-                boxOutlineCollector.submit(crystal.getBoundingBox(), ColorUtils.withAlphaInt(crystalRgb, 160));
-            }
-            if (highlightCrystal.get()) {
-                faceCollector.submit(crystal, ColorUtils.withAlphaInt(crystalRgb, 64));
-            }
-            if (tracingOption.line()) {
-                traceCollector.submit(crystal.getBoundingBox().getCenter(), ColorUtils.withAlphaInt(crystalRgb, 255));
-            }
+
             submitDamageText(crystal.getPos(), 6.0F, crystalRgb);
+        }
+        if (highlightCrystal.get()) {
+            for (var crystal : mc.world.getEntities()) {
+                if (crystal instanceof EndCrystalEntity end) {
+                    faceCollector.submit(crystal, ColorUtils.withAlphaInt(crystalRgb, 64));
+                }
+                if (tracingOption.box()) {
+                    boxOutlineCollector.submit(crystal.getBoundingBox(), ColorUtils.withAlphaInt(crystalRgb, 160));
+                }
+
+                if (tracingOption.line()) {
+                    traceCollector.submit(
+                            crystal.getBoundingBox().getCenter(), ColorUtils.withAlphaInt(crystalRgb, 255));
+                }
+            }
         }
     }
 
