@@ -22,6 +22,7 @@ import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.hacks.utils.enums.LegalTargetingMode;
+import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.EnumRef;
@@ -32,6 +33,7 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.collections.FlagEntry;
 import me.matl114.utils.entity.PlayerInputUtils;
+import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -150,6 +152,7 @@ public class Interact extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreGameTick(), this::onPreTick);
+        registerListener(Listener.getPostGameTick(), this::updateRenderCollector);
         registerListener(RenderListener.getRender3DEvent(), this::onRender3D);
         registerListener(Listener.getItemUseAction(), this::onInteract);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
@@ -795,37 +798,48 @@ public class Interact extends BaseModule {
     }
 
     public void onRender3D(Event<Render3D> event) {
-        if (renderAttackTarget.get() && currentInteractTarget != null) {
-            float tickDelta = event.context.partialTicks();
-            Box currentBox;
-            if (currentInteractTarget instanceof BlockHitResult hitResult
-                    && hitResult.getType() == HitResult.Type.BLOCK) {
-                BlockPos hitPos = hitResult.getBlockPos();
-                BlockState state = mc.world.getBlockState(hitPos);
-                VoxelShape shape = state.getOutlineShape(mc.world, hitPos);
-                if (shape.isEmpty()) {
-                    return;
-                }
-                currentBox = shape.getBoundingBox().offset(hitPos);
-            } else if (currentInteractTarget instanceof EntityHitResult hitResult
-                    && hitResult.getType() == HitResult.Type.ENTITY) {
-                currentBox = RenderUtils.getLerpedBox(hitResult.getEntity(), tickDelta);
-            } else {
-                return;
-            }
-            RenderUtils.startDrawVirtual(event.context.stack());
-            try {
-                float dist = (float)
-                        currentBox.getCenter().subtract(mc.player.getEyePos()).length();
-                float opacity = Math.min(0.6F, 0.20F + dist * 0.02F);
-                RenderUtils.drawSolidBox(
-                        event.context.stack(),
-                        currentBox.getMinPos(),
-                        currentBox.getMaxPos(),
-                        ColorUtils.withAlpha(renderAttackColor.get().color(), opacity));
-            } finally {
-                RenderUtils.stopDrawVirtual(event.context.stack());
-            }
+        if (!renderAttackTarget.get() || mc.player == null) return;
+        RenderUtils.startDrawVirtual(event.context.stack());
+        try {
+            entityTargetCollector.render3D(event.context.stack(), event.context.partialTicks());
+            blockTargetCollector.render3D(event.context.stack(), event.context.partialTicks());
+        } finally {
+            RenderUtils.stopDrawVirtual(event.context.stack());
+        }
+    }
+
+    private final RenderCollector<Entity> entityTargetCollector =
+            RenderCollectors.createEntityBoxCollector(false, true, false);
+    private final RenderCollector<Box> blockTargetCollector = RenderCollectors.createBoxCollector(false, true, false);
+
+    private void updateRenderCollector(Event<ClientPlayerEntity> event) {
+        entityTargetCollector.clear();
+        blockTargetCollector.clear();
+        if (!renderAttackTarget.get() || mc.player == null || mc.world == null || currentInteractTarget == null) return;
+
+        if (currentInteractTarget instanceof BlockHitResult hitResult && hitResult.getType() == HitResult.Type.BLOCK) {
+            BlockPos hitPos = hitResult.getBlockPos();
+            VoxelShape shape = mc.world.getBlockState(hitPos).getOutlineShape(mc.world, hitPos);
+            if (shape.isEmpty()) return;
+            var box = shape.getBoundingBox().offset(hitPos);
+            float dist = (float) box.getCenter().subtract(mc.player.getEyePos()).length();
+            float opacity = Math.min(0.6F, 0.20F + dist * 0.02F);
+            blockTargetCollector.submit(
+                    box,
+                    ColorUtils.withAlpha(renderAttackColor.get().color(), opacity)
+                            .getRGB());
+        } else if (currentInteractTarget instanceof EntityHitResult hitResult
+                && hitResult.getType() == HitResult.Type.ENTITY) {
+            Entity entity = hitResult.getEntity();
+            float dist = (float) entity.getPos()
+                    .add(0, entity.getHeight() * 0.5, 0)
+                    .subtract(mc.player.getEyePos())
+                    .length();
+            float opacity = Math.min(0.6F, 0.20F + dist * 0.02F);
+            entityTargetCollector.submit(
+                    entity,
+                    ColorUtils.withAlpha(renderAttackColor.get().color(), opacity)
+                            .getRGB());
         }
     }
 

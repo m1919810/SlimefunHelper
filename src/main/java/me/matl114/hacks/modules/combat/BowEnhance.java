@@ -18,6 +18,7 @@ import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.RotationManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
+import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
@@ -28,6 +29,7 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.RenderUtils;
+import me.matl114.utils.render.RenderCollector;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -41,7 +43,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
@@ -90,6 +91,7 @@ public class BowEnhance extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onBowAction, 999);
+        registerListener(Listener.getPostGameTick(), this::updateRenderCollector);
         registerListener(RenderListener.getRender3DEvent(), this::onRenderAimTarget);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
     }
@@ -153,32 +155,36 @@ public class BowEnhance extends BaseModule {
         }
     }
 
-    public void onRenderAimTarget(Event<Render3D> stackE) {
-        var stack = stackE.context;
-        if (enable.get() && enableAim.get() && renderTarget.get() && mc.player != null && mc.player.isUsingItem()) {
-            float tickDelta = stack.partialTicks();
-            ItemStack itemInUse = mc.player.getActiveItem();
-            if (!itemInUse.isEmpty()
-                    && (itemInUse.getItem() instanceof RangedWeaponItem
-                            || itemInUse.getItem() instanceof TridentItem)) {
-                RenderUtils.startDrawVirtual(stack.stack());
-                try {
-                    Entity entity =
-                            CombatTasks.getTargetSelector().searchAimableEntity(itemInUse.getItem() instanceof BowItem);
-                    if (entity != null) {
-                        Box box = RenderUtils.getLerpedBox(entity, tickDelta);
-                        RenderUtils.drawSolidBox(
-                                stack.stack(),
-                                box.getMinPos(),
-                                box.getMaxPos(),
-                                ColorUtils.withAlpha(Color.GREEN, 0.25F));
-                    }
-                } finally {
-                    RenderUtils.stopDrawVirtual(stack.stack());
-                }
-            }
+    private void updateRenderCollector(Event<ClientPlayerEntity> event) {
+        targetCollector.clear();
+        if (!enable.get() || !enableAim.get() || !renderTarget.get() || mc.player == null || !mc.player.isUsingItem()) {
+            return;
+        }
+        ItemStack itemInUse = mc.player.getActiveItem();
+        if (itemInUse.isEmpty()
+                || (!(itemInUse.getItem() instanceof RangedWeaponItem)
+                        && !(itemInUse.getItem() instanceof TridentItem))) {
+            return;
+        }
+        Entity entity = CombatTasks.getTargetSelector().searchAimableEntity(itemInUse.getItem() instanceof BowItem);
+        if (entity != null) {
+            targetCollector.submit(
+                    entity, ColorUtils.withAlpha(Color.GREEN, 0.25F).getRGB());
         }
     }
+
+    public void onRenderAimTarget(Event<Render3D> stackE) {
+        if (!enable.get() || !enableAim.get() || !renderTarget.get() || mc.player == null) return;
+        RenderUtils.startDrawVirtual(stackE.context.stack());
+        try {
+            targetCollector.render3D(stackE.context.stack(), stackE.context.partialTicks());
+        } finally {
+            RenderUtils.stopDrawVirtual(stackE.context.stack());
+        }
+    }
+
+    private final RenderCollector<Entity> targetCollector =
+            RenderCollectors.createEntityBoxCollector(false, true, false);
 
     public void bowActionMovement(Event<PlayerActionC2SPacket> event, @Nullable Entity entity, float initialVelocity) {
         Vec2f playerPitchYaw = new Vec2f(mc.player.getPitch(), mc.player.getYaw());

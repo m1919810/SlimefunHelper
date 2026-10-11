@@ -29,6 +29,7 @@ import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.enums.LegalTargetingMode;
+import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -36,6 +37,7 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.entity.PlayerInputUtils;
+import me.matl114.utils.render.RenderCollector;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.block.Blocks;
@@ -148,6 +150,7 @@ public class Attack extends BaseModule {
         super.registerAll();
         // should be in high priority
         registerListener(Listener.getAttackAction(), this::onAttack, -999);
+        registerListener(Listener.getPostGameTick(), this::updateRenderCollector);
         registerListener(RenderListener.getRender3DEvent(), this::onRenderTarget);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
     }
@@ -181,52 +184,40 @@ public class Attack extends BaseModule {
         return 0;
     }
 
-    private Entity lastTickTarget;
-    private int lastTick;
+    private void updateRenderCollector(Event<ClientPlayerEntity> event) {
+        targetCollector.clear();
+        if (!enable.get() || mc.player == null || !renderAttackTarget.get()) return;
+        if (mc.player.isUsingItem()) {
+            if (mc.player.getActiveHand() == Hand.MAIN_HAND) return;
+            if (mc.player.getActiveItem().getItem() instanceof RangedWeaponItem) return;
+        }
+        if (mc.crosshairTarget.getType() != HitResult.Type.MISS
+                && CombatTasks.notSuitableForAttack(mc.player.getMainHandStack())) return;
+
+        Entity lastTickTarget = CombatTasks.getTargetSelector().searchAttackEntity(getTpSelectRange(), true);
+
+        if (!EntityUtils.isEntityValid(lastTickTarget)) {
+            return;
+        }
+        float dist = lastTickTarget.distanceTo(mc.player);
+        float opacity = Math.min(0.6F, 0.10F + dist * 0.02F);
+        targetCollector.submit(
+                lastTickTarget,
+                ColorUtils.withAlpha(renderAttackColor.get().color(), opacity).getRGB());
+    }
 
     public void onRenderTarget(Event<Render3D> stackE) {
-        var stack = stackE.context;
-        if (enable.get() && mc.player != null && renderAttackTarget.get()) {
-            float tickDelta = stack.partialTicks();
-            if (mc.player.isUsingItem()) {
-                // filter bow, but keep shield
-                if (mc.player.getActiveHand() == Hand.MAIN_HAND) {
-                    return;
-                }
-                if (mc.player.getActiveItem().getItem() instanceof RangedWeaponItem bow) {
-                    return;
-                }
-            }
-            // only render when holding weapon,
-            if (CombatTasks.notSuitableForAttack(mc.player.getMainHandStack())) {
-                return;
-            }
-            if (lastTick != Tasks.getTick()) {
-                lastTick = Tasks.getTick();
-                lastTickTarget = CombatTasks.getTargetSelector().searchAttackEntity(getTpSelectRange(), true);
-            }
-            if (!EntityUtils.isEntityValid(lastTickTarget)) {
-                lastTickTarget = null;
-                return;
-            }
-            RenderUtils.startDrawVirtual(stack.stack());
-            try {
-                Entity entity = lastTickTarget;
-                if (entity != null) {
-                    float dist = entity.distanceTo(mc.player);
-                    float opacity = Math.min(0.6F, 0.10F + dist * 0.02F);
-                    Box box = RenderUtils.getLerpedBox(entity, tickDelta);
-                    RenderUtils.drawSolidBox(
-                            stack.stack(),
-                            box.getMinPos(),
-                            box.getMaxPos(),
-                            ColorUtils.withAlpha(renderAttackColor.get().color(), opacity));
-                }
-            } finally {
-                RenderUtils.stopDrawVirtual(stack.stack());
-            }
+        if (!enable.get() || !renderAttackTarget.get() || mc.player == null) return;
+        RenderUtils.startDrawVirtual(stackE.context.stack());
+        try {
+            targetCollector.render3D(stackE.context.stack(), stackE.context.partialTicks());
+        } finally {
+            RenderUtils.stopDrawVirtual(stackE.context.stack());
         }
     }
+
+    private final RenderCollector<Entity> targetCollector =
+            RenderCollectors.createEntityBoxCollector(false, true, false);
 
     public List<Entity> getCurrentRangeEntities() {
         return CombatTasks.getTargetSelector().getAttackableEntities(getTpSelectRange());

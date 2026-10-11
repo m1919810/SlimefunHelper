@@ -326,6 +326,34 @@ public class RenderCollectors {
         };
     }
 
+    public static RenderCollector<Entity> createEntityTracerCollector() {
+        return new RenderCollector.Impl<Entity>() {
+            private final RenderCollector<Vec3d> tracerCollector = createTracerCollector();
+
+            @Override
+            public void render3D(MatrixStack matrices, float partialTick) {
+                if (entries.isEmpty()) return;
+                for (var entry : entries) {
+                    tracerCollector.submit(
+                            RenderUtils.getLerpedBox(entry.val(), partialTick).getCenter(), entry.index());
+                }
+                tracerCollector.render3D(matrices, partialTick);
+                tracerCollector.clear();
+            }
+
+            @Override
+            public void render2D(VDrawContext vdraw, float partialTick) {
+                if (entries.isEmpty()) return;
+                for (var entry : entries) {
+                    tracerCollector.submit(
+                            RenderUtils.getLerpedBox(entry.val(), partialTick).getCenter(), entry.index());
+                }
+                tracerCollector.render2D(vdraw, partialTick);
+                tracerCollector.clear();
+            }
+        };
+    }
+
     public static RenderCollector<List<Vec3d>> createLinesCollector() {
         return new RenderCollector.Impl<List<Vec3d>>() {
 

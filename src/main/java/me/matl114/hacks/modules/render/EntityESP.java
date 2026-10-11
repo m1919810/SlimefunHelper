@@ -26,7 +26,6 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.math.Vec3d;
 
 public class EntityESP extends BaseModule {
     public final ModulePath entityRoot = makePath(Configs.RENDER_CONFIG, "detect-entity");
@@ -123,12 +122,12 @@ public class EntityESP extends BaseModule {
 
     private final RenderCollector<Entity> renderOutline = RenderCollectors.createEntityBoxCollector(true, false, false);
     private final RenderCollector<Entity> renderFace = RenderCollectors.createEntityFaceCollector();
-    private final RenderCollector<Vec3d> renderTrace = RenderCollectors.createTracerCollector();
+    private final RenderCollector<Entity> entityTracer = RenderCollectors.createEntityTracerCollector();
 
     public void onTick(Event<ClientPlayerEntity> event) {
         renderOutline.clear();
         renderFace.clear();
-        renderTrace.clear();
+        entityTracer.clear();
 
         boolean enable = this.enable.get();
 
@@ -187,11 +186,11 @@ public class EntityESP extends BaseModule {
         if (object instanceof MatrixStack stack) {
             renderFace.render3D(stack, tickDelta);
             renderOutline.render3D(stack, tickDelta);
-            renderTrace.render3D(stack, tickDelta);
+            entityTracer.render3D(stack, tickDelta);
         } else if (object instanceof VDrawContext vdraw) {
             renderFace.render2D(vdraw, tickDelta);
             renderOutline.render2D(vdraw, tickDelta);
-            renderTrace.render2D(vdraw, tickDelta);
+            entityTracer.render2D(vdraw, tickDelta);
         }
     }
 
@@ -206,7 +205,7 @@ public class EntityESP extends BaseModule {
             renderFace.submit(entity, ColorUtils.withAlphaInt(color.getRGB(), 32));
         }
         if (renderTraceSettings.get().getEntryValueOr(entity.getType(), false)) {
-            renderTrace.submit(RenderUtils.getLerpedBox(entity, 0.0F).getCenter(), color.getRGB());
+            entityTracer.submit(entity, color.getRGB());
         }
     }
 

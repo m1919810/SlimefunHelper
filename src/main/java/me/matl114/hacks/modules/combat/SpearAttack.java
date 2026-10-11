@@ -21,6 +21,7 @@ import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
+import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
@@ -28,6 +29,8 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.*;
 import me.matl114.utils.*;
+import me.matl114.utils.render.RenderCollector;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.text.Text;
@@ -86,6 +89,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
     @Override
     public void registerAll() {
         super.registerAll();
+        registerListener(Listener.getPostGameTick(), this::updateRenderCollector);
         registerListener(RenderListener.getRender3DEvent(), this::renderPlayerSpearTarget);
         registerListener(Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class), this::onClientTickEnd);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
@@ -224,34 +228,30 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
     int currentWaitBackTick = 0;
 
     private void renderPlayerSpearTarget(Event<Render3D> event) {
-        if (!enable.get()) return;
-        //        if (RenderTasks.DEBUG_RENDER_SPEAR) {
-        //            onSpearAttackRender(event);
-        //        }
-        var stack = event.context();
-        float tickDelta = stack.partialTicks();
-        if (spearRender.get()) {
-            RenderUtils.startDrawVirtual(stack.stack());
-            try {
-                if (canSpearAttack()) {
-                    Entity spearEntity = CombatTasks.getTargetSelector()
-                            .searchAttackEntity(spearDistance.get(), false, SpearAttack::isSpearable);
-                    if (spearEntity != null) {
-                        float dist = spearEntity.distanceTo(mc.player);
-                        float opacity = Math.min(0.6F, 0.10F + dist * 0.02F);
-                        Box box = RenderUtils.getLerpedBox(spearEntity, tickDelta);
-                        RenderUtils.drawSolidBox(
-                                stack.stack(),
-                                box.getMinPos(),
-                                box.getMaxPos(),
-                                ColorUtils.withAlpha(Color.GREEN, opacity));
-                    }
-                }
-            } finally {
-                RenderUtils.stopDrawVirtual(stack.stack());
-            }
+        if (!enable.get() || !spearRender.get()) return;
+        RenderUtils.startDrawVirtual(event.context().stack());
+        try {
+            targetCollector.render3D(event.context().stack(), event.context().partialTicks());
+        } finally {
+            RenderUtils.stopDrawVirtual(event.context().stack());
         }
     }
+
+    private void updateRenderCollector(Event<ClientPlayerEntity> event) {
+        targetCollector.clear();
+        if (!enable.get() || !spearRender.get() || !canSpearAttack()) return;
+        Entity spearEntity = CombatTasks.getTargetSelector()
+                .searchAttackEntity(spearDistance.get(), false, SpearAttack::isSpearable);
+        if (spearEntity != null) {
+            float dist = spearEntity.distanceTo(mc.player);
+            float opacity = Math.min(0.6F, 0.10F + dist * 0.02F);
+            targetCollector.submit(
+                    spearEntity, ColorUtils.withAlpha(Color.GREEN, opacity).getRGB());
+        }
+    }
+
+    private final RenderCollector<Entity> targetCollector =
+            RenderCollectors.createEntityBoxCollector(false, true, false);
 
     //    private void drawPlayerUseSpearTick(LivingEntity entity, MatrixStack stack) {
     //        AttackRangeComponent attackRange = entity.getAttackRange();
