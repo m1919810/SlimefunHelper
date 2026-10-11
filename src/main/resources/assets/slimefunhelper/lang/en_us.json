@@ -2167,8 +2167,6 @@
 	"widget.click-gui.module-name.Move.Travel.tooltips": "允许你发起一些简单的定向运动任务\n指令!!travel",
 	"widget.click-gui.module-name.Move.SearchControl": "SearchControl",
 	"widget.click-gui.module-name.Move.SwimControl": "SwimControl",
-	"widget.click-gui.module-name.Move.ElytraFinder": "开发中",
-	"widget.click-gui.module-name.Move.ElytraFinder.tooltips": "开发中",
 	"widget.click-gui.module-name.Move.AntiLiquid": "AntiLiquid",
 	"widget.click-gui.module-name.Move.AntiChunkLag": "AntiChunkLag",
 	"widget.click-gui.module-name.Render.RenderExtra": "RenderExtra",

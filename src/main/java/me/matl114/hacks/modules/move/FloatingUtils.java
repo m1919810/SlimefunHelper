@@ -1,10 +1,11 @@
 package me.matl114.hacks.modules.move;
 
+import java.util.Optional;
 import me.matl114.events.Event;
+import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
-import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
@@ -15,6 +16,7 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.versioned.api.VPacket;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.util.math.Vec3d;
 
@@ -93,6 +95,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
     @Override
     public void registerAll() {
         super.registerAll();
+        registerListener(Listener.getPreGameTick(), this::onPreGameTick);
     }
 
     @Override
@@ -111,17 +114,16 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
                 || forceFloatingThisTick;
     }
 
-    @Override
-    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+    public void onPreGameTick(Event<ClientPlayerEntity> event) {
+        if (checkNull()) return;
         if (!workGrimFloatingThisTick() && enableElytraSlowFall.get()) {
             if (mc.player.isFallFlying() && !mc.player.isOnGround()) {
                 boolean rotateYaw = Tasks.getTick() % 2 == 0;
-                movementManagerEvent.context.pushImportantRotation(true, rotateYaw);
-                EntityUtils.setEntityPitchSafe(mc.player, 0);
-                if (rotateYaw) {
-                    PlayerStateManager.setPlayerYawSafe(mc.player, mc.player.getYaw() + 180);
-                }
-                movementManagerEvent.context.markForResetRot();
+                RotationManager.INSTANCE.request(RotationManager.ofDirection(
+                                Optional.of(0.0F),
+                                rotateYaw ? Optional.of(mc.player.getYaw() + 180.0F) : Optional.empty())
+                        .applyMoveFix(false)
+                        .occupied(false));
             }
         }
     }

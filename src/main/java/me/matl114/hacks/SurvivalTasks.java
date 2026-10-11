@@ -5,8 +5,6 @@ import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.survival.*;
-import me.matl114.hacks.modules.survival.ElytraFinder;
-import org.jetbrains.annotations.ApiStatus;
 
 public class SurvivalTasks {
     public static void init() {}
@@ -55,10 +53,6 @@ public class SurvivalTasks {
 
     @Getter
     private static PathManager pathManager;
-
-    @ApiStatus.Experimental
-    @Getter
-    private static ElytraFinder elytraFinder;
 
     @Getter
     private static BaritoneFix baritoneFix;

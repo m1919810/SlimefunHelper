@@ -18,9 +18,8 @@ import me.matl114.hacks.modules.mine.MiningProgressManager;
 import me.matl114.hacks.modules.mine.PacketMine;
 import me.matl114.hacks.modules.move.PlayerInputManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
-import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.modules.move.RotationManager;
 import me.matl114.hacks.utils.config.*;
-import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.hacks.utils.tasks.StateExecutor;
@@ -51,27 +50,16 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 
-public class AutoSurround extends BaseModule implements LegalMovementManager.MovementModifier {
-    static LegalMovementManager.DelegateMovementModifier instance;
+public class AutoSurround extends BaseModule {
     public static AutoSurround INSTANCE;
 
     public AutoSurround() {
         super("AutoSurround");
-        if (instance == null) {
-            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
-        }
-        instance.setDelegate(this::cast);
         INSTANCE = this;
         bindFlag(enable);
     }
 
     public final ModulePath autoSurround = makePath(Configs.INTERACT_CONFIG, "place-utils.auto-surround");
-
-    @Override
-    public int priority() {
-        return PRIORITY_MONITOR;
-    }
 
     public final FlagRef enable = flagBuilder(autoSurround.addEnable()).build();
 
@@ -153,22 +141,21 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
     @Override
     public void onEnableModule() {
         super.onEnableModule();
-        triggerCenterFix = autoCenter.get() && mc.player != null && mc.player.getPose() != EntityPose.SWIMMING;
     }
 
     @Override
     public void onDisableModule() {
         super.onDisableModule();
-        triggerCenterFix = false;
     }
 
     int delayTicks;
     boolean needSneak = false;
     StateExecutor needPlaceState = new StateExecutor();
+    BlockPos lastCenter;
 
     public void onInput(Event<Void> inputEvent) {
+        boolean triggerCenterFix = false;
         if (enable.get()) {
-            if (!InteractionTasks.canHandleInteract(mode.get())) return;
             boolean bl = mc.player.isSneaking();
             if (++delayTicks >= delay.get()) {
                 if (!eatingAbort.get() || !mc.player.isUsingItem()) {
@@ -179,7 +166,6 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                         delayTicks = 0;
                         needPlaceState.state(true);
                     } else {
-                        triggerCenterFix = false;
                         needPlaceState.state(false);
                     }
                 } else {
@@ -202,6 +188,33 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                 }
             }
         }
+        if (triggerCenterFix && mc.player.isOnGround()) {
+            if (lastCenter == null || !MathUtils.isInBox(lastCenter.toCenterPos(), mc.player.getPos(), 1.0)) {
+                lastCenter = lastSurround == null ? PlayerStateManager.INSTANCE.lastVelocityAffectingPos : lastSurround;
+            }
+            var blockPos = lastCenter;
+            boolean fixed = mc.player.getX() - blockPos.getX() - 0.5 <= 0.2
+                    && mc.player.getX() - blockPos.getX() - 0.5 >= -0.2
+                    && mc.player.getZ() - blockPos.getZ() - 0.5 <= 0.2
+                    && mc.player.getZ() - 0.5 - blockPos.getZ() >= -0.2;
+            if (!fixed) {
+                PlayerInputUtils.Input inputUtils = PlayerInputUtils.of(mc.options);
+                if (!inputUtils.hasMovement()) {
+                    Vec3d lookHorizontal = blockPos.toCenterPos().subtract(mc.player.getPos());
+                    float yaw = (float) Math.toDegrees(Math.atan2(-lookHorizontal.x, lookHorizontal.z));
+                    boolean accepted = RotationManager.INSTANCE.request(
+                            RotationManager.ofDirection(Optional.empty(), Optional.of(yaw))
+                                    .applyMoveFix(false)
+                                    .occupied(false));
+                    if (accepted) {
+                        PlayerInputManager.INSTANCE.addForwardModifier(0, true, 1);
+                        PlayerInputManager.INSTANCE.addBackwardModifier(0, false, 1);
+                    }
+                }
+            } else {
+                lastCenter = null;
+            }
+        }
     }
 
     public void onPrePacketMine(Event<BlockBreak> eventPre) {
@@ -216,9 +229,6 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
         }
     }
 
-    int[] dx = {0, 0, -1, 1};
-
-    int[] dz = {-1, 1, 0, 0};
     Direction[] dd = {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST, Direction.DOWN};
     BlockPos lastSurround;
 
@@ -361,7 +371,8 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                                     }
                                 });
                     }
-                    if (canCubePlace(mc.player, test, pendingRemoval)) {
+                    if (canCubePlace(mc.player, test, pendingRemoval)
+                            && InteractionTasks.canHandleInteract(mode.get())) {
                         if (placeCnt == 0) {
                             var supply = supplyBlocks();
                             if (supply == null) {
@@ -438,54 +449,6 @@ public class AutoSurround extends BaseModule implements LegalMovementManager.Mov
                 ghostHand.get().getSearchSize(offhand.get()),
                 true,
                 false);
-    }
-
-    boolean triggerCenterFix = false;
-    boolean rotateSuccess = false;
-    BlockPos lastCenter;
-
-    @Override
-    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
-
-        if (triggerCenterFix && mc.player.isOnGround()) {
-            if (lastCenter == null || !MathUtils.isInBox(lastCenter.toCenterPos(), mc.player.getPos(), 1.0)) {
-                lastCenter = lastSurround == null ? PlayerStateManager.INSTANCE.lastVelocityAffectingPos : lastSurround;
-            }
-            var blockPos = lastCenter;
-            boolean fixed = mc.player.getX() - blockPos.getX() - 0.5 <= 0.2
-                    && mc.player.getX() - blockPos.getX() - 0.5 >= -0.2
-                    && mc.player.getZ() - blockPos.getZ() - 0.5 <= 0.2
-                    && mc.player.getZ() - 0.5 - blockPos.getZ() >= -0.2;
-            if (!fixed) {
-                PlayerInputUtils.Input inputUtils = PlayerInputUtils.of(mc.options);
-                if (!inputUtils.hasMovement() && !movementManagerEvent.context.hasImportantRotation()) {
-                    rotateSuccess = true;
-                    Vec3d lookHorizontal = blockPos.toCenterPos().subtract(mc.player.getPos());
-                    PlayerStateManager.setPlayerYawSafe(
-                            mc.player, EntityUtils.rotationToYaw(lookHorizontal.normalize()));
-                    movementManagerEvent.context.markForResetRot();
-                }
-            } else {
-                triggerCenterFix = false;
-                lastCenter = null;
-            }
-        }
-    }
-    // todo: try check block position, sneak-related
-    @Override
-    public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
-        if (triggerCenterFix && mc.player.isOnGround() && rotateSuccess) {
-            rotateSuccess = false;
-            var input = PlayerInputUtils.of(mc.player);
-            if (!input.hasWASDMovement()) {
-                input.forward(true).applyInput(mc.player);
-            }
-        }
-    }
-
-    @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-        return true;
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
