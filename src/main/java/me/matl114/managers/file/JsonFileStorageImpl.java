@@ -57,7 +57,7 @@ public class JsonFileStorageImpl extends FileStorageImpl {
     }
 
     @Override
-    public void write() {
+    public synchronized void write() {
         ensureParentDir();
         File tempFile = new File(file.getParent(), file.getName() + ".tmp");
         if (tempFile.exists()) {

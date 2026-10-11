@@ -215,7 +215,7 @@ public class Config implements RefMap {
         return this;
     }
 
-    public void save(@Nonnull File file) {
+    public synchronized void save(@Nonnull File file) {
         File absoluteFile = file.getAbsoluteFile();
         File parentDir = absoluteFile.getParentFile();
         if (parentDir != null && !parentDir.exists() && !parentDir.mkdirs() && !parentDir.exists()) {
@@ -369,7 +369,7 @@ public class Config implements RefMap {
     }
 
     public void reload() {
-        if (this.file != null) {
+        if (this.file != null && this.file.isFile()) {
             ref.copyValueFrom(Refs.transferConfig(ConfigLoader.loadYamlConfig(this.file)));
         }
     }
