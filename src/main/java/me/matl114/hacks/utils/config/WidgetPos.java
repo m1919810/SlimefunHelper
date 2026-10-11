@@ -129,7 +129,7 @@ public class WidgetPos implements NBTParsable<WidgetPos> {
         return factory.createElement(
                 IconElement.fixedGui(Constants.EDITOR_SPRITE, ButtonAction.run(() -> {
                             // open gui
-                            ScreenAccess.of(new WidgetPosSelectScreen(320, current.get(), consumer))
+                            ScreenAccess.of(new WidgetPosSelectScreen(320, current.get(), consumer, factory))
                                     .openFromCurrent();
                         }))
                         .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(

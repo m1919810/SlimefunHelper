@@ -103,7 +103,7 @@ public class RegistryAttrKeyValue<T> extends BaseAttrKeyValue<T> {
         var select = factory.createElement(
                 IconElement.fixedGui(
                                 Constants.SEARCH_TEXTURE_SPRITE,
-                                ButtonAction.run(() -> openRegistrySearch(registry, attr)))
+                                ButtonAction.run(() -> openRegistrySearch(factory, registry, attr)))
                         .withTooltips(TooltipHandler.of(Constants.searchRegistryTooltips())),
                 null,
                 null,
@@ -117,12 +117,15 @@ public class RegistryAttrKeyValue<T> extends BaseAttrKeyValue<T> {
                 .addDrawableChild(select);
     }
 
-    private static <T, W> void openRegistrySearch(Registry<T> registry, AttrKeyValue<W> attr) {
-        ScreenAccess.of(new RegistryChooseScreen<>(registry, (var) -> {
-                    if (var != null) {
-                        attr.setInput(registry.getId(var).toString());
-                    }
-                }))
+    private static <T, W> void openRegistrySearch(ElementFactory factory, Registry<T> registry, AttrKeyValue<W> attr) {
+        ScreenAccess.of(new RegistryChooseScreen<>(
+                        registry,
+                        (var) -> {
+                            if (var != null) {
+                                attr.setInput(registry.getId(var).toString());
+                            }
+                        },
+                        factory))
                 .openFromCurrent();
     }
 }

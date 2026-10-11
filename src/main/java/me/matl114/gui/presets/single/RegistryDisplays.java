@@ -38,6 +38,7 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.Text;
+import net.minecraft.util.Colors;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.random.LocalRandom;
 import net.minecraft.util.math.random.Random;
@@ -181,7 +182,7 @@ public class RegistryDisplays {
             int startIndexY = startIndexX;
             icon.render(startIndexX, startIndexY, context, value);
             RenderHandler.drawScaledText0(
-                    context, TextRenderers.get(), name, 20, 1, 200, 10, -16711936, TextAlign.LEFT);
+                    context, TextRenderers.get(), name, 20, 1, 200, 10, Colors.WHITE, TextAlign.LEFT);
             RenderHandler.drawScaledText0(
                     context,
                     TextRenderers.get(),
@@ -190,7 +191,7 @@ public class RegistryDisplays {
                     10,
                     200,
                     19,
-                    -16711936,
+                    Colors.WHITE,
                     TextAlign.LEFT);
         }
     }

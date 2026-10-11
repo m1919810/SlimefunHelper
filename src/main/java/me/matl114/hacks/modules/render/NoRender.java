@@ -4,7 +4,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
-import me.matl114.hacks.utils.config.EntityTypeRegex;
+import me.matl114.hacks.utils.config.EntityTypeEntrySet;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.managers.Configs;
@@ -108,8 +108,8 @@ public class NoRender extends BaseModule {
 
     public final FlagRef ignoreSpawn = flagBuilder(entity.add("force-no")).build();
 
-    public final NBTRef<EntityTypeRegex> types = builder(entity.add("types"), EntityTypeRegex.class)
-            .defaultValue(new EntityTypeRegex(new Regex("^()$")))
+    public final NBTRef<EntityTypeEntrySet> types = builder(entity.add("types"), EntityTypeEntrySet.class)
+            .defaultValue(new EntityTypeEntrySet(new Regex("^()$")))
             .build();
 
     public final FlagRef noArmorRender = flagBuilder(entity.add("armor-model")).build();
