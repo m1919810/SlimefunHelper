@@ -8,15 +8,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -72,15 +64,15 @@ public class StructureLabel extends BaseModule {
             Math.max(1, Runtime.getRuntime().availableProcessors() / 4);
     private static final int LOOT_EXECUTOR_THREAD_COUNT =
             Math.max(1, Runtime.getRuntime().availableProcessors() / 2);
-    private static final ScheduledExecutorService structureExecutor = Executors.newScheduledThreadPool(
-            STRUCTURE_EXECUTOR_THREAD_COUNT, task -> daemonThread(task, "StructureSearch", Thread.NORM_PRIORITY));
+    private static final ExecutorService structureExecutor =
+            Executors.newFixedThreadPool(STRUCTURE_EXECUTOR_THREAD_COUNT, StructureLabel::daemonThread);
     private static final ThreadPoolExecutor lootExecutor = new ThreadPoolExecutor(
             LOOT_EXECUTOR_THREAD_COUNT,
             LOOT_EXECUTOR_THREAD_COUNT,
             0L,
             TimeUnit.MILLISECONDS,
             new PriorityBlockingQueue<>(),
-            task -> daemonThread(task, "LootPrediction", Thread.NORM_PRIORITY));
+            StructureLabel::daemonThread);
     private static final AtomicLong lootTaskSequence = new AtomicLong();
     private static final Identifier END_CITIES = Identifier.ofVanilla("end_cities");
     private static final Identifier ANCIENT_CITIES = Identifier.ofVanilla("ancient_cities");
@@ -90,15 +82,15 @@ public class StructureLabel extends BaseModule {
     private static final Identifier RUINED_PORTAL_LOOT = Identifier.ofVanilla("chests/ruined_portal");
     private static final String VISITED_STRUCTURE_KEY = "slimefunhelper:structure_label_visited";
 
-    private static Thread daemonThread(Runnable task, String name, int priority) {
-        Thread thread = new Thread(task, "SlimefunHelper-" + name);
+    private static Thread daemonThread(Runnable task) {
+        Thread thread = new Thread(task);
         thread.setDaemon(true);
-        thread.setPriority(priority);
+        thread.setPriority(Thread.NORM_PRIORITY);
         return thread;
     }
 
-    private static ScheduledFuture<?> scheduleStructureTask(Runnable task) {
-        return structureExecutor.schedule(task, 0, TimeUnit.MILLISECONDS);
+    private static Future<?> submitStructureTask(Runnable task) {
+        return structureExecutor.submit(task);
     }
 
     public final ModulePath root = makePath(Configs.SURVIVAL_CONFIG, "structure-label");
@@ -193,7 +185,7 @@ public class StructureLabel extends BaseModule {
     private final Set<LootAreaTaskKey> pendingLootAreaTasks = ConcurrentHashMap.newKeySet();
     private final Set<Future<?>> pendingTasks = ConcurrentHashMap.newKeySet();
     private final Map<CityKey, EndCityResult> cachedCities = new ConcurrentHashMap<>();
-    private final ThreadLocal<LootBiomeSamplers> lootBiomeSamplerCache = new ThreadLocal<>();
+    private final Map<Thread, LootBiomeSamplers> lootBiomeSamplerCache = new ConcurrentHashMap<>();
     private final Map<StructureKey, IXWaypoint> waypoints = new ConcurrentHashMap<>();
     private final Map<StructureKey, WaypointSpec> committedWaypointSpecs = new ConcurrentHashMap<>();
     private final Map<AppleChestWaypointKey, IXWaypoint> appleChestWaypoints = new ConcurrentHashMap<>();
@@ -245,6 +237,7 @@ public class StructureLabel extends BaseModule {
         registerListener(Listener.getPostGameTick(), this::onTick);
         registerListener(RenderListener.getRender3DEvent(), this::onRender3D);
         registerListener(XaeroHelper.getWorldSwitchPoint(), this::onWorldSwitch);
+        registerListener(Listener.getServerLeavePoint(), this::onServerLeave);
     }
 
     @Override
@@ -260,6 +253,10 @@ public class StructureLabel extends BaseModule {
     }
 
     private void onWorldSwitch(Event<World> event) {
+        resetState(true, true);
+    }
+
+    private void onServerLeave(Event<Void> event) {
         resetState(true, true);
     }
 
@@ -290,7 +287,7 @@ public class StructureLabel extends BaseModule {
             requestAreasAround(playerArea);
             lastRequestedRadius = radius;
             if (movedArea) {
-                ScheduledFuture<?> future = scheduleStructureTask(() -> pruneCache(playerArea));
+                Future<?> future = submitStructureTask(() -> pruneCache(playerArea));
                 pendingTasks.add(future);
             }
         }
@@ -326,7 +323,7 @@ public class StructureLabel extends BaseModule {
         }
         ContextRequest request = new ContextRequest(generation, seed, worldKey);
         pendingContextRequest = request;
-        ScheduledFuture<?> future = scheduleStructureTask(() -> {
+        Future<?> future = submitStructureTask(() -> {
             try {
                 Map<Identifier, StructureConfig> configs = new java.util.LinkedHashMap<>();
                 Map<Identifier, StructureConfig> vanillaConfigs = StructureConfig.vanillaConfigs();
@@ -344,8 +341,9 @@ public class StructureLabel extends BaseModule {
                 if (!isCurrent(request)) {
                     return;
                 }
+                Populator populator = new Populator(seed, structureIndices);
                 context = new GenerationContext(
-                        request.generation(), seed, worldKey, Map.copyOf(configs), structureIndices, biomeSampler);
+                        request.generation(), seed, worldKey, Map.copyOf(configs), populator, biomeSampler);
                 pendingContextRequest = null;
                 waypointDirty = true;
                 waypointSyncTicks = 0;
@@ -383,7 +381,7 @@ public class StructureLabel extends BaseModule {
             return;
         }
         for (AreaKey area : areas) {
-            ScheduledFuture<?> future = scheduleStructureTask(() -> requestAreaBatch(List.of(area), current));
+            Future<?> future = submitStructureTask(() -> requestAreaBatch(List.of(area), current));
             pendingTasks.add(future);
         }
     }
@@ -424,7 +422,7 @@ public class StructureLabel extends BaseModule {
     }
 
     private void requestAreaBatch(List<AreaKey> areas, GenerationContext current) {
-        Populator populator = new Populator(current.seed(), current.structureIndices());
+        Populator populator = current.populator();
         List<AreaKey> completedAreas = new ArrayList<>();
         for (AreaKey area : areas) {
             try {
@@ -501,12 +499,12 @@ public class StructureLabel extends BaseModule {
         if (!pendingAreaDetails.add(area)) {
             return;
         }
-        ScheduledFuture<?> future = scheduleStructureTask(() -> {
+        Future<?> future = submitStructureTask(() -> {
             try {
                 if (!isCurrentArea(area, current)) {
                     return;
                 }
-                Populator populator = new Populator(current.seed(), current.structureIndices());
+                Populator populator = current.populator();
                 List<EndCityResult> endCities = current.configs().containsKey(END_CITIES)
                         ? populator.generateEndCities(current.configs().get(END_CITIES), range)
                         : List.of();
@@ -540,7 +538,9 @@ public class StructureLabel extends BaseModule {
                             && viableDesertPyramids.contains(StructureKey.of(structure)));
         });
         if (!hasLootStructure) {
-            checkedOtherLootAreas.add(area);
+            if (isCurrentOtherLootArea(area, current, predictionGeneration)) {
+                checkedOtherLootAreas.add(area);
+            }
             return;
         }
         if (checkedOtherLootAreas.contains(area) || !pendingOtherLootAreas.add(area)) {
@@ -551,7 +551,7 @@ public class StructureLabel extends BaseModule {
                 if (!isCurrentOtherLootArea(area, current, predictionGeneration)) {
                     return;
                 }
-                Populator populator = new Populator(current.seed(), current.structureIndices());
+                Populator populator = current.populator();
                 List<PredictedChestAlternatives> chests = new ArrayList<>();
                 LootBiomeSamplers samplers = getLootBiomeSamplers(current);
                 CubiomesOverworldBiomeSampler overworldSampler = samplers.overworld();
@@ -647,13 +647,13 @@ public class StructureLabel extends BaseModule {
         if (cachedAncientCityChests.containsKey(area) || !pendingAncientChestAreas.add(area)) {
             return;
         }
-        ScheduledFuture<?> future = scheduleStructureTask(() -> {
+        Future<?> future = submitStructureTask(() -> {
             try {
                 if (!isCurrentArea(area, current)) {
                     return;
                 }
                 ChunkRange range = areaChunkRange(area);
-                Populator populator = new Populator(current.seed(), current.structureIndices());
+                Populator populator = current.populator();
                 List<PredictedChest> chests = populator.generateAncientCityChests(
                         populator.generateAncientCityPiecesNear(
                                 current.configs().get(ANCIENT_CITIES), range, current.biomeSampler()),
@@ -661,6 +661,9 @@ public class StructureLabel extends BaseModule {
                         current.biomeSampler());
                 if (isCurrentArea(area, current)) {
                     cachedAncientCityChests.put(area, List.copyOf(chests));
+                    if (!isCurrentArea(area, current)) {
+                        return;
+                    }
                     cachedAncientCityLootContents.put(area, List.of());
                     scheduleAppleChestMarking(
                             area,
@@ -745,7 +748,9 @@ public class StructureLabel extends BaseModule {
                     Map<AreaKey, List<PredictedChestContents>> lootContentsCache =
                             lowPriority ? cachedOtherLootContents : cachedAncientCityLootContents;
                     lootContentsCache.compute(area, (key, cached) -> {
-                        if (lowPriority && !isCurrentOtherLootArea(area, current, predictionGeneration)) {
+                        if (lowPriority
+                                ? !isCurrentOtherLootArea(area, current, predictionGeneration)
+                                : !isCurrentArea(area, current)) {
                             return cached;
                         }
                         List<PredictedChestContents> combined = new ArrayList<>(cached == null ? List.of() : cached);
@@ -760,7 +765,9 @@ public class StructureLabel extends BaseModule {
                     Map<AreaKey, List<PredictedChestAlternatives>> appleCache =
                             lowPriority ? cachedOtherPredictedAppleChests : cachedPredictedAppleChests;
                     appleCache.compute(area, (key, cached) -> {
-                        if (lowPriority && !isCurrentOtherLootArea(area, current, predictionGeneration)) {
+                        if (lowPriority
+                                ? !isCurrentOtherLootArea(area, current, predictionGeneration)
+                                : !isCurrentArea(area, current)) {
                             return cached;
                         }
                         List<PredictedChestAlternatives> combined =
@@ -773,7 +780,7 @@ public class StructureLabel extends BaseModule {
                     }
                 }
             } catch (Throwable throwable) {
-                Debug.getLogger().debug("Unable to mark enchanted golden apple chests", throwable);
+                Debug.info("Unable to mark enchanted golden apple chests", throwable);
             } finally {
                 pendingLootAreaTasks.remove(taskKey);
             }
@@ -830,6 +837,9 @@ public class StructureLabel extends BaseModule {
         pendingAreaDetails.remove(area);
         cachedAreas.put(area, List.copyOf(endCities));
         for (EndCityResult result : endCities) {
+            if (!isCurrentArea(area, current)) {
+                return;
+            }
             cachedCities.put(CityKey.of(result.structure()), result);
         }
         if (!endCities.isEmpty()) {
@@ -856,8 +866,14 @@ public class StructureLabel extends BaseModule {
                 continue;
             }
             StructureKey key = StructureKey.of(structure);
+            if (!isCurrentArea(area, current)) {
+                return;
+            }
             checkedAncientCities.add(key);
             if (current.biomeSampler().isAncientCityBiomeViable(current.seed(), structure)) {
+                if (!isCurrentArea(area, current)) {
+                    return;
+                }
                 viableAncientCities.add(key);
             }
         }
@@ -877,10 +893,16 @@ public class StructureLabel extends BaseModule {
                 continue;
             }
             StructureKey key = StructureKey.of(structure);
+            if (!isCurrentArea(area, current)) {
+                return;
+            }
             if (!checkedDesertPyramids.add(key)) {
                 continue;
             }
             if (current.biomeSampler().isDesertPyramidViable(structure)) {
+                if (!isCurrentArea(area, current)) {
+                    return;
+                }
                 viableDesertPyramids.add(key);
             }
             changed = true;
@@ -1013,7 +1035,7 @@ public class StructureLabel extends BaseModule {
                 x,
                 position.getY(),
                 z,
-                desertPyramid ? "Desert Pyramid Apple Chest" : "Ruined Portal Apple Chest",
+                desertPyramid ? "Desert Pyramid" : "Ruined Portal",
                 desertPyramid ? "DP" : "RP",
                 isVisitedChunk(new ChunkPos(position))
                         ? Formatting.GRAY.ordinal()
@@ -1413,11 +1435,11 @@ public class StructureLabel extends BaseModule {
     }
 
     private boolean isCurrent(GenerationContext current) {
-        return enable.get() && context == current && generation == current.generation();
+        return !checkNull() && enable.get() && context == current && generation == current.generation();
     }
 
     private boolean isCurrent(ContextRequest request) {
-        return enable.get() && pendingContextRequest == request && generation == request.generation();
+        return !checkNull() && enable.get() && pendingContextRequest == request && generation == request.generation();
     }
 
     private void cleanupFinishedTasks() {
@@ -1425,7 +1447,8 @@ public class StructureLabel extends BaseModule {
     }
 
     private LootBiomeSamplers getLootBiomeSamplers(GenerationContext current) {
-        LootBiomeSamplers cached = lootBiomeSamplerCache.get();
+        Thread thread = Thread.currentThread();
+        LootBiomeSamplers cached = lootBiomeSamplerCache.get(thread);
         if (cached != null && cached.matches(current)) {
             return cached;
         }
@@ -1436,7 +1459,9 @@ public class StructureLabel extends BaseModule {
                 World.NETHER.equals(current.worldKey()) ? CubiomesNetherBiomeSampler.create(current.seed()) : null;
         LootBiomeSamplers created =
                 new LootBiomeSamplers(current.seed(), current.worldKey(), overworldSampler, netherSampler);
-        lootBiomeSamplerCache.set(created);
+        if (isCurrent(current)) {
+            lootBiomeSamplerCache.put(thread, created);
+        }
         return created;
     }
 
@@ -1458,6 +1483,7 @@ public class StructureLabel extends BaseModule {
         cachedAncientCityChests.clear();
         cachedAncientCityLootContents.clear();
         cachedOtherLootContents.clear();
+        lootBiomeSamplerCache.clear();
         checkedAncientCities.clear();
         viableAncientCities.clear();
         checkedDesertPyramids.clear();
@@ -1551,7 +1577,7 @@ public class StructureLabel extends BaseModule {
             long seed,
             RegistryKey<World> worldKey,
             Map<Identifier, StructureConfig> configs,
-            Map<Identifier, StructureDecorationIndex.Index> structureIndices,
+            Populator populator,
             @Nullable CubiomesOverworldBiomeSampler biomeSampler) {}
 
     private record LootBiomeSamplers(
