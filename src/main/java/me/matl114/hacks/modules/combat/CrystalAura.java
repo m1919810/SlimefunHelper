@@ -494,7 +494,6 @@ public class CrystalAura extends BaseModule {
     }
 
     public boolean tickPlace() {
-        if (!InteractionTasks.canHandleInteract(mode.get())) return false;
         if (currentTarget.isEmpty()) {
             return false;
         }

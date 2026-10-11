@@ -95,12 +95,28 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
         if (directionalSprint.get()
                 && directionalSprintMode.getValue().hasAc()
                 && mayWorkSprint()
-                && PlayerInputUtils.of(mc.options).sprint()
-                && !PlayerInputUtils.of(mc.options).forward()
-                && PlayerInputUtils.of(mc.options).backward()) {
-            RotationManager.INSTANCE.request(
-                    RotationManager.ofDirection(Optional.empty(), Optional.of(mc.player.getYaw() + 180.0F))
-                            .occupied(false));
+                && PlayerInputUtils.of(mc.options).sprint()) {
+            var input = PlayerInputUtils.of(mc.options);
+            // be legal,
+            if (!input.forward() && input.hasWASDMovement()) {
+                float yaw;
+                if (input.backward()) {
+                    yaw = 180;
+                } else {
+                    yaw = 180 + input.sidewaysSpeed() * 90;
+                }
+                if (yaw != 0.0F) {
+                    RotationManager.INSTANCE.request(
+                            RotationManager.ofDirection(Optional.empty(), Optional.of(mc.player.getYaw() + yaw))
+                                    .preTick(() -> {
+                                        if (lastTickLandingRotateJump) {
+                                            PlayerInputManager.INSTANCE.addJumpModifier(0, false, 1);
+                                        }
+                                        PlayerInputManager.INSTANCE.addSprintModifier(0, true, 1);
+                                    })
+                                    .occupied(false));
+                }
+            }
         }
     }
 
@@ -128,16 +144,10 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
         //                Debug.info("check vc", player.getVelocity().horizontalLength());
 
         // Debug.info(player.input.movementForward);
-        if (directionalSprint.get() && directionalSprintMode.getValue().hasAc()) {
-            PlayerInputUtils.Input input = PlayerInputUtils.of(player);
-            if (lastTickLandingRotateJump) {
-                input.jump(false);
-            }
-            input.applyInput(player);
-        }
+        enableSprintDirectionalThisTick = false;
         if (directionalSprint.get() && directionalSprintMode.getValue() == BypassMode.NO_BYPASS) {
             PlayerInputUtils.Input input = PlayerInputUtils.of(player);
-            if (mayWorkSprint() && input.backward() && !input.forward()) {
+            if (mayWorkSprint() && input.hasWASDMovement() && !input.forward()) {
                 // there is no rotation here
                 enableSprintDirectionalThisTick = true;
             }
@@ -162,7 +172,6 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
 
     @Override
     public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-        enableSprintDirectionalThisTick = false;
         lastTickLandingRotateJump = false;
         if (!movementManagerEvent.context.playerStatus.onGround
                 && movementManagerEvent.context.playerStatus.entity.isOnGround()) {

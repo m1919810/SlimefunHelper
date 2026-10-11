@@ -235,7 +235,6 @@ public class Interact extends BaseModule {
     }
 
     public void onPreTick(Event<ClientPlayerEntity> event) {
-        if (!InteractionTasks.canHandleInteract(blockMode.get())) return;
         currentInteractTarget = null;
         if (enable.get()) {
             HitResult currentCrosshairTarget = mc.crosshairTarget;

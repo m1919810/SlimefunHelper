@@ -1,6 +1,7 @@
 package me.matl114.hacks.modules.move;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -95,9 +96,12 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
         currentTickRequest = currentTickRequests.stream()
                 .filter(RotationRequest::isOccupied)
                 .findFirst()
-                .orElseGet(() -> currentTickRequests.stream().findFirst().orElse(null));
+                .orElseGet(() -> currentTickRequests.stream()
+                        .filter(s -> !s.isOccupied())
+                        .findFirst()
+                        .orElse(null));
         currentTickRequests.clear();
-        if (ElytraExtra.INSTANCE != null && ElytraExtra.INSTANCE.hasFireworkVelocityOverrides()) {
+        if (ElytraExtra.INSTANCE.hasFireworkVelocityOverrides()) {
             return;
         }
         if (currentTickRequest == null) {
@@ -338,51 +342,26 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
     }
 
     public static final class LookDirectionRequest extends RotationRequestImpl<Vec2f> {
-        private final Supplier<Vec2f> rotationSupplier;
-        private Optional<Float> pitch;
-        private Optional<Float> yaw;
+        private final Function<ClientPlayerEntity, Vec2f> rotationSupplier;
 
         public LookDirectionRequest() {
             this(Optional.empty(), Optional.empty());
         }
 
         public LookDirectionRequest(Supplier<Vec2f> rotationSupplier) {
-            this.rotationSupplier = Objects.requireNonNull(rotationSupplier, "rotationSupplier");
-            this.pitch = Optional.empty();
-            this.yaw = Optional.empty();
+            this.rotationSupplier = (pl) -> rotationSupplier.get();
         }
 
         public LookDirectionRequest(Optional<Float> pitch, Optional<Float> yaw) {
-            this.rotationSupplier = null;
-            this.pitch = Objects.requireNonNull(pitch, "pitch");
-            this.yaw = Objects.requireNonNull(yaw, "yaw");
-        }
-
-        public LookDirectionRequest pitch(Optional<Float> pitch) {
-            this.pitch = Objects.requireNonNull(pitch, "pitch");
-            return this;
-        }
-
-        public LookDirectionRequest pitch(float pitch) {
-            return pitch(Optional.of(pitch));
-        }
-
-        public LookDirectionRequest yaw(Optional<Float> yaw) {
-            this.yaw = Objects.requireNonNull(yaw, "yaw");
-            return this;
-        }
-
-        public LookDirectionRequest yaw(float yaw) {
-            return yaw(Optional.of(yaw));
+            this.rotationSupplier = (pl) -> {
+                if (pitch.isEmpty() && yaw.isEmpty()) return null;
+                return new Vec2f(pitch.orElseGet(pl::getPitch), yaw.orElseGet(pl::getYaw));
+            };
         }
 
         @Override
         protected @Nullable Vec2f calculateRotationPre(Vec3d pos, ClientPlayerEntity player) {
-            Vec2f rotation = rotationSupplier == null ? null : rotationSupplier.get();
-            if (rotation == null && (pitch.isEmpty() || yaw.isEmpty())) return null;
-            float resolvedPitch = pitch.orElse(rotation == null ? player.getPitch() : rotation.x);
-            float resolvedYaw = yaw.orElse(rotation == null ? player.getYaw() : rotation.y);
-            return new Vec2f(resolvedPitch, resolvedYaw);
+            return rotationSupplier == null ? null : rotationSupplier.apply(player);
         }
     }
 
