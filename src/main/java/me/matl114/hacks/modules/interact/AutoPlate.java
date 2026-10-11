@@ -220,8 +220,7 @@ public class AutoPlate extends BaseModule {
                     && InteractExtra.INSTANCE.isWithinInteractRange(
                             mc.player.getPos(), blockHitResult.val().getBlockPos(), range.get())
                     && InteractUtils.getBlockPlacement(state.getBlock(), mc.player, mc.world, blockHitResult.val())
-                            != null
-                    && InteractionTasks.canHandleInteract(mode.get())) {
+                            != null) {
                 Runnable runnable = InvExtra.INSTANCE.swapItemToHand(supplyBlock, false, GhostHandMode.INV_SWAP);
                 if (runnable == null) break;
                 stack.add(runnable);
