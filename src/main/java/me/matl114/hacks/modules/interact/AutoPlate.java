@@ -108,7 +108,6 @@ public class AutoPlate extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreHandleInputEvents(), this::onInput);
-        registerListener(Listener.getPostGameTick(), this::updateRenderCollector);
         registerListener(RenderListener.getRender3DEvent(), this::onRender3D);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetReload);
     }
@@ -117,13 +116,8 @@ public class AutoPlate extends BaseModule {
     Optional<BlockState> placeState = Optional.empty();
     final RenderCollector<Box> drawOutlines = RenderCollectors.createBoxCollector(true, false, false);
 
-    private void updateRenderCollector(Event<net.minecraft.client.network.ClientPlayerEntity> event) {
-        drawOutlines.clear();
-        if (!enable.get() || !render.get()) return;
-        placeList.forEach(pos -> drawOutlines.submit(new Box(pos), color.get().withAlpha(255)));
-    }
-
     public void refreshState() {
+        drawOutlines.clear();
         placeList.clear();
         placeState = Optional.empty();
         Box playerBox = mc.player.getBoundingBox().expand(expandRange.get(), 0, expandRange.get());
@@ -145,6 +139,8 @@ public class AutoPlate extends BaseModule {
                         .mapToObj(j -> new BlockPos(
                                 s.getX() + mc.player.getBlockX(), maxY - j, s.getZ() + mc.player.getBlockZ())))
                 .toList());
+        placeList.forEach(s -> drawOutlines.submit(new Box(s), color.get().withAlpha(255)));
+
         if (copyState.get()) {
             List<BlockPos> filteredPos =
                     collisions.stream().filter(s -> s.getY() == maxY).toList();
@@ -162,7 +158,6 @@ public class AutoPlate extends BaseModule {
 
     public void onInput(Event<Void> event) {
         if (checkNull()) return;
-        if (!InteractionTasks.canHandleInteract(mode.get())) return;
         if (enable.get()) {
             if (++timer >= delay.get()) {
                 timer = 0;
@@ -186,7 +181,6 @@ public class AutoPlate extends BaseModule {
     }
 
     public void tickPlace() {
-        if (!InteractionTasks.canHandleInteract(mode.get())) return;
         int cnt = 0;
         int multiply = ((DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled(
                         mode.get().canMultiRotPlace())))
@@ -226,7 +220,8 @@ public class AutoPlate extends BaseModule {
                     && InteractExtra.INSTANCE.isWithinInteractRange(
                             mc.player.getPos(), blockHitResult.val().getBlockPos(), range.get())
                     && InteractUtils.getBlockPlacement(state.getBlock(), mc.player, mc.world, blockHitResult.val())
-                            != null) {
+                            != null
+                    && InteractionTasks.canHandleInteract(mode.get())) {
                 Runnable runnable = InvExtra.INSTANCE.swapItemToHand(supplyBlock, false, GhostHandMode.INV_SWAP);
                 if (runnable == null) break;
                 stack.add(runnable);

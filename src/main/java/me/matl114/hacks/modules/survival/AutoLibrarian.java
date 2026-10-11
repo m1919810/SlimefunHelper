@@ -38,6 +38,7 @@ import net.minecraft.client.gui.screen.ingame.MerchantScreen;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.passive.VillagerEntity;
@@ -197,17 +198,18 @@ public class AutoLibrarian extends BaseModule {
 
     VillagerEntity targetVillager;
     BlockPos targetWorkStationBase;
-    private final RenderCollector<Box> renderCollector = RenderCollectors.createBoxCollector(true, false, false);
+    private final RenderCollector<Entity> renderCollector =
+            RenderCollectors.createEntityBoxCollector(true, false, false);
+    private final RenderCollector<Box> boxCollector = RenderCollectors.createBoxCollector(true, false, false);
 
     private void updateRenderCollector(Event<net.minecraft.client.network.ClientPlayerEntity> event) {
         renderCollector.clear();
+        boxCollector.clear();
         if (checkNull() || !enable.get() || !render.get() || targetVillager == null || targetWorkStationBase == null) {
             return;
         }
-        renderCollector.submit(
-                RenderUtils.getLerpedBox(targetVillager, 0.0F),
-                renderColor.get().withAlpha(255));
-        renderCollector.submit(
+        renderCollector.submit(targetVillager, renderColor.get().withAlpha(255));
+        boxCollector.submit(
                 new Box(targetWorkStationBase.add(0, 1, 0)), renderColor.get().withAlpha(255));
     }
 
@@ -299,6 +301,7 @@ public class AutoLibrarian extends BaseModule {
                 RenderUtils.startDrawVirtual(event.context.stack());
                 try {
                     renderCollector.render3D(event.context.stack(), event.context.partialTicks());
+                    boxCollector.render3D(event.context.stack(), event.context.partialTicks());
                 } finally {
                     RenderUtils.stopDrawVirtual(event.context.stack());
                 }

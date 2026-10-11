@@ -334,9 +334,7 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
     @Unique
     private boolean shouldDirectionalSprint() {
         Sprint sprintModule = Sprint.INSTANCE;
-        return sprintModule.directionalSprint.get()
-                && (input.playerInput.backward() && !input.playerInput.forward())
-                && sprintModule.enableSprintDirectionalThisTick;
+        return sprintModule.directionalSprint.get() && sprintModule.enableSprintDirectionalThisTick;
     }
 
     @ModifyExpressionValue(

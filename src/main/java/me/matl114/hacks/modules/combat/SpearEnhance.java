@@ -53,7 +53,6 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -72,8 +71,6 @@ public class SpearEnhance extends BaseModule {
 
     public final FlagRef renderKineticPlayers =
             flagBuilder(spearModule.add("render-kinetic-players")).build();
-
-    private final RenderCollector<Box> kineticPlayerCollector = RenderCollectors.createBoxCollector(false, true, false);
 
     public final FlagRef replaceSpearModel = builder(spearModule.add("replace-via-spear-model"), Boolean.class)
             .defaultValue(true)
@@ -161,13 +158,16 @@ public class SpearEnhance extends BaseModule {
         }
     }
 
+    private final RenderCollector<Entity> kineticPlayerCollector =
+            RenderCollectors.createEntityBoxCollector(false, true, false);
+
     private void updateKineticPlayerCollector(Event<ClientPlayerEntity> event) {
         kineticPlayerCollector.clear();
         if (checkNull() || !renderKineticPlayers.get()) return;
         int color = renderColor.get().withAlpha(64);
         for (var player : mc.world.getPlayers()) {
             if (player != mc.getCameraEntity() && canSpearKineticAttack(player)) {
-                kineticPlayerCollector.submit(player.getBoundingBox(), color);
+                kineticPlayerCollector.submit(player, color);
             }
         }
     }
