@@ -80,7 +80,7 @@ public class ChestESP extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(RenderListener.getBlockEntityRenderListener(), this::onBlockEntityRender);
-        registerListener(Listener.getPreGameTick(), this::onSwapRenderContent);
+        registerListener(Listener.getPostGameTick(), this::onSwapRenderContent);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
     }
 
