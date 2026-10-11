@@ -126,11 +126,6 @@ public class ChatTools extends BaseModule {
         }
     }
 
-    private static final List<Text> TOOLTIPS_CHAT_TOOLS = List.of(Text.literal("点击展开/关闭聊天框小工具栏"));
-
-    private static final List<Text> TOOLTIPS_SPECIAL_CHARS =
-            List.of(Text.literal("点击展开/关闭特殊字符快捷键"), Text.literal("可以在配置界面中配置特殊字符列表"));
-
     public void sendCachedMessage() {
         String val = chatCache.get();
         if (val != null) {

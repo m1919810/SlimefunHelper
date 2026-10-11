@@ -48,7 +48,7 @@ public class FakeLag extends BaseModule {
 
     int joinServerTick;
 
-    public void onPacketInBound(Event<PacketStorage> event) {
+    public void onPacketInBound(Event<PacketStorage.Recv> event) {
         if (checkNull()) {
             joinServerTick = Tasks.getTick();
             return;

@@ -68,7 +68,8 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
     public void registerAll() {
         super.registerAll();
         registerListener(
-                Listener.getPacketPostSendPoint().getChannel(TeleportConfirmC2SPacket.class), this::onSetBackReceive);
+                Listener.getPacketPostScheduleSendPoint().getChannel(TeleportConfirmC2SPacket.class),
+                this::onSetBackReceive);
         registerListener(Listener.getPacketPoint().getChannel(EntityVelocityUpdateS2CPacket.class), this::onVcUpdate);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(PlayerPositionLookS2CPacket.class),

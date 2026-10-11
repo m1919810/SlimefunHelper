@@ -190,9 +190,11 @@ public class BlockRotate extends BaseModule {
                                                 .getCurrentVersion()
                                                 .isLowerOrEqualTo(20, 8)))) {
                     if (ViaFabricPlusHooks.isSupportDupRot()) {
-                        var packet = LegacySnapRotManager.INSTANCE.createSnapAt(
-                                InteractionTasks.createBlockRayCastDirection(lookRot));
-                        PacketManager.schedulePostSendPacket(e.context, packet);
+                        BlockPos lookRot0 = lookRot;
+                        PacketManager.schedulePostScheduleCallback(
+                                e.context,
+                                () -> LegacySnapRotManager.INSTANCE.snapAt(
+                                        InteractionTasks.createBlockRayCastDirection(lookRot0), false));
                     } else {
                         InteractionTasks.addPostRotationCorrectTask(lookRot, Runnables.doNothing());
                     }

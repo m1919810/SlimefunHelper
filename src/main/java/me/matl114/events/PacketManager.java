@@ -1,14 +1,17 @@
 package me.matl114.events;
 
 import com.google.common.collect.Queues;
+import com.google.common.util.concurrent.Runnables;
 import it.unimi.dsi.fastutil.objects.ReferenceArraySet;
 import it.unimi.dsi.fastutil.objects.ReferenceSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javax.annotation.Nonnull;
 import lombok.Getter;
 import me.matl114.events.annotations.Broadcast;
 import me.matl114.events.annotations.Cancelable;
@@ -16,7 +19,8 @@ import me.matl114.events.annotations.ExtraArgs;
 import me.matl114.events.channels.EventChannel;
 import me.matl114.events.channels.ListenerPoint;
 import me.matl114.events.packets.PacketStorage;
-import me.matl114.events.packets.PacketStorageImpl;
+import me.matl114.events.packets.PacketStorageRecvImpl;
+import me.matl114.events.packets.PacketStorageSendImpl;
 import me.matl114.managers.ScheduleService;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.ClientConnection;
@@ -26,6 +30,7 @@ import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.PacketType;
 import net.minecraft.network.packet.PlayPackets;
 import net.minecraft.network.packet.c2s.common.KeepAliveC2SPacket;
+import net.minecraft.network.packet.c2s.config.ReadyC2SPacket;
 import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
 import net.minecraft.network.packet.s2c.common.KeepAliveS2CPacket;
@@ -34,34 +39,12 @@ import net.minecraft.world.World;
 
 public class PacketManager {
     // this queue should be accessed only in event loop
-    public static ConcurrentLinkedQueue<PacketStorage> packetQueueIn = Queues.newConcurrentLinkedQueue();
+    public static ConcurrentLinkedQueue<PacketStorage.Recv> packetQueueIn = Queues.newConcurrentLinkedQueue();
     // this queue can be accessed async
-    public static final ConcurrentLinkedQueue<PacketStorage> packetQueueOut = Queues.newConcurrentLinkedQueue();
-
-    public static final WeakHashMap<Packet<?>, List<Consumer<Event<Packet<?>>>>> postSendQueue = new WeakHashMap<>();
+    public static final ConcurrentLinkedQueue<PacketStorage.Send> packetQueueOut = Queues.newConcurrentLinkedQueue();
 
     public static final WeakHashMap<Packet<?>, List<Consumer<Event<Packet<?>>>>> postScheduleSendQueue =
             new WeakHashMap<>();
-
-    public static void schedulePostSendPacket(Packet<?> post, Packet<?> packet) {
-        if (packet == null) return;
-        schedulePostCallback(post, (ev) -> {
-            ClientConnection conn = ev.getArgs(0);
-            conn.send(packet);
-        });
-    }
-
-    public static <T extends Packet<?>> void schedulePostCallback(T post, Runnable packet) {
-        if (packet == null) return;
-        schedulePostCallback(post, (ev) -> {
-            packet.run();
-        });
-    }
-
-    public static <T extends Packet<?>> void schedulePostCallback(T post, Consumer<Event<T>> packet) {
-        if (packet == null) return;
-        postSendQueue.computeIfAbsent(post, (kv) -> new ArrayList<>()).add((Consumer) packet);
-    }
 
     public static <T extends Packet<?>> void schedulePostScheduleCallback(T post, Runnable packet) {
         if (packet == null) return;
@@ -75,15 +58,6 @@ public class PacketManager {
         postScheduleSendQueue.computeIfAbsent(post, (kv) -> new ArrayList<>()).add((Consumer) packet);
     }
 
-    public static void onPostPacketSend(Event<Packet<?>> packet) {
-        var lst = postSendQueue.remove(packet.context);
-        if (lst != null && !lst.isEmpty()) {
-            for (var pkt : lst) {
-                pkt.accept(packet);
-            }
-        }
-    }
-
     public static void onPostPacketScheduleSend(Event<Packet<?>> packet) {
         var lst = postScheduleSendQueue.remove(packet.context);
         if (lst != null && !lst.isEmpty()) {
@@ -94,7 +68,6 @@ public class PacketManager {
     }
 
     static {
-        Listener.getPacketPostSendPoint().registerHandler(PacketManager::onPostPacketSend);
         Listener.getPacketPostScheduleSendPoint().registerHandler(PacketManager::onPostPacketScheduleSend);
     }
     // must visit in eventLoop
@@ -117,8 +90,8 @@ public class PacketManager {
                 // clear all
                 clearAndShutdown();
             } else {
-                Event<PacketStorage> queueEvent = new Event<>(
-                        new PacketStorageImpl(packet, System.currentTimeMillis(), connection),
+                Event<PacketStorage.Recv> queueEvent = new Event<>(
+                        new PacketStorageRecvImpl(packet, System.currentTimeMillis(), connection),
                         true,
                         false,
                         connection,
@@ -135,7 +108,7 @@ public class PacketManager {
 
     public static void clearAndShutdown() {
         queueShutdownEvent.broadcast(null);
-        flushOutBound();
+        flushOutBound(Runnables.doNothing());
     }
 
     static boolean immediatelyFlush;
@@ -144,12 +117,20 @@ public class PacketManager {
         immediatelyFlush = true;
     }
 
-    public static void scheduleInInBoundThread(Runnable runnable) {
-        if (mc.getNetworkHandler() != null) {
-            if (mc.getNetworkHandler().getConnection().channel.eventLoop().inEventLoop(Thread.currentThread())) {
+    public static void schedule(Runnable runnable) {
+        if (mc.getNetworkHandler() == null) {
+            runnable.run();
+            return;
+        }
+        scheduleInEventLoop(mc.getNetworkHandler().getConnection(), runnable);
+    }
+
+    public static void scheduleInEventLoop(@Nonnull ClientConnection connection, Runnable runnable) {
+        if (connection.isOpen()) {
+            if (connection.channel.eventLoop().inEventLoop(Thread.currentThread())) {
                 runnable.run();
             } else {
-                mc.getNetworkHandler().getConnection().channel.eventLoop().execute(runnable);
+                connection.channel.eventLoop().execute(runnable);
             }
         } else {
             runnable.run();
@@ -163,16 +144,25 @@ public class PacketManager {
         }
     }
 
-    public static boolean handleQueueOutPacket(Packet<?> packet, ClientConnection connection) {
+    public static boolean handleQueueOutPacket(
+            Packet<?> packet, BiConsumer<Packet<?>, Boolean> callback, ClientConnection connection) {
         if (startFlushOut) {
+            return false;
+        }
+        // just come to PLAY stage, do not queue
+        if (packet instanceof ReadyC2SPacket) {
+            //
             return false;
         }
         if (connection.getPacketListener() instanceof ClientPlayPacketListener play) {
             if (packet instanceof AcknowledgeReconfigurationC2SPacket) {
                 clearAndShutdown();
             } else {
-                Event<PacketStorage> queueEvent = new Event<>(
-                        new PacketStorageImpl(packet, System.currentTimeMillis(), connection), true, false, connection);
+                Event<PacketStorage.Send> queueEvent = new Event<>(
+                        new PacketStorageSendImpl(packet, System.currentTimeMillis(), callback),
+                        true,
+                        false,
+                        connection);
                 packetQueueOutEvent.handleValue(queueEvent);
                 if (queueEvent.isCancelled()) {
                     handleQueueOut(queueEvent.context());
@@ -206,7 +196,7 @@ public class PacketManager {
                                     continue;
                                 }
                                 if (!escapePipeline) {
-                                    Event<PacketStorage> queueEvent = new Event<>(
+                                    Event<PacketStorage.Recv> queueEvent = new Event<>(
                                             packet,
                                             true,
                                             false,
@@ -241,53 +231,70 @@ public class PacketManager {
         }
     }
 
-    public static void flushOutBound() {
-        try {
-            if (mc.getNetworkHandler() != null
-                    && mc.getNetworkHandler().getConnection().isOpen()) {
-                // flush
-                startFlushOut = true;
-                try {
-                    for (var packet : packetQueueOut) {
-                        packet.send(false);
-                    }
-                    mc.getNetworkHandler().getConnection().flush();
-                } finally {
-                    startFlushOut = false;
-                }
-            }
-        } finally {
-            packetQueueOut.clear();
-        }
-    }
+    public static void flushOutBound(Runnable postFlushTask) {
 
-    public static void flushOutBound(Function<PacketStorage, FlushAction> pdd) {
         if (mc.getNetworkHandler() != null
                 && mc.getNetworkHandler().getConnection().isOpen()) {
             // flush
-            startFlushOut = true;
-            var iter = packetQueueOut.iterator();
-            try {
-                boolean sendAny = false;
-                while (iter.hasNext()) {
-                    var packet = iter.next();
-                    switch (pdd.apply(packet)) {
-                        case FLUSH -> {
-                            packet.send(false);
-                            sendAny = true;
-                            iter.remove();
+            ClientConnection conn = mc.getNetworkHandler().getConnection();
+            scheduleInEventLoop(conn, () -> {
+                startFlushOut = true;
+                try {
+                    List<PacketStorage.Send> storages = new ArrayList<>(packetQueueOut);
+                    if (!storages.isEmpty()) {
+                        for (var re : storages) {
+                            re.send(false);
                         }
-                        case DROP -> {
-                            iter.remove();
+                        mc.getNetworkHandler().getConnection().flush();
+                    }
+                } finally {
+                    startFlushOut = false;
+                    packetQueueOut.clear();
+                    postFlushTask.run();
+                }
+            });
+        } else {
+            packetQueueOut.clear();
+            postFlushTask.run();
+        }
+    }
+
+    public static void flushOutBound(Function<PacketStorage, FlushAction> pdd, Runnable postFlushTask) {
+        if (mc.getNetworkHandler() != null
+                && mc.getNetworkHandler().getConnection().isOpen()) {
+            // flush
+            ClientConnection conn = mc.getNetworkHandler().getConnection();
+            scheduleInEventLoop(conn, () -> {
+                startFlushOut = true;
+                var iter = packetQueueOut.iterator();
+                try {
+                    List<PacketStorage.Send> storages = new ArrayList<>();
+                    while (iter.hasNext()) {
+                        var packet = iter.next();
+                        switch (pdd.apply(packet)) {
+                            case FLUSH -> {
+                                storages.add(packet);
+                                iter.remove();
+                            }
+                            case DROP -> {
+                                iter.remove();
+                            }
                         }
                     }
+                    if (!storages.isEmpty()) {
+                        for (var re : storages) {
+                            re.send(false);
+                        }
+                        mc.getNetworkHandler().getConnection().flush();
+                    }
+                } finally {
+                    startFlushOut = false;
+                    postFlushTask.run();
                 }
-                if (sendAny) mc.getNetworkHandler().getConnection().flush();
-            } finally {
-                startFlushOut = false;
-            }
+            });
         } else {
             packetQueueOut.removeIf((v) -> pdd.apply(v) != FlushAction.QUEUE);
+            postFlushTask.run();
         }
     }
 
@@ -344,23 +351,23 @@ public class PacketManager {
         return pkt != null && packetSet2.contains(pkt);
     }
 
-    public static void handleQueueIn(PacketStorage packet) {
+    public static void handleQueueIn(PacketStorage.Recv packet) {
         packetQueueIn.add(packet);
     }
 
-    public static void handleQueueOut(PacketStorage packet) {
+    public static void handleQueueOut(PacketStorage.Send packet) {
         packetQueueOut.add(packet);
     }
 
     @Getter
     @Cancelable
     @ExtraArgs({ClientConnection.class, boolean.class})
-    public static EventChannel<PacketStorage> packetQueueInEvent = new EventChannel<>();
+    public static EventChannel<PacketStorage.Recv> packetQueueInEvent = new EventChannel<>();
 
     @Getter
     @Cancelable
     @ExtraArgs({ClientConnection.class})
-    public static EventChannel<PacketStorage> packetQueueOutEvent = new EventChannel<>();
+    public static EventChannel<PacketStorage.Send> packetQueueOutEvent = new EventChannel<>();
 
     @Getter
     @Broadcast
