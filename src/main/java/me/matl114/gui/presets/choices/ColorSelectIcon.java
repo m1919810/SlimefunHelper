@@ -7,6 +7,8 @@ import java.util.List;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.BoxElement;
+import me.matl114.gui.interfaces.DefaultElementFactory;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.ScreenUtils;
@@ -32,16 +34,22 @@ public class ColorSelectIcon extends BoxElement {
     }
 
     final ValueAccessor<TextColor> color;
+    final ElementFactory elementFactory;
 
     public ColorSelectIcon(ValueAccessor<TextColor> color) {
+        this(color, DefaultElementFactory.INSTANCE);
+    }
+
+    public ColorSelectIcon(ValueAccessor<TextColor> color, ElementFactory elementFactory) {
         super(ButtonAction.isLeft(s -> {
             if (ScreenUtils.hasShiftDown()) {
-                openColorSelectScreen(color);
+                openColorSelectScreen(color, elementFactory);
             } else {
                 swapToNearestColorSwitch(color, s);
             }
         }));
         this.color = color;
+        this.elementFactory = elementFactory;
         combineAbsoluteRender(TooltipHandler.of(() -> {
             List<Text> tooltip = new ArrayList<>();
             tooltip.add(Text.translatable(
@@ -53,8 +61,13 @@ public class ColorSelectIcon extends BoxElement {
     }
 
     public ColorSelectIcon(ValueAccessor<TextColor> color, ButtonAction buttonAction) {
+        this(color, buttonAction, DefaultElementFactory.INSTANCE);
+    }
+
+    public ColorSelectIcon(ValueAccessor<TextColor> color, ButtonAction buttonAction, ElementFactory elementFactory) {
         super(buttonAction);
         this.color = color;
+        this.elementFactory = elementFactory;
         combineAbsoluteRender(TooltipHandler.of(() -> {
             return List.of(Text.translatable(
                     "widget.gui.color-select-icon.current-color",
@@ -118,6 +131,10 @@ public class ColorSelectIcon extends BoxElement {
     }
 
     public static void openColorSelectScreen(ValueAccessor<TextColor> colorAcc) {
-        ScreenAccess.of(new ColorSelectScreen(colorAcc)).openFromCurrent();
+        openColorSelectScreen(colorAcc, DefaultElementFactory.INSTANCE);
+    }
+
+    public static void openColorSelectScreen(ValueAccessor<TextColor> colorAcc, ElementFactory elementFactory) {
+        ScreenAccess.of(new ColorSelectScreen(colorAcc, elementFactory)).openFromCurrent();
     }
 }

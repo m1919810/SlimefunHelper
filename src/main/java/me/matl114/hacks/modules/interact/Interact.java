@@ -99,9 +99,9 @@ public class Interact extends BaseModule {
     public final FlagRef enableBlock =
             builder(base.add("enable-block"), Boolean.class).defaultValue(false).build();
 
-    public final NBTRef<EntityTypeRegex> interactWhiteList = builder(
-                    base.add("entity-whitelist"), EntityTypeRegex.class)
-            .defaultValue(new EntityTypeRegex(new Regex("^(villager|chest_minecart)$")))
+    public final NBTRef<EntityTypeEntrySet> interactWhiteList = builder(
+                    base.add("entity-whitelist"), EntityTypeEntrySet.class)
+            .defaultValue(new EntityTypeEntrySet(new Regex("^(villager|chest_minecart)$")))
             .build();
 
     public final FlagRef ignoreBlockPlace =

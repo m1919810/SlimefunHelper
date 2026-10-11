@@ -15,7 +15,7 @@ import me.matl114.hacks.modules.combat.TargetSelector;
 import me.matl114.hacks.modules.interact.Interact;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.EntityUtils;
-import me.matl114.hacks.utils.config.EntityTypeRegex;
+import me.matl114.hacks.utils.config.EntityTypeEntrySet;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.enums.GhostHandMode;
@@ -93,8 +93,9 @@ public class AutoBreed extends BaseModule {
             .defaultValue(new WrapColor(Formatting.AQUA))
             .build();
 
-    public final NBTRef<EntityTypeRegex> entityWhitelist = builder(root.add("entity-whitelist"), EntityTypeRegex.class)
-            .defaultValue(new EntityTypeRegex(new Regex("^(turtle)$")))
+    public final NBTRef<EntityTypeEntrySet> entityWhitelist = builder(
+                    root.add("entity-whitelist"), EntityTypeEntrySet.class)
+            .defaultValue(new EntityTypeEntrySet(new Regex("^(turtle)$")))
             .build();
 
     private final PathingSchedular pathingSchedular = new PathingSchedular();

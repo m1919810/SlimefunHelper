@@ -125,6 +125,9 @@ public class WidgetUtils {
                 .setElementHandler(new AbstractElement()
                         .withInputHandler(InputHandler.clickRun(() -> expanded.setValue(!expanded.getValue())))));
         headerSubScreen.addDrawableChild(header);
+        int arrowSize = Math.min(COLLAPSIBLE_ARROW_SIZE, Math.min(arrowWidth, arrowHeight));
+        int arrowOffsetX = (arrowWidth - arrowSize) / 2;
+        int arrowOffsetY = (arrowHeight - arrowSize) / 2;
         headerSubScreen.addDrawableChild(ExecutableWidget.instance(arrowX, arrowY, arrowWidth, arrowHeight)
                 .setRenderHandler(new AbstractElement()
                         .combineRender(factory.createLabel(TextProvider.of(Text.empty()), TooltipHandler.of(List.of())))
@@ -134,11 +137,11 @@ public class WidgetUtils {
                                     expanded.getValue()
                                             ? Constants.EXPAND_GUI_ON_SPRITE
                                             : Constants.EXPAND_GUI_OFF_SPRITE,
-                                    2,
-                                    2,
+                                    arrowOffsetX,
+                                    arrowOffsetY,
                                     0,
-                                    COLLAPSIBLE_ARROW_SIZE,
-                                    COLLAPSIBLE_ARROW_SIZE);
+                                    arrowSize,
+                                    arrowSize);
                             context.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
                         })));
         list.addDrawableChild(new DynamicContentWidget<>(

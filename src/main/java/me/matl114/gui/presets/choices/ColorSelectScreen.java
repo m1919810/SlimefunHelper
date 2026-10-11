@@ -3,7 +3,8 @@ package me.matl114.gui.presets.choices;
 import java.awt.*;
 import me.matl114.gui.WidgetUtils;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.complex.RawTextElement;
+import me.matl114.gui.interfaces.DefaultElementFactory;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.text.Text;
@@ -12,10 +13,16 @@ import net.minecraft.util.Formatting;
 
 public class ColorSelectScreen extends ConfirmingBigScreen {
     ValueAccessor<TextColor> source;
+    ElementFactory elementFactory;
 
     protected ColorSelectScreen(ValueAccessor<TextColor> color) {
+        this(color, DefaultElementFactory.INSTANCE);
+    }
+
+    protected ColorSelectScreen(ValueAccessor<TextColor> color, ElementFactory elementFactory) {
         super(Text.translatable("widget.gui.color-select-screen.title").formatted(Formatting.GREEN));
         this.source = color;
+        this.elementFactory = elementFactory;
         TextColor color1 = color.getValue();
         Color color2 = new Color(color1.getRgb(), true);
         this.rValue = color2.getRed();
@@ -67,16 +74,24 @@ public class ColorSelectScreen extends ConfirmingBigScreen {
                             context.fill(bValue - 1, 0, bValue + 1, element.getTextureHeight(), -1);
                         })))
                 .addToSub(subScreenWidget);
-        ExecutableWidget.instance(350, 60, 40, 40)
-                .setElementHandler(new ColorSelectIcon(
-                        ValueAccessor.of(() -> TextColor.fromRgb(ColorUtils.getColorInt(rValue, gValue, bValue))),
-                        ButtonAction.empty()))
+        elementFactory
+                .createElement(
+                        new ColorSelectIcon(
+                                ValueAccessor.of(
+                                        () -> TextColor.fromRgb(ColorUtils.getColorInt(rValue, gValue, bValue))),
+                                ButtonAction.empty(),
+                                elementFactory),
+                        null,
+                        null,
+                        350,
+                        60,
+                        40,
+                        40)
                 .addToSub(subScreenWidget);
         ExecutableWidget.instance(370 - 60, 120, 120, 30)
-                .setElementHandler(new RawTextElement(
-                        (el) -> Text.literal("R: %d, G: %d, B: %d".formatted(rValue, gValue, bValue)),
-                        ColorUtils.getColorInt(0, 0, 0, 255),
-                        TextAlign.MIDDLE))
+                .setElementHandler(elementFactory.createText(
+                        () -> Text.literal("R: %d, G: %d, B: %d".formatted(rValue, gValue, bValue)),
+                        java.util.List::of))
                 .addToSub(subScreenWidget);
         subScreenWidget.addTo(this);
     }
