@@ -52,6 +52,9 @@ public class SurvivalTasks {
     private static SearchLabel searchLabel;
 
     @Getter
+    private static StructureLabel structureLabel;
+
+    @Getter
     private static PathManager pathManager;
 
     @Getter
@@ -77,6 +80,7 @@ public class SurvivalTasks {
         walkControl = new WalkControl().register(m);
         searchControl = new SearchControl().register(m);
         searchLabel = new SearchLabel().register(m);
+        structureLabel = new StructureLabel().register(m);
         pathManager = new PathManager().register(m);
         baritoneFix = new BaritoneFix().register(m);
         xaeroHelper = new XaeroHelper().register(m);

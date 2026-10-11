@@ -48,7 +48,7 @@ public class NBTFileStorageImpl extends FileStorageImpl {
     }
 
     @Override
-    public void write() {
+    public synchronized void write() {
         ensureParentDir();
         File tempFile = new File(this.file.getParentFile(), this.file.getName() + ".tmp");
         if (tempFile.exists()) {
