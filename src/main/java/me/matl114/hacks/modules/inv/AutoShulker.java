@@ -55,7 +55,7 @@ public class AutoShulker extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(
-                Listener.getPacketPostSendPoint().getChannel(PlayerInteractBlockC2SPacket.class),
+                Listener.getPacketPostScheduleSendPoint().getChannel(PlayerInteractBlockC2SPacket.class),
                 this::onClickShulkerBoxOrPlaceShulkerBox);
     }
 

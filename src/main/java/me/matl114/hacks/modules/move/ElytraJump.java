@@ -100,12 +100,22 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
     private boolean ownsRoadPath;
 
     private void flushImmediately() {
-        if (queueing) {
-            queueing = false;
-            if (checkNull()) return;
-            // check for fallflying
-            PacketManager.flushOutBound();
-        }
+        if (checkNull()) return;
+        PacketManager.schedule(() -> {
+            if (queueing) {
+                // check for fallflying
+                PacketManager.flushOutBound(() -> {
+                    queueing = false;
+                });
+            }
+        });
+    }
+
+    private void startQueue() {
+        if (checkNull()) return;
+        PacketManager.schedule(() -> {
+            queueing = true;
+        });
     }
 
     @Override
@@ -144,7 +154,7 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
 
     boolean queueing = false;
 
-    public void onPacketQueue(Event<PacketStorage> eventIn) {
+    public void onPacketQueue(Event<PacketStorage.Send> eventIn) {
         if (queueing && usePacketQueue.get()) {
             PacketType<?> packetType = eventIn.context.packetType();
             if (PacketManager.isAsyncOrNotTransactionC2SPacket(packetType)) {
@@ -434,7 +444,7 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
                 flushImmediately();
             }
             if (re.jump()) {
-                queueing = true;
+                startQueue();
             }
         } else {
             flushImmediately();

@@ -2,28 +2,14 @@ package me.matl114.events.packets;
 
 import me.matl114.accessors.events.ClientConnectionAccess;
 import net.minecraft.network.ClientConnection;
-import net.minecraft.network.NetworkSide;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.PacketType;
 
-public record PacketStorageImpl(Packet<?> packet, long timestampMS, ClientConnection connection)
-        implements PacketStorage {
+public record PacketStorageRecvImpl(Packet<?> packet, long timestampMS, ClientConnection connection)
+        implements PacketStorage.Recv {
     @Override
     public PacketType<?> packetType() {
         return packet.getPacketId();
-    }
-
-    @Override
-    public NetworkSide side() {
-        return packet.getPacketId().side();
-    }
-
-    @Override
-    public void send(boolean flush) {
-        try {
-            connection.send(packet, null, flush);
-        } catch (Throwable throwable) {
-        }
     }
 
     @Override

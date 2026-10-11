@@ -15,7 +15,7 @@ import me.matl114.events.*;
 import me.matl114.events.Event;
 import me.matl114.events.impl.Render3D;
 import me.matl114.events.packets.PacketStorage;
-import me.matl114.events.packets.PacketStorageImpl;
+import me.matl114.events.packets.PacketStorageRecvImpl;
 import me.matl114.gui.basic.*;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -114,8 +114,8 @@ public class PositionPredict extends BaseModule {
 
     static final Int2ObjectMap<PredictorImpl> asyncLoadedPlayerPositionTrackers = new Int2ObjectOpenHashMap<>();
 
-    public static void onInBoundPacket(Event<PacketStorage> event) {
-        if (event.<Boolean>getArgs(1) && event.context instanceof PacketStorageImpl impl) {
+    public static void onInBoundPacket(Event<PacketStorage.Recv> event) {
+        if (event.<Boolean>getArgs(1) && event.context instanceof PacketStorageRecvImpl impl) {
             onPacket(impl.packet());
         }
     }

@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.combat;
 
+import com.google.common.util.concurrent.Runnables;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
@@ -58,13 +59,15 @@ public class TransactionBlocker extends BaseModule {
     }
 
     public void flush() {
-        PacketManager.flushOutBound((packet) -> {
-            if (isTransactionRelated(packet.packetType())) {
-                return PacketManager.FlushAction.DROP;
-            } else {
-                return PacketManager.FlushAction.QUEUE;
-            }
-        });
+        PacketManager.flushOutBound(
+                (packet) -> {
+                    if (isTransactionRelated(packet.packetType())) {
+                        return PacketManager.FlushAction.DROP;
+                    } else {
+                        return PacketManager.FlushAction.QUEUE;
+                    }
+                },
+                Runnables.doNothing());
     }
 
     public boolean isTransactionRelated(Packet<?> packet) {
@@ -75,7 +78,7 @@ public class TransactionBlocker extends BaseModule {
         return packet == CommonPackets.PING || packet == CommonPackets.PONG;
     }
 
-    public void onPacketQueue(Event<PacketStorage> packetEvent) {
+    public void onPacketQueue(Event<PacketStorage.Send> packetEvent) {
         if (enable.get() && isTransactionRelated(packetEvent.context.packetType())) {
             packetEvent.cancel();
             Listener.sendPacketNoEvents(new CommonPongC2SPacket(0));

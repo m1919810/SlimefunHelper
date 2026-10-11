@@ -1,6 +1,7 @@
 package me.matl114.hacks.modules.combat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.Runnables;
 import java.awt.*;
 import java.util.List;
 import java.util.OptionalInt;
@@ -152,7 +153,7 @@ public class Blink extends BaseModule {
 
     public void flush() {
         lastAutoDumpTick = Tasks.getTick();
-        PacketManager.flushOutBound();
+        PacketManager.flushOutBound(Runnables.doNothing());
         if (mc.player != null) {
             startPlayerPos = new EntityMovementStatus<>(mc.player);
         }
@@ -183,23 +184,25 @@ public class Blink extends BaseModule {
             try {
                 MutableBoolean afterTeleportExcept = new MutableBoolean(false);
                 lastAutoDumpTick = Tasks.getTick();
-                PacketManager.flushOutBound(packets -> {
-                    var packet = packets.packetType();
-                    if (packet == PlayPackets.MOVE_PLAYER_POS
-                            || packet == PlayPackets.MOVE_PLAYER_ROT
-                            || packet == PlayPackets.MOVE_PLAYER_POS_ROT
-                            || packet == PlayPackets.MOVE_PLAYER_STATUS_ONLY) {
-                        if (afterTeleportExcept.booleanValue()) {
-                            return PacketManager.FlushAction.FLUSH;
-                        }
-                        return PacketManager.FlushAction.DROP;
-                    } else if (packet == PlayPackets.PLAYER_INPUT) {
-                        return PacketManager.FlushAction.DROP;
-                    } else if (packet == PlayPackets.ACCEPT_TELEPORTATION) {
-                        afterTeleportExcept.setTrue();
-                        return PacketManager.FlushAction.FLUSH;
-                    } else return PacketManager.FlushAction.FLUSH;
-                });
+                PacketManager.flushOutBound(
+                        packets -> {
+                            var packet = packets.packetType();
+                            if (packet == PlayPackets.MOVE_PLAYER_POS
+                                    || packet == PlayPackets.MOVE_PLAYER_ROT
+                                    || packet == PlayPackets.MOVE_PLAYER_POS_ROT
+                                    || packet == PlayPackets.MOVE_PLAYER_STATUS_ONLY) {
+                                if (afterTeleportExcept.booleanValue()) {
+                                    return PacketManager.FlushAction.FLUSH;
+                                }
+                                return PacketManager.FlushAction.DROP;
+                            } else if (packet == PlayPackets.PLAYER_INPUT) {
+                                return PacketManager.FlushAction.DROP;
+                            } else if (packet == PlayPackets.ACCEPT_TELEPORTATION) {
+                                afterTeleportExcept.setTrue();
+                                return PacketManager.FlushAction.FLUSH;
+                            } else return PacketManager.FlushAction.FLUSH;
+                        },
+                        Runnables.doNothing());
             } finally {
                 ClientPlayerAccess.of(mc.player).resyncInput();
                 startPlayerPos.restore();
@@ -254,7 +257,7 @@ public class Blink extends BaseModule {
     boolean escapeSwing = false;
     boolean elytraSupportFuckStartFly = false;
 
-    public void onPacketQueue(Event<PacketStorage> packet) {
+    public void onPacketQueue(Event<PacketStorage.Send> packet) {
         if (enable.get()) {
             var pkt = packet.context;
             PacketType<?> pktType = pkt.packetType();

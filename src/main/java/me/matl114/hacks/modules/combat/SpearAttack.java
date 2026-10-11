@@ -134,11 +134,6 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
                 .predict(target); // .predictAttackPosition(target);
         Vec3d direction =
                 targetPos.add(0, target.getEyeHeight(target.getPose()), 0).subtract(mc.player.getEyePos());
-        if (RenderTasks.DEBUG_RENDER_SPEAR) {
-            RenderTasks.registerVirtualRenderTask(new RenderTasks.RenderTask(
-                    RenderTasks.DEBUG_TICK,
-                    new RenderTasks.LineObject(mc.player.getEyePos(), direction).color(Color.MAGENTA)));
-        }
         double distance = direction.length();
         direction = direction.normalize();
         Vec3d tpDirection = direction.multiply(-1);

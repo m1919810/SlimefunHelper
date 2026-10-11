@@ -12,7 +12,19 @@ public interface PacketStorage {
 
     NetworkSide side();
 
-    void send(boolean forceFlush);
+    public interface Recv extends PacketStorage {
+        default NetworkSide side() {
+            return NetworkSide.CLIENTBOUND;
+        }
 
-    void handle();
+        void handle();
+    }
+
+    public interface Send extends PacketStorage {
+        default NetworkSide side() {
+            return NetworkSide.SERVERBOUND;
+        }
+
+        void send(boolean forceFlush);
+    }
 }

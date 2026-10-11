@@ -32,7 +32,7 @@ public abstract class PacketWrapperSendEvents implements PacketWrapper {
                             this,
                             this.user().getChannel(),
                             (bl) -> operation.call(protocol, skipCurrentPipeline, bl));
-                    Event<PacketStorage> event = new Event<>(storageImpl, true, false);
+                    Event<PacketStorage.Send> event = new Event<>(storageImpl, true, false);
                     PacketManager.getPacketQueueOutEvent().handleValue(event);
                     if (event.isCancelled()) {
                         PacketManager.handleQueueOut(storageImpl);
