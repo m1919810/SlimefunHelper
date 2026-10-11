@@ -1,18 +1,9 @@
-[02:18:17] [Test worker/INFO]: check 1
-[02:18:17] [Test worker/INFO]: running ItemStack tests 2
-[02:18:17] [Test worker/INFO]: item:
-  ==: org.bukkit.inventory.ItemStack
-  v: 3465
-  type: DIRT
-  meta:
-    ==: ItemMeta
-    meta-type: UNSPECIFIC
-    PublicBukkitValues:
-      infinityexpansion:display: 351372703i
-
-[02:18:18] [Test worker/INFO]: Could not call method 'public static me.matl114.bukkit.BukkitMetaItem me.matl114.bukkit.BukkitMetaItem.deserialize(java.util.Map) throws java.lang.Throwable' of class me.matl114.bukkit.BukkitMetaItem for deserialization java.lang.ExceptionInInitializerError
-[02:18:18] [Test worker/INFO]: Could not call method 'public static me.matl114.bukkit.BukkitItemStack me.matl114.bukkit.BukkitItemStack.deserialize(java.util.Map)' of class me.matl114.bukkit.BukkitItemStack for deserialization java.lang.NoClassDefFoundError: Could not initialize class net.minecraft.item.Items
-[02:18:18] [Test worker/INFO]: null
-[02:18:18] [Test worker/INFO]: check 2
-[02:18:18] [Test worker/INFO]: running ItemStack tests 2
-[02:18:18] [Test worker/INFO]: Could not call method 'public static me.matl114.bukkit.BukkitMetaItem me.matl114.bukkit.BukkitMetaItem.deserialize(java.util.Map) throws java.lang.Throwable' of class me.matl114.bukkit.BukkitMetaItem for deserialization java.lang.NoClassDefFoundError: Could not initialize class net.minecraft.item.Items
+[12:00:53] [main/INFO]: [STDOUT]: ---net.minecraft.registry.ReloadableRegistries$Lookup
+[12:00:53] [main/INFO]: [STDOUT]: M public net.minecraft.loot.LootTable net.minecraft.registry.ReloadableRegistries$Lookup.getLootTable(net.minecraft.registry.RegistryKey)
+[12:00:53] [main/INFO]: [STDOUT]: M public net.minecraft.registry.RegistryWrapper$WrapperLookup net.minecraft.registry.ReloadableRegistries$Lookup.createRegistryLookup()
+[12:00:53] [main/INFO]: [STDOUT]: M private static java.util.Optional net.minecraft.registry.ReloadableRegistries$Lookup.method_58291(net.minecraft.registry.RegistryKey,net.minecraft.registry.RegistryWrapper$Impl)
+[12:00:53] [main/INFO]: [STDOUT]: C public net.minecraft.registry.ReloadableRegistries$Lookup(net.minecraft.registry.RegistryWrapper$WrapperLookup)
+[12:00:53] [main/INFO]: [STDOUT]: ---net.minecraft.server.MinecraftServer
+[12:00:53] [main/INFO]: [STDOUT]: M public net.minecraft.registry.ReloadableRegistries$Lookup net.minecraft.server.MinecraftServer.getReloadableRegistries()
+[12:00:53] [main/INFO]: [STDOUT]: M public java.util.concurrent.CompletableFuture net.minecraft.server.MinecraftServer.reloadResources(java.util.Collection)
+[12:00:53] [main/INFO]: [STDOUT]: C public net.minecraft.server.MinecraftServer(java.lang.Thread,net.minecraft.world.level.storage.LevelStorage$Session,net.minecraft.resource.ResourcePackManager,net.minecraft.server.SaveLoader,java.net.Proxy,com.mojang.datafixers.DataFixer,net.minecraft.util.ApiServices,net.minecraft.world.chunk.ChunkLoadProgress)
