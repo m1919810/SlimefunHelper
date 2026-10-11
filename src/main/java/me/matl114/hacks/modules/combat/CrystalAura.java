@@ -1120,15 +1120,20 @@ public class CrystalAura extends BaseModule {
         if (entry == null) {
             return false;
         }
+        BlockHitResult hitResult = InteractionTasks.createHitResult(basePos, mc.player.getPos());
+        if (!InteractionTasks.canHandleInteract(mode.get(), hitResult)) {
+            return false;
+        }
         Runnable callback = InvExtra.INSTANCE.swapItemToHand(entry.index(), offhand.get(), ghostHand.get());
         if (callback == null) {
             return false;
         }
-        InteractionTasks.handlePlaceMode(
-                mode.get(),
-                InteractionTasks.createHitResult(basePos, mc.player.getPos()),
-                offhand.get() ? Hand.OFF_HAND : Hand.MAIN_HAND,
-                swingHand.get());
+        boolean completed = InteractionTasks.handlePlaceMode(
+                mode.get(), hitResult, offhand.get() ? Hand.OFF_HAND : Hand.MAIN_HAND, swingHand.get());
+        if (!completed) {
+            InteractionTasks.finishGhostHand(mode.get(), callback);
+            return false;
+        }
         CombatManager.INSTANCE.markCrystalPlace(basePos);
         InteractionTasks.finishGhostHand(mode.get(), callback);
         return true;
@@ -1140,6 +1145,9 @@ public class CrystalAura extends BaseModule {
         }
         IndexEntry<ItemStack> entry = supplyItem(Items.OBSIDIAN);
         if (entry == null) {
+            return false;
+        }
+        if (!InteractionTasks.canHandleInteract(mode.get(), autoBase.basePlaceResult())) {
             return false;
         }
         Runnable callback = InvExtra.INSTANCE.swapItemToHand(entry.index(), offhand.get(), ghostHand.get());
@@ -1184,13 +1192,16 @@ public class CrystalAura extends BaseModule {
         if (hitResult == null || !canPlaceBlockingBlockAtHit(plan, entry.val(), hitResult)) {
             return false;
         }
+        if (!InteractionTasks.canHandleInteract(mode.get(), hitResult)) {
+            return false;
+        }
         Runnable callback = InvExtra.INSTANCE.swapItemToHand(entry.index(), false, ghostHand.get());
         if (callback == null) {
             return false;
         }
-        InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
+        boolean completed = InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
         InteractionTasks.finishGhostHand(mode.get(), callback);
-        return true;
+        return completed;
     }
 
     private boolean canPlaceBlockingBlockAtHit(CrystalPlan plan, ItemStack stack, BlockHitResult hitResult) {
@@ -1348,13 +1359,16 @@ public class CrystalAura extends BaseModule {
 
     private boolean placeScaffoldBlock(CrystalPlan plan, IndexEntry<ItemStack> entry) {
         BlockHitResult hitResult = getScaffoldPlaceResult(plan);
+        if (!InteractionTasks.canHandleInteract(mode.get(), hitResult)) {
+            return false;
+        }
         Runnable callback = InvExtra.INSTANCE.swapItemToHand(entry.index(), false, ghostHand.get());
         if (callback == null) {
             return false;
         }
-        InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
+        boolean completed = InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
         InteractionTasks.finishGhostHand(mode.get(), callback);
-        return true;
+        return completed;
     }
 
     private boolean placeFill(BlockPos pos, BlockHitResult hitResult) {
@@ -1362,16 +1376,21 @@ public class CrystalAura extends BaseModule {
         if (entry == null) {
             return false;
         }
+        if (!InteractionTasks.canHandleInteract(mode.get(), hitResult)) {
+            return false;
+        }
         Runnable callback = InvExtra.INSTANCE.swapItemToHand(entry.index(), offhand.get(), ghostHand.get());
         if (callback == null) {
             return false;
         }
         mc.world.setBlockState(pos, Blocks.AIR.getDefaultState());
-        InteractionTasks.handlePlaceMode(
+        boolean completed = InteractionTasks.handlePlaceMode(
                 mode.get(), hitResult, offhand.get() ? Hand.OFF_HAND : Hand.MAIN_HAND, swingHand.get());
         InteractionTasks.finishGhostHand(mode.get(), callback);
-        trackedGlasses.put(pos, Tasks.getTick());
-        return true;
+        if (completed) {
+            trackedGlasses.put(pos, Tasks.getTick());
+        }
+        return completed;
     }
 
     private boolean canFillPos(BlockPos crystalPos) {

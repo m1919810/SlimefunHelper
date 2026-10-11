@@ -260,6 +260,7 @@ public class AutoSlab extends BaseModule {
                         && InteractExtra.INSTANCE.isWithinInteractRange(
                                 mc.player.getPos(), hitResult.val().getBlockPos(), range.get())
                         && InteractUtils.getBlockPlacement(bl, mc.player, mc.world, hitResult.val()) != null) {
+                    if (!InteractionTasks.canHandleInteract(mode.get(), hitResult.val())) break;
                     Runnable runnable = InvExtra.INSTANCE.swapItemToHand(entry.index(), false, GhostHandMode.INV_SWAP);
                     if (runnable == null) break;
                     stack.add(runnable);

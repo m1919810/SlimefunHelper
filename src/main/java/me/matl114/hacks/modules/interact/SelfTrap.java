@@ -250,6 +250,9 @@ public class SelfTrap extends BaseModule {
                 if (supply == null) {
                     break;
                 }
+                if (!InteractionTasks.canHandleInteract(mode.get(), hitResult.val())) {
+                    break;
+                }
                 maxPlace = Math.min(maxPlace, supply.val().getCount());
                 offhandOk |= supply.index() == 40;
                 inventoryCallback = InvExtra.INSTANCE.swapItemToHand(supply.index(), offhandOk, ghostHand.get());

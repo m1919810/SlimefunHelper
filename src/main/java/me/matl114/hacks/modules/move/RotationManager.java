@@ -59,12 +59,8 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
     @ApiMethod
     public boolean request(RotationRequest request) {
         Objects.requireNonNull(request, "request");
-        if (request.isOccupied()) {
-            if (isOccupied()) {
-                return false;
-            }
-            currentTickRequests.add(request);
-            return true;
+        if (isOccupied()) {
+            return false;
         }
         if (isOccupied()) {
             return false;
@@ -74,7 +70,7 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
     }
 
     public boolean isOccupied() {
-        return currentTickRequests.stream().anyMatch(RotationRequest::isOccupied);
+        return currentTickRequests.stream().anyMatch(request -> request.priority() == Integer.MIN_VALUE);
     }
 
     private void onQueuePacket(Event<PacketStorage> event) {
@@ -94,12 +90,8 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
         ClientPlayerEntity player = manager.playerStatus.entity;
 
         currentTickRequest = currentTickRequests.stream()
-                .filter(RotationRequest::isOccupied)
-                .findFirst()
-                .orElseGet(() -> currentTickRequests.stream()
-                        .filter(s -> !s.isOccupied())
-                        .findFirst()
-                        .orElse(null));
+                .min(Comparator.comparingInt(RotationRequest::priority))
+                .orElse(null);
         currentTickRequests.clear();
         if (ElytraExtra.INSTANCE.hasFireworkVelocityOverrides()) {
             return;
@@ -162,12 +154,8 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
     }
 
     public interface RotationRequest {
-        default boolean occupyRotation() {
-            return true;
-        }
-
-        default boolean isOccupied() {
-            return occupyRotation();
+        default int priority() {
+            return Integer.MIN_VALUE;
         }
 
         @Nullable
@@ -194,15 +182,11 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
         private Runnable postTick = () -> {};
         private boolean preMovementAdjust;
         private boolean applyMoveFix = true;
-        private boolean occupied = true;
+        private int priority = Integer.MIN_VALUE;
 
         @Override
-        public boolean occupyRotation() {
-            return occupied;
-        }
-
-        public boolean occupied() {
-            return occupied;
+        public int priority() {
+            return priority;
         }
 
         public boolean preMovementAdjust() {

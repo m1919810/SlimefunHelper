@@ -426,6 +426,9 @@ public class AnchorAura extends BaseModule {
                 if (glowstone == null) {
                     return interactCount;
                 }
+                if (!InteractionTasks.canHandleInteract(mode.get(), hitResult)) {
+                    return interactCount;
+                }
                 var callback = InvExtra.INSTANCE.swapItemToHand(glowstone.index(), false, ghostHand.get());
                 if (callback == null) {
                     return interactCount;
@@ -442,6 +445,9 @@ public class AnchorAura extends BaseModule {
             }
             if (level > 0) {
                 var noGlowStone = supplyNoItem(Items.GLOWSTONE);
+                if (!InteractionTasks.canHandleInteract(mode.get(), hitResult)) {
+                    return interactCount;
+                }
                 var callback = InvExtra.INSTANCE.swapItemToHand(noGlowStone.index(), false, ghostHand.get());
                 if (callback == null) {
                     return interactCount;
@@ -457,14 +463,21 @@ public class AnchorAura extends BaseModule {
                     if (anchor == null) {
                         return interactCount;
                     }
+                    if (!InteractionTasks.canHandleInteract(mode.get(), hitResult)) {
+                        return interactCount;
+                    }
                     var callback2 = InvExtra.INSTANCE.swapItemToHand(anchor.index(), false, ghostHand.get());
                     if (callback2 == null) {
                         return interactCount;
                     }
                     mc.world.setBlockState(targetPos, Blocks.AIR.getDefaultState());
-                    InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
+                    boolean anchorCompleted =
+                            InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
                     interactCount++;
                     InteractionTasks.finishGhostHand(mode.get(), callback2);
+                    if (!anchorCompleted) {
+                        return interactCount;
+                    }
                 } else if (completed) {
                     trackedAnchorPositions.remove(targetPos);
                 }
@@ -614,6 +627,7 @@ public class AnchorAura extends BaseModule {
     public boolean placeAnchor(BlockHitResult hitResult) {
         var entry = supplyItem(Items.RESPAWN_ANCHOR);
         if (entry == null) return false;
+        if (!InteractionTasks.canHandleInteract(mode.get(), hitResult)) return false;
         var runnable = InvExtra.INSTANCE.swapItemToHand(entry.index(), false, ghostHand.get());
         if (runnable == null) return false;
         boolean finished = InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
@@ -656,13 +670,16 @@ public class AnchorAura extends BaseModule {
         if (entry == null) {
             return false;
         }
+        if (!InteractionTasks.canHandleInteract(mode.get(), hitResult)) {
+            return false;
+        }
         Runnable runnable = InvExtra.INSTANCE.swapItemToHand(entry.index(), false, ghostHand.get());
         if (runnable == null) {
             return false;
         }
-        InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
+        boolean completed = InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
         InteractionTasks.finishGhostHand(mode.get(), runnable);
-        return true;
+        return completed;
     }
 
     public void updateAnchor(BlockPos pos, Map<PlayerEntity, Double> damageMap) {
