@@ -132,7 +132,7 @@ public class WalkControl extends BaseModule {
                 }
             }
             if (!modifier.isEmpty()) {
-                PlayerInputManager.INSTANCE.addInputModifier(modifier);
+                PlayerInputManager.INSTANCE.addInputModifier(modifier, 0);
             }
         }
         if (mc.options.forwardKey.isPressed()) {

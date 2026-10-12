@@ -105,6 +105,12 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             .show(() -> mode.get().isIn(Mode.FREEZE))
             .build();
 
+    public final FlagRef stopWallCriticalWhenMoving = flagBuilder(criticals.add("stop-wall-when-moving"))
+            .show(() -> mode.get() == Mode.GRIM_WALL
+                    || (mode.get().isNotIn(Mode.FREEZE, Mode.PACKET) && inWallPacket.get())
+                    || (mode.get() == Mode.FREEZE && inWallFreezeCritical.get()))
+            .build();
+
     public final DoubleRef customInWallJumpFreezeHeight = builder(criticals.add("custom-in-wall-height"), Double.class)
             .defaultValue(0.05)
             .validator(Configs.doubleRange(0, 1))
@@ -187,6 +193,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
         if (inWallPacket.get()
                 && (PlayerStateManager.INSTANCE.lastInWall || PlayerStateManager.INSTANCE.lastUnderBlock)
                 && mode.get().isNotIn(Mode.FREEZE, Mode.PACKET)) {
+            if (shouldSkipWallCritical()) return;
             handleCriticalWall(event);
             return;
         }
@@ -266,10 +273,19 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             case GRIM_WALL -> {
                 if (mc.player.isOnGround()
                         && (PlayerStateManager.INSTANCE.lastInWall || PlayerStateManager.INSTANCE.lastUnderBlock)) {
+                    if (shouldSkipWallCritical()) return;
                     handleCriticalWall(event);
                 }
             }
         }
+    }
+
+    private boolean shouldSkipWallCritical() {
+        if (ViaFabricPlusHooks.isSupportEndTick()) return true;
+        if (!stopWallCriticalWhenMoving.get()) return false;
+
+        int movementTick = PlayerStateManager.INSTANCE.lastRealMovementPacketTick;
+        return movementTick >= Tasks.getTick() - 1;
     }
 
     public void handleCriticalWall(Event<PlayerInteractEntityC2SPacket> event) {
@@ -402,7 +418,8 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
             how_to_apply:
             {
                 if (inWallFreezeCritical.get()
-                        && (PlayerStateManager.INSTANCE.lastUnderBlock || PlayerStateManager.INSTANCE.lastInWall)) {
+                        && (PlayerStateManager.INSTANCE.lastUnderBlock || PlayerStateManager.INSTANCE.lastInWall)
+                        && !shouldSkipWallCritical()) {
                     // wall shit
                     double jumpMin = customInWallJumpFreezeHeight.get() / 4.0D;
                     Box oldBox = mc.player.dimensions.getBoxAt(movementManagerEvent.context.playerStatus.pos);

@@ -273,7 +273,7 @@ public class PrinterRewrite extends BaseModule {
         if (needSneak) {
             needSneak = false;
             if (autoSneak.get()) {
-                PlayerInputManager.INSTANCE.addSneakModifier(0, true, Math.max(delay.get() - 1, 0), 2);
+                PlayerInputManager.INSTANCE.addSneakModifier(0, true, Math.max(delay.get() - 1, 0), 1);
             }
         }
         if (drainWater) {

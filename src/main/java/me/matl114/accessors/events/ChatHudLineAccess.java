@@ -1,11 +1,12 @@
 package me.matl114.accessors.events;
 
+import java.util.Set;
 import net.minecraft.client.gui.hud.ChatHudLine;
 
 public interface ChatHudLineAccess {
-    public void setUniqueMessageId(String uniqueMessageId);
+    public void addUniqueMessageId(String uniqueMessageId);
 
-    public String getUniqueMessageId();
+    public Set<String> getUniqueMessageIds();
 
     public static ChatHudLineAccess of(ChatHudLine chatHudLine) {
         return (ChatHudLineAccess) (Object) chatHudLine;

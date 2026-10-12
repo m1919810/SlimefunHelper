@@ -16,7 +16,6 @@ import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.modules.render.*;
-import me.matl114.hacks.modules.render.StorageDisplay;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.*;
 import net.minecraft.client.MinecraftClient;
@@ -553,10 +552,7 @@ public class RenderTasks {
     private static EquipmentHud equipmentHud;
 
     @Getter
-    private static StorageDisplay storageDisplay;
-
-    @Getter
-    private static EnchantmentDisplay enchantmentDisplay;
+    private static ItemDisplay itemDisplay;
 
     @Getter
     private static ShulkerDisplay shulkerDisplay;
@@ -588,8 +584,7 @@ public class RenderTasks {
         invHud = new InvHud().register(m);
         playerStatistic = new PlayerStatistic().register(m);
         equipmentHud = new EquipmentHud().register(m);
-        storageDisplay = new StorageDisplay().register(m);
-        enchantmentDisplay = new EnchantmentDisplay().register(m);
+        itemDisplay = new ItemDisplay().register(m);
         shulkerDisplay = new ShulkerDisplay().register(m);
     }
 
