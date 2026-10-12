@@ -29,7 +29,6 @@ import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.enums.BypassMode;
-import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.move.ElytraOptimizeUtils;
 import me.matl114.hacks.utils.tasks.CounterExecutor;
 import me.matl114.hacks.utils.tasks.StateExecutor;
@@ -221,6 +220,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                     customFireworksPath.add("firework-max-delay-multiply-vanilla"))
             .defaultValue(20.0D)
             .validator(Configs.doubleRange(0.0D, 100.0D))
+            .build();
+
+    public final FlagRef offHand = builder(customFireworksPath.add("firework-offhand"), Boolean.class)
+            .defaultValue(true)
             .build();
 
     public final FireworkTimer timerVanilla = new FireworkTimer(fireworkMaxTicks);
@@ -902,7 +905,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         if (shouldBlockFireworkAction()) {
             sumitDelay(ItemStack.EMPTY);
         } else {
-            sendUsePacket(pitch, yaw);
+            sendUsePacket(pitch, yaw, this::canBeUsedAsFireworks);
         }
         CombatTasks.getBlink().onFireworkUse();
     }
@@ -922,24 +925,28 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         return 1;
     }
 
-    private void sendUsePacket(float pitch, float yaw) {
-        timerVanilla.fire();
+    private void sendUsePacket(float pitch, float yaw, Predicate<ItemStack> predicate) {
         ItemStack stack = mc.player.getStackInHand(Hand.MAIN_HAND);
-        if (canBeUsedAsFireworks(stack)) {
+        if (predicate.test(stack)) {
+            timerVanilla.fire();
             sendFirework(Hand.MAIN_HAND, yaw, pitch);
             onHasFirework();
         } else {
             stack = mc.player.getStackInHand(Hand.OFF_HAND);
-            if (canBeUsedAsFireworks(stack)) {
+            if (predicate.test(stack)) {
+                timerVanilla.fire();
                 sendFirework(Hand.OFF_HAND, yaw, pitch);
                 onHasFirework();
             } else {
                 // check hotbars
-                var findResult = InventoryUtils.findPlayerBackpackItem(this::canBeUsedAsFireworks, false, true);
+                var findResult = InventoryUtils.findPlayerBackpackItem(predicate, false, true);
                 if (findResult != null) {
-                    Runnable callback = InvExtra.INSTANCE.swapInventorySlotToOffhand(findResult.index());
+                    Runnable callback = offHand.get()
+                            ? InvExtra.INSTANCE.swapInventorySlotToOffhand(findResult.index())
+                            : InvExtra.INSTANCE.swapInventorySlotToHand(findResult.index());
                     if (callback != null) {
-                        sendFirework(Hand.OFF_HAND, yaw, pitch);
+                        timerVanilla.fire();
+                        sendFirework(offHand.get() ? Hand.OFF_HAND : Hand.MAIN_HAND, yaw, pitch);
                         callback.run();
                     }
                     onHasFirework();
@@ -1264,31 +1271,16 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public void flushRockets() {
         flushing = true;
         int selected = InventoryUtils.getSelectedSlot();
-        Runnable callback = null;
         try {
             float lastYaw = PlayerStateManager.INSTANCE.lastYaw;
             float lastPitch = PlayerStateManager.INSTANCE.lastPitch;
             while (!delayQueue.isEmpty()) {
                 var packetEntry = delayQueue.poll();
                 if (!packetEntry.isEmpty()) {
-                    var findResult = InventoryUtils.findPlayerItem(
-                            (it) -> ItemStack.areItemsAndComponentsEqual(packetEntry, it), false, false);
-                    if (findResult != null) {
-                        if (findResult.index() == InventoryUtils.getSelectedSlot()) {
-                            timerVanilla.fire();
-                            sendFirework(Hand.MAIN_HAND, lastYaw, lastPitch);
-                        } else {
-                            callback =
-                                    InvExtra.INSTANCE.swapItemToHand(findResult.index(), true, GhostHandMode.INV_SWAP);
-                            if (callback != null) {
-                                timerVanilla.fire();
-                                sendFirework(Hand.OFF_HAND, lastYaw, lastPitch);
-                                callback.run();
-                            }
-                        }
-                    }
+                    sendUsePacket(
+                            lastYaw, lastPitch, (stack) -> ItemStack.areItemsAndComponentsEqual(stack, packetEntry));
                 } else {
-                    sendUsePacket(lastYaw, lastPitch);
+                    sendUsePacket(lastYaw, lastPitch, this::canBeUsedAsFireworks);
                 }
             }
         } finally {

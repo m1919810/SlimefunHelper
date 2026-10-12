@@ -1427,8 +1427,8 @@ public class StructureLabel extends BaseModule {
         }
         me.matl114.utils.RenderUtils.startDrawVirtual(event.context().stack());
         try {
-            boxCollector.render3D(event.context().stack());
-            tracerCollector.render3D(event.context().stack());
+            boxCollector.render3D(event.context().stack(), event.context.partialTicks());
+            tracerCollector.render3D(event.context().stack(), event.context.partialTicks());
         } finally {
             me.matl114.utils.RenderUtils.stopDrawVirtual(event.context().stack());
         }
