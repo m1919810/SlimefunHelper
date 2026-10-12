@@ -71,11 +71,11 @@ public class StructureLabel extends BaseModule {
             LOOT_EXECUTOR_THREAD_COUNT,
             0L,
             TimeUnit.MILLISECONDS,
-            new PriorityBlockingQueue<>(),
+            new LinkedBlockingQueue<>(),
             StructureLabel::daemonThread);
-    private static final AtomicLong lootTaskSequence = new AtomicLong();
     private static final Identifier END_CITIES = Identifier.ofVanilla("end_cities");
     private static final Identifier ANCIENT_CITIES = Identifier.ofVanilla("ancient_cities");
+    private static final Identifier TRIAL_CHAMBERS = Identifier.ofVanilla("trial_chambers");
     private static final Identifier DESERT_PYRAMIDS = Identifier.ofVanilla("desert_pyramids");
     private static final Identifier RUINED_PORTALS = Identifier.ofVanilla("ruined_portals");
     private static final Identifier DESERT_PYRAMID_LOOT = Identifier.ofVanilla("chests/desert_pyramid");
@@ -107,6 +107,10 @@ public class StructureLabel extends BaseModule {
 
     public final FlagRef labelAncientCities = flagBuilder(root.add("label-ancient-cities"))
             .updateListener(this::refreshWaypoints)
+            .build();
+
+    public final FlagRef labelTrialChambers = flagBuilder(root.add("label-trial-chambers"))
+            .updateListener(this::onTrialChambersSettingChanged)
             .build();
 
     public final FlagRef labelOtherEnchantedGoldStructures = flagBuilder(
@@ -175,6 +179,8 @@ public class StructureLabel extends BaseModule {
     private final Map<AreaKey, List<PredictedChestContents>> cachedOtherLootContents = new ConcurrentHashMap<>();
     private final Set<StructureKey> checkedAncientCities = ConcurrentHashMap.newKeySet();
     private final Set<StructureKey> viableAncientCities = ConcurrentHashMap.newKeySet();
+    private final Set<StructureKey> checkedTrialChambers = ConcurrentHashMap.newKeySet();
+    private final Set<StructureKey> viableTrialChambers = ConcurrentHashMap.newKeySet();
     private final Set<StructureKey> checkedDesertPyramids = ConcurrentHashMap.newKeySet();
     private final Set<StructureKey> viableDesertPyramids = ConcurrentHashMap.newKeySet();
     private final Set<AreaKey> pendingAreas = ConcurrentHashMap.newKeySet();
@@ -207,6 +213,10 @@ public class StructureLabel extends BaseModule {
 
     private void refreshWaypoints(Boolean enabled) {
         waypointDirty = true;
+    }
+
+    private void onTrialChambersSettingChanged(Boolean enabled) {
+        resetState();
     }
 
     private void onOtherLootPredictionSettingChanged(Boolean enabled) {
@@ -436,10 +446,15 @@ public class StructureLabel extends BaseModule {
                     if (!isCurrentArea(area, current)) {
                         break;
                     }
+                    if (TRIAL_CHAMBERS.equals(config.structureSetId()) && !labelTrialChambers.get()) {
+                        continue;
+                    }
                     List<StructurePosition> generated = populator.generate(config, range);
                     structures.addAll(generated);
                     if (ANCIENT_CITIES.equals(config.structureSetId())) {
                         cacheAncientCityViability(area, generated, current);
+                    } else if (TRIAL_CHAMBERS.equals(config.structureSetId())) {
+                        cacheTrialChamberViability(area, generated, current);
                     }
                 }
                 if (!isCurrentArea(area, current)) {
@@ -790,28 +805,9 @@ public class StructureLabel extends BaseModule {
     }
 
     private Future<?> scheduleLootTask(AreaKey area, Runnable task) {
-        AreaKey center = lastPlayerArea;
-        long distance = center == null ? Long.MAX_VALUE : areaDistanceSquared(area, center);
-        PrioritizedLootTask future = new PrioritizedLootTask(task, distance, lootTaskSequence.getAndIncrement());
+        FutureTask<Void> future = new FutureTask<>(task, null);
         lootExecutor.execute(future);
         return future;
-    }
-
-    private final class PrioritizedLootTask extends FutureTask<Void> implements Comparable<PrioritizedLootTask> {
-        private final long distance;
-        private final long sequence;
-
-        private PrioritizedLootTask(Runnable task, long distance, long sequence) {
-            super(task, null);
-            this.distance = distance;
-            this.sequence = sequence;
-        }
-
-        @Override
-        public int compareTo(PrioritizedLootTask other) {
-            int distanceOrder = Long.compare(distance, other.distance);
-            return distanceOrder != 0 ? distanceOrder : Long.compare(sequence, other.sequence);
-        }
     }
 
     private void completeAreaStructures(AreaKey area, GenerationContext current, List<StructurePosition> structures) {
@@ -823,7 +819,9 @@ public class StructureLabel extends BaseModule {
         pendingAreas.remove(area);
         if (structures.stream().anyMatch(structure -> {
             Identifier structureSet = structure.config().structureSetId();
-            return END_CITIES.equals(structureSet) || ANCIENT_CITIES.equals(structureSet);
+            return END_CITIES.equals(structureSet)
+                    || ANCIENT_CITIES.equals(structureSet)
+                    || TRIAL_CHAMBERS.equals(structureSet);
         })) {
             waypointDirty = true;
         }
@@ -876,6 +874,36 @@ public class StructureLabel extends BaseModule {
                 }
                 viableAncientCities.add(key);
             }
+        }
+    }
+
+    private void cacheTrialChamberViability(
+            AreaKey area, List<StructurePosition> structures, GenerationContext current) {
+        if (!isCurrentArea(area, current) || current.biomeSampler() == null) {
+            return;
+        }
+        boolean changed = false;
+        for (StructurePosition structure : structures) {
+            if (!isCurrentArea(area, current)) {
+                return;
+            }
+            if (!TRIAL_CHAMBERS.equals(structure.config().structureSetId())) {
+                continue;
+            }
+            StructureKey key = StructureKey.of(structure);
+            if (!checkedTrialChambers.add(key)) {
+                continue;
+            }
+            if (current.biomeSampler().isTrialChambersBiomeViable(structure)) {
+                if (!isCurrentArea(area, current)) {
+                    return;
+                }
+                viableTrialChambers.add(key);
+            }
+            changed = true;
+        }
+        if (changed && isCurrentArea(area, current)) {
+            waypointDirty = true;
         }
     }
 
@@ -935,6 +963,8 @@ public class StructureLabel extends BaseModule {
                 StructureKey key = StructureKey.of(structure);
                 checkedAncientCities.remove(key);
                 viableAncientCities.remove(key);
+                checkedTrialChambers.remove(key);
+                viableTrialChambers.remove(key);
                 checkedDesertPyramids.remove(key);
                 viableDesertPyramids.remove(key);
             }
@@ -953,6 +983,10 @@ public class StructureLabel extends BaseModule {
         checkedAncientCities.removeIf(
                 key -> Objects.equals(lastPlayerArea, center) && !isWithinCurrentCache(areaForStructure(key)));
         viableAncientCities.removeIf(
+                key -> Objects.equals(lastPlayerArea, center) && !isWithinCurrentCache(areaForStructure(key)));
+        checkedTrialChambers.removeIf(
+                key -> Objects.equals(lastPlayerArea, center) && !isWithinCurrentCache(areaForStructure(key)));
+        viableTrialChambers.removeIf(
                 key -> Objects.equals(lastPlayerArea, center) && !isWithinCurrentCache(areaForStructure(key)));
         checkedDesertPyramids.removeIf(
                 key -> Objects.equals(lastPlayerArea, center) && !isWithinCurrentCache(areaForStructure(key)));
@@ -1100,6 +1134,9 @@ public class StructureLabel extends BaseModule {
         if (ANCIENT_CITIES.equals(structure.config().structureSetId())) {
             return labelAncientCities.get();
         }
+        if (TRIAL_CHAMBERS.equals(structure.config().structureSetId())) {
+            return labelTrialChambers.get();
+        }
         return false;
     }
 
@@ -1109,24 +1146,29 @@ public class StructureLabel extends BaseModule {
                 ? Formatting.GRAY.ordinal()
                 : END_CITIES.equals(structureSet)
                         ? elytra ? elytraColorId.get() : endCityColorId.get()
-                        : ANCIENT_CITIES.equals(structureSet)
+                        : ANCIENT_CITIES.equals(structureSet) || TRIAL_CHAMBERS.equals(structureSet)
                                 ? ancientCityColorId.get()
                                 : DESERT_PYRAMIDS.equals(structureSet)
                                         ? desertPyramidColorId.get()
                                         : ruinedPortalColorId.get();
         boolean ancientCity = ANCIENT_CITIES.equals(structureSet);
+        boolean trialChambers = TRIAL_CHAMBERS.equals(structureSet);
         String name = ancientCity
                 ? "Ancient City"
-                : DESERT_PYRAMIDS.equals(structureSet)
-                        ? "Desert Pyramid"
-                        : RUINED_PORTALS.equals(structureSet)
-                                ? "Ruined Portal"
-                                : elytra ? "Elytra End City" : "End City";
+                : trialChambers
+                        ? "Trial Chambers"
+                        : DESERT_PYRAMIDS.equals(structureSet)
+                                ? "Desert Pyramid"
+                                : RUINED_PORTALS.equals(structureSet)
+                                        ? "Ruined Portal"
+                                        : elytra ? "Elytra End City" : "End City";
         String initials = ancientCity
                 ? "AC"
-                : DESERT_PYRAMIDS.equals(structureSet)
-                        ? "DP"
-                        : RUINED_PORTALS.equals(structureSet) ? "RP" : elytra ? "E" : "C";
+                : trialChambers
+                        ? "TC"
+                        : DESERT_PYRAMIDS.equals(structureSet)
+                                ? "DP"
+                                : RUINED_PORTALS.equals(structureSet) ? "RP" : elytra ? "E" : "C";
         double scale = mc.world.getDimension().coordinateScale();
         int x = (int) Math.round((structure.blockX() + 8) * scale);
         int z = (int) Math.round((structure.blockZ() + 8) * scale);
@@ -1407,6 +1449,9 @@ public class StructureLabel extends BaseModule {
         if (ANCIENT_CITIES.equals(setId)) {
             return viableAncientCities.contains(key);
         }
+        if (TRIAL_CHAMBERS.equals(setId)) {
+            return viableTrialChambers.contains(key);
+        }
         if (DESERT_PYRAMIDS.equals(setId)) {
             return viableDesertPyramids.contains(key);
         }
@@ -1486,6 +1531,8 @@ public class StructureLabel extends BaseModule {
         lootBiomeSamplerCache.clear();
         checkedAncientCities.clear();
         viableAncientCities.clear();
+        checkedTrialChambers.clear();
+        viableTrialChambers.clear();
         checkedDesertPyramids.clear();
         viableDesertPyramids.clear();
         cachedCities.clear();

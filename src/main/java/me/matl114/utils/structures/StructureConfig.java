@@ -71,6 +71,15 @@ public final class StructureConfig {
                         8,
                         SpreadType.LINEAR));
         configs.put(
+                Identifier.ofVanilla("trial_chambers"),
+                of(
+                        Identifier.ofVanilla("trial_chambers"),
+                        Set.of(Identifier.ofVanilla("trial_chambers")),
+                        94251327,
+                        34,
+                        12,
+                        SpreadType.LINEAR));
+        configs.put(
                 Identifier.ofVanilla("desert_pyramids"),
                 of(
                         Identifier.ofVanilla("desert_pyramids"),
