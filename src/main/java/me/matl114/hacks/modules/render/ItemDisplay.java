@@ -31,20 +31,94 @@ import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.ResourceUtils;
 import me.matl114.utils.inventory.ItemStackSample;
 import net.minecraft.client.render.model.BakedModel;
+import me.matl114.versioned.api.VItem;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.ItemEnchantmentsComponent;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EntityType;
+import net.minecraft.item.BowItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.item.MaceItem;
 import net.minecraft.nbt.*;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.Identifier;
 
-public class StorageDisplay extends BaseModule {
-    public final ModulePath modelConfig = makePath(Configs.RENDER_CONFIG, "itemstack-display.storage-display");
+public class ItemDisplay extends BaseModule {
+    public final ModulePath modelConfig =
+            makePath(Configs.RENDER_CONFIG, "itemstack-display.item-display.storage-display");
+    public final ModulePath enchantmentConfig =
+            makePath(Configs.RENDER_CONFIG, "itemstack-display.item-display.enchantment-display");
 
-    public StorageDisplay() {
-        super("StorageDisplay");
+    public static final String NAMESPACE = "slimefunhelper";
+    public static final String MODEL_PATH = "enchantment_icon/";
+    public static final Map<RegistryKey<Enchantment>, Identifier> ENCHANTMENT_ICON_MODELS = Map.ofEntries(
+            Map.entry(Enchantments.BANE_OF_ARTHROPODS, enchantmentIcon("icon_bane_of_arthropods")),
+            Map.entry(Enchantments.BLAST_PROTECTION, enchantmentIcon("icon_blast_protection")),
+            Map.entry(Enchantments.BREACH, enchantmentIcon("icon_breach")),
+            Map.entry(Enchantments.DENSITY, enchantmentIcon("icon_density")),
+            Map.entry(Enchantments.FIRE_PROTECTION, enchantmentIcon("icon_fire_protection")),
+            Map.entry(Enchantments.FORTUNE, enchantmentIcon("icon_fortune")),
+            Map.entry(Enchantments.POWER, enchantmentIcon("icon_power")),
+            Map.entry(Enchantments.PROTECTION, enchantmentIcon("icon_protection")),
+            Map.entry(Enchantments.SHARPNESS, enchantmentIcon("icon_sharpness")),
+            Map.entry(Enchantments.SILK_TOUCH, enchantmentIcon("icon_silk_touch")),
+            Map.entry(Enchantments.SMITE, enchantmentIcon("icon_smite")));
+
+    public final FlagRef enable = builder(enchantmentConfig.addEnable(), Boolean.class)
+            .defaultValue(false)
+            .build();
+    public final FlagRef enableMace = builder(enchantmentConfig.add("mace"), Boolean.class)
+            .defaultValue(true)
+            .build();
+    public final FlagRef enableWeapon = builder(enchantmentConfig.add("weapon"), Boolean.class)
+            .defaultValue(true)
+            .build();
+    public final FlagRef enableEquippable = builder(enchantmentConfig.add("equippable"), Boolean.class)
+            .defaultValue(true)
+            .build();
+    public final FlagRef enableTool = builder(enchantmentConfig.add("tool"), Boolean.class)
+            .defaultValue(true)
+            .build();
+    public final FlagRef enableBow = builder(enchantmentConfig.add("bow"), Boolean.class)
+            .defaultValue(false)
+            .build();
+
+    public final Map<Item, List<RegistryKey<Enchantment>>> checkList = new HashMap<>();
+    public final Map<Item, FlagRef> checkFlags = new HashMap<>();
+
+    public ItemDisplay() {
+        super("ItemDisplay");
+        portConfigs(makePath(Configs.RENDER_CONFIG, "itemstack-display.storage-display"), modelConfig);
+        portConfigs(makePath(Configs.RENDER_CONFIG, "itemstack-display.enchantment-display"), enchantmentConfig);
+        for (var item : Registries.ITEM) {
+            if (item instanceof MaceItem) {
+                checkList.put(item, List.of(Enchantments.DENSITY, Enchantments.BREACH));
+                checkFlags.put(item, enableMace);
+            } else if (VItem.getInstance().isWeapon(new ItemStack(item))) {
+                checkList.put(
+                        item, List.of(Enchantments.SHARPNESS, Enchantments.SMITE, Enchantments.BANE_OF_ARTHROPODS));
+                checkFlags.put(item, enableWeapon);
+            } else if (item.getComponents().contains(DataComponentTypes.EQUIPPABLE)) {
+                checkList.put(
+                        item,
+                        List.of(Enchantments.PROTECTION, Enchantments.BLAST_PROTECTION, Enchantments.FIRE_PROTECTION));
+                checkFlags.put(item, enableEquippable);
+            } else if (item.getComponents().contains(DataComponentTypes.TOOL)) {
+                checkList.put(item, List.of(Enchantments.FORTUNE, Enchantments.SILK_TOUCH));
+                checkFlags.put(item, enableTool);
+            } else if (item instanceof BowItem) {
+                checkList.put(item, List.of(Enchantments.POWER));
+                checkFlags.put(item, enableBow);
+            }
+        }
+    }
+
+    private static Identifier enchantmentIcon(String path) {
+        return new Identifier(NAMESPACE, MODEL_PATH + path);
     }
 
     public final FlagRef storageDisplay = builder(modelConfig.add("enable-storage-display"), Boolean.class)
@@ -90,6 +164,36 @@ public class StorageDisplay extends BaseModule {
         registerListener(Listener.getPostTick(), this::onCacheClean);
         registerListener(RenderListener.getAtlasSourceSupply(), this::onGceChickenTextureLoad);
         registerListener(RenderListener.getAsyncItemModelSupply(), this::onGceChickenModelLoad);
+        registerListener(RenderListener.getAsyncItemModelSupply(), this::onItemModelSupply);
+        registerListener(RenderListener.getAtlasSourceSupply(), this::onTextureSupply);
+        registerListener(RenderListener.getDetachedItemStackInformation(), this::onInfoAttached);
+    }
+
+    private void onItemModelSupply(Event<Set<Identifier>> event) {
+        event.context().addAll(ResourceUtils.lookupOurModelResources(event.getArgs(0), "enchantment_icon"));
+    }
+
+    private void onTextureSupply(Event<Set<Identifier>> event) {
+        if (event.getArgs(1).equals(new Identifier("minecraft", "blocks"))) {
+            event.context().addAll(ResourceUtils.lookupOurTextureResources(event.getArgs(0), "enchantment_icon"));
+        }
+    }
+
+    private void onInfoAttached(Event<List<GuiModel>> event) {
+        if (!enable.get()) return;
+        ItemStack stack = event.getArgs(0);
+        if (stack.isEmpty() || !checkList.containsKey(stack.getItem())) return;
+        FlagRef checkFlag = checkFlags.get(stack.getItem());
+        if (checkFlag == null || !checkFlag.get()) return;
+        ItemEnchantmentsComponent enchantments = stack.get(DataComponentTypes.ENCHANTMENTS);
+        if (enchantments != null && !enchantments.isEmpty()) {
+            for (var enchantment : checkList.get(stack.getItem())) {
+                if (ItemStackUtils.getEnchantmentLevel(enchantments, enchantment) > 0) {
+                    event.context().add(GuiModel.of(ENCHANTMENT_ICON_MODELS.get(enchantment)));
+                    return;
+                }
+            }
+        }
     }
 
     public void onContainerSpawner(Event<List<GuiModel>> event) {

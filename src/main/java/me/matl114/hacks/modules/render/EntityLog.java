@@ -9,6 +9,7 @@ import me.matl114.events.impl.Render2D;
 import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.survival.XaeroHelper;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hacks.utils.render.RenderElements;
@@ -70,6 +71,9 @@ public class EntityLog extends BaseModule {
 
     public final FlagRef renderLogPosition =
             flagBuilder(entityLog.add("render-log-players")).build();
+
+    public final FlagRef addLogPointToXaero =
+            flagBuilder(entityLog.add("add-log-point-to-xaero-map")).build();
 
     public final NBTRef<TracingOption> option = builder(entityLog.add("render-options"), TracingOption.class)
             .defaultValue(new TracingOption(true, false))
@@ -328,6 +332,19 @@ public class EntityLog extends BaseModule {
                     20);
         }
         offLinePos.put(playerUUID, entry);
+        if (addLogPointToXaero.get() && XaeroHelper.INSTANCE != null) {
+            XaeroHelper.INSTANCE.submitWaypoint(
+                    this,
+                    (int) Math.floor(entry.leavePos.x),
+                    (int) Math.floor(entry.leavePos.y),
+                    (int) Math.floor(entry.leavePos.z),
+                    "[SFH] Log: " + ChatUtils.textToPlainString(entry.displayName),
+                    "L",
+                    Formatting.LIGHT_PURPLE.ordinal(),
+                    0,
+                    true,
+                    true);
+        }
     }
 
     public void onServerExit(Event<Void> eventLeave) {

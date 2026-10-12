@@ -343,6 +343,18 @@ public class DamageUtils {
         return rawDamage;
     }
 
+    public static float getFinalAttackDamageAgainst(
+            PlayerEntity attacker, ItemStack weapon, float rawDamage, DamageContext context) {
+        DamageSource damageSource = createDamageSource(attacker, attacker, weapon);
+        rawDamage = getDamageAfterDifficulty(rawDamage, damageSource, context);
+        if (rawDamage <= 0.0F) return 0.0F;
+        rawDamage = getDamageAfterHurtTime(rawDamage, damageSource, context);
+        if (rawDamage <= 0.0F) return 0.0F;
+        rawDamage = getDamageAfterArmorReduce(rawDamage, damageSource, context);
+        if (rawDamage <= 0.0F) return 0.0F;
+        return getDamageAfterEffectAndProtection(rawDamage, damageSource, context);
+    }
+
     public static float getDamageAfterDifficulty(float currentVal, DamageSource source, DamageContext context) {
         if (source.isScaledWithDifficulty()) {
             return getMultipliedDamageByDifficulty(context.world, currentVal);
@@ -381,8 +393,10 @@ public class DamageUtils {
             } else if (source.isIn(DamageTypeTags.BYPASSES_ENCHANTMENTS)) {
                 return currentVal;
             } else {
-                float k = getProtectionAmount(
-                        context.armorSlots, EnchantmentEffectComponentTypes.DAMAGE_PROTECTION, source);
+                float k = context.assumeProtectionFour
+                        ? 16.0F
+                        : getProtectionAmount(
+                                context.armorSlots, EnchantmentEffectComponentTypes.DAMAGE_PROTECTION, source);
 
                 if (k > 0.0F) {
                     currentVal = DamageUtil.getInflictedDamage(currentVal, k);
@@ -518,23 +532,36 @@ public class DamageUtils {
     }
 
     public static DamageContext.Builder fromPlayer(PlayerEntity player) {
+        return fromLivingEntity(player);
+    }
+
+    public static DamageContext.Builder fromLivingEntity(LivingEntity entity) {
         DamageContext.Builder builder = new DamageContext.Builder();
         builder.withArmor((float) player.getAttributes().getValue(EntityAttributes.GENERIC_ARMOR));
         builder.withArmorToughness((float) player.getAttributes().getValue(EntityAttributes.GENERIC_ARMOR_TOUGHNESS));
         for (EquipmentSlot slot : EquipmentSlot.values()) {
-            ItemStack stack = player.getEquippedStack(slot);
+            ItemStack stack = entity.getEquippedStack(slot);
             builder.withArmorSlot(slot, stack);
         }
-        for (var re : player.getStatusEffects()) {
+        for (var re : entity.getStatusEffects()) {
             builder.withStatusEffect(re);
         }
         return builder;
+    }
+
+    public static DamageContext createContext(LivingEntity entity) {
+        return fromLivingEntity(entity).build();
+    }
+
+    public static DamageContext createAssumeProtectionFourContext(LivingEntity entity) {
+        return fromLivingEntity(entity).assumeProtectionFour(true).build();
     }
 
     public static final class DamageContext {
         private final World world;
         private final float armor;
         private final float armorToughness;
+        private final boolean assumeProtectionFour;
         private final Map<EquipmentSlot, ItemStack> armorSlots;
         private final Map<RegistryEntry<net.minecraft.entity.effect.StatusEffect>, Integer> statusEffects;
 
@@ -542,6 +569,7 @@ public class DamageUtils {
             this.world = builder.world;
             this.armor = builder.armor;
             this.armorToughness = builder.armorToughness;
+            this.assumeProtectionFour = builder.assumeProtectionFour;
             this.armorSlots = Map.copyOf(builder.armorSlots);
             this.statusEffects = Map.copyOf(builder.statusEffects);
         }
@@ -550,6 +578,7 @@ public class DamageUtils {
             private World world;
             private float armor;
             private float armorToughness;
+            private boolean assumeProtectionFour;
             private final Map<EquipmentSlot, ItemStack> armorSlots = new HashMap<>();
             private final Map<RegistryEntry<net.minecraft.entity.effect.StatusEffect>, Integer> statusEffects =
                     new HashMap<>();
@@ -562,6 +591,7 @@ public class DamageUtils {
                 this.world = context.world;
                 this.armor = context.armor;
                 this.armorToughness = context.armorToughness;
+                this.assumeProtectionFour = context.assumeProtectionFour;
                 this.armorSlots.putAll(context.armorSlots);
                 this.statusEffects.putAll(context.statusEffects);
             }
@@ -578,6 +608,11 @@ public class DamageUtils {
 
             public Builder withArmorToughness(float armorToughness) {
                 this.armorToughness = armorToughness;
+                return this;
+            }
+
+            public Builder assumeProtectionFour(boolean assumeProtectionFour) {
+                this.assumeProtectionFour = assumeProtectionFour;
                 return this;
             }
 

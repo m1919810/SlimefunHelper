@@ -110,7 +110,7 @@ public class AdjustmentSchedular {
             modifier = buildWasdModifier(player, renderDirection);
         }
         if (modifier != null) {
-            PlayerInputManager.INSTANCE.addInputModifier(modifier, 1);
+            PlayerInputManager.INSTANCE.addInputModifier(modifier, 0);
         }
     }
 

@@ -157,7 +157,7 @@ public class GrimIdiots extends BaseModule {
                             Interact.INSTANCE.placeBlock(centerPos);
                             Interact.INSTANCE.placeBlock(placeSequence.get(2));
                             startTick = Tasks.getTick();
-                            PlayerInputManager.INSTANCE.addJumpModifier(0, true, 1);
+                            PlayerInputManager.INSTANCE.addJumpModifier(0, true, 0);
                             callback.run();
                         }
 
@@ -245,7 +245,7 @@ public class GrimIdiots extends BaseModule {
                                     break progress;
                                 }
                             } else {
-                                PlayerInputManager.INSTANCE.addJumpModifier(0, true, 1);
+                                PlayerInputManager.INSTANCE.addJumpModifier(0, true, 0);
                             }
                             callback.run();
 
