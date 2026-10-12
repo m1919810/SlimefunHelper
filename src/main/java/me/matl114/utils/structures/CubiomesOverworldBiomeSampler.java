@@ -88,8 +88,7 @@ public final class CubiomesOverworldBiomeSampler {
         int quartX = Math.toIntExact(structure.chunkX() * 4L + 2L);
         int quartY = terrainGenerator.getSeaLevel() >> 2;
         int quartZ = Math.toIntExact(structure.chunkZ() * 4L + 2L);
-        return BiomeValidity.contains(
-                trialChambers.getValidBiomes(), biomeAtQuart(quartX, quartY, quartZ));
+        return BiomeValidity.contains(trialChambers.getValidBiomes(), biomeAtQuart(quartX, quartY, quartZ));
     }
 
     /** Cubiomes viewer's ruined-portal biome sample: chunk center at quart Y=0. */
