@@ -10,11 +10,8 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.utils.NetworkUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.ChunkDeltaUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerActionResponseS2CPacket;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
 
 public class FakeBlockManager extends BaseModule {
@@ -31,12 +28,6 @@ public class FakeBlockManager extends BaseModule {
         registerListener(Listener.getPlayerRespawnPoint(), this::onWorldSwitch);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(PlayerActionResponseS2CPacket.class), this::onBlockACK);
-        registerListener(
-                Listener.getPacketPostHandlePoint().getChannel(BlockUpdateS2CPacket.class), this::onBlockUpdate);
-        registerListener(
-                Listener.getPacketPostHandlePoint().getChannel(ChunkDeltaUpdateS2CPacket.class),
-                this::onChunkDeltaUpdate);
-        registerListener(Listener.getChunkUpdateListener(), this::onChunkUpdate);
     }
 
     final Int2ObjectOpenHashMap<BlockPos> fakeMiningBlocks = new Int2ObjectOpenHashMap<>(4);
@@ -94,10 +85,4 @@ public class FakeBlockManager extends BaseModule {
             }
         }
     }
-
-    public void onBlockUpdate(Event<BlockUpdateS2CPacket> event) {}
-
-    public void onChunkDeltaUpdate(Event<ChunkDeltaUpdateS2CPacket> event) {}
-
-    public void onChunkUpdate(Event<ChunkPos> chunkUpdate) {}
 }
