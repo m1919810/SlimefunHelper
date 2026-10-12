@@ -90,6 +90,7 @@ public class PlayerStateManager extends BaseModule {
     public int lastStartGlidingTick = 0;
     public boolean lastMovementContainsPosition = false;
     public boolean lastTickHasMovement = false;
+    public int lastRealMovementPacketTick = Integer.MIN_VALUE;
     public boolean lastClimbing;
     public boolean lastInLava;
     public boolean lastInWater;
@@ -126,6 +127,10 @@ public class PlayerStateManager extends BaseModule {
     public PlayerStateManager() {
         super("PlayerStateManager");
         INSTANCE = this;
+    }
+
+    public boolean hasResistance() {
+        return mc.player != null && mc.player.hasStatusEffect(StatusEffects.RESISTANCE);
     }
 
     @Override
@@ -213,6 +218,9 @@ public class PlayerStateManager extends BaseModule {
     public void onMove(Event<PlayerMoveC2SPacket> event) {
         if (event.isCancelled()) return;
         PlayerMoveC2SPacket packet = event.context;
+        if (PlayerMoveC2SPacketAccess.of(packet).getCause() != PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP) {
+            lastRealMovementPacketTick = Tasks.getTick();
+        }
         if (PlayerMoveC2SPacketAccess.of(packet).getCause() != PlayerMoveC2SPacketAccess.Cause.TRIGGER_SIMULATION) {
             lastMovementContainsPosition = packet.changesPosition();
 
@@ -702,6 +710,7 @@ public class PlayerStateManager extends BaseModule {
         lastZ = 0.0D;
         lastOnGround = false;
         lastPlayerOnGround = false;
+        lastRealMovementPacketTick = Integer.MIN_VALUE;
         lastPitch = 0.0F;
         lastYaw = 0.0F;
         lastSprint = false;

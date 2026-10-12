@@ -183,8 +183,12 @@ public abstract class INameTag extends BaseModule {
                                         ? friendNameColor.get().asRGB()
                                         : nameColor.get().asRGB()));
                 if (showHealth.get()) {
-                    text.append(Text.literal(" %d♥".formatted((int) player.getHealth()))
-                            .withColor(healthColor.get().asRGB()));
+                    float absorption = player.getAbsorptionAmount();
+                    String healthText = absorption > 0.0F
+                            ? " %d(+%d)♥".formatted((int) player.getHealth(), (int) absorption)
+                            : " %d♥".formatted((int) player.getHealth());
+                    text.append(
+                            Text.literal(healthText).withColor(healthColor.get().asRGB()));
                 }
                 if (showPing.get()) {
                     int latency = 0;

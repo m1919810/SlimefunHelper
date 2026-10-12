@@ -24,7 +24,6 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VDataFlag;
-import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.UseEffectsComponent;
@@ -41,6 +40,7 @@ import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
@@ -80,6 +80,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         registerListener(Listener.getEntityTrackDataUpdate().getChannel(EntityType.PLAYER), this::onEntityDataUpdate);
         registerListener(Listener.getPacketPostHandlePoint().getChannel(EntityStatusS2CPacket.class), this::onConsume);
         registerListener(Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class), this::onSendStartUse);
+        registerListener(Listener.getPreGameTick(), this::onPreGameTick);
     }
 
     public final FlagRef sneak = flagBuilder(noSlowdown.add("when-sneak")).build();
@@ -99,6 +100,9 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
 
     public final FlagRef enableFakeSneak =
             flagBuilder(noSlowdown.add("fake-sneak")).build();
+
+    public final FlagRef onlySneakPress =
+            flagBuilder(noSlowdown.add("only-sneak-press")).build();
 
     public final KeyBindRef keyBindRef = moduleEntry(
                     noSlowdown.add("fake-sneak-hotkey"), new MultiKeyBind(), noSlowdown.add("fake-sneak"))
@@ -252,6 +256,8 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
 
     public void resetPlayer() {
         sneakStatus = false;
+        cachedPos = null;
+        supportingPos = null;
     }
 
     boolean sneakStatus = false;
@@ -371,7 +377,23 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     }
 
     public boolean shouldFakeSneakStatus() {
-        return (sneakStatus || (enableFakeSneak.get() && checkSneakSpeed())) && mc.player.isOnGround();
+        return (sneakStatus || isFakeSneakActive() || (isFakeSneakEnabled() && lastPredictWasSneakEdge))
+                && mc.player.isOnGround();
+    }
+
+    private boolean isFakeSneakEnabled() {
+        return enableFakeSneak.get() && checkSneakSpeed();
+    }
+
+    private boolean isFakeSneakActive() {
+        if (!isFakeSneakEnabled()) {
+            return false;
+        }
+        if (onlySneakPress.get()) {
+            return mc.options.sneakKey.isPressed();
+        }
+        PlayerInputUtils.Input input = PlayerInputUtils.of(mc.options);
+        return input.hasWASDMovement() && !input.sneak() && !input.jump();
     }
 
     private boolean checkSneakSpeed() {
@@ -697,6 +719,34 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     public boolean workNoSlowItemThisTick;
     boolean grimFlagNoSlowOnce = false;
 
+    private void onPreGameTick(Event<ClientPlayerEntity> event) {
+        ClientPlayerEntity args = event.context;
+        lastPredictWasSneakEdge = false;
+        supportingPos = args.getVelocityAffectingPos();
+        Box playerBox = args.getBoundingBox();
+        List<Box> nearbyCollisionBoxes = getNearbyCollisionBoxes(playerBox);
+        boolean supportAt05 = hasSupportCollision(playerBox, nearbyCollisionBoxes, 0.05);
+        boolean supportAt15 = hasSupportCollision(playerBox, nearbyCollisionBoxes, 0.15);
+        boolean shouldSneakFromSupport = isFakeSneakEnabled()
+                && args.isOnGround()
+                && (!supportAt05 || (!supportAt15 && isMovingOutwardFromEdge(args)));
+        boolean trackSneakEdge = (shouldFakeSneakStatus() || shouldSneakFromSupport) && args.isOnGround();
+        if (trackSneakEdge) {
+            cachedPos = supportingPos;
+            lastPredictWasSneakEdge = !supportAt05 || isPredictedSneakEdge(args);
+        } else {
+            cachedPos = null;
+        }
+
+        if ((isFakeSneakActive() || shouldSneakFromSupport) && args.isOnGround()) {
+            if (lastPredictWasSneakEdge) {
+                PlayerInputManager.INSTANCE.addSneakModifier(0, true, 1);
+            } else if (onlySneakPress.get()) {
+                PlayerInputManager.INSTANCE.addSneakModifier(0, false, 1);
+            }
+        }
+    }
+
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
@@ -730,49 +780,69 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     }
 
     BlockPos cachedPos;
+    BlockPos supportingPos;
+
+    private List<Box> getNearbyCollisionBoxes(Box playerBox) {
+        Box searchBox = playerBox.expand(0.05, 0.5, 0.05);
+        List<Box> collisionBoxes = new ArrayList<>();
+        for (BlockPos pos : CollisionUtil.getIntersectingBlockPositions(mc.world, searchBox, false)) {
+            var shape = mc.world.getBlockState(pos).getCollisionShape(mc.world, pos);
+            if (shape.isEmpty()) continue;
+            for (Box collisionBox : shape.getBoundingBoxes()) {
+                collisionBoxes.add(collisionBox.offset(pos));
+            }
+        }
+        return collisionBoxes;
+    }
+
+    private boolean hasSupportCollision(Box playerBox, List<Box> collisionBoxes, double shrink) {
+        Box supportCheckBox = playerBox.offset(0, -0.5, 0).expand(-shrink);
+        return collisionBoxes.stream().anyMatch(supportCheckBox::intersects);
+    }
+
+    private boolean isMovingOutwardFromEdge(ClientPlayerEntity args) {
+        PlayerInputUtils.Input input = PlayerInputUtils.of(args);
+        if (!input.hasWASDMovement()) return false;
+        Vec3d inputDirection = getInputDirection(args, input);
+        if (inputDirection.equals(Vec3d.ZERO)) return false;
+
+        Box playerBox = args.getBoundingBox();
+        Box predictedPlayerBox = playerBox.offset(inputDirection.x * 0.1, 0, inputDirection.z * 0.1);
+        return !hasSupportCollision(predictedPlayerBox, getNearbyCollisionBoxes(predictedPlayerBox), 0.05);
+    }
+
+    private Vec3d getInputDirection(ClientPlayerEntity args, PlayerInputUtils.Input input) {
+        double forward = input.forwardSpeed();
+        double sideways = input.sidewaysSpeed();
+        double inputLength = Math.sqrt(forward * forward + sideways * sideways);
+        if (inputLength == 0) {
+            return Vec3d.ZERO;
+        }
+
+        double yaw = Math.toRadians(args.getYaw());
+        double sinYaw = Math.sin(yaw);
+        double cosYaw = Math.cos(yaw);
+        return new Vec3d(
+                (-forward * sinYaw + sideways * cosYaw) / inputLength,
+                0,
+                (forward * cosYaw + sideways * sinYaw) / inputLength);
+    }
+
+    private boolean isPredictedSneakEdge(ClientPlayerEntity args) {
+        Vec3d position = args.getPos();
+        Vec3d velocity = args.getVelocity();
+        Vec3d inputDirection = getInputDirection(args, PlayerInputUtils.of(args));
+        double lookAhead = 0.1;
+        Vec3d predictedPosition =
+                position.add(velocity.x + inputDirection.x * lookAhead, 0, velocity.z + inputDirection.z * lookAhead);
+        Box predictedPlayerBox =
+                args.getBoundingBox().offset(predictedPosition.x - position.x, 0, predictedPosition.z - position.z);
+        return !hasSupportCollision(predictedPlayerBox, getNearbyCollisionBoxes(predictedPlayerBox), 0.066);
+    }
 
     @Override
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
-        if (shouldFakeSneakStatus()) {
-            // totally shit, the sneak flag is override with playerInput,
-            // fuck ojng
-            // we move it to InputTick
-            if (args.isSneaking()) {
-                // we tend to make this work
-                // add flag to remove calculation noSlow
-                // use supporting plate here
-                if (cachedPos != null) {
-                    BlockPos supportingPos = cachedPos;
-                    Vec3d velocity = args.getVelocity();
-                    Vec3d vec3d = args.getPos();
-                    Vec3d vec3dSupportingBlock = vec3d.subtract(0, 0.500001F, 0);
-                    BlockPos underBlock = BlockPos.ofFloored(vec3dSupportingBlock);
-                    BlockState state = mc.world.getBlockState(underBlock);
-                    if (state.isAir() || !state.isFullCube(mc.world, underBlock)) {
-                        double delta = 0.1F;
-                        double xmin = supportingPos.getX() - delta;
-                        double zmin = supportingPos.getZ() - delta;
-                        double xmax = supportingPos.getX() + 1 + delta;
-                        double zmax = supportingPos.getZ() + 1 + delta;
-                        boolean xrange = (vec3d.x > xmin && vec3d.x < xmax);
-                        boolean zrange = vec3d.z > zmin && vec3d.z < zmax;
-                        if (!xrange || !zrange) {
-                            Vec3d supportingPosCenter = supportingPos.toCenterPos();
-                            boolean directionX = vec3d.x < supportingPosCenter.x;
-                            boolean directionZ = vec3d.z < supportingPosCenter.z;
-
-                            if (((!xrange) && directionX == (velocity.x < 0))
-                                    || (!zrange) && directionZ == (velocity.z < 0)
-                                    || (!xrange && !zrange)) {
-                                this.lastPredictWasSneakEdge = true;
-                            }
-                        }
-                    }
-                }
-                cachedPos = args.getVelocityAffectingPos();
-            }
-        }
         if (useItem.get()
                 && useItemBypass.get().isIn(UseBypassMode.BYPASS_GRIM_LAZY_V3)
                 && noSprint.get()
@@ -789,17 +859,8 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
 
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
-        ClientPlayerEntity args = movementManagerEvent.context.playerStatus.entity;
         if (shouldFakeSneakStatus()) {
             // do not sync sneak status
-            //            if(lastPredictWasSneakEdge){
-            //
-            //            }
-            if (!lastPredictWasSneakEdge && args.isSneaking()) {
-                // in lower version,
-                // ClientPlayerAccess.of(args).setLastSneakFlag(args.isSneaking());
-                PlayerInputUtils.of(args).sneak(false).applyInput(args);
-            }
             if (lastPredictWasSneakEdge) {
                 ClientPlayerAccess.of(mc.player).resyncSneak();
             }

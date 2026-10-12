@@ -43,6 +43,7 @@ import me.matl114.versioned.api.VItem;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -101,6 +102,11 @@ public class Attack extends BaseModule {
 
     public final FlagRef autoAntiShield =
             flagBuilder(attack.add("auto-anti-shield")).build();
+
+    public final NBTRef<OptionalPrimitive<Integer>> fastDestroyShield = builder(
+                    attack.add("fast-destroy-shield"), OptionalPrimitive.INT_TYPE)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.INT_TYPE, 1))
+            .build();
 
     public final FlagRef autoSwap = flagBuilder(attack.add("attack-inv-swap")).build();
 
@@ -304,7 +310,30 @@ public class Attack extends BaseModule {
                 && shouldUseAntiShield(target)
                 && (invResult = findAntiShieldWeapon(attackSettings)) != null) {
             return invResult;
-        } else if (attackSettings.invSwap()
+        }
+        if (INSTANCE.fastDestroyShield.get().isPresent()
+                && target instanceof LivingEntity livingTarget
+                && livingTarget.isUsingItem()
+                && livingTarget.getActiveItem().getItem() instanceof ShieldItem
+                && isWithinShieldBlockingAngle(livingTarget, mc.player)
+                && (invResult = InventoryUtils.findBestPlayerItem(
+                                (stack) -> {
+                                    if (!VItem.getInstance().isWeapon(stack)
+                                            || VItem.getInstance().isAxe(stack)) {
+                                        return null;
+                                    }
+                                    double baseDamage = AttributeUtils.getAttributeWith(
+                                                    mc.player, Map.of(EquipmentSlot.MAINHAND, stack))
+                                            .getValue(EntityAttributes.ATTACK_DAMAGE);
+                                    return baseDamage >= 15.0D ? baseDamage : null;
+                                },
+                                attackSettings.ghostHandMode().getSearchSize(false),
+                                false,
+                                false))
+                        != null) {
+            return invResult;
+        }
+        if (attackSettings.invSwap()
                 && !VItem.getInstance().isWeapon(mc.player.getStackInHand(Hand.MAIN_HAND))
                 && target instanceof LivingEntity lv
                 && (invResult = InventoryUtils.findBestPlayerItem(
@@ -377,12 +406,35 @@ public class Attack extends BaseModule {
         IndexEntry<ItemStack> invResult = selectBestWeapon(attackSettings, target);
         Runnable callback = InvExtra.INSTANCE.swapItemToHand(invResult.index(), false, attackSettings.ghostHandMode());
         attackWithCritic(player, target, attackSettings.criticalSprint(), attackSettings.swingHand());
+        OptionalPrimitive<Integer> fastDestroyShield = INSTANCE.fastDestroyShield.get();
+        if (fastDestroyShield.isPresent()
+                && player.getAttributeValue(EntityAttributes.ATTACK_DAMAGE) >= 15.0D
+                && !VItem.getInstance().isAxe(invResult.val())
+                && target instanceof LivingEntity livingTarget
+                && livingTarget.isUsingItem()
+                && livingTarget.getActiveItem().getItem() instanceof ShieldItem
+                && isWithinShieldBlockingAngle(livingTarget, player)) {
+            for (int i = 0; i < fastDestroyShield.getValue(); i++) {
+                attackWithCritic(player, target, attackSettings.criticalSprint(), attackSettings.swingHand());
+            }
+        }
         if (callback != null) {
             callback.run();
         }
         if (input != null) {
             input.sendPlayerInputAsRiding();
         }
+    }
+
+    private static boolean isWithinShieldBlockingAngle(LivingEntity target, Entity attacker) {
+        // Vanilla shield blocking uses horizontal source direction and head yaw.
+        // The shield's default blocking angle is 90 degrees.
+        Vec3d directionToAttacker = attacker.getPos()
+                .subtract(target.getPos())
+                .multiply(1.0D, 0.0D, 1.0D)
+                .normalize();
+        Vec3d horizontalView = Vec3d.fromPolar(0.0F, target.getHeadYaw());
+        return horizontalView.dotProduct(directionToAttacker) >= 0.0D;
     }
 
     @ApiMethod
