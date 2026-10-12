@@ -89,7 +89,11 @@ public class Misc extends BaseModule {
         directionZ /= directionLength;
         BlockPos support = BlockPos.ofFloored(mc.player.getX(), mc.player.getY() - 0.01, mc.player.getZ());
         BlockPos target = findGapTarget(support, directionX, directionZ);
-        if (target == null || isNearHorizontalNeighbor(support, target)) return;
+        if (target == null) return;
+        if (mc.options.forwardKey.isPressed()) {
+            PlayerInputManager.INSTANCE.addSprintModifier(0, true, 1);
+        }
+        if (isNearHorizontalNeighbor(support, target)) return;
 
         BlockState state = mc.world.getBlockState(target);
         var collision = state.getCollisionShape(mc.world, target);
@@ -99,39 +103,14 @@ public class Misc extends BaseModule {
 
         double playerCenter = mc.player.getX() * directionX + mc.player.getZ() * directionZ;
         double playerHalfWidth = mc.player.getWidth() * 0.5 * (Math.abs(directionX) + Math.abs(directionZ));
-        double playerLeading = playerCenter + playerHalfWidth;
         double targetFar = maxProjection(targetBox, directionX, directionZ);
         double maxTravelDistance = targetFar + playerHalfWidth - playerCenter;
 
-        // Find the farthest takeoff position on the current support that still clears the target edge.
-        double supportEdge = maxProjection(new Box(support), directionX, directionZ);
-        double high = Math.max(0.0, supportEdge - playerLeading);
-        double low = 0.0;
-        if (mc.options.forwardKey.isPressed() && PlayerInputManager.INSTANCE != null) {
-            PlayerInputManager.INSTANCE.addSprintModifier(0, true, 1);
-        }
-        List<Vec3d> best = simulateJump(maxTravelDistance, 0.0, directionX, directionZ);
-        boolean reachesFromCurrent = reachesLanding(best, targetBox, directionX, directionZ);
-        List<Vec3d> fromEdge = simulateJump(maxTravelDistance, high, directionX, directionZ);
-        boolean reachesFromEdge = reachesLanding(fromEdge, targetBox, directionX, directionZ);
-        boolean canReach = reachesFromCurrent || reachesFromEdge;
-        if (canReach) {
-            if (!reachesFromCurrent) best = fromEdge;
-            for (int i = 0; i < 18; i++) {
-                double middle = (low + high) * 0.5;
-                List<Vec3d> trajectory = simulateJump(maxTravelDistance, middle, directionX, directionZ);
-                if (reachesLanding(trajectory, targetBox, directionX, directionZ)) {
-                    best = trajectory;
-                    if (reachesFromCurrent) low = middle;
-                    else high = middle;
-                } else {
-                    if (reachesFromCurrent) high = middle;
-                    else low = middle;
-                }
-            }
-        }
-        parkourTrajectory.submit(best, canReach ? JUMP_COLOR : Color.RED.getRGB());
-        if (reachesFromCurrent && mc.options.forwardKey.isPressed() && PlayerInputManager.INSTANCE != null) {
+        List<Vec3d> trajectory = simulateJump(maxTravelDistance, directionX, directionZ);
+        boolean shouldJump = reachesLanding(trajectory, targetBox, directionX, directionZ)
+                && mc.options.forwardKey.isPressed();
+        parkourTrajectory.submit(trajectory, shouldJump ? JUMP_COLOR : Color.RED.getRGB());
+        if (shouldJump) {
             PlayerInputManager.INSTANCE.addJumpModifier(0, true, 1);
         }
     }
@@ -179,20 +158,13 @@ public class Misc extends BaseModule {
         return null;
     }
 
-    private List<Vec3d> simulateJump(
-            double maxTravelDistance, double takeoffOffset, double directionX, double directionZ) {
+    private List<Vec3d> simulateJump(double maxTravelDistance, double directionX, double directionZ) {
         List<Vec3d> points = new ArrayList<>();
         double x = 0.0;
         double y = 0.0;
         double vx = Math.max(0.0, mc.player.getVelocity().x * directionX + mc.player.getVelocity().z * directionZ);
         double vy;
         points.add(worldPoint(directionX, directionZ, x, y));
-        // Build sprint speed on the current block before jumping from the selected takeoff point.
-        for (int tick = 0; tick < 10 && x < takeoffOffset; tick++) {
-            vx = (vx + 0.13) * 0.91;
-            x += vx;
-            points.add(worldPoint(directionX, directionZ, x, y));
-        }
         vy = 0.42;
         for (int tick = 0; tick < 40 && x < maxTravelDistance; tick++) {
             double acceleration = tick == 0 ? 0.13 : 0.026;
@@ -211,6 +183,7 @@ public class Misc extends BaseModule {
 
     private boolean reachesLanding(List<Vec3d> trajectory, Box targetBox, double directionX, double directionZ) {
         double landingY = targetBox.maxY;
+        // Accept the full interior span with 0.1 clearance from both projected edges.
         double landingNear = minProjection(targetBox, directionX, directionZ) + PARKOUR_LANDING_MARGIN;
         double landingFar = maxProjection(targetBox, directionX, directionZ) - PARKOUR_LANDING_MARGIN;
         if (landingNear > landingFar || trajectory.size() < 2) return false;
