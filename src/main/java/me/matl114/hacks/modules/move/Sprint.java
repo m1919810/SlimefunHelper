@@ -110,9 +110,9 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
                             RotationManager.ofDirection(Optional.empty(), Optional.of(mc.player.getYaw() + yaw))
                                     .preTick(() -> {
                                         if (lastTickLandingRotateJump) {
-                                            PlayerInputManager.INSTANCE.addJumpModifier(0, false, 1);
+                                            PlayerInputManager.INSTANCE.addJumpModifier(0, false, 0);
                                         }
-                                        PlayerInputManager.INSTANCE.addSprintModifier(0, true, 1);
+                                        PlayerInputManager.INSTANCE.addSprintModifier(0, true, 0);
                                     })
                                     .priority(0));
                 }

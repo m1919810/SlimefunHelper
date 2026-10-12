@@ -205,8 +205,8 @@ public class AutoSurround extends BaseModule {
                     float yaw = EntityUtils.rotationToYaw(lookHorizontal);
                     RotationManager.INSTANCE.request(RotationManager.ofDirection(Optional.empty(), Optional.of(yaw))
                             .preTick(() -> {
-                                PlayerInputManager.INSTANCE.addForwardModifier(0, true, 1);
-                                PlayerInputManager.INSTANCE.addBackwardModifier(0, false, 1);
+                                PlayerInputManager.INSTANCE.addForwardModifier(0, true, 0);
+                                PlayerInputManager.INSTANCE.addBackwardModifier(0, false, 0);
                             })
                             .applyMoveFix(false)
                             .priority(0));

@@ -66,7 +66,7 @@ public class AntiAFK extends BaseModule {
                 if (jump.get()) {
                     modifier = modifier.withJump(true);
                 }
-                PlayerInputManager.INSTANCE.addInputModifier(modifier, 1);
+                PlayerInputManager.INSTANCE.addInputModifier(modifier, 0);
             }
             if (swing.get()) {
                 mc.player.swingHand(Hand.MAIN_HAND);

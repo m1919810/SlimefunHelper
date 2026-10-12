@@ -242,9 +242,11 @@ public class AntiCrystal extends BaseModule {
                         if (!ViaFabricPlusHooks.isSupportDupRot() && mc.player.getItemUseTime() >= ticks.get() - 1) {
                             var pitchYaw = EntityUtils.rotationToPitchYaw(
                                     targetPoint.subtract(mc.player.getEyePos()).normalize());
-                            PlayerInputManager.INSTANCE.addInputModifier(PlayerInputManager.Modifier.empty(0)
-                                    .withPitch(pitchYaw.x)
-                                    .withYaw(pitchYaw.y));
+                            PlayerInputManager.INSTANCE.addInputModifier(
+                                    PlayerInputManager.Modifier.empty(0)
+                                            .withPitch(pitchYaw.x)
+                                            .withYaw(pitchYaw.y),
+                                    0);
                         }
                     }
                 } else {
