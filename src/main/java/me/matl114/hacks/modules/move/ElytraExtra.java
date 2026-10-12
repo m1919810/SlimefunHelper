@@ -1123,7 +1123,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                                     mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
                     flushRockets();
                     MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
-                    if (armorFlyBadPacketFix.get()) {
+                    if (armorFlyBadPacketFix.get() && ViaFabricPlusHooks.isSupportEndTick()) {
                         mc.getNetworkHandler().sendPacket(new CommonPongC2SPacket(Integer.MIN_VALUE));
                     }
                 } else {
@@ -1931,6 +1931,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                             event.context.timestampMS(),
                             impl.connection()));
                     currentDelayingLastTransaction = lastTransactionRecv;
+                } else {
+                    Debug.chat("Debug1");
                 }
                 event.cancel();
             }

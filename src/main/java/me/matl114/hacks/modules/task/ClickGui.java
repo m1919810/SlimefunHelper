@@ -169,6 +169,7 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                     ExecutableWidget.instance(0, 0, width, height).setElementHandler(moduleElement));
             moduleRow.addDrawableChild(createSliderText(
                     TextProvider.of(getModuleName(baseModule), TextAlign.LEFT),
+                    TooltipHandler.of(List.of()),
                     TextAlign.LEFT,
                     0,
                     0,
@@ -176,6 +177,7 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                     height));
             moduleRow.addDrawableChild(createSliderText(
                     TextProvider.of(() -> Text.literal(expanded.getValue() ? "-" : "+"), TextAlign.RIGHT),
+                    TooltipHandler.of(List.of()),
                     TextAlign.RIGHT,
                     width - height,
                     0,
@@ -244,19 +246,26 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
         }
 
         private DrawableWidget createSliderText(
-                TextProvider provider, TextAlign align, int x, int y, int width, int height) {
-            return createSliderText(provider, align, x, y, width, height, false);
+                TextProvider provider, TooltipHandler handler, TextAlign align, int x, int y, int width, int height) {
+            return createSliderText(provider, handler, align, x, y, width, height, false);
         }
 
         private DrawableWidget createSliderText(
-                TextProvider provider, TextAlign align, int x, int y, int width, int height, boolean splitter) {
-            ElementHandler text = guiElementFactory.createText(provider, TooltipHandler.of(List.of()), splitter, align);
+                TextProvider provider,
+                TooltipHandler handler,
+                TextAlign align,
+                int x,
+                int y,
+                int width,
+                int height,
+                boolean splitter) {
+            ElementHandler text = guiElementFactory.createText(provider, handler, splitter, align);
             return ExecutableWidget.instance(x, y, width, height).setElementHandler(text);
         }
 
         private DrawableWidget createSliderConfigText(
-                TextProvider provider, TextAlign align, int x, int y, int width, int height) {
-            return createSliderText(provider, align, x, y + height / 6, width, height * 2 / 3, false);
+                TextProvider provider, TooltipHandler handler, TextAlign align, int x, int y, int width, int height) {
+            return createSliderText(provider, handler, align, x, y + height / 6, width, height * 2 / 3, false);
         }
 
         private ConditionalWidget createSliderConfigRow(WrapperConfigRef<?> configWidget) {
@@ -271,6 +280,7 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                 var keyValue = configWidget.createKeyValue();
                 SubScreenWidget line = createSliderConfigLine(
                         key,
+                        TooltipHandler.of(ChatUtils.parseTooltipsTranslation(configWidget.keyName() + ".tooltips", "")),
                         keyValue.generateValueWidget(BaseModule.CONFIG_FACTORY, width - height, 0, height, height),
                         width,
                         height);
@@ -282,8 +292,10 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                 ValueAccessor<Boolean> editorOpen = ValueAccessor.holder(false);
                 row.addDrawableChild(createSliderConfigLine(
                         key,
+                        TooltipHandler.of(ChatUtils.parseTooltipsTranslation(configWidget.keyName() + ".tooltips", "")),
                         createSliderConfigText(
                                 TextProvider.of(() -> createSliderSpecialDisplay(ref), TextAlign.RIGHT),
+                                TooltipHandler.of(List.of()),
                                 TextAlign.RIGHT,
                                 0,
                                 0,
@@ -298,6 +310,7 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                 ValueAccessor<Boolean> editorOpen = ValueAccessor.holder(false);
                 SubScreenWidget line = createSliderConfigLine(
                         key,
+                        TooltipHandler.of(ChatUtils.parseTooltipsTranslation(configWidget.keyName() + ".tooltips", "")),
                         getSpecificTypeSprite(ref, width, height),
                         width,
                         height,
@@ -340,19 +353,26 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                     height / 2);
         }
 
-        private SubScreenWidget createSliderConfigLine(TextProvider key, DrawableWidget value, int width, int height) {
-            return createSliderConfigLine(key, value, width, height, null);
+        private SubScreenWidget createSliderConfigLine(
+                TextProvider key, TooltipHandler handler, DrawableWidget value, int width, int height) {
+            return createSliderConfigLine(key, handler, value, width, height, null);
         }
 
         private SubScreenWidget createSliderConfigLine(
-                TextProvider key, DrawableWidget value, int width, int height, Runnable clickAction) {
+                TextProvider key,
+                TooltipHandler handler,
+                DrawableWidget value,
+                int width,
+                int height,
+                Runnable clickAction) {
             SubScreenWidget line = new SubScreenWidget(0, 0, width, height);
             if (clickAction != null) {
                 line.addDrawableChild(ExecutableWidget.instance(0, 0, width, height)
                         .setElementHandler(new AbstractElement().withInputHandler(InputHandler.clickRun(clickAction))));
             }
             line.addDrawableChild(guiElementFactory.createBackground(0, 0, width, height))
-                    .addDrawableChild(createSliderConfigText(key, TextAlign.LEFT, 0, 0, width - height, height))
+                    .addDrawableChild(
+                            createSliderConfigText(key, handler, TextAlign.LEFT, 0, 0, width - height, height))
                     .addDrawableChild(value);
 
             return line;
@@ -481,8 +501,15 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
             header.addDrawableChild(guiElementFactory.createBackground(0, 0, width, height));
             header.addDrawableChild(ExecutableWidget.instance(0, 0, width, height)
                     .setElementHandler(new AbstractElement().withInputHandler(InputHandler.clickRun(toggle))));
-            header.addDrawableChild(
-                    createSliderText(TextProvider.of(title), TextAlign.MIDDLE, 0, textY, textWidth, textHeight, true));
+            header.addDrawableChild(createSliderText(
+                    TextProvider.of(title),
+                    TooltipHandler.of(List.of()),
+                    TextAlign.MIDDLE,
+                    0,
+                    textY,
+                    textWidth,
+                    textHeight,
+                    true));
             header.addDrawableChild(ExecutableWidget.instance(width - height, 0, height, height)
                     .setElementHandler(new AbstractElement()
                             .withInputHandler(InputHandler.clickRun(toggle))
