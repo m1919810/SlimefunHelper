@@ -77,6 +77,21 @@ public final class CubiomesOverworldBiomeSampler {
                 .matchesKey(BiomeKeys.DEEP_DARK);
     }
 
+    /** Checks the vanilla Trial Chambers biome tag at the candidate chunk's center and sea level. */
+    public boolean isTrialChambersBiomeViable(StructurePosition structure) {
+        var trialChambers = DefaultWorldgenRegistryManager.registry()
+                .getWrapperOrThrow(RegistryKeys.STRUCTURE)
+                .get(Identifier.ofVanilla("trial_chambers"));
+        if (trialChambers == null) {
+            return false;
+        }
+        int quartX = Math.toIntExact(structure.chunkX() * 4L + 2L);
+        int quartY = terrainGenerator.getSeaLevel() >> 2;
+        int quartZ = Math.toIntExact(structure.chunkZ() * 4L + 2L);
+        return BiomeValidity.contains(
+                trialChambers.getValidBiomes(), biomeAtQuart(quartX, quartY, quartZ));
+    }
+
     /** Cubiomes viewer's ruined-portal biome sample: chunk center at quart Y=0. */
     public Identifier getRuinedPortalBiomeId(StructurePosition structure) {
         int quartX = Math.toIntExact(structure.chunkX() * 4L + 2L);
