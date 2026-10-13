@@ -263,5 +263,10 @@
 	"message.module.misc.parkour-jump-failed": "跑酷跳跃失败，位置已回档。",
 	"configenum.text-style.vanilla": "原版字体",
 	"configenum.text-style.system": "系统字体",
-	"configenum.text-style.font": "资源包字体"
+	"configenum.text-style.font": "资源包字体",
+	"structure-label.loot-version": "古城战利品版本",
+	"configenum.loot-version.v1_21_1": "Minecraft 1.21.1",
+	"configenum.loot-version.v1_21_4": "Minecraft 1.21.4",
+	"configenum.loot-version.v1_21_11": "Minecraft 1.21.11",
+	"configenum.loot-version.v26_1": "Minecraft 26.1"
 }

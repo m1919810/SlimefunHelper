@@ -35,14 +35,13 @@ public final class Populator {
 
     private final long seed;
     private final Map<Identifier, StructureDecorationIndex.Index> structureIndices;
+    private final LootVersion lootVersion;
 
-    public Populator(long seed) {
-        this(seed, Map.of());
-    }
-
-    public Populator(long seed, Map<Identifier, StructureDecorationIndex.Index> structureIndices) {
+    public Populator(
+            long seed, Map<Identifier, StructureDecorationIndex.Index> structureIndices, LootVersion lootVersion) {
         this.seed = seed;
         this.structureIndices = Map.copyOf(structureIndices);
+        this.lootVersion = Objects.requireNonNull(lootVersion);
     }
 
     public long seed() {
@@ -163,8 +162,8 @@ public final class Populator {
                         }
                         long lootSeed = random.get().nextLootSeed();
                         chest.lootTable()
-                                .ifPresent(lootTable ->
-                                        predicted.add(new PredictedChest(chest.position(), lootTable, lootSeed)));
+                                .ifPresent(lootTable -> predicted.add(
+                                        new PredictedChest(chest.position(), lootTable, lootSeed, lootVersion)));
                     }
                 }
             }
@@ -230,7 +229,7 @@ public final class Populator {
                 chestRandom.nextInt(3);
                 chestChunkRandoms.put(chunkKey, chestRandom);
             }
-            chests.add(new PredictedChest(position, DESERT_PYRAMID_LOOT, chestRandom.nextLootSeed()));
+            chests.add(new PredictedChest(position, DESERT_PYRAMID_LOOT, chestRandom.nextLootSeed(), lootVersion));
         }
         return Optional.of(chests);
     }
@@ -287,8 +286,8 @@ public final class Populator {
                 chestRandom.nextInt(3);
                 chestChunkRandoms.put(chunkKey, chestRandom);
             }
-            predictions.add(
-                    new PredictedChestAlternatives(possiblePositions, DESERT_PYRAMID_LOOT, chestRandom.nextLootSeed()));
+            predictions.add(new PredictedChestAlternatives(
+                    possiblePositions, DESERT_PYRAMID_LOOT, chestRandom.nextLootSeed(), lootVersion));
         }
         return Optional.of(List.copyOf(predictions));
     }
@@ -436,7 +435,7 @@ public final class Populator {
             // The portal NBT chest has no seed. StructureTemplate writes the next shared stream
             // long before loading it; portal processors use per-position placement RNGs.
             return List.of(
-                    new PredictedChest(chest, RUINED_PORTAL_LOOT, random.get().nextLootSeed()));
+                    new PredictedChest(chest, RUINED_PORTAL_LOOT, random.get().nextLootSeed(), lootVersion));
         }
         return List.of();
     }
@@ -577,7 +576,8 @@ public final class Populator {
                         predicted.add(new PredictedChest(
                                 marker.position(),
                                 END_CITY_LOOT,
-                                chunkRandom.get().nextLootSeed()));
+                                chunkRandom.get().nextLootSeed(),
+                                lootVersion));
                     }
                 }
             }

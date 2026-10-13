@@ -23,6 +23,7 @@ import me.matl114.hacks.utils.tasks.TimerExecutor;
 import me.matl114.hacks.utils.world.ChunkStorage;
 import me.matl114.hooks.impl.xaerowaypoints.IXWaypoint;
 import me.matl114.managers.Configs;
+import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.NBTRef;
@@ -32,6 +33,7 @@ import me.matl114.utils.structures.ChunkRange;
 import me.matl114.utils.structures.CubiomesNetherBiomeSampler;
 import me.matl114.utils.structures.CubiomesOverworldBiomeSampler;
 import me.matl114.utils.structures.EndCityResult;
+import me.matl114.utils.structures.LootVersion;
 import me.matl114.utils.structures.Populator;
 import me.matl114.utils.structures.PredictedChest;
 import me.matl114.utils.structures.PredictedChestAlternatives;
@@ -107,6 +109,11 @@ public class StructureLabel extends BaseModule {
 
     public final FlagRef labelAncientCities = flagBuilder(root.add("label-ancient-cities"))
             .updateListener(this::refreshWaypoints)
+            .build();
+
+    public final EnumRef<LootVersion> lootVersion = builder(root.add("loot-version"), LootVersion.class)
+            .defaultValue(LootVersion.V1_21_11)
+            .updateListener(version -> resetState())
             .build();
 
     public final FlagRef labelTrialChambers = flagBuilder(root.add("label-trial-chambers"))
@@ -353,7 +360,7 @@ public class StructureLabel extends BaseModule {
                 if (!isCurrent(request)) {
                     return;
                 }
-                Populator populator = new Populator(seed, structureIndices);
+                Populator populator = new Populator(seed, structureIndices, lootVersion.get());
                 context = new GenerationContext(
                         request.generation(), seed, worldKey, Map.copyOf(configs), populator, biomeSampler);
                 pendingContextRequest = null;
@@ -1401,7 +1408,8 @@ public class StructureLabel extends BaseModule {
     }
 
     private static PredictedChestAlternatives asAlternatives(PredictedChest chest) {
-        return new PredictedChestAlternatives(List.of(chest.position()), chest.lootTable(), chest.lootSeed());
+        return new PredictedChestAlternatives(
+                List.of(chest.position()), chest.lootTable(), chest.lootSeed(), chest.lootVersion());
     }
 
     private boolean containsEnchantedGoldenApple(BlockEntity blockEntity) {
