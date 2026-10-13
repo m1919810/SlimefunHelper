@@ -141,6 +141,14 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public final FlagRef fireworksLiquidFly =
             flagBuilder(elytraTweaks.add("firework-liquid-fly")).hideConfig().build();
 
+    public final FlagRef antiKick = builder(elytraTweaks.add("anti-kick"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
+    public final FlagRef compressPackets = builder(elytraTweaks.add("anti-kick-compress-packets"), Boolean.class)
+            .defaultValue(false)
+            .build();
+
     //    public final FlagRef elytraResyncBadPacketFix =
     //            flagBuilder(elytraTweaks.add("fix-duplicate-elytra-state-sync")).build();
 
@@ -203,10 +211,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public final FlagRef renderFix = flagBuilder(armorFlyPath.add("render-fix")).build();
 
     public final FlagRef handControl = builder(armorFlyPath.add("enable-manually-swap"), Boolean.class)
-            .defaultValue(true)
-            .build();
-
-    public final FlagRef antiKick = builder(armorFlyPath.add("anti-kick"), Boolean.class)
             .defaultValue(true)
             .build();
 
@@ -713,7 +717,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     public boolean shouldUseDelayMovementAttackMaceFix() {
-        return maceFixMode.get().getValue().get() == BypassMode.BYPASS_GRIM;
+        return maceFixMode.get().isPresent() && maceFixMode.get().getValue().get() == BypassMode.BYPASS_GRIM;
     }
 
     public void handleMaceAttack(Event<PlayerInteractEntityC2SPacket> interactPacket) {
@@ -1331,7 +1335,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             rocketFlush.state(true);
             sumitDelay(ItemStack.EMPTY);
             // fix sprint issues
-            mc.player.setSprinting(false);
             PlayerInputUtils.of(mc.player).sprint(false).applyInput(mc.player);
         }
     }
@@ -1345,7 +1348,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
         tickElytraSimulation();
         // queue packets, so that fallflying and movement can be sent together
-        if (antiKick.get() && isThisTickGlideMovementServerSideGlide()) {
+        if (compressPackets.get() && isThisTickGlideMovementServerSideGlide()) {
             RotationManager.INSTANCE.startQueuePacket();
         }
         // resetFallFly
@@ -2093,7 +2096,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             // ??
             if (MovExtra.INSTANCE.fuckGrimACSprint.get()) {
                 PlayerInputUtils.of(player).sprint(false).applyInput(player);
-                player.setSprinting(false);
             }
             PlayerInputUtils.of(player).sneak(false).applyInput(player);
         }
@@ -2480,12 +2482,13 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         double eMinZ = Math.min(0, minZ - v1.z);
         double eMaxZ = Math.max(0, maxZ - v1.z);
         double zeroPointThreeTest = 0.0;
-        double uMinX = v3.x + eMinX - zeroPointThreeTest;
-        double uMaxX = v3.x + eMaxX + zeroPointThreeTest;
-        double uMinY = v3.y + eMinY;
-        double uMaxY = v3.y + eMaxY;
-        double uMinZ = v3.z + eMinZ - zeroPointThreeTest;
-        double uMaxZ = v3.z + eMaxZ + zeroPointThreeTest;
+        double thresoldLeft = ElytraExtra.INSTANCE.autoRescaleThreshold.get();
+        double uMinX = v3.x + eMinX - zeroPointThreeTest + thresoldLeft;
+        double uMaxX = v3.x + eMaxX + zeroPointThreeTest - thresoldLeft;
+        double uMinY = v3.y + eMinY + thresoldLeft;
+        double uMaxY = v3.y + eMaxY - thresoldLeft;
+        double uMinZ = v3.z + eMinZ - zeroPointThreeTest + thresoldLeft;
+        double uMaxZ = v3.z + eMaxZ + zeroPointThreeTest - thresoldLeft;
         // I dont understand.
         double dx = currentMotion.x, dy = currentMotion.y, dz = currentMotion.z;
         double exceedX = 0.0, exceedY = 0.0, exceedZ = 0.0;
@@ -2506,13 +2509,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
         // 退化情况：所有 scale 为 0
         if (maxScale < 1E-6) {
-            if (apply) setOverridingFireworkVelocity(null);
-            return currentMotion;
-        }
-        Vec3d predictedMotion = EntityUtils.calculateGlidingVelocity(mc.player, currentMotion, currentRotation, true);
-        double limitScale = currentMotion.length() / predictedMotion.length();
-        // 已在盒内，无需缩放
-        if (maxScale >= limitScale) {
             if (apply) setOverridingFireworkVelocity(null);
             return currentMotion;
         }

@@ -150,7 +150,16 @@ public class AttackAura extends BaseModule {
         if (settings.maceSwap()
                 && currentWeapon.val().isOf(Items.MACE)
                 && PlayerStateManager.INSTANCE.fallDistance > 1.5) {
-            return lastArua + 10 <= Tasks.getTick();
+            if (entity instanceof PlayerEntity pl) {
+                var re = CombatManager.INSTANCE.getDamageTracker(pl);
+                if (!(re != null && re.getInvulnerabilityTicks() > 0)) {
+                    return true;
+                }
+            } else {
+                if (Tasks.getTick() >= lastArua + 10) {
+                    return true;
+                }
+            }
         }
         if (deathPredict.get()
                 && entity instanceof LivingEntity target

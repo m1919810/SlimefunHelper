@@ -167,6 +167,9 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
     }
 
     public void onScrollSpeedAdjust(Event<MouseScrollAction> event) {
+        if (mc.currentScreen != null) {
+            return;
+        }
         if (enable.get() && camera != null && speedAdjust.get().isPresent()) {
             currentSpeed = Math.clamp(
                     currentSpeed + event.context.vertical() * speedAdjust.get().getValue(), 0.0D, 1000.0D);

@@ -408,7 +408,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                 }
                 if (useAutoRescale.get()) {
                     float yaw = motion.yaw();
-                    yaw = (Tasks.getTick() % 2 == 0) ? yaw + 0.001F : yaw - 0.001F;
+                    yaw = (Tasks.getTick() % 2 == 0) ? yaw + 0.01F : yaw - 0.01F;
                     motion.yaw(yaw);
                 }
                 if (shouldControlRotation && motion.speed() > 1e-3) {

@@ -211,7 +211,7 @@ public class PacketMine extends BaseModule {
             }
             if (autoToolDoubleBreak.get()
                     && PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos() != null) {
-                MineExtra.INSTANCE.tickGhostHandDoubleBreak(currentTickCallback, groundDeceive.get());
+                MineExtra.INSTANCE.tickGhostHandDoubleBreak(currentTickCallback, ghostHand.get(), groundDeceive.get());
             } else {
                 if (currentTickCallback != null) {
                     currentTickCallback.run();

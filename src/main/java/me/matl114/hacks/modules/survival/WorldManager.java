@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.Setter;
+import me.matl114.accessors.events.EntityAccess;
 import me.matl114.accessors.interfaces.EntityInventory;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -320,7 +321,9 @@ public class WorldManager extends BaseModule {
     public void onThrownOwnerDataUpdate(Event<Entity> data) {
         if (data.context instanceof ProjectileEntity thrown) {
             getStatus(thrown, true).setUpdateCallback((lv) -> {
-                if (lv instanceof ProjectileEntity thrown2 && thrown2.getOwner() instanceof PlayerEntity pl) {
+                if (lv instanceof ProjectileEntity thrown2
+                        && EntityAccess.of(thrown2).getLivingTicks() > 250
+                        && thrown2.getOwner() instanceof PlayerEntity pl) {
                     var bc = getStatus(lv, true);
                     var sub = NBTUtils.ensurePath(bc.getDataContainer(), KEY_PEARL_INFO);
                     sub.put(KEY_PEARL_NAME, NbtString.of(pl.getNameForScoreboard()));
@@ -492,11 +495,15 @@ public class WorldManager extends BaseModule {
             for (var entry : currentEntities.entrySet()) {
                 EntityStatus status = entry.getValue();
                 if (status.isDirty()) {
-                    EntityStorage storage = meta.getEntityStorage(entry.getKey(), true);
+
                     if (!status.isEmpty()) {
+                        EntityStorage storage = meta.getEntityStorage(entry.getKey(), true);
                         storage.put(ENTITY_DATA_KEY, status, EntityStatus.CODEC, manager);
                     } else {
-                        storage.put(ENTITY_DATA_KEY, null);
+                        EntityStorage storage = meta.getEntityStorage(entry.getKey(), false);
+                        if (storage != null) {
+                            storage.put(ENTITY_DATA_KEY, null);
+                        }
                     }
                     status.dirty = false;
                 }
