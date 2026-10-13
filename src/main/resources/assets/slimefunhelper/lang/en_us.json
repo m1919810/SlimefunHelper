@@ -4354,5 +4354,10 @@
 	"text-fonts.font-size": "Font size",
 	"configenum.text-style.vanilla": "Vanilla",
 	"configenum.text-style.system": "System font",
-	"configenum.text-style.font": "Resource-pack font"
+	"configenum.text-style.font": "Resource-pack font",
+	"structure-label.loot-version": "战利品版本",
+	"configenum.loot-version.v1_21_1": "Minecraft 1.21.1",
+	"configenum.loot-version.v1_21_4": "Minecraft 1.21.4",
+	"configenum.loot-version.v1_21_11": "Minecraft 1.21.11",
+	"configenum.loot-version.v26_1": "Minecraft 26.1"
 }
