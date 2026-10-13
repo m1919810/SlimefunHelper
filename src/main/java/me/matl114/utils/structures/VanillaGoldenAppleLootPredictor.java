@@ -65,51 +65,6 @@ public final class VanillaGoldenAppleLootPredictor {
                             Entry.uniform(10, Items.SAND, 1, 8))),
             new Pool(1, 1, List.of(Entry.empty(6), Entry.fixed(1, Items.DUNE_ARMOR_TRIM_SMITHING_TEMPLATE, 2))));
 
-    private static final List<Pool> ANCIENT_CITY_POOLS = List.of(
-            new Pool(
-                    5,
-                    10,
-                    List.of(
-                            Entry.uniform(1, Items.ENCHANTED_GOLDEN_APPLE, 1, 2),
-                            Entry.item(1, Items.MUSIC_DISC_OTHERSIDE),
-                            Entry.fixed(2, Items.COMPASS, 1),
-                            Entry.uniform(2, Items.SCULK_CATALYST, 1, 2),
-                            Entry.item(2, Items.NAME_TAG),
-                            Entry.fixed(2, Items.DIAMOND_HOE, 1)
-                                    .withDamage(0.8F, 1.0F)
-                                    .withEnchantment(EnchantmentOperation.WITH_LEVELS, 30, 50),
-                            Entry.fixed(2, Items.LEAD, 1),
-                            Entry.fixed(2, Items.DIAMOND_HORSE_ARMOR, 1),
-                            Entry.uniform(2, Items.LEATHER, 1, 5),
-                            Entry.item(2, Items.MUSIC_DISC_13),
-                            Entry.item(2, Items.MUSIC_DISC_CAT),
-                            Entry.item(2, Items.DIAMOND_LEGGINGS)
-                                    .withEnchantment(EnchantmentOperation.WITH_LEVELS, 30, 50),
-                            Entry.item(3, Items.BOOK).withEnchantment(EnchantmentOperation.RANDOM_FIXED, 1, 3),
-                            Entry.uniform(3, Items.SCULK, 4, 10),
-                            Entry.uniform(3, Items.SCULK_SENSOR, 1, 3),
-                            Entry.uniform(3, Items.CANDLE, 1, 4),
-                            Entry.uniform(3, Items.AMETHYST_SHARD, 1, 15),
-                            Entry.uniform(3, Items.EXPERIENCE_BOTTLE, 1, 3),
-                            Entry.uniform(3, Items.GLOW_BERRIES, 1, 15),
-                            Entry.item(3, Items.IRON_LEGGINGS)
-                                    .withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39),
-                            Entry.uniform(4, Items.ECHO_SHARD, 1, 3),
-                            Entry.uniform(4, Items.DISC_FRAGMENT_5, 1, 3),
-                            Entry.uniform(5, Items.POTION, 1, 3).withStrongRegenerationPotion(),
-                            Entry.randomlyEnchanted(5, Items.BOOK),
-                            Entry.uniform(5, Items.BOOK, 3, 10),
-                            Entry.uniform(5, Items.BONE, 1, 15),
-                            Entry.uniform(5, Items.SOUL_TORCH, 1, 15),
-                            Entry.uniform(7, Items.COAL, 6, 15))),
-            new Pool(
-                    1,
-                    1,
-                    List.of(
-                            Entry.empty(75),
-                            Entry.item(4, Items.WARD_ARMOR_TRIM_SMITHING_TEMPLATE),
-                            Entry.item(1, Items.SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE))));
-
     private static final List<Pool> RUINED_PORTAL_POOLS = List.of(
             new Pool(
                     4,
@@ -199,6 +154,55 @@ public final class VanillaGoldenAppleLootPredictor {
                                     .withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39))),
             new Pool(1, 1, List.of(Entry.empty(14), Entry.item(1, Items.SPIRE_ARMOR_TRIM_SMITHING_TEMPLATE))));
 
+    private static List<Pool> ancientCityPools(LootVersion version) {
+        List<Entry> entries = new ArrayList<>();
+        entries.add(Entry.uniform(1, Items.ENCHANTED_GOLDEN_APPLE, 1, 2));
+        entries.add(Entry.item(1, Items.MUSIC_DISC_OTHERSIDE));
+        entries.add(Entry.fixed(2, Items.COMPASS, 1));
+        entries.add(Entry.uniform(2, Items.SCULK_CATALYST, 1, 2));
+        if (version.ancientCityHasNameTag()) {
+            entries.add(Entry.item(2, Items.NAME_TAG));
+        }
+        entries.add(Entry.fixed(2, Items.DIAMOND_HOE, 1)
+                .withDamage(0.8F, 1.0F)
+                .withEnchantment(EnchantmentOperation.WITH_LEVELS, 30, 50));
+        entries.add(Entry.fixed(2, Items.LEAD, 1));
+        entries.add(Entry.fixed(2, Items.DIAMOND_HORSE_ARMOR, 1));
+        entries.add(
+                version.ancientCityUsesLeatherInsteadOfSaddle()
+                        ? Entry.uniform(2, Items.LEATHER, 1, 5)
+                        : Entry.item(2, Items.SADDLE));
+        entries.add(Entry.item(2, Items.MUSIC_DISC_13));
+        entries.add(Entry.item(2, Items.MUSIC_DISC_CAT));
+        entries.add(Entry.item(2, Items.DIAMOND_LEGGINGS).withEnchantment(EnchantmentOperation.WITH_LEVELS, 30, 50));
+        entries.add(Entry.item(3, Items.BOOK).withEnchantment(EnchantmentOperation.RANDOM_FIXED, 1, 3));
+        entries.add(Entry.uniform(3, Items.SCULK, 4, 10));
+        entries.add(Entry.uniform(3, Items.SCULK_SENSOR, 1, 3));
+        entries.add(Entry.uniform(3, Items.CANDLE, 1, 4));
+        entries.add(Entry.uniform(3, Items.AMETHYST_SHARD, 1, 15));
+        entries.add(Entry.uniform(3, Items.EXPERIENCE_BOTTLE, 1, 3));
+        entries.add(Entry.uniform(3, Items.GLOW_BERRIES, 1, 15));
+        entries.add(Entry.item(3, Items.IRON_LEGGINGS).withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39));
+        entries.add(Entry.uniform(4, Items.ECHO_SHARD, 1, 3));
+        entries.add(Entry.uniform(4, Items.DISC_FRAGMENT_5, 1, 3));
+        entries.add(Entry.uniform(5, Items.POTION, 1, 3).withStrongRegenerationPotion());
+        entries.add(Entry.randomlyEnchanted(5, Items.BOOK));
+        entries.add(Entry.uniform(5, Items.BOOK, 3, 10));
+        entries.add(Entry.uniform(5, Items.BONE, 1, 15));
+        entries.add(Entry.uniform(5, Items.SOUL_TORCH, 1, 15));
+        entries.add(Entry.uniform(7, Items.COAL, 6, 15));
+
+        return List.of(
+                new Pool(5, 10, entries),
+                new Pool(
+                        1,
+                        1,
+                        List.of(
+                                Entry.empty(75),
+                                Entry.item(4, Items.WARD_ARMOR_TRIM_SMITHING_TEMPLATE),
+                                Entry.item(1, Items.SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE))));
+    }
+
     private VanillaGoldenAppleLootPredictor() {}
 
     /**
@@ -206,38 +210,44 @@ public final class VanillaGoldenAppleLootPredictor {
      * multiset includes every pool and all stack functions; zero loot seeds use world sequence state
      * and therefore cannot be reconstructed from the chest seed alone.
      */
-    public static Optional<List<ItemStack>> generateContents(Identifier lootTable, long lootSeed) {
-        return simulate(lootTable, lootSeed).map(GeneratedLoot::stacks);
+    public static Optional<List<ItemStack>> generateContents(
+            Identifier lootTable, long lootSeed, LootVersion lootVersion) {
+        return simulate(lootTable, lootSeed, lootVersion).map(GeneratedLoot::stacks);
     }
 
     /**
      * Generates contents from the caller's current random-sequence state. This is required when
      * vanilla's LootTableSeed is zero; the supplied random source is advanced by loot generation.
      */
-    public static Optional<List<ItemStack>> generateContents(Identifier lootTable, Random random) {
-        return simulate(lootTable, random).map(GeneratedLoot::stacks);
+    public static Optional<List<ItemStack>> generateContents(
+            Identifier lootTable, Random random, LootVersion lootVersion) {
+        return simulate(lootTable, random, lootVersion).map(GeneratedLoot::stacks);
     }
 
     /** Returns the final 27 chest slots, including vanilla stack splitting and slot shuffling. */
-    public static Optional<List<ItemStack>> generateInventoryContents(Identifier lootTable, long lootSeed) {
-        return simulate(lootTable, lootSeed).map(generated -> fillChest(generated.stacks(), generated.random()));
+    public static Optional<List<ItemStack>> generateInventoryContents(
+            Identifier lootTable, long lootSeed, LootVersion lootVersion) {
+        return simulate(lootTable, lootSeed, lootVersion)
+                .map(generated -> fillChest(generated.stacks(), generated.random()));
     }
 
     /** Generates final chest slots from the caller's current random-sequence state. */
-    public static Optional<List<ItemStack>> generateInventoryContents(Identifier lootTable, Random random) {
-        return simulate(lootTable, random).map(generated -> fillChest(generated.stacks(), generated.random()));
+    public static Optional<List<ItemStack>> generateInventoryContents(
+            Identifier lootTable, Random random, LootVersion lootVersion) {
+        return simulate(lootTable, random, lootVersion)
+                .map(generated -> fillChest(generated.stacks(), generated.random()));
     }
 
-    private static Optional<GeneratedLoot> simulate(Identifier lootTable, long lootSeed) {
+    private static Optional<GeneratedLoot> simulate(Identifier lootTable, long lootSeed, LootVersion lootVersion) {
         if (lootSeed == 0L) {
             return Optional.empty();
         }
 
-        return simulate(lootTable, Random.create(lootSeed));
+        return simulate(lootTable, Random.create(lootSeed), lootVersion);
     }
 
-    private static Optional<GeneratedLoot> simulate(Identifier lootTable, Random random) {
-        List<Pool> pools = poolsFor(lootTable);
+    private static Optional<GeneratedLoot> simulate(Identifier lootTable, Random random, LootVersion lootVersion) {
+        List<Pool> pools = poolsFor(lootTable, lootVersion);
         if (pools == null) {
             return Optional.empty();
         }
@@ -333,8 +343,9 @@ public final class VanillaGoldenAppleLootPredictor {
 
     private record GeneratedLoot(List<ItemStack> stacks, Random random) {}
 
-    public static Optional<Boolean> containsEnchantedGoldenApple(Identifier lootTable, long lootSeed) {
-        Optional<List<ItemStack>> contents = generateContents(lootTable, lootSeed);
+    public static Optional<Boolean> containsEnchantedGoldenApple(
+            Identifier lootTable, long lootSeed, LootVersion lootVersion) {
+        Optional<List<ItemStack>> contents = generateContents(lootTable, lootSeed, lootVersion);
         return contents.map(stacks -> stacks.stream().anyMatch(stack -> stack.isOf(Items.ENCHANTED_GOLDEN_APPLE)));
     }
 
@@ -430,12 +441,12 @@ public final class VanillaGoldenAppleLootPredictor {
         return stack;
     }
 
-    private static List<Pool> poolsFor(Identifier lootTable) {
+    private static List<Pool> poolsFor(Identifier lootTable, LootVersion lootVersion) {
         if (DESERT_PYRAMID.equals(lootTable)) {
             return DESERT_PYRAMID_POOLS;
         }
         if (ANCIENT_CITY.equals(lootTable)) {
-            return ANCIENT_CITY_POOLS;
+            return ancientCityPools(lootVersion);
         }
         if (ANCIENT_CITY_ICE_BOX.equals(lootTable)) {
             return ANCIENT_CITY_ICE_BOX_POOLS;
