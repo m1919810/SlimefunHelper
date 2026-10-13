@@ -98,8 +98,7 @@ public class MineBot extends BaseModule {
             .defaultValue(true)
             .build();
 
-    public final FlagRef autoSwap =
-            flagBuilder(mineBot.add("auto-swap")).defaultValue(true).build();
+    public final FlagRef autoSwap = flagBuilder(mineBot.add("auto-swap")).build();
 
     public final FlagRef swing = flagBuilder(mineBot.add("swing-hand")).build();
 
@@ -220,7 +219,7 @@ public class MineBot extends BaseModule {
                     bestStack = InventoryUtils.getSelectedItem();
                 }
             }
-            InvExtra.INSTANCE.swapItemToHand(bestStack.index(), false, ghostHand.get());
+            Runnable runnable = InvExtra.INSTANCE.swapItemToHand(bestStack.index(), false, ghostHand.get());
             AttributeUtils.updateAttribute(mc.player);
             float speed = MineExtra.INSTANCE.predictBlockBreakingSpeedAt(lastMinePos);
             tryMine += 1;

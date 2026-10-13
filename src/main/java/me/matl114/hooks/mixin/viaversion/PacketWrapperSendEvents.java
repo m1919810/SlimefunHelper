@@ -18,6 +18,7 @@ import org.spongepowered.asm.mixin.Pseudo;
 @Pseudo
 @Mixin(PacketWrapperImpl.class)
 public abstract class PacketWrapperSendEvents implements PacketWrapper {
+
     @WrapMethod(
             method = "Lcom/viaversion/viaversion/protocol/packet/PacketWrapperImpl;sendToServer0(Ljava/lang/Class;ZZ)V",
             remap = false,
@@ -26,21 +27,40 @@ public abstract class PacketWrapperSendEvents implements PacketWrapper {
             Class<?> protocol, boolean skipCurrentPipeline, boolean currentThread, Operation<Void> operation) {
         if (user() != null && user().getChannel() != null) {
             if (this.getPacketType() != null && this.getPacketType().state() == State.PLAY) {
-                if (!PacketManager.startFlushOut) {
+                if (currentThread) {
+                    // on thread
                     PacketWrapperSendStorageImpl storageImpl = new PacketWrapperSendStorageImpl(
                             System.currentTimeMillis(),
                             this,
                             this.user().getChannel(),
-                            (bl) -> operation.call(protocol, skipCurrentPipeline, bl));
+                            (bl) -> operation.call(protocol, skipCurrentPipeline, true));
                     Event<PacketStorage.Send> event = new Event<>(storageImpl, true, false);
                     PacketManager.getPacketQueueOutEvent().handleValue(event);
                     if (event.isCancelled()) {
                         PacketManager.handleQueueOut(storageImpl);
                         return;
                     }
+                    operation.call(protocol, skipCurrentPipeline, true);
+                    return;
+                } else {
+                    // switch to thread then call event, do not call event on origin thread
+                    user().getChannel().eventLoop().execute(() -> {
+                        PacketWrapperSendStorageImpl storageImpl = new PacketWrapperSendStorageImpl(
+                                System.currentTimeMillis(),
+                                this,
+                                this.user().getChannel(),
+                                (bl) -> operation.call(protocol, skipCurrentPipeline, true));
+                        Event<PacketStorage.Send> event = new Event<>(storageImpl, true, false);
+                        PacketManager.getPacketQueueOutEvent().handleValue(event);
+                        if (event.isCancelled()) {
+                            PacketManager.handleQueueOut(storageImpl);
+                            return;
+                        }
+                        operation.call(protocol, skipCurrentPipeline, true);
+                    });
+                    return;
                 }
             }
-
             operation.call(protocol, skipCurrentPipeline, currentThread);
         }
     }

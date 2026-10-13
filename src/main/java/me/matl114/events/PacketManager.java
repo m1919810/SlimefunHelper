@@ -107,8 +107,10 @@ public class PacketManager {
     }
 
     public static void clearAndShutdown() {
-        queueShutdownEvent.broadcast(null);
-        flushOutBound(Runnables.doNothing());
+        schedule(() -> {
+            queueShutdownEvent.broadcast(null);
+            flushOutBound(Runnables.doNothing());
+        });
     }
 
     static boolean immediatelyFlush;

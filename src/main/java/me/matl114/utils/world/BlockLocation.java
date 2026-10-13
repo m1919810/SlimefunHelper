@@ -31,7 +31,9 @@ public record BlockLocation(RegistryKey<World> world, int x, int y, int z) {
 
     public boolean isInRange(BlockLocation location, double distance) {
         if (Objects.equals(location.world, world)) {
-            return MathUtils.s2(x - location.x) + MathUtils.s2(z - location.z) + MathUtils.s2(y - location.y)
+            return MathUtils.s2((double) (x - location.x))
+                            + MathUtils.s2((double) (z - location.z))
+                            + MathUtils.s2((double) (y - location.y))
                     <= MathUtils.s2(distance);
         } else {
             return false;
@@ -40,7 +42,8 @@ public record BlockLocation(RegistryKey<World> world, int x, int y, int z) {
 
     public boolean isInRangeHorizontal(BlockLocation location, double distance) {
         if (Objects.equals(location.world, world)) {
-            return MathUtils.s2(x - location.x) + MathUtils.s2(z - location.z) <= MathUtils.s2(distance);
+            return MathUtils.s2((double) (x - location.x)) + MathUtils.s2((double) (z - location.z))
+                    <= MathUtils.s2(distance);
         } else {
             return false;
         }

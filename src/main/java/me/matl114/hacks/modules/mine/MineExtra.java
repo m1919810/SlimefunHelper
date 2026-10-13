@@ -137,6 +137,11 @@ public class MineExtra extends BaseModule {
     public final FlagRef ghostHandFailBreak =
             flagBuilder(doubleBreakMine.add("ghost-hand")).build();
 
+    public final EnumRef<GhostHandMode> ghostHandFailBreakMode = builder(
+                    doubleBreakMine.add("ghost-hand-mode"), GhostHandMode.class)
+            .defaultValue(GhostHandMode.INV_SWAP)
+            .build();
+
     public final FlagRef ghostHandFailBreakEatingAbort =
             flagBuilder(doubleBreakMine.add("eating-abort")).build();
 
@@ -178,7 +183,7 @@ public class MineExtra extends BaseModule {
     public final FlagRef renderOnlyWhenMine =
             flagBuilder(render.add("render-only-when-mine")).build();
 
-    private IndexEntry<ItemStack> getBestMiningToFor(BlockState currentState) {
+    private IndexEntry<ItemStack> getBestMiningToFor(BlockState currentState, GhostHandMode mode) {
         IndexEntry<ItemStack> defaultEntry = InventoryUtils.getSelectedItem();
         BlockState calculatingState =
                 (currentState.isAir() || currentState.isLiquid()) ? Blocks.OBSIDIAN.getDefaultState() : currentState;
@@ -201,6 +206,7 @@ public class MineExtra extends BaseModule {
                     }
                     return null;
                 },
+                mode.getSearchSize(false),
                 true,
                 true);
         return result != null ? result : defaultEntry;
@@ -211,7 +217,7 @@ public class MineExtra extends BaseModule {
         if (!ghostHandMine.get()) {
             return defaultEntry;
         }
-        return getBestMiningToFor(currentState);
+        return getBestMiningToFor(currentState, GhostHandMode.INV_SWAP);
     }
 
     @Override
@@ -447,10 +453,7 @@ public class MineExtra extends BaseModule {
         }
         if (PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos() != null
                 && ghostHandFailBreak.get()) {
-            if (mc.player.isUsingItem() && ghostHandFailBreakEatingAbort.get()) {
-                return;
-            }
-            tickGhostHandDoubleBreak(null, false);
+            tickGhostHandDoubleBreak(null, ghostHandFailBreakMode.get(), false);
         }
     }
 
@@ -472,20 +475,27 @@ public class MineExtra extends BaseModule {
         }
     }
 
-    public void tickGhostHandDoubleBreak(Runnable currentTickCallback, boolean groundDeceive) {
+    public void tickGhostHandDoubleBreak(Runnable currentTickCallback, GhostHandMode mode, boolean groundDeceive) {
         if (lastTickGhostHandFailBreak == Tasks.getTick()) {
             if (currentTickCallback != null) {
                 currentTickCallback.run();
             }
             return;
         }
-        lastTickGhostHandFailBreak = Tasks.getTick();
+        if (mc.player.isUsingItem() && ghostHandFailBreakEatingAbort.get()) {
+            if (currentTickCallback != null) {
+                currentTickCallback.run();
+            }
+            return;
+        }
         if (switchCallback != null) {
             if (currentTickCallback != null) {
                 currentTickCallback.run();
             }
             return;
         }
+        lastTickGhostHandFailBreak = Tasks.getTick();
+
         BlockPos failPos = PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos();
         if (failPos == null) {
             if (currentTickCallback != null) {
@@ -494,11 +504,10 @@ public class MineExtra extends BaseModule {
             return;
         }
         BlockState blockState = mc.world.getBlockState(failPos);
-        IndexEntry<ItemStack> currentItemSlot = getBestMiningToFor(blockState);
+        IndexEntry<ItemStack> currentItemSlot = getBestMiningToFor(blockState, mode);
         ItemStack currentTool = currentItemSlot.val();
         if (canMineFailBreak(blockState, currentTool, groundDeceive)) {
-            Runnable callback =
-                    InvExtra.INSTANCE.swapItemToHand(currentItemSlot.index(), false, GhostHandMode.INV_SWAP);
+            Runnable callback = InvExtra.INSTANCE.swapItemToHand(currentItemSlot.index(), false, mode);
             Runnable currentCallback = currentTickCallback == null ? Runnables.doNothing() : currentTickCallback;
             switchCallback = () -> {
                 callback.run();
@@ -791,7 +800,9 @@ public class MineExtra extends BaseModule {
                             if (lastTickGhostHandFailBreak > Tasks.getTick() - 2) {
                                 progressFail = PlayerInteractionAccess.of(mc.interactionManager)
                                         .predictFailMiningProgressWithTool(
-                                                getBestMiningToFor(mc.world.getBlockState(doubleMinePos))
+                                                getBestMiningToFor(
+                                                                mc.world.getBlockState(doubleMinePos),
+                                                                GhostHandMode.INV_SWAP)
                                                         .val(),
                                                 0);
                             } else {

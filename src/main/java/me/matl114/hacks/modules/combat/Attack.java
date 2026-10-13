@@ -184,6 +184,7 @@ public class Attack extends BaseModule {
         if (mc.player != null
                 && mc.player.isFallFlying()
                 && willUseMaceAttack()
+                && ElytraExtra.INSTANCE.shouldUseMaceFix()
                 && ElytraExtra.INSTANCE.shouldUseDelayMovementAttackMaceFix()) {
             return 1;
         }
