@@ -450,7 +450,6 @@ public class ElytraOptimizeUtils {
             if (realApply) setOverridingFireworkVelocity(null);
             return currentMotion;
         }
-        Vec3d predictedMotion = EntityUtils.calculateGlidingVelocity(mc.player, currentMotion, currentRotation, true);
         Vec3d clampedMotion = currentMotion.multiply(1 / maxScale);
         // todo : add more angle restrict
         if (clampedMotion.y > 0) {
@@ -459,11 +458,6 @@ public class ElytraOptimizeUtils {
             clampedMotion = clampedMotion.withAxis(Direction.Axis.Y, uMinY);
         }
         clampedMotion = ElytraExtra.INSTANCE.applySpeedLimit(clampedMotion);
-        // 已在盒内，无需缩放
-        if (clampedMotion.lengthSquared() < predictedMotion.lengthSquared()) {
-            if (realApply) setOverridingFireworkVelocity(null);
-            return currentMotion;
-        }
 
         // 需要缩小至盒子边界
         if (realApply) setOverridingFireworkVelocity(clampedMotion); // <-- 保存边界值

@@ -423,9 +423,7 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
         if (workThisTick) {
             if (mc.player.isOnGround()) {
                 re.jump(true).sprint(true).forward(true).sneak(sneak.get()).applyInput(mc.player);
-
                 mc.player.setSprinting(true);
-
             } else {
                 if (!mc.player.isFallFlying()) {
                     if (mc.player.checkGliding()) {

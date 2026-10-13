@@ -259,6 +259,8 @@
 	"text-fonts.font-name": "系统字体",
 	"text-fonts.resource-font": "资源包字体",
 	"text-fonts.font-size": "字体大小",
+	"message.module.structure-label.input-seed": "请输入世界种子以使用结构标签。",
+	"message.module.misc.parkour-jump-failed": "跑酷跳跃失败，位置已回档。",
 	"configenum.text-style.vanilla": "原版字体",
 	"configenum.text-style.system": "系统字体",
 	"configenum.text-style.font": "资源包字体"

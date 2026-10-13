@@ -78,6 +78,7 @@ public class QueueMine extends BaseModule {
 
     int lastSumitTick = 0;
     RenderCollector<Box> outline = RenderCollectors.createBoxCollector(true, false, false);
+    boolean lastRequestContainsDoubleBreak = false;
 
     public void onPostInputEvent(Event<Void> eventVoid) {
         if (checkNull()) return;
@@ -86,10 +87,13 @@ public class QueueMine extends BaseModule {
             if (lastSumitTick != Tasks.getTick()) {
                 tickQueue();
             }
-            if (useDoubleBreak.get()
-                    && supportDoubleBreakGhostHand.get()
-                    && PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos() != null) {
-                MineExtra.INSTANCE.tickGhostHandDoubleBreak(null, false);
+            if (PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos() != null) {
+                if (useDoubleBreak.get() && supportDoubleBreakGhostHand.get()) {
+                    MineExtra.INSTANCE.tickGhostHandDoubleBreak(
+                            null, MineExtra.INSTANCE.ghostHandFailBreakMode.get(), false);
+                }
+            } else {
+                lastRequestContainsDoubleBreak = false;
             }
         }
 
@@ -129,6 +133,7 @@ public class QueueMine extends BaseModule {
                     if (currentCanDoubleBreak) {
                         access.sendFailBreakCurrentPos(null);
                         currentCanDoubleBreak = false;
+                        lastRequestContainsDoubleBreak = true;
                         breakRequest.poll();
                     } else {
                         if (Objects.equals(access.getCurrentMiningPos(), posLatest)) {
@@ -142,6 +147,7 @@ public class QueueMine extends BaseModule {
                 } else if (currentCanDoubleBreak) {
                     access.sendFailBreakCurrentPos(null);
                     currentCanDoubleBreak = false;
+                    lastRequestContainsDoubleBreak = true;
                     breakRequest.poll();
                 } else {
                     break;

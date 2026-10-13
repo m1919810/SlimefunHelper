@@ -641,6 +641,7 @@ public class CombatManager extends BaseModule {
                 || category == TrackedDamageCategory.EXPLOSION;
     }
 
+    @Nullable
     public DamageTracker getDamageTracker(PlayerEntity player) {
         if (!(player instanceof MetadataHolder holder) || holder.isMetaEmpty()) return null;
         return holder.getMetadata().get(this, KEY_DAMAGE_TRACKER);

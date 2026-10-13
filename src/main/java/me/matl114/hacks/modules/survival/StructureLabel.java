@@ -19,6 +19,7 @@ import me.matl114.hacks.modules.inv.ChestHistory;
 import me.matl114.hacks.modules.task.ServerStorage;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.render.RenderCollectors;
+import me.matl114.hacks.utils.tasks.TimerExecutor;
 import me.matl114.hacks.utils.world.ChunkStorage;
 import me.matl114.hooks.impl.xaerowaypoints.IXWaypoint;
 import me.matl114.managers.Configs;
@@ -189,6 +190,7 @@ public class StructureLabel extends BaseModule {
     private final Set<AreaKey> pendingAncientChestAreas = ConcurrentHashMap.newKeySet();
     private final Set<LootAreaTaskKey> pendingLootAreaTasks = ConcurrentHashMap.newKeySet();
     private final Set<Future<?>> pendingTasks = ConcurrentHashMap.newKeySet();
+    private final TimerExecutor missingSeedTimer = new TimerExecutor();
     private final Map<CityKey, EndCityResult> cachedCities = new ConcurrentHashMap<>();
     private final Map<Thread, LootBiomeSamplers> lootBiomeSamplerCache = new ConcurrentHashMap<>();
     private final Map<StructureKey, IXWaypoint> waypoints = new ConcurrentHashMap<>();
@@ -315,6 +317,7 @@ public class StructureLabel extends BaseModule {
         RegistryKey<World> worldKey = mc.world.getRegistryKey();
         ContextRequest pending = pendingContextRequest;
         if (!SeedOre.INSTANCE.hasCurrentSeed()) {
+            missingSeedTimer.run(100, () -> logI18N("message.module.structure-label.input-seed"));
             if (context != null || pending != null) {
                 resetState(false, true);
             }

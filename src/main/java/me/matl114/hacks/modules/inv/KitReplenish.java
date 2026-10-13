@@ -127,6 +127,9 @@ public class KitReplenish extends BaseModule {
     public final FlagRef zeroTickSupplyShulker =
             flagBuilder(replenishRoot.add("zero-tick-supply")).build();
 
+    public final FlagRef longRequest =
+            flagBuilder(replenishRoot.add("long-request")).build();
+
     public final FlagRef log =
             builder(replenishRoot.add("log"), Boolean.class).defaultValue(true).build();
 
@@ -186,11 +189,7 @@ public class KitReplenish extends BaseModule {
         transaction = null;
     }
 
-    public void onSwitchWorld(Event<ClientPlayerEntity> event) {
-        clearReplenishingTask();
-        enderChestRequest = false;
-        shulkerBoxRequest = null;
-    }
+    public void onSwitchWorld(Event<ClientPlayerEntity> event) {}
 
     int timerPostResortInventory = 0;
 
@@ -239,6 +238,10 @@ public class KitReplenish extends BaseModule {
                             enderChestRequest = true;
                             break process;
                         } else {
+
+                            if (longRequest.get()) {
+                                break process;
+                            }
                             transaction.complete(false);
                             break process;
                         }
@@ -295,6 +298,10 @@ public class KitReplenish extends BaseModule {
                                 break process;
                             }
                         } else {
+                            if (longRequest.get()) {
+                                transaction.stage = Transaction.STAGE_FIND_SHULKER;
+                                break process;
+                            }
                             transaction.complete(false);
                             break process;
                         }
@@ -1529,15 +1536,18 @@ public class KitReplenish extends BaseModule {
 
     public void replenishCurrentKit() {
         if (checkNull()) return;
-        if (this.transaction != null) {
-            if (!this.transaction.isCompleted()) {
-                logI18N("message.kit-manager.kit-replenish.request.blocked");
-            }
+        Transaction trans = this.transaction;
+        if (trans != null && !trans.isCompleted()) {
+            logI18N("message.kit-manager.kit-replenish.request.blocked");
         }
         clearReplenishingTask();
         shulkerBoxRequest = null;
         enderChestRequest = false;
         timeoutEnderChest = -1;
+        if (trans != null) {
+            return;
+        }
+
         Kit kit = this.requestKit != null ? this.requestKit : this.kitMap.getDefaultKit();
         if (kit != null) {
             logI18N("message.kit-manager.kit-replenish.request.success", kit.name());
