@@ -59,6 +59,8 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
             .defaultValue(BypassMode.NO_BYPASS)
             .build();
 
+    public final FlagRef strafeSprint = flagBuilder(sprint.add("strafe-sprint")).build();
+
     @Override
     public void registerAll() {
         super.registerAll();
@@ -90,6 +92,18 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
                 if (logSprint.get()) {
                     logI18N("message.module.sprint.toggle-on");
                 }
+            }
+        }
+        if (mc.player.isOnGround()
+                && PlayerInputUtils.of(mc.options).sprint()
+                && PlayerInputUtils.of(mc.options).forward()
+                && mayWorkSprint()
+                && strafeSprint.get()) {
+            var input = PlayerInputUtils.of(mc.options);
+            if (input.forwardSpeed() > 0 && input.sidewaysSpeed() == 0) {
+                RotationManager.INSTANCE.request(
+                        RotationManager.ofDirection(Optional.empty(), Optional.of(mc.player.getYaw() - 45))
+                                .priority(0));
             }
         }
         if (directionalSprint.get()

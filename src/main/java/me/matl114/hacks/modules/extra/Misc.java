@@ -71,12 +71,14 @@ public class Misc extends BaseModule {
     public final FlagRef sneak = flagBuilder(friendsWine.add("sneak")).build();
     public final FlagRef autoParkourEnable =
             flagBuilder(autoParkour.addEnable()).build();
-    public final FlagRef parkourOverrideYaw =
-            flagBuilder(autoParkour.add("override-yaw")).defaultValue(true).build();
     public final IntRef parkourSearchDistance = intBuilder(autoParkour.add("search-distance"))
             .defaultValue(3)
             .validator(Configs.INT_POSITIVE)
             .build();
+    public final FlagRef parkourAutoStart =
+            flagBuilder(autoParkour.add("auto-start")).defaultValue(false).build();
+    public final FlagRef parkourYawControl =
+            flagBuilder(autoParkour.add("yaw-control")).defaultValue(true).build();
     private final RenderCollector<Box> parkourTarget = RenderCollectors.createBoxCollector(true, false, false);
     private final RenderCollector<List<Vec3d>> parkourTrajectory = RenderCollectors.createLinesCollector();
     public final FlagRef parkourUsePacketQueue =
@@ -102,6 +104,8 @@ public class Misc extends BaseModule {
     private Box parkourJumpTarget;
     private double parkourJumpMinimumY;
     private boolean parkourJumpTargetLadder;
+    private boolean parkourAutoStartJump;
+    private boolean parkourClimbingLadder;
 
     @Override
     public void registerAll() {
@@ -140,31 +144,66 @@ public class Misc extends BaseModule {
             parkourJumping = false;
             parkourJumpTarget = null;
             parkourJumpTargetLadder = false;
+            parkourAutoStartJump = false;
+            parkourClimbingLadder = false;
+            return;
+        }
+        if (parkourClimbingLadder) {
+            if (mc.player.isClimbing()) {
+                applyParkourLadderClimbInput();
+                return;
+            }
+            parkourClimbingLadder = false;
             return;
         }
         if (parkourJumping) {
-            if (parkourPacketQueueActive && parkourJumpTargetLadder && isLandedOnParkourTarget()) {
+            if (parkourJumpTargetLadder && mc.player.isClimbing()) {
+                parkourClimbingLadder = true;
+                parkourJumping = false;
+                parkourAutoStartJump = false;
+                parkourJumpTarget = null;
+                parkourJumpTargetLadder = false;
+                if (parkourPacketQueueActive) finishParkourPacketQueue(true);
+                applyParkourLadderClimbInput();
+                return;
+            }
+            if (parkourPacketQueueActive && !parkourJumpTargetLadder && isLandedOnParkourTarget()) {
                 finishParkourPacketQueue(true);
             }
             if (mc.player.isOnGround() || mc.player.isClimbing()) {
+                boolean climbingLadder = mc.player.isClimbing();
+                boolean successfulLanding = !climbingLadder && isLandedOnParkourTarget();
                 if (parkourPacketQueueActive) {
                     finishParkourPacketQueue(isLandedOnParkourTarget());
                 }
                 parkourJumping = false;
+                parkourAutoStartJump = false;
                 parkourJumpTarget = null;
                 parkourJumpTargetLadder = false;
-                return;
+                if (climbingLadder) {
+                    parkourClimbingLadder = true;
+                    applyParkourLadderClimbInput();
+                    return;
+                }
+                if (!successfulLanding) return;
             } else {
                 PlayerInputManager.INSTANCE.addSprintModifier(Integer.MAX_VALUE, true, 1);
                 PlayerInputManager.INSTANCE.addForwardModifier(Integer.MAX_VALUE, true, 1);
-                if (parkourOverrideYaw.get()) {
+                if (parkourYawControl.get() && !parkourJumpTargetLadder) {
                     PlayerInputManager.INSTANCE.addYawModifier(Integer.MAX_VALUE, parkourJumpYaw, 1);
+                }
+                if (parkourAutoStartJump) {
+                    applyParkourAutoStartInput(parkourJumpYaw, parkourYawControl.get() && !parkourJumpTargetLadder);
+                }
+                if (parkourJumpTargetLadder) {
+                    PlayerInputManager.INSTANCE.addJumpModifier(Integer.MAX_VALUE, true, 1);
                 }
                 if (parkourPacketQueueActive
                         && mc.player.getVelocity().y < 0.0D
                         && mc.player.getY() < parkourJumpMinimumY) {
                     finishParkourPacketQueue(false);
                     parkourJumping = false;
+                    parkourAutoStartJump = false;
                     parkourJumpTarget = null;
                     parkourJumpTargetLadder = false;
                 }
@@ -184,9 +223,7 @@ public class Misc extends BaseModule {
         if (target == null) return;
         BlockState targetState = mc.world.getBlockState(target);
         boolean ladderTarget = targetState.getBlock() instanceof LadderBlock;
-        var shape = ladderTarget
-                ? targetState.getOutlineShape(mc.world, target)
-                : targetState.getCollisionShape(mc.world, target);
+        var shape = targetState.getCollisionShape(mc.world, target);
         if (shape.isEmpty()) return;
         Box targetBox = shape.getBoundingBox().offset(target);
         Box trajectoryTargetBox = ladderTarget
@@ -198,14 +235,14 @@ public class Misc extends BaseModule {
                         target.getY() + 1.0D,
                         target.getZ() + 1.0D)
                 : targetBox;
-        Optional<Float> targetYaw = getParkourTargetYaw(targetBox);
-        if (parkourOverrideYaw.get() && targetYaw.isPresent()) {
-            float yawToTarget = targetYaw.get();
-            PlayerInputManager.INSTANCE.addYawModifier(Integer.MAX_VALUE, yawToTarget, 1);
-            double targetYawRadians = Math.toRadians(yawToTarget);
-            directionX = -Math.sin(targetYawRadians);
-            directionZ = Math.cos(targetYawRadians);
+        boolean controlTargetYaw = parkourYawControl.get() && !ladderTarget;
+        parkourJumpYaw = controlTargetYaw ? getParkourTargetYaw(targetBox) : mc.player.getYaw();
+        if (controlTargetYaw) {
+            PlayerInputManager.INSTANCE.addYawModifier(Integer.MAX_VALUE, parkourJumpYaw, 1);
         }
+        double targetYaw = Math.toRadians(parkourJumpYaw);
+        directionX = -Math.sin(targetYaw);
+        directionZ = Math.cos(targetYaw);
         if (mc.options.forwardKey.isPressed()) {
             PlayerInputManager.INSTANCE.addSprintModifier(0, true, 1);
         }
@@ -218,27 +255,52 @@ public class Misc extends BaseModule {
         }
         int color = simulatedTrajectory ? JUMP_COLOR : Color.RED.getRGB();
         parkourTrajectory.submit(plan.trajectory(), color);
-        boolean mustJumpBeforeLeavingGround = !ladderTarget
-                && !parkourJumping
-                && mc.player.isOnGround()
-                && mc.options.forwardKey.isPressed()
-                && willLoseGroundOnNextStep(directionX, directionZ);
+        boolean autoStartActive = simulatedTrajectory
+                && ((parkourAutoStart.get() || mc.options.forwardKey.isPressed()))
+                && !mc.options.sneakKey.isPressed();
+        if (autoStartActive) applyParkourAutoStartInput(parkourJumpYaw, controlTargetYaw);
         boolean canStartCurrentJump = simulatedTrajectory
                 && plan.takeoffDelayTicks() == 0
                 && canJumpReach(trajectoryTargetBox, directionX, directionZ);
         boolean shouldJump = !parkourJumping
                 && mc.player.isOnGround()
-                && mc.options.forwardKey.isPressed()
-                && (mustJumpBeforeLeavingGround || canStartCurrentJump);
+                && (mc.options.forwardKey.isPressed() || autoStartActive)
+                && canStartCurrentJump;
         if (shouldJump) {
             parkourJumpMinimumY = getParkourMinimumY(trajectoryTargetBox);
             PlayerInputManager.INSTANCE.addJumpModifier(0, true, 1);
             parkourJumping = true;
-            parkourJumpYaw = targetYaw.orElse(mc.player.getYaw());
+            parkourAutoStartJump = autoStartActive;
             parkourJumpTarget = trajectoryTargetBox;
             parkourJumpTargetLadder = ladderTarget;
             if (parkourUsePacketQueue.get()) startParkourPacketQueue();
         }
+    }
+
+    private void applyParkourLadderClimbInput() {
+        PlayerInputManager.INSTANCE.addForwardModifier(Integer.MAX_VALUE, true, 1);
+        PlayerInputManager.INSTANCE.addJumpModifier(Integer.MAX_VALUE, true, 1);
+    }
+
+    private void applyParkourAutoStartInput(float yaw, boolean controlYaw) {
+        PlayerInputManager.Modifier modifier = PlayerInputManager.Modifier.empty(Integer.MAX_VALUE)
+                .forward(true)
+                .backward(false)
+                .left(false)
+                .right(false)
+                .sneak(false)
+                .sprint(true);
+        if (controlYaw) modifier = modifier.yaw(yaw);
+        PlayerInputManager.INSTANCE.addInputModifier(modifier, 1);
+    }
+
+    private float getParkourTargetYaw(Box targetBox) {
+        double nearestX = Math.max(targetBox.minX, Math.min(mc.player.getX(), targetBox.maxX));
+        double nearestZ = Math.max(targetBox.minZ, Math.min(mc.player.getZ(), targetBox.maxZ));
+        double deltaX = nearestX - mc.player.getX();
+        double deltaZ = nearestZ - mc.player.getZ();
+        if (deltaX * deltaX + deltaZ * deltaZ <= 1.0E-8D) return mc.player.getYaw();
+        return (float) Math.toDegrees(Math.atan2(-deltaX, deltaZ));
     }
 
     private void startParkourPacketQueue() {
@@ -299,27 +361,11 @@ public class Misc extends BaseModule {
 
     private boolean isLandedOnParkourTarget() {
         if (parkourJumpTargetLadder) {
-            return parkourJumpTarget != null
-                    && (isLadderClimbPosition(mc.player.getPos(), parkourJumpTarget) || isOneBlockBelowLadderTarget());
+            return parkourJumpTarget != null && mc.player.isClimbing();
         }
         return parkourJumpTarget != null
                 && Math.abs(mc.player.getY() - parkourJumpTarget.maxY) < 0.08D
                 && hasLandingSupport(mc.player.getPos(), parkourJumpTarget);
-    }
-
-    private boolean isOneBlockBelowLadderTarget() {
-        BlockPos target = BlockPos.ofFloored(parkourJumpTarget.minX, parkourJumpTarget.minY, parkourJumpTarget.minZ);
-        return mc.player.getBlockY() == target.getY() - 1
-                && isLadderClimbPosition(mc.player.getPos(), parkourJumpTarget);
-    }
-
-    private Optional<Float> getParkourTargetYaw(Box targetBox) {
-        double nearestX = Math.max(targetBox.minX, Math.min(mc.player.getX(), targetBox.maxX));
-        double nearestZ = Math.max(targetBox.minZ, Math.min(mc.player.getZ(), targetBox.maxZ));
-        double aimX = nearestX - mc.player.getX();
-        double aimZ = nearestZ - mc.player.getZ();
-        if (aimX * aimX + aimZ * aimZ <= 1.0E-8D) return Optional.empty();
-        return Optional.of((float) Math.toDegrees(Math.atan2(-aimX, aimZ)));
     }
 
     private boolean isNearPlayerHorizontalNeighbor(BlockPos candidate, BlockPos playerBlock) {
@@ -338,9 +384,7 @@ public class Misc extends BaseModule {
         for (BlockPos projected : RaycastUtils.createRaycastBlockPoses(rayStart, rayEnd)) {
             if (projected.equals(support)) continue;
             BlockState projectedState = mc.world.getBlockState(projected);
-            var projectedShape = projectedState.getBlock() instanceof LadderBlock
-                    ? projectedState.getOutlineShape(mc.world, projected)
-                    : projectedState.getCollisionShape(mc.world, projected);
+            var projectedShape = projectedState.getCollisionShape(mc.world, projected);
             if (!gapSeen) {
                 if (!projectedShape.isEmpty()) continue;
                 gapSeen = true;
@@ -355,9 +399,7 @@ public class Misc extends BaseModule {
                 if (isNearPlayerHorizontalNeighbor(candidate, playerBlock)) continue;
                 BlockState state = mc.world.getBlockState(candidate);
                 boolean ladder = state.getBlock() instanceof LadderBlock;
-                var shape = ladder
-                        ? state.getOutlineShape(mc.world, candidate)
-                        : state.getCollisionShape(mc.world, candidate);
+                var shape = state.getCollisionShape(mc.world, candidate);
                 if (shape.isEmpty()) continue;
                 Box bounds = shape.getBoundingBox();
                 double top = candidate.getY() + bounds.maxY;
@@ -539,15 +581,6 @@ public class Misc extends BaseModule {
         return true;
     }
 
-    private boolean willLoseGroundOnNextStep(double directionX, double directionZ) {
-        Vec3d position = mc.player.getPos();
-        Vec3d velocity = mc.player.getVelocity();
-        double groundAcceleration = getParkourGroundAcceleration(true, position);
-        Vec3d nextPosition = position.add(
-                velocity.x + directionX * groundAcceleration, 0.0D, velocity.z + directionZ * groundAcceleration);
-        return !hasGroundAlong(position, nextPosition);
-    }
-
     private boolean hasGroundAt(Vec3d position) {
         Vec3d currentPosition = mc.player.getPos();
         Box playerBox = mc.player
@@ -655,9 +688,6 @@ public class Misc extends BaseModule {
         double x = takeoff.x;
         double z = takeoff.z;
         boolean ladderTarget = isLadderTarget(targetBox);
-        // Keep simulating after first contact and use the highest reachable ladder contact.
-        int highestLadderContactIndex = -1;
-        Vec3d highestLadderContact = null;
         List<Box> targetCollisionBoxes = ladderTarget ? List.of() : getParkourTargetCollisionBoxes(targetBox);
         points.add(new Vec3d(x, y, z));
         for (int tick = 0; tick < 40; tick++) {
@@ -680,16 +710,13 @@ public class Misc extends BaseModule {
             velocityX = (targetMovement.blockedX() ? 0.0D : targetMovement.deltaX()) * horizontalFriction;
             velocityZ = (targetMovement.blockedZ() ? 0.0D : targetMovement.deltaZ()) * horizontalFriction;
             Vec3d point = new Vec3d(x, y, z);
-            boolean touchingLadder = ladderTarget && isLadderClimbPosition(point, targetBox);
             if (!hasClearPlayerSpace(point)) {
-                if (!ladderTarget || highestLadderContactIndex < 0) return null;
-                break;
+                return null;
             }
             if (ladderTarget) {
                 points.add(point);
-                if (touchingLadder && (highestLadderContact == null || point.y > highestLadderContact.y)) {
-                    highestLadderContactIndex = points.size() - 1;
-                    highestLadderContact = point;
+                if (isLadderClimbPosition(point, targetBox)) {
+                    return new LandingTrajectory(points, x * directionX + z * directionZ);
                 }
             } else {
                 points.add(point);
@@ -699,11 +726,6 @@ public class Misc extends BaseModule {
             }
             double verticalVelocity = targetMovement.blockedY() ? 0.0D : movementY;
             vy = (verticalVelocity - mc.player.getFinalGravity()) * PARKOUR_VERTICAL_FRICTION;
-        }
-        if (highestLadderContactIndex >= 0) {
-            List<Vec3d> trajectory = new ArrayList<>(points.subList(0, highestLadderContactIndex + 1));
-            return new LandingTrajectory(
-                    trajectory, highestLadderContact.x * directionX + highestLadderContact.z * directionZ);
         }
         return null;
     }
@@ -947,24 +969,10 @@ public class Misc extends BaseModule {
 
     private boolean isLadderClimbPosition(Vec3d position, Box targetBox) {
         BlockPos target = BlockPos.ofFloored(targetBox.minX, targetBox.minY, targetBox.minZ);
-        Box playerBox = new Box(
-                position.x - PARKOUR_PLAYER_HALF_WIDTH,
-                position.y,
-                position.z - PARKOUR_PLAYER_HALF_WIDTH,
-                position.x + PARKOUR_PLAYER_HALF_WIDTH,
-                position.y + mc.player.getHeight(),
-                position.z + PARKOUR_PLAYER_HALF_WIDTH);
-        int maxLadderY =
-                BlockPos.ofFloored(position.x, playerBox.maxY, position.z).getY();
-        for (int y = target.getY(); y <= maxLadderY; y++) {
-            BlockPos ladderPos = new BlockPos(target.getX(), y, target.getZ());
-            var state = mc.world.getBlockState(ladderPos);
-            if (!(state.getBlock() instanceof LadderBlock)) break;
-            for (Box localShape : state.getOutlineShape(mc.world, ladderPos).getBoundingBoxes()) {
-                if (playerBox.intersects(localShape.offset(ladderPos))) return true;
-            }
-        }
-        return false;
+        BlockPos playerFeet = BlockPos.ofFloored(position.x, position.y, position.z);
+        return playerFeet.getX() == target.getX()
+                && playerFeet.getZ() == target.getZ()
+                && mc.world.getBlockState(playerFeet).getBlock() instanceof LadderBlock;
     }
 
     private ParkourPlan findFlatGroundFallbackPlan(
