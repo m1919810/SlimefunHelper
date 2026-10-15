@@ -259,6 +259,8 @@ public class CombatTasks {
     @Getter
     private static AutoWeb autoWeb;
 
+    private static AutoTrap autoTrap;
+
     @Getter
     private static AnchorAura anchorAura;
 
@@ -309,6 +311,7 @@ public class CombatTasks {
         autoCity = new AutoCity().register(m);
         crystalAura = new CrystalAura().register(m);
         autoWeb = new AutoWeb().register(m);
+        autoTrap = new AutoTrap().register(m);
         anchorAura = new AnchorAura().register(m);
         antiReplenish = new AntiReplenish().register(m);
         antiCrystal = new AntiCrystal().register(m);
