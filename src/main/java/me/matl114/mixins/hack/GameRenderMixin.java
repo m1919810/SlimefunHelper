@@ -21,6 +21,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(GameRenderer.class)
 public abstract class GameRenderMixin {
 
+    @ModifyExpressionValue(
+            method = "renderWorld",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/util/math/MathHelper;lerp(FFF)F"))
+    private float noNauseaWobble(float original) {
+        return NoRender.INSTANCE.noNausea() ? 0.0F : original;
+    }
+
     @Shadow
     private ItemStack floatingItem;
 
