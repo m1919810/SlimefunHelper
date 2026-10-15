@@ -158,6 +158,21 @@ public class MathUtils {
         return positions;
     }
 
+    public static List<BlockPos> getOccupiedHorizontalBlockPositions(Box box, int y) {
+        int minX = (int) Math.floor(box.minX);
+        int maxX = (int) Math.ceil(box.maxX) - 1;
+        int minZ = (int) Math.floor(box.minZ);
+        int maxZ = (int) Math.ceil(box.maxZ) - 1;
+
+        List<BlockPos> positions = new ArrayList<>((maxX - minX + 1) * (maxZ - minZ + 1));
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                positions.add(new BlockPos(x, y, z));
+            }
+        }
+        return positions;
+    }
+
     public static final Direction[] HORIZONTALS = Arrays.stream(Direction.values())
             .filter((direction) -> {
                 return direction.getAxis().isHorizontal();
