@@ -24,6 +24,7 @@ import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.ScreenUtils;
+import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
@@ -53,9 +54,6 @@ public class ChatTools extends BaseModule {
             .defaultValue("😡🤓🥵😭🤡😋🤤😊😄🥲😁👉👆🤔😎🐍😅♂♀")
             .updateListener(this::refreshSpecialChars)
             .build();
-
-    public final StringRef chatCache =
-            builder(chatTools.add("cached"), String.class).defaultValue("").build();
 
     public final FlagRef autoSend = flagBuilder(
                     Configs.CHAT_CONFIG, chatTools.add("auto-chat").toPath())
@@ -127,7 +125,7 @@ public class ChatTools extends BaseModule {
     }
 
     public void sendCachedMessage() {
-        String val = chatCache.get();
+        String val = ChatLocalSettings.getChatCache();
         if (val != null) {
             ChatTasks.sayMessage(val, false);
         }
@@ -178,14 +176,14 @@ public class ChatTools extends BaseModule {
         int totalHeight = 68; //  -104 ~ -36
         SubScreenWidget basicSubScreenWidget = new SubScreenWidget(0, 0, 250, 68);
         // -56 -> -56 - (-104)
-        ContentDelegateWidget<TextFieldWidget> helperWidgetWrapper =
-                McWidgetHelpers.createTextFieldEditBox(0 + 2, 48 + 2, 120 - 2, 20 - 2, chatCache::set, chatCache.get());
+        ContentDelegateWidget<TextFieldWidget> helperWidgetWrapper = McWidgetHelpers.createTextFieldEditBox(
+                0 + 2, 48 + 2, 120 - 2, 20 - 2, ChatLocalSettings::setChatCache, ChatLocalSettings.getChatCache());
         cacheWidget = helperWidgetWrapper.getDelegate();
 
         // todo： add translatable to buttons and everything
         createExecuteButton(
                         "widget.chat-tools.send-cache",
-                        ButtonAction.run(() -> ChatTasks.sayMessage(chatCache.get(), true)),
+                        ButtonAction.run(() -> ChatTasks.sayMessage(ChatLocalSettings.getChatCache(), true)),
                         120 + 1,
                         48 + 1,
                         60 - 2,
@@ -194,13 +192,15 @@ public class ChatTools extends BaseModule {
 
         Runnable toggle = HotKeyUtils.getToggleTask(
                 Configs.CHAT_CONFIG, chatTools.add("auto-chat").toPath());
+        AttrKeyValue<Boolean> autoSendToggle = AttrKeyValue.bool("chat-screen-tools.auto-chat", autoSend.get());
+        autoSendToggle.addListener(bl -> {
+            if (bl != autoSend.get()) {
+                toggle.run();
+            }
+        });
         createToggleButton(
                         "widget.chat-tools.auto-send",
-                        ValueAccessor.of(autoSend::get, (bl) -> {
-                            if (bl != autoSend.get()) {
-                                toggle.run();
-                            }
-                        }),
+                        ValueAccessor.of(autoSendToggle),
                         180 + 1,
                         48 + 1,
                         50 - 2,
@@ -208,13 +208,16 @@ public class ChatTools extends BaseModule {
                 .addToSub(basicSubScreenWidget);
         Runnable toggle2 = HotKeyUtils.getToggleTask(
                 Configs.CHAT_CONFIG, chatTools.add("keep-chat-inv").toPath());
+        AttrKeyValue<Boolean> keepChatInvToggle =
+                AttrKeyValue.bool("chat-screen-tools.keep-chat-inv", keepChatInv.get());
+        keepChatInvToggle.addListener(bl -> {
+            if (bl != keepChatInv.get()) {
+                toggle2.run();
+            }
+        });
         createToggleButton(
                         "widget.chat-tools.keep-chat-inv",
-                        ValueAccessor.of(keepChatInv::get, (bl) -> {
-                            if (bl != autoSend.get()) {
-                                toggle2.run();
-                            }
-                        }),
+                        ValueAccessor.of(keepChatInvToggle),
                         180 + 1,
                         24 + 1,
                         70 - 2,

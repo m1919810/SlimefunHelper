@@ -138,6 +138,7 @@ public class AutoCity extends BaseModule {
                 .toList());
 
         Comparator<BlockPos> blockPosComparator = Comparator.comparingInt(BlockPos::getY)
+                .thenComparing(Comparator.comparingInt(this::countAirNeighbors).reversed())
                 .thenComparingDouble(v -> v.getSquaredDistance(targetEntityPos))
                 .thenComparingDouble(v -> MathUtils.getBlockBox(v).squaredMagnitude(pos));
 
@@ -287,5 +288,15 @@ public class AutoCity extends BaseModule {
         if (working) {
             PacketMine.INSTANCE.tickMine();
         }
+    }
+
+    private int countAirNeighbors(BlockPos pos) {
+        int count = 0;
+        for (Direction direction : Direction.values()) {
+            if (mc.world.getBlockState(pos.offset(direction)).isAir()) {
+                count++;
+            }
+        }
+        return count;
     }
 }

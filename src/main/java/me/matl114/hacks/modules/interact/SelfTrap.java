@@ -72,7 +72,7 @@ public class SelfTrap extends BaseModule {
 
     public final FlagRef airplace = flagBuilder(selfTrap.add("air-place")).build();
 
-    public final FlagRef placeLower = flagBuilder(selfTrap.add("lower")).build();
+    public final FlagRef scaffold = flagBuilder(selfTrap.add("lower")).build();
 
     public final FlagRef onlyGround = flagBuilder(selfTrap.add("only-ground")).build();
 
@@ -177,29 +177,34 @@ public class SelfTrap extends BaseModule {
         }
 
         Set<BlockPos> result = new LinkedHashSet<>();
-        if (placeLower.get()) {
-            if (!onlyGround.get()
-                    || !CollisionUtil.isBoxCollided(
-                            mc.world,
-                            mc.player,
-                            playerBox.withMinY(playerBox.minY - 1.5).withMaxY(playerBox.minY))) {
-                for (BlockPos occupied : occupiedFeet) {
-                    result.add(occupied.down());
-                }
+        if (!onlyGround.get()
+                || !CollisionUtil.isBoxCollided(
+                        mc.world,
+                        mc.player,
+                        playerBox.withMinY(playerBox.minY - 1.5).withMaxY(playerBox.minY))) {
+            for (BlockPos occupied : occupiedFeet) {
+                result.add(occupied.down());
             }
         }
-        for (Direction direction : Direction.Type.HORIZONTAL) {
+        Set<BlockPos> scaffoldPoses = new LinkedHashSet<>();
+        for (Direction direction : MathUtils.HORIZONTALS) {
             for (BlockPos occupied : occupiedFeet) {
                 BlockPos candidate = occupied.offset(direction);
                 if (!occupiedFeet.contains(candidate)) {
                     result.add(candidate);
-                }
-                BlockPos candidateDown = candidate.down();
-                if (!occupiedFeet.contains(candidateDown)) {
-                    result.add(candidateDown);
+                    if (scaffold.get()) {
+                        BlockState state = mc.world.getBlockState(candidate);
+                        if (state.isAir() || state.isLiquid()) {
+                            BlockPos candidateDown = candidate.down();
+                            if (!occupiedFeet.contains(candidateDown)) {
+                                scaffoldPoses.add(candidateDown);
+                            }
+                        }
+                    }
                 }
             }
         }
+        result.addAll(scaffoldPoses);
         return result;
     }
 

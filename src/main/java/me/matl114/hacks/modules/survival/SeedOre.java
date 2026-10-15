@@ -3,9 +3,6 @@ package me.matl114.hacks.modules.survival;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.*;
 import com.mojang.datafixers.util.Pair;
-import com.mojang.serialization.JavaOps;
-import it.unimi.dsi.fastutil.objects.Object2LongMap;
-import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
@@ -19,16 +16,15 @@ import me.matl114.events.RenderListener;
 import me.matl114.events.impl.Render3D;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.RenderTasks;
+import me.matl114.hacks.WorldTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
-import me.matl114.managers.FileManager;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.command.MainCommand;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.StringRef;
-import me.matl114.managers.file.FileStorage;
 import me.matl114.utils.*;
 import me.matl114.utils.commands.commandGroup.CommandContext;
 import me.matl114.utils.commands.commandGroup.SubCommand;
@@ -42,10 +38,6 @@ import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtLong;
-import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
@@ -83,15 +75,10 @@ import net.minecraft.world.gen.placementmodifier.RarityFilterPlacementModifier;
 public class SeedOre extends BaseModule {
     public static SeedOre INSTANCE;
     public static final String[] SEED_MAP = new String[] {"seed", "seed-cache"};
-    public final Object2LongMap<String> seedMap = new Object2LongOpenHashMap<>();
     // how to do cache: chunkUnload
     private final Map<Long, Map<Ore, Set<Vec3d>>> chunkSeedCache = new ConcurrentHashMap<>();
     private final Map<Long, Map<BlockPos, BlockState>> fakeOres = new ConcurrentHashMap<>();
     private final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
-
-    public void saveSeedMap() {
-        seedMapSave.write((Map<String, Long>) seedMap, JavaOps.INSTANCE);
-    }
 
     public SeedOre() {
         super("SeedOre");
@@ -125,20 +112,6 @@ public class SeedOre extends BaseModule {
             .validator(Configs.REGEX_VALIDATOR)
             .updateListener(Ore::reloadOreSettings)
             .build();
-
-    public final FileStorage seedMapSave = FileManager.getInstance().getInternalStorage("seed-storage.nbt");
-
-    {
-        NbtCompound nbt = seedMapSave.asReadOnly(NbtOps.INSTANCE);
-        seedMap.clear();
-        for (var entry : nbt.entrySet()) {
-            String key = entry.getKey();
-            NbtElement value = entry.getValue();
-            if (value instanceof NbtLong ll) {
-                seedMap.put(key, ll.longValue());
-            }
-        }
-    }
 
     @Override
     public void registerAll() {
@@ -220,28 +193,6 @@ public class SeedOre extends BaseModule {
         }
     }
 
-    public void putSeed(String key, long seed) {
-        if (seedMap.containsKey(key)) {
-            long old = seedMap.getLong(key);
-            if (old != seed) {
-                seedMap.put(key, seed);
-                saveSeedMap();
-                onSeedChange(key);
-            }
-        } else {
-            seedMap.put(key, seed);
-            saveSeedMap();
-            onSeedChange(key);
-        }
-    }
-
-    public void removeSeed(String key) {
-        if (seedMap.containsKey(key)) {
-            seedMap.removeLong(key);
-            onSeedChange(key);
-        }
-    }
-
     public void onSeedChange(String key) {
         if (!checkCurrentSeedExistence()) return;
         if (Objects.equals(CommonUtils.getWorldName(), key) && enable.get()) {
@@ -250,22 +201,12 @@ public class SeedOre extends BaseModule {
         }
     }
 
-    public boolean hasCurrentSeed() {
-        return seedMap.containsKey(CommonUtils.getWorldName());
+    private boolean hasCurrentSeed() {
+        return WorldTasks.seedMap.containsKey(CommonUtils.getWorldName());
     }
 
-    public long getCurrentSeed() {
-        return seedMap.getLong(CommonUtils.getWorldName());
-    }
-
-    @ApiMethod
-    public void setWorldSeed(long seed) {
-        putSeed(CommonUtils.getWorldName(), seed);
-    }
-
-    @ApiMethod
-    public void removeWorldSeed() {
-        removeSeed(CommonUtils.getWorldName());
+    private long getCurrentSeed() {
+        return WorldTasks.seedMap.getLong(CommonUtils.getWorldName());
     }
 
     public boolean checkCurrentSeedExistence() {
@@ -282,21 +223,6 @@ public class SeedOre extends BaseModule {
     public static boolean isSeedValid(long seed) {
         long hashed = mc.world.getBiomeAccess().seed;
         return BiomeAccess.hashSeed(seed) == hashed;
-    }
-
-    public void validateCurrentSeed() {
-        if (!checkCurrentSeedExistence()) return;
-        long value = seedMap.getLong(CommonUtils.getWorldName());
-        Debug.chat(Text.literal("[世界种子] 核验当前世界种子中:").formatted(Formatting.GREEN));
-        Debug.chat(
-                Text.literal("[世界种子] 输入的种子: ").formatted(Formatting.GREEN).append(ChatUtils.getDisplayedLong(value)));
-        long hashed = mc.world.getBiomeAccess().seed;
-        Debug.chat(Text.literal("[世界种子] 服务器加密种子: ").append(ChatUtils.getDisplayedLong(hashed)));
-        if (isSeedValid(value)) {
-            Debug.chat(Text.literal("[世界种子] 验证通过").formatted(Formatting.GREEN));
-        } else {
-            Debug.chat(Text.literal("[世界种子] 验证失败").formatted(Formatting.RED));
-        }
     }
 
     // 重载可视区块的种子计算 包含了假矿计算
@@ -615,38 +541,6 @@ public class SeedOre extends BaseModule {
                     .post(e -> e.executor(CommandContext.run(this::onFakeOre)))
                     .complete();
         }
-        TreeSubCommand seed = command.subMainBuilder().name("seed").build();
-        {
-            seed.subBuilder(SubCommand.taskBuilder())
-                    .name("set")
-                    .helper("message.command.seed.set.help")
-                    .arg(SimpleCommandArgs.argumentBuilder()
-                            .name("seed")
-                            .intValue()
-                            .tabSupplier(() -> seedMap.keySet().stream())
-                            .build())
-                    .post(e -> e.executor(CommandContext.run(this::onSeedSet)))
-                    .complete()
-                    .subBuilder(SubCommand.taskBuilder())
-                    .name("remove")
-                    .helper("message.command.seed.remove.help")
-                    .arg(SimpleCommandArgs.argumentBuilder()
-                            .name("world")
-                            .tabSupplier(() -> seedMap.keySet().stream())
-                            .build())
-                    .post(e -> e.executor(CommandContext.run(this::onSeedRemove)))
-                    .complete()
-                    .subBuilder(SubCommand.taskBuilder())
-                    .name("list")
-                    .helper("message.command.seed.list.help")
-                    .post(e -> e.executor(CommandContext.run(this::onSeedList)))
-                    .complete()
-                    .subBuilder(SubCommand.taskBuilder())
-                    .name("validate")
-                    .helper("message.command.seed.validate.help")
-                    .post(e -> e.executor(CommandContext.run(this::validateCurrentSeed)))
-                    .complete();
-        }
     }
 
     @Override
@@ -671,30 +565,6 @@ public class SeedOre extends BaseModule {
             if (isActive()) {
                 enable.set(false);
             }
-        }
-    }
-
-    public void onSeedSet(ArgumentInputStream re) {
-        String na = re.nextNonnull();
-        long val;
-        if (seedMap.containsKey(na)) {
-            val = seedMap.getLong(na);
-        } else {
-            val = Long.parseLong(na);
-        }
-        setWorldSeed(val);
-        me.matl114.utils.Debug.chat("[世界种子] 设置", CommonUtils.getWorldName(), "的种子为", val);
-    }
-
-    public void onSeedRemove(ArgumentInputStream re) {
-        String key = re.nextNonnull();
-        removeSeed(key);
-    }
-
-    public void onSeedList() {
-        Debug.chat("[世界种子] 列表");
-        for (var entry : seedMap.object2LongEntrySet()) {
-            Debug.chat(entry.getKey(), ":", ChatUtils.getDisplayedLong(entry.getLongValue()));
         }
     }
 

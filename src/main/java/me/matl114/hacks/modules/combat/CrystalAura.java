@@ -825,21 +825,7 @@ public class CrystalAura extends BaseModule {
             if (!EntityUtils.isEntityValid(target) || target == mc.player) {
                 continue;
             }
-            Vec3d targetPos = target.getPos();
-            Vec3d realMovement;
-            if (usePredictor.get()) {
-                Vec3d predictionPos =
-                        PositionPredict.INSTANCE.attackPredictArgument.get().predict(target);
-
-                if (predictionPos.squaredDistanceTo(targetPos) > MathUtils.s2(0.5)) {
-                    Vec3d movement = predictionPos.subtract(targetPos);
-                    realMovement = MovTasks.simulateMovement(target, targetPos, movement, false);
-                } else {
-                    realMovement = Vec3d.ZERO;
-                }
-            } else {
-                realMovement = Vec3d.ZERO;
-            }
+            Vec3d realMovement = getTargetDamageMovement(target);
             damageMap.put(target, (double) ExplosionUtils.calculateExplosionMaxDamage(
                     ExplosionUtils.END_CRYSTAL_POWER, target.getBoundingBox().offset(realMovement), explosionPos));
         }
@@ -871,21 +857,7 @@ public class CrystalAura extends BaseModule {
             if (!EntityUtils.isEntityValid(target) || target == mc.player) {
                 continue;
             }
-            Vec3d targetPos = target.getPos();
-            Vec3d realMovement;
-            if (usePredictor.get()) {
-                Vec3d predictionPos =
-                        PositionPredict.INSTANCE.attackPredictArgument.get().predict(target);
-
-                if (predictionPos.squaredDistanceTo(targetPos) > MathUtils.s2(0.5)) {
-                    Vec3d movement = predictionPos.subtract(targetPos);
-                    realMovement = MovTasks.simulateMovement(target, targetPos, movement, false);
-                } else {
-                    realMovement = Vec3d.ZERO;
-                }
-            } else {
-                realMovement = Vec3d.ZERO;
-            }
+            Vec3d realMovement = getTargetDamageMovement(target);
 
             damageMap.put(target, (double) ExplosionUtils.calculateExplosionRawDamage(
                     ExplosionUtils.END_CRYSTAL_POWER,
@@ -895,6 +867,29 @@ public class CrystalAura extends BaseModule {
                     ExplosionUtils.EXPLOSION_RESISTENCE));
         }
         return damageMap;
+    }
+
+    private Vec3d getTargetDamageMovement(PlayerEntity target) {
+        Vec3d targetPos = target.getPos();
+        Vec3d syncedPos = PositionPredict.INSTANCE.getPredictor(target).getCurrentSyncedPos();
+        if (syncedPos == null) {
+            return Vec3d.ZERO;
+        }
+
+        Vec3d syncMovement = syncedPos.subtract(targetPos);
+        if (!usePredictor.get()) {
+            return syncMovement;
+        }
+
+        Vec3d predictionPos =
+                PositionPredict.INSTANCE.attackPredictArgument.get().predict(target);
+        if (predictionPos == null || predictionPos.squaredDistanceTo(syncedPos) <= MathUtils.s2(0.5)) {
+            return syncMovement;
+        }
+
+        Vec3d predictedMovement =
+                MovTasks.simulateMovement(target, syncedPos, predictionPos.subtract(syncedPos), false);
+        return syncMovement.add(predictedMovement);
     }
 
     private Vec3d getCrystalExplosionPos(BlockPos basePos) {
