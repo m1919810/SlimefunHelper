@@ -213,8 +213,8 @@ public class AutoBreed extends BaseModule {
         if (restore == null) {
             return;
         }
-        Interact.INSTANCE.interactEntity(targetAnimal);
-        restore.run();
+        boolean completed = Interact.INSTANCE.interactEntity(targetAnimal);
+        Interact.INSTANCE.finishEntityGhostHand(completed, restore);
         if (targetAnimal.isBaby()) {
             incrementBabyBreedCount(targetAnimal);
         }
