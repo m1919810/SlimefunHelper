@@ -1,11 +1,6 @@
 package me.matl114.hacks.modules.combat;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.impl.EventContainer;
@@ -30,6 +25,7 @@ import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.InteractUtils;
 import me.matl114.utils.InventoryUtils;
+import me.matl114.utils.MathUtils;
 import me.matl114.utils.collections.FlagEntry;
 import me.matl114.utils.collections.IndexEntry;
 import net.minecraft.block.BlockState;
@@ -49,7 +45,6 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public class AutoTrap extends BaseModule {
@@ -84,17 +79,17 @@ public class AutoTrap extends BaseModule {
     public final FlagRef airplace = flagBuilder(root.add("air-place")).build();
     public final FlagRef offhand = flagBuilder(root.add("offhand-enable")).build();
     public final FlagRef footPlate = flagBuilder(root.add("foot-plate")).build();
-    public final FlagRef footIfNoChoice =
-            flagBuilder(root.add("foot-if-no-choice")).build();
-    public final FlagRef higher = flagBuilder(root.add("higher")).build();
-    public final FlagRef lower = flagBuilder(root.add("lower")).build();
+    public final FlagRef foot = flagBuilder(root.add("foot")).build();
     public final FlagRef ceiling = flagBuilder(root.add("ceiling")).build();
     public final FlagRef headAroundStanding =
             flagBuilder(root.add("head-around-standing")).build();
     public final FlagRef headAroundCrawling =
             flagBuilder(root.add("head-around-crawling")).build();
+    public final FlagRef scaffold = flagBuilder(root.add("scaffold")).build();
     public final ModulePath autoCrawlConfig = root.add("auto-crawl");
     public final FlagRef autoCrawl = flagBuilder(autoCrawlConfig.addEnable()).build();
+    public final FlagRef autoCrawlZeroTickInteract =
+            flagBuilder(autoCrawlConfig.add("zero-tick-interact")).build();
     public final FlagRef useWhiteList = flagBuilder(root.add("use-white-list")).build();
     public final NBTRef<EntrySet<Item>> whiteList = builder(root.add("white-list"), EntrySet.<Item>parameter())
             .defaultValue(new EntrySet<>(Registries.ITEM, List.of(Items.OBSIDIAN)))
@@ -129,21 +124,28 @@ public class AutoTrap extends BaseModule {
             return;
         }
         if (++delayTicks >= delay.get()) {
+            int interactions = 0;
+            int maxInteractions = multiply.get();
             if (autoCrawl.get()) {
                 for (PlayerEntity target : targets) {
                     Vec3d predictedPos =
                             PositionPredict.INSTANCE.attackPredictArgument.get().predict(target);
-                    if (tryAutoCrawl(predictedPos)) {
+                    interactions += tryAutoCrawl(predictedPos);
+                    if (interactions >= maxInteractions) {
                         delayTicks = 0;
                         return;
                     }
                 }
             }
             for (PlayerEntity target : targets) {
-                if (placeTrap(target)) {
+                interactions += placeTrap(target, maxInteractions - interactions);
+                if (interactions >= maxInteractions) {
                     delayTicks = 0;
                     return;
                 }
+            }
+            if (interactions > 0) {
+                delayTicks = 0;
             }
         }
     }
@@ -161,55 +163,94 @@ public class AutoTrap extends BaseModule {
                 .toList();
     }
 
-    private boolean placeTrap(PlayerEntity target) {
+    private int placeTrap(PlayerEntity target, int remainingInteractions) {
+        if (remainingInteractions <= 0) {
+            return 0;
+        }
         Predictor predictor = PositionPredict.INSTANCE.getPredictor(target);
         Vec3d predictedPos =
                 PositionPredict.INSTANCE.attackPredictArgument.get().predict(target);
         Vec3d knownMovement = predictor.getKnownDeltaMovement();
         Box predictedBox = target.getBoundingBox().offset(predictedPos.subtract(target.getPos()));
+        boolean collision =
+                mc.player.getBoundingBox().contains(target.getBoundingBox().getCenter());
+        int maxY = (int) Math.ceil(predictedBox.maxY);
+        int minY = (int) Math.floor(predictedBox.minY);
         Set<BlockPos> candidates = new LinkedHashSet<>();
 
         boolean crawling = target.getPose() == EntityPose.SWIMMING;
-        Set<BlockPos> headCandidates = new LinkedHashSet<>();
-        Set<BlockPos> headOccupied = Set.of();
+
+        Set<BlockPos> ceilings = new LinkedHashSet<>();
+        if (ceiling.get()) {
+            var headOccupied = MathUtils.getOccupiedHorizontalBlockPositions(predictedBox, maxY);
+            ceilings.addAll(headOccupied);
+        }
+
+        if (footPlate.get()) {
+            var headOccupied = MathUtils.getOccupiedHorizontalBlockPositions(predictedBox, minY - 1);
+            ceilings.addAll(headOccupied);
+        }
+        candidates.addAll(ceilings);
+        Direction[] footDirections = {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST};
+
+        Set<BlockPos> footCandidates = new LinkedHashSet<>();
+        var footOccupied = MathUtils.getOccupiedHorizontalBlockPositions(predictedBox, minY);
+        Set<BlockPos> footAroundCandidates = getSurroundCandidates(footOccupied, footDirections);
         if (crawling ? headAroundCrawling.get() : headAroundStanding.get()) {
-            int headY = MathHelper.floor(predictedBox.maxY - 0.01D);
             Direction[] headDirections = {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST};
             Arrays.sort(headDirections, Comparator.comparingDouble(direction -> -(Vec3d.of(direction.getVector())
                     .dotProduct(knownMovement))));
-            headOccupied = getOccupiedFootprint(predictedBox, headY);
-            headCandidates.addAll(getSurroundCandidates(headOccupied, headDirections));
+            for (int y = (crawling ? minY : minY + 1); y < maxY; y++) {
+                var headOccupied = MathUtils.getOccupiedHorizontalBlockPositions(predictedBox, y);
+                footCandidates.addAll(getSurroundCandidates(headOccupied, headDirections));
+            }
         }
-        candidates.addAll(headCandidates);
-        if (higher.get() && !hasSolidBlock(headOccupied)) {
-            headCandidates.stream().map(BlockPos::up).forEach(candidates::add);
-        }
-        if (ceiling.get()) {
-            candidates.add(BlockPos.ofFloored(predictedPos.x, Math.floor(predictedBox.maxY) + 1.0D, predictedPos.z));
+        for (var bp : footAroundCandidates) {
+            BlockState stateUp = mc.world.getBlockState(bp.up());
+            if (foot.get() || (footCandidates.contains(bp.up()) && (stateUp.isAir() || stateUp.isLiquid()))) {
+                footCandidates.add(bp);
+            }
         }
 
-        Set<BlockPos> footCandidates = new LinkedHashSet<>();
-        if (footPlate.get()) {
-            footCandidates.add(BlockPos.ofFloored(predictedPos.x, predictedBox.minY - 1.0D, predictedPos.z));
-        }
-        Direction[] footDirections = {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST};
-        Set<BlockPos> footOccupied = getOccupiedFootprint(predictedBox, MathHelper.floor(predictedBox.minY));
-        Set<BlockPos> footAroundCandidates =
-                footIfNoChoice.get() ? getSurroundCandidates(footOccupied, footDirections) : new LinkedHashSet<>();
-        footCandidates.addAll(footAroundCandidates);
         candidates.addAll(footCandidates);
-        if (lower.get() && !hasSolidBlock(footOccupied)) {
-            footAroundCandidates.stream().map(BlockPos::down).forEach(candidates::add);
+        Set<BlockPos> scaffoldCandidates = new LinkedHashSet<>();
+        if (scaffold.get()) {
+            for (var y : new int[] {minY - 1, maxY}) {
+                for (var bp0 : footAroundCandidates) {
+                    BlockPos scaffold1 = bp0.withY(y);
+                    BlockPos scaffoldAgaint = y == minY - 1 ? scaffold1.up() : scaffold1.down();
+                    BlockState state1 = mc.world.getBlockState(scaffoldAgaint);
+                    if (candidates.contains(scaffoldAgaint) && (state1.isAir() || state1.isLiquid())) {
+                        scaffoldCandidates.add(scaffold1);
+                    } else {
+                        for (var dir : footDirections) {
+                            BlockPos bp2 = scaffold1.offset(dir);
+                            if (ceilings.contains(bp2)) {
+                                BlockState state2 = mc.world.getBlockState(bp2);
+                                if (state2.isAir() || state2.isLiquid()) {
+                                    if (InteractionTasks.checkPositionPlace(scaffold1, dir, mc.player.getPos())) {
+                                        scaffoldCandidates.add(scaffold1);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
-
+        candidates.addAll(scaffoldCandidates);
+        if (collision) {
+            candidates.removeAll(footCandidates);
+        }
         List<BlockPos> ordered = new ArrayList<>(candidates);
         IndexEntry<ItemStack> supply = supplyBlocks();
         if (supply == null) {
-            return false;
+            return 0;
         }
 
         boolean handIsOffhand = offhand.get() || supply.index() == 40;
-        int maxPlaces = Math.min(multiply.get(), supply.val().getCount());
+        int maxPlaces = Math.min(remainingInteractions, supply.val().getCount());
         int placed = 0;
         Runnable callback = null;
         for (BlockPos pos : ordered) {
@@ -222,14 +263,15 @@ public class AutoTrap extends BaseModule {
             if (!InteractUtils.canInteractAndPlace(mc.player, hitResult)) {
                 continue;
             }
-            if (!InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), pos)
+            if (!InteractExtra.INSTANCE.isWithinInteractRange(
+                            mc.player.getPos(), hitResult.val().getBlockPos())
                     || !InteractionTasks.canHandleInteract(mode.get(), hitResult.val())) {
                 continue;
             }
             if (placed == 0) {
                 callback = InvExtra.INSTANCE.swapItemToHand(supply.index(), handIsOffhand, ghostHand.get());
                 if (callback == null) {
-                    return false;
+                    return 0;
                 }
             }
             boolean completed = InteractionTasks.handlePlaceMode(
@@ -242,24 +284,10 @@ public class AutoTrap extends BaseModule {
         if (callback != null) {
             InteractionTasks.finishGhostHand(mode.get(), callback);
         }
-        return placed > 0;
+        return placed;
     }
 
-    private Set<BlockPos> getOccupiedFootprint(Box targetBox, int y) {
-        int minX = MathHelper.floor(targetBox.minX);
-        int maxX = MathHelper.ceil(targetBox.maxX) - 1;
-        int minZ = MathHelper.floor(targetBox.minZ);
-        int maxZ = MathHelper.ceil(targetBox.maxZ) - 1;
-        Set<BlockPos> occupied = new LinkedHashSet<>();
-        for (int x = minX; x <= maxX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
-                occupied.add(new BlockPos(x, y, z));
-            }
-        }
-        return occupied;
-    }
-
-    private Set<BlockPos> getSurroundCandidates(Set<BlockPos> occupied, Direction[] directions) {
+    private Set<BlockPos> getSurroundCandidates(Collection<BlockPos> occupied, Direction[] directions) {
         Set<BlockPos> result = new LinkedHashSet<>();
         for (Direction direction : directions) {
             for (BlockPos occupiedPos : occupied) {
@@ -273,40 +301,33 @@ public class AutoTrap extends BaseModule {
         return result;
     }
 
-    private boolean hasSolidBlock(Set<BlockPos> positions) {
-        return positions.stream().anyMatch(pos -> {
-            BlockState state = mc.world.getBlockState(pos);
-            return !state.isAir() && !state.isLiquid();
-        });
-    }
-
-    private boolean tryAutoCrawl(Vec3d predictedPos) {
+    private int tryAutoCrawl(Vec3d predictedPos) {
         BlockPos feetPos = BlockPos.ofFloored(predictedPos);
         BlockPos supportPos = feetPos.down();
         BlockState supportState = mc.world.getBlockState(supportPos);
         if (supportState.getCollisionShape(mc.world, supportPos).isEmpty()) {
-            return false;
+            return 0;
         }
 
         BlockPos headPos = feetPos.up();
         BlockState headState = mc.world.getBlockState(headPos);
         if (headState.getBlock() instanceof FenceGateBlock) {
-            return !headState.get(FenceGateBlock.OPEN) || interactWithCrawlBlock(headPos);
+            return headState.get(FenceGateBlock.OPEN) ? interactWithCrawlBlock(headPos) : 0;
         }
         if (headState.getBlock() instanceof TrapdoorBlock) {
             if (headState.get(TrapdoorBlock.OPEN)) {
                 BlockState closedState = headState.with(TrapdoorBlock.OPEN, false);
-                return isLowTrapdoor(closedState, headPos) && interactWithCrawlBlock(headPos);
+                return isLowTrapdoor(closedState, headPos) ? interactWithCrawlBlock(headPos) : 0;
             }
-            return isLowTrapdoor(headState, headPos);
+            return 0;
         }
         if (!headState.isAir() && !headState.isLiquid()) {
-            return false;
+            return 0;
         }
 
         IndexEntry<ItemStack> supply = supplyCrawlBlock();
         if (supply == null) {
-            return false;
+            return 0;
         }
         boolean trapdoor = ((BlockItem) supply.val().getItem()).getBlock() instanceof TrapdoorBlock;
         BlockHalf trapdoorHalf = trapdoor
@@ -314,7 +335,7 @@ public class AutoTrap extends BaseModule {
                         ((BlockItem) supply.val().getItem()).getBlock().getDefaultState(), headPos)
                 : null;
         if (trapdoor && trapdoorHalf == null) {
-            return false;
+            return 0;
         }
         BlockState crawlState = ((BlockItem) supply.val().getItem()).getBlock().getDefaultState();
         if (trapdoor) {
@@ -344,26 +365,30 @@ public class AutoTrap extends BaseModule {
         if (!InteractUtils.canInteractAndPlace(mc.player, hitResult)
                 || !InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), headPos)
                 || !InteractionTasks.canHandleInteract(mode.get(), hitResult.val())) {
-            return false;
+            return 0;
         }
 
         boolean handIsOffhand = offhand.get() || supply.index() == 40;
         Runnable callback = InvExtra.INSTANCE.swapItemToHand(supply.index(), handIsOffhand, ghostHand.get());
         if (callback == null) {
-            return false;
+            return 0;
         }
-        boolean completed = InteractionTasks.handlePlaceMode(
-                mode.get(), hitResult.val(), handIsOffhand ? Hand.OFF_HAND : Hand.MAIN_HAND, swingHand.get());
+        Hand hand = handIsOffhand ? Hand.OFF_HAND : Hand.MAIN_HAND;
+        boolean completed = InteractionTasks.handlePlaceMode(mode.get(), hitResult.val(), hand, swingHand.get());
         InteractionTasks.finishGhostHand(mode.get(), callback);
-        return completed;
+        return completed || (trapdoor && autoCrawlZeroTickInteract.get()) ? 1 : 0;
     }
 
-    private boolean interactWithCrawlBlock(BlockPos pos) {
+    private int interactWithCrawlBlock(BlockPos pos) {
         BlockHitResult hitResult = InteractionTasks.createHitResult(pos, mc.player.getPos());
-        return InteractionTasks.canHandleInteract(mode.get(), hitResult)
-                && InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), pos)
-                && InteractionTasks.handlePlaceMode(
-                        mode.get(), hitResult, offhand.get() ? Hand.OFF_HAND : Hand.MAIN_HAND, swingHand.get());
+        if (!InteractionTasks.canHandleInteract(mode.get(), hitResult)
+                || !InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), pos)) {
+            return 0;
+        }
+        return InteractionTasks.handlePlaceMode(
+                        mode.get(), hitResult, offhand.get() ? Hand.OFF_HAND : Hand.MAIN_HAND, swingHand.get())
+                ? 1
+                : 0;
     }
 
     private IndexEntry<ItemStack> supplyCrawlBlock() {

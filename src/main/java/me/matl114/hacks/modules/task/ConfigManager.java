@@ -4,15 +4,12 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.Dynamic;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.HackModules;
-import me.matl114.managers.Configs;
 import me.matl114.managers.FileManager;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.command.MainCommand;
@@ -38,7 +35,6 @@ public class ConfigManager extends BaseModule {
     public ConfigManager() {
         super("ConfigManager");
     }
-
 
     @Override
     public void registerAll() {
