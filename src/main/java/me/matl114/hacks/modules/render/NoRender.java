@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.render;
 
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.EntityTypeEntrySet;
@@ -13,6 +14,7 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
 import net.minecraft.client.particle.Particle;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityStatusEffectS2CPacket;
@@ -36,6 +38,7 @@ public class NoRender extends BaseModule {
 
     public NoRender() {
         super("NoRender");
+        portConfigs(render.add("no-world-bob-view"), worldEffect.add("no-world-bob-view"));
         bindFlag(enable);
         INSTANCE = this;
     }
@@ -79,6 +82,16 @@ public class NoRender extends BaseModule {
 
     public final FlagRef noWeather =
             flagBuilder(worldEffect.add("weather-effect")).build();
+
+    public final FlagRef noWorldBobView = builder(worldEffect.add("no-world-bob-view"), FlagRef.TYPE)
+            .defaultValue(true)
+            .build();
+
+    public final FlagRef noBlockAnimation =
+            flagBuilder(worldEffect.add("block-animation")).build();
+
+    public final FlagRef noTextureOffset =
+            flagBuilder(worldEffect.add("texture-offset")).build();
 
     public final FlagRef noNausea = flagBuilder(effectSetting.add("no-nausea")).build();
 
@@ -134,6 +147,7 @@ public class NoRender extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPacketPoint().getChannel(EntityStatusEffectS2CPacket.class), this::doCancelEffect);
         registerListener(Listener.getPacketPoint().getChannel(EntitySpawnS2CPacket.class), this::doCancelSpawn);
+        registerListener(RenderListener.getApplyWorldBobView(), this::onApplyWorldBobView);
         registerListener(
                 Listener.getParticleCreateListener().getChannel(ParticleTypes.RAIN), this::doParticleSpawnWeather);
         registerListener(
@@ -230,6 +244,24 @@ public class NoRender extends BaseModule {
 
     public boolean noWeather() {
         return isActive() && noWeather.get();
+    }
+
+    public boolean noWorldBobView() {
+        return isActive() && noWorldBobView.get();
+    }
+
+    public void onApplyWorldBobView(Event<MatrixStack> event) {
+        if (noWorldBobView()) {
+            event.cancel();
+        }
+    }
+
+    public boolean noBlockAnimation() {
+        return isActive() && noBlockAnimation.get();
+    }
+
+    public boolean noTextureOffset() {
+        return isActive() && noTextureOffset.get();
     }
 
     public boolean noFlyFov() {

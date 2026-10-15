@@ -53,6 +53,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Environment(EnvType.CLIENT)
 @Mixin(ClientPlayerEntity.class)
 public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity implements ClientPlayerAccess {
+    @Shadow
+    public float nauseaIntensity;
+
+    @Shadow
+    public float lastNauseaIntensity;
+
     @Unique
     private boolean forceNoFall;
 
