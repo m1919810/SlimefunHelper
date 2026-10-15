@@ -39,10 +39,6 @@ public class ConfigManager extends BaseModule {
         super("ConfigManager");
     }
 
-    private final ModulePath root = makePath(Configs.MISC_CONFIG, "config");
-    private final ListRef privacyPathKeywords = builder(root.add("privacy-protection-path-keywords"), ListRef.TYPE)
-            .defaultValue(List.of("chat", "http"))
-            .build();
 
     @Override
     public void registerAll() {
@@ -122,6 +118,12 @@ public class ConfigManager extends BaseModule {
                 .post(e -> e.executor(CommandContext.run(this::onSave)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
+                .name("savehotkey")
+                .helper("message.command.config.savehotkey.help")
+                .arg(manualPathArgument)
+                .post(e -> e.executor(CommandContext.run(this::onSaveHotkey)))
+                .complete()
+                .subBuilder(SubCommand.taskBuilder())
                 .name("savemodule")
                 .helper("message.command.config.savemodule.help")
                 .arg(manualPathArgument)
@@ -156,6 +158,12 @@ public class ConfigManager extends BaseModule {
                 .arg(configOrAllNameArgument)
                 .arg(pathPrefixArgument)
                 .post(e -> e.executor(CommandContext.run(this::onLoad)))
+                .complete()
+                .subBuilder(SubCommand.taskBuilder())
+                .name("loadhotkey")
+                .helper("message.command.config.loadhotkey.help")
+                .arg(fileLoadArgument)
+                .post(e -> e.executor(CommandContext.run(this::onLoadHotkey)))
                 .complete()
                 .subBuilder(SubCommand.taskBuilder())
                 .name("loadmodule")
@@ -238,17 +246,6 @@ public class ConfigManager extends BaseModule {
                     }
                 }))
                 .complete();
-    }
-
-    @Override
-    public void addCustomWidgets(
-            Consumer<DrawableWidget> acceptor,
-            int dx,
-            int dy,
-            int dblank,
-            me.matl114.gui.interfaces.ElementFactory factory) {
-        super.addCustomWidgets(acceptor, dx, dy, dblank, factory);
-        acceptor.accept(factory.createTitle("widget.config-manager.command", 0, dblank, dx, dy));
     }
 
     public void onOpen() {
@@ -402,19 +399,12 @@ public class ConfigManager extends BaseModule {
         String pathPrefix = args.nextNonnullString().trim();
         ConfigSnapshot snapshot;
         if ("all".equalsIgnoreCase(allName)) {
-            List<String> privacyKeywords = privacyPathKeywords.get();
-
             Map<Identifier, MapRef> snapshotMap = new LinkedHashMap<>();
             for (Config config : Config.REGISTRY) {
                 if (config.getRegistryKey() == null) {
                     continue;
                 }
                 Identifier identifier = config.getRegistryKey().getValue();
-                if (isPrivacyConfig(identifier, privacyKeywords)) {
-                    Debug.chat(Text.literal("保存时跳过配置: " + identifier + " 以避免隐私信息泄露(可在设置中调整关键词)")
-                            .formatted(Formatting.YELLOW));
-                    continue;
-                }
                 snapshotMap.put(identifier, filterSnapshotByPathPrefix(config, pathPrefix));
             }
 
@@ -434,6 +424,43 @@ public class ConfigManager extends BaseModule {
         DataResult<me.matl114.managers.config.Ref<?>> encoded =
                 ConfigSnapshot.CODEC.encodeStart(ConfigOp.INSTANCE, snapshot);
         save(fileName, snapshot);
+    }
+
+    public void onSaveHotkey(ArgumentInputStream args) {
+        String rawPath = args.nextNonnullString();
+        String fileName;
+        try {
+            fileName = normalizeSnapshotFileName(rawPath);
+        } catch (IllegalArgumentException e) {
+            Debug.chat(Text.literal(e.getMessage()).formatted(Formatting.RED));
+            return;
+        }
+        if (FileManager.getInstance().hasConfigStorage(fileName)) {
+            Debug.chat(Text.translatable("message.command.config.hotkey.file-exists", fileName)
+                    .formatted(Formatting.RED));
+            Debug.chat(Text.translatable("message.command.config.hotkey.open-folder")
+                    .formatted(Formatting.YELLOW)
+                    .styled(style -> style.withClickEvent(ChatUtils.getOpenFile(FileManager.CONFIG_SAVE_FOLDER))));
+            return;
+        }
+
+        Map<Identifier, MapRef> snapshotMap = new LinkedHashMap<>();
+        for (Config config : Config.REGISTRY) {
+            if (config.getRegistryKey() == null) {
+                continue;
+            }
+            Identifier identifier = config.getRegistryKey().getValue();
+            MapRef hotkeySnapshot = new MapRef();
+            for (LeafEntry leaf : flattenMapRef(config.asRef())) {
+                if (leaf.value() instanceof KeyBindRef) {
+                    hotkeySnapshot.setValue(leaf.value(), leaf.path());
+                }
+            }
+            if (!hotkeySnapshot.getValue().isEmpty()) {
+                snapshotMap.put(identifier, hotkeySnapshot);
+            }
+        }
+        save(fileName, new ConfigSnapshot(snapshotMap));
     }
 
     public void onSaveModule(ArgumentInputStream args, me.matl114.utils.commands.params.ArgumentReader argsReader) {
@@ -468,14 +495,6 @@ public class ConfigManager extends BaseModule {
             }
         }
 
-        List<String> privacyKeywords = privacyPathKeywords.get();
-        for (var entry : new HashSet<>(snapshotMap.keySet())) {
-            if (isPrivacyConfig(entry, privacyKeywords)) {
-                Debug.chat(Text.literal("保存时跳过配置: " + entry + " 以避免隐私信息泄露(可在设置中调整关键词)")
-                        .formatted(Formatting.YELLOW));
-                snapshotMap.remove(entry);
-            }
-        }
         ConfigSnapshot snapshot = new ConfigSnapshot(snapshotMap);
         save(fileName, snapshot);
     }
@@ -485,14 +504,15 @@ public class ConfigManager extends BaseModule {
                 ConfigSnapshot.CODEC.encodeStart(ConfigOp.INSTANCE, snapshot);
         if (encoded.isError()) {
             String message = encoded.error().map(DataResult.Error::message).orElse("未知编码错误");
-            Debug.chat(Text.literal("保存配置快照失败: " + message).formatted(Formatting.RED));
+            Debug.chat(Text.translatable("message.command.config.save.error", message)
+                    .formatted(Formatting.RED));
             return;
         }
 
         try (FileStorage storage =
                 FileManager.getInstance().getConfigStorage(fileName).asAutoSave()) {
             storage.write(encoded.result().get(), ConfigOp.INSTANCE);
-            Debug.chat(Text.literal("成功保存配置快照: " + fileName + " ,点击本文本打开文件夹")
+            Debug.chat(Text.translatable("message.command.config.save.success", fileName)
                     .formatted(Formatting.GREEN)
                     .styled(style -> style.withClickEvent(
                             ChatUtils.getOpenFile(storage.getFile().getParentFile()))));
@@ -560,6 +580,42 @@ public class ConfigManager extends BaseModule {
         }
 
         Debug.chat(Text.literal("成功加载配置快照" + fileName).formatted(Formatting.GREEN));
+    }
+
+    public void onLoadHotkey(ArgumentInputStream args) {
+        String rawPath = args.nextArg();
+        if (rawPath == null) {
+            promptSnapshotFolderImport();
+            return;
+        }
+        String fileName;
+        try {
+            fileName = normalizeSnapshotFileName(rawPath);
+        } catch (IllegalArgumentException e) {
+            Debug.chat(Text.literal(e.getMessage()).formatted(Formatting.RED));
+            promptSnapshotFolderImport();
+            return;
+        }
+
+        ConfigSnapshot snapshot = load(fileName);
+        if (snapshot == null) return;
+        for (Map.Entry<Identifier, MapRef> entry : snapshot.snapSnot().entrySet()) {
+            Config config = Config.REGISTRY.get(entry.getKey());
+            if (config == null) {
+                continue;
+            }
+            for (LeafEntry leaf : flattenMapRef(entry.getValue())) {
+                if (!(leaf.value() instanceof KeyBindRef)) {
+                    continue;
+                }
+                Ref<?> currentRef = config.get(leaf.path());
+                if (currentRef instanceof KeyBindRef) {
+                    currentRef.copyValueFrom(leaf.value());
+                }
+            }
+        }
+        Debug.chat(Text.translatable("message.command.config.hotkey.load-success", fileName)
+                .formatted(Formatting.GREEN));
     }
 
     public ConfigSnapshot load(String fileName) {
@@ -685,13 +741,6 @@ public class ConfigManager extends BaseModule {
             }
         }
         return filteredSnapshot;
-    }
-
-    private boolean isPrivacyConfig(Identifier identifier, List<String> privacyKeywords) {
-        String path = identifier.getPath();
-        return privacyKeywords.stream()
-                .filter(keyword -> keyword != null && !keyword.isBlank())
-                .anyMatch(path::contains);
     }
 
     private void promptSnapshotFolderImport() {

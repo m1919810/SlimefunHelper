@@ -71,6 +71,10 @@ public class AnchorAura extends BaseModule {
     public final FlagRef airplace =
             builder(root.add("air-place"), Boolean.class).defaultValue(false).build();
 
+    public final FlagRef usePredictor = builder(root.add("damage-use-predictor"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
     public final IntRef range = intBuilder(root.add("range"))
             .defaultValue(10)
             .validator(Configs.intRange(0, 100))
@@ -693,22 +697,30 @@ public class AnchorAura extends BaseModule {
             return target.getBoundingBox();
         }
         if (predictedBoxes == null) {
-            return createPredictedTargetBox(target);
+            return createTargetDamageBox(target);
         }
-        return predictedBoxes.computeIfAbsent(target, this::createPredictedTargetBox);
+        return predictedBoxes.computeIfAbsent(target, this::createTargetDamageBox);
     }
 
-    private Box createPredictedTargetBox(PlayerEntity target) {
+    private Box createTargetDamageBox(PlayerEntity target) {
         Box currentBox = target.getBoundingBox();
         Vec3d currentPos = target.getPos();
+        Vec3d syncedPos = PositionPredict.INSTANCE.getPredictor(target).getCurrentSyncedPos();
+        if (syncedPos == null) {
+            return currentBox;
+        }
+        Vec3d syncMovement = syncedPos.subtract(currentPos);
+        if (!usePredictor.get()) {
+            return currentBox.offset(syncMovement);
+        }
         Vec3d predictedPos =
                 PositionPredict.INSTANCE.attackPredictArgument.get().predict(target);
         if (predictedPos == null
-                || predictedPos.squaredDistanceTo(currentPos) <= MathUtils.s2(PREDICT_POSITION_SWITCH_DISTANCE)) {
-            return currentBox;
+                || predictedPos.squaredDistanceTo(syncedPos) <= MathUtils.s2(PREDICT_POSITION_SWITCH_DISTANCE)) {
+            return currentBox.offset(syncMovement);
         }
-        Vec3d realMovement = MovTasks.simulateMovement(target, currentPos, predictedPos.subtract(currentPos), false);
-        return currentBox.offset(realMovement);
+        Vec3d predictedMovement = MovTasks.simulateMovement(target, syncedPos, predictedPos.subtract(syncedPos), false);
+        return currentBox.offset(syncMovement.add(predictedMovement));
     }
 
     private double getBestEnemyDamage(Map<PlayerEntity, Double> damageMap) {

@@ -13,6 +13,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.events.impl.Render3D;
+import me.matl114.hacks.WorldTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.inv.ChestHistory;
@@ -323,14 +324,14 @@ public class StructureLabel extends BaseModule {
     private boolean prepareContextAsync() {
         RegistryKey<World> worldKey = mc.world.getRegistryKey();
         ContextRequest pending = pendingContextRequest;
-        if (!SeedOre.INSTANCE.hasCurrentSeed()) {
+        if (!WorldTasks.hasSeed()) {
             missingSeedTimer.run(100, () -> logI18N("message.module.structure-label.input-seed"));
             if (context != null || pending != null) {
                 resetState(false, true);
             }
             return false;
         }
-        long seed = SeedOre.INSTANCE.getCurrentSeed();
+        long seed = WorldTasks.getSeed();
         if (context != null && context.worldKey().equals(worldKey) && context.seed() == seed) {
             return true;
         }
