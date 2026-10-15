@@ -6,6 +6,7 @@ import baritone.api.command.Command;
 import baritone.api.command.argument.IArgConsumer;
 import baritone.command.defaults.ElytraCommand;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import me.matl114.hacks.WorldTasks;
 import me.matl114.hacks.modules.survival.BaritoneFix;
 import me.matl114.hacks.modules.survival.SeedOre;
 import me.matl114.utils.ChatUtils;
@@ -48,9 +49,8 @@ public abstract class ElytraCommandMixin extends Command {
     @Inject(method = "execute", at = @At("HEAD"), require = 0, remap = false)
     private void onAutoImportSeedValue(String par1, IArgConsumer par2, CallbackInfo ci) {
         if (BaritoneFix.INSTANCE.enableSeedAutoImport.get()) {
-            SeedOre seedOre = SeedOre.INSTANCE;
-            if (seedOre.hasCurrentSeed()) {
-                long seed = seedOre.getCurrentSeed();
+            if (WorldTasks.hasSeed()) {
+                long seed = WorldTasks.getSeed();
                 if (seed != BaritoneAPI.getSettings().elytraNetherSeed.value && SeedOre.isSeedValid(seed)) {
                     Debug.chat(
                             Text.literal("[BaritoneFix]").formatted(Formatting.RED),

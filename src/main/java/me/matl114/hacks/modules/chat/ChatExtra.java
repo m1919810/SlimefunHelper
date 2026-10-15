@@ -6,11 +6,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import me.matl114.accessors.access.ChatScreenAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.gui.basic.DrawableWidget;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.Regex;
@@ -25,6 +28,8 @@ import me.matl114.managers.config.StringRef;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ScreenUtils;
+import me.matl114.utils.config.AttrKeyValue;
+import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
@@ -107,6 +112,23 @@ public class ChatExtra extends BaseModule {
     }
 
     @Override
+    public void addCustomWidgets(
+            Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank, ElementFactory factory) {
+        super.addCustomWidgets(acceptor, dx, dy, dblank, factory);
+        acceptor.accept(factory.createTitle(ChatLocalSettings.TITLE_TRANSLATION_KEY, 0, dblank, dx, dy));
+        AttrKeyValue<Boolean> passwordEncryption = AttrKeyValue.bool(
+                "chat-screen-tools.password-encrypt", ChatLocalSettings.isPasswordEncryptionEnabled());
+        passwordEncryption.addListener(ChatLocalSettings::setPasswordEncryptionEnabled);
+        acceptor.accept(factory.createToggleButton(
+                "chat-screen-tools.password-encrypt", ValueAccessor.of(passwordEncryption), 0, dblank, dx, dy));
+        AttrKeyValue<String> passwordSalt =
+                AttrKeyValue.str("chat-screen-tools.password-encrypt-salt", ChatLocalSettings.getPasswordSalt());
+        passwordSalt.addListener(ChatLocalSettings::setPasswordSalt);
+        acceptor.accept(passwordSalt.generateKeyValueInput(
+                factory, 0, dblank, indexWidth, blankWidth, dx - indexWidth - blankWidth, dy));
+    }
+
+    @Override
     public void onDisableModule() {
         super.onDisableModule();
     }
@@ -153,16 +175,9 @@ public class ChatExtra extends BaseModule {
             .defaultValue(new Regex("^(/login|/l|/reg|/register|/changepass|/changepassword) (.+)$"))
             .build();
 
-    public final FlagRef encryptPass =
-            flagBuilder(chatTools.add("password-encrypt")).build();
-
     public final IntRef encryptLength = intBuilder(chatTools.add("password-encrypt-length"))
             .defaultValue(20)
             .validator(Configs.INT_POSITIVE)
-            .build();
-
-    public final StringRef encryptSalt = builder(chatTools.add("password-encrypt-salt"), String.class)
-            .defaultValue("")
             .build();
 
     // add chat screen extra things
@@ -247,7 +262,7 @@ public class ChatExtra extends BaseModule {
     }
 
     public void onChatPasswordEncrypt(Event<String> commandChat) {
-        if (mc.player != null && encryptPass.get() && !ScreenUtils.hasCtrlDown()) {
+        if (mc.player != null && ChatLocalSettings.isPasswordEncryptionEnabled() && !ScreenUtils.hasCtrlDown()) {
             String command = commandChat.context();
             if (regexLogin.get().test(command)) {
                 String playerName = mc.player.getNameForScoreboard();
@@ -266,7 +281,7 @@ public class ChatExtra extends BaseModule {
     }
 
     private String encryptWithPlayerName(String str, String playerName) {
-        String concatStr = playerName + ":" + encryptSalt.get() + str;
+        String concatStr = playerName + ":" + ChatLocalSettings.getPasswordSalt() + str;
         byte[] bytes =
                 Hashing.sha256().hashString(concatStr, StandardCharsets.UTF_8).asBytes();
         BigInteger integer = new BigInteger(1, bytes);

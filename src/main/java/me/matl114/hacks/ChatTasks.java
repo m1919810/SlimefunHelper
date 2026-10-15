@@ -19,7 +19,6 @@ import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.chat.*;
 import me.matl114.hacks.modules.inv.ChestHistory;
 import me.matl114.hacks.modules.move.PlayerStateManager;
-import me.matl114.hacks.modules.survival.SeedOre;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.managers.Tasks;
@@ -369,8 +368,8 @@ public class ChatTasks {
                                     .append(ChatUtils.getDisplayedLong(mc.world.getBiomeAccess().seed)),
                             Text.literal("当前绑定种子: ")
                                     .append(
-                                            SeedOre.INSTANCE.hasCurrentSeed()
-                                                    ? ChatUtils.getDisplayedLong(SeedOre.INSTANCE.getCurrentSeed())
+                                            WorldTasks.hasSeed()
+                                                    ? ChatUtils.getDisplayedLong(WorldTasks.getSeed())
                                                     : Text.literal("暂未输入")));
                     onResource0(val, datas);
                 }

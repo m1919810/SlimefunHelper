@@ -569,8 +569,15 @@ public class CombatManager extends BaseModule {
         ExplosionUtils.BlockStateAccess blockAccess =
                 ExplosionUtils.fromWorldWithAutomaticOverrides(mc.world, event.context.center());
         for (PlayerEntity player : mc.world.getPlayers()) {
+            Box targetBox = player.getBoundingBox();
+            if (player != mc.player) {
+                Vec3d syncedPos = PositionPredict.INSTANCE.getPredictor(player).getCurrentSyncedPos();
+                if (syncedPos != null) {
+                    targetBox = targetBox.offset(syncedPos.subtract(player.getPos()));
+                }
+            }
             float rawDamage = ExplosionUtils.calculateExplosionRawDamage(
-                    radius, event.context.center(), player.getBoundingBox(), blockAccess, ExplosionUtils.ALL_TERRAIN);
+                    radius, event.context.center(), targetBox, blockAccess, ExplosionUtils.ALL_TERRAIN);
             float damage = DamageUtils.getMultipliedDamageByDifficulty(mc.world, rawDamage);
             DamageTracker tracker = getDamageTracker(player);
             if (tracker != null) {
