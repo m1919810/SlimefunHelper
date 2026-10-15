@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.interact;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.impl.BlockBreak;
@@ -91,7 +92,7 @@ public class AutoSurround extends BaseModule {
             .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 10.0D))
             .build();
 
-    public final FlagRef placeLower = flagBuilder(autoSurround.add("lower")).build();
+    public final FlagRef scaffold = flagBuilder(autoSurround.add("lower")).build();
 
     public final FlagRef placeUpper = flagBuilder(autoSurround.add("upper")).build();
 
@@ -100,6 +101,9 @@ public class AutoSurround extends BaseModule {
 
     public final FlagRef antiPacketMine =
             flagBuilder(autoSurround.add("anti-packet-mine")).build();
+
+    public final FlagRef autoFillMinePos =
+            flagBuilder(autoSurround.add("auto-fill-mine-pos")).build();
 
     public final FlagRef onlyGround =
             flagBuilder(autoSurround.add("only-ground")).build();
@@ -236,6 +240,8 @@ public class AutoSurround extends BaseModule {
         BlockPos vcPos = PlayerStateManager.INSTANCE.lastVelocityAffectingPos;
         lastSurround = vcPos;
         Box playerBox = mc.player.getBoundingBox();
+        int minY = (int) Math.floor(playerBox.minY);
+        int maxY = (int) Math.ceil(playerBox.maxY);
         playerBox = playerBox.withMaxY(Math.max(
                 playerBox.minY
                         + InteractExtra.INSTANCE.getPotentialEyeHeights().max().orElse(0),
@@ -245,26 +251,8 @@ public class AutoSurround extends BaseModule {
         for (BlockPos occupiedPos : occupiedPoses) {
             occupiedBasePoses.add(new BlockPos(occupiedPos.getX(), vcPos.getY(), occupiedPos.getZ()));
         }
-        int minY = ((int) playerBox.minY) - 1;
-        int maxY = ((int) playerBox.maxY) + 1;
         Set<BlockPos> result = new LinkedHashSet<>();
-        if (placeLower.get()) {
-            if (!onlyGround.get()
-                    && !CollisionUtil.isBoxCollided(
-                            mc.world,
-                            mc.player,
-                            playerBox.withMinY(playerBox.minY - 1.5).withMaxY(playerBox.minY))) {
-                for (int y = minY; y < maxY - 1; ++y) {
-                    for (var re : occupiedPoses) {
-                        BlockPos test = re.withY(y);
-                        if (occupiedPoses.contains(test)) {
-                            continue;
-                        }
-                        result.add(test);
-                    }
-                }
-            }
-        }
+
         var directionTestPoses = new LinkedHashSet<BlockPos>();
 
         for (int direction = 0; direction < 4; ++direction) {
@@ -277,7 +265,7 @@ public class AutoSurround extends BaseModule {
             }
         }
         // do not place under me
-        for (int y = minY; y <= maxY; ++y) {
+        for (int y = minY; y < maxY; ++y) {
             for (BlockPos testPos : directionTestPoses) {
                 BlockPos test = testPos.withY(y);
                 if (occupiedPoses.contains(test)) {
@@ -295,6 +283,43 @@ public class AutoSurround extends BaseModule {
                 result.add(test);
             }
         }
+        if (!onlyGround.get()
+                && !CollisionUtil.isBoxCollided(
+                        mc.world,
+                        mc.player,
+                        playerBox.withMinY(playerBox.minY - 1.5).withMaxY(playerBox.minY))) {
+            for (var re : occupiedPoses) {
+                BlockPos test = re.withY(minY - 1);
+                if (occupiedPoses.contains(test)) {
+                    continue;
+                }
+                result.add(test);
+            }
+        }
+        Set<BlockPos> scaffoldPoses = new LinkedHashSet<>();
+        if (scaffold.get()) {
+            for (var re : directionTestPoses) {
+                BlockPos test = re.withY(minY);
+                if (occupiedPoses.contains(test)) {
+                    continue;
+                }
+                BlockState stateUp = mc.world.getBlockState(test.up());
+                if (stateUp.isAir() || stateUp.isLiquid()) {
+                    scaffoldPoses.add(test);
+                }
+            }
+            for (BlockPos occupiedPos : directionTestPoses) {
+                BlockPos upperPos = occupiedPos.withY(maxY);
+                if (occupiedPoses.contains(upperPos)) {
+                    continue;
+                }
+                BlockState stateUp = mc.world.getBlockState(upperPos.down());
+                if (stateUp.isAir() || stateUp.isLiquid()) {
+                    scaffoldPoses.add(upperPos);
+                }
+            }
+        }
+        result.addAll(scaffoldPoses);
 
         return result;
     }
@@ -332,7 +357,7 @@ public class AutoSurround extends BaseModule {
         boolean offhandOk = offhand.get();
         var resultPoses = getTargetingPos();
         Set<BlockPos> bbs = Set.of();
-        if (antiPacketMine.get()) {
+        if (antiPacketMine.get() || autoFillMinePos.get()) {
             bbs = MiningProgressManager.INSTANCE.getBreakingMap().values().stream()
                     .filter(s -> TargetSelector.INSTANCE.canAttack(s.player))
                     .filter(MiningProgressManager.BlockBreakTracker::canMine)
@@ -341,8 +366,28 @@ public class AutoSurround extends BaseModule {
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
         }
+        Set<BlockPos> fillMinePoses = new LinkedHashSet<>();
+        if (autoFillMinePos.get()) {
+            BlockPos currentMinePos =
+                    PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
+            for (BlockPos minePos : bbs) {
+                for (int i = 0; i < 4; i++) {
+                    BlockPos neighbor = minePos.offset(dd[i]);
+                    if (Objects.equals(neighbor, currentMinePos)) {
+                        continue;
+                    }
+                    BlockState neighbourState = mc.world.getBlockState(neighbor);
+                    if (neighbourState.isAir() || neighbourState.isLiquid() || neighbourState.isReplaceable()) {
+                        fillMinePoses.add(neighbor);
+                    }
+                }
+            }
+        }
         Set<BlockPos> pendingMine = new HashSet<>();
-        for (var test : resultPoses) {
+        Set<BlockPos> orderedResultPoses = new LinkedHashSet<>(resultPoses.size() + fillMinePoses.size());
+        orderedResultPoses.addAll(resultPoses);
+        orderedResultPoses.addAll(fillMinePoses);
+        for (var test : orderedResultPoses) {
             BlockState state = mc.world.getBlockState(test);
             if ((state.isAir() || state.isReplaceable())) {
                 var hitResult = InteractionTasks.getPlaceSupportingResult(test, airplace.get(), !legal);
