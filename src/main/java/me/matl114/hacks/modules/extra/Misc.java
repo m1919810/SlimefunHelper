@@ -107,8 +107,8 @@ public class Misc extends BaseModule {
         double maxTravelDistance = targetFar + playerHalfWidth - playerCenter;
 
         List<Vec3d> trajectory = simulateJump(maxTravelDistance, directionX, directionZ);
-        boolean shouldJump = reachesLanding(trajectory, targetBox, directionX, directionZ)
-                && mc.options.forwardKey.isPressed();
+        boolean shouldJump =
+                reachesLanding(trajectory, targetBox, directionX, directionZ) && mc.options.forwardKey.isPressed();
         parkourTrajectory.submit(trajectory, shouldJump ? JUMP_COLOR : Color.RED.getRGB());
         if (shouldJump) {
             PlayerInputManager.INSTANCE.addJumpModifier(0, true, 1);
