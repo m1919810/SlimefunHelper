@@ -11,7 +11,7 @@ public record LocalEntityPredictor(Entity entity) implements Predictor {
 
     @Override
     public Vec3d getCurrentSyncedPos() {
-        return entity.getTrackedPosition().getPos();
+        return entity.getPos();
     }
 
     @Override
