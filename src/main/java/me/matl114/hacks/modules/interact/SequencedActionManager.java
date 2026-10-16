@@ -54,10 +54,11 @@ public class SequencedActionManager extends BaseModule {
                 this::onBlockBreak,
                 Integer.MAX_VALUE);
         registerListener(
-                Listener.getPacketPreHandlePoint().getChannel(PlayerActionResponseS2CPacket.class), this::onAck);
+                Listener.getPacketPostHandlePoint().getChannel(PlayerActionResponseS2CPacket.class), this::onAck);
     }
 
     int maxSeq = 0;
+    private int maxAckSeq = 0;
     Deque<IndexEntry<UseItemOnBlock>> blockPlaceSequences = new ArrayDeque<>(8);
     Deque<IndexEntry<UseItem>> itemUsageSequences = new ArrayDeque<>(8);
     Deque<IndexEntry<BlockBreak>> blockBreakSequences = new ArrayDeque<>(8);
@@ -68,14 +69,15 @@ public class SequencedActionManager extends BaseModule {
 
     @Broadcast
     @Getter
-    public static EventChannelDispatcher<SequencedAction> sequencedActionResponse =
-            new EventChannelDispatcher<>(SequencedAction::getClass);
+    public static EventChannelDispatcher<IndexEntry<? extends SequencedAction>> sequencedActionResponse =
+            new EventChannelDispatcher<>(entry -> entry.val().getClass());
 
     private void onPlayerRespawn(Event<ClientPlayerEntity> playerEntityEvent) {
         maxSeq = 0;
-        blockPlaceSequences.forEach(s -> sequencedActionResponse.broadcast(s.val()));
-        itemUsageSequences.forEach(s -> sequencedActionResponse.broadcast(s.val()));
-        blockBreakSequences.forEach(s -> sequencedActionResponse.broadcast(s.val()));
+        maxAckSeq = 0;
+        blockPlaceSequences.forEach(sequencedActionResponse::broadcast);
+        itemUsageSequences.forEach(sequencedActionResponse::broadcast);
+        blockBreakSequences.forEach(sequencedActionResponse::broadcast);
         blockPlaceSequences.clear();
         itemUsageSequences.clear();
         blockBreakSequences.clear();
@@ -86,9 +88,6 @@ public class SequencedActionManager extends BaseModule {
     private void onInteractBlock(Event<PlayerInteractBlockC2SPacket> event) {
         if (event.isCancelled()) return;
         // ignore fake sequence
-        if (event.context.getSequence() > mc.world.getPendingUpdateManager().sequence + 20) {
-            return;
-        }
         maxSeq = Math.max(maxSeq, event.context.getSequence());
         var context = PlayerInteractBlockC2SPacketAccess.of(event.context).getUseContext();
         var stack = context != null && context.stack() != null
@@ -109,9 +108,6 @@ public class SequencedActionManager extends BaseModule {
     private void onInteractItem(Event<PlayerInteractItemC2SPacket> event) {
         if (event.isCancelled()) return;
         // ignore fake sequence
-        if (event.context.getSequence() > mc.world.getPendingUpdateManager().sequence + 20) {
-            return;
-        }
         maxSeq = Math.max(maxSeq, event.context.getSequence());
         ItemStack stack = PlayerInteractItemC2SPacketAccess.of(event.context).getItemStack();
         itemUsageSequences.add(
@@ -123,9 +119,6 @@ public class SequencedActionManager extends BaseModule {
 
     private void onBlockBreak(Event<PlayerActionC2SPacket> event) {
         if (event.isCancelled()) return;
-        if (event.context.getSequence() > mc.world.getPendingUpdateManager().sequence + 20) {
-            return;
-        }
         // not sequenced packet
         if (event.context.getSequence() == 0) return;
         if (event.context.getAction() != PlayerActionC2SPacket.Action.START_DESTROY_BLOCK
@@ -150,7 +143,7 @@ public class SequencedActionManager extends BaseModule {
         while ((val = ackList.peek()) != null && val.index() <= ack) {
             var pollOut = ackList.pollFirst();
             if (pollOut != null) {
-                sequencedActionResponse.broadcast(pollOut.val());
+                sequencedActionResponse.broadcast(pollOut);
             }
         }
         if (!ackList.isEmpty()) {
@@ -159,7 +152,7 @@ public class SequencedActionManager extends BaseModule {
                 var s = iter.next();
                 if (s.index() <= ack) {
                     iter.remove();
-                    sequencedActionResponse.broadcast(s.val());
+                    sequencedActionResponse.broadcast(s);
                 }
             }
         }
@@ -188,6 +181,14 @@ public class SequencedActionManager extends BaseModule {
         return itemUsageSequences.stream().anyMatch(s -> bp.test(s.val()));
     }
 
+    public boolean isWaitingItemUseResponse(int sequenceId) {
+        return itemUsageSequences.stream().anyMatch(s -> s.index() == sequenceId);
+    }
+
+    public int getMaxAckSeq() {
+        return maxAckSeq;
+    }
+
     public boolean isWaitingBreakResponse(Predicate<BlockPos> bp) {
         return blockBreakSequences.stream().anyMatch(s -> bp.test(s.val().blockPos()));
     }
@@ -202,6 +203,7 @@ public class SequencedActionManager extends BaseModule {
 
     public void onAck(Event<PlayerActionResponseS2CPacket> event) {
         int response = event.context.sequence();
+        maxAckSeq = Math.max(maxAckSeq, response);
         updateACK(itemUsageSequences, response);
         updateACK(blockPlaceSequences, response);
         updateACK(blockBreakSequences, response);
