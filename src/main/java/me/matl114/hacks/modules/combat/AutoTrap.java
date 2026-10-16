@@ -86,10 +86,7 @@ public class AutoTrap extends BaseModule {
     public final FlagRef headAroundCrawling =
             flagBuilder(root.add("head-around-crawling")).build();
     public final FlagRef scaffold = flagBuilder(root.add("scaffold")).build();
-    public final ModulePath autoCrawlConfig = root.add("auto-crawl");
-    public final FlagRef autoCrawl = flagBuilder(autoCrawlConfig.addEnable()).build();
-    public final FlagRef autoCrawlZeroTickInteract =
-            flagBuilder(autoCrawlConfig.add("zero-tick-interact")).build();
+
     public final FlagRef useWhiteList = flagBuilder(root.add("use-white-list")).build();
     public final NBTRef<EntrySet<Item>> whiteList = builder(root.add("white-list"), EntrySet.<Item>parameter())
             .defaultValue(new EntrySet<>(Registries.ITEM, List.of(Items.OBSIDIAN)))
@@ -105,7 +102,13 @@ public class AutoTrap extends BaseModule {
             .build();
     public final FlagRef swingHand =
             builder(root.add("swing-hand"), Boolean.class).defaultValue(true).build();
-
+    public final ModulePath autoCrawlConfig = root.add("auto-crawl");
+    public final FlagRef autoCrawl = flagBuilder(autoCrawlConfig.addEnable()).build();
+    public final KeyBindRef hotkey2 = toggleHotkey(
+                    autoCrawlConfig.addHotkey(), new MultiKeyBind(), autoCrawlConfig.addEnable())
+            .build();
+    public final FlagRef autoCrawlZeroTickInteract =
+            flagBuilder(autoCrawlConfig.add("zero-tick-interact")).build();
     private int delayTicks;
 
     @Override
@@ -116,17 +119,22 @@ public class AutoTrap extends BaseModule {
     }
 
     private void onInput(Event<Void> event) {
-        if (checkNull() || !enable.get() || (eatingAbort.get() && mc.player.isUsingItem())) {
+        if (checkNull()) {
             return;
         }
-        List<PlayerEntity> targets = getTargets();
-        if (targets.isEmpty()) {
+
+        if (eatingAbort.get() && mc.player.isUsingItem()) {
             return;
         }
         if (++delayTicks >= delay.get()) {
             int interactions = 0;
             int maxInteractions = multiply.get();
+
             if (autoCrawl.get()) {
+                List<PlayerEntity> targets = getTargets();
+                if (targets.isEmpty()) {
+                    return;
+                }
                 for (PlayerEntity target : targets) {
                     Vec3d predictedPos =
                             PositionPredict.INSTANCE.attackPredictArgument.get().predict(target);
@@ -137,13 +145,20 @@ public class AutoTrap extends BaseModule {
                     }
                 }
             }
-            for (PlayerEntity target : targets) {
-                interactions += placeTrap(target, maxInteractions - interactions);
-                if (interactions >= maxInteractions) {
-                    delayTicks = 0;
+            if (enable.get()) {
+                List<PlayerEntity> targets = getTargets();
+                if (targets.isEmpty()) {
                     return;
                 }
+                for (PlayerEntity target : targets) {
+                    interactions += placeTrap(target, maxInteractions - interactions);
+                    if (interactions >= maxInteractions) {
+                        delayTicks = 0;
+                        return;
+                    }
+                }
             }
+
             if (interactions > 0) {
                 delayTicks = 0;
             }

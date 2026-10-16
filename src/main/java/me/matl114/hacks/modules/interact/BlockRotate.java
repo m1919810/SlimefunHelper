@@ -47,12 +47,8 @@ public class BlockRotate extends BaseModule {
 
     public BlockRotate() {
         super("BlockRotate");
-        bindFlag(enable);
         INSTANCE = this;
     }
-
-    public final FlagRef enable =
-            builder(blockRotate.add("enable"), Boolean.class).defaultValue(true).build();
 
     public final EnumRef<BypassMode> bypassMode = builder(blockRotate.add("yaw-deceive-bypass-mode"), BypassMode.class)
             .defaultValue(BypassMode.NO_BYPASS)
@@ -91,7 +87,7 @@ public class BlockRotate extends BaseModule {
     }
 
     public boolean enableBlockRotateModify() {
-        return enable3.get() || enable2.get();
+        return enable3.get() || enable2.get() || enable4.get();
     }
 
     final Map<BlockPos, TemporarySchematic> tempSchematics = new ConcurrentHashMap<>();
@@ -128,7 +124,7 @@ public class BlockRotate extends BaseModule {
     // can not bypass
     public void onPreSendInteractBlockRotate(Event<PlayerInteractBlockC2SPacket> e) {
         if (e.isCancelled()) return;
-        if (enable.get() && enableBlockRotateModify()) {
+        if (enableBlockRotateModify()) {
             if (e.context instanceof PlayerInteractBlockC2SPacketAccess paccess) {
                 //
                 Vec2f currentPy = new Vec2f(PlayerStateManager.INSTANCE.lastPitch, PlayerStateManager.INSTANCE.lastYaw);
@@ -274,16 +270,17 @@ public class BlockRotate extends BaseModule {
                         access.setPos(easyPlaceResult.getPos());
                     }
                 }
-                if (legal.get()
-                        && !RaycastUtils.canRaycastHit(
-                                mc.player,
-                                PlayerStateManager.INSTANCE.lastPitch,
-                                PlayerStateManager.INSTANCE.lastYaw,
-                                packetHitResult.getBlockPos(),
-                                InteractExtra.INSTANCE.getBlockReachDistance())) {
+                handleYawDeceive(litematicaState, yawDeceive.context);
+                if ((legal.get()
+                                && !RaycastUtils.canRaycastHit(
+                                        mc.player,
+                                        PlayerStateManager.INSTANCE.lastPitch,
+                                        PlayerStateManager.INSTANCE.lastYaw,
+                                        packetHitResult.getBlockPos(),
+                                        InteractExtra.INSTANCE.getBlockReachDistance()))
+                        || yawDeceive.context != null) {
                     look.context(packetHitResult.getBlockPos());
                 }
-                handleYawDeceive(litematicaState, yawDeceive.context);
             }
             RenderTasks.debugBlockHitResult(packetHitResult);
         }
@@ -295,17 +292,19 @@ public class BlockRotate extends BaseModule {
             World litematicaWorld = LitematicaHooks.getInstance().getSchematicWorld();
             if (!LitematicaHooks.getInstance().isPositionWithinRange(pos)) return;
             BlockState litematicaState = litematicaWorld.getBlockState(pos);
-            if (legal.get()
-                    && !RaycastUtils.canRaycastHit(
-                            mc.player,
-                            PlayerStateManager.INSTANCE.lastPitch,
-                            PlayerStateManager.INSTANCE.lastYaw,
-                            pos,
-                            InteractExtra.INSTANCE.getBlockReachDistance())) {
-                look.context(pos);
-            }
+
             if (litematicaState.getBlock() == newState.getBlock() && litematicaState != newState) {
                 handleYawInteractDeceive(litematicaState, yawDeceive.context);
+            }
+            if ((legal.get()
+                            && !RaycastUtils.canRaycastHit(
+                                    mc.player,
+                                    PlayerStateManager.INSTANCE.lastPitch,
+                                    PlayerStateManager.INSTANCE.lastYaw,
+                                    pos,
+                                    InteractExtra.INSTANCE.getBlockReachDistance()))
+                    || yawDeceive.context != null) {
+                look.context(pos);
             }
         }
     }
