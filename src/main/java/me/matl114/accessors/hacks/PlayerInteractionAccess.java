@@ -81,6 +81,10 @@ public interface PlayerInteractionAccess {
      */
     public BlockPos getCurrentFailBreakPos();
 
+    public boolean commitFailBreak(BlockPos pos, int startTick);
+
+    public void clearActiveFailBreak();
+
     /**
      * 判断 failBreak 槽位是否为空。
      *
