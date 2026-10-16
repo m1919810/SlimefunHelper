@@ -8,11 +8,14 @@ import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.*;
 import me.matl114.events.Event;
+import me.matl114.events.impl.BlockBreak;
+import me.matl114.events.impl.BlockUpdate;
 import me.matl114.events.impl.EventContainer;
 import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.modules.interact.SequencedActionManager;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.OptionalPrimitive;
@@ -44,6 +47,10 @@ import org.spongepowered.asm.mixin.Unique;
 
 public class MineExtra extends BaseModule {
     public static MineExtra INSTANCE;
+
+    private record PendingFailBreak(int seqNum, BlockPos pos, int startBreakTick) {}
+
+    private PendingFailBreak pendingFailBreak;
 
     public MineExtra() {
         super("MineExtra");
@@ -226,7 +233,11 @@ public class MineExtra extends BaseModule {
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetLoad);
         registerListener(Listener.getGameJoinPoint(), this::onGameJoin);
-        registerListener(Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onMine);
+        registerListener(
+                Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onMine, Integer.MAX_VALUE);
+        registerListener(
+                SequencedActionManager.getSequencedActionResponse().getChannel(BlockBreak.class), this::onFailBreakAck);
+        registerListener(Listener.getBlockUpdateListener(), this::onFailBreakBlockUpdate);
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onGrimSBFastBreakExplode);
         registerListener(Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onSilentBreak);
@@ -239,6 +250,42 @@ public class MineExtra extends BaseModule {
 
     public void onGameJoin(Event<ClientPlayerEntity> gameJoin) {
         resetStatistics();
+    }
+
+    private void onFailBreakBlockUpdate(Event<BlockUpdate> event) {
+        if (mc.interactionManager == null) {
+            return;
+        }
+        BlockUpdate update = event.context();
+        PlayerInteractionAccess access = PlayerInteractionAccess.of(mc.interactionManager);
+        if (update.newState().isAir() && Objects.equals(access.getCurrentFailBreakPos(), update.pos())) {
+            access.clearActiveFailBreak();
+        }
+    }
+
+    private void onFailBreakAck(Event<IndexEntry<BlockBreak>> event) {
+        if (checkNull()) return;
+        if (pendingFailBreak == null) return;
+        IndexEntry<BlockBreak> ackEntry = event.context();
+        BlockBreak ack = ackEntry.val();
+        PendingFailBreak pending = pendingFailBreak;
+        // has more ack
+        if (ackEntry.index() > pending.seqNum()) {
+            pendingFailBreak = null;
+            return;
+        }
+        if (ack.stage() != BlockBreak.Stage.POST || ackEntry.index() != pending.seqNum()) {
+            return;
+        }
+        pendingFailBreak = null;
+        PlayerInteractionAccess access = PlayerInteractionAccess.of(mc.interactionManager);
+        if (!access.isFailBreakEmpty()) {
+            return;
+        }
+        if (mc.world.getBlockState(pending.pos()).isAir()) {
+            return;
+        }
+        access.commitFailBreak(pending.pos(), pending.startBreakTick());
     }
 
     int lastSwingPacket = 0;
@@ -255,7 +302,13 @@ public class MineExtra extends BaseModule {
     boolean thisTickHasBroken;
 
     public void onMine(Event<PlayerActionC2SPacket> packetEvent) {
+        if (packetEvent.isCancelled()) {
+            return;
+        }
         PlayerActionC2SPacket packet = packetEvent.context();
+        if (packet.getAction() == PlayerActionC2SPacket.Action.START_DESTROY_BLOCK) {
+            updateGainedAdvantageCooldown(packet.getPos(), packetEvent);
+        }
         if (instaBreakGhostHand != null
                 && packet.getAction() == PlayerActionC2SPacket.Action.START_DESTROY_BLOCK
                 && ghostHandMine.get()
@@ -302,6 +355,15 @@ public class MineExtra extends BaseModule {
         }
         // statistic update
         PlayerInteractionAccess access = PlayerInteractionAccess.of(mc.interactionManager);
+
+        if (packet.getAction() == PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK
+                && mc.world != null
+                && access.isFailBreakEmpty()
+                && pendingFailBreak == null
+                && Objects.equals(access.getCurrentMiningPos(), packet.getPos())) {
+            pendingFailBreak = new PendingFailBreak(
+                    packet.getSequence(), packet.getPos().toImmutable(), lastStartMineBreakingProgressResetTick);
+        }
 
         if (packet.getAction() == PlayerActionC2SPacket.Action.START_DESTROY_BLOCK) {
             // filter bad packets/ instant break
@@ -355,7 +417,6 @@ public class MineExtra extends BaseModule {
                     && Objects.equals(
                             PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos(), packet.getPos())) {
                 if (mc.player.getAbilities().creativeMode) {
-                    gainedAdvantageCooldown = 150;
                     return;
                 }
                 BlockState state = mc.world.getBlockState(packet.getPos());
@@ -388,11 +449,6 @@ public class MineExtra extends BaseModule {
                                     Direction.DOWN,
                                     seq);
                         });
-                        if ((Tasks.getTick() - lastFinishBreakingTick) >= 6) {
-                            gainedAdvantageCooldown = (int) (gainedAdvantageCooldown * 0.9);
-                        } else {
-                            gainedAdvantageCooldown += (300 - (Tasks.getTick() - lastFinishBreakingTick) * 50);
-                        }
                     }
                 });
             }
@@ -420,7 +476,6 @@ public class MineExtra extends BaseModule {
             // exact tick we send,
             if (currentMiningBlock != null && Tasks.getTick() - lastFinishBreakingTick >= 6) {
                 if (mc.player.getAbilities().creativeMode) {
-                    gainedAdvantageCooldown = GRIM_BAD_PACKETS_DOUBLE_MINE_COOLDOWN_THRESHOLD;
                     return;
                 }
                 if (!cooldownFix.get().isPresent()) return;
@@ -435,7 +490,6 @@ public class MineExtra extends BaseModule {
                                     BlockPos.ofFloored(mc.player.getPos()).withY(9178),
                                     Direction.DOWN,
                                     seq));
-                    gainedAdvantageCooldown = (int) (gainedAdvantageCooldown * 0.9);
                 }
                 ;
             }
@@ -532,7 +586,6 @@ public class MineExtra extends BaseModule {
     public int gainedAdvantageMining;
 
     public int ignoreNextFastBreakStatus = 0;
-    public int lastStartDoubleMineTick = 0;
 
     public void resetStatistics() {
         lastFinishBreakingTick = 0;
@@ -541,10 +594,7 @@ public class MineExtra extends BaseModule {
         lastStartingMineIsInstantBreak = false;
         gainedAdvantageMining = 0;
         ignoreNextFastBreakStatus = 0;
-    }
-
-    public boolean isVanillaDoubleMineCooldownComplete(int extra) {
-        return Tasks.getTick() - lastStartDoubleMineTick >= 6 + extra;
+        pendingFailBreak = null;
     }
 
     public boolean isVanillaMineCooldownComplete(int extra) {
@@ -572,8 +622,7 @@ public class MineExtra extends BaseModule {
                 } else if (fastBreakBypassMode.get() == Mode.BYPASS_GRIM_BAD_PACKETS) {
                     // still magic numbers...
                     if (doubleBreak.get()) {
-                        if (!isVanillaDoubleMineCooldownComplete(7)
-                                || gainedAdvantageCooldown > GRIM_BAD_PACKETS_DOUBLE_MINE_COOLDOWN_THRESHOLD) {
+                        if (gainedAdvantageCooldown > GRIM_BAD_PACKETS_DOUBLE_MINE_COOLDOWN_THRESHOLD) {
                             return 5;
                         }
                     } else {
@@ -590,41 +639,43 @@ public class MineExtra extends BaseModule {
     public void onStartingMine(BlockPos pos, float speed, boolean instaBreak) {
         MineExtra mineExtra = this;
         lastStartingMineIsInstantBreak = instaBreak || speed > Math.min(1.0F, mineExtra.breakThreshold.get());
+    }
 
-        if (!mineExtra.quickMine.get()) {
-            return;
-        }
+    private void updateGainedAdvantageCooldown(BlockPos pos, Event<PlayerActionC2SPacket> event) {
+        MineExtra mineExtra = this;
         // escape init case
         if (lastFinishBreakingTick == 0) return;
-        if (instaBreak) return;
         int thisCurrentTick = Tasks.getTick();
         // this means it is ok to directly mine
         boolean canResetThisTime = false;
-        if (thisCurrentTick >= lastFinishBreakingTick + 6) {
-            canResetThisTime = true;
-            gainedAdvantageCooldown = (int) (gainedAdvantageCooldown * 0.9);
-        } else {
-            gainedAdvantageCooldown += 300 - (thisCurrentTick - lastFinishBreakingTick) * 50;
-        }
         int threshold = mineExtra.grimAcCounterThreshold.get();
+        if (!mc.player.getAbilities().creativeMode) {
+            if (thisCurrentTick >= lastFinishBreakingTick + 6) {
+                canResetThisTime = true;
+                gainedAdvantageCooldown = (int) (gainedAdvantageCooldown * 0.9);
+            } else {
+                gainedAdvantageCooldown += 300 - (thisCurrentTick - lastFinishBreakingTick) * 50;
+            }
+        } else {
+            gainedAdvantageCooldown = Math.min(threshold, gainedAdvantageCooldown);
+        }
+
         // we will deal the cooldown shit of bad packets mode in the duplication count of bad packets
         if (gainedAdvantageCooldown > threshold
                 && canResetThisTime
                 && mineExtra.fastBreakBypassMode.getValue() == Mode.BYPASS_GRIM_LEGIT
-                && mc.player != null) {
+                && mc.player != null
+                && !mc.player.getAbilities().creativeMode) {
             // reset
-            gainedAdvantageCooldown = 150;
-            if (!mc.player.getAbilities().creativeMode) {
-                ClientPlayerEntity player = MinecraftClient.getInstance().player;
-                Direction dir = Direction.getFacing(pos.toCenterPos().subtract(player.getEyePos()))
-                        .getOpposite();
-                for (int i = 0; i < 20; ++i) {
-                    mc.interactionManager.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence -> {
-                        return new PlayerActionC2SPacket(
-                                PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, dir, sequence);
-                    }));
-                }
-            }
+            ClientPlayerEntity player = MinecraftClient.getInstance().player;
+            Direction dir = Direction.getFacing(pos.toCenterPos().subtract(player.getEyePos()))
+                    .getOpposite();
+            PacketManager.schedulePostScheduleCallback(event.context, () -> {
+                mc.interactionManager.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence -> {
+                    return new PlayerActionC2SPacket(
+                            PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos, dir, sequence);
+                }));
+            });
         }
         gainedAdvantageCooldown = MathHelper.clamp(gainedAdvantageCooldown, -1000, 1000);
     }
@@ -655,7 +706,7 @@ public class MineExtra extends BaseModule {
                 }
             }
         }
-        gainedAdvantageCooldown = MathHelper.clamp(gainedAdvantageCooldown, -1000, 1000);
+        gainedAdvantageMining = MathHelper.clamp(gainedAdvantageMining, -1000, 1000);
     }
 
     public void onPostStopMiningFastBreak(BlockPos pos, double speed, double currentProgress) {
