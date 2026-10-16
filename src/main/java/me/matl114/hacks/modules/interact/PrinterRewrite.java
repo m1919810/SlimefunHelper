@@ -46,7 +46,6 @@ import net.minecraft.fluid.Fluids;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.*;
@@ -151,8 +150,6 @@ public class PrinterRewrite extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvent);
-        registerListener(
-                Listener.getPacketPostHandlePoint().getChannel(BlockUpdateS2CPacket.class), this::onBlockUpdate);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetReload);
     }
@@ -175,18 +172,22 @@ public class PrinterRewrite extends BaseModule {
     final RenderCollector<Box> drawOutlines = RenderCollectors.createBoxCollector(true, false, false);
     boolean needSneak = false;
     boolean drainWater = false;
-    Map<BlockPos, Integer> desyncWaitBlocks = new HashMap<>();
+    Set<BlockPos> desyncWaitBlocks = new HashSet<>();
+    Map<Integer, BlockPos> waterBlocks = new HashMap<>();
 
     public void tickDesyncWaitBlocks() {
-        if (desyncWaitBlocks.isEmpty()) {
-            return;
+        var actionManager = SequencedActionManager.INSTANCE;
+        var blockIter = desyncWaitBlocks.iterator();
+        while (blockIter.hasNext()) {
+            if (!actionManager.isWaitingBlockResponse(blockIter.next())) {
+                blockIter.remove();
+            }
         }
-        int tick = Tasks.getTick();
-        var iter = desyncWaitBlocks.entrySet().iterator();
-        while (iter.hasNext()) {
-            var entry = iter.next();
-            if (entry.getValue() < tick) {
-                iter.remove();
+        var waterIter = waterBlocks.entrySet().iterator();
+        while (waterIter.hasNext()) {
+            var entry = waterIter.next();
+            if (entry.getKey() <= actionManager.getMaxAckSeq()) {
+                waterIter.remove();
             }
         }
     }
@@ -219,7 +220,7 @@ public class PrinterRewrite extends BaseModule {
                                 && !clientState.isAir()
                                 && !clientState.isLiquid()
                                 && !clientState.isReplaceable()
-                                && !desyncWaitBlocks.containsKey(checkPos)
+                                && !desyncWaitBlocks.contains(checkPos)
                                 && canBeReplaceTo(clientState, state)) {
                             if (doMultiReplace(checkPos, clientState, state)) {
                                 placeCount++;
@@ -235,7 +236,8 @@ public class PrinterRewrite extends BaseModule {
                                                         || state.getFluidState().getFluid() == Fluids.WATER))
                                         || (clientState.getBlock() == state.getBlock()
                                                 && clientState.getFluidState() != state.getFluidState()))
-                                && !desyncWaitBlocks.containsKey(checkPos)) {
+                                && !desyncWaitBlocks.contains(checkPos)
+                                && !isWaitingWaterBucketAt(checkPos)) {
                             // fluid state change
                             FluidState fluidState = clientState.getFluidState();
                             FluidState targetState = state.getFluidState();
@@ -389,6 +391,8 @@ public class PrinterRewrite extends BaseModule {
         if (useIce.get()
                 && fluidState.getFluid() == Fluids.WATER
                 && (clientState.isAir() || clientState.isLiquid() || clientState.isReplaceable())) {
+            var actionManager = SequencedActionManager.INSTANCE;
+            int previousSequence = actionManager.lastBlockPlace == null ? -1 : actionManager.lastBlockPlace.index();
             if (doPlace(
                     pos,
                     Blocks.ICE.getDefaultState(),
@@ -404,7 +408,13 @@ public class PrinterRewrite extends BaseModule {
                             0);
                 }
 
-                desyncWaitBlocks.put(pos, Tasks.getTick() + 20);
+                var lastPlace = actionManager.lastBlockPlace;
+                if (lastPlace != null
+                        && lastPlace.index() != previousSequence
+                        && actionManager.isWaitingBlockResponse(
+                                lastPlace.val().hitResult().getBlockPos())) {
+                    desyncWaitBlocks.add(lastPlace.val().hitResult().getBlockPos());
+                }
                 return true;
             }
         }
@@ -432,10 +442,19 @@ public class PrinterRewrite extends BaseModule {
                     EntityMovementStatus<PlayerEntity> playerStatus = new EntityMovementStatus<>(mc.player);
                     EntityUtils.setEntityPitchSafe(mc.player, rot.x);
                     PlayerStateManager.setPlayerYawSafe(mc.player, rot.y);
+                    var actionManager = SequencedActionManager.INSTANCE;
+                    int previousSequence = actionManager.lastItemUse == null ? -1 : actionManager.lastItemUse.index();
                     mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
                     playerStatus.restoreRotation();
                     suc = true;
-                    desyncWaitBlocks.put(pos, Tasks.getTick() + 20);
+                    var lastUse = actionManager.lastItemUse;
+                    if (lastUse != null
+                            && lastUse.index() != previousSequence
+                            && (lastUse.val().handItem().isOf(Items.WATER_BUCKET)
+                                    || lastUse.val().handItem().isOf(Items.LAVA_BUCKET))
+                            && actionManager.isWaitingItemUseResponse(lastUse.index())) {
+                        waterBlocks.put(lastUse.index(), pos);
+                    }
                     if (returnBlock.get()) {
                         InteractionTasks.finishGhostHand(mode.get(), callback);
                     }
@@ -456,6 +475,13 @@ public class PrinterRewrite extends BaseModule {
 
     public boolean canBeReplaceTo(BlockState fromState, BlockState toState) {
         return InteractUtils.canBeReplaceTo(fromState, toState);
+    }
+
+    private boolean isWaitingWaterBucketAt(BlockPos pos) {
+        var actionManager = SequencedActionManager.INSTANCE;
+        return waterBlocks.entrySet().stream()
+                .anyMatch(entry ->
+                        entry.getValue().equals(pos) && actionManager.isWaitingItemUseResponse(entry.getKey()));
     }
 
     private boolean isDesyncStateInteractTransition(BlockState currentState, BlockState targetState) {
@@ -602,7 +628,7 @@ public class PrinterRewrite extends BaseModule {
                         }
                         putSuccessPlace(pos);
                         if (isDesyncStateInteractTransition(currentState, targetState)) {
-                            desyncWaitBlocks.put(pos, Tasks.getTick() + 20);
+                            desyncWaitBlocks.add(hitResult.val().getBlockPos());
                         }
                         if (returnBlock.get()) {
                             InteractionTasks.finishGhostHand(mode.get(), runnable);
@@ -618,16 +644,6 @@ public class PrinterRewrite extends BaseModule {
             }
         }
         return false;
-    }
-
-    private void onBlockUpdate(Event<BlockUpdateS2CPacket> event) {
-        if (enable.get() && !desyncWaitBlocks.isEmpty()) {
-            BlockPos pos = event.context.getPos();
-            Integer waitUntil = desyncWaitBlocks.get(pos);
-            if (waitUntil != null) {
-                desyncWaitBlocks.put(pos, Math.min(waitUntil, Tasks.getTick() + 2));
-            }
-        }
     }
 
     public void tickTryDrainWater() {}

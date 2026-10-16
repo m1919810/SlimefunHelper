@@ -183,9 +183,10 @@ public class CombatManager extends BaseModule {
         pendingCrystalSummons.clear();
     }
 
-    public void onUseOnBlockAck(Event<UseItemOnBlock> event) {
+    public void onUseOnBlockAck(Event<IndexEntry<UseItemOnBlock>> event) {
+        UseItemOnBlock action = event.context().val();
         pendingCrystalSummons.removeIf(
-                entry -> Objects.equals(entry.val(), event.context.hitResult().getBlockPos()));
+                entry -> Objects.equals(entry.val(), action.hitResult().getBlockPos()));
     }
 
     private void onPlayerAttackCrystal(Event<PlayerInteractEntityC2SPacket> event) {
