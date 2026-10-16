@@ -753,12 +753,16 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             if (useItemBypass.get() == UseBypassMode.BYPASS_GRIM_50) {
                 PlayerInputUtils.Input input = PlayerInputUtils.of(args);
                 if (input.hasWASDMovement()) {
-                    if (grimFlagNoSlowOnce) {
-                        grimFlagNoSlowOnce = false;
-                        workNoSlowItemThisTick = false;
-                    } else {
+                    if (mc.player.isFallFlying() && !mc.player.isTouchingWater()) {
                         grimFlagNoSlowOnce = true;
-                        workNoSlowItemThisTick = true;
+                    } else {
+                        if (grimFlagNoSlowOnce) {
+                            grimFlagNoSlowOnce = false;
+                            workNoSlowItemThisTick = false;
+                        } else {
+                            grimFlagNoSlowOnce = true;
+                            workNoSlowItemThisTick = true;
+                        }
                     }
                 } else {
                     if (grimFlagNoSlowOnce) {

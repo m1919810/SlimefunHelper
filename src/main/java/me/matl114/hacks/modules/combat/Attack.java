@@ -334,7 +334,21 @@ public class Attack extends BaseModule {
                         != null) {
             return invResult;
         }
-        if (attackSettings.invSwap()
+        if (attackSettings.maceSwap()
+                && target instanceof LivingEntity lv
+                && (invResult = InventoryUtils.findBestPlayerItem(
+                                (ex) -> {
+                                    if (ex.getItem() == Items.MACE) {
+                                        return DamageUtils.getAttackDamage(lv, ex);
+                                    }
+                                    return null;
+                                },
+                                attackSettings.ghostHandMode().getSearchSize(false),
+                                false,
+                                false))
+                        != null) {
+            return invResult;
+        } else if (attackSettings.invSwap()
                 && !VItem.getInstance().isWeapon(mc.player.getStackInHand(Hand.MAIN_HAND))
                 && target instanceof LivingEntity lv
                 && (invResult = InventoryUtils.findBestPlayerItem(
@@ -347,20 +361,6 @@ public class Attack extends BaseModule {
                                                 : -((double) damageCost * 1E8)
                                                         + DamageUtils.getAttackDamage(mc.player, lv, ex)
                                                                 * DamageUtils.getAttackSpeed(mc.player, ex);
-                                    }
-                                    return null;
-                                },
-                                attackSettings.ghostHandMode().getSearchSize(false),
-                                false,
-                                false))
-                        != null) {
-            return invResult;
-        } else if (attackSettings.maceSwap()
-                && target instanceof LivingEntity lv
-                && (invResult = InventoryUtils.findBestPlayerItem(
-                                (ex) -> {
-                                    if (ex.getItem() == Items.MACE) {
-                                        return DamageUtils.getAttackDamage(lv, ex);
                                     }
                                     return null;
                                 },
