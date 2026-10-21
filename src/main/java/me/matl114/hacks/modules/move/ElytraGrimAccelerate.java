@@ -7,6 +7,7 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.enums.SetBackTriggerType;
 import me.matl114.managers.Configs;
@@ -30,11 +31,7 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
 
     public ElytraGrimAccelerate() {
         super("ElytraGrimAcc");
-        if (instance == null) {
-            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
-        }
-        instance.setDelegate(this::cast);
+        MovementManager.registerMovementPipeline(this);
         INSTANCE = this;
         bindFlag(enable);
     }

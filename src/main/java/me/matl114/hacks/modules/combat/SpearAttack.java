@@ -18,6 +18,7 @@ import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
@@ -46,11 +47,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
 
     public SpearAttack() {
         super("SpearAttack");
-        if (INSTANCE == null) {
-            INSTANCE = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> INSTANCE);
-        }
-        INSTANCE.setDelegate(this::cast);
+        MovementManager.registerMovementPipeline(this);
         bindFlag(enable);
     }
 

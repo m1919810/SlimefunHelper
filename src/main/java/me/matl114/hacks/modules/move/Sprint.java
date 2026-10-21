@@ -4,10 +4,11 @@ import java.util.Optional;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.impl.EventContainer;
-import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.modules.task.MovementManager;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.enums.BypassMode;
 import me.matl114.managers.Configs;
@@ -22,18 +23,12 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     public final ModulePath moveSpeed = makePath(Configs.MOV_CONFIG, "move-speed");
     public final ModulePath sprint = moveSpeed.add("sprint");
 
-    public static LegalMovementManager.DelegateMovementModifier instance;
     public static Sprint INSTANCE;
     // todo: 顶头跑 here
     public Sprint() {
         super("Sprint");
         INSTANCE = this;
-        if (instance == null) {
-            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            // register at here for the first time
-            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
-        }
-        instance.setDelegate(this::cast);
+        MovementManager.registerMovementPipeline(this);
     }
 
     public final FlagRef autoSprintLegal =
@@ -120,15 +115,18 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
                     yaw = 180 + input.sidewaysSpeed() * 90;
                 }
                 if (yaw != 0.0F) {
-                    RotationManager.INSTANCE.request(
-                            RotationManager.ofDirection(Optional.empty(), Optional.of(mc.player.getYaw() + yaw))
-                                    .preTick(() -> {
-                                        if (lastTickLandingRotateJump) {
-                                            PlayerInputManager.INSTANCE.addJumpModifier(0, false, 0);
-                                        }
-                                        PlayerInputManager.INSTANCE.addSprintModifier(0, true, 0);
-                                    })
-                                    .priority(0));
+                    RotationManager.INSTANCE.request(RotationManager.ofDirection(
+                                    Optional.empty(), Optional.of(mc.player.getYaw() + yaw))
+                            .preTick(() -> {
+                                if (lastTickLandingRotateJump
+                                        && Math.abs(EntityUtils.getSafeYawDiff(
+                                                        mc.player.getYaw() + yaw, PlayerStateManager.INSTANCE.lastYaw))
+                                                >= 60) {
+                                    PlayerInputManager.INSTANCE.addJumpModifier(0, false, 0);
+                                }
+                                PlayerInputManager.INSTANCE.addSprintModifier(0, true, 0);
+                            })
+                            .priority(0));
                 }
             }
         }

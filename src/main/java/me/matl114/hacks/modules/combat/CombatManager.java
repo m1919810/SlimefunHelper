@@ -542,15 +542,13 @@ public class CombatManager extends BaseModule {
         if (!(target instanceof PlayerEntity player)) return;
         ItemStack weapon = mc.player.getMainHandStack();
         cacheDamageEstimate(
-                player, TrackedDamageCategory.PLAYER_ATTACK, getMaximumWeaponDamage(mc.player, player, weapon, false));
+                player, TrackedDamageCategory.PLAYER_ATTACK, getMaximumWeaponDamage(mc.player, player, weapon));
         String weaponPath = Registries.ITEM.getId(weapon.getItem()).getPath();
         if (weapon.getItem() instanceof MaceItem) {
-            cacheDamageEstimate(
-                    player, TrackedDamageCategory.SMASH, getMaximumWeaponDamage(mc.player, player, weapon, true));
+            cacheDamageEstimate(player, TrackedDamageCategory.SMASH, getMaximumWeaponDamage(mc.player, player, weapon));
         }
         if (weaponPath.contains("spear")) {
-            cacheDamageEstimate(
-                    player, TrackedDamageCategory.SPEAR, getMaximumWeaponDamage(mc.player, player, weapon, false));
+            cacheDamageEstimate(player, TrackedDamageCategory.SPEAR, getMaximumWeaponDamage(mc.player, player, weapon));
         }
     }
 
@@ -603,7 +601,7 @@ public class CombatManager extends BaseModule {
             damage = tracker.takeEstimate(category, Tasks.getTick());
             if (damage <= 0.0F) {
                 ItemStack weapon = attacker.getMainHandStack();
-                damage = getMaximumWeaponDamage(attacker, player, weapon, category == TrackedDamageCategory.SMASH);
+                damage = getMaximumWeaponDamage(attacker, player, weapon);
             }
         }
         if (damage <= 0.0F) damage = UNKNOWN_DAMAGE_ESTIMATE;
@@ -622,15 +620,13 @@ public class CombatManager extends BaseModule {
         tracker.considerEstimatedDamage(damage);
     }
 
-    private float getMaximumWeaponDamage(PlayerEntity attacker, PlayerEntity target, ItemStack weapon, boolean smash) {
-        double baseDamage = DamageUtils.getAttackDamage(attacker, target, weapon);
-        if (smash && weapon.getItem() instanceof MaceItem) {
-            double fallDistance = attacker == mc.player && PlayerStateManager.INSTANCE != null
-                    ? PlayerStateManager.INSTANCE.fallDistance
-                    : 0.0D;
-            baseDamage += DamageUtils.getSmashDamageBonus(
-                    weapon, DamageUtils.createDamageSource(attacker, attacker, weapon), fallDistance);
-        }
+    private float getMaximumWeaponDamage(PlayerEntity attacker, PlayerEntity target, ItemStack weapon) {
+        double baseDamage = DamageUtils.getMaxRealAttackDamage(
+                attacker,
+                target,
+                weapon,
+                attacker == mc.player ? PlayerStateManager.INSTANCE.fallDistance : attacker.fallDistance,
+                true);
         return (float) (baseDamage * 1.5D);
     }
 

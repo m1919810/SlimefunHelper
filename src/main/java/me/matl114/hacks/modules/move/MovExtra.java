@@ -5,11 +5,9 @@ import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.events.EntityAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
-import me.matl114.hacks.api.ModulePreset;
-import me.matl114.hacks.modules.ac.DisablerManager;
+import me.matl114.hacks.modules.task.DisablerManager;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
@@ -33,13 +31,6 @@ public class MovExtra extends BaseModule {
         INSTANCE = this;
     }
 
-    public final FlagRef fuckGrimAC =
-            flagBuilder(moveSafety.add("grimac-1-21-2-input-features")).build();
-
-    public final FlagRef fuckGrimACSprint = builder(moveSafety.add("grimac-sprint-features"), Boolean.class)
-            .defaultValue(true)
-            .build();
-
     public final FlagRef noStepHeightFeature =
             flagBuilder(moveSafety.add("disable-stepheight-feature")).build();
 
@@ -48,10 +39,13 @@ public class MovExtra extends BaseModule {
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::onFlightToggle))
             .build();
 
+    public final FlagRef noJumpDelay =
+            flagBuilder(moveSafety.add("disable-jump-delay")).build();
+
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetLoad);
+        registerListener(Listener.getPlayerNotFlyJumpPoint(), this::onJumpDelay);
     }
 
     public void onFlightToggle() {
@@ -76,9 +70,15 @@ public class MovExtra extends BaseModule {
         }
     }
 
+    public void onJumpDelay(Event<Integer> event) {
+        if (noJumpDelay.get()) {
+            event.context(0);
+        }
+    }
+
     public void sendPacketsForInventoryAction() {
         sendSprintPacketsForInventoryAction();
-        if (fuckGrimAC.get()) {
+        if (DisablerManager.INSTANCE.isInventoryWalkFix()) {
             if (ViaFabricPlusHooks.isSupportEndTick()) {
                 sendNoMultiActionInputPacket(mc.player);
             }
@@ -86,7 +86,7 @@ public class MovExtra extends BaseModule {
     }
 
     public void sendSprintPacketsForInventoryAction() {
-        if (fuckGrimACSprint.get()) {
+        if (DisablerManager.INSTANCE.isInventorySprintFix()) {
             ClientPlayerEntity player = mc.player;
             // only sprint need to be toggled
             PlayerStateManager.INSTANCE.sendSprintStatus(false, true);
@@ -95,7 +95,7 @@ public class MovExtra extends BaseModule {
     }
 
     public void sendInputPacketsForInventoryAction() {
-        if (fuckGrimAC.get() && ViaFabricPlusHooks.isSupportEndTick()) {
+        if (DisablerManager.INSTANCE.isInventoryWalkFix() && ViaFabricPlusHooks.isSupportEndTick()) {
             ClientPlayerEntity player = mc.player;
             sendNoMultiActionInputPacket(player);
         }
@@ -119,7 +119,7 @@ public class MovExtra extends BaseModule {
     }
     // mostly same as InventoryAction packets
     public void sendPacketsForPreStartFallFlying() {
-        if (fuckGrimAC.get() && ViaFabricPlusHooks.isSupportEndTick()) {
+        if (DisablerManager.INSTANCE.isInventoryWalkFix() && ViaFabricPlusHooks.isSupportEndTick()) {
             if (PlayerStateManager.INSTANCE.lastInput.jump()) {
                 var input = PlayerInputUtils.of(mc.player).jump(false);
                 input.sendPlayerInputPacket();
@@ -129,21 +129,12 @@ public class MovExtra extends BaseModule {
     }
 
     public void sendPacketsForPostStartFallFlying() {
-        if (fuckGrimAC.get() && ViaFabricPlusHooks.isSupportEndTick()) {
+        if (DisablerManager.INSTANCE.isInventoryWalkFix() && ViaFabricPlusHooks.isSupportEndTick()) {
             if (!PlayerStateManager.INSTANCE.lastInput.jump()) {
                 var input = PlayerInputUtils.of(mc.player).jump(true);
                 input.sendPlayerInputPacket();
                 input.applyInput(mc.player);
             }
-        }
-    }
-
-    public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {
-        if (presetEvent.context().getValue().isOptionPreset()) return;
-        switch (presetEvent.context.getValue()) {
-                // check 1.21.2+
-            case AC_GRIM, AC_GRIM_LEGACY -> fuckGrimAC.set(true);
-            default -> fuckGrimAC.set(false);
         }
     }
 }

@@ -18,7 +18,8 @@ import me.matl114.events.impl.MetadataUpdate;
 import me.matl114.events.impl.SlotClickAction;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
-import me.matl114.hacks.modules.ac.PostManager;
+import me.matl114.hacks.modules.task.PostManager;
+import me.matl114.hacks.modules.task.ServerFeature;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Tasks;
@@ -38,7 +39,6 @@ import net.minecraft.component.type.*;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.*;
 import net.minecraft.entity.attribute.AttributeContainer;
-import net.minecraft.entity.attribute.DefaultAttributeRegistry;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
@@ -113,6 +113,7 @@ public class PlayerStateManager extends BaseModule {
     public Map<ItemStackSample, Integer> inventoryTotalSummary;
     public int glidingTicks;
     public int lastActiveTicks;
+    public ItemStack lastItemInMainHand = ItemStack.EMPTY;
     private static final int MAX_SIZE = 20;
 
     {
@@ -212,6 +213,16 @@ public class PlayerStateManager extends BaseModule {
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerInteractBlockC2SPacket.class), this::onInteractBlock);
         registerListener(Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class), this::onInteract);
+
+        registerListener(
+                Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class),
+                this::onPlayerAction,
+                Integer.MAX_VALUE);
+        registerListener(
+                Listener.getPacketPoint().getChannel(UpdateSelectedSlotC2SPacket.class),
+                this::onUpdateSelectSlot,
+                Integer.MAX_VALUE);
+        registerListener(Listener.getPostClickSlot(), this::onPostContainerClick, Integer.MAX_VALUE);
     }
 
     public void onMove(Event<PlayerMoveC2SPacket> event) {
@@ -607,6 +618,15 @@ public class PlayerStateManager extends BaseModule {
         } else {
             glidingTicks = 0;
         }
+        // update lastItem for tick before
+        ItemStack stack = mc.player.getStackInHand(Hand.MAIN_HAND);
+        if (!ItemStack.areEqual(stack, lastItemInMainHand)) {
+            if (!ItemStack.areItemsEqual(stack, lastItemInMainHand)) {
+                lastAttackStrengthResetTick = Tasks.getTick() - 1;
+            }
+            lastItemInMainHand = stack;
+        }
+        detectEquipmentChanges();
     }
 
     public void onEntityAttackEvent(Event<EntityDamageS2CPacket> eventS2C) {
@@ -650,6 +670,44 @@ public class PlayerStateManager extends BaseModule {
             lastAttackStrengthResetTick = Tasks.getTick();
             updateAFK();
         }
+    }
+
+    public void onPlayerAction(Event<PlayerActionC2SPacket> event) {
+        if (event.isCancelled()) return;
+        switch (event.context.getAction()) {
+            case RELEASE_USE_ITEM, DROP_ITEM, DROP_ALL_ITEMS, SWAP_ITEM_WITH_OFFHAND -> detectEquipmentChanges();
+            default -> {
+                return;
+            }
+        }
+    }
+
+    public void onUpdateSelectSlot(Event<UpdateSelectedSlotC2SPacket> event) {
+        if (event.isCancelled()) return;
+        detectEquipmentChanges();
+    }
+
+    public void onPostContainerClick(Event<SlotClickAction> event) {
+        detectEquipmentChanges();
+    }
+
+    public void detectEquipmentChanges() {
+        if (!ServerFeature.INSTANCE.attributeSwap.get() && ServerFeature.INSTANCE.trackClientAttrUpdate.get()) {
+            AttributeUtils.updateAttribute(mc.player);
+        }
+        if (ServerFeature.INSTANCE.attackStrengthUpdateWithHand.get()) {
+            ItemStack stack = mc.player.getStackInHand(Hand.MAIN_HAND);
+            if (!ItemStack.areEqual(stack, lastItemInMainHand)) {
+                if (!ItemStack.areItemsEqual(stack, lastItemInMainHand)) {
+                    lastAttackStrengthResetTick = Tasks.getTick();
+                }
+                lastItemInMainHand = stack;
+            }
+        }
+    }
+
+    public int getTicksSinceLastAttack() {
+        return Tasks.getTick() - lastAttackStrengthResetTick;
     }
 
     public void onInteractBlock(Event<PlayerInteractBlockC2SPacket> event) {
@@ -720,6 +778,7 @@ public class PlayerStateManager extends BaseModule {
         glidingTicks = 0;
         lastStartGlidingTick = 0;
         lastSelectedSlot = 0;
+        lastItemInMainHand = ItemStack.EMPTY;
         updateAFK();
     }
 
@@ -1210,9 +1269,7 @@ public class PlayerStateManager extends BaseModule {
         public final Set<ItemStackSample> trackedInventoryItems = new HashSet<>();
         // todo: add more shit
         public void tickUpdate(PlayerEntity player) {
-            AttributeContainer container = new AttributeContainer(
-                    DefaultAttributeRegistry.get((EntityType<? extends LivingEntity>) player.getType()));
-            container.setFrom(player.getAttributes());
+            AttributeContainer container = AttributeUtils.getAttributeWith(player, Map.of());
             this.attributeSnapShot = container;
             int protection = 0;
             int blastProtection = 0;

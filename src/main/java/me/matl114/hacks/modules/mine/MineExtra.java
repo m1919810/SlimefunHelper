@@ -1,6 +1,5 @@
 package me.matl114.hacks.modules.mine;
 
-import com.google.common.util.concurrent.Runnables;
 import com.mojang.datafixers.util.Pair;
 import java.awt.*;
 import java.util.*;
@@ -17,6 +16,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.interact.SequencedActionManager;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.modules.task.ServerFeature;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.config.WrapColor;
@@ -96,6 +96,11 @@ public class MineExtra extends BaseModule {
 
     public final FlagRef ghostHandSwapWhenStart = flagBuilder(fastbreak.add("ghost-hand-swap-when-start"))
             .show(ghostHandMine::get)
+            .build();
+
+    public final EnumRef<GhostHandMode> ghostHandPreferredMode = builder(
+                    fastbreak.add("ghost-hand-preferred-mode"), GhostHandMode.class)
+            .defaultValue(GhostHandMode.INV_SWAP)
             .build();
 
     public final ModulePath cooldownGroup = fastbreak.add("cooldown-manage");
@@ -321,6 +326,14 @@ public class MineExtra extends BaseModule {
     boolean thisTickHasBroken;
     boolean lastMineProgressDeceive = false;
 
+    public void finishMineGhostHand(Runnable runnable) {
+        if (ServerFeature.INSTANCE.attributeSwap.get()) {
+            InvExtra.INSTANCE.pushNextTickGhostHandCallback(runnable);
+        } else {
+            runnable.run();
+        }
+    }
+
     public void onMine(Event<PlayerActionC2SPacket> packetEvent) {
         if (packetEvent.isCancelled()) {
             return;
@@ -336,7 +349,8 @@ public class MineExtra extends BaseModule {
                 && mc.interactionManager != null
                 && Objects.equals(packet.getPos(), instaBreakGhostHand.getSecond())) {
             if (instaBreakGhostHand.getFirst() != null) {
-                PacketManager.schedulePostScheduleCallback(packet, instaBreakGhostHand.getFirst());
+                Runnable first = instaBreakGhostHand.getFirst();
+                PacketManager.schedulePostScheduleCallback(packet, () -> finishMineGhostHand(first));
             }
             instaBreakGhostHand = null;
         }
@@ -351,12 +365,6 @@ public class MineExtra extends BaseModule {
                 } else {
                     lastMineProgressDeceive = true;
                 }
-                //                Listener.sendPacketNoEvents(new
-                // PlayerActionC2SPacket(PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, packet.getPos().up(),
-                // packet.getDirection(), NetworkUtils.generateNextSequence()));
-                //                Listener.sendPacketNoEvents(new
-                // PlayerActionC2SPacket(PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, packet.getPos().down(),
-                // packet.getDirection(), NetworkUtils.generateNextSequence()));
             }
             case STOP_DESTROY_BLOCK -> {
                 lastGrimACWrongBreakCheck = null;
@@ -512,13 +520,7 @@ public class MineExtra extends BaseModule {
 
     public void onTickGhostHandFailBreak(Event<ClientPlayerEntity> event) {
         if (checkNull()) return;
-        if (switchCallback != null) {
-            try {
-                switchCallback.run();
-            } finally {
-                switchCallback = null;
-            }
-        }
+        InvExtra.INSTANCE.tickNextTickCallbacks();
         if (PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos() != null
                 && ghostHandFailBreak.get()) {
             tickGhostHandDoubleBreak(null, ghostHandFailBreakMode.get(), false);
@@ -526,7 +528,6 @@ public class MineExtra extends BaseModule {
     }
 
     public int lastTickGhostHandFailBreak = 0;
-    public Runnable switchCallback = null;
 
     public boolean canMineFailBreak(BlockState state, ItemStack tool, boolean groundDeceive) {
         // do not mine liquid, that's a disaster
@@ -546,19 +547,19 @@ public class MineExtra extends BaseModule {
     public void tickGhostHandDoubleBreak(Runnable currentTickCallback, GhostHandMode mode, boolean groundDeceive) {
         if (lastTickGhostHandFailBreak == Tasks.getTick()) {
             if (currentTickCallback != null) {
-                currentTickCallback.run();
+                finishMineGhostHand(currentTickCallback);
             }
             return;
         }
         if (mc.player.isUsingItem() && ghostHandFailBreakEatingAbort.get()) {
             if (currentTickCallback != null) {
-                currentTickCallback.run();
+                finishMineGhostHand(currentTickCallback);
             }
             return;
         }
-        if (switchCallback != null) {
+        if (InvExtra.INSTANCE.hasNextTickGhostHandCallback()) {
             if (currentTickCallback != null) {
-                currentTickCallback.run();
+                finishMineGhostHand(currentTickCallback);
             }
             return;
         }
@@ -567,7 +568,7 @@ public class MineExtra extends BaseModule {
         BlockPos failPos = PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos();
         if (failPos == null) {
             if (currentTickCallback != null) {
-                currentTickCallback.run();
+                finishMineGhostHand(currentTickCallback);
             }
             return;
         }
@@ -575,15 +576,15 @@ public class MineExtra extends BaseModule {
         IndexEntry<ItemStack> currentItemSlot = getBestMiningToFor(blockState, mode);
         ItemStack currentTool = currentItemSlot.val();
         if (canMineFailBreak(blockState, currentTool, groundDeceive)) {
+            // force delay, because it might save some packets
+            if (currentTickCallback != null) {
+                InvExtra.INSTANCE.pushNextTickGhostHandCallback(currentTickCallback);
+            }
             Runnable callback = InvExtra.INSTANCE.swapItemToHand(currentItemSlot.index(), false, mode);
-            Runnable currentCallback = currentTickCallback == null ? Runnables.doNothing() : currentTickCallback;
-            switchCallback = () -> {
-                callback.run();
-                currentCallback.run();
-            };
+            InvExtra.INSTANCE.pushNextTickGhostHandCallback(callback);
         } else {
             if (currentTickCallback != null) {
-                currentTickCallback.run();
+                finishMineGhostHand(currentTickCallback);
             }
         }
     }

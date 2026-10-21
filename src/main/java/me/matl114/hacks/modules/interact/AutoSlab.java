@@ -16,8 +16,8 @@ import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
-import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.modules.task.DisablerManager;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.config.WrapColor;
@@ -279,7 +279,7 @@ public class AutoSlab extends BaseModule {
         if (returnBlock.get()) {
             int size = stack.size();
             for (var i = size - 1; i >= 0; i--) {
-                InteractionTasks.finishGhostHand(mode.get(), stack.get(i));
+                InteractionTasks.finishInteractGhostHand(mode.get(), stack.get(i));
             }
         }
     }

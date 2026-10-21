@@ -56,7 +56,7 @@ public class FakePlayerEntity extends OtherClientPlayerEntity {
         if (rawDamage <= 0.0F) {
             return 0.0F;
         }
-        rawDamage = DamageUtils.getDamageAfterArmorReduce(rawDamage, damageSource, context);
+        rawDamage = DamageUtils.getDamageAfterArmorReduce(rawDamage, null, damageSource, context);
         if (rawDamage <= 0.0F) {
             return 0.0F;
         }
