@@ -100,7 +100,7 @@ public class FakePlayer extends BaseModule {
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class),
                 this::onHit,
-                Integer.MAX_VALUE);
+                Integer.MIN_VALUE);
         registerListener(
                 Listener.getPacketPreHandlePoint().getChannel(ExplosionS2CPacket.class),
                 this::onExplode,
@@ -273,8 +273,13 @@ public class FakePlayer extends BaseModule {
     private void onAttack(FakePlayerEntity fake) {
         ItemStack weapon = mc.player.getStackInHand(Hand.MAIN_HAND);
         // todo: add other types
-        float damage =
-                DamageUtils.getRealAttackDamage(mc.player, fake, weapon, PlayerStateManager.INSTANCE.fallDistance);
+        float damage = DamageUtils.getRealAttackDamage(
+                mc.player,
+                fake,
+                weapon,
+                PlayerStateManager.INSTANCE.fallDistance,
+                PlayerStateManager.INSTANCE.getTicksSinceLastAttack(),
+                false);
         onDamage(fake, DamageUtils.createDirectDamageSource(DamageTypes.PLAYER_ATTACK, mc.player), damage);
     }
 

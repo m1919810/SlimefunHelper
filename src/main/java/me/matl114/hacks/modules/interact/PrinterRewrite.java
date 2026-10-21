@@ -17,14 +17,12 @@ import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
-import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.mine.QueueMine;
 import me.matl114.hacks.modules.move.PlayerInputManager;
-import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.modules.task.DisablerManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.config.WrapColor;
-import me.matl114.hacks.utils.entity.EntityMovementStatus;
 import me.matl114.hacks.utils.enums.BypassMode;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
@@ -39,7 +37,6 @@ import me.matl114.utils.collections.FlagEntry;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.*;
 import net.minecraft.block.enums.SlabType;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
@@ -179,7 +176,12 @@ public class PrinterRewrite extends BaseModule {
         var actionManager = SequencedActionManager.INSTANCE;
         var blockIter = desyncWaitBlocks.iterator();
         while (blockIter.hasNext()) {
-            if (!actionManager.isWaitingBlockResponse(blockIter.next())) {
+            BlockPos pos = blockIter.next();
+            if (!actionManager.isWaitingBlockUseOnResponse(
+                            (useItemOn) -> useItemOn.placingBlockPos().isPresent()
+                                    && Objects.equals(
+                                            useItemOn.placingBlockPos().get(), pos))
+                    && !actionManager.isWaitingBlockResponse(pos)) {
                 blockIter.remove();
             }
         }
@@ -359,13 +361,13 @@ public class PrinterRewrite extends BaseModule {
                     return false;
                 }
                 if (!handlePlace(result.val())) {
-                    InteractionTasks.finishGhostHand(mode.get(), callback);
+                    InteractionTasks.finishInteractGhostHand(mode.get(), callback);
                     putCanNotPlace(pos);
                     return false;
                 }
                 // sb grimac
                 if (returnBlock.get()) {
-                    InteractionTasks.finishGhostHand(mode.get(), callback);
+                    InteractionTasks.finishInteractGhostHand(mode.get(), callback);
                 }
                 putSuccessPlace(pos);
                 return true;
@@ -408,13 +410,7 @@ public class PrinterRewrite extends BaseModule {
                             0);
                 }
 
-                var lastPlace = actionManager.lastBlockPlace;
-                if (lastPlace != null
-                        && lastPlace.index() != previousSequence
-                        && actionManager.isWaitingBlockResponse(
-                                lastPlace.val().hitResult().getBlockPos())) {
-                    desyncWaitBlocks.add(lastPlace.val().hitResult().getBlockPos());
-                }
+                desyncWaitBlocks.add(pos);
                 return true;
             }
         }
@@ -439,24 +435,11 @@ public class PrinterRewrite extends BaseModule {
 
                 Runnable callback = InvExtra.INSTANCE.swapItemToHand(item, false, GhostHandMode.INV_SWAP);
                 if (callback != null) {
-                    EntityMovementStatus<PlayerEntity> playerStatus = new EntityMovementStatus<>(mc.player);
-                    EntityUtils.setEntityPitchSafe(mc.player, rot.x);
-                    PlayerStateManager.setPlayerYawSafe(mc.player, rot.y);
-                    var actionManager = SequencedActionManager.INSTANCE;
-                    int previousSequence = actionManager.lastItemUse == null ? -1 : actionManager.lastItemUse.index();
-                    mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
-                    playerStatus.restoreRotation();
+                    InteractionTasks.interactItem(Hand.MAIN_HAND, rot.x, rot.y, true, swingHand.get());
                     suc = true;
-                    var lastUse = actionManager.lastItemUse;
-                    if (lastUse != null
-                            && lastUse.index() != previousSequence
-                            && (lastUse.val().handItem().isOf(Items.WATER_BUCKET)
-                                    || lastUse.val().handItem().isOf(Items.LAVA_BUCKET))
-                            && actionManager.isWaitingItemUseResponse(lastUse.index())) {
-                        waterBlocks.put(lastUse.index(), pos);
-                    }
+                    waterBlocks.put(mc.world.getPendingUpdateManager().getSequence(), pos);
                     if (returnBlock.get()) {
-                        InteractionTasks.finishGhostHand(mode.get(), callback);
+                        callback.run();
                     }
                 }
             }
@@ -622,16 +605,16 @@ public class PrinterRewrite extends BaseModule {
                     Runnable runnable = InvExtra.INSTANCE.swapItemToHand(re.index(), false, GhostHandMode.INV_SWAP);
                     if (runnable != null) {
                         if (!InteractionTasks.handlePlaceMode(mode.get(), hitResult.val(), Hand.MAIN_HAND)) {
-                            InteractionTasks.finishGhostHand(mode.get(), runnable);
+                            InteractionTasks.finishInteractGhostHand(mode.get(), runnable);
                             putCanNotPlace(pos);
                             return false;
                         }
                         putSuccessPlace(pos);
                         if (isDesyncStateInteractTransition(currentState, targetState)) {
-                            desyncWaitBlocks.add(hitResult.val().getBlockPos());
+                            desyncWaitBlocks.add(pos);
                         }
                         if (returnBlock.get()) {
-                            InteractionTasks.finishGhostHand(mode.get(), runnable);
+                            InteractionTasks.finishInteractGhostHand(mode.get(), runnable);
                         }
                         return true;
                     }

@@ -17,11 +17,11 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
-import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.interact.SequencedActionManager;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.mine.PacketMine;
+import me.matl114.hacks.modules.task.DisablerManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.enums.GhostHandMode;
@@ -1126,11 +1126,11 @@ public class CrystalAura extends BaseModule {
         boolean completed = InteractionTasks.handlePlaceMode(
                 mode.get(), hitResult, offhand.get() ? Hand.OFF_HAND : Hand.MAIN_HAND, swingHand.get());
         if (!completed) {
-            InteractionTasks.finishGhostHand(mode.get(), callback);
+            InteractionTasks.finishInteractGhostHand(mode.get(), callback);
             return false;
         }
         CombatManager.INSTANCE.markCrystalPlace(basePos);
-        InteractionTasks.finishGhostHand(mode.get(), callback);
+        InteractionTasks.finishInteractGhostHand(mode.get(), callback);
         return true;
     }
 
@@ -1154,7 +1154,7 @@ public class CrystalAura extends BaseModule {
                 autoBase.basePlaceResult(),
                 offhand.get() ? Hand.OFF_HAND : Hand.MAIN_HAND,
                 swingHand.get());
-        InteractionTasks.finishGhostHand(mode.get(), callback);
+        InteractionTasks.finishInteractGhostHand(mode.get(), callback);
         if (completed
                 && zeroTickBase.get()
                 && DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled(
@@ -1195,7 +1195,7 @@ public class CrystalAura extends BaseModule {
             return false;
         }
         boolean completed = InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
-        InteractionTasks.finishGhostHand(mode.get(), callback);
+        InteractionTasks.finishInteractGhostHand(mode.get(), callback);
         return completed;
     }
 
@@ -1362,7 +1362,7 @@ public class CrystalAura extends BaseModule {
             return false;
         }
         boolean completed = InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
-        InteractionTasks.finishGhostHand(mode.get(), callback);
+        InteractionTasks.finishInteractGhostHand(mode.get(), callback);
         return completed;
     }
 
@@ -1381,7 +1381,7 @@ public class CrystalAura extends BaseModule {
         mc.world.setBlockState(pos, Blocks.AIR.getDefaultState());
         boolean completed = InteractionTasks.handlePlaceMode(
                 mode.get(), hitResult, offhand.get() ? Hand.OFF_HAND : Hand.MAIN_HAND, swingHand.get());
-        InteractionTasks.finishGhostHand(mode.get(), callback);
+        InteractionTasks.finishInteractGhostHand(mode.get(), callback);
         if (completed) {
             trackedGlasses.put(pos, Tasks.getTick());
         }

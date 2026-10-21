@@ -10,6 +10,7 @@ import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.modules.task.ServerFeature;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
@@ -128,17 +129,25 @@ public class AttackAura extends BaseModule {
 
     private boolean isCooldown(Attack.AttackSettings settings, Entity entity) {
         IndexEntry<ItemStack> currentWeapon = Attack.selectBestWeapon(settings, entity);
-        AttributeContainer swapContainer =
-                AttributeUtils.getAttributeWith(mc.player, Map.of(EquipmentSlot.MAINHAND, currentWeapon.val()));
+        AttributeContainer swapContainer = AttributeUtils.getAttributeWith(
+                mc.player,
+                ServerFeature.INSTANCE.attributeSwap.get()
+                        ? Map.of()
+                        : Map.of(EquipmentSlot.MAINHAND, currentWeapon.val()));
         double rawAttackDamage = swapContainer.getValue(EntityAttributes.ATTACK_DAMAGE);
         if (entity instanceof LivingEntity livingEntity
                 && livingEntity.isUsingItem()
                 && livingEntity.getActiveItem().getItem() instanceof ShieldItem
-                && Attack.INSTANCE.fastDestroyShield.get().isPresent()
+                && settings.fastBreakShieldSwap().isPresent()
                 && !VItem.getInstance().isAxe(currentWeapon.val())
                 && rawAttackDamage > 10.0D
                 && DamageUtils.getRealAttackDamage(
-                                mc.player, entity, currentWeapon.val(), PlayerStateManager.INSTANCE.fallDistance)
+                                mc.player,
+                                entity,
+                                currentWeapon.val(),
+                                PlayerStateManager.INSTANCE.fallDistance,
+                                PlayerStateManager.INSTANCE.getTicksSinceLastAttack(),
+                                ServerFeature.INSTANCE.attributeSwap.get())
                         > 3.1F) {
             return true;
         }
@@ -171,7 +180,9 @@ public class AttackAura extends BaseModule {
                                         mc.player,
                                         target,
                                         currentWeapon.val(),
-                                        PlayerStateManager.INSTANCE.fallDistance),
+                                        PlayerStateManager.INSTANCE.fallDistance,
+                                        PlayerStateManager.INSTANCE.getTicksSinceLastAttack(),
+                                        ServerFeature.INSTANCE.attributeSwap.get()),
                                 DamageUtils.createContext(target))
                         > target.getHealth() + target.getAbsorptionAmount()) {
             return true;

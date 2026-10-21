@@ -331,7 +331,7 @@ public class Interact extends BaseModule {
     public void finishEntityGhostHand(boolean completed, Runnable callback) {
         if (callback == null) return;
         if (!completed) {
-            InvExtra.INSTANCE.pushGhostHandCallback(callback);
+            InvExtra.INSTANCE.pushPostTickGhostHandCallback(callback);
         } else {
             callback.run();
         }

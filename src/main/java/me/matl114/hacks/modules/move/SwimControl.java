@@ -1,9 +1,9 @@
 package me.matl114.hacks.modules.move;
 
 import me.matl114.events.Event;
-import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.ConfigEnum;
@@ -22,11 +22,7 @@ public class SwimControl extends BaseModule implements LegalMovementManager.Move
     public SwimControl() {
         super("SwimControl");
         INSTANCE = this;
-        if (instance == null) {
-            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
-        }
-        instance.setDelegate(this::cast);
+        MovementManager.registerMovementPipeline(this);
         bindFlag(enable);
     }
 

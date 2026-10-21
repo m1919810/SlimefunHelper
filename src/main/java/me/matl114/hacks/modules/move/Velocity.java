@@ -11,6 +11,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.mine.FakeBlockManager;
+import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -106,17 +107,11 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
     public final FlagRef noClimbing =
             flagBuilder(velocityControl.add("no-climbing")).build();
 
-    public static LegalMovementManager.DelegateMovementModifier instance;
-
     public Velocity() {
         super("Velocity");
         INSTANCE = this;
         bindFlag(enable);
-        if (instance == null) {
-            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
-        }
-        instance.setDelegate(this::cast);
+        MovementManager.registerMovementPipeline(this);
     }
 
     @Override

@@ -107,9 +107,7 @@ public abstract class LivingEntityEvents extends Entity
             Event<Integer> jumpEvent = new Event<>(10, true, true);
             Listener.getPlayerNotFlyJumpPoint().handleValue(jumpEvent);
             nextJumpCooldown = jumpEvent.context();
-            if (jumpEvent.isCancelled()) {
-
-            } else {
+            if (!jumpEvent.isCancelled()) {
                 original.call(instance);
             }
         } else {
@@ -117,17 +115,15 @@ public abstract class LivingEntityEvents extends Entity
         }
     }
 
-    @Inject(
+    @WrapOperation(
             method = "tickMovement",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target = "Lnet/minecraft/entity/LivingEntity;isFallFlying()Z",
-                            shift = At.Shift.BEFORE))
-    private void overrideJumpCooldown(CallbackInfo ci) {
+            at = @At(value = "FIELD", target = "Lnet/minecraft/entity/LivingEntity;jumpingCooldown:I", ordinal = 4))
+    private void overrideJumpCooldown(LivingEntity instance, int value, Operation<Void> original) {
         if (nextJumpCooldown != null) {
-            jumpingCooldown = nextJumpCooldown;
+            original.call(instance, nextJumpCooldown.intValue());
             nextJumpCooldown = null;
+        } else {
+            original.call(instance, value);
         }
     }
 
@@ -193,7 +189,8 @@ public abstract class LivingEntityEvents extends Entity
             }
             tickEquipment();
 
-            if (ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(20, 8)) {
+            if (checkClientPlayer()
+                    && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(20, 8)) {
                 AttributeUtils.overrideViaAttributes(getClientLastEquipmentSnapshot(), this.getAttributes());
             }
         }

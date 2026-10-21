@@ -9,8 +9,8 @@ import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
-import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.modules.task.DisablerManager;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.managers.Configs;
@@ -116,7 +116,7 @@ public class Scaffold extends BaseModule {
             return InteractionTasks.handlePlaceMode(
                     legalMode.get(), result, offhandOk ? Hand.OFF_HAND : Hand.MAIN_HAND, swingHand.get());
         } finally {
-            InteractionTasks.finishGhostHand(legalMode.get(), callback);
+            InteractionTasks.finishInteractGhostHand(legalMode.get(), callback);
         }
     }
 

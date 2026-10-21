@@ -11,6 +11,7 @@ import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.NBTTypes;
@@ -49,11 +50,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
 
     public TravellingControl() {
         super("Travel");
-        if (instance == null) {
-            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
-        }
-        instance.setDelegate(this::cast);
+        MovementManager.registerMovementPipeline(this);
     }
 
     //    public FlagRef enable = flagBuilder(travellingControl.add("enable")).build();

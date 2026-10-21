@@ -83,6 +83,7 @@ public class Misc extends BaseModule {
     private final RenderCollector<List<Vec3d>> parkourTrajectory = RenderCollectors.createLinesCollector();
     public final FlagRef parkourUsePacketQueue =
             flagBuilder(autoParkour.add("use-packet-queue")).defaultValue(false).build();
+
     private static final int PARKOUR_COLOR = Color.CYAN.getRGB();
     private static final int JUMP_COLOR = Color.GREEN.getRGB();
     private static final double PARKOUR_PLAYER_HALF_WIDTH = 0.3D;

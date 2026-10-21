@@ -20,10 +20,12 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
-import me.matl114.hacks.modules.ac.PacketOrderManager;
-import me.matl114.hacks.modules.ac.PostManager;
 import me.matl114.hacks.modules.interact.SequencedActionManager;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.modules.task.DisablerManager;
+import me.matl114.hacks.modules.task.MovementManager;
+import me.matl114.hacks.modules.task.PacketOrderManager;
+import me.matl114.hacks.modules.task.PostManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.*;
@@ -48,6 +50,8 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.FireworksComponent;
 import net.minecraft.entity.*;
+import net.minecraft.entity.attribute.AttributeContainer;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.projectile.FireworkRocketEntity;
@@ -80,15 +84,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public ElytraExtra() {
         super("ElytraExtra");
-        if (instance == null) {
-            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
-        }
-        instance.setDelegate(this::cast);
+        MovementManager.registerMovementPipeline(this);
         INSTANCE = this;
     }
-
-    public final FlagRef fuckGrimAC = MovTasks.getMovExtra().fuckGrimAC;
 
     public final NBTRef<OptionalPrimitive<WrapEnum<BypassMode>>> noKineticMode = builder(
                     elytraTweaks.add("no-kinetic-mode"), OptionalPrimitive.configEnum(BypassMode.class))
@@ -836,8 +834,11 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                         var item = entry.val();
                         if (item.isEmpty()) return -3.0D;
                         if (canStopFallFlying(item)) {
-                            return DamageUtils.getArmorValue(mc.player, item, EquipmentSlot.CHEST)
-                                    * DamageUtils.getArmorToughnessValue(mc.player, item, EquipmentSlot.CHEST);
+                            AttributeContainer container =
+                                    AttributeUtils.getAttributeWith(mc.player, Map.of(EquipmentSlot.CHEST, item));
+
+                            return container.getValue(EntityAttributes.ARMOR)
+                                    * container.getValue(EntityAttributes.ARMOR_TOUGHNESS);
                         }
                         return null;
                     },
@@ -2095,7 +2096,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         if (isCurrentArmorGliding() && isThisTickGlideMovementServerSideGlide()) {
             // fix grimac multiaction c, fix grimac elytra c,
             // ??
-            if (MovExtra.INSTANCE.fuckGrimACSprint.get()) {
+            if (DisablerManager.INSTANCE.isInventorySprintFix()) {
                 PlayerInputUtils.of(player).sprint(false).applyInput(player);
             }
             PlayerInputUtils.of(player).sneak(false).applyInput(player);
@@ -2173,7 +2174,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
         if (player.isFallFlying()) {
             player.horizontalCollision = false;
-            if (fuckGrimAC.get() && currentTickStartGlideTransaction) {
+            if (DisablerManager.INSTANCE.isInventoryWalkFix() && currentTickStartGlideTransaction) {
                 var input = PlayerInputUtils.of(player);
                 input.forward(false).backward(false).left(false).right(false).jump(true);
                 input.applyInput(player);

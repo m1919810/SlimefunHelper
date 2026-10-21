@@ -8,6 +8,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.combat.ElytraBot;
+import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.NBTTypes;
@@ -15,6 +16,7 @@ import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.move.ElytraMotion;
 import me.matl114.hacks.utils.move.ElytraOptimizeUtils;
+import me.matl114.hacks.utils.tasks.PressExecutor;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -146,11 +148,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
 
     public ElytraFlight() {
         super("ElytraFlight");
-        if (instance == null) {
-            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
-        }
-        instance.setDelegate(this::cast);
+        MovementManager.registerMovementPipeline(this);
         bindFlag(enable);
         INSTANCE = this;
     }
@@ -201,7 +199,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
         }
     }
 
-    int holdJumpCounter = 0;
+    PressExecutor holdJump = new PressExecutor();
     boolean controllingThisTick = false;
 
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
@@ -210,15 +208,13 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             currentTakeOff = true;
         }
         if (mc.options.jumpKey.isPressed()) {
-            holdJumpCounter++;
-        } else {
-            holdJumpCounter = 0;
+            holdJump.press();
         }
         controllingThisTick = false;
         if (shouldControlFlight()) {
             if (!player.isFallFlying()
                     && takeOffOptimize.get().isPresent()
-                    && holdJumpCounter >= takeOffOptimize.get().getValue()) {
+                    && holdJump.canRun(takeOffOptimize.get().getValue())) {
                 if (!mc.player.isOnGround() && mc.player.checkGliding()) {
                     MovExtra.INSTANCE.sendPacketsForPreStartFallFlying();
                     mc.getNetworkHandler()
@@ -228,7 +224,8 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                 }
             }
             if (player.isFallFlying()) {
-                if (MovTasks.getElytraGrimAccelerate().enable.get()) {
+                if (pauseWhenAccelerate.get()
+                        && MovTasks.getElytraGrimAccelerate().enable.get()) {
                     // GrimAccelerate on
                     // close
                     return;

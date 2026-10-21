@@ -17,6 +17,9 @@ import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.task.*;
 import me.matl114.hacks.modules.task.ConnectionProxy;
+import me.matl114.hacks.modules.task.DisablerManager;
+import me.matl114.hacks.modules.task.PacketOrderManager;
+import me.matl114.hacks.modules.task.PostManager;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.Config;
@@ -300,6 +303,21 @@ public class MainTasks {
     private static ServerStorage serverStorage;
 
     @Getter
+    private static ServerFeature serverFeature;
+
+    @Getter
+    private static MovementManager movementManager;
+
+    @Getter
+    private static PostManager postManager;
+
+    @Getter
+    private static DisablerManager disablerManager;
+
+    @Getter
+    private static PacketOrderManager packetOrderManager;
+
+    @Getter
     private static ConnectionProxy connectionProxy;
 
     @Getter
@@ -313,6 +331,11 @@ public class MainTasks {
         bindCommand = new BindCommand().register(m);
         eventCommand = new EventCommand().register(m);
         serverStorage = new ServerStorage().register(m);
+        serverFeature = new ServerFeature().register(m);
+        movementManager = new MovementManager().register(m);
+        postManager = new PostManager().register(m);
+        disablerManager = new DisablerManager().register(m);
+        packetOrderManager = new PacketOrderManager().register(m);
         connectionProxy = new ConnectionProxy().register(m);
         iqBoost = new IQBoost().register(m);
     }
@@ -335,7 +358,6 @@ public class MainTasks {
         SurvivalTasks.init();
         SlimefunTasks.init();
         ModelTasks.init();
-        ACTasks.init();
         ExtraTasks.init();
     }
 }

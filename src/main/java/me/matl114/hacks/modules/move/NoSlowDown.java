@@ -7,11 +7,11 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.impl.EventContainer;
 import me.matl114.events.impl.MetadataUpdate;
-import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.mine.FakeBlockManager;
+import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
@@ -49,24 +49,13 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     public final ModulePath noSlowdown = moveSpeed.add("no-slowdown");
     public final ModulePath fakeSneakStatusPath = moveSpeed.add("fake-sneak-status");
 
-    public static LegalMovementManager.DelegateMovementModifier instance;
     public static NoSlowDown INSTANCE;
 
     public NoSlowDown() {
         super("NoSlowDown");
         // 哎我操GrimAC别修了，真没辙了，再修我还怎么打啊。。。
         INSTANCE = this;
-        if (instance == null) {
-            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            // register at here for the first time
-            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(this::newMovementInstance);
-        }
-        instance.setDelegate(this::cast);
-    }
-
-    private LegalMovementManager.DelegateMovementModifier newMovementInstance() {
-        resetPlayer();
-        return instance;
+        MovementManager.registerMovementPipeline(this);
     }
 
     @Override

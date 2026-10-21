@@ -23,6 +23,7 @@ import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerInputManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.modules.move.RotationManager;
+import me.matl114.hacks.modules.task.ServerFeature;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.OptionalPrimitive;
@@ -263,7 +264,7 @@ public class Attack extends BaseModule {
         boolean maceSwap = autoMaceSwap.get().isPresent()
                 && PlayerStateManager.INSTANCE.fallDistance
                         >= autoMaceSwap.get().getValue();
-        boolean invSwap = autoSwap.get();
+        boolean invSwap = autoSwap.get() && !ServerFeature.INSTANCE.attackStrengthUpdateWithHand.get();
         boolean selectWeapon = autoSelect.get();
         boolean antiShield = autoAntiShield.get();
         boolean useAttack = autoRelease.get() && mc.player.isUsingItem();
@@ -284,6 +285,7 @@ public class Attack extends BaseModule {
                 invSwap,
                 selectWeapon,
                 antiShield,
+                fastDestroyShield.get().asOptional(),
                 useAttack,
                 elytraSwitch,
                 criticalSprint,
@@ -304,6 +306,11 @@ public class Attack extends BaseModule {
                 && findAntiShieldWeapon(settings) != null;
     }
 
+    private static double applyArmorReduceOn(ItemStack stack, double finalDamage, LivingEntity target) {
+        var context = DamageUtils.createAssumeProtectionFourContext(target);
+        return DamageUtils.getFinalAttackDamageAgainst(mc.player, stack, (float) finalDamage, context);
+    }
+
     @Nonnull
     public static IndexEntry<ItemStack> selectBestWeapon(AttackSettings attackSettings, @Nullable Entity target) {
         IndexEntry<ItemStack> invResult;
@@ -312,7 +319,8 @@ public class Attack extends BaseModule {
                 && (invResult = findAntiShieldWeapon(attackSettings)) != null) {
             return invResult;
         }
-        if (INSTANCE.fastDestroyShield.get().isPresent()
+        if (attackSettings.fastBreakShieldSwap().isPresent()
+                && !ServerFeature.INSTANCE.attributeSwap.get()
                 && target instanceof LivingEntity livingTarget
                 && livingTarget.isUsingItem()
                 && livingTarget.getActiveItem().getItem() instanceof ShieldItem
@@ -339,7 +347,16 @@ public class Attack extends BaseModule {
                 && (invResult = InventoryUtils.findBestPlayerItem(
                                 (ex) -> {
                                     if (ex.getItem() == Items.MACE) {
-                                        return DamageUtils.getAttackDamage(lv, ex);
+                                        return applyArmorReduceOn(
+                                                ex,
+                                                DamageUtils.getRealAttackDamage(
+                                                        mc.player,
+                                                        lv,
+                                                        ex,
+                                                        PlayerStateManager.INSTANCE.fallDistance,
+                                                        PlayerStateManager.INSTANCE.getTicksSinceLastAttack(),
+                                                        ServerFeature.INSTANCE.attributeSwap.get()),
+                                                lv);
                                     }
                                     return null;
                                 },
@@ -349,7 +366,6 @@ public class Attack extends BaseModule {
                         != null) {
             return invResult;
         } else if (attackSettings.invSwap()
-                && !VItem.getInstance().isWeapon(mc.player.getStackInHand(Hand.MAIN_HAND))
                 && target instanceof LivingEntity lv
                 && (invResult = InventoryUtils.findBestPlayerItem(
                                 (ex) -> {
@@ -359,8 +375,17 @@ public class Attack extends BaseModule {
                                         return damageCost == null
                                                 ? null
                                                 : -((double) damageCost * 1E8)
-                                                        + DamageUtils.getAttackDamage(mc.player, lv, ex)
-                                                                * DamageUtils.getAttackSpeed(mc.player, ex);
+                                                        + applyArmorReduceOn(
+                                                                ex,
+                                                                DamageUtils.getRealAttackDamage(
+                                                                        mc.player,
+                                                                        lv,
+                                                                        ex,
+                                                                        PlayerStateManager.INSTANCE.fallDistance,
+                                                                        PlayerStateManager.INSTANCE
+                                                                                .getTicksSinceLastAttack(),
+                                                                        ServerFeature.INSTANCE.attributeSwap.get()),
+                                                                lv);
                                     }
                                     return null;
                                 },
@@ -371,15 +396,23 @@ public class Attack extends BaseModule {
             return invResult;
         } else if (attackSettings.selectWeapon()
                 && !mc.player.getStackInHand(Hand.MAIN_HAND).isEmpty()
-                && target instanceof LivingEntity
+                && target instanceof LivingEntity lv
                 && (invResult = InventoryUtils.findBestPlayerItem(
                                 (ex) -> {
                                     if (VItem.getInstance().isSpear(ex)) return null;
                                     if (ex.isOf(mc.player
                                             .getStackInHand(Hand.MAIN_HAND)
                                             .getItem())) {
-                                        return DamageUtils.getAttackDamage(mc.player, target, ex)
-                                                * DamageUtils.getAttackSpeed(mc.player, ex);
+                                        return applyArmorReduceOn(
+                                                ex,
+                                                DamageUtils.getRealAttackDamage(
+                                                        mc.player,
+                                                        lv,
+                                                        ex,
+                                                        PlayerStateManager.INSTANCE.fallDistance,
+                                                        PlayerStateManager.INSTANCE.getTicksSinceLastAttack(),
+                                                        ServerFeature.INSTANCE.attributeSwap.get()),
+                                                lv);
                                     }
                                     return null;
                                 },
@@ -407,7 +440,7 @@ public class Attack extends BaseModule {
         IndexEntry<ItemStack> invResult = selectBestWeapon(attackSettings, target);
         Runnable callback = InvExtra.INSTANCE.swapItemToHand(invResult.index(), false, attackSettings.ghostHandMode());
         attackWithCritic(player, target, attackSettings.criticalSprint(), attackSettings.swingHand());
-        OptionalPrimitive<Integer> fastDestroyShield = INSTANCE.fastDestroyShield.get();
+        Optional<Integer> fastDestroyShield = attackSettings.fastBreakShieldSwap();
         if (fastDestroyShield.isPresent()
                 && player.getAttributeValue(EntityAttributes.ATTACK_DAMAGE) >= 15.0D
                 && !VItem.getInstance().isAxe(invResult.val())
@@ -415,7 +448,7 @@ public class Attack extends BaseModule {
                 && livingTarget.isUsingItem()
                 && livingTarget.getActiveItem().getItem() instanceof ShieldItem
                 && isWithinShieldBlockingAngle(livingTarget, player)) {
-            for (int i = 0; i < fastDestroyShield.getValue(); i++) {
+            for (int i = 0; i < fastDestroyShield.get(); i++) {
                 attackWithCritic(player, target, attackSettings.criticalSprint(), attackSettings.swingHand());
             }
         }
@@ -1161,6 +1194,7 @@ public class Attack extends BaseModule {
             boolean invSwap,
             boolean selectWeapon,
             boolean antiShieldSwap,
+            Optional<Integer> fastBreakShieldSwap,
             boolean useAttack,
             boolean elytraDelaySwitch,
             boolean criticalSprint,
@@ -1173,6 +1207,22 @@ public class Attack extends BaseModule {
 
         public boolean isNoDelay() {
             return !elytraDelaySwitch && !useAttack;
+        }
+
+        public AttackSettings withNoSwap() {
+            return new AttackSettings(
+                    useTp,
+                    false,
+                    false,
+                    false,
+                    false,
+                    Optional.empty(),
+                    useAttack,
+                    elytraDelaySwitch,
+                    criticalSprint,
+                    maceVClip,
+                    swingHand,
+                    ghostHandMode);
         }
     }
 }

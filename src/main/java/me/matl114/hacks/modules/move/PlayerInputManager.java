@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.With;
 import me.matl114.events.Event;
-import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Tasks;
@@ -16,18 +16,13 @@ import org.jetbrains.annotations.Nullable;
 
 public class PlayerInputManager extends BaseModule implements LegalMovementManager.MovementModifier {
     public static PlayerInputManager INSTANCE;
-    public static LegalMovementManager.DelegateMovementModifier instance;
 
     private final List<TimedModifier> priorityQueue = new ArrayList<>(16);
 
     public PlayerInputManager() {
         super("PlayerInputManager");
         INSTANCE = this;
-        if (instance == null) {
-            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
-        }
-        instance.setDelegate(this::cast);
+        MovementManager.registerMovementPipeline(this);
     }
 
     public void addInputModifier(Modifier modifier) {

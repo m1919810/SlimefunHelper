@@ -10,6 +10,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.ElytraExtra;
 import me.matl114.hacks.modules.move.FloatingUtils;
+import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.tasks.TimerExecutor;
 import me.matl114.hooks.BaritoneHooks;
@@ -36,11 +37,7 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
     public BaritoneFix() {
         super("BaritoneFix");
         INSTANCE = this;
-        if (instance == null) {
-            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
-        }
-        instance.setDelegate(this::cast);
+        MovementManager.registerMovementPipeline(this);
     }
 
     public final ModulePath fix = makePath(Configs.SURVIVAL_CONFIG, "baritone.fix");

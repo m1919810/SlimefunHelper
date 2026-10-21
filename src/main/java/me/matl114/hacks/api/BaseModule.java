@@ -340,6 +340,10 @@ public abstract class BaseModule implements ModuleListProvider {
         return flagBuilder(path.getConfig(), path.toPath());
     }
 
+    public WrapperSettingBuilder<Boolean> flagBuilder(ModulePath path, boolean defaultVal) {
+        return builder(path.getConfig(), Boolean.class).path(path.toPath()).defaultValue(defaultVal);
+    }
+
     public WrapperSettingBuilder<Integer> intBuilder(ModulePath path) {
         return builder(path.getConfig(), path.toPath(), IntRef.TYPE);
     }
