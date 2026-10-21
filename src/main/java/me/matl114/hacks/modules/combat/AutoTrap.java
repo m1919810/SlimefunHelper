@@ -297,7 +297,7 @@ public class AutoTrap extends BaseModule {
             }
         }
         if (callback != null) {
-            InteractionTasks.finishGhostHand(mode.get(), callback);
+            InteractionTasks.finishInteractGhostHand(mode.get(), callback);
         }
         return placed;
     }
@@ -390,7 +390,7 @@ public class AutoTrap extends BaseModule {
         }
         Hand hand = handIsOffhand ? Hand.OFF_HAND : Hand.MAIN_HAND;
         boolean completed = InteractionTasks.handlePlaceMode(mode.get(), hitResult.val(), hand, swingHand.get());
-        InteractionTasks.finishGhostHand(mode.get(), callback);
+        InteractionTasks.finishInteractGhostHand(mode.get(), callback);
         return completed || (trapdoor && autoCrawlZeroTickInteract.get()) ? 1 : 0;
     }
 

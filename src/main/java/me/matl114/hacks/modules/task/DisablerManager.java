@@ -1,4 +1,4 @@
-package me.matl114.hacks.modules.ac;
+package me.matl114.hacks.modules.task;
 
 import java.util.Objects;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
@@ -7,7 +7,6 @@ import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
 import me.matl114.events.impl.EventContainer;
 import me.matl114.events.impl.SlotClickAction;
-import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
@@ -35,10 +34,13 @@ import net.minecraft.util.math.Vec3d;
 public class DisablerManager extends BaseModule implements LegalMovementManager.MovementModifier {
     public static DisablerManager INSTANCE;
 
-    public final ModulePath disablers = makePath(Configs.EXTRA_CONFIG, "disablers");
+    public final ModulePath disablers = makePath(Configs.MISC_CONFIG, "disablers");
 
-    public final FlagRef enable =
-            builder(disablers.addEnable(), Boolean.class).defaultValue(true).build();
+    {
+        portConfigs(makePath(Configs.EXTRA_CONFIG, "disablers"), disablers);
+    }
+
+    public final FlagRef enable = flagBuilder(disablers.addEnable(), true).build();
 
     public final KeyBindRef hotkey = moduleEntry(
                     disablers.addHotkey(), new MultiKeyBind(), disablers.addEnable(), moduleMeta(() -> this.currentAC))
@@ -48,45 +50,45 @@ public class DisablerManager extends BaseModule implements LegalMovementManager.
             .defaultValue(SupportAC.NONE)
             .build();
 
-    public final FlagRef grimSelfCheck = builder(disablers.add("grim-self-check"), Boolean.class)
-            .defaultValue(false)
+    public final ModulePath grimPlaceBreak = disablers.add("grim-place-break");
+
+    public final FlagRef grimSelfCheck = flagBuilder(grimPlaceBreak.add("grim-self-check"))
+            .show(() -> currentAC.get().isIn(SupportAC.GRIM))
             .build();
 
-    public final FlagRef grimMultiplace = builder(disablers.add("grim-multi-place"), Boolean.class)
-            .defaultValue(true)
-            .build();
+    public final FlagRef grimMultiplace =
+            flagBuilder(grimPlaceBreak.add("grim-multi-place"), true).build();
 
     public final FlagRef grimMultiplaceFix =
-            flagBuilder(disablers.add("grim-multi-place-fix")).build();
+            flagBuilder(grimPlaceBreak.add("grim-multi-place-fix")).build();
 
     //    public final FlagRef grimMultiBreak = builder(disablers.add("grim-multi-break"), Boolean.class)
     //            .defaultValue(false)
     //            .build();
 
-    public final FlagRef autoFlushPlaceQueue = builder(disablers.add("auto-flush-multi-place-queue"), Boolean.class)
-            .defaultValue(true)
+    public final FlagRef autoFlushPlaceQueue = flagBuilder(grimPlaceBreak.add("auto-flush-multi-place-queue"), true)
             .build();
 
-    public final FlagRef autoFlushPlaceBreakQueue = builder(
-                    disablers.add("auto-flush-place-break-queue"), Boolean.class)
-            .defaultValue(true)
+    public final FlagRef autoFlushPlaceBreakQueue = flagBuilder(
+                    grimPlaceBreak.add("auto-flush-place-break-queue"), true)
             .build();
 
-    public final FlagRef duplicatedSprintFix = builder(disablers.add("fix-duplicated-sprint-one-tick"), Boolean.class)
-            .defaultValue(true)
-            .build();
+    public final ModulePath movement = disablers.add("movement");
 
-    static LegalMovementManager.DelegateMovementModifier instance;
+    public final FlagRef inventoryWalkFix =
+            flagBuilder(movement.add("inventory-walk-fix"), true).build();
+
+    public final FlagRef inventorySprintFix =
+            flagBuilder(movement.add("inventory-sprint-fix"), true).build();
+
+    public final FlagRef duplicatedSprintFix =
+            flagBuilder(movement.add("fix-duplicated-sprint-one-tick"), true).build();
 
     public DisablerManager() {
         super("Disabler");
         INSTANCE = this;
         bindFlag(enable);
-        if (instance == null) {
-            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
-        }
-        instance.setDelegate(this::cast);
+        MovementManager.registerMovementPipeline(this);
     }
 
     boolean grimSelfCheckDisabler;
@@ -327,6 +329,14 @@ public class DisablerManager extends BaseModule implements LegalMovementManager.
         }
     }
 
+    public boolean isInventoryWalkFix() {
+        return currentAC.get().isIn(SupportAC.GRIM) && inventoryWalkFix.get();
+    }
+
+    public boolean isInventorySprintFix() {
+        return currentAC.get().isNotIn(SupportAC.NONE) && inventorySprintFix.get();
+    }
+
     public void onPresetReload(Event<EventContainer<ModulePreset>> event) {
         if (event.context().getValue().isOptionPreset()) return;
         switch (event.context.getValue()) {
@@ -344,6 +354,15 @@ public class DisablerManager extends BaseModule implements LegalMovementManager.
             duplicatedSprintFix.set(true);
         } else {
             duplicatedSprintFix.set(false);
+        }
+        switch (event.context.getValue()) {
+                // check 1.21.2+
+            case AC_GRIM, AC_GRIM_LEGACY -> {
+                inventoryWalkFix.set(true);
+            }
+            default -> {
+                inventoryWalkFix.set(false);
+            }
         }
     }
 

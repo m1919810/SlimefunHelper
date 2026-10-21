@@ -214,7 +214,7 @@ public class PacketMine extends BaseModule {
                 MineExtra.INSTANCE.tickGhostHandDoubleBreak(currentTickCallback, ghostHand.get(), groundDeceive.get());
             } else {
                 if (currentTickCallback != null) {
-                    currentTickCallback.run();
+                    MineExtra.INSTANCE.finishMineGhostHand(currentTickCallback);
                 }
             }
             if (postMineCallback != null) {

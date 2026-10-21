@@ -13,14 +13,16 @@ import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
-import me.matl114.hacks.modules.ac.PostManager;
 import me.matl114.hacks.modules.move.MovExtra;
+import me.matl114.hacks.modules.task.PostManager;
+import me.matl114.hacks.modules.task.ServerFeature;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.hooks.ViaProtocols;
 import me.matl114.managers.Configs;
 import me.matl114.managers.TaskManagers;
+import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
@@ -46,7 +48,8 @@ import net.minecraft.text.Text;
 
 public class InvExtra extends BaseModule {
     public static InvExtra INSTANCE;
-    private final Deque<Runnable> ghostHandCallbacks = new ArrayDeque<>();
+    private final Deque<Runnable> postTickGhostHandCallbacks = new ArrayDeque<>();
+    private final Deque<Runnable> nextTickGhostHandCallbacks = new ArrayDeque<>();
     public final ModulePath inventory = makePath(Configs.INV_CONFIG, "inventory");
 
     public InvExtra() {
@@ -68,9 +71,6 @@ public class InvExtra extends BaseModule {
     public final FlagRef expandInventory =
             flagBuilder(inventory.add("expand-backpack-inventory")).build();
 
-    public final FlagRef ghostHandAttribute =
-            flagBuilder(inventory.add("ghost-hand-attribute-sync")).build();
-
     public final KeyBindRef pickItemHotkey = hotkey(inventory.add("pick-item"))
             .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.MOUSE_BUTTON_3))
             .registerHotkey(HotKeyUtils.asHandler(this::onPickItem))
@@ -90,7 +90,8 @@ public class InvExtra extends BaseModule {
                 Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class),
                 this::onClientTickEnd,
                 Integer.MAX_VALUE);
-        registerListener(Listener.getServerLeavePoint(), event -> ghostHandCallbacks.clear());
+        registerListener(Listener.getPreTick(), this::onNewTick);
+        registerListener(Listener.getServerLeavePoint(), event -> postTickGhostHandCallbacks.clear());
         TaskManagers.getToggleManager().register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + "keep-inv", enableKeepInv);
         TaskManagers.getTaskManager().register(TaskManagers.PREFIX_BUTTON_TASKS + "." + CLEAR_KEEP, this::clearKeep);
     }
@@ -164,18 +165,57 @@ public class InvExtra extends BaseModule {
         }
     }
 
-    public void pushGhostHandCallback(Runnable callback) {
-        if (callback != null) ghostHandCallbacks.push(callback);
+    private void onNewTick(Event<Void> event) {
+        if (checkNull()) return;
+        tickNextTickCallbacks();
+    }
+
+    int lastRunningTicks;
+
+    public void tickNextTickCallbacks() {
+        if (lastRunningTicks != Tasks.getTick()) {
+            lastRunningTicks = Tasks.getTick();
+            while (!nextTickGhostHandCallbacks.isEmpty()) {
+                Runnable r = nextTickGhostHandCallbacks.removeLast();
+                r.run();
+            }
+        }
+    }
+
+    public boolean pushPostTickGhostHandCallback(Runnable callback) {
+        if (callback != null && callback != Runnables.doNothing()) {
+            postTickGhostHandCallbacks.push(callback);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean pushNextTickGhostHandCallback(Runnable runnable) {
+        // must ensure that this tick 's nextTick Task already processed
+        tickNextTickCallbacks();
+        if (runnable != null && runnable != Runnables.doNothing()) {
+            nextTickGhostHandCallbacks.addLast(runnable);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean hasPostTickGhostHandCallback() {
+        return !postTickGhostHandCallbacks.isEmpty();
+    }
+
+    public boolean hasNextTickGhostHandCallback() {
+        return !nextTickGhostHandCallbacks.isEmpty();
     }
 
     public void drainGhostHandCallbacks() {
-        while (!ghostHandCallbacks.isEmpty()) {
-            ghostHandCallbacks.pop().run();
+        while (!postTickGhostHandCallbacks.isEmpty()) {
+            postTickGhostHandCallbacks.pop().run();
         }
     }
 
     public void syncAttr() {
-        if (ghostHandAttribute.get()) {
+        if (!ServerFeature.INSTANCE.attributeSwap.get()) {
             AttributeUtils.updateAttribute(mc.player);
         }
     }

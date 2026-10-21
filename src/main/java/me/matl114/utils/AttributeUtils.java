@@ -33,9 +33,8 @@ public class AttributeUtils {
             LivingEntity living, Map<EquipmentSlot, ItemStack> equipmentOverrides) {
         Map<EquipmentSlot, ItemStack> filterMap = new LinkedHashMap<>(equipmentOverrides);
         AttributeContainer attributeContainer = copyAttributes(living);
-        for (Map.Entry<EquipmentSlot, ItemStack> entry : filterMap.entrySet()) {
-            var slot = entry.getKey();
-            var itemStack2 = entry.getValue();
+        for (var slot : EquipmentSlot.values()) {
+            var itemStack2 = equipmentOverrides.getOrDefault(slot, living.getEquippedStack(slot));
             ItemStack toBeRemoved = living.getEquippedStack(slot);
             if (!toBeRemoved.isEmpty()) {
                 toBeRemoved.applyAttributeModifiers(slot, (attribute, modifier) -> {
@@ -56,7 +55,8 @@ public class AttributeUtils {
                 });
             }
         }
-        if (ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(20, 8)) {
+        if (living instanceof PlayerEntity pl
+                && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(20, 8)) {
             Map<EquipmentSlot, ItemStack> newMap = new HashMap<>(filterMap);
             for (var re : EquipmentSlot.values()) {
                 if (!newMap.containsKey(re)) {
@@ -113,10 +113,13 @@ public class AttributeUtils {
     private static void setAttributeVia(
             AttributeContainer attributeContainer, RegistryEntry<EntityAttribute> attribute, double level) {
         var attributeInstance = attributeContainer.getCustomInstance(attribute);
-        attributeInstance
-                .clearModifiers(); // Minecraft is applying attribute modifiers in some situations, remove them before
-        // we set the base value
-        attributeInstance.setBaseValue(level);
+        if (attributeInstance != null) {
+            attributeInstance
+                    .clearModifiers(); // Minecraft is applying attribute modifiers in some situations, remove them
+            // before
+            // we set the base value
+            attributeInstance.setBaseValue(level);
+        }
     }
 
     private static int getEquipmentLevel(

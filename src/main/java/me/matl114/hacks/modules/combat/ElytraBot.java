@@ -5,6 +5,7 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -1422,17 +1423,14 @@ public class ElytraBot extends BaseModule {
                                     .createAttackSettings()
                                     .withMaceSwap(false);
                             if (shouldUseAntiShield()) {
-                                settings = settings.withAntiShieldSwap(true);
+                                settings = settings.withAntiShieldSwap(true).withFastBreakShieldSwap(Optional.empty());
                             }
                             CombatTasks.getAttack().attackEntity(base.target, settings);
                         }
                         if (maceAttack) {
                             Attack.AttackSettings settings = Attack.INSTANCE.createAttackSettings();
                             Attack.INSTANCE.attackEntity(
-                                    base.target,
-                                    settings.withMaceSwap(true)
-                                            .withInvSwap(false)
-                                            .withAntiShieldSwap(false));
+                                    base.target, settings.withNoSwap().withMaceSwap(true));
                             lastMaceAttackTick = Tasks.getTick();
                             Debug.debug("[ElytraBot] Do mace attack here", Tasks.getTick());
                         }
@@ -1457,8 +1455,7 @@ public class ElytraBot extends BaseModule {
                     && canAttackMace()
                     && shouldAttackMace()) {
                 Attack.AttackSettings settings = CombatTasks.getAttack().createAttackSettings();
-                Attack.INSTANCE.attackEntity(
-                        base.target, settings.withMaceSwap(true).withInvSwap(false));
+                Attack.INSTANCE.attackEntity(base.target, settings.withNoSwap().withMaceSwap(true));
             }
         }
 

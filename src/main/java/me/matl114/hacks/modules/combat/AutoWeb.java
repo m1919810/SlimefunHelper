@@ -157,7 +157,7 @@ public class AutoWeb extends BaseModule {
         }
         boolean completed = InteractionTasks.handlePlaceMode(
                 mode.get(), hitResult, offhand.get() ? Hand.OFF_HAND : Hand.MAIN_HAND, swingHand.get());
-        InteractionTasks.finishGhostHand(mode.get(), callback);
+        InteractionTasks.finishInteractGhostHand(mode.get(), callback);
         return completed;
     }
 

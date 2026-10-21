@@ -7,6 +7,7 @@ import me.matl114.events.Event;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -25,11 +26,7 @@ public class AntiLiquid extends BaseModule implements LegalMovementManager.Movem
     public AntiLiquid() {
         super("AntiLiquid");
         bindFlag(enable);
-        if (instance == null) {
-            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
-        }
-        instance.setDelegate(this::cast);
+        MovementManager.registerMovementPipeline(this);
     }
 
     public final ModulePath moveSafety = makePath(Configs.MOV_CONFIG, "move-safety");

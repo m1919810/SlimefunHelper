@@ -1,22 +1,22 @@
 package me.matl114.utils;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.*;
 import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.ComponentType;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.EnchantmentEffectComponentTypes;
-import net.minecraft.component.type.AttributeModifiersComponent;
-import net.minecraft.component.type.ItemEnchantmentsComponent;
 import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.Enchantments;
 import net.minecraft.enchantment.effect.EnchantmentEffectEntry;
 import net.minecraft.enchantment.effect.EnchantmentValueEffect;
 import net.minecraft.entity.DamageUtil;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.EntityAttribute;
+import net.minecraft.entity.attribute.AttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.DamageType;
@@ -27,11 +27,11 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.MaceItem;
 import net.minecraft.loot.condition.DamageSourcePropertiesLootCondition;
+import net.minecraft.loot.condition.EntityPropertiesLootCondition;
 import net.minecraft.predicate.entity.*;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.DamageTypeTags;
-import net.minecraft.registry.tag.EntityTypeTags;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.random.LocalRandom;
 import net.minecraft.util.math.random.Random;
@@ -45,178 +45,57 @@ public class DamageUtils {
         return key != null && Objects.equals(key.getValue().getPath(), type);
     }
 
-    public static double getAttributeValue(
-            RegistryEntry<EntityAttribute> entry, PlayerEntity player, ItemStack stack, EquipmentSlot slot) {
-        double att = player.getAttributeBaseValue(entry);
-        AttributeModifiersComponent modifiers = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
-        if (modifiers != null && !modifiers.modifiers().isEmpty()) {
-            att = applyOperations(modifiers.modifiers(), entry, att, slot);
-        }
-        return att;
-    }
-
-    public static double getArmorValue(PlayerEntity player, ItemStack stack, EquipmentSlot slot) {
-        return getAttributeValue(EntityAttributes.GENERIC_ARMOR, player, stack, slot);
-    }
-
-    public static double getArmorToughnessValue(PlayerEntity player, ItemStack stack, EquipmentSlot slot) {
-        return getAttributeValue(EntityAttributes.GENERIC_ARMOR_TOUGHNESS, player, stack, slot);
-    }
-
-    public static double getAttackSpeed(PlayerEntity player, ItemStack stack) {
-        double speed = player.getAttributeBaseValue(EntityAttributes.GENERIC_ATTACK_SPEED);
-        AttributeModifiersComponent modifiers = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
-        if (modifiers != null && !modifiers.modifiers().isEmpty()) {
-            speed = applyOperations(
-                    modifiers.modifiers(), EntityAttributes.GENERIC_ATTACK_SPEED, speed, EquipmentSlot.MAINHAND);
-        }
-        return speed;
-    }
-
-    public static double applyOperations(
-            List<AttributeModifiersComponent.Entry> modifiers,
-            RegistryEntry<EntityAttribute> entityAttribute,
-            double base,
-            EquipmentSlot slot) {
-        double d = base;
-        Iterator var6 = modifiers.iterator();
-
-        while (var6.hasNext()) {
-            AttributeModifiersComponent.Entry entry = (AttributeModifiersComponent.Entry) var6.next();
-            if (entry.slot().matches(slot) && Objects.equals(entityAttribute, entry.attribute())) {
-                double e = entry.modifier().value();
-                double var10001;
-                switch (entry.modifier().operation()) {
-                    case ADD_VALUE -> var10001 = e;
-                    case ADD_MULTIPLIED_BASE -> var10001 = e * base;
-                    case ADD_MULTIPLIED_TOTAL -> var10001 = e * d;
-                    default -> throw new MatchException((String) null, (Throwable) null);
-                }
-
-                d += var10001;
-            }
-        }
-        return d;
-    }
-
-    public static double getEnchantmentBonus(PlayerEntity player, Entity target, ItemStack stack) {
-        ItemEnchantmentsComponent enchantments = stack.get(DataComponentTypes.ENCHANTMENTS);
-        float bonus = 0.0F;
-        if (enchantments != null && !enchantments.isEmpty()) {
-            for (var entry : enchantments.getEnchantmentEntries()) {
-                RegistryEntry<Enchantment> enchantment = entry.getKey();
-                int level = entry.getIntValue();
-
-                // 锋利 (Sharpness)
-                if (enchantment.matchesKey(Enchantments.SHARPNESS)) {
-                    bonus += 1.0f + (level - 1) * 0.5f;
-                }
-                // 亡灵杀手 (Smite)
-                else if (enchantment.matchesKey(Enchantments.SMITE)
-                        && target.getType().isIn(EntityTypeTags.SENSITIVE_TO_SMITE)) {
-                    bonus += 2.5f * level;
-                }
-                // 节肢杀手 (Bane of Arthropods)
-                else if (enchantment.matchesKey(Enchantments.BANE_OF_ARTHROPODS)
-                        && target.getType().isIn(EntityTypeTags.SENSITIVE_TO_BANE_OF_ARTHROPODS)) {
-                    bonus += 2.5f * level;
-                }
-                // 穿刺 (Impaling) —— 仅对三叉戟且目标为水生生物生效
-                else if (enchantment.matchesKey(Enchantments.IMPALING)
-                        && target.getType().isIn(EntityTypeTags.SENSITIVE_TO_IMPALING)) {
-                    bonus += 2.5f * level;
-                }
-            }
-        }
-        return bonus;
-    }
-
-    public static double getMaceAttackBonus(ItemStack stack, float height) {
-        if (height <= 1.5) {
-            // 原版在 shouldDealAdditionalDamage 中要求 >1.5 且不在滑翔
-            // 此处仅返回 0，上层调用者应自行判断条件
-            return 0.0;
-        }
-        double baseBonus;
-        if (height <= 3.0) {
-            baseBonus = 4.0 * height;
-        } else if (height <= 8.0) {
-            baseBonus = 12.0 + 2.0 * (height - 3.0);
-        } else {
-            baseBonus = 22.0 + (height - 8.0);
-        }
-
-        // 2. 密度附魔加成
-        ItemEnchantmentsComponent enchantments = stack.get(DataComponentTypes.ENCHANTMENTS);
-        if (enchantments != null) {
-            int densityLevel = ItemStackUtils.getEnchantmentLevel(enchantments, Enchantments.DENSITY);
-            baseBonus += densityLevel * 0.5 * height;
-        }
-
-        return baseBonus;
-    }
-
-    public static double getAttackDamage(PlayerEntity player, Entity livingEntity, ItemStack stack) {
-        double att = player.getAttributeBaseValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
-        AttributeModifiersComponent modifiers = stack.get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
-        if (modifiers != null && !modifiers.modifiers().isEmpty()) {
-            att = applyOperations(
-                    modifiers.modifiers(), EntityAttributes.GENERIC_ATTACK_DAMAGE, att, EquipmentSlot.MAINHAND);
-        }
-        att += getEnchantmentBonus(player, livingEntity, stack);
-        return att;
-    }
-
-    public static double getAttackDamage(
-            PlayerEntity player, LivingEntity livingEntity, ItemStack stack, float cooldownProgress) {
-        return getAttackDamage(player, livingEntity, stack);
-    }
-
-    public static double getAttackDamage(LivingEntity livingEntity, ItemStack stack) {
-        return getAttackDamage(mc.player, livingEntity, stack);
+    public static float getMaxRealAttackDamage(
+            PlayerEntity player, Entity livingEntity, ItemStack stack, double fallDistance, boolean attributeSwap) {
+        var attribute = AttributeUtils.getAttributeWith(
+                player, attributeSwap ? Map.of() : Map.of(EquipmentSlot.MAINHAND, stack));
+        float f = (float) attribute.getValue(EntityAttributes.ATTACK_DAMAGE);
+        return getAttackDamage(player, livingEntity, stack, fallDistance, f, 1.0F);
     }
 
     public static float getRealAttackDamage(
-            PlayerEntity player, Entity livingEntity, ItemStack stack, double fallDistance) {
-        var attribute = AttributeUtils.getAttributeWith(player, Map.of(EquipmentSlot.MAINHAND, stack));
-        float f = player.isUsingRiptide() ? 8.0F : (float) attribute.getValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
+            PlayerEntity player,
+            Entity livingEntity,
+            ItemStack stack,
+            double fallDistance,
+            int cooldownTicks,
+            boolean attributeSwap) {
+        var attribute = AttributeUtils.getAttributeWith(
+                player, attributeSwap ? Map.of() : Map.of(EquipmentSlot.MAINHAND, stack));
+        float f = (float) attribute.getValue(EntityAttributes.ATTACK_DAMAGE);
+        float g = (float) MathHelper.clamp(
+                ((float) cooldownTicks + 0.5)
+                        / (float) (1.0 / attribute.getValue(EntityAttributes.ATTACK_SPEED) * 20.0),
+                0.0F,
+                1.0F);
+        return getAttackDamage(player, livingEntity, stack, fallDistance, f, g);
+    }
+
+    private static float getAttackDamage(
+            PlayerEntity player,
+            Entity entity,
+            ItemStack stack,
+            double fallDistance,
+            float attackDamage,
+            float cooldownProgress) {
+        float f = player.isUsingRiptide() ? 8.0F : attackDamage;
         DamageSource damageSource = createDamageSource(player, player, stack);
-        float g = player.getAttackCooldownProgress(0.5F);
-        float h = g * (getDamageAgainst(stack, f, damageSource) - f);
+        float g = cooldownProgress;
+        float h = g * (getDamageAgainst(stack, f, damageSource, entity) - f);
         f *= (0.2F + g * g * 0.8F);
         if (stack.getItem() instanceof MaceItem mace) {
-            f += (float) getSmashDamageBonus(stack, damageSource, fallDistance);
+            f += (float) getSmashDamageBonus(stack, entity, damageSource, fallDistance);
         }
         if (canDealCritical(player, fallDistance)) {
             f *= 1.5F;
         }
-        float i = f + h;
-        return i;
+        return f + h;
     }
 
-    private static float getDamageAgainst(ItemStack weapon, float baseDamage, DamageSource damageSource) {
-        return EnchantmentUtils.calculate(
-                weapon,
-                ((current, enchantment, level) -> {
-                    for (var ench : enchantment.value().getEffect(EnchantmentEffectComponentTypes.DAMAGE)) {
-                        if (EnchantmentUtils.matchPartialCondition(ench, (lootCondition -> {
-                            if (lootCondition instanceof DamageSourcePropertiesLootCondition damageSourcePredicate) {
-                                return damageSourcePredicate.predicate().isEmpty()
-                                        || matchDamageSource(
-                                                damageSource,
-                                                damageSourcePredicate
-                                                        .predicate()
-                                                        .get());
-                            } else {
-                                return true;
-                            }
-                        }))) {
-                            current = ench.effect().apply(level, randomSource, current);
-                        }
-                    }
-                    return current;
-                }),
-                baseDamage);
+    private static float getDamageAgainst(
+            ItemStack weapon, float baseDamage, DamageSource damageSource, Entity target) {
+        return getConditionalMultiplierByWeaponEnchantment(
+                weapon, EnchantmentEffectComponentTypes.DAMAGE, damageSource, target, baseDamage);
     }
 
     public static float getMultipliedDamageByDifficulty(World world, float amount) {
@@ -287,28 +166,37 @@ public class DamageUtils {
                 && !attacker.isSprinting();
     }
 
-    public static double getSmashDamageBonus(ItemStack stack, DamageSource source, double f) {
-        double g;
-        if (f <= 3.0) {
-            g = 4.0 * f;
-        } else if (f <= 8.0) {
-            g = 12.0 + 2.0 * (f - 3.0);
+    public static double getSmashDamageBonus(ItemStack stack, Entity target, DamageSource source, double f) {
+        if (target instanceof LivingEntity lv) {
+            if (f <= 1.5) {
+                return 0.0D;
+            }
+            double g;
+            if (f <= 3.0) {
+                g = 4.0 * f;
+            } else if (f <= 8.0) {
+                g = 12.0 + 2.0 * (f - 3.0);
+            } else {
+                g = 22.0 + f - 8.0;
+            }
+            return g
+                    + EnchantmentUtils.calculate(
+                                    stack,
+                                    ((current, enchantment, level) -> {
+                                        for (var re : enchantment
+                                                .value()
+                                                .getEffect(
+                                                        EnchantmentEffectComponentTypes
+                                                                .SMASH_DAMAGE_PER_FALLEN_BLOCK)) {
+                                            current = re.effect().apply(level, randomSource, current);
+                                        }
+                                        return current;
+                                    }),
+                                    0.0F)
+                            * f;
         } else {
-            g = 22.0 + f - 8.0;
+            return 0.0D;
         }
-        return g
-                + EnchantmentUtils.calculate(
-                                stack,
-                                ((current, enchantment, level) -> {
-                                    for (var re : enchantment
-                                            .value()
-                                            .getEffect(EnchantmentEffectComponentTypes.SMASH_DAMAGE_PER_FALLEN_BLOCK)) {
-                                        current = re.effect().apply(level, randomSource, current);
-                                    }
-                                    return current;
-                                }),
-                                0.0F)
-                        * f;
     }
 
     public static final int STAGE_IS_INVULNERABLE = 0;
@@ -332,7 +220,7 @@ public class DamageUtils {
         if (rawDamage <= 0.0F) {
             return 0.0F;
         }
-        rawDamage = DamageUtils.getDamageAfterArmorReduce(rawDamage, damageSource, context);
+        rawDamage = DamageUtils.getDamageAfterArmorReduce(rawDamage, null, damageSource, context);
         if (rawDamage <= 0.0F) {
             return 0.0F;
         }
@@ -350,7 +238,7 @@ public class DamageUtils {
         if (rawDamage <= 0.0F) return 0.0F;
         rawDamage = getDamageAfterHurtTime(rawDamage, damageSource, context);
         if (rawDamage <= 0.0F) return 0.0F;
-        rawDamage = getDamageAfterArmorReduce(rawDamage, damageSource, context);
+        rawDamage = getDamageAfterArmorReduce(rawDamage, weapon, damageSource, context);
         if (rawDamage <= 0.0F) return 0.0F;
         return getDamageAfterEffectAndProtection(rawDamage, damageSource, context);
     }
@@ -366,9 +254,17 @@ public class DamageUtils {
         return currentVal;
     }
 
-    public static float getDamageAfterArmorReduce(float currentVal, DamageSource source, DamageContext context) {
+    public static float getDamageAfterArmorReduce(
+            float currentVal, @Nullable ItemStack weaponOverride, DamageSource source, DamageContext context) {
         if (!source.isIn(DamageTypeTags.BYPASSES_ARMOR)) {
-            currentVal = getDamageLeftAfterArmor(currentVal, source, context.armor, context.armorToughness);
+            currentVal = getDamageLeftAfterArmor(
+                    (weaponOverride != null && source.getSource() == source.getAttacker())
+                            ? weaponOverride
+                            : source.getWeaponStack(),
+                    currentVal,
+                    source,
+                    context.armor,
+                    context.armorToughness);
         }
 
         return currentVal;
@@ -420,19 +316,23 @@ public class DamageUtils {
     }
 
     private static float getDamageLeftAfterArmor(
-            float damageAmount, DamageSource damageSource, float armor, float armorToughness) {
+            @Nullable ItemStack sourceWeapon,
+            float damageAmount,
+            DamageSource damageSource,
+            float armor,
+            float armorToughness) {
         float i;
         label12:
         {
             float f = 2.0F + armorToughness / 4.0F;
             float g = MathHelper.clamp(armor - damageAmount / f, armor * 0.2F, 20.0F);
             float h = g / 25.0F;
-            ItemStack itemStack = damageSource.getWeaponStack();
+            ItemStack itemStack = sourceWeapon;
             if (itemStack != null) {
 
                 i = MathHelper.clamp(
                         getConditionalMultiplierByWeaponEnchantment(
-                                itemStack, EnchantmentEffectComponentTypes.ARMOR_EFFECTIVENESS, damageSource, h),
+                                itemStack, EnchantmentEffectComponentTypes.ARMOR_EFFECTIVENESS, damageSource, null, h),
                         0.0F,
                         1.0F);
                 break label12;
@@ -451,6 +351,7 @@ public class DamageUtils {
             ItemStack stack,
             ComponentType<List<EnchantmentEffectEntry<EnchantmentValueEffect>>> listComponentType,
             DamageSource source,
+            @Nullable Entity target,
             float h) {
         return EnchantmentUtils.calculate(
                 stack,
@@ -462,6 +363,10 @@ public class DamageUtils {
                                 return damage.predicate().isEmpty()
                                         || matchDamageSource(
                                                 source, damage.predicate().get());
+                            } else if (target != null && loot instanceof EntityPropertiesLootCondition predicate) {
+                                return predicate.predicate().isEmpty()
+                                        || matchEntityTypes(
+                                                target, predicate.predicate().get());
                             } else {
                                 return true;
                             }
@@ -537,8 +442,9 @@ public class DamageUtils {
 
     public static DamageContext.Builder fromLivingEntity(LivingEntity entity) {
         DamageContext.Builder builder = new DamageContext.Builder();
-        builder.withArmor((float) player.getAttributes().getValue(EntityAttributes.GENERIC_ARMOR));
-        builder.withArmorToughness((float) player.getAttributes().getValue(EntityAttributes.GENERIC_ARMOR_TOUGHNESS));
+        AttributeContainer container = AttributeUtils.getAttributeWith(entity, Map.of());
+        builder.withArmor((float) container.getValue(EntityAttributes.ARMOR));
+        builder.withArmorToughness((float) container.getValue(EntityAttributes.ARMOR_TOUGHNESS));
         for (EquipmentSlot slot : EquipmentSlot.values()) {
             ItemStack stack = entity.getEquippedStack(slot);
             builder.withArmorSlot(slot, stack);

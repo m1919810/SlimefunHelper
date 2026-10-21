@@ -11,10 +11,10 @@ import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
-import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.mine.PacketMine;
 import me.matl114.hacks.modules.move.PlayerInputManager;
+import me.matl114.hacks.modules.task.DisablerManager;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
@@ -274,7 +274,7 @@ public class SelfTrap extends BaseModule {
         }
 
         if (inventoryCallback != null) {
-            InteractionTasks.finishGhostHand(mode.get(), inventoryCallback);
+            InteractionTasks.finishInteractGhostHand(mode.get(), inventoryCallback);
         }
         return placeCount > 0;
     }

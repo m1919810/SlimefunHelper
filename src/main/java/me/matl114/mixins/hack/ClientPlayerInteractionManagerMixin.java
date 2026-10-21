@@ -10,10 +10,10 @@ import javax.annotation.Nullable;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.hacks.CombatTasks;
-import me.matl114.hacks.modules.ac.DisablerManager;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.mine.MineExtra;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
+import me.matl114.hacks.modules.task.DisablerManager;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.AttributeUtils;
@@ -324,8 +324,11 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
                                     WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
                                             client.player, instance, bestTool.val()))
                             > 1.01) {
+                GhostHandMode preferred = MineExtra.INSTANCE.ghostHandPreferredMode.get();
+                GhostHandMode modeSelect =
+                        preferred.isAcceptable(bestTool.index()) ? preferred : GhostHandMode.INV_SWAP;
                 MineExtra.INSTANCE.instaBreakGhostHand =
-                        Pair.of(InvExtra.INSTANCE.swapItemToHand(bestTool.index(), false, GhostHandMode.INV_SWAP), pos);
+                        Pair.of(InvExtra.INSTANCE.swapItemToHand(bestTool.index(), false, modeSelect), pos);
                 return true;
             }
         }
@@ -401,7 +404,9 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
             this.currentBreakingProgress = progress;
             DisablerManager.INSTANCE.flushACPlaceBreakQueue();
             clearBreakingState();
-            Runnable fastBreakGhostHand = InvExtra.INSTANCE.swapItemToHand(tool.index(), false, GhostHandMode.INV_SWAP);
+            GhostHandMode preferred = MineExtra.INSTANCE.ghostHandPreferredMode.get();
+            GhostHandMode modeSelect = preferred.isAcceptable(tool.index()) ? preferred : GhostHandMode.INV_SWAP;
+            Runnable fastBreakGhostHand = InvExtra.INSTANCE.swapItemToHand(tool.index(), false, modeSelect);
             AttributeUtils.updateAttribute(this.client.player);
             float speed =
                     blockState.calcBlockBreakingDelta(MinecraftClient.getInstance().player, this.client.world, pos);
@@ -411,7 +416,7 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
                         PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, direction, sequence);
             });
             if (fastBreakGhostHand != null) {
-                fastBreakGhostHand.run();
+                MineExtra.INSTANCE.finishMineGhostHand(fastBreakGhostHand);
             }
             mineExtra.onPostStopMiningFastBreak(pos, speed, this.currentBreakingProgress);
             applyPostStopState(!mineExtra.optimizeOneBlock.get());
@@ -669,8 +674,9 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
         }
         if (mineExtra.shouldTriggerEarlyStop(speed)) {
             DisablerManager.INSTANCE.flushACPlaceBreakQueue();
-            Runnable fastbreakCallback =
-                    InvExtra.INSTANCE.swapItemToHand(usingTool.index(), false, GhostHandMode.INV_SWAP);
+            GhostHandMode preferred = MineExtra.INSTANCE.ghostHandPreferredMode.get();
+            GhostHandMode modeSelect = preferred.isAcceptable(usingTool.index()) ? preferred : GhostHandMode.INV_SWAP;
+            Runnable fastbreakCallback = InvExtra.INSTANCE.swapItemToHand(usingTool.index(), false, modeSelect);
             AttributeUtils.updateAttribute(this.client.player);
             clearBreakingState();
             this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence) -> {
@@ -679,7 +685,7 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
                         PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, pos, direction, sequence);
             });
             if (fastbreakCallback != null) {
-                fastbreakCallback.run();
+                MineExtra.INSTANCE.finishMineGhostHand(fastbreakCallback);
             }
             mineExtra.onPostStopMiningFastBreak(pos, speed, this.currentBreakingProgress);
             applyPostStopState(!mineExtra.optimizeOneBlock.get());

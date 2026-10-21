@@ -63,11 +63,12 @@ public class InteractionTasks {
     //
     //    }
 
-    public static void interactItem(Hand hand, Vec3d rot, boolean realInteract, boolean swingHand) {
-        interactItem(hand, EntityUtils.rotationToPitch(rot), EntityUtils.rotationToYaw(rot), realInteract, swingHand);
+    public static boolean interactItem(Hand hand, Vec3d rot, boolean realInteract, boolean swingHand) {
+        return interactItem(
+                hand, EntityUtils.rotationToPitch(rot), EntityUtils.rotationToYaw(rot), realInteract, swingHand);
     }
 
-    public static void interactItem(Hand hand, float pitch, float yaw, boolean realInteract, boolean swingHand) {
+    public static boolean interactItem(Hand hand, float pitch, float yaw, boolean realInteract, boolean swingHand) {
         if (realInteract || !ViaFabricPlusHooks.isSupportDupRot()) {
             Vec2f storePY = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
             EntityUtils.setEntityPitchSafe(mc.player, pitch);
@@ -78,8 +79,10 @@ public class InteractionTasks {
             }
             mc.player.setPitch(storePY.x);
             mc.player.setYaw(storePY.y);
+            return actionResult.isAccepted();
         } else {
             LegacySnapRotManager.INSTANCE.snapAt(pitch, yaw, false);
+            return false;
         }
     }
 
@@ -192,10 +195,10 @@ public class InteractionTasks {
         throw new IllegalStateException("Unhandled interaction mode: " + mode);
     }
 
-    public static void finishGhostHand(LegalInteractMode mode, Runnable callback) {
+    public static void finishInteractGhostHand(LegalInteractMode mode, Runnable callback) {
         if (callback == null) return;
         if (!mode.canMultiRotPlace()) {
-            InvExtra.INSTANCE.pushGhostHandCallback(callback);
+            InvExtra.INSTANCE.pushPostTickGhostHandCallback(callback);
         } else {
             callback.run();
         }

@@ -9,6 +9,7 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
@@ -37,11 +38,7 @@ public class Flight extends BaseModule implements LegalMovementManager.MovementM
     public Flight() {
         super("Flight");
         bindFlag(canFly);
-        if (instance == null) {
-            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
-        }
-        instance.setDelegate(this::cast);
+        MovementManager.registerMovementPipeline(this);
     }
 
     public final FlagRef canFly =

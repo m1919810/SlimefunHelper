@@ -9,10 +9,10 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
 import me.matl114.events.packets.PacketStorage;
-import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.modules.combat.TargetSelector;
 import me.matl114.hacks.modules.interact.InteractExtra;
+import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.RayCastCalculator;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
@@ -36,11 +36,7 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
     public RotationManager() {
         super("RotationManager");
         INSTANCE = this;
-        if (instance == null) {
-            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
-        }
-        instance.setDelegate(this::cast);
+        MovementManager.registerMovementPipeline(this);
     }
 
     @Override

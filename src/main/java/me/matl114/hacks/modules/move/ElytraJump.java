@@ -9,6 +9,7 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.mine.QueueMine;
+import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.move.goal.GoalNearBlockPos;
@@ -34,11 +35,7 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
 
     public ElytraJump() {
         super("ElytraJump");
-        if (instance == null) {
-            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
-        }
-        instance.setDelegate(this::cast);
+        MovementManager.registerMovementPipeline(this);
         bindFlag(enable);
     }
 

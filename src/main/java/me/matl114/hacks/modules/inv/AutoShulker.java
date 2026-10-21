@@ -7,7 +7,7 @@ import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
-import me.matl114.hacks.modules.ac.PostManager;
+import me.matl114.hacks.modules.task.PostManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;

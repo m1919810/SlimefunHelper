@@ -442,7 +442,7 @@ public class AnchorAura extends BaseModule {
                 interactCount++;
                 level = 1;
                 cache.powerLevel = level;
-                InteractionTasks.finishGhostHand(mode.get(), callback);
+                InteractionTasks.finishInteractGhostHand(mode.get(), callback);
                 if (!completed || !use0TickSupply.get()) {
                     return interactCount;
                 }
@@ -461,7 +461,7 @@ public class AnchorAura extends BaseModule {
                 interactCount++;
                 level = 0;
                 cache.powerLevel = level;
-                InteractionTasks.finishGhostHand(mode.get(), callback);
+                InteractionTasks.finishInteractGhostHand(mode.get(), callback);
                 if (completed && place0TickSupply.get()) {
                     var anchor = supplyItem(Items.RESPAWN_ANCHOR);
                     if (anchor == null) {
@@ -478,7 +478,7 @@ public class AnchorAura extends BaseModule {
                     boolean anchorCompleted =
                             InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
                     interactCount++;
-                    InteractionTasks.finishGhostHand(mode.get(), callback2);
+                    InteractionTasks.finishInteractGhostHand(mode.get(), callback2);
                     if (!anchorCompleted) {
                         return interactCount;
                     }
@@ -635,7 +635,7 @@ public class AnchorAura extends BaseModule {
         var runnable = InvExtra.INSTANCE.swapItemToHand(entry.index(), false, ghostHand.get());
         if (runnable == null) return false;
         boolean finished = InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
-        InteractionTasks.finishGhostHand(mode.get(), runnable);
+        InteractionTasks.finishInteractGhostHand(mode.get(), runnable);
         return finished;
     }
 
@@ -682,7 +682,7 @@ public class AnchorAura extends BaseModule {
             return false;
         }
         boolean completed = InteractionTasks.handlePlaceMode(mode.get(), hitResult, Hand.MAIN_HAND, swingHand.get());
-        InteractionTasks.finishGhostHand(mode.get(), runnable);
+        InteractionTasks.finishInteractGhostHand(mode.get(), runnable);
         return completed;
     }
 

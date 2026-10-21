@@ -23,4 +23,8 @@ public enum GhostHandMode implements ConfigEnum {
     public int getSearchSize(boolean offHand) {
         return offHand ? InventoryUtils.getPlayerInvSize() : searchSize;
     }
+
+    public boolean isAcceptable(int index) {
+        return index == 40 || index < searchSize;
+    }
 }

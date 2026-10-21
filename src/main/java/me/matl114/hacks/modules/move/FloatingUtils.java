@@ -3,9 +3,9 @@ package me.matl114.hacks.modules.move;
 import java.util.Optional;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
@@ -31,11 +31,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
 
     public FloatingUtils() {
         super("FloatingUtils");
-        if (instance == null) {
-            instance = new LegalMovementManager.DelegateMovementModifier(this::cast);
-            MovTasks.PLAYER_PIPELINE_0.addMovementModifierFactory(() -> instance);
-        }
-        instance.setDelegate(this::cast);
+        MovementManager.registerMovementPipeline(this);
         INSTANCE = this;
     }
 

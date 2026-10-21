@@ -12,7 +12,7 @@ import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
-import me.matl114.hacks.modules.ac.DisablerManager;
+import me.matl114.hacks.modules.task.DisablerManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
