@@ -37,7 +37,6 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
@@ -85,7 +84,7 @@ public class InvExtra extends BaseModule {
         registerListener(Listener.getPreClickSlot(), this::onClickSlot);
         registerListener(Listener.getPacketPoint().getChannel(CloseHandledScreenC2SPacket.class), this::onCloseScreen);
         registerListener(
-                Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class),
+                Listener.getPostGameTick(),
                 this::onClientTickEnd,
                 Integer.MAX_VALUE);
         registerListener(Listener.getPreTick(), this::onNewTick);
@@ -125,7 +124,7 @@ public class InvExtra extends BaseModule {
     List<Runnable> inventoryCallbacks = new ArrayList<>();
     List<Integer> hotBarCallbacks = new ArrayList<>();
 
-    private void onClientTickEnd(Event<ClientTickEndC2SPacket> event) {
+    private void onClientTickEnd(Event<ClientPlayerEntity> event) {
         if (event.isCancelled()) return;
         // Movement-post actions may add inventory callbacks during this packet's post-schedule phase.
         duringCallback = true;
@@ -138,11 +137,9 @@ public class InvExtra extends BaseModule {
             try {
                 MovTasks.getMovExtra().sendSprintPacketsForInventoryAction();
                 List<Runnable> inventoryTasks = new ArrayList<>(inventoryCallbacks);
-                PacketManager.schedulePostScheduleCallback(event.context, () -> {
-                    for (Runnable r : inventoryTasks) {
-                        r.run();
-                    }
-                });
+                for (Runnable r : inventoryTasks) {
+                    r.run();
+                }
 
             } finally {
                 inventoryCallbacks.clear();
