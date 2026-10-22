@@ -4,6 +4,7 @@ import com.mojang.authlib.GameProfile;
 import java.util.function.Consumer;
 import me.matl114.accessors.events.ClientConnectionAccess;
 import me.matl114.utils.DamageUtils;
+import me.matl114.utils.InventoryUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.OtherClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
@@ -32,7 +33,7 @@ public class FakePlayerEntity extends OtherClientPlayerEntity {
     }
 
     public void copyEquipmentFrom(PlayerEntity player) {
-        getInventory().clone(player.getInventory());
+        InventoryUtils.copyInventory(player.getInventory(), getInventory());
     }
 
     public void setFreeze(boolean freeze) {
