@@ -151,11 +151,6 @@ public class VanillaTextDrawer implements TextDrawer {
     }
 
     @Override
-    public List<StringVisitable> wrapLinesWithoutLanguage(StringVisitable text, int width) {
-        return delegate.wrapLinesWithoutLanguage(text, width);
-    }
-
-    @Override
     public TextHandler getTextHandler() {
         return delegate.getTextHandler();
     }

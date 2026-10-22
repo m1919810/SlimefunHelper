@@ -145,7 +145,5 @@ public interface TextDrawer {
 
     List<OrderedText> wrapLines(StringVisitable text, int width);
 
-    List<StringVisitable> wrapLinesWithoutLanguage(StringVisitable text, int width);
-
     TextHandler getTextHandler();
 }
