@@ -127,7 +127,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 Listener.getEntityClientVelocityUpdate().getChannel(EntityType.PLAYER), this::onPlayerTickVelocity);
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onPlayerMovePacketSend);
         registerListener(Listener.getPlayerNotFlyJumpPoint(), this::onPlayerJump);
-        registerListener(Listener.getPlayerWebSlowPoint(), this::onWeb);
+        registerListener(Listener.getPlayerSlowedByBlockPoint(), this::onSlowDown);
     }
 
     public void onPlayerInit() {
@@ -199,7 +199,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         return false;
     }
 
-    public void onWeb() {
+    public void onSlowDown() {
         lastOnGroundHeight = mc.player.getY();
         if (runningDelegate != null) runningDelegate.counter = 0;
     }
@@ -236,6 +236,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 || args.getBlockStateAtPos().isOf(Blocks.BUBBLE_COLUMN)
                 || args.hasVehicle()
                 || PlayerStateManager.INSTANCE.lastInWeb
+                || PlayerStateManager.INSTANCE.lastSlowByBlock
                 || PlayerStateManager.INSTANCE.lastInWater
                 || PlayerStateManager.INSTANCE.lastClimbing
                 || mc.player.hasStatusEffect(StatusEffects.SLOW_FALLING)
