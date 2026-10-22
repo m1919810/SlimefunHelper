@@ -19,7 +19,6 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.collections.IndexEntry;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
@@ -72,7 +71,7 @@ public class SequencedActionManager extends BaseModule {
     public static EventChannelDispatcher<IndexEntry<? extends SequencedAction>> sequencedActionResponse =
             new EventChannelDispatcher<>(entry -> entry.val().getClass());
 
-    private void onPlayerRespawn(Event<ClientPlayerEntity> playerEntityEvent) {
+    private void onPlayerRespawn() {
         maxSeq = 0;
         maxAckSeq = 0;
         blockPlaceSequences.forEach(sequencedActionResponse::broadcast);

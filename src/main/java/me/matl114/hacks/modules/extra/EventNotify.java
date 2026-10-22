@@ -133,7 +133,7 @@ public class EventNotify extends BaseModule {
         }
     }
 
-    public void onLeaveServer(Event<Void> eventLeave) {
+    public void onLeaveServer() {
         if (enable.get() && leave.get()) {
             if (checkMin()) {
                 return;

@@ -16,7 +16,6 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.versioned.api.VPacket;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.util.math.Vec3d;
 
@@ -110,7 +109,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
                 || forceFloatingThisTick;
     }
 
-    public void onPreGameTick(Event<ClientPlayerEntity> event) {
+    public void onPreGameTick() {
         if (checkNull()) return;
         if (!workGrimFloatingThisTick() && enableElytraSlowFall.get()) {
             if (mc.player.isFallFlying() && !mc.player.isOnGround()) {

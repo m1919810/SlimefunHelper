@@ -125,7 +125,7 @@ public class SelfTrap extends BaseModule {
         }
     }
 
-    public void onInput(Event<Void> inputEvent) {
+    public void onInput() {
         if (checkNull() || !enable.get()) {
             return;
         }

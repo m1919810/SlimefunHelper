@@ -50,7 +50,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
-import net.minecraft.world.World;
 
 public class PathManager extends BaseModule {
     public static PathManager INSTANCE;
@@ -556,7 +555,7 @@ public class PathManager extends BaseModule {
         return pointVec.squaredDistanceTo(foot) < TRIM_MAX_DISTANCE_SQUARED;
     }
 
-    private void onPreTick(Event<ClientPlayerEntity> event) {
+    private void onPreTick() {
         if (recordingStorage != null && recordingStarted) {
             if (checkNull()) {
                 finishPath("录制任务意外退出", null);
@@ -579,19 +578,19 @@ public class PathManager extends BaseModule {
         }
     }
 
-    private void onWorldSwitch(Event<World> event) {
+    private void onWorldSwitch() {
         finishPath("切换世界", null);
         currentPath = null;
         stopCurrentRunningBaritone();
     }
 
-    private void onDisconnect(Event<Void> event) {
+    private void onDisconnect() {
         finishPath("断开连接", null);
         currentPath = null;
         stopCurrentRunningBaritone();
     }
 
-    private void onRespawn(Event<PlayerRespawnS2CPacket> event) {
+    private void onRespawn() {
         finishPath("玩家重生", null);
         currentPath = null;
         stopCurrentRunningBaritone();

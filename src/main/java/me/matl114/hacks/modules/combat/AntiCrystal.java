@@ -223,7 +223,7 @@ public class AntiCrystal extends BaseModule {
     Runnable bowCallback = null;
     Vec3d targetPoint;
 
-    public void onPreInputEvent(Event<Void> event) {
+    public void onPreInputEvent() {
         if (checkNull()) return;
         if (bowCallback != null) {
             if (mc.player.isUsingItem()) {
@@ -491,7 +491,7 @@ public class AntiCrystal extends BaseModule {
         }
     }
 
-    public void onPostInputEvent(Event<Void> event) {
+    public void onPostInputEvent() {
         if (checkNull()) return;
     }
 }

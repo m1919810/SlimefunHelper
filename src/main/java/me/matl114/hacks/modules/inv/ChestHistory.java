@@ -287,7 +287,7 @@ public class ChestHistory extends BaseModule {
 
     private static String lastServerName = null;
 
-    private void onServerJoin(Event<ClientPlayerEntity> v) {
+    private void onServerJoin() {
         String serverName = ServerStorage.getCurrentServerName();
         if (!Objects.equals(serverName, lastServerName)) {
             // refresh
@@ -377,7 +377,7 @@ public class ChestHistory extends BaseModule {
     private static final int POSITION_FLAG = VRender.createTextPositionFlag(0, 1);
     private final RenderCollector<RenderElements.Text> titleCollector = RenderCollectors.createTextCollector();
 
-    private void updateTitleCollector(Event<ClientPlayerEntity> event) {
+    private void updateTitleCollector() {
         titleCollector.clear();
         if (!enableTitle.get() || mc.player == null || mc.world == null) return;
         BlockLocation location = BlockLocation.of(mc.player);

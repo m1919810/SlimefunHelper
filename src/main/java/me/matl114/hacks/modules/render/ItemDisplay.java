@@ -271,7 +271,7 @@ public class ItemDisplay extends BaseModule {
             });
     private int updateTick = 0;
 
-    private void onCacheClean(Event<Void> gameTick) {
+    private void onCacheClean() {
         if (updateTick < 60 * 20) {
             updateTick++;
             return;

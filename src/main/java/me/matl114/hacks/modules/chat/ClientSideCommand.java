@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -123,11 +122,11 @@ public class ClientSideCommand extends BaseModule {
         super.registerAll();
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(CommandTreeS2CPacket.class),
-                (Consumer<Event<CommandTreeS2CPacket>>) this::onClientCommandReload);
+                this::onClientCommandReload);
         registerListener(Listener.getChatSend(), this::onCommandSend, 1);
     }
 
-    private <T extends CommandSource> void onClientCommandReload(Event<CommandTreeS2CPacket> reload) {
+    private <T extends CommandSource> void onClientCommandReload() {
         CommandDispatcher<T> clientTree =
                 (CommandDispatcher<T>) mc.getNetworkHandler().getCommandDispatcher();
         RootCommandNode<T> root = clientTree.getRoot();

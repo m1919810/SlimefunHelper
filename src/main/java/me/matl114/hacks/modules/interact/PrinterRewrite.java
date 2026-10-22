@@ -194,7 +194,7 @@ public class PrinterRewrite extends BaseModule {
         }
     }
 
-    public void onPreInputEvent(Event<Void> event) {
+    public void onPreInputEvent() {
         if (++countDown >= delay.get()) {
             countDown = 0;
         } else {

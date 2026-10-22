@@ -202,7 +202,7 @@ public class AutoLibrarian extends BaseModule {
             RenderCollectors.createEntityBoxCollector(true, false, false);
     private final RenderCollector<Box> boxCollector = RenderCollectors.createBoxCollector(true, false, false);
 
-    private void updateRenderCollector(Event<net.minecraft.client.network.ClientPlayerEntity> event) {
+    private void updateRenderCollector() {
         renderCollector.clear();
         boxCollector.clear();
         if (checkNull() || !enable.get() || !render.get() || targetVillager == null || targetWorkStationBase == null) {
@@ -283,7 +283,7 @@ public class AutoLibrarian extends BaseModule {
         return;
     }
 
-    public void onPreInputEvent(Event<Void> event) {
+    public void onPreInputEvent() {
         if (checkNull()) return;
         if (enable.get()) {
             refreshTarget();

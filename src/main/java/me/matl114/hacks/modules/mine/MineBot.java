@@ -7,7 +7,6 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
-import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -29,7 +28,6 @@ import me.matl114.utils.collections.IndexEntry;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -122,7 +120,7 @@ public class MineBot extends BaseModule {
 
     public BlockPos lastMinePos = null;
 
-    public void onTick(Event<ClientPlayerEntity> player) {
+    public void onTick() {
         if (isActive()) {
             onMineBotTick();
         }

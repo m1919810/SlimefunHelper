@@ -1,6 +1,5 @@
 package me.matl114.hacks.modules.survival;
 
-import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -13,7 +12,6 @@ import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.MathUtils;
 import me.matl114.utils.entity.PlayerInputUtils;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.math.Vec3d;
 
 public class SearchControl extends BaseModule {
@@ -111,7 +109,7 @@ public class SearchControl extends BaseModule {
         return this::tickLookRect;
     }
 
-    public void onPreTick(Event<ClientPlayerEntity> event) {
+    public void onPreTick() {
         if (enable.get()) {
             if (currentLookControl == null) {
                 refreshControl();

@@ -32,7 +32,6 @@ import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.entity.TrialSpawnerBlockEntity;
 import net.minecraft.block.entity.VaultBlockEntity;
 import net.minecraft.block.enums.TrialSpawnerState;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.mob.MobEntity;
@@ -45,7 +44,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
 
 public class TrialInfoESP extends BaseModule {
     public TrialInfoESP() {
@@ -120,7 +118,7 @@ public class TrialInfoESP extends BaseModule {
     private BlockPos enterTrialPosition;
     TimerExecutor cacheClearTimer = new TimerExecutor();
 
-    public void onTick(Event<ClientPlayerEntity> event) {
+    public void onTick() {
         if (cacheClearTimer.run(1000)) {
             cachedVaultsAndTrials = new HashMap<>();
         }
@@ -353,7 +351,7 @@ public class TrialInfoESP extends BaseModule {
         }
     }
 
-    private void onSwitchWorld(Event<World> event) {
+    private void onSwitchWorld() {
         cachedVaultsAndTrials.clear();
         enterTrialPosition = null;
         lineRenderCollector.clear();

@@ -34,7 +34,6 @@ import me.matl114.utils.CommonUtils;
 import me.matl114.utils.MathUtils;
 import me.matl114.utils.ScreenUtils;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -194,7 +193,7 @@ public class XaeroHelper extends BaseModule {
         }
     }
 
-    public void onTickMapRender(Event<ClientPlayerEntity> event) {
+    public void onTickMapRender() {
         if (loadedChunkRender.get() && loadedChunkFeature != null) {
             Set<ChunkPos> chunkPoses = new HashSet<>(100);
             for (var chunk : CommonUtils.chunks(false)) {
@@ -412,7 +411,7 @@ public class XaeroHelper extends BaseModule {
         }
     }
 
-    public void onXaeroTempWaypointSync(Event<ClientPlayerEntity> eventVoid) {
+    public void onXaeroTempWaypointSync() {
         if (checkNull()) return;
         cleanupCollectedWaypoints();
         if (!XaeroHooks.getInstance().isXaeroMiniMapEnable()) {

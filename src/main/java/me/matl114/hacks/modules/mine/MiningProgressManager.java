@@ -15,7 +15,6 @@ import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.WorldUtils;
 import me.matl114.utils.inventory.ItemStackSample;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -55,7 +54,7 @@ public class MiningProgressManager extends BaseModule {
         trackedMap.remove(event.context.getId());
     }
 
-    public void onWorldChange(Event<ClientPlayerEntity> world) {
+    public void onWorldChange() {
         trackedMap.clear();
     }
 
@@ -73,7 +72,7 @@ public class MiningProgressManager extends BaseModule {
         }
     }
 
-    public void onUpdate(Event<ClientPlayerEntity> eventUpdate) {
+    public void onUpdate() {
         if (checkNull()) return;
         for (var re : trackedMap.values()) {
             re.tickWorld(mc.world);

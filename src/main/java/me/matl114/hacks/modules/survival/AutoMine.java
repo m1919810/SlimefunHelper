@@ -186,7 +186,7 @@ public class AutoMine extends BaseModule {
         pathingSchedular.disable();
     }
 
-    public void onPreInputEvent(Event<Void> event) {
+    public void onPreInputEvent() {
         if (checkNull() || !enable.get()) {
             return;
         }

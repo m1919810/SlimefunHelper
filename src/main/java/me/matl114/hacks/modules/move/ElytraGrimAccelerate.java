@@ -109,7 +109,7 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
 
     int lastWorkingTick = 0;
 
-    public void onSetBackReceive(Event<TeleportConfirmC2SPacket> packet) {
+    public void onSetBackReceive() {
         setBackCount++;
         lastSendMoveAndWaitSetBackTick = 0;
     }
@@ -121,7 +121,7 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
     boolean currentTryWorking = false;
     boolean currentWorking = false;
 
-    public void onTeleportConfirm(Event<PlayerPositionLookS2CPacket> event) {}
+    public void onTeleportConfirm() {}
 
     private void createStorePacket() {
         // fix chunk lag

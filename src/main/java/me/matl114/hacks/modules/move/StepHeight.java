@@ -52,7 +52,7 @@ public class StepHeight extends BaseModule implements LegalMovementManager.Movem
 
     private Runnable jumpTriggerStepHeight;
 
-    private void onJump(Event<Integer> jumpEvent) {
+    private void onJump() {
         if (jumpTriggerStepHeight != null) {
             jumpTriggerStepHeight.run();
         }

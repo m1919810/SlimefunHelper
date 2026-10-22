@@ -250,7 +250,7 @@ public class MineExtra extends BaseModule {
         super.registerAll();
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetLoad);
-        registerListener(Listener.getGameJoinPoint(), this::onGameJoin);
+        registerListener(Listener.getGameJoinPoint(), this::resetStatistics);
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onMine, Integer.MAX_VALUE);
         registerListener(
@@ -265,14 +265,12 @@ public class MineExtra extends BaseModule {
                 this::onSilentBreak,
                 Integer.MAX_VALUE);
         registerListener(
-                Listener.getPacketPostScheduleSendPoint().getChannel(HandSwingC2SPacket.class), this::onLastSwing);
+                Listener.getPacketPostScheduleSendPoint().getChannel(HandSwingC2SPacket.class),
+                this::onLastSwing,
+                true);
         registerListener(Listener.getPreGameTick(), this::onGrimCooldownResetPackets);
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onPlayerMove);
         registerListener(Listener.getPreGameTick(), this::onTickGhostHandFailBreak);
-    }
-
-    public void onGameJoin(Event<ClientPlayerEntity> gameJoin) {
-        resetStatistics();
     }
 
     private void onFailBreakBlockUpdate(Event<BlockUpdate> event) {
@@ -315,7 +313,7 @@ public class MineExtra extends BaseModule {
     BlockPos lastGrimACWrongBreakCheck;
     BlockPos currentMiningBlock;
 
-    public void onLastSwing(Event<HandSwingC2SPacket> handSwingC2SPacketEvent) {
+    public void onLastSwing() {
         lastSwingPacket = Tasks.getTick();
     }
 
@@ -493,7 +491,7 @@ public class MineExtra extends BaseModule {
 
     int thisTickStartBreakPackets = 0;
 
-    public void onGrimCooldownResetPackets(Event<ClientPlayerEntity> tickEvent) {
+    public void onGrimCooldownResetPackets() {
         thisTickStartBreakPackets = 0;
         if (quickMine.get() && fastBreakBypassMode.get() == Mode.BYPASS_GRIM_BAD_PACKETS && mc.player != null) {
             // exact tick we send,
@@ -517,7 +515,7 @@ public class MineExtra extends BaseModule {
         }
     }
 
-    public void onTickGhostHandFailBreak(Event<ClientPlayerEntity> event) {
+    public void onTickGhostHandFailBreak() {
         if (checkNull()) return;
         InvExtra.INSTANCE.tickNextTickCallbacks();
         if (PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos() != null

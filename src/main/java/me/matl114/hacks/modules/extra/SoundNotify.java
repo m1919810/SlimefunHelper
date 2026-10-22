@@ -272,7 +272,7 @@ public class SoundNotify extends BaseModule {
         }
     }
 
-    public void onPostTick(Event<Void> event) {
+    public void onPostTick() {
         if (checkNull()) return;
         if (!enable.get()) {
             alertedEffects.clear();
@@ -393,7 +393,7 @@ public class SoundNotify extends BaseModule {
         }
     }
 
-    public void onDisconnect(Event<Void> event) {
+    public void onDisconnect() {
         alertedEffects.clear();
         resetDurabilityTracking();
         for (TimerExecutor timer : soundTimers.values()) {

@@ -102,7 +102,7 @@ public class AutoCity extends BaseModule {
         }
     }
 
-    public void onInputEvent(Event<Void> event) {
+    public void onInputEvent() {
         if (enable.get()) {
             pendingSwitchPos = false;
             refreshTarget();

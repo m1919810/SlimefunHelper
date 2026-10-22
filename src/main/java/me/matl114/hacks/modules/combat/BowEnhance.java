@@ -155,7 +155,7 @@ public class BowEnhance extends BaseModule {
         }
     }
 
-    private void updateRenderCollector(Event<ClientPlayerEntity> event) {
+    private void updateRenderCollector() {
         targetCollector.clear();
         if (!enable.get() || !enableAim.get() || !renderTarget.get() || mc.player == null || !mc.player.isUsingItem()) {
             return;

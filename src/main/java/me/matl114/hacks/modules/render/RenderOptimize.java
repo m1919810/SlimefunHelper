@@ -324,7 +324,7 @@ public class RenderOptimize extends BaseModule {
 
     public void canChunkBeSeen(int chunkX, int chunkZ, Vec3d cameraPos, Vec3d cameraLook) {}
 
-    public void onBlockEntityCullingTick(Event<ClientPlayerEntity> event) {
+    public void onBlockEntityCullingTick() {
 
         if (mc.world != null && cullingEnable.get()) {
             double maxDistance = cullingRadius.get();
@@ -445,7 +445,7 @@ public class RenderOptimize extends BaseModule {
     public volatile ConcurrentHashMap<Long, Boolean> cache = new ConcurrentHashMap<>();
     private int tickCounter = 0;
 
-    public void onCacheClean(Event<ClientPlayerEntity> event) {
+    public void onCacheClean() {
         if (cullingUseRaycast.get()) {
             tickCounter += 1;
             if (tickCounter > 1) {

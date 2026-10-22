@@ -23,7 +23,6 @@ import me.matl114.utils.commands.commandGroup.SubCommand;
 import me.matl114.utils.commands.commandGroup.TreeSubCommand;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.versioned.api.VRecord;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
 import net.minecraft.world.GameMode;
@@ -89,18 +88,18 @@ public class PlayerQueue extends BaseModule {
     public Deque<Entry> playerQueue = new ArrayDeque<>();
     public Set<UUID> uniqueSetPlayer = new HashSet<>();
 
-    public void onServerLeave(Event<Void> serverLeave) {
+    public void onServerLeave() {
         if (leaveClearCache.get()) {
             trackedPlayers.clear();
         }
     }
 
-    public void onServerChange(Event<Void> serverChange) {
+    public void onServerChange() {
         playerQueue.clear();
         uniqueSetPlayer.clear();
     }
 
-    public void onServerInitialize(Event<ClientPlayerEntity> onGameJoin) {
+    public void onServerInitialize() {
         playerQueue.clear();
         uniqueSetPlayer.clear();
         Tasks.scheduleDelayed(this::onInitializeQueue, 20);

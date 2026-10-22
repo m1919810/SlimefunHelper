@@ -181,7 +181,7 @@ public class AutoEat extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPreHandleInputEvents(), this::onTickPre);
         registerListener(Listener.getPostHandleInputEvents(), this::onTickPost);
-        registerListener(Listener.getPlayerRespawnPoint(), this::onWorldSwitch);
+        registerListener(Listener.getPlayerRespawnPoint(), this::stopEating);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(EntityStatusS2CPacket.class), this::onStatusConsumed);
         registerListener(Listener.getPrePlayerUseItem(), this::onRightClick);
@@ -189,15 +189,18 @@ public class AutoEat extends BaseModule {
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class),
                 this::onInteractPacket,
-                114514);
+                114514,
+                true);
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerInteractBlockC2SPacket.class),
                 this::onInteractPacket,
-                114514);
+                114514,
+                true);
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class),
                 this::onInteractPacket,
-                114514);
+                114514,
+                true);
     }
 
     @Override
@@ -206,8 +209,7 @@ public class AutoEat extends BaseModule {
         stopEating();
     }
 
-    private <T extends Packet<?>> void onInteractPacket(Event<T> eventPacket) {
-        if (eventPacket.isCancelled()) return;
+    private <T extends Packet<?>> void onInteractPacket() {
         interactMark.mark();
     }
 
@@ -316,10 +318,6 @@ public class AutoEat extends BaseModule {
         }
     }
 
-    private void onWorldSwitch(Event<ClientPlayerEntity> event) {
-        stopEating();
-    }
-
     private void stopEating() {
         if (eating) {
             KeyBindAccess.of(mc.options.useKey).resetKeyState(); // mc.options.useKey.setPressed(false);
@@ -336,7 +334,7 @@ public class AutoEat extends BaseModule {
 
     boolean lastAutoFireworkIsDone = false;
 
-    public void onTickPre(Event<Void> event) {
+    public void onTickPre() {
         ClientPlayerEntity player = mc.player;
         if (checkNull()) {
             if (eating) {
@@ -375,7 +373,7 @@ public class AutoEat extends BaseModule {
         return false;
     }
 
-    public void onTickPost(Event<Void> event) {
+    public void onTickPost() {
         if (checkNull()) {
             return;
         }

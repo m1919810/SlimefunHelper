@@ -41,7 +41,6 @@ import me.matl114.utils.commands.params.types.EntitySelector;
 import me.matl114.utils.commands.params.types.ExecutePos;
 import me.matl114.utils.commands.params.types.ExecuteRotation;
 import me.matl114.versioned.api.VItem;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.PotionContentsComponent;
 import net.minecraft.entity.Entity;
@@ -164,26 +163,26 @@ public class InteractManager extends BaseModule {
         acceptor.accept(factory.createTitle("widget.attack.attack.use-argument", 0, dblank, dx, dy));
     }
 
-    public void onServerLeave(Event<Void> event) {
+    public void onServerLeave() {
         clearRunningRequests(null);
     }
 
-    public void onWorldSwitch(Event<ClientPlayerEntity> event) {
+    public void onWorldSwitch() {
         clearRunningRequests(null);
     }
 
     int holdUseTick = -1;
     Runnable holdUseCallback = null;
 
-    public void onPreInputEventLow(Event<Void> event) {
+    public void onPreInputEventLow() {
         duringInputEvent = true;
     }
 
-    public void onPostInputEventMonitor(Event<Void> event) {
+    public void onPostInputEventMonitor() {
         duringInputEvent = false;
     }
 
-    public void onInputEvent(Event<Void> event) {
+    public void onInputEvent() {
         if (checkNull()) return;
         duringCommand = true;
         try {
@@ -219,7 +218,7 @@ public class InteractManager extends BaseModule {
         duringVanillaInput = true;
     }
 
-    public void onPostInputEvent(Event<Void> event) {
+    public void onPostInputEvent() {
         duringVanillaInput = false;
     }
 

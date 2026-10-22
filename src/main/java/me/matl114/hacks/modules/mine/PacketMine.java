@@ -31,7 +31,6 @@ import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
 import net.minecraft.registry.Registries;
@@ -144,7 +143,7 @@ public class PacketMine extends BaseModule {
         }
     }
 
-    public void onTick(Event<ClientPlayerEntity> tickEvent) {
+    public void onTick() {
         if (isActive()) {
             if (checkNull()) return;
             if (eatingAbort.get() && mc.player.isUsingItem()) {

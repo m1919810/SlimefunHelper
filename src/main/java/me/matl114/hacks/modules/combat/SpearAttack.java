@@ -31,7 +31,6 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.*;
 import me.matl114.utils.*;
 import me.matl114.utils.render.RenderCollector;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.text.Text;
@@ -229,7 +228,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
         }
     }
 
-    private void updateRenderCollector(Event<ClientPlayerEntity> event) {
+    private void updateRenderCollector() {
         targetCollector.clear();
         if (!enable.get() || !spearRender.get() || !canSpearAttack()) return;
         Entity spearEntity = CombatTasks.getTargetSelector()

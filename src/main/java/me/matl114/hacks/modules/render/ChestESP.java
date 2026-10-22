@@ -25,7 +25,6 @@ import net.minecraft.block.ChestBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.enums.ChestType;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.TextColor;
@@ -84,13 +83,13 @@ public class ChestESP extends BaseModule {
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
     }
 
-    public void onBlockEntityRender(Event<BlockEntity> blockEntityEvent) {}
+    public void onBlockEntityRender() {}
 
     public final RenderCollector<Box> boxSolidCollector = RenderCollectors.createBoxCollector(false, true, false);
     public final RenderCollector<Box> boxOutlineCollector = RenderCollectors.createBoxCollector(true, false, false);
     public final RenderCollector<Vec3d> boxTraceLineCollector = RenderCollectors.createTracerCollector();
 
-    public void onSwapRenderContent(Event<ClientPlayerEntity> clientPlayerEntityEvent) {
+    public void onSwapRenderContent() {
         if (checkNull()) return;
         boxOutlineCollector.clear();
         boxTraceLineCollector.clear();

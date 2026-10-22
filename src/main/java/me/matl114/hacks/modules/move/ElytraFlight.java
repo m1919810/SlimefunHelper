@@ -165,7 +165,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
         registerListener(Listener.getPreGameTick(), this::onPreGameTick);
     }
 
-    private void onPreGameTick(Event<ClientPlayerEntity> event) {
+    private void onPreGameTick() {
         if (shouldControlFlight() && PlayerInputUtils.of(mc.options).hasMovementControl()) {
             if (motionMode.get().isIn(ElytraExtra.MotionMode.FIRE_WORKS)) {
                 if (ElytraExtra.INSTANCE.canFireworkControlMotion(fireworksRotationLastingTicks.get())) {

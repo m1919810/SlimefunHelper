@@ -92,7 +92,7 @@ public class ShulkerDisplay extends BaseModule {
         registerListener(RenderListener.getRenderScreen().getChannel(HandledScreen.class), this::onRenderScreen);
     }
 
-    private void prepareCompressedContents(Event<Void> event) {
+    private void prepareCompressedContents() {
         if (checkNull()) return;
         compressedContents.clear();
         if (enable.get() && showMode.get().isIn(ShowMode.ALL)) {

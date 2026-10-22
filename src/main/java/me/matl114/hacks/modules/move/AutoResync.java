@@ -19,7 +19,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.utils.Debug;
 import me.matl114.utils.MathUtils;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityPosition;
 import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
@@ -94,14 +93,10 @@ public class AutoResync extends BaseModule {
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(PlayerRotationS2CPacket.class), this::onPostRotate);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
-        registerListener(Listener.getPlayerRespawnPoint(), this::onWorldSwitch);
+        registerListener(Listener.getPlayerRespawnPoint(), () -> worldSwitchTick = Tasks.getTick());
     }
 
     int worldSwitchTick = 0;
-
-    public void onWorldSwitch(Event<ClientPlayerEntity> event) {
-        worldSwitchTick = Tasks.getTick();
-    }
 
     public Vec2f restoreRot = null;
 
@@ -189,7 +184,7 @@ public class AutoResync extends BaseModule {
         }
     }
 
-    public void onPreSetBack(Event<PlayerPositionLookS2CPacket> event) {
+    public void onPreSetBack() {
         if (checkNull()) return;
         if (autoResyncRot.get() && !modifyPacketRot.get()) {
             restoreRot = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
@@ -211,7 +206,7 @@ public class AutoResync extends BaseModule {
         }
     }
 
-    public void onPostSetBack(Event<PlayerPositionLookS2CPacket> event) {
+    public void onPostSetBack() {
         if (checkNull()) return;
         if (checkNull()) return;
         if (restoreRot != null) {
@@ -223,7 +218,7 @@ public class AutoResync extends BaseModule {
         }
     }
 
-    public void onPostRotate(Event<PlayerRotationS2CPacket> eventRotate) {
+    public void onPostRotate() {
         if (checkNull()) return;
         if (restoreRot != null) {
             EntityUtils.setEntityPitchSafe(mc.player, restoreRot.x);

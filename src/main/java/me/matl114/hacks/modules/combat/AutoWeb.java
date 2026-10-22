@@ -110,7 +110,7 @@ public class AutoWeb extends BaseModule {
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPreset);
     }
 
-    private void onPreInputEvent(Event<Void> event) {
+    private void onPreInputEvent() {
         if (checkNull() || !enable.get()) {
             return;
         }

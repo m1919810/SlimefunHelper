@@ -1,6 +1,5 @@
 package me.matl114.hacks.modules.inv;
 
-import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -14,7 +13,6 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -66,7 +64,7 @@ public class AutoSteal extends BaseModule {
         registerListener(Listener.getPreGameTick(), this::onInventoryTick);
     }
 
-    public void onInventoryTick(Event<ClientPlayerEntity> event) {
+    public void onInventoryTick() {
         if (mc.currentScreen instanceof HandledScreen<?> handle && enable.get()) {
             Text text = handle.getTitle();
             String titleName = text == null ? "" : ChatUtils.textToPlainString(text);

@@ -28,7 +28,6 @@ import me.matl114.utils.*;
 import net.minecraft.block.*;
 import net.minecraft.block.enums.BlockFace;
 import net.minecraft.block.enums.Orientation;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
@@ -92,13 +91,13 @@ public class BlockRotate extends BaseModule {
 
     final Map<BlockPos, TemporarySchematic> tempSchematics = new ConcurrentHashMap<>();
 
-    public void onWorldChange(Event<World> eventWorld) {
+    public void onWorldChange() {
         tempSchematics.clear();
     }
 
     int timer = 0;
 
-    public void onUpdate(Event<ClientPlayerEntity> eventUpdate) {
+    public void onUpdate() {
         if (timer++ > 20) {
             timer = 0;
             var iter = tempSchematics.entrySet().iterator();
