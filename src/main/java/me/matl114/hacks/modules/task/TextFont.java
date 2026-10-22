@@ -11,6 +11,7 @@ import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
+import me.matl114.managers.Tasks;
 import me.matl114.managers.config.ConfigEnum;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.EnumRef;
@@ -74,11 +75,16 @@ public class TextFont extends BaseModule {
     }
 
     private void updateTextFont() {
-        try {
-            TextRenderers.setRenderer(getTextDrawer());
-        } catch (Throwable throwable) {
-            TextRenderers.setRenderer(new VanillaTextDrawer());
-        }
+        // delay because it might init before the openGl init
+        Tasks.scheduleDelayed(
+                () -> {
+                    try {
+                        TextRenderers.setRenderer(getTextDrawer());
+                    } catch (Throwable throwable) {
+                        TextRenderers.setRenderer(new VanillaTextDrawer());
+                    }
+                },
+                0);
     }
 
     public TextDrawer getTextDrawer() {
