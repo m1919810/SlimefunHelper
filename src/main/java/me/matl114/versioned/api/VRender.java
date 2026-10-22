@@ -11,10 +11,10 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.texture.GuiAtlasManager;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.OrderedText;
 import net.minecraft.util.Identifier;
@@ -188,7 +188,7 @@ public interface VRender {
             ItemStack itemStack,
             MatrixStack stack,
             Vec3d vec3d,
-            ModelTransformationMode context,
+            ItemDisplayContext context,
             ItemDisplay displayInfo);
 
     @With

@@ -12,9 +12,9 @@ import me.matl114.utils.render.UV;
 import me.matl114.versioned.api.VRender;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
-import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.OrderedText;
 import net.minecraft.util.Identifier;
@@ -37,6 +37,35 @@ public class Render_v1_21_1 implements VRender, VRender.WrapRenderOperation {
     };
     private static final RenderPhase.ShaderProgram ENTITY_HIGHLIGHT_PROGRAM =
             new RenderPhase.ShaderProgram(() -> entityHighlightProgram);
+    private static final RenderLayer LINES_LAYER =
+            createPositionColorLayer("slimefunhelper:debug_lines", VertexFormat.DrawMode.DEBUG_LINES, true);
+    private static final RenderLayer LINE_STRIP_LAYER =
+            createPositionColorLayer("slimefunhelper:debug_line_strip", VertexFormat.DrawMode.DEBUG_LINE_STRIP, true);
+    private static final RenderLayer QUADS_LAYER =
+            createPositionColorLayer("slimefunhelper:debug_quads", VertexFormat.DrawMode.QUADS, true);
+    private static final RenderLayer QUADS_NO_CULL_LAYER =
+            createPositionColorLayer("slimefunhelper:debug_quads_no_cull", VertexFormat.DrawMode.QUADS, false);
+    private static final RenderLayer TRIANGLES_LAYER =
+            createPositionColorLayer("slimefunhelper:debug_triangles", VertexFormat.DrawMode.TRIANGLES, true);
+    private static final RenderLayer TRIANGLES_NO_CULL_LAYER =
+            createPositionColorLayer("slimefunhelper:debug_triangles_no_cull", VertexFormat.DrawMode.TRIANGLES, false);
+    private static final RenderLayer TRIANGLE_STRIP_LAYER =
+            createPositionColorLayer("slimefunhelper:debug_triangle_strip", VertexFormat.DrawMode.TRIANGLE_STRIP, true);
+    private static final RenderLayer TRIANGLE_STRIP_NO_CULL_LAYER =
+            createPositionColorLayer("slimefunhelper:debug_triangle_strip_no_cull", VertexFormat.DrawMode.TRIANGLE_STRIP, false);
+
+    private static RenderLayer createPositionColorLayer(String name, VertexFormat.DrawMode drawMode, boolean hasCulling) {
+        RenderLayer.MultiPhaseParameters.Builder phases = RenderLayer.MultiPhaseParameters.builder()
+                .program(new RenderPhase.ShaderProgram(GameRenderer::getPositionColorProgram))
+                .transparency(RenderPhase.TRANSLUCENT_TRANSPARENCY)
+                .depthTest(DISABLE_DEPTH_TEST)
+                .writeMaskState(RenderPhase.COLOR_MASK);
+        if (!hasCulling) {
+            phases.cull(RenderPhase.DISABLE_CULLING);
+        }
+        return RenderLayer.of(name, VertexFormats.POSITION_COLOR, drawMode, 1536, false, drawMode == VertexFormat.DrawMode.QUADS, phases.build(false));
+    }
+
     private static final RenderLayer GUI_3D_LAYER = RenderLayer.of(
             "slimefunhelper:gui_3d",
             VertexFormats.POSITION_COLOR,
@@ -91,87 +120,31 @@ public class Render_v1_21_1 implements VRender, VRender.WrapRenderOperation {
     @Override
     public void createLinesLayer(RenderCallback callback) {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        Tessellator tessellator = RenderSystem.renderThreadTesselator();
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-        BufferBuilder bufferBuilder =
-                tessellator.begin(VertexFormat.DrawMode.DEBUG_LINES, VertexFormats.POSITION_COLOR);
-        callback.draw(this, bufferBuilder);
-        var buffer = bufferBuilder.endNullable();
-        if (buffer != null) {
-            BufferRenderer.drawWithGlobalProgram(buffer);
-        }
+        createLayer(LINES_LAYER, callback);
     }
 
     @Override
     public void createLineStripLayer(RenderCallback callback) {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        Tessellator tessellator = RenderSystem.renderThreadTesselator();
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-        BufferBuilder bufferBuilder =
-                tessellator.begin(VertexFormat.DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION_COLOR);
-        callback.draw(this, bufferBuilder);
-        var buffer = bufferBuilder.endNullable();
-        if (buffer != null) {
-            BufferRenderer.drawWithGlobalProgram(buffer);
-        }
+        createLayer(LINE_STRIP_LAYER, callback);
     }
 
     @Override
     public void createQuadsLayer(RenderCallback callback, boolean hasCulling) {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        Tessellator tessellator = RenderSystem.renderThreadTesselator();
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-        BufferBuilder bufferBuilder = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
-        if (!hasCulling) {
-            RenderSystem.disableCull();
-        }
-        callback.draw(this, bufferBuilder);
-        if (!hasCulling) {
-            RenderSystem.enableCull();
-        }
-        var buffer = bufferBuilder.endNullable();
-        if (buffer != null) {
-            BufferRenderer.drawWithGlobalProgram(buffer);
-        }
+        createLayer(hasCulling ? QUADS_LAYER : QUADS_NO_CULL_LAYER, callback);
     }
 
     @Override
     public void createTrianglesLayer(RenderCallback callback, boolean hasCulling) {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        Tessellator tessellator = RenderSystem.renderThreadTesselator();
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-        BufferBuilder bufferBuilder = tessellator.begin(VertexFormat.DrawMode.TRIANGLES, VertexFormats.POSITION_COLOR);
-        if (!hasCulling) {
-            RenderSystem.disableCull();
-        }
-        callback.draw(this, bufferBuilder);
-        if (!hasCulling) {
-            RenderSystem.enableCull();
-        }
-        var buffer = bufferBuilder.endNullable();
-        if (buffer != null) {
-            BufferRenderer.drawWithGlobalProgram(buffer);
-        }
+        createLayer(hasCulling ? TRIANGLES_LAYER : TRIANGLES_NO_CULL_LAYER, callback);
     }
 
     @Override
     public void createTriangleStripLayer(RenderCallback callback, boolean hasCulling) {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        Tessellator tessellator = RenderSystem.renderThreadTesselator();
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-        BufferBuilder bufferBuilder =
-                tessellator.begin(VertexFormat.DrawMode.TRIANGLE_STRIP, VertexFormats.POSITION_COLOR);
-        if (!hasCulling) {
-            RenderSystem.disableCull();
-        }
-        callback.draw(this, bufferBuilder);
-        if (!hasCulling) {
-            RenderSystem.enableCull();
-        }
-        var buffer = bufferBuilder.endNullable();
-        if (buffer != null) {
-            BufferRenderer.drawWithGlobalProgram(buffer);
-        }
+        createLayer(hasCulling ? TRIANGLE_STRIP_LAYER : TRIANGLE_STRIP_NO_CULL_LAYER, callback);
     }
 
     @Override
@@ -247,7 +220,7 @@ public class Render_v1_21_1 implements VRender, VRender.WrapRenderOperation {
             ItemStack itemStack,
             MatrixStack stack,
             Vec3d vec3d,
-            ModelTransformationMode context,
+            ItemDisplayContext context,
             ItemDisplay displayInfo) {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         boolean bl = Vec3d.ZERO.equals(vec3d);
