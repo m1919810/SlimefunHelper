@@ -220,7 +220,6 @@ public class MineBot extends BaseModule {
                 }
             }
             Runnable runnable = InvExtra.INSTANCE.swapItemToHand(bestStack.index(), false, ghostHand.get());
-            AttributeUtils.updateAttribute(mc.player);
             float speed = MineExtra.INSTANCE.predictBlockBreakingSpeedAt(lastMinePos);
             tryMine += 1;
             // use real Direction

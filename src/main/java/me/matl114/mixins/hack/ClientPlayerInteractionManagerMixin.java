@@ -291,7 +291,6 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
         if (state == null || state.isAir() || state.isLiquid()) {
             return true;
         }
-        AttributeUtils.updateAttribute(this.client.player);
         float speed = WorldUtils.calcBlockBreakingDelta(state, this.client.world, currentFailBreakPos);
         // in the case of server lag
         if (speed > 0.0F && ((Tasks.getTick() - failBreakStartTick - 1) * speed > 1.0F)) {
@@ -407,9 +406,8 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
             GhostHandMode preferred = MineExtra.INSTANCE.ghostHandPreferredMode.get();
             GhostHandMode modeSelect = preferred.isAcceptable(tool.index()) ? preferred : GhostHandMode.INV_SWAP;
             Runnable fastBreakGhostHand = InvExtra.INSTANCE.swapItemToHand(tool.index(), false, modeSelect);
-            AttributeUtils.updateAttribute(this.client.player);
-            float speed =
-                    blockState.calcBlockBreakingDelta(MinecraftClient.getInstance().player, this.client.world, pos);
+            float speed = WorldUtils.calcBlockBreakingDelta(
+                    blockState, this.client.world, pos, this.client.player, this.client.player.getMainHandStack());
             this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence) -> {
                 this.breakBlock(pos);
                 return new PlayerActionC2SPacket(
@@ -516,7 +514,6 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
         if (state.isAir() || state.isLiquid()) {
             return false;
         }
-        AttributeUtils.updateAttribute(this.client.player);
         float speed = WorldUtils.calcBlockBreakingDelta(state, this.client.world, currentBreakingPos);
         if (speed <= 0) {
             return false;
@@ -677,7 +674,6 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
             GhostHandMode preferred = MineExtra.INSTANCE.ghostHandPreferredMode.get();
             GhostHandMode modeSelect = preferred.isAcceptable(usingTool.index()) ? preferred : GhostHandMode.INV_SWAP;
             Runnable fastbreakCallback = InvExtra.INSTANCE.swapItemToHand(usingTool.index(), false, modeSelect);
-            AttributeUtils.updateAttribute(this.client.player);
             clearBreakingState();
             this.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence) -> {
                 this.breakBlock(pos);

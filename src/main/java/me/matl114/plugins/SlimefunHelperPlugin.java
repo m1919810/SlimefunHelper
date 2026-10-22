@@ -2,6 +2,7 @@ package me.matl114.plugins;
 
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.managers.config.Config;
+import me.matl114.managers.config.ConfigLoader;
 import net.fabricmc.loader.api.ModContainer;
 
 /** Entry point implemented by extensions loaded through the {@code slimefunhelper} Fabric entrypoint. */
@@ -30,12 +31,16 @@ public interface SlimefunHelperPlugin {
 
     /** Registers a plugin module group in the global module registry. */
     default void registerModuleGroup(ModuleGroup group) {
-        PluginManager.getInstance().registerModuleGroup(group);
+        PluginManager.getInstance().registerModuleGroup(this, group);
+    }
+
+    default <T extends Config> T loadRuntimeConfig(String fileName, String customName) {
+        return (T) ConfigLoader.loadRuntimeConfig(fileName, customName).markForSave();
     }
 
     /** Makes a plugin config visible to the global config screen and reload lifecycle. */
     default <T extends Config> T registerConfig(T config) {
-        return PluginManager.getInstance().registerConfig(config);
+        return PluginManager.getInstance().registerConfig(this, config);
     }
 
     default void onDiscovered(ModContainer container) {}

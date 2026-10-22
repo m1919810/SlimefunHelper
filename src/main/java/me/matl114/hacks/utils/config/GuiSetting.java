@@ -25,7 +25,6 @@ import me.matl114.gui.interfaces.ElementStyle;
 import me.matl114.gui.interfaces.ElementType;
 import me.matl114.gui.presets.single.CenterScreen;
 import me.matl114.hacks.utils.gui.*;
-import me.matl114.managers.config.Config;
 import me.matl114.managers.config.NBTParsable;
 import me.matl114.managers.config.NBTType;
 import me.matl114.utils.ChatUtils;
@@ -289,7 +288,6 @@ public record GuiSetting(
         int width = WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT.totalWidth();
         DrawableWidget widget = createEditorWidget(factory, source, 0, 0, width, 0);
         CenterScreen screen = new CenterScreen(widget);
-        ScreenAccess.of(screen).addCloseFuture(Config::configSaveTasks);
         ScreenAccess.of(screen).openFromCurrent();
     }
 

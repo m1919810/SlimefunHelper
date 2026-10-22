@@ -2,57 +2,31 @@ package me.matl114.managers;
 
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
-import java.util.LinkedHashSet;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import me.matl114.managers.config.Config;
 import me.matl114.managers.config.ConfigLoader;
+import me.matl114.plugins.SlimefunHelperPlugin;
 import me.matl114.utils.config.NumberClamp;
 import net.minecraft.util.Identifier;
 
 public class Configs {
-    private static final Set<Config> PLUGIN_CONFIGS = new LinkedHashSet<>();
 
-    /** Registers a config supplied by a plugin for the global config lifecycle. */
-    public static void registerConfig(Config config) {
-        Objects.requireNonNull(config, "config");
-        if (PLUGIN_CONFIGS.add(config) && init) {
-            config.registerGlobal();
-        }
-    }
-
-    public static void loadConfigs() {
-        if (true) {
-            MINE_CONFIG.registerGlobal();
-            CHAT_CONFIG.registerGlobal();
-            RENDER_CONFIG.registerGlobal();
-            EXTRA_CONFIG.registerGlobal();
-            COMBAT_CONFIG.registerGlobal();
-            INV_CONFIG.registerGlobal();
-            MOV_CONFIG.registerGlobal();
-            INTERACT_CONFIG.registerGlobal();
-            SURVIVAL_CONFIG.registerGlobal();
-            SLIMEFUN_CONFIG.registerGlobal();
-            MODEL_CONFIG.registerGlobal();
-            MISC_CONFIG.registerGlobal();
-            TOGGLE_CONFIG.registerGlobal();
-        } else {
-            CHAT_CONFIG.registerGlobal();
-            INV_CONFIG.registerGlobal();
-            SLIMEFUN_CONFIG.registerGlobal();
-            MODEL_CONFIG.registerGlobal();
-            MISC_CONFIG.registerGlobal();
-            TOGGLE_CONFIG.registerGlobal();
-        }
-        PLUGIN_CONFIGS.forEach(Config::registerGlobal);
-        if (init) {
-            Config.reloadAll();
-        } else {
-            init = true;
-        }
+    public static void loadConfigs(SlimefunHelperPlugin plugin) {
+        plugin.registerConfig(MINE_CONFIG);
+        plugin.registerConfig(CHAT_CONFIG);
+        plugin.registerConfig(RENDER_CONFIG);
+        plugin.registerConfig(EXTRA_CONFIG);
+        plugin.registerConfig(COMBAT_CONFIG);
+        plugin.registerConfig(INV_CONFIG);
+        plugin.registerConfig(MOV_CONFIG);
+        plugin.registerConfig(INTERACT_CONFIG);
+        plugin.registerConfig(SURVIVAL_CONFIG);
+        plugin.registerConfig(SLIMEFUN_CONFIG);
+        plugin.registerConfig(MODEL_CONFIG);
+        plugin.registerConfig(MISC_CONFIG);
     }
 
     public static final Predicate<String> REGEX_VALIDATOR = x -> {
@@ -140,7 +114,4 @@ public class Configs {
 
     public static final Config MISC_CONFIG =
             ConfigLoader.loadRuntimeConfig("misc.yml", "misc settings").markForSave();
-
-    public static final Config TOGGLE_CONFIG =
-            ConfigLoader.loadRuntimeConfig("toggles.yml", "toggle settings").markForSave();
 }

@@ -39,7 +39,6 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.AttributeUtils;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.MathUtils;
@@ -563,7 +562,6 @@ public class AutoMine extends BaseModule {
                 }
             }
             InvExtra.INSTANCE.swapItemToHand(bestStack.index(), false, GhostHandMode.INV_SWAP);
-            AttributeUtils.updateAttribute(mc.player);
             float speed = MineExtra.INSTANCE.predictBlockBreakingSpeedAt(lastMinePos);
             tryMine += 1;
             Vec3d shouldFacing = lastMinePos.toCenterPos().subtract(mc.player.getEyePos());

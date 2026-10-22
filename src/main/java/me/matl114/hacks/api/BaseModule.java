@@ -175,8 +175,8 @@ public abstract class BaseModule implements ModuleListProvider {
         portPaths.put(oldPath, newPath);
         var unknown = oldPath.getConfig().get(oldPath.toPath());
         if (unknown != null) {
-            oldPath.getConfig().setValueNoNew(null, oldPath.toPath());
-            newPath.getConfig().setValueNoNew(unknown, newPath.toPath());
+            oldPath.getConfig().setValue(null, oldPath.toPath());
+            newPath.getConfig().setValue(unknown, newPath.toPath());
         }
     }
 
@@ -277,7 +277,6 @@ public abstract class BaseModule implements ModuleListProvider {
             }
         });
         registeredConfigRefs.clear();
-        registeredConfigEditableRefs.clear();
         registeredHotkeys.forEach(s -> s.setInputHandler(SimpleHotKey.InputHandler.EMPTY));
         registeredHotkeys.clear();
         MainCommand.unregisterCommandBootstrap(this::isOwner);
@@ -285,14 +284,13 @@ public abstract class BaseModule implements ModuleListProvider {
     }
 
     private final List<WrapperConfigRef<?>> registeredConfigRefs = new ArrayList<>();
-    private final List<WrapperConfigRef<?>> registeredConfigEditableRefs = new ArrayList<>();
 
     public final List<WrapperConfigRef<?>> getEditableConfig() {
-        return Collections.unmodifiableList(registeredConfigEditableRefs);
+        return Collections.unmodifiableList(registeredConfigRefs);
     }
 
     public boolean hasEditableConfig() {
-        return !registeredConfigEditableRefs.isEmpty();
+        return !registeredConfigRefs.isEmpty();
     }
 
     Boolean showInGui;
@@ -321,11 +319,11 @@ public abstract class BaseModule implements ModuleListProvider {
     private final Set<SimpleHotKey> registeredHotkeys = new LinkedHashSet<>();
 
     public <T> WrapperSettingBuilder<T> builder(Config config, Class<T> type) {
-        return new WrapperSettingBuilder<>(config.asRef(), config, type, this);
+        return new WrapperSettingBuilder<>(config, type, this);
     }
 
     public <T> WrapperSettingBuilder<T> builder(Config config, String[] path, Class<T> type) {
-        return new WrapperSettingBuilder<>(config.asRef(), config, type, this).path(path);
+        return new WrapperSettingBuilder<>(config, type, this).path(path);
     }
 
     public <T> WrapperSettingBuilder<T> builder(ModulePath path, Class<T> type) {
@@ -368,14 +366,6 @@ public abstract class BaseModule implements ModuleListProvider {
         return hotkey(path.getConfig(), path.toPath(), defaultValue);
     }
 
-    public WrapperSettingBuilder<MultiKeyBind> toggleConfigHotkey(
-            Config config, String[] path, MultiKeyBind defaultValue) {
-        return builder(config, MultiKeyBind.class)
-                .path(path)
-                .defaultValue(defaultValue)
-                .registerHotkey(HotKeyUtils.getToggleHandler(Configs.TOGGLE_CONFIG, path));
-    }
-
     public WrapperSettingBuilder<MultiKeyBind> moduleEntry(
             ModulePath hotkeyPath, MultiKeyBind defaultValue, ModulePath togglePath) {
         return moduleEntry(hotkeyPath.getConfig(), hotkeyPath.toPath(), defaultValue, togglePath.toPath());
@@ -388,8 +378,7 @@ public abstract class BaseModule implements ModuleListProvider {
 
     public WrapperSettingBuilder<MultiKeyBind> moduleEntry(
             Config config, String[] hotkeyPath, MultiKeyBind defaultValue, String[] togglePath) {
-        return new WrapperModuleSettingBuilder(
-                        config.asRef(), config, this, new ModuleEntry(config, togglePath, hotkeyPath))
+        return new WrapperModuleSettingBuilder(config, this, new ModuleEntry(config, togglePath, hotkeyPath))
                 .defaultValue(defaultValue)
                 .registerHotkey(HotKeyUtils.getToggleHandler(config, togglePath))
                 .registerModuleEntry();
@@ -402,10 +391,7 @@ public abstract class BaseModule implements ModuleListProvider {
             String[] togglePath,
             Supplier<Text> descriptor) {
         return new WrapperModuleSettingBuilder(
-                        config.asRef(),
-                        config,
-                        this,
-                        new MetaDataModuleEntry(config, togglePath, hotkeyPath, descriptor))
+                        config, this, new MetaDataModuleEntry(config, togglePath, hotkeyPath, descriptor))
                 .defaultValue(defaultValue)
                 .registerHotkey(HotKeyUtils.getToggleHandler(config, togglePath))
                 .registerModuleEntry();
@@ -413,7 +399,7 @@ public abstract class BaseModule implements ModuleListProvider {
 
     public WrapperSettingBuilder<MultiKeyBind> toggleHotkey(
             Config config, String[] path, MultiKeyBind defaultValue, String[] togglePath) {
-        return new WrapperSettingBuilder<>(config.asRef(), config, KeyBindRef.TYPE, this)
+        return new WrapperSettingBuilder<>(config, KeyBindRef.TYPE, this)
                 .path(path)
                 .defaultValue(defaultValue)
                 .registerHotkey(HotKeyUtils.getToggleHandler(config, togglePath));
@@ -436,10 +422,6 @@ public abstract class BaseModule implements ModuleListProvider {
     private <T> void registerConfigWrapper(WrapperConfigRef<T> ref) {
         registeredConfigRefs.removeIf(ref::isSamePath);
         registeredConfigRefs.add(ref);
-        if (ref.isEditable()) {
-            registeredConfigEditableRefs.removeIf(ref::isSamePath);
-            registeredConfigEditableRefs.add(ref);
-        }
     }
 
     public void registerHotkey(SimpleHotKey register) {
@@ -652,10 +634,6 @@ public abstract class BaseModule implements ModuleListProvider {
             }
         }
 
-        public boolean isEditable() {
-            return this.config.getRegistryKey() != null;
-        }
-
         public boolean isSamePath(WrapperConfigRef<?> ref) {
             return config == ref.config && Arrays.equals(path, ref.path);
         }
@@ -665,7 +643,7 @@ public abstract class BaseModule implements ModuleListProvider {
         }
     }
 
-    public static class WrapperSettingBuilder<W> extends Config.SettingBuilder<W> {
+    public static class WrapperSettingBuilder<W> extends ConfigSettingBuilder<W> {
         BaseModule module;
         WrapperConfigRef<W> wrapperConfig;
         SimpleHotKey hotkey;
@@ -677,8 +655,8 @@ public abstract class BaseModule implements ModuleListProvider {
             return wrapperConfig;
         }
 
-        public WrapperSettingBuilder(MapRef ref, Config rootConfig, Class<W> clazz, BaseModule module) {
-            super(ref, rootConfig, clazz);
+        public WrapperSettingBuilder(Config rootConfig, Class<W> clazz, BaseModule module) {
+            super(rootConfig, clazz);
             this.module = module;
         }
 
@@ -771,8 +749,8 @@ public abstract class BaseModule implements ModuleListProvider {
     public static class WrapperModuleSettingBuilder extends WrapperSettingBuilder<MultiKeyBind> {
         ModuleEntry moduleEntry;
 
-        public WrapperModuleSettingBuilder(MapRef ref, Config rootConfig, BaseModule module, ModuleEntry moduleEntry) {
-            super(ref, rootConfig, KeyBindRef.TYPE, module);
+        public WrapperModuleSettingBuilder(Config rootConfig, BaseModule module, ModuleEntry moduleEntry) {
+            super(rootConfig, KeyBindRef.TYPE, module);
             this.moduleEntry = moduleEntry;
             this.path(moduleEntry.hotkeyPath);
         }
