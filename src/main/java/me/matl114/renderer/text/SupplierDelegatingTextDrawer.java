@@ -150,11 +150,6 @@ public final class SupplierDelegatingTextDrawer implements TextDrawer {
     }
 
     @Override
-    public List<StringVisitable> wrapLinesWithoutLanguage(StringVisitable text, int width) {
-        return getDelegate().wrapLinesWithoutLanguage(text, width);
-    }
-
-    @Override
     public TextHandler getTextHandler() {
         return getDelegate().getTextHandler();
     }

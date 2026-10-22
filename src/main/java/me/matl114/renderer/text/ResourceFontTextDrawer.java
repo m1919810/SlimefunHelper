@@ -165,11 +165,6 @@ public class ResourceFontTextDrawer extends VanillaTextDrawer {
     }
 
     @Override
-    public List<StringVisitable> wrapLinesWithoutLanguage(StringVisitable text, int width) {
-        return delegate.wrapLinesWithoutLanguage(withFont(text), width);
-    }
-
-    @Override
     public TextHandler getTextHandler() {
         return new TextHandler((codePoint, style) ->
                 delegate.getTextHandler().getWidth(OrderedText.styled(codePoint, withFont(style))));
