@@ -15,6 +15,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.impl.CombatPlayer;
 import me.matl114.events.impl.MetadataUpdate;
+import me.matl114.events.impl.SlowMovement;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.modules.task.PostManager;
@@ -31,6 +32,7 @@ import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VPacket;
 import me.matl114.versioned.api.VRecord;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.*;
@@ -98,7 +100,9 @@ public class PlayerStateManager extends BaseModule {
     public boolean realInLava;
     public boolean lastLavaPush;
     public boolean lastInWeb;
+    public boolean lastSlowByBlock;
     private boolean inWeb;
+    private boolean slowByBlock;
     public boolean lastInWall;
     public boolean lastUnderBlock;
     public boolean lastHasGroundSupport;
@@ -154,7 +158,7 @@ public class PlayerStateManager extends BaseModule {
                 Listener.getPacketPostHandlePoint().getChannel(PlayerPositionLookS2CPacket.class),
                 this::onPostPlayerPositionLook,
                 Integer.MAX_VALUE);
-        registerListener(Listener.getPlayerWebSlowPoint(), this::handleInWeb);
+        registerListener(Listener.getPlayerSlowedByBlockPoint(), this::handleInWeb);
         registerListener(Listener.getPlayerFluidVelocityPoint(), this::handleInFluid);
         registerListener(Listener.getPreGameTick(), this::handleTick);
         registerListener(
@@ -469,10 +473,15 @@ public class PlayerStateManager extends BaseModule {
         lastOnGround = onGround;
     }
 
-    public void handleInWeb() {
+    public void handleInWeb(Event<SlowMovement> event) {
         fallDistance = 0.0;
-        lastInWeb = true;
-        inWeb = true;
+        if (event.context.state().isOf(Blocks.COBWEB)) {
+            lastInWeb = true;
+            inWeb = true;
+        } else {
+            lastSlowByBlock = true;
+            slowByBlock = true;
+        }
     }
 
     public void handleInFluid(Event<Vec3d> vec3dEvent) {
@@ -542,6 +551,8 @@ public class PlayerStateManager extends BaseModule {
         lastClimbing = mc.player.isClimbing();
         lastInWeb = inWeb;
         inWeb = false;
+        lastSlowByBlock = slowByBlock;
+        slowByBlock = false;
         lastWaterPush = realInWater;
         realInWater = false;
         // fix error fluid state caused by reverting
