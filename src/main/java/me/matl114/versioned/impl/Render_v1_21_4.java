@@ -5,6 +5,7 @@ import java.awt.*;
 import java.util.List;
 import java.util.OptionalDouble;
 import java.util.function.Function;
+import me.matl114.renderer.TextRenderers;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.ColorQuad;
 import me.matl114.utils.render.Quad;
@@ -183,6 +184,21 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
                         .build(false));
     });
 
+    public static final Function<Identifier, RenderLayer> ENTITY_HIGHLIGHT_FACTORY = Util.memoize(texture ->
+            RenderLayer.of(
+                    "slimefunhelper:entity_highlight/" + texture,
+                    VertexFormats.POSITION_TEXTURE_COLOR,
+                    VertexFormat.DrawMode.QUADS,
+                    1536,
+                    RenderLayer.MultiPhaseParameters.builder()
+                            .texture(new RenderPhase.Texture(texture, TriState.DEFAULT, false))
+                            .program(RenderLayer.OUTLINE_PROGRAM)
+                            .transparency(RenderLayer.TRANSLUCENT_TRANSPARENCY)
+                            .depthTest(DISABLE_DEPTH_TEST)
+                            .writeMaskState(RenderLayer.COLOR_MASK)
+                            .cull(RenderLayer.DISABLE_CULLING)
+                            .build(false)));
+
     private void createLayer(RenderLayer layer, RenderCallback callback) {
         VertexConsumerProvider.Immediate vcp = getVCP();
         VertexConsumer consumer = vcp.getBuffer(layer);
@@ -225,11 +241,14 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
         vcp.draw(layer);
     }
 
+    @Override
+    public void createEntityHighlightLayer(Identifier path, RenderCallback callback) {
+        createLayer(ENTITY_HIGHLIGHT_FACTORY.apply(path), callback);
+    }
+
     public void createGuiLayer(RenderCallback callback) {
         createLayer(GUI_3D, callback);
     }
-
-    private static final float TEXT_HEIGHT = 9.0f;
 
     @Override
     public void drawTextCameraCoord(
@@ -241,14 +260,15 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
             TextDisplay displayInfo) {
         int xAlign = displayPositionFlag % 3;
         int yAlign = displayPositionFlag / 3;
-        int width = mc.textRenderer.getWidth(orderedText);
+        var textDrawer = TextRenderers.get();
+        int width = textDrawer.getWidth(orderedText);
         float xStart = -((width * xAlign) / 2.0F);
-        float yStart = -((TEXT_HEIGHT * yAlign) / 2.0F);
+        float yStart = -((textDrawer.getTextHeight() * yAlign) / 2.0F);
         stack.push();
         stack.translate(vec3d.x, vec3d.y, vec3d.z);
         stack.scale(1, -1, 1);
         stack.translate(xStart, yStart, 0);
-        mc.textRenderer.draw(
+        textDrawer.draw(
                 orderedText,
                 0,
                 0,

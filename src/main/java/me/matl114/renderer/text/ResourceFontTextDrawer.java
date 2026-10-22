@@ -4,13 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextHandler;
-import net.minecraft.client.font.TextRenderer.GlyphDrawable;
 import net.minecraft.client.font.TextRenderer.TextLayerType;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.StringVisitable;
 import net.minecraft.text.Style;
-import net.minecraft.text.StyleSpriteSource;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextVisitFactory;
 import net.minecraft.util.Identifier;
@@ -28,7 +26,7 @@ public class ResourceFontTextDrawer extends VanillaTextDrawer {
     public ResourceFontTextDrawer(net.minecraft.client.font.TextRenderer delegate, Identifier fontId) {
         super(delegate);
         this.fontId = fontId;
-        this.fontStyle = Style.EMPTY.withFont(new StyleSpriteSource.Font(fontId));
+        this.fontStyle = Style.EMPTY.withFont(fontId);
     }
 
     public Identifier fontId() {
@@ -74,20 +72,6 @@ public class ResourceFontTextDrawer extends VanillaTextDrawer {
     @Override
     public StringVisitable trimToWidth(StringVisitable text, int width) {
         return delegate.getTextHandler().trimToWidth(withFont(text), width, fontStyle);
-    }
-
-    @Override
-    public GlyphDrawable prepare(String text, float x, float y, int color, boolean shadow, int backgroundColor) {
-        if (text == null) {
-            return null;
-        }
-        return delegate.prepare(formattedString(text, true), x, y, color, shadow, false, backgroundColor);
-    }
-
-    @Override
-    public GlyphDrawable prepare(
-            OrderedText text, float x, float y, int color, boolean shadow, boolean trackEmpty, int backgroundColor) {
-        return delegate.prepare(withFont(text), x, y, color, shadow, trackEmpty, backgroundColor);
     }
 
     @Override
@@ -224,7 +208,7 @@ public class ResourceFontTextDrawer extends VanillaTextDrawer {
     }
 
     private Style withFont(Style style) {
-        return style.withFont(new StyleSpriteSource.Font(fontId));
+        return style.withFont(fontId);
     }
 
     private record FormattedCharacter(int index, Style style, int codePoint) {}

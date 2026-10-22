@@ -4,9 +4,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import me.matl114.renderer.TextRenderers;
+import me.matl114.renderer.text.ResourceFontTextDrawer;
+import me.matl114.renderer.text.TextDrawer;
+import me.matl114.renderer.text.VanillaTextDrawer;
 import me.matl114.versioned.api.MatrixStack;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.font.TextRenderer.TextLayerType;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
@@ -194,13 +199,44 @@ public class DrawContext_v1_21_4 implements VDrawContext {
     }
 
     @Override
-    public void drawText(TextRenderer textRenderer, OrderedText text, int x, int y, int color, boolean shadow) {
-        drawContext.drawText(textRenderer, text, x, y, getShaderRGB(color), shadow);
+    public void drawText(TextDrawer textDrawer, OrderedText text, int x, int y, int color, boolean shadow) {
+        TextDrawer currentDrawer = TextRenderers.resolve(textDrawer);
+        if (currentDrawer.getClass() == VanillaTextDrawer.class) {
+            drawContext.drawText(currentDrawer.unwrap(), text, x, y, getShaderRGB(color), shadow);
+        } else if (currentDrawer instanceof ResourceFontTextDrawer resourceFontTextDrawer) {
+            drawContext.getMatrices().push();
+            try {
+                drawContext.getMatrices().translate(0, resourceFontTextDrawer.getTextYOffset(), 0);
+                drawContext.drawText(
+                        resourceFontTextDrawer.unwrap(), resourceFontTextDrawer.withFont(text), x, y, getShaderRGB(color), shadow);
+            } finally {
+                drawContext.getMatrices().pop();
+            }
+        } else {
+            currentDrawer.draw(text, x, y, getShaderRGB(color), shadow, matrixStack.peek3D(),
+                    drawContext.vertexConsumers, TextLayerType.NORMAL, 0, 15728880);
+        }
     }
 
     @Override
-    public void drawText(TextRenderer textRenderer, @Nullable String text, int x, int y, int color, boolean shadow) {
-        drawContext.drawText(textRenderer, text, x, y, getShaderRGB(color), shadow);
+    public void drawText(TextDrawer textDrawer, @Nullable String text, int x, int y, int color, boolean shadow) {
+        if (text == null) return;
+        TextDrawer currentDrawer = TextRenderers.resolve(textDrawer);
+        if (currentDrawer.getClass() == VanillaTextDrawer.class) {
+            drawContext.drawText(currentDrawer.unwrap(), text, x, y, getShaderRGB(color), shadow);
+        } else if (currentDrawer instanceof ResourceFontTextDrawer resourceFontTextDrawer) {
+            drawContext.getMatrices().push();
+            try {
+                drawContext.getMatrices().translate(0, resourceFontTextDrawer.getTextYOffset(), 0);
+                drawContext.drawText(resourceFontTextDrawer.unwrap(), resourceFontTextDrawer.formattedString(text, true),
+                        x, y, getShaderRGB(color), shadow);
+            } finally {
+                drawContext.getMatrices().pop();
+            }
+        } else {
+            currentDrawer.draw(text, x, y, getShaderRGB(color), shadow, matrixStack.peek3D(),
+                    drawContext.vertexConsumers, TextLayerType.NORMAL, 0, 15728880);
+        }
     }
 
     @Override
@@ -272,10 +308,11 @@ public class DrawContext_v1_21_4 implements VDrawContext {
     }
 
     @Override
-    public void drawTooltip(TextRenderer textRenderer, List<Text> text, Optional<TooltipData> data, int x, int y) {
+    public void drawTooltip(List<Text> text, Optional<TooltipData> data, int x, int y) {
         var trans = matrixStack.peek3D();
         var point1 = new Vector4f(x, y, 0, 1).mul(trans);
-        addInternal(() -> this.drawContext.drawTooltip(textRenderer, text, data, (int) point1.x, (int) point1.y));
+        addInternal(() -> this.drawContext.drawTooltip(
+                net.minecraft.client.MinecraftClient.getInstance().textRenderer, text, data, (int) point1.x, (int) point1.y));
     }
 
     @Override
@@ -285,7 +322,11 @@ public class DrawContext_v1_21_4 implements VDrawContext {
 
     @Override
     public void drawItemInSlot(
-            TextRenderer textRenderer, ItemStack stack, int x, int y, @Nullable String countOverride) {
+            TextDrawer textDrawer, ItemStack stack, int x, int y, @Nullable String countOverride) {
+        TextRenderer textRenderer = TextRenderers.resolve(textDrawer).unwrap();
+        if (textRenderer == null) {
+            throw new IllegalArgumentException("TextDrawer must expose a Minecraft TextRenderer");
+        }
         this.drawContext.drawStackOverlay(textRenderer, stack, x, y, countOverride);
     }
 }

@@ -2,7 +2,6 @@ package me.matl114.renderer.text;
 
 import java.util.List;
 import net.minecraft.client.font.TextHandler;
-import net.minecraft.client.font.TextRenderer.GlyphDrawable;
 import net.minecraft.client.font.TextRenderer.TextLayerType;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.BufferAllocator;
@@ -41,11 +40,6 @@ public interface TextDrawer {
     String trimToWidth(String text, int maxWidth);
 
     StringVisitable trimToWidth(StringVisitable text, int width);
-
-    GlyphDrawable prepare(String text, float x, float y, int color, boolean shadow, int backgroundColor);
-
-    GlyphDrawable prepare(
-            OrderedText text, float x, float y, int color, boolean shadow, boolean trackEmpty, int backgroundColor);
 
     void draw(
             String text,
