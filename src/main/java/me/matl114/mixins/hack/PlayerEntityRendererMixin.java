@@ -14,7 +14,6 @@ import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.PlayerEntityRenderer;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -27,19 +26,19 @@ public abstract class PlayerEntityRendererMixin {
 
     @Inject(
             method =
-                    "renderArm(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;ILnet/minecraft/util/Identifier;Lnet/minecraft/client/model/ModelPart;Z)V",
+                    "renderArm",
             at = @At("RETURN"))
     private void captureFirstPersonArm(
             MatrixStack matrices,
             VertexConsumerProvider vertexConsumers,
             int light,
-            Identifier texture,
+            AbstractClientPlayerEntity player,
             ModelPart arm,
-            boolean sleeveVisible,
+            ModelPart sleeve,
             CallbackInfo ci) {
         if (HandView.INSTANCE == null || !HandView.INSTANCE.isActive() || !HandView.INSTANCE.glow.get()) return;
         MODEL_FACE.begin();
-        MODEL_FACE.submitArm(arm, matrices, texture, light);
+        MODEL_FACE.submitArm(arm, matrices, player.getSkinTextures().texture(), light);
         MODEL_FACE.render(HandView.INSTANCE.glowColor.get().withAlpha(HandView.INSTANCE.glowAlpha.get()));
     }
 

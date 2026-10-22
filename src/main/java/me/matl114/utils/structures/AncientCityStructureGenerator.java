@@ -36,7 +36,7 @@ public final class AncientCityStructureGenerator {
         }
 
         DynamicRegistryManager registries = DefaultWorldgenRegistryManager.registry();
-        Registry<Structure> structures = registries.getWrapperOrThrow(RegistryKeys.STRUCTURE);
+        Registry<Structure> structures = registries.get(RegistryKeys.STRUCTURE);
         Structure structure = structures.get(ANCIENT_CITY);
         if (!(structure instanceof JigsawStructure jigsaw)) {
             return Optional.empty();

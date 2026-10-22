@@ -30,9 +30,11 @@ import net.minecraft.resource.ResourcePack;
 import net.minecraft.resource.ResourcePackInfo;
 import net.minecraft.resource.ResourcePackSource;
 import net.minecraft.resource.ResourceType;
+import net.minecraft.resource.metadata.ResourceMetadataReader;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
+import org.jetbrains.annotations.Nullable;
 
 public final class LocalFontTextDrawer extends ResourceFontTextDrawer implements AutoCloseable {
     private static final AtomicLong FONT_INSTANCES = new AtomicLong();
@@ -309,8 +311,9 @@ public final class LocalFontTextDrawer extends ResourceFontTextDrawer implements
             return Set.of("slimefunhelper");
         }
 
+        @Nullable
         @Override
-        public <T> T parseMetadata(net.minecraft.resource.metadata.ResourceMetadataSerializer<T> metadataSerializer) {
+        public <T> T parseMetadata(ResourceMetadataReader<T> metaReader) throws IOException {
             return null;
         }
 

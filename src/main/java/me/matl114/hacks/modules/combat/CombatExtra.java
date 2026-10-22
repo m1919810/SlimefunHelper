@@ -79,7 +79,7 @@ public class CombatExtra extends BaseModule {
     }
 
     public double getAttackRangeAttribute() {
-        return mc.player.getAttributeValue(EntityAttributes.PLAYER_ENTITY_INTERACTION_RANGE) ;
+        return mc.player.getAttributeValue(EntityAttributes.PLAYER_ENTITY_INTERACTION_RANGE);
     }
 
     @Override
@@ -92,8 +92,7 @@ public class CombatExtra extends BaseModule {
         registerListener(Listener.getAttackAction(), this::onUseAttackNoSlow);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onMovementPacket);
-        registerListener(
-                Listener.getPostGameTick(), this::onClientTickEndPacket);
+        registerListener(Listener.getPostGameTick(), this::onClientTickEndPacket);
         registerListener(
                 Listener.getEntityTrackedPositionUpdate().getChannel(EntityType.PLAYER), this::onTrackedPosition);
     }

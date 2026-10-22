@@ -6,12 +6,13 @@ import me.matl114.versioned.impl.HandFaceRenderer_v1_21_11;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.RenderLayers;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.item.ItemRenderState;
 import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemDisplayContext;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
 import org.spongepowered.asm.mixin.Mixin;
@@ -26,21 +27,26 @@ public abstract class ItemRendererMixin {
 
     @Inject(
             method =
-                    "renderItem(Lnet/minecraft/item/ItemDisplayContext;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;II[ILnet/minecraft/client/render/model/BakedModel;Lnet/minecraft/client/render/RenderLayer;Lnet/minecraft/client/render/item/ItemRenderState$Glint;)V",
-            at = @At("RETURN"))
-    private static void captureFirstPersonItem(
-            ItemDisplayContext displayContext,
+                    "renderItem(Lnet/minecraft/item/ItemStack;Lnet/minecraft/item/ItemDisplayContext;ZLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;IILnet/minecraft/client/render/model/BakedModel;)V",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/render/item/ItemRenderer;renderBakedItemModel(Lnet/minecraft/client/render/model/BakedModel;Lnet/minecraft/item/ItemStack;IILnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;)V",
+                            shift = At.Shift.AFTER))
+    private void captureFirstPersonItem(
+            ItemStack stack,
+            ItemDisplayContext renderMode,
+            boolean leftHanded,
             MatrixStack matrices,
             VertexConsumerProvider vertexConsumers,
             int light,
             int overlay,
-            int[] tintLayers,
             BakedModel model,
-            RenderLayer renderLayer,
-            ItemRenderState.Glint glintType,
             CallbackInfo ci) {
-        if (displayContext.isFirstPerson()) {
+        if (renderMode.isFirstPerson()) {
             if (HandView.INSTANCE == null || !HandView.INSTANCE.isActive() || !HandView.INSTANCE.glow.get()) return;
+            RenderLayer renderLayer = RenderLayers.getItemLayer(stack, true);
             MODEL_FACE.begin();
             Random random = Random.create();
             for (Direction direction : Direction.values()) {

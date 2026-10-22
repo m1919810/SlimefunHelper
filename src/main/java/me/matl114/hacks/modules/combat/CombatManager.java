@@ -554,9 +554,10 @@ public class CombatManager extends BaseModule {
 
     private void onExplosionPacket(Event<ExplosionS2CPacket> event) {
         if (checkNull()) return;
-        BlockPos explosionBlock = BlockPos.ofFloored(event.context.center());
+        Vec3d center = new Vec3d(event.context.getX(), event.context.getY(), event.context.getZ());
+        BlockPos explosionBlock = BlockPos.ofFloored(center);
         BlockState explosionState = mc.world.getBlockState(explosionBlock);
-        boolean centeredExplosion = Objects.equals(event.context.center(), explosionBlock.toCenterPos());
+        boolean centeredExplosion = Objects.equals(center, explosionBlock.toCenterPos());
         boolean respawnAnchor = centeredExplosion && explosionState.getBlock() instanceof RespawnAnchorBlock;
         boolean bed = centeredExplosion && explosionState.getBlock() instanceof BedBlock;
         float radius = 0;
@@ -565,8 +566,7 @@ public class CombatManager extends BaseModule {
                     ? ExplosionUtils.RESPAWN_ANCHOR_POWER
                     : bed ? ExplosionUtils.BED_POWER : ExplosionUtils.END_CRYSTAL_POWER;
         }
-        ExplosionUtils.BlockStateAccess blockAccess =
-                ExplosionUtils.fromWorldWithAutomaticOverrides(mc.world, event.context.center());
+        ExplosionUtils.BlockStateAccess blockAccess = ExplosionUtils.fromWorldWithAutomaticOverrides(mc.world, center);
         for (PlayerEntity player : mc.world.getPlayers()) {
             Box targetBox = player.getBoundingBox();
             if (player != mc.player) {
@@ -576,7 +576,7 @@ public class CombatManager extends BaseModule {
                 }
             }
             float rawDamage = ExplosionUtils.calculateExplosionRawDamage(
-                    radius, event.context.center(), targetBox, blockAccess, ExplosionUtils.ALL_TERRAIN);
+                    radius, center, targetBox, blockAccess, ExplosionUtils.ALL_TERRAIN);
             float damage = DamageUtils.getMultipliedDamageByDifficulty(mc.world, rawDamage);
             DamageTracker tracker = getDamageTracker(player);
             if (tracker != null) {

@@ -44,11 +44,11 @@ public abstract class AbstractClientPlayerEntityMixin extends PlayerEntity {
         if (NoRender.INSTANCE.noSprintFov()) {
             var attributeContainer = AttributeUtils.copyAttributes(this);
             EntityAttributeInstance entityAttributeInstance =
-                    attributeContainer.getCustomInstance(EntityAttributes.MOVEMENT_SPEED);
+                    attributeContainer.getCustomInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED);
             if (entityAttributeInstance != null) {
                 entityAttributeInstance.removeModifier(Identifier.ofVanilla("sprinting"));
             }
-            original = attributeContainer.getValue(EntityAttributes.MOVEMENT_SPEED);
+            original = attributeContainer.getValue(EntityAttributes.GENERIC_MOVEMENT_SPEED);
         }
         if (NoRender.INSTANCE.noSlowDownFov()) {
             original = Math.max(original, 0.1F);

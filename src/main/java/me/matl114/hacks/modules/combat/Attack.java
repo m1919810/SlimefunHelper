@@ -333,7 +333,7 @@ public class Attack extends BaseModule {
                                     }
                                     double baseDamage = AttributeUtils.getAttributeWith(
                                                     mc.player, Map.of(EquipmentSlot.MAINHAND, stack))
-                                            .getValue(EntityAttributes.ATTACK_DAMAGE);
+                                            .getValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
                                     return baseDamage >= 15.0D ? baseDamage : null;
                                 },
                                 attackSettings.ghostHandMode().getSearchSize(false),
@@ -442,7 +442,7 @@ public class Attack extends BaseModule {
         attackWithCritic(player, target, attackSettings.criticalSprint(), attackSettings.swingHand());
         Optional<Integer> fastDestroyShield = attackSettings.fastBreakShieldSwap();
         if (fastDestroyShield.isPresent()
-                && player.getAttributeValue(EntityAttributes.ATTACK_DAMAGE) >= 15.0D
+                && player.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE) >= 15.0D
                 && !VItem.getInstance().isAxe(invResult.val())
                 && target instanceof LivingEntity livingTarget
                 && livingTarget.isUsingItem()

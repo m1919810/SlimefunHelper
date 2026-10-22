@@ -218,15 +218,16 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
         return original;
     }
 
-    @ModifyExpressionValue(
-            method = "shouldStopSprinting",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z"))
-    private boolean noSlowUsingItemDoNotBlockSprint(boolean original) {
-        if (NoSlowDown.INSTANCE.workNoSlowItemThisTick) {
-            return false;
-        }
-        return original;
-    }
+    //    @ModifyExpressionValue(
+    //            method = "shouldStopSprinting",
+    //            at = @At(value = "INVOKE", target =
+    // "Lnet/minecraft/client/network/ClientPlayerEntity;isUsingItem()Z"))
+    //    private boolean noSlowUsingItemDoNotBlockSprint(boolean original) {
+    //        if (NoSlowDown.INSTANCE.workNoSlowItemThisTick) {
+    //            return false;
+    //        }
+    //        return original;
+    //    }
 
     @WrapOperation(
             method = "tickMovement",
@@ -268,38 +269,8 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
 
     @WrapOperation(
             method = "tickMovement",
-            at =
-                    @At(
-                            value = "INVOKE",
-                            target = "Lnet/minecraft/client/network/ClientPlayerEntity;shouldStopSprinting()Z"))
-    private boolean canStopSprintAddConditionWrapperBecauseOfViaFabricShit(
-            ClientPlayerEntity instance, Operation<Boolean> original) {
-        // fix viafabric
-        boolean v = usingItem;
-        if (NoSlowDown.INSTANCE.workNoSlowItemThisTick) {
-            usingItem = false;
-        }
-        PlayerInputUtils.Input playerInput = PlayerInputUtils.of(this.input);
-        Vec2f movementVector = this.input.getMovementInput();
-        PlayerInputUtils.Input clone = playerInput.clone();
-        if (shouldDirectionalSprint()) {
-            clone.forward(true).backward(false);
-        }
-        clone.applyInput(this.input).syncMovementVector(this.input, 1.0F);
-        try {
-            return original.call(instance);
-        } finally {
-            usingItem = v;
-            playerInput.applyInput(this.input);
-            this.input.movementSideways = movementVector.x;
-            this.input.movementForward = movementVector.y;
-        }
-    }
-
-    @WrapOperation(
-            method = "tickMovement",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/util/PlayerInput;sneak()Z", ordinal = 1))
-    private boolean canStopSprintSwimAddSneakConditionWrapper(PlayerInput instance, Operation<Boolean> original) {
+            at = @At(value = "FIELD", target = "Lnet/minecraft/client/input/Input;sneaking:Z", ordinal = 1))
+    private boolean canStopSprintSwimAddSneakConditionWrapper(Input instance, Operation<Boolean> original) {
         if (NoSlowDown.INSTANCE.shouldNoSlowSneak()) {
             return false;
         }

@@ -16,10 +16,10 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.render.entity.EntityRenderer;
-import net.minecraft.client.render.entity.state.EntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public abstract class EntityModelCollector implements RenderCollector<Entity> {
@@ -64,23 +64,22 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
         renderEntity(entityRenderDispatcher.getRenderer(entity), entity, partialTick);
     }
 
-    private <T extends Entity, S extends EntityRenderState> void renderEntity(
-            EntityRenderer<? super T, S> renderer, T entity, float partialTick) {
-        S state = renderer.getAndUpdateRenderState(entity, partialTick);
-        state.displayName = null;
-        state.leashData = null;
-        state.onFire = false;
-
+    private <T extends Entity> void renderEntity(EntityRenderer<? super T> renderer, T entity, float partialTick) {
         Vec3d cameraPos = RenderUtils.getCameraPos();
-        Vec3d positionOffset = renderer.getPositionOffset(state);
+        Vec3d positionOffset = renderer.getPositionOffset(entity, partialTick);
         MatrixStack entityMatrices = new MatrixStack();
         entityMatrices.push();
-        Vec3d lerpedPos = entity.getLerpedPos(partialTick);
+        Vec3d lerpedPos = new Vec3d(
+                MathHelper.lerp(partialTick, entity.lastRenderX, entity.getX()),
+                MathHelper.lerp(partialTick, entity.lastRenderY, entity.getY()),
+                MathHelper.lerp(partialTick, entity.lastRenderZ, entity.getZ()));
         entityMatrices.translate(
                 lerpedPos.x - cameraPos.x + positionOffset.x,
                 lerpedPos.y - cameraPos.y + positionOffset.y,
                 lerpedPos.z - cameraPos.z + positionOffset.z);
-        renderer.render(state, entityMatrices, vertexConsumers, renderer.getLight(entity, partialTick));
+        float yaw = MathHelper.lerp(partialTick, entity.prevYaw, entity.getYaw());
+        renderer.render(
+                entity, yaw, partialTick, entityMatrices, vertexConsumers, renderer.getLight(entity, partialTick));
         entityMatrices.pop();
     }
 
@@ -151,6 +150,9 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
 
         @Override
         public VertexConsumer vertex(float x, float y, float z) {
+            if (count == vertices.length) {
+                count = 0;
+            }
             currentVertex = count;
             vertices[count++] = new Vec3d(x, y, z);
             return this;

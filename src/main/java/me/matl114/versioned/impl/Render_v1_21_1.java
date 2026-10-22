@@ -12,9 +12,9 @@ import me.matl114.utils.render.UV;
 import me.matl114.versioned.api.VRender;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
+import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.OrderedText;
 import net.minecraft.util.Identifier;
@@ -24,6 +24,45 @@ import org.joml.Vector3f;
 
 public class Render_v1_21_1 implements VRender, VRender.WrapRenderOperation {
     private static net.minecraft.client.gl.ShaderProgram entityHighlightProgram;
+    private static final RenderPhase.DepthTest DISABLE_DEPTH_TEST = new RenderPhase.DepthTest("never", 519) {
+        @Override
+        public void startDrawing() {
+            RenderSystem.disableDepthTest();
+        }
+
+        @Override
+        public void endDrawing() {
+            RenderSystem.enableDepthTest();
+        }
+    };
+    private static final RenderPhase.ShaderProgram ENTITY_HIGHLIGHT_PROGRAM =
+            new RenderPhase.ShaderProgram(() -> entityHighlightProgram);
+    private static final RenderLayer GUI_3D_LAYER = RenderLayer.of(
+            "slimefunhelper:gui_3d",
+            VertexFormats.POSITION_COLOR,
+            VertexFormat.DrawMode.QUADS,
+            1536,
+            RenderLayer.MultiPhaseParameters.builder()
+                    .program(new RenderPhase.ShaderProgram(GameRenderer::getPositionColorProgram))
+                    .transparency(RenderPhase.TRANSLUCENT_TRANSPARENCY)
+                    .depthTest(DISABLE_DEPTH_TEST)
+                    .cull(RenderPhase.DISABLE_CULLING)
+                    .writeMaskState(RenderPhase.COLOR_MASK)
+                    .build(false));
+    private static final Function<Identifier, RenderLayer> GUI_TEXTURE_3D_LAYERS =
+            Util.memoize(texture -> RenderLayer.of(
+                    "slimefunhelper:gui_textured_3d/" + texture,
+                    VertexFormats.POSITION_TEXTURE_COLOR,
+                    VertexFormat.DrawMode.QUADS,
+                    1536,
+                    RenderLayer.MultiPhaseParameters.builder()
+                            .texture(new RenderPhase.Texture(texture, false, false))
+                            .program(new RenderPhase.ShaderProgram(GameRenderer::getPositionTexColorProgram))
+                            .transparency(RenderPhase.TRANSLUCENT_TRANSPARENCY)
+                            .depthTest(DISABLE_DEPTH_TEST)
+                            .cull(RenderPhase.DISABLE_CULLING)
+                            .writeMaskState(RenderPhase.COLOR_MASK)
+                            .build(false)));
     private static final Function<Identifier, RenderLayer> ENTITY_HIGHLIGHT_LAYERS =
             Util.memoize(texture -> RenderLayer.of(
                     "slimefunhelper:entity_highlight/" + texture,
@@ -32,15 +71,21 @@ public class Render_v1_21_1 implements VRender, VRender.WrapRenderOperation {
                     1536,
                     RenderLayer.MultiPhaseParameters.builder()
                             .texture(new RenderPhase.Texture(texture, false, false))
-                            .program(new RenderPhase.ShaderProgram(() -> entityHighlightProgram))
+                            .program(ENTITY_HIGHLIGHT_PROGRAM)
                             .transparency(RenderPhase.TRANSLUCENT_TRANSPARENCY)
-                            .depthTest(RenderPhase.ALWAYS_DEPTH_TEST)
+                            .depthTest(DISABLE_DEPTH_TEST)
                             .cull(RenderPhase.DISABLE_CULLING)
                             .writeMaskState(RenderPhase.COLOR_MASK)
                             .build(false)));
 
     public static void setEntityHighlightProgram(net.minecraft.client.gl.ShaderProgram program) {
         entityHighlightProgram = program;
+    }
+
+    private void createLayer(RenderLayer layer, RenderCallback callback) {
+        VertexConsumerProvider.Immediate consumers = mc.getBufferBuilders().getEntityVertexConsumers();
+        callback.draw(this, consumers.getBuffer(layer));
+        consumers.draw(layer);
     }
 
     @Override
@@ -132,57 +177,29 @@ public class Render_v1_21_1 implements VRender, VRender.WrapRenderOperation {
     @Override
     public void createGuiTexturedLayer(Identifier path, RenderCallback callback) {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.disableCull();
-        Tessellator tessellator = RenderSystem.renderThreadTesselator();
-        RenderSystem.setShaderTexture(0, path);
-        RenderSystem.setShader(GameRenderer::getPositionTexColorProgram);
-        var vertex = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
-        callback.draw(this, vertex);
-        var buffer = vertex.endNullable();
-        if (buffer != null) {
-            BufferRenderer.drawWithGlobalProgram(buffer);
-        }
-        RenderSystem.enableCull();
+        createLayer(GUI_TEXTURE_3D_LAYERS.apply(path), callback);
     }
 
     @Override
     public void createSpriteTexturedLayer(Sprite sprite, RenderCallback callback) {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.disableCull();
-        Tessellator tessellator = RenderSystem.renderThreadTesselator();
-        RenderSystem.setShaderTexture(0, sprite.getAtlasId());
-        RenderSystem.setShader(GameRenderer::getPositionTexColorProgram);
-        var delegate = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
-        var vertex = RenderUtils.getSpriteVertexConsumer(delegate, sprite);
+        RenderLayer layer = GUI_TEXTURE_3D_LAYERS.apply(sprite.getAtlasId());
+        VertexConsumerProvider.Immediate consumers = mc.getBufferBuilders().getEntityVertexConsumers();
+        VertexConsumer vertex = RenderUtils.getSpriteVertexConsumer(consumers.getBuffer(layer), sprite);
         callback.draw(this, vertex);
-        var buffer = delegate.endNullable();
-        if (buffer != null) {
-            BufferRenderer.drawWithGlobalProgram(buffer);
-        }
-        RenderSystem.enableCull();
+        consumers.draw(layer);
     }
 
     @Override
     public void createEntityHighlightLayer(Identifier path, RenderCallback callback) {
-        RenderLayer layer = ENTITY_HIGHLIGHT_LAYERS.apply(path);
-        VertexConsumerProvider.Immediate consumers = mc.getBufferBuilders().getEntityVertexConsumers();
-        callback.draw(this, consumers.getBuffer(layer));
-        consumers.draw(layer);
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        createLayer(ENTITY_HIGHLIGHT_LAYERS.apply(path), callback);
     }
 
     @Override
     public void createGuiLayer(RenderCallback callback) {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.disableCull();
-        Tessellator tessellator = RenderSystem.renderThreadTesselator();
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-        var vertex = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
-        callback.draw(this, vertex);
-        var buffer = vertex.endNullable();
-        if (buffer != null) {
-            BufferRenderer.drawWithGlobalProgram(buffer);
-        }
-        RenderSystem.enableCull();
+        createLayer(GUI_3D_LAYER, callback);
     }
 
     private static final MinecraftClient mc = MinecraftClient.getInstance();
@@ -227,7 +244,7 @@ public class Render_v1_21_1 implements VRender, VRender.WrapRenderOperation {
 
     @Override
     public void drawItemCameraCoord(
-            ItemStack itemStack, MatrixStack stack, Vec3d vec3d, ItemDisplayContext context, ItemDisplay displayInfo) {
+            ItemStack itemStack, MatrixStack stack, Vec3d vec3d, ModelTransformationMode context, ItemDisplay displayInfo) {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         boolean bl = Vec3d.ZERO.equals(vec3d);
         if (!bl) {
@@ -240,7 +257,7 @@ public class Render_v1_21_1 implements VRender, VRender.WrapRenderOperation {
                         displayInfo.light(),
                         displayInfo.overlay(),
                         stack,
-                        mc.gameRenderer.buffers.getEntityVertexConsumers(),
+                        mc.getBufferBuilders().getEntityVertexConsumers(),
                         mc.world,
                         -999);
         if (!bl) {

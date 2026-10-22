@@ -181,9 +181,9 @@ public class PlayerInputUtils {
             Vec2f movement = compatMovementVectorWithViaFabric(new Vec2f(this.sidewaysSpeed(), this.forwardSpeed()));
             input.movementSideways = movement.x;
             input.movementForward = movement.y;
-            if(shouldSlow){
-                input.movementForward *= 0.2F;
-                input.movementSideways *= 0.2F;
+            if (shouldSlow != 1.0F) {
+                input.movementForward *= shouldSlow;
+                input.movementSideways *= shouldSlow;
             }
         }
 

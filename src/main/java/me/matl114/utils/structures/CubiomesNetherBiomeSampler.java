@@ -79,7 +79,7 @@ public final class CubiomesNetherBiomeSampler {
         int quartZ = origin.getZ() >> 2;
         RegistryEntry<Biome> biome = biomeSource.getBiome(quartX, quartY, quartZ, biomeNoise);
         var structure = DefaultWorldgenRegistryManager.registry()
-                .getWrapperOrThrow(RegistryKeys.STRUCTURE)
+                .get(RegistryKeys.STRUCTURE)
                 .get(structureId);
         return structure != null && BiomeValidity.contains(structure.getValidBiomes(), biome);
     }
@@ -122,14 +122,14 @@ public final class CubiomesNetherBiomeSampler {
 
     /** Checks a vanilla structure processor's protected-block rule against default seeded terrain. */
     public boolean canPlaceGeneratedStructureBlock(BlockPos position) {
-        if (!heightLimitView.isInHeightLimit(position.getY())) {
+        if (heightLimitView.isOutOfHeightLimit(position.getY())) {
             return false;
         }
         BlockState terrainState = terrainGenerator
                 .getColumnSample(position.getX(), position.getZ(), heightLimitView, noiseConfig)
                 .getState(position.getY());
         return !DefaultWorldgenRegistryManager.registry()
-                .getWrapperOrThrow(RegistryKeys.BLOCK)
+                .get(RegistryKeys.BLOCK)
                 .getEntry(terrainState.getBlock())
                 .isIn(BlockTags.FEATURES_CANNOT_REPLACE);
     }

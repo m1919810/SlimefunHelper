@@ -80,7 +80,7 @@ public final class CubiomesOverworldBiomeSampler {
     /** Checks the vanilla Trial Chambers biome tag at the candidate chunk's center and sea level. */
     public boolean isTrialChambersBiomeViable(StructurePosition structure) {
         var trialChambers = DefaultWorldgenRegistryManager.registry()
-                .getWrapperOrThrow(RegistryKeys.STRUCTURE)
+                .get(RegistryKeys.STRUCTURE)
                 .get(Identifier.ofVanilla("trial_chambers"));
         if (trialChambers == null) {
             return false;
@@ -105,7 +105,7 @@ public final class CubiomesOverworldBiomeSampler {
     public boolean isRuinedPortalBiomeValid(Identifier structureId, BlockPos origin) {
         RegistryEntry<Biome> biome = biomeAtQuart(origin.getX() >> 2, origin.getY() >> 2, origin.getZ() >> 2);
         var structure = DefaultWorldgenRegistryManager.registry()
-                .getWrapperOrThrow(RegistryKeys.STRUCTURE)
+                .get(RegistryKeys.STRUCTURE)
                 .get(structureId);
         return structure != null && BiomeValidity.contains(structure.getValidBiomes(), biome);
     }
@@ -161,7 +161,7 @@ public final class CubiomesOverworldBiomeSampler {
         }
 
         var desertPyramid = DefaultWorldgenRegistryManager.registry()
-                .getWrapperOrThrow(RegistryKeys.STRUCTURE)
+                .get(RegistryKeys.STRUCTURE)
                 .get(Identifier.ofVanilla("desert_pyramid"));
         if (desertPyramid == null) {
             return false;
@@ -181,14 +181,14 @@ public final class CubiomesOverworldBiomeSampler {
 
     /** Checks a vanilla structure processor's protected-block rule against default seeded terrain. */
     public boolean canPlaceGeneratedStructureBlock(BlockPos position) {
-        if (!heightLimitView.isInHeightLimit(position.getY())) {
+        if (heightLimitView.isOutOfHeightLimit(position.getY())) {
             return false;
         }
         BlockState terrainState = terrainGenerator
                 .getColumnSample(position.getX(), position.getZ(), heightLimitView, noiseConfig)
                 .getState(position.getY());
         return !DefaultWorldgenRegistryManager.registry()
-                .getWrapperOrThrow(RegistryKeys.BLOCK)
+                .get(RegistryKeys.BLOCK)
                 .getEntry(terrainState.getBlock())
                 .isIn(BlockTags.FEATURES_CANNOT_REPLACE);
     }

@@ -37,11 +37,7 @@ import net.minecraft.component.type.ItemEnchantmentsComponent;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EntityType;
-import net.minecraft.item.BowItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.item.MaceItem;
+import net.minecraft.item.*;
 import net.minecraft.nbt.*;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKey;
@@ -102,7 +98,7 @@ public class ItemDisplay extends BaseModule {
                 checkList.put(
                         item, List.of(Enchantments.SHARPNESS, Enchantments.SMITE, Enchantments.BANE_OF_ARTHROPODS));
                 checkFlags.put(item, enableWeapon);
-            } else if (item.getComponents().contains(DataComponentTypes.EQUIPPABLE)) {
+            } else if (item instanceof Equipment) {
                 checkList.put(
                         item,
                         List.of(Enchantments.PROTECTION, Enchantments.BLAST_PROTECTION, Enchantments.FIRE_PROTECTION));

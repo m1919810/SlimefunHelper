@@ -6,7 +6,6 @@ import java.util.Optional;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.structure.EndCityGenerator;
@@ -15,7 +14,6 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.HeightLimitView;
-import net.minecraft.world.World;
 import net.minecraft.world.biome.source.TheEndBiomeSource;
 import net.minecraft.world.gen.chunk.ChunkGeneratorSettings;
 import net.minecraft.world.gen.chunk.NoiseChunkGenerator;
@@ -31,7 +29,7 @@ final class VanillaEndCityStructureGenerator {
 
     static Optional<EndCityResult> generate(long seed, StructurePosition candidate, EndCityTemplateData templateData) {
         DynamicRegistryManager.Immutable registries = DefaultWorldgenRegistryManager.registry();
-        Registry<Structure> structures = registries.getWrapperOrThrow(RegistryKeys.STRUCTURE);
+        Registry<Structure> structures = registries.get(RegistryKeys.STRUCTURE);
         Structure structure = structures.get(END_CITY);
         if (structure == null) {
             return Optional.empty();
@@ -47,10 +45,6 @@ final class VanillaEndCityStructureGenerator {
         HeightLimitView heightLimit = HeightLimitView.create(-64, 384);
         ChunkPos chunk = new ChunkPos(Math.toIntExact(candidate.chunkX()), Math.toIntExact(candidate.chunkZ()));
         StructureStart start = structure.createStructureStart(
-                registries
-                        .getWrapperOrThrow(RegistryKeys.STRUCTURE)
-                        .getOrThrow(RegistryKey.of(RegistryKeys.STRUCTURE, END_CITY)),
-                World.END,
                 registries,
                 generator,
                 biomeSource,

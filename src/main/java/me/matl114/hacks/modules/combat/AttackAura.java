@@ -134,7 +134,7 @@ public class AttackAura extends BaseModule {
                 ServerFeature.INSTANCE.attributeSwap.get()
                         ? Map.of()
                         : Map.of(EquipmentSlot.MAINHAND, currentWeapon.val()));
-        double rawAttackDamage = swapContainer.getValue(EntityAttributes.ATTACK_DAMAGE);
+        double rawAttackDamage = swapContainer.getValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
         if (entity instanceof LivingEntity livingEntity
                 && livingEntity.isUsingItem()
                 && livingEntity.getActiveItem().getItem() instanceof ShieldItem
@@ -187,7 +187,7 @@ public class AttackAura extends BaseModule {
                         > target.getHealth() + target.getAbsorptionAmount()) {
             return true;
         }
-        double attackSpeed = swapContainer.getValue(EntityAttributes.ATTACK_SPEED);
+        double attackSpeed = swapContainer.getValue(EntityAttributes.GENERIC_ATTACK_SPEED);
         float perTick = (float) (1.0 / attackSpeed * 20.0);
         float progress = (float) MathHelper.clamp(((float) strength + 0.5) / perTick, 0.0F, 1.0F);
         return progress >= cooldownProgress.get();

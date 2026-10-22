@@ -1,6 +1,6 @@
 {
-  "vertex": "minecraft:core/position_tex_color",
-  "fragment": "slimefunhelper:core/entity_highlight",
+  "vertex": "minecraft:position_tex_color",
+  "fragment": "slimefunhelper:entity_highlight",
   "samplers": [
     { "name": "Sampler0" }
   ],

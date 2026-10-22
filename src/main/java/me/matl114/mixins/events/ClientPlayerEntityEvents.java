@@ -21,11 +21,11 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.recipebook.ClientRecipeBook;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.ElytraItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.stat.StatHandler;
 import net.minecraft.util.math.Vec3d;
@@ -157,11 +157,13 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         getLegalMovementManager().postInputTick((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
         // changed, update movementVector
         PlayerInputUtils.Input newInput = PlayerInputUtils.of(this.input);
-        if (!Objects.equals(currentInput, this.input.playerInput)) {
-            PlayerInputUtils.Input i0 = new PlayerInputUtils.Input(this.input.playerInput);
+        if (!Objects.equals(currentInput, newInput)) {
+            PlayerInputUtils.Input i0 = newInput;
             i0.syncMovementVector(
                     this.input,
-                    this.shouldSlowDown() ? (float) this.getAttributeValue(EntityAttributes.SNEAKING_SPEED) : 1.0F);
+                    this.shouldSlowDown()
+                            ? (float) this.getAttributeValue(EntityAttributes.PLAYER_SNEAKING_SPEED)
+                            : 1.0F);
         }
     }
 

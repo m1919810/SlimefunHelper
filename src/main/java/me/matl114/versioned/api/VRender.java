@@ -14,7 +14,7 @@ import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.texture.GuiAtlasManager;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.item.ItemDisplayContext;
+import net.minecraft.client.render.model.json.ModelTransformationMode;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.OrderedText;
 import net.minecraft.util.Identifier;
@@ -185,7 +185,7 @@ public interface VRender {
             TextDisplay displayInfo);
 
     public void drawItemCameraCoord(
-            ItemStack itemStack, MatrixStack stack, Vec3d vec3d, ItemDisplayContext context, ItemDisplay displayInfo);
+            ItemStack itemStack, MatrixStack stack, Vec3d vec3d, ModelTransformationMode context, ItemDisplay displayInfo);
 
     @With
     public record TextDisplay(boolean shadow, TextRenderer.TextLayerType layerType, int backgroundColor, int light) {}

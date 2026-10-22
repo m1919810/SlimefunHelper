@@ -7,7 +7,6 @@ import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.events.PacketManager;
 import me.matl114.events.impl.SlotClickAction;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.MovTasks;
@@ -83,10 +82,7 @@ public class InvExtra extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPreClickSlot(), this::onClickSlot);
         registerListener(Listener.getPacketPoint().getChannel(CloseHandledScreenC2SPacket.class), this::onCloseScreen);
-        registerListener(
-                Listener.getPostGameTick(),
-                this::onClientTickEnd,
-                Integer.MAX_VALUE);
+        registerListener(Listener.getPostGameTick(), this::onClientTickEnd, Integer.MAX_VALUE);
         registerListener(Listener.getPreTick(), this::onNewTick);
         registerListener(Listener.getServerLeavePoint(), event -> postTickGhostHandCallbacks.clear());
         TaskManagers.getToggleManager().register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + "keep-inv", enableKeepInv);
@@ -148,7 +144,7 @@ public class InvExtra extends BaseModule {
         if (!hotBarCallbacks.isEmpty()) {
             try {
                 int lastSelected = hotBarCallbacks.getLast();
-                mc.player.getInventory().setSelectedSlot(lastSelected);
+                mc.player.getInventory().selectedSlot = (lastSelected);
                 PostManager.INSTANCE.addNextTransactionAction((ch2) -> {
                     PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(lastSelected);
                 });

@@ -2,9 +2,9 @@ package me.matl114.mixins.events;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.events.RenderListener;
 import me.matl114.events.impl.RenderSlot;
-import me.matl114.utils.collections.Point;
 import me.matl114.versioned.api.VDrawContext;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -14,7 +14,6 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -38,26 +37,22 @@ public abstract class HandledScreenEvents extends Screen {
         // RenderListener.renderHandledScreen(context, (HandledScreen<?>) (Object) this, mouseX, mouseY, delta);
     }
 
-    @Unique
-    Point cachedMouseXY;
-
-    @Inject(method = "render", at = @At("HEAD"))
-    private void onCacheMouseXY(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-        cachedMouseXY = new Point(mouseX, mouseY);
-    }
-
     @WrapOperation(
-            method = "drawSlots",
+            method = "render",
             at =
                     @At(
                             value = "INVOKE",
                             target =
                                     "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;drawSlot(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/screen/slot/Slot;)V"))
-    public void onRenderSlot(HandledScreen instance, DrawContext context, Slot slot, Operation<Void> original) {
-        if (cachedMouseXY != null
-                && !RenderListener.getRenderSlot()
-                        .fireEvent(new RenderSlot(
-                                VDrawContext.of(context), instance, slot, cachedMouseXY.x, cachedMouseXY.y))) {
+    public void onRenderSlot(
+            HandledScreen instance,
+            DrawContext context,
+            Slot slot,
+            Operation<Void> original,
+            @Local(argsOnly = true, ordinal = 0) int mouseX,
+            @Local(argsOnly = true, ordinal = 1) int mouseY) {
+        if (!RenderListener.getRenderSlot()
+                .fireEvent(new RenderSlot(VDrawContext.of(context), instance, slot, mouseX, mouseY))) {
             return;
         }
         original.call(instance, context, slot);

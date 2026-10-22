@@ -49,7 +49,7 @@ public class DamageUtils {
             PlayerEntity player, Entity livingEntity, ItemStack stack, double fallDistance, boolean attributeSwap) {
         var attribute = AttributeUtils.getAttributeWith(
                 player, attributeSwap ? Map.of() : Map.of(EquipmentSlot.MAINHAND, stack));
-        float f = (float) attribute.getValue(EntityAttributes.ATTACK_DAMAGE);
+        float f = (float) attribute.getValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
         return getAttackDamage(player, livingEntity, stack, fallDistance, f, 1.0F);
     }
 
@@ -62,10 +62,10 @@ public class DamageUtils {
             boolean attributeSwap) {
         var attribute = AttributeUtils.getAttributeWith(
                 player, attributeSwap ? Map.of() : Map.of(EquipmentSlot.MAINHAND, stack));
-        float f = (float) attribute.getValue(EntityAttributes.ATTACK_DAMAGE);
+        float f = (float) attribute.getValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
         float g = (float) MathHelper.clamp(
                 ((float) cooldownTicks + 0.5)
-                        / (float) (1.0 / attribute.getValue(EntityAttributes.ATTACK_SPEED) * 20.0),
+                        / (float) (1.0 / attribute.getValue(EntityAttributes.GENERIC_ATTACK_SPEED) * 20.0),
                 0.0F,
                 1.0F);
         return getAttackDamage(player, livingEntity, stack, fallDistance, f, g);
@@ -443,8 +443,8 @@ public class DamageUtils {
     public static DamageContext.Builder fromLivingEntity(LivingEntity entity) {
         DamageContext.Builder builder = new DamageContext.Builder();
         AttributeContainer container = AttributeUtils.getAttributeWith(entity, Map.of());
-        builder.withArmor((float) container.getValue(EntityAttributes.ARMOR));
-        builder.withArmorToughness((float) container.getValue(EntityAttributes.ARMOR_TOUGHNESS));
+        builder.withArmor((float) container.getValue(EntityAttributes.GENERIC_ARMOR));
+        builder.withArmorToughness((float) container.getValue(EntityAttributes.GENERIC_ARMOR_TOUGHNESS));
         for (EquipmentSlot slot : EquipmentSlot.values()) {
             ItemStack stack = entity.getEquippedStack(slot);
             builder.withArmorSlot(slot, stack);

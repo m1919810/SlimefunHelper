@@ -310,8 +310,7 @@ public class FakePlayer extends BaseModule {
                 radius = ExplosionUtils.END_CRYSTAL_POWER;
             }
         }
-        ExplosionUtils.BlockStateAccess blockAccess =
-                ExplosionUtils.fromWorldWithAutomaticOverrides(mc.world, event.context.center());
+        ExplosionUtils.BlockStateAccess blockAccess = ExplosionUtils.fromWorldWithAutomaticOverrides(mc.world, center);
         for (var re : fakes) {
             float damage = ExplosionUtils.calculateExplosionRawDamage(
                     radius, center, re.getBoundingBox(), blockAccess, ExplosionUtils.ALL_TERRAIN);

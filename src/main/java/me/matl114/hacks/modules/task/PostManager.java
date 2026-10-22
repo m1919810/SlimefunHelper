@@ -30,7 +30,6 @@ public class PostManager extends BaseModule {
         registerListener(Listener.getPacketPoint().getChannel(CommonPingS2CPacket.class), this::peekPingPacketIn);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(CommonPingS2CPacket.class), this::postPongPacketOut);
-        registerListener(Listener.getPostGameTick(), this::postTickEnd);
         registerListener(Listener.getServerLeavePoint(), this::onDisconnectReset);
         registerListener(Listener.getPostGameTick(), this::onWatchPingLongTimeNoSent);
         registerListener(Listener.getPreTick(), this::onPreTick);

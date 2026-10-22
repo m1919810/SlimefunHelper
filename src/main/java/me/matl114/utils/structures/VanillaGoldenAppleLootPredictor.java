@@ -230,7 +230,7 @@ public final class VanillaGoldenAppleLootPredictor {
         RegistryWrapper.Impl<Enchantment> enchantments =
                 DefaultWorldgenRegistryManager.registry().getWrapperOrThrow(RegistryKeys.ENCHANTMENT);
         Optional<RegistryEntryList.Named<Enchantment>> randomLootSet =
-                enchantments.getEntry(EnchantmentTags.ON_RANDOM_LOOT);
+                enchantments.getOptional(EnchantmentTags.ON_RANDOM_LOOT);
 
         List<ItemStack> contents = new ArrayList<>();
         for (Pool pool : pools) {
