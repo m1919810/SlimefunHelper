@@ -5,7 +5,6 @@ import me.matl114.versioned.api.ModelFaceFactory;
 import me.matl114.versioned.impl.HandFaceRenderer_v1_21_11;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
@@ -35,10 +34,6 @@ public final class HandFaceRenderer {
 
     public static void render(int color) {
         DELEGATE.render(color);
-    }
-
-    public static void renderDeferred(OrderedRenderCommandQueue queue, int color) {
-        DELEGATE.renderDeferred(queue, color);
     }
 
     public static void clear() {

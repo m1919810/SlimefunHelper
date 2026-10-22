@@ -131,14 +131,7 @@ public interface GuiModel {
         ItemModel itemModel;
 
         @Override
-        public Entry updateAndSubmit(
-                ItemRenderState renderState,
-                ItemStack stack,
-                ItemModelManager resolver,
-                ItemDisplayContext displayContext,
-                @Nullable ClientWorld world,
-                @Nullable HeldItemContext heldItemContext,
-                int seed) {
+        public Entry updateAndSubmit(ItemRenderState renderState, ItemStack stack, ItemModelManager resolver, ItemDisplayContext displayContext, ClientWorld world, LivingEntity livingEntity, int seed) {
             if (itemModel == null) {
                 return null;
             }
@@ -146,9 +139,8 @@ public interface GuiModel {
             ItemRenderState state2 = new ItemRenderState();
             state2.clear();
             ItemRenderStateAccess.of(state2).setDisplayContext(displayContext);
-            state2.setOversizedInGui(false);
             itemModel.update(
-                    state2, new ItemStack(Items.BARRIER), resolver, displayContext, world, heldItemContext, seed);
+                state2, new ItemStack(Items.BARRIER), resolver, displayContext, world, livingEntity, seed);
             return new Entry(null, state2);
         }
     }

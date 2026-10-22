@@ -5,9 +5,11 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.util.Identifier;
 
 public interface RenderLayerAccess {
+    RenderLayerAccess EMPTY = Optional::empty;
+
     public Optional<Identifier> getRenderTexture();
 
     static RenderLayerAccess of(RenderLayer layer) {
-        return (RenderLayerAccess) layer;
+        return layer instanceof RenderLayer.MultiPhase ? (RenderLayerAccess) layer : EMPTY;
     }
 }
