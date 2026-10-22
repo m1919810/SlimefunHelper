@@ -2,8 +2,6 @@ package me.matl114.mixins.events;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import java.util.Iterator;
-import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.events.RenderListener;
 import me.matl114.events.impl.RenderSlot;
 import me.matl114.utils.collections.Point;
@@ -20,8 +18,6 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(HandledScreen.class)
 @Environment(EnvType.CLIENT)

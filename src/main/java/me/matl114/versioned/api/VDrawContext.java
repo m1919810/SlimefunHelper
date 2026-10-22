@@ -1,11 +1,11 @@
 package me.matl114.versioned.api;
 
-import java.awt.*;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nonnull;
+import me.matl114.renderer.TextRenderers;
+import me.matl114.renderer.text.TextDrawer;
 import me.matl114.versioned.impl.DrawContext_v1_21_1;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.item.ItemStack;

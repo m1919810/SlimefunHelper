@@ -3,6 +3,7 @@ package me.matl114.utils.entity;
 import lombok.*;
 import lombok.experimental.Accessors;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.versioned.accessors.PlayerInputAccess;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.input.Input;
@@ -10,7 +11,6 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
-import net.minecraft.util.PlayerInput;
 import net.minecraft.util.math.Vec2f;
 
 public class PlayerInputUtils {
@@ -153,8 +153,14 @@ public class PlayerInputUtils {
             return this.jump == this.sneak ? 0 : (this.jump ? 1 : -1);
         }
 
-        public Input applyInput(ClientPlayerEntity input) {
-            applyInput(input.input);
+        public Input applyInput(net.minecraft.client.input.Input input) {
+            input.pressingForward = this.forward;
+            input.pressingBack = this.backward;
+            input.pressingLeft = this.left;
+            input.pressingRight = this.right;
+            input.jumping = this.jump;
+            input.sneaking = this.sneak;
+            PlayerInputAccess.of(input).setPressingSprint(this.sprint);
             return this;
         }
 
@@ -167,13 +173,7 @@ public class PlayerInputUtils {
 
         public Input applyInput(ClientPlayerEntity player) {
             var input = player.input;
-            input.pressingForward = this.forward;
-            input.pressingBack = this.backward;
-            input.pressingLeft = this.left;
-            input.pressingRight = this.right;
-            input.jumping = this.jump;
-            input.sneaking = this.sneak;
-            PlayerInputAccess.of(input).setPressingSprint(this.sprint);
+            applyInput(input);
             return this;
         }
 

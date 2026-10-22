@@ -30,8 +30,8 @@ import me.matl114.plugins.MainPlugin;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.ResourceUtils;
 import me.matl114.utils.inventory.ItemStackSample;
-import net.minecraft.client.render.model.BakedModel;
 import me.matl114.versioned.api.VItem;
+import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
 import net.minecraft.enchantment.Enchantment;
@@ -403,8 +403,7 @@ public class ItemDisplay extends BaseModule {
                 String val = dnaInfo.get(optionalChicken);
                 if (val != null) {
                     Identifier id = MainPlugin.identifier("gce/" + val);
-                    RenderListener.getModModel(id)
-                            .ifPresent(bakedModelEvent::context);
+                    RenderListener.getModModel(id).ifPresent(bakedModelEvent::context);
                 }
             }
         }

@@ -20,11 +20,11 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.OtherClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.play.CooldownUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityTrackerUpdateS2CPacket;
@@ -79,7 +79,7 @@ public class CombatExtra extends BaseModule {
     }
 
     public double getAttackRangeAttribute() {
-        return mc.player.getAttributeValue(EntityAttributes.PLAYER_ENTITY_INTERACTION_RANGE) + d;
+        return mc.player.getAttributeValue(EntityAttributes.PLAYER_ENTITY_INTERACTION_RANGE) ;
     }
 
     @Override
@@ -93,7 +93,7 @@ public class CombatExtra extends BaseModule {
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onMovementPacket);
         registerListener(
-                Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class), this::onClientTickEndPacket);
+                Listener.getPostGameTick(), this::onClientTickEndPacket);
         registerListener(
                 Listener.getEntityTrackedPositionUpdate().getChannel(EntityType.PLAYER), this::onTrackedPosition);
     }
@@ -208,7 +208,7 @@ public class CombatExtra extends BaseModule {
         getTracker(entity).onMovement(!tickReliable);
     }
 
-    public void onClientTickEndPacket(Event<ClientTickEndC2SPacket> event) {
+    public void onClientTickEndPacket(Event<ClientPlayerEntity> event) {
         if (ViaFabricPlusHooks.isSupportEndTick() && !PlayerStateManager.INSTANCE.lastTickHasMovement) {
             mc.world.getPlayers().forEach(s -> {
                 if (s instanceof OtherClientPlayerEntity) {

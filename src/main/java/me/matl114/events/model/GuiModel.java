@@ -12,14 +12,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.render.model.BakedModel;
-import me.matl114.accessors.events.ItemRenderStateAccess;
-import me.matl114.events.RenderListener;
-import net.minecraft.client.item.ItemModelManager;
-import net.minecraft.client.render.item.ItemRenderState;
-import net.minecraft.client.render.item.model.ItemModel;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -53,10 +46,10 @@ public interface GuiModel {
         return new ItemStackModel(stack);
     }
 
-//    public static GuiModel of(ItemModel model) {
-//        if (model == null) return EMPTY;
-//        return new ItemGuiModel(model);
-//    }
+    public static GuiModel of(BakedModel model) {
+        if (model == null) return EMPTY;
+        return new ItemGuiModel(new ItemStack(Items.BARRIER), model);
+    }
 
     public static GuiModel of(Identifier id) {
         if (id == null) return EMPTY;
@@ -138,31 +131,6 @@ public interface GuiModel {
     }
 
     @AllArgsConstructor
-    public static class ItemGuiModel implements GuiModel {
-        ItemModel itemModel;
-
-        @Override
-        public Entry updateAndSubmit(
-                ItemRenderState renderState,
-                ItemStack stack,
-                ItemModelManager resolver,
-                ItemDisplayContext displayContext,
-                ClientWorld world,
-                LivingEntity livingEntity,
-                int seed) {
-            if (itemModel == null) {
-                return null;
-            }
-
-            ItemRenderState state2 = new ItemRenderState();
-            state2.clear();
-            ItemRenderStateAccess.of(state2).setDisplayContext(displayContext);
-            itemModel.update(state2, new ItemStack(Items.BARRIER), resolver, displayContext, world, livingEntity, seed);
-            return new Entry(null, state2);
-        }
-    }
-
-    @AllArgsConstructor
     public static class PackingModel implements GuiModel {
         List<GuiModel> guiModelList;
 
@@ -217,6 +185,7 @@ public interface GuiModel {
                             return Stream.of(s.updateAndSubmit(renderer));
                         }
                     })
+                    .filter(entry -> entry != null)
                     .toList();
         }
 

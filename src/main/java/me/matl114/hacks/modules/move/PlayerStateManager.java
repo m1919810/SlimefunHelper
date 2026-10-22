@@ -353,7 +353,8 @@ public class PlayerStateManager extends BaseModule {
         Vec3d vec3d = new Vec3d(exp.getPlayerVelocityX(), exp.getPlayerVelocityY(), exp.getPlayerVelocityZ());
         if (vec3d.lengthSquared() > 1E-4) {
             final Vec3d knockBack = vec3d;
-            PostManager.INSTANCE.addNextTransactionAction(s -> lastKnownClientVelocity = lastKnownClientVelocity.add(knockBack));
+            PostManager.INSTANCE.addNextTransactionAction(
+                    s -> lastKnownClientVelocity = lastKnownClientVelocity.add(knockBack));
         }
     }
 

@@ -3,6 +3,8 @@ package me.matl114.versioned.impl;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.awt.*;
 import java.util.List;
+import java.util.function.Function;
+import me.matl114.renderer.TextRenderers;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.ColorQuad;
 import me.matl114.utils.render.Quad;
@@ -16,10 +18,30 @@ import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.OrderedText;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Vector3f;
 
 public class Render_v1_21_1 implements VRender, VRender.WrapRenderOperation {
+    private static net.minecraft.client.gl.ShaderProgram entityHighlightProgram;
+    private static final Function<Identifier, RenderLayer> ENTITY_HIGHLIGHT_LAYERS =
+            Util.memoize(texture -> RenderLayer.of(
+                    "slimefunhelper:entity_highlight/" + texture,
+                    VertexFormats.POSITION_TEXTURE_COLOR,
+                    VertexFormat.DrawMode.QUADS,
+                    1536,
+                    RenderLayer.MultiPhaseParameters.builder()
+                            .texture(new RenderPhase.Texture(texture, false, false))
+                            .program(new RenderPhase.ShaderProgram(() -> entityHighlightProgram))
+                            .transparency(RenderPhase.TRANSLUCENT_TRANSPARENCY)
+                            .depthTest(RenderPhase.ALWAYS_DEPTH_TEST)
+                            .cull(RenderPhase.DISABLE_CULLING)
+                            .writeMaskState(RenderPhase.COLOR_MASK)
+                            .build(false)));
+
+    public static void setEntityHighlightProgram(net.minecraft.client.gl.ShaderProgram program) {
+        entityHighlightProgram = program;
+    }
 
     @Override
     public void createLinesLayer(RenderCallback callback) {
@@ -141,6 +163,14 @@ public class Render_v1_21_1 implements VRender, VRender.WrapRenderOperation {
     }
 
     @Override
+    public void createEntityHighlightLayer(Identifier path, RenderCallback callback) {
+        RenderLayer layer = ENTITY_HIGHLIGHT_LAYERS.apply(path);
+        VertexConsumerProvider.Immediate consumers = mc.getBufferBuilders().getEntityVertexConsumers();
+        callback.draw(this, consumers.getBuffer(layer));
+        consumers.draw(layer);
+    }
+
+    @Override
     public void createGuiLayer(RenderCallback callback) {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         RenderSystem.disableCull();
@@ -156,7 +186,6 @@ public class Render_v1_21_1 implements VRender, VRender.WrapRenderOperation {
     }
 
     private static final MinecraftClient mc = MinecraftClient.getInstance();
-    private static final float TEXT_HEIGHT = 9.0F;
 
     @Override
     public void drawTextCameraCoord(
@@ -171,14 +200,15 @@ public class Render_v1_21_1 implements VRender, VRender.WrapRenderOperation {
         //        GL11.glDepthMask(true);
         int xAlign = displayPositionFlag % 3;
         int yAlign = displayPositionFlag / 3;
-        int width = mc.textRenderer.getWidth(orderedText);
+        var textDrawer = TextRenderers.get();
+        int width = textDrawer.getWidth(orderedText);
         float xStart = -((width * xAlign) / 2.0F);
-        float yStart = -((TEXT_HEIGHT * yAlign) / 2.0F);
+        float yStart = -((textDrawer.getTextHeight() * yAlign) / 2.0F);
         stack.push();
         stack.translate(vec3d.x, vec3d.y, vec3d.z);
         stack.scale(1, -1, 1);
         stack.translate(xStart, yStart, 0);
-        mc.textRenderer.draw(
+        textDrawer.draw(
                 orderedText,
                 0,
                 0,
