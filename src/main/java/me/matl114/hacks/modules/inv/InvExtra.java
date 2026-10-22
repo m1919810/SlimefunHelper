@@ -15,7 +15,6 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.MovExtra;
 import me.matl114.hacks.modules.task.PostManager;
-import me.matl114.hacks.modules.task.ServerFeature;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hooks.ViaFabricPlusHooks;
@@ -28,7 +27,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.AttributeUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.ScreenUtils;
@@ -144,7 +142,6 @@ public class InvExtra extends BaseModule {
                     for (Runnable r : inventoryTasks) {
                         r.run();
                     }
-                    syncAttr();
                 });
 
             } finally {
@@ -157,7 +154,6 @@ public class InvExtra extends BaseModule {
                 mc.player.getInventory().setSelectedSlot(lastSelected);
                 PostManager.INSTANCE.addNextTransactionAction((ch2) -> {
                     PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(lastSelected);
-                    syncAttr();
                 });
             } finally {
                 hotBarCallbacks.clear();
@@ -214,18 +210,11 @@ public class InvExtra extends BaseModule {
         }
     }
 
-    public void syncAttr() {
-        if (!ServerFeature.INSTANCE.attributeSwap.get()) {
-            AttributeUtils.updateAttribute(mc.player);
-        }
-    }
-
     public Runnable switchOrSwapInventoryIndexToHand(int hand) {
         int selected = InventoryUtils.getSelectedSlot();
         if (selected != hand) {
             if (hand < 9) {
                 PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(hand);
-                syncAttr();
                 return wrapHotbarTask(selected);
             } else {
                 OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), hand);
@@ -239,7 +228,6 @@ public class InvExtra extends BaseModule {
                                 selected,
                                 SlotActionType.SWAP,
                                 mc.player);
-                        syncAttr();
                         return wrapInvTask(() -> {
                             mc.interactionManager.clickSlot(
                                     mc.player.currentScreenHandler.syncId,
@@ -288,7 +276,6 @@ public class InvExtra extends BaseModule {
                     MovTasks.getMovExtra().sendPacketsForInventoryAction();
                     mc.interactionManager.clickSlot(
                             mc.player.currentScreenHandler.syncId, swapped, selected, SlotActionType.SWAP, mc.player);
-                    syncAttr();
                     return wrapInvTask(() -> {
                         mc.interactionManager.clickSlot(
                                 mc.player.currentScreenHandler.syncId,
@@ -318,7 +305,6 @@ public class InvExtra extends BaseModule {
 
                 mc.interactionManager.clickSlot(
                         mc.player.currentScreenHandler.syncId, swapped, 40, SlotActionType.SWAP, mc.player);
-                syncAttr();
                 return wrapInvTask(() -> {
                     mc.interactionManager.clickSlot(
                             mc.player.currentScreenHandler.syncId, swapped, 40, SlotActionType.SWAP, mc.player);
@@ -338,7 +324,6 @@ public class InvExtra extends BaseModule {
             return Runnables.doNothing();
         }
         PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(hand);
-        syncAttr();
         return wrapHotbarTask(selected);
     }
 
@@ -391,7 +376,6 @@ public class InvExtra extends BaseModule {
             // use number operation
             int target = targetSlotInstance.getIndex();
             mc.interactionManager.clickSlot(handler.syncId, armorSlot, target, SlotActionType.SWAP, mc.player);
-            syncAttr();
             return wrapInvTask(() -> {
                 mc.interactionManager.clickSlot(handler.syncId, armorSlot, target, SlotActionType.SWAP, mc.player);
             });
@@ -401,14 +385,12 @@ public class InvExtra extends BaseModule {
                     && (armorSlotInstance.getIndex() < 9 || armorSlotInstance.getIndex() == 40)) {
                 int target = armorSlotInstance.getIndex();
                 mc.interactionManager.clickSlot(handler.syncId, targetSlot, target, SlotActionType.SWAP, mc.player);
-                syncAttr();
                 return wrapInvTask(() -> {
                     mc.interactionManager.clickSlot(handler.syncId, targetSlot, target, SlotActionType.SWAP, mc.player);
                 });
             } else {
                 // fuck, do not kick me.
                 swapTwoIdiotSlot(handler, targetSlot, armorSlot);
-                syncAttr();
                 return wrapInvTask(() -> {
                     swapTwoIdiotSlot(handler, targetSlot, armorSlot);
                 });
@@ -471,7 +453,6 @@ public class InvExtra extends BaseModule {
             } else {
                 MovTasks.getMovExtra().sendPacketsForInventoryAction();
                 runnable.run();
-                syncAttr();
             }
         };
     }
@@ -482,7 +463,6 @@ public class InvExtra extends BaseModule {
                 hotBarCallbacks.add(swap);
             } else {
                 PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(swap);
-                syncAttr();
             }
         };
     }

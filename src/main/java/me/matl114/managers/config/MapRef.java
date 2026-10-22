@@ -283,4 +283,9 @@ public class MapRef extends Ref<Map<String, Ref<?>>> implements RefMap {
     public KeyBindRef getKeyBind(String... path) {
         return null;
     }
+
+    @Override
+    public MapRef asRef() {
+        return this;
+    }
 }

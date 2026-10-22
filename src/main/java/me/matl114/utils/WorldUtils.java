@@ -152,10 +152,6 @@ public class WorldUtils {
                 .orElse(null);
     }
 
-    public static float getPlayerBlockBreakingSpeedAt(BlockState state) {
-        return getPlayerBlockBreakingSpeedWithCanMineMultiply(mc.player, state, mc.player.getMainHandStack());
-    }
-
     public static float getPlayerBlockBreakingSpeedWithCanMineMultiply(
             PlayerEntity player, BlockState state, ItemStack stack) {
         float f = stack.getMiningSpeedMultiplier(state);
@@ -196,7 +192,13 @@ public class WorldUtils {
     }
 
     public static float calcBlockBreakingDelta(BlockState state, BlockView world, BlockPos pos) {
-        var playerBreakSpeed = getPlayerBlockBreakingSpeedAt(state);
+        return calcBlockBreakingDelta(state, world, pos, mc.player, mc.player.getMainHandStack());
+    }
+
+    public static float calcBlockBreakingDelta(
+            BlockState state, BlockView world, BlockPos pos, PlayerEntity player, ItemStack tool) {
+
+        var playerBreakSpeed = getPlayerBlockBreakingSpeedWithCanMineMultiply(player, state, tool);
         return calcBlockBreakingDelta(state, world, pos, playerBreakSpeed);
     }
 

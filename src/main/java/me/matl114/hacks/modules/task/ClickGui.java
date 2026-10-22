@@ -1453,7 +1453,7 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
     }
 
     private DrawableWidget createConfig(ClickGuiMetaData meta) {
-        var screen = new ConfigMultiLevelListScreen(Config.getConfigs().stream().toList(), CONFIG_FACTORY);
+        var screen = new ConfigMultiLevelListScreen(Config.REGISTRY.stream().toList(), CONFIG_FACTORY);
         screen.init(mc.getWindow().getScaledWidth(), mc.getWindow().getScaledHeight());
         return new ContentDelegateWidget<>(0, 0, 0, 0).setContentDelegate(screen);
     }

@@ -68,9 +68,7 @@ public class ConfigManager extends BaseModule {
                     if (config == null) {
                         return Stream.empty();
                     }
-                    return Stream.concat(config.getVisiblePaths().stream(), config.getPaths().stream())
-                            .distinct()
-                            .sorted();
+                    return config.getVisiblePaths().stream().distinct().sorted();
                 }))
                 .build();
         SimpleCommandArgs.Argument manualPathArgument = SimpleCommandArgs.argumentBuilder()

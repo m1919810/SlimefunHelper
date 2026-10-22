@@ -9,7 +9,6 @@ import java.util.LinkedHashMap;
 import me.matl114.managers.FileManager;
 import me.matl114.plugins.MainPlugin;
 import me.matl114.utils.Debug;
-import net.fabricmc.loader.api.FabricLoader;
 import org.yaml.snakeyaml.Yaml;
 
 public class ConfigLoader {
@@ -37,7 +36,7 @@ public class ConfigLoader {
 
     public static Config loadInternalConfig(String internalFileName, String customName) {
         try {
-            return new Config(customName, null, loadYamlConfig((Reader) (new InputStreamReader(
+            return new ConfigImpl(customName, null, loadYamlConfig((Reader) (new InputStreamReader(
                     MainPlugin.class.getResourceAsStream("/" + internalFileName), Charsets.UTF_8))));
         } catch (Throwable e) {
             Debug.info("failed to load internal config " + internalFileName + ".yml, Error: " + e.getMessage());
@@ -45,20 +44,15 @@ public class ConfigLoader {
         }
     }
 
-    public static Config loadExternalConfig(String name, String customName) {
-        final File cfgFile =
-                FabricLoader.getInstance().getConfigDir().resolve(name).toFile();
-        return loadExternalConfig(cfgFile, customName);
-    }
-
     public static Config loadExternalConfig(File cfgFile, String customName) {
         String fileName = cfgFile.getName();
         copyFile(cfgFile, fileName);
-        return new Config(customName, cfgFile);
+        return new ConfigImpl(customName, cfgFile);
     }
 
     public static Config loadRuntimeConfig(String name, String customName) {
-        return loadExternalConfig(FileManager.getInstance().getRuntimeFile(name), customName);
+        return loadExternalConfig(FileManager.getInstance().getRuntimeFile(name), customName)
+                .registerAutoSave();
     }
 
     public static HashMap<String, Object> loadYamlConfig(File file) {

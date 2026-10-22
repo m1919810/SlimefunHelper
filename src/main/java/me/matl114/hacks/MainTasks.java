@@ -162,7 +162,7 @@ public class MainTasks {
             }
         }
 
-        for (Config config : Config.getConfigs()) {
+        for (Config config : Config.REGISTRY) {
             Set<String> indexes = new LinkedHashSet<>();
             for (String path : config.getVisiblePaths()) {
                 String[] cut = Config.cutToPath(path);
@@ -233,15 +233,14 @@ public class MainTasks {
 
     @ApiMethod
     public static void openConfigNewStyleScreen() {
-        ScreenAccess.of(new ConfigurateNewStyleScreen(
-                        Config.getConfigs().stream().toList()))
+        ScreenAccess.of(new ConfigurateNewStyleScreen(Config.REGISTRY.stream().toList()))
                 .openFromCurrent();
     }
 
     @ApiMethod
     public static void openConfigScreen(Config config) {
         ConfigurateNewStyleScreen newStyleScreen =
-                new ConfigurateNewStyleScreen(Config.getConfigs().stream().toList());
+                new ConfigurateNewStyleScreen(Config.REGISTRY.stream().toList());
         newStyleScreen.setGlobal(config);
         ScreenAccess.of(newStyleScreen).openFromCurrent();
     }

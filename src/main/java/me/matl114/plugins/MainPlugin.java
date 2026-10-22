@@ -12,6 +12,7 @@ import me.matl114.jsApi.SlimefunHelperApi;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.command.MainCommand;
+import me.matl114.managers.config.Config;
 import me.matl114.registry.RegistryBootstrap;
 import me.matl114.utils.Debug;
 import net.fabricmc.fabric.api.client.model.loading.v1.PreparableModelLoadingPlugin;
@@ -37,7 +38,7 @@ public final class MainPlugin implements SlimefunHelperPlugin {
 
     @Override
     public void onConfigBootstrap() {
-        reloadModConfig();
+        Configs.loadConfigs(this);
     }
 
     @Override
@@ -65,13 +66,13 @@ public final class MainPlugin implements SlimefunHelperPlugin {
                     @Override
                     public void reload(ResourceManager manager) {
                         Debug.info("Resource reload for SlimefunHelper");
-                        reloadModConfig();
+                        Config.reloadAll();
                         RenderListener.onResourceReload(manager);
                     }
                 });
         ModelLoadingPluginManager.<Collection<Identifier>>registerPlugin(
                 (resourceManager, executor) -> CompletableFuture.supplyAsync(() -> {
-                    reloadModConfig();
+                    Config.reloadAll();
                     return Set.of();
                 }),
                 (PreparableModelLoadingPlugin<Collection<Identifier>>) (data, pluginContext) -> {});
@@ -88,10 +89,5 @@ public final class MainPlugin implements SlimefunHelperPlugin {
     @Override
     public ModContainer getContainer() {
         return container;
-    }
-
-    private static void reloadModConfig() {
-        Debug.info("Reloading Mod Config");
-        Configs.loadConfigs();
     }
 }

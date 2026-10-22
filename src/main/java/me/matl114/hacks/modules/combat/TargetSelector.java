@@ -140,7 +140,7 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
         var path = attack.add(KEY_FRIENDS);
         if (path.getConfig().contains(path.toPath())) {
             var re = path.getConfig().getList(path.toPath());
-            path.getConfig().setValueNoNew(null, path.toPath());
+            path.getConfig().setValue(null, path.toPath());
             if (re != null) {
                 onListChange(new FriendListStorage(re.get(), Map.of()));
             }
