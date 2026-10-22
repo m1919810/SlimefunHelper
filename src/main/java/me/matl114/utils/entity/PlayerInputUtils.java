@@ -178,8 +178,9 @@ public class PlayerInputUtils {
         }
 
         public void syncMovementVector(net.minecraft.client.input.Input input) {
-            input.movementVector =
-                    compatMovementVectorWithViaFabric(new Vec2f(this.sidewaysSpeed(), this.forwardSpeed()));
+            Vec2f movement = compatMovementVectorWithViaFabric(new Vec2f(this.sidewaysSpeed(), this.forwardSpeed()));
+            input.movementSideways = movement.x;
+            input.movementForward = movement.y;
         }
 
         public Input applyInput(GameOptions options) {

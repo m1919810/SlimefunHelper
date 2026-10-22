@@ -12,6 +12,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.command.OrderedRenderCommandQueue;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.PlayerEntityRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
@@ -27,11 +28,11 @@ public abstract class PlayerEntityRendererMixin {
 
     @Inject(
             method =
-                    "renderArm(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;ILnet/minecraft/util/Identifier;Lnet/minecraft/client/model/ModelPart;Z)V",
+                    "renderArm(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;ILnet/minecraft/util/Identifier;Lnet/minecraft/client/model/ModelPart;Z)V",
             at = @At("RETURN"))
     private void captureFirstPersonArm(
             MatrixStack matrices,
-            OrderedRenderCommandQueue queue,
+            VertexConsumerProvider vertexConsumers,
             int light,
             Identifier texture,
             ModelPart arm,
@@ -40,8 +41,7 @@ public abstract class PlayerEntityRendererMixin {
         if (HandView.INSTANCE == null || !HandView.INSTANCE.isActive() || !HandView.INSTANCE.glow.get()) return;
         MODEL_FACE.begin();
         MODEL_FACE.submitArm(arm, matrices, texture, light);
-        MODEL_FACE.renderDeferred(
-                queue, HandView.INSTANCE.glowColor.get().withAlpha(HandView.INSTANCE.glowAlpha.get()));
+        MODEL_FACE.render(HandView.INSTANCE.glowColor.get().withAlpha(HandView.INSTANCE.glowAlpha.get()));
     }
 
     @ModifyExpressionValue(

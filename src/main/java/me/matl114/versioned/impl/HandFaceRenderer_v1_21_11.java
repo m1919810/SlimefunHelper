@@ -12,14 +12,11 @@ import me.matl114.versioned.api.VRender;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.util.math.Vector2f;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fc;
 import org.joml.Vector3f;
 
 public final class HandFaceRenderer_v1_21_11 {
@@ -44,15 +41,21 @@ public final class HandFaceRenderer_v1_21_11 {
         if (texture == null) return;
         Matrix4f transform = new Matrix4f(matrices.peek().getPositionMatrix());
         for (BakedQuad baked : bakedQuads) {
+            int[] data = baked.getVertexData();
+            int stride = data.length / 4;
             Vec3d[] vertices = new Vec3d[4];
             float[] us = new float[4];
             float[] vs = new float[4];
             for (int i = 0; i < 4; i++) {
-                Vector3f pos = transform.transformPosition(baked.getPosition(i), new Vector3f());
+                int offset = i * stride;
+                Vector3f pos = transform.transformPosition(
+                        Float.intBitsToFloat(data[offset]),
+                        Float.intBitsToFloat(data[offset + 1]),
+                        Float.intBitsToFloat(data[offset + 2]),
+                        new Vector3f());
                 vertices[i] = new Vec3d(pos.x, pos.y, pos.z);
-                long uv = baked.getTexcoords(i);
-                us[i] = Vector2f.getX(uv);
-                vs[i] = Vector2f.getY(uv);
+                us[i] = Float.intBitsToFloat(data[offset + 4]);
+                vs[i] = Float.intBitsToFloat(data[offset + 5]);
             }
             quads.add(new TexturedQuad(texture, vertices, us, vs, color));
         }
@@ -86,43 +89,6 @@ public final class HandFaceRenderer_v1_21_11 {
             });
         }
         quads.clear();
-    }
-
-    public void renderDeferred(OrderedRenderCommandQueue queue, int color) {
-        collecting = false;
-        if (quads.isEmpty()) return;
-
-        Map<Identifier, List<TexturedQuad>> byTexture = new LinkedHashMap<>();
-        for (TexturedQuad quad : quads) {
-            byTexture
-                    .computeIfAbsent(quad.texture(), ignored -> new ArrayList<>())
-                    .add(quad.withColor(color));
-        }
-        for (Map.Entry<Identifier, List<TexturedQuad>> group : byTexture.entrySet()) {
-            List<TexturedQuad> texturedQuads = List.copyOf(group.getValue());
-            queue.submitCustom(
-                    new MatrixStack(),
-                    Render_v1_21_11.ENTITY_HIGHLIGHT_FACTORY.apply(group.getKey()),
-                    (entry, vertexConsumer) -> drawTexturedQuads(texturedQuads, vertexConsumer));
-        }
-        quads.clear();
-    }
-
-    private void drawTexturedQuads(List<TexturedQuad> texturedQuads, VertexConsumer vertexConsumer) {
-        var operation = (VRender.WrapRenderOperation) VRender.getInstance();
-        MatrixStack identity = new MatrixStack();
-        for (TexturedQuad captured : texturedQuads) {
-            operation.drawTexturedQuad(
-                    identity,
-                    vertexConsumer,
-                    new Quad(
-                            captured.vertices()[0],
-                            captured.vertices()[1],
-                            captured.vertices()[2],
-                            captured.vertices()[3]),
-                    new UV(captured.us()[0], captured.vs()[0], captured.us()[2], captured.vs()[2]),
-                    ColorQuad.of(captured.color()));
-        }
     }
 
     public void clear() {
@@ -200,14 +166,9 @@ public final class HandFaceRenderer_v1_21_11 {
         }
 
         @Override
-        public VertexConsumer vertex(Matrix4fc matrix, float x, float y, float z) {
+        public VertexConsumer vertex(Matrix4f matrix, float x, float y, float z) {
             Vector3f pos = matrix.transformPosition(x, y, z, new Vector3f());
             return vertex(pos.x, pos.y, pos.z);
-        }
-
-        @Override
-        public VertexConsumer lineWidth(float width) {
-            return this;
         }
     }
 }

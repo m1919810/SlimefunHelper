@@ -1,9 +1,8 @@
 package me.matl114.utils.render;
 
-import com.mojang.blaze3d.vertex.VertexFormat;
-import it.unimi.dsi.fastutil.objects.Object2ObjectSortedMaps;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import me.matl114.accessors.access.RenderLayerAccess;
@@ -11,13 +10,11 @@ import me.matl114.utils.RenderUtils;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.OutlineVertexConsumerProvider;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.command.OrderedRenderCommandQueueImpl;
-import net.minecraft.client.render.command.RenderDispatcher;
-import net.minecraft.client.render.entity.EntityRenderManager;
+import net.minecraft.client.render.VertexFormat;
+import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.client.render.entity.state.EntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
@@ -29,20 +26,10 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
     protected static final MinecraftClient mc = MinecraftClient.getInstance();
 
     protected final List<IndexEntry<Entity>> entities = new ArrayList<>();
-    private final OrderedRenderCommandQueueImpl commandQueue = new OrderedRenderCommandQueueImpl();
     private final EntityVertexConsumerProvider vertexConsumers;
-    private final RenderDispatcher renderDispatcher;
 
     protected EntityModelCollector() {
         this.vertexConsumers = new EntityVertexConsumerProvider(this::collectQuad);
-        this.renderDispatcher = new RenderDispatcher(
-                commandQueue,
-                mc.getBlockRenderManager(),
-                vertexConsumers,
-                mc.getAtlasManager(),
-                NoopOutlineVertexConsumerProvider.INSTANCE,
-                NoopImmediateVertexConsumerProvider.INSTANCE,
-                mc.textRenderer);
     }
 
     @Override
@@ -59,13 +46,12 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
     @Override
     public final void render3D(MatrixStack matrices, float partialTick) {
         if (entities.isEmpty()) return;
-        EntityRenderManager entityRenderManager = mc.getEntityRenderDispatcher();
-        if (entityRenderManager == null) return;
+        EntityRenderDispatcher entityRenderDispatcher = mc.getEntityRenderDispatcher();
+        if (entityRenderDispatcher == null) return;
         for (IndexEntry<Entity> entry : entities) {
             clearCollected();
             vertexConsumers.setColor(entry.index());
-            submitEntity(entityRenderManager, entry.val(), partialTick);
-            renderDispatcher.render();
+            submitEntity(entityRenderDispatcher, entry.val(), partialTick);
             renderCollected(matrices);
         }
         clearCollected();
@@ -74,14 +60,17 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
     @Override
     public void render2D(VDrawContext vDrawContext, float partialTick) {}
 
-    private void submitEntity(EntityRenderManager entityRenderManager, Entity entity, float partialTick) {
-        EntityRenderState state = entityRenderManager.getAndUpdateRenderState(entity, partialTick);
-        state.displayName = null;
-        state.leashDatas = null;
-        state.onFire = false;
-        state.shadowPieces.clear();
+    private void submitEntity(EntityRenderDispatcher entityRenderDispatcher, Entity entity, float partialTick) {
+        renderEntity(entityRenderDispatcher.getRenderer(entity), entity, partialTick);
+    }
 
-        EntityRenderer renderer = entityRenderManager.getRenderer(state);
+    private <T extends Entity, S extends EntityRenderState> void renderEntity(
+            EntityRenderer<? super T, S> renderer, T entity, float partialTick) {
+        S state = renderer.getAndUpdateRenderState(entity, partialTick);
+        state.displayName = null;
+        state.leashData = null;
+        state.onFire = false;
+
         Vec3d cameraPos = RenderUtils.getCameraPos();
         Vec3d positionOffset = renderer.getPositionOffset(state);
         MatrixStack entityMatrices = new MatrixStack();
@@ -91,7 +80,7 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
                 lerpedPos.x - cameraPos.x + positionOffset.x,
                 lerpedPos.y - cameraPos.y + positionOffset.y,
                 lerpedPos.z - cameraPos.z + positionOffset.z);
-        renderer.render(state, entityMatrices, commandQueue, mc.gameRenderer.getEntityRenderStates().cameraRenderState);
+        renderer.render(state, entityMatrices, vertexConsumers, renderer.getLight(entity, partialTick));
         entityMatrices.pop();
     }
 
@@ -114,7 +103,7 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
         private int color;
 
         private EntityVertexConsumerProvider(QuadConsumer quadConsumer) {
-            super(null, Object2ObjectSortedMaps.emptyMap());
+            super(null, new LinkedHashMap<>());
             this.quadConsumer = quadConsumer;
         }
 
@@ -205,11 +194,6 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
             }
             return this;
         }
-
-        @Override
-        public VertexConsumer lineWidth(float width) {
-            return this;
-        }
     }
 
     private static final class NoopVertexConsumer implements VertexConsumer {
@@ -249,44 +233,5 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
         public VertexConsumer normal(float x, float y, float z) {
             return this;
         }
-
-        @Override
-        public VertexConsumer lineWidth(float width) {
-            return this;
-        }
-    }
-
-    private static final class NoopImmediateVertexConsumerProvider extends VertexConsumerProvider.Immediate {
-        private static final NoopImmediateVertexConsumerProvider INSTANCE = new NoopImmediateVertexConsumerProvider();
-
-        private NoopImmediateVertexConsumerProvider() {
-            super(null, Object2ObjectSortedMaps.emptyMap());
-        }
-
-        @Override
-        public VertexConsumer getBuffer(RenderLayer layer) {
-            return NoopVertexConsumer.INSTANCE;
-        }
-
-        @Override
-        public void draw() {}
-
-        @Override
-        public void drawCurrentLayer() {}
-
-        @Override
-        public void draw(RenderLayer layer) {}
-    }
-
-    private static final class NoopOutlineVertexConsumerProvider extends OutlineVertexConsumerProvider {
-        private static final NoopOutlineVertexConsumerProvider INSTANCE = new NoopOutlineVertexConsumerProvider();
-
-        @Override
-        public VertexConsumer getBuffer(RenderLayer layer) {
-            return NoopVertexConsumer.INSTANCE;
-        }
-
-        @Override
-        public void draw() {}
     }
 }

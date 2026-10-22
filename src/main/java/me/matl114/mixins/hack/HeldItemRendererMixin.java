@@ -4,7 +4,7 @@ import me.matl114.hacks.modules.render.HandView;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.client.render.command.OrderedRenderCommandQueue;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.item.HeldItemRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
@@ -27,7 +27,7 @@ public abstract class HeldItemRendererMixin {
             ItemStack item,
             float equipProgress,
             MatrixStack matrices,
-            OrderedRenderCommandQueue orderedRenderCommandQueue,
+            VertexConsumerProvider vertexConsumers,
             int light,
             CallbackInfo ci) {
         if (HandView.INSTANCE == null || !HandView.INSTANCE.isActive()) {
@@ -47,7 +47,7 @@ public abstract class HeldItemRendererMixin {
             ItemStack item,
             float equipProgress,
             MatrixStack matrices,
-            OrderedRenderCommandQueue orderedRenderCommandQueue,
+            VertexConsumerProvider vertexConsumers,
             int light,
             CallbackInfo ci) {
         if (HandView.INSTANCE != null && HandView.INSTANCE.isActive()) {

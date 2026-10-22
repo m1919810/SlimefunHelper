@@ -51,13 +51,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(ClientPlayerEntity.class)
 public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity implements ClientPlayerAccess {
     @Shadow
-    public float nauseaIntensity;
-
-    @Shadow
-    public float lastNauseaIntensity;
-
-
-    @Shadow
     private double lastX;
 
     @Shadow
@@ -174,7 +167,7 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
     }
 
     @ModifyExpressionValue(
-            method = "tickNausea",
+            method = "tickNausea(Z)V",
             at =
                     @At(
                             value = "INVOKE",
@@ -251,7 +244,7 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
             usingItem = false;
         }
         PlayerInputUtils.Input playerInput = PlayerInputUtils.of(this.input);
-        Vec2f movementVector = this.input.movementVector;
+        Vec2f movementVector = this.input.getMovementInput();
         if (shouldDirectionalSprint()) {
             playerInput
                     .clone()
@@ -265,7 +258,8 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
         } finally {
             usingItem = v;
             playerInput.applyInput(this.input);
-            this.input.movementVector = movementVector;
+            this.input.movementSideways = movementVector.x;
+            this.input.movementForward = movementVector.y;
         }
     }
 
@@ -283,7 +277,7 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
             usingItem = false;
         }
         PlayerInputUtils.Input playerInput = PlayerInputUtils.of(this.input);
-        Vec2f movementVector = this.input.movementVector;
+        Vec2f movementVector = this.input.getMovementInput();
         if (shouldDirectionalSprint()) {
             playerInput
                     .clone()
@@ -297,7 +291,8 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
         } finally {
             usingItem = v;
             playerInput.applyInput(this.input);
-            this.input.movementVector = movementVector;
+            this.input.movementSideways = movementVector.x;
+            this.input.movementForward = movementVector.y;
         }
     }
 
