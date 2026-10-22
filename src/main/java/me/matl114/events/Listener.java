@@ -520,8 +520,7 @@ public class Listener {
 
     @Getter
     @Broadcast
-    @ExtraArgs({BlockPos.class})
-    private static final EventChannel<Vec3d> playerWebSlowPoint = new EventChannel<>();
+    private static final EventChannel<SlowMovement> playerSlowedByBlockPoint = new EventChannel<>();
 
     @Getter
     @Cancelable

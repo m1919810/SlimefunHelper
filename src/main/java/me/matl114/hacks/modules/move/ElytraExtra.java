@@ -453,7 +453,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     public Vec3d clampFireworkSpeedInWeb(Vec3d oldVelocity) {
-        if (fireworkSpeedLimitWeb.get() && canFireworkControlMotion() && PlayerStateManager.INSTANCE.lastInWeb) {
+        if (fireworkSpeedLimitWeb.get()
+                && canFireworkControlMotion()
+                && (PlayerStateManager.INSTANCE.lastInWeb || PlayerStateManager.INSTANCE.lastSlowByBlock)) {
             Vec3d simulationVelocity = oldVelocity;
             Vec3d stuckSpeedMultiplier = mc.player.movementMultiplier;
             if (stuckSpeedMultiplier != null && stuckSpeedMultiplier.horizontalLengthSquared() > 1E-7) {

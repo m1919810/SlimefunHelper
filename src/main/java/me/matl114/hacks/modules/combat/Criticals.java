@@ -157,7 +157,10 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
     }
 
     private boolean canNotCrit() {
-        return mc.player.isTouchingWater() || mc.player.hasVehicle() || PlayerStateManager.INSTANCE.lastInWeb;
+        return mc.player.isTouchingWater()
+                || mc.player.hasVehicle()
+                || PlayerStateManager.INSTANCE.lastInWeb
+                || PlayerStateManager.INSTANCE.lastSlowByBlock;
     }
 
     public void onPlayerAttack(Event<PlayerInteractEntityC2SPacket> event) {
