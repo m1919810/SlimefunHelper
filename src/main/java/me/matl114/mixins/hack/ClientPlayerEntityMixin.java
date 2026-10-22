@@ -294,45 +294,48 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
         }
     }
 
-    @WrapOperation(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/PlayerInput;sneak()Z", ordinal = 1))
-    private boolean canStopSprintSwimAddSneakConditionWrapper(PlayerInput instance, Operation<Boolean> original){
-        if(NoSlowDown.INSTANCE.shouldNoSlowSneak()){
+    @WrapOperation(
+            method = "tickMovement",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/util/PlayerInput;sneak()Z", ordinal = 1))
+    private boolean canStopSprintSwimAddSneakConditionWrapper(PlayerInput instance, Operation<Boolean> original) {
+        if (NoSlowDown.INSTANCE.shouldNoSlowSneak()) {
             return false;
         }
         return original.call(instance);
     }
 
-//    @WrapOperation(
-//            method = "tickMovement",
-//            at =
-//                    @At(
-//                            value = "INVOKE",
-//                            target = "Lnet/minecraft/client/network/ClientPlayerEntity;shouldStopSwimSprinting()Z"))
-//    private boolean canStopSprintSwimAddConditionWrapperBecauseOfViaFabricShit(
-//            ClientPlayerEntity instance, Operation<Boolean> original) {
-//        // fix viafabric
-//        boolean v = usingItem;
-//        if (NoSlowDown.INSTANCE.workNoSlowItemThisTick) {
-//            usingItem = false;
-//        }
-//        PlayerInputUtils.Input playerInput = PlayerInputUtils.of(this.input);
-//        Vec2f movementVector = this.input.movementVector;
-//        PlayerInputUtils.Input clone = playerInput.clone();
-//        if (shouldDirectionalSprint()) {
-//            clone.forward(true).backward(false);
-//        }
-//        if (NoSlowDown.INSTANCE.shouldNoSlowSneak()) {
-//            clone.sneak(false);
-//        }
-//        clone.applyInput(this.input).syncMovementVector(this.input);
-//        try {
-//            return original.call(instance);
-//        } finally {
-//            usingItem = v;
-//            playerInput.applyInput(this.input);
-//            this.input.movementVector = movementVector;
-//        }
-//    }
+    //    @WrapOperation(
+    //            method = "tickMovement",
+    //            at =
+    //                    @At(
+    //                            value = "INVOKE",
+    //                            target =
+    // "Lnet/minecraft/client/network/ClientPlayerEntity;shouldStopSwimSprinting()Z"))
+    //    private boolean canStopSprintSwimAddConditionWrapperBecauseOfViaFabricShit(
+    //            ClientPlayerEntity instance, Operation<Boolean> original) {
+    //        // fix viafabric
+    //        boolean v = usingItem;
+    //        if (NoSlowDown.INSTANCE.workNoSlowItemThisTick) {
+    //            usingItem = false;
+    //        }
+    //        PlayerInputUtils.Input playerInput = PlayerInputUtils.of(this.input);
+    //        Vec2f movementVector = this.input.movementVector;
+    //        PlayerInputUtils.Input clone = playerInput.clone();
+    //        if (shouldDirectionalSprint()) {
+    //            clone.forward(true).backward(false);
+    //        }
+    //        if (NoSlowDown.INSTANCE.shouldNoSlowSneak()) {
+    //            clone.sneak(false);
+    //        }
+    //        clone.applyInput(this.input).syncMovementVector(this.input);
+    //        try {
+    //            return original.call(instance);
+    //        } finally {
+    //            usingItem = v;
+    //            playerInput.applyInput(this.input);
+    //            this.input.movementVector = movementVector;
+    //        }
+    //    }
 
     @ModifyExpressionValue(
             method = "tickMovement",

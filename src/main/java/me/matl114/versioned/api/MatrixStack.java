@@ -24,6 +24,7 @@ public interface MatrixStack {
     public void multiply3D(Quaternionf quaternion);
 
     public void set(Matrix3x2f matrix);
+
     static MatrixStack of(net.minecraft.client.util.math.MatrixStack matrixStack) {
         return (MatrixStack) matrixStack;
     }

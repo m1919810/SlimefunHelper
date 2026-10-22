@@ -8,7 +8,6 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.utils.recipes.NetworkRecipeWrap;
 import me.matl114.hacks.utils.recipes.RecipeIngredient;
 import me.matl114.hacks.utils.recipes.WrapRecipe;
-import net.fabricmc.fabric.api.recipe.v1.ingredient.CustomIngredient;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;

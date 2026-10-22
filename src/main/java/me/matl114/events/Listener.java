@@ -1,7 +1,6 @@
 package me.matl114.events;
 
 import com.google.common.collect.ImmutableSet;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelPipeline;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;

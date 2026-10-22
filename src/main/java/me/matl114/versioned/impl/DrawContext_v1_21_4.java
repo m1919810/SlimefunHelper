@@ -208,13 +208,27 @@ public class DrawContext_v1_21_4 implements VDrawContext {
             try {
                 drawContext.getMatrices().translate(0, resourceFontTextDrawer.getTextYOffset(), 0);
                 drawContext.drawText(
-                        resourceFontTextDrawer.unwrap(), resourceFontTextDrawer.withFont(text), x, y, getShaderRGB(color), shadow);
+                        resourceFontTextDrawer.unwrap(),
+                        resourceFontTextDrawer.withFont(text),
+                        x,
+                        y,
+                        getShaderRGB(color),
+                        shadow);
             } finally {
                 drawContext.getMatrices().pop();
             }
         } else {
-            currentDrawer.draw(text, x, y, getShaderRGB(color), shadow, matrixStack.peek3D(),
-                    drawContext.vertexConsumers, TextLayerType.NORMAL, 0, 15728880);
+            currentDrawer.draw(
+                    text,
+                    x,
+                    y,
+                    getShaderRGB(color),
+                    shadow,
+                    matrixStack.peek3D(),
+                    drawContext.vertexConsumers,
+                    TextLayerType.NORMAL,
+                    0,
+                    15728880);
         }
     }
 
@@ -228,14 +242,28 @@ public class DrawContext_v1_21_4 implements VDrawContext {
             drawContext.getMatrices().push();
             try {
                 drawContext.getMatrices().translate(0, resourceFontTextDrawer.getTextYOffset(), 0);
-                drawContext.drawText(resourceFontTextDrawer.unwrap(), resourceFontTextDrawer.formattedString(text, true),
-                        x, y, getShaderRGB(color), shadow);
+                drawContext.drawText(
+                        resourceFontTextDrawer.unwrap(),
+                        resourceFontTextDrawer.formattedString(text, true),
+                        x,
+                        y,
+                        getShaderRGB(color),
+                        shadow);
             } finally {
                 drawContext.getMatrices().pop();
             }
         } else {
-            currentDrawer.draw(text, x, y, getShaderRGB(color), shadow, matrixStack.peek3D(),
-                    drawContext.vertexConsumers, TextLayerType.NORMAL, 0, 15728880);
+            currentDrawer.draw(
+                    text,
+                    x,
+                    y,
+                    getShaderRGB(color),
+                    shadow,
+                    matrixStack.peek3D(),
+                    drawContext.vertexConsumers,
+                    TextLayerType.NORMAL,
+                    0,
+                    15728880);
         }
     }
 
@@ -312,7 +340,8 @@ public class DrawContext_v1_21_4 implements VDrawContext {
         var trans = matrixStack.peek3D();
         var point1 = new Vector4f(x, y, 0, 1).mul(trans);
         addInternal(() -> this.drawContext.drawTooltip(
-                net.minecraft.client.MinecraftClient.getInstance().textRenderer, text, data, (int) point1.x, (int) point1.y));
+                net.minecraft.client.MinecraftClient.getInstance().textRenderer, text, data, (int) point1.x, (int)
+                        point1.y));
     }
 
     @Override
@@ -321,8 +350,7 @@ public class DrawContext_v1_21_4 implements VDrawContext {
     }
 
     @Override
-    public void drawItemInSlot(
-            TextDrawer textDrawer, ItemStack stack, int x, int y, @Nullable String countOverride) {
+    public void drawItemInSlot(TextDrawer textDrawer, ItemStack stack, int x, int y, @Nullable String countOverride) {
         TextRenderer textRenderer = TextRenderers.resolve(textDrawer).unwrap();
         if (textRenderer == null) {
             throw new IllegalArgumentException("TextDrawer must expose a Minecraft TextRenderer");

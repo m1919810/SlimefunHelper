@@ -186,14 +186,14 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
                         .build(false));
     });
 
-    private static final RenderPhase.ShaderProgram ENTITY_HIGHLIGHT_PROGRAM = new RenderPhase.ShaderProgram(
-            new ShaderProgramKey(
+    private static final RenderPhase.ShaderProgram ENTITY_HIGHLIGHT_PROGRAM =
+            new RenderPhase.ShaderProgram(new ShaderProgramKey(
                     Identifier.of("slimefunhelper", "core/entity_highlight"),
                     VertexFormats.POSITION_TEXTURE_COLOR,
                     Defines.EMPTY));
 
-    public static final Function<Identifier, RenderLayer> ENTITY_HIGHLIGHT_FACTORY = Util.memoize(texture ->
-            RenderLayer.of(
+    public static final Function<Identifier, RenderLayer> ENTITY_HIGHLIGHT_FACTORY =
+            Util.memoize(texture -> RenderLayer.of(
                     "slimefunhelper:entity_highlight/" + texture,
                     VertexFormats.POSITION_TEXTURE_COLOR,
                     VertexFormat.DrawMode.QUADS,

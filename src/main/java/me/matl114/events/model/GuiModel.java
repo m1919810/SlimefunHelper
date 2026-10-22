@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.With;
 import me.matl114.accessors.events.ItemRenderStateAccess;
@@ -15,7 +14,6 @@ import net.minecraft.client.render.item.ItemRenderState;
 import net.minecraft.client.render.item.model.ItemModel;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
@@ -131,7 +129,14 @@ public interface GuiModel {
         ItemModel itemModel;
 
         @Override
-        public Entry updateAndSubmit(ItemRenderState renderState, ItemStack stack, ItemModelManager resolver, ItemDisplayContext displayContext, ClientWorld world, LivingEntity livingEntity, int seed) {
+        public Entry updateAndSubmit(
+                ItemRenderState renderState,
+                ItemStack stack,
+                ItemModelManager resolver,
+                ItemDisplayContext displayContext,
+                ClientWorld world,
+                LivingEntity livingEntity,
+                int seed) {
             if (itemModel == null) {
                 return null;
             }
@@ -139,8 +144,7 @@ public interface GuiModel {
             ItemRenderState state2 = new ItemRenderState();
             state2.clear();
             ItemRenderStateAccess.of(state2).setDisplayContext(displayContext);
-            itemModel.update(
-                state2, new ItemStack(Items.BARRIER), resolver, displayContext, world, livingEntity, seed);
+            itemModel.update(state2, new ItemStack(Items.BARRIER), resolver, displayContext, world, livingEntity, seed);
             return new Entry(null, state2);
         }
     }
