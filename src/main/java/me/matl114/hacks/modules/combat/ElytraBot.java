@@ -63,7 +63,6 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
-import org.jetbrains.annotations.ApiStatus;
 
 public class ElytraBot extends BaseModule {
     public final ModulePath combatBot = makePath(Configs.COMBAT_CONFIG, "combat-bot");
@@ -622,118 +621,6 @@ public class ElytraBot extends BaseModule {
     public final FlagRef spearAntiSpearPullOverWhenPredictHit = flagBuilder(
                     antiSpear.add("spear-anti-spear-pull-over-when-predict-hit"))
             .show(() -> mode.get().isIn(Mode.SPEAR_ARUA))
-            .build();
-
-    public final ModulePath spearVer2 = elytraBot.add("spear-arua-v2");
-
-    @ApiStatus.Experimental
-    public final FlagRef spearTestV2 = builder(spearVer2.add("spear-v2"), Boolean.class)
-            .defaultValue(false)
-            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA) && ElytraExtra.INSTANCE.autoRescale.get())
-            .experimental()
-            .build();
-
-    @ApiStatus.Experimental
-    public final FlagRef spearAngleOptimize = builder(spearVer2.add("spear-angle-optimize"), Boolean.class)
-            .defaultValue(false)
-            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA) && ElytraExtra.INSTANCE.autoRescale.get() && spearTestV2.get())
-            .experimental()
-            .build();
-
-    @ApiStatus.Experimental
-    public final NBTRef<Vec2> spearV2HeightRange = builder(spearVer2.add("spear-v2-height-range"), Vec2.class)
-            .defaultValue(new Vec2(0.0, 4.0D))
-            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA) && this.spearTestV2.get())
-            .experimental()
-            .build();
-
-    @ApiStatus.Experimental
-    public final DoubleRef spearV2PositionLerp = doubleBuilder(spearVer2.add("spear-v2-position-lerp"))
-            .defaultValue(1.0D)
-            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA) && this.spearTestV2.get())
-            .experimental()
-            .build();
-
-    @ApiStatus.Experimental
-    public final DoubleRef spearV2AdjustPositionHorizontal = doubleBuilder(
-                    spearVer2.add("spear-v2-adjust-pos-horizontal-amount"))
-            .defaultValue(0.0D)
-            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA) && this.spearTestV2.get())
-            .experimental()
-            .build();
-
-    @ApiStatus.Experimental
-    public final DoubleRef spearV2PreAttackRange = doubleBuilder(spearVer2.add("spear-v2-pre-attack-range"))
-            .defaultValue(9.0D)
-            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA) && this.spearTestV2.get())
-            .experimental()
-            .build();
-
-    public final ModulePath spearVer3 = elytraBot.add("spear-arua-v3");
-
-    @ApiStatus.Experimental
-    public final FlagRef spearTestV3 = builder(spearVer3.add("spear-v3"), Boolean.class)
-            .defaultValue(false)
-            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA))
-            .experimental()
-            .build();
-
-    @ApiStatus.Experimental
-    public final DoubleRef spearV3PullUpHeight = doubleBuilder(spearVer3.add("spear-v3-pull-up-height"))
-            .defaultValue(8.0D)
-            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA) && this.spearTestV3.get())
-            .experimental()
-            .build();
-
-    @ApiStatus.Experimental
-    public final DoubleRef spearV3OutwardRange = doubleBuilder(spearVer3.add("spear-v3-outward-range"))
-            .defaultValue(12.0D)
-            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA) && this.spearTestV3.get())
-            .experimental()
-            .build();
-
-    @ApiStatus.Experimental
-    public final DoubleRef spearV3OutwardSpeed = doubleBuilder(spearVer3.add("spear-v3-outward-speed"))
-            .defaultValue(10.0D)
-            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA) && this.spearTestV3.get())
-            .experimental()
-            .build();
-
-    @ApiStatus.Experimental
-    public final DoubleRef spearV3DiveDistance = doubleBuilder(spearVer3.add("spear-v3-dive-distance"))
-            .defaultValue(20.0D)
-            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA) && this.spearTestV3.get())
-            .experimental()
-            .build();
-
-    @ApiStatus.Experimental
-    public final NBTRef<OptionalPrimitive<Double>> spearV3PullUpFallDistance = builder(
-                    spearVer3.add("spear-v3-pull-up-fall-distance"), OptionalPrimitive.DOUBLE_TYPE)
-            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 1.5D))
-            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA) && this.spearTestV3.get())
-            .experimental()
-            .build();
-
-    @ApiStatus.Experimental
-    public final FlagRef spearV3UseMaceAttack = flagBuilder(spearVer3.add("spear-v3-use-mace-attack"))
-            .defaultValue(true)
-            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA) && this.spearTestV3.get())
-            .experimental()
-            .build();
-
-    @ApiStatus.Experimental
-    public final NBTRef<OptionalPrimitive<Double>> spearV3MaceFallDistance = builder(
-                    spearVer3.add("spear-v3-mace-fall-distance"), OptionalPrimitive.DOUBLE_TYPE)
-            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 1.5D))
-            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA) && this.spearTestV3.get())
-            .experimental()
-            .build();
-
-    @ApiStatus.Experimental
-    public final IntRef spearV3MaceAttackCooldown = builder(spearVer3.add("spear-v3-mace-attack-cooldown"), IntRef.TYPE)
-            .defaultValue(5)
-            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA) && this.spearTestV3.get())
-            .experimental()
             .build();
 
     public void onSwitch() {
