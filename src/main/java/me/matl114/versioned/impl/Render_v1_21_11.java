@@ -133,7 +133,6 @@ public class Render_v1_21_11 implements VRender, VRender.WrapRenderOperation {
                     MainPlugin.ID + ":entity_highlight/" + identifier,
                     RenderSetup.builder(ENTITY_HIGHLIGHT)
                             .texture("Sampler0", identifier)
-                            .translucent()
                             .build()));
 
     public static final RenderLayer QUADS_NO_CULL = RenderLayer.of(

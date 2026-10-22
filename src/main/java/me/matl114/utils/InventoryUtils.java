@@ -615,4 +615,11 @@ public class InventoryUtils {
         }
         return indexMap;
     }
+
+    public static void copyInventory(PlayerInventory from, PlayerInventory to) {
+        for (var re = 0; re < InventoryUtils.getPlayerInvSize(); ++re) {
+            to.setStack(re, from.getStack(re).copy());
+        }
+        to.setSelectedSlot(from.getSelectedSlot());
+    }
 }
