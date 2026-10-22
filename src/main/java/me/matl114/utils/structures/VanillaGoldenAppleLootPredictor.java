@@ -31,166 +31,133 @@ public final class VanillaGoldenAppleLootPredictor {
     private static final Identifier ANCIENT_CITY = Identifier.ofVanilla("chests/ancient_city");
     private static final Identifier ANCIENT_CITY_ICE_BOX = Identifier.ofVanilla("chests/ancient_city_ice_box");
     private static final Identifier RUINED_PORTAL = Identifier.ofVanilla("chests/ruined_portal");
-    private static final Identifier END_CITY = Identifier.ofVanilla("chests/end_city_treasure");
+    private static final Identifier BOOK_ID = Identifier.ofVanilla("book");
+    private static final Identifier SUSPICIOUS_STEW_ID = Identifier.ofVanilla("suspicious_stew");
 
     private static final List<Pool> DESERT_PYRAMID_POOLS = List.of(
             new Pool(
                     2,
                     4,
                     List.of(
-                            Entry.uniform(5, Items.DIAMOND, 1, 3),
-                            Entry.uniform(15, Items.IRON_INGOT, 1, 5),
-                            Entry.uniform(15, Items.GOLD_INGOT, 2, 7),
-                            Entry.uniform(15, Items.EMERALD, 1, 3),
-                            Entry.uniform(25, Items.BONE, 4, 6),
-                            Entry.uniform(25, Items.SPIDER_EYE, 1, 3),
-                            Entry.uniform(25, Items.ROTTEN_FLESH, 3, 7),
-                            Entry.uniform(20, Items.LEATHER, 1, 5),
-                            Entry.item(15, Items.COPPER_HORSE_ARMOR),
-                            Entry.item(15, Items.IRON_HORSE_ARMOR),
-                            Entry.item(10, Items.GOLDEN_HORSE_ARMOR),
-                            Entry.item(5, Items.DIAMOND_HORSE_ARMOR),
-                            Entry.randomlyEnchanted(20, Items.BOOK),
-                            Entry.item(20, Items.GOLDEN_APPLE),
-                            Entry.item(2, Items.ENCHANTED_GOLDEN_APPLE),
+                            Entry.uniform(5, Identifier.ofVanilla("diamond"), 1, 3),
+                            Entry.uniform(15, Identifier.ofVanilla("iron_ingot"), 1, 5),
+                            Entry.uniform(15, Identifier.ofVanilla("gold_ingot"), 2, 7),
+                            Entry.uniform(15, Identifier.ofVanilla("emerald"), 1, 3),
+                            Entry.uniform(25, Identifier.ofVanilla("bone"), 4, 6),
+                            Entry.uniform(25, Identifier.ofVanilla("spider_eye"), 1, 3),
+                            Entry.uniform(25, Identifier.ofVanilla("rotten_flesh"), 3, 7),
+                            Entry.uniform(20, Identifier.ofVanilla("leather"), 1, 5),
+                            Entry.item(15, Identifier.ofVanilla("copper_horse_armor")),
+                            Entry.item(15, Identifier.ofVanilla("iron_horse_armor")),
+                            Entry.item(10, Identifier.ofVanilla("golden_horse_armor")),
+                            Entry.item(5, Identifier.ofVanilla("diamond_horse_armor")),
+                            Entry.randomlyEnchanted(20, Identifier.ofVanilla("book")),
+                            Entry.item(20, Identifier.ofVanilla("golden_apple")),
+                            Entry.item(2, Identifier.ofVanilla("enchanted_golden_apple")),
                             Entry.empty(15))),
             new Pool(
                     4,
                     4,
                     List.of(
-                            Entry.uniform(10, Items.BONE, 1, 8),
-                            Entry.uniform(10, Items.GUNPOWDER, 1, 8),
-                            Entry.uniform(10, Items.ROTTEN_FLESH, 1, 8),
-                            Entry.uniform(10, Items.STRING, 1, 8),
-                            Entry.uniform(10, Items.SAND, 1, 8))),
-            new Pool(1, 1, List.of(Entry.empty(6), Entry.fixed(1, Items.DUNE_ARMOR_TRIM_SMITHING_TEMPLATE, 2))));
+                            Entry.uniform(10, Identifier.ofVanilla("bone"), 1, 8),
+                            Entry.uniform(10, Identifier.ofVanilla("gunpowder"), 1, 8),
+                            Entry.uniform(10, Identifier.ofVanilla("rotten_flesh"), 1, 8),
+                            Entry.uniform(10, Identifier.ofVanilla("string"), 1, 8),
+                            Entry.uniform(10, Identifier.ofVanilla("sand"), 1, 8))),
+            new Pool(1, 1, List.of(Entry.empty(6), Entry.fixed(1, Identifier.ofVanilla("dune_armor_trim_smithing_template"), 2))));
 
     private static final List<Pool> RUINED_PORTAL_POOLS = List.of(
             new Pool(
                     4,
                     8,
                     List.of(
-                            Entry.uniform(40, Items.OBSIDIAN, 1, 2),
-                            Entry.uniform(40, Items.FLINT, 1, 4),
-                            Entry.uniform(40, Items.IRON_NUGGET, 9, 18),
-                            Entry.item(40, Items.FLINT_AND_STEEL),
-                            Entry.item(40, Items.FIRE_CHARGE),
-                            Entry.item(15, Items.GOLDEN_APPLE),
-                            Entry.uniform(15, Items.GOLD_NUGGET, 4, 24),
-                            Entry.randomlyEnchanted(15, Items.GOLDEN_SWORD),
-                            Entry.randomlyEnchanted(15, Items.GOLDEN_AXE),
-                            Entry.randomlyEnchanted(15, Items.GOLDEN_HOE),
-                            Entry.randomlyEnchanted(15, Items.GOLDEN_SHOVEL),
-                            Entry.randomlyEnchanted(15, Items.GOLDEN_PICKAXE),
-                            Entry.randomlyEnchanted(15, Items.GOLDEN_BOOTS),
-                            Entry.randomlyEnchanted(15, Items.GOLDEN_CHESTPLATE),
-                            Entry.randomlyEnchanted(15, Items.GOLDEN_HELMET),
-                            Entry.randomlyEnchanted(15, Items.GOLDEN_LEGGINGS),
-                            Entry.uniform(5, Items.GLISTERING_MELON_SLICE, 4, 12),
-                            Entry.item(5, Items.GOLDEN_HORSE_ARMOR),
-                            Entry.item(5, Items.LIGHT_WEIGHTED_PRESSURE_PLATE),
-                            Entry.uniform(5, Items.GOLDEN_CARROT, 4, 12),
-                            Entry.item(5, Items.CLOCK),
-                            Entry.uniform(5, Items.GOLD_INGOT, 2, 8),
-                            Entry.item(1, Items.BELL),
-                            Entry.item(1, Items.ENCHANTED_GOLDEN_APPLE),
-                            Entry.uniform(1, Items.GOLD_BLOCK, 1, 2))),
-            new Pool(1, 1, List.of(Entry.empty(1), Entry.uniform(2, Items.LODESTONE, 1, 2))));
+                            Entry.uniform(40, Identifier.ofVanilla("obsidian"), 1, 2),
+                            Entry.uniform(40, Identifier.ofVanilla("flint"), 1, 4),
+                            Entry.uniform(40, Identifier.ofVanilla("iron_nugget"), 9, 18),
+                            Entry.item(40, Identifier.ofVanilla("flint_and_steel")),
+                            Entry.item(40, Identifier.ofVanilla("fire_charge")),
+                            Entry.item(15, Identifier.ofVanilla("golden_apple")),
+                            Entry.uniform(15, Identifier.ofVanilla("gold_nugget"), 4, 24),
+                            Entry.randomlyEnchanted(15, Identifier.ofVanilla("golden_sword")),
+                            Entry.randomlyEnchanted(15, Identifier.ofVanilla("golden_axe")),
+                            Entry.randomlyEnchanted(15, Identifier.ofVanilla("golden_hoe")),
+                            Entry.randomlyEnchanted(15, Identifier.ofVanilla("golden_shovel")),
+                            Entry.randomlyEnchanted(15, Identifier.ofVanilla("golden_pickaxe")),
+                            Entry.randomlyEnchanted(15, Identifier.ofVanilla("golden_boots")),
+                            Entry.randomlyEnchanted(15, Identifier.ofVanilla("golden_chestplate")),
+                            Entry.randomlyEnchanted(15, Identifier.ofVanilla("golden_helmet")),
+                            Entry.randomlyEnchanted(15, Identifier.ofVanilla("golden_leggings")),
+                            Entry.uniform(5, Identifier.ofVanilla("glistering_melon_slice"), 4, 12),
+                            Entry.item(5, Identifier.ofVanilla("golden_horse_armor")),
+                            Entry.item(5, Identifier.ofVanilla("light_weighted_pressure_plate")),
+                            Entry.uniform(5, Identifier.ofVanilla("golden_carrot"), 4, 12),
+                            Entry.item(5, Identifier.ofVanilla("clock")),
+                            Entry.uniform(5, Identifier.ofVanilla("gold_ingot"), 2, 8),
+                            Entry.item(1, Identifier.ofVanilla("bell")),
+                            Entry.item(1, Identifier.ofVanilla("enchanted_golden_apple")),
+                            Entry.uniform(1, Identifier.ofVanilla("gold_block"), 1, 2))),
+            new Pool(1, 1, List.of(Entry.empty(1), Entry.uniform(2, Identifier.ofVanilla("lodestone"), 1, 2))));
 
     private static final List<Pool> ANCIENT_CITY_ICE_BOX_POOLS = List.of(new Pool(
             4,
             10,
             List.of(
-                    Entry.uniform(1, Items.SUSPICIOUS_STEW, 2, 6),
-                    Entry.uniform(1, Items.GOLDEN_CARROT, 1, 10),
-                    Entry.uniform(1, Items.BAKED_POTATO, 1, 10),
-                    Entry.uniform(2, Items.PACKED_ICE, 2, 6),
-                    Entry.uniform(4, Items.SNOWBALL, 2, 6))));
+                    Entry.uniform(1, Identifier.ofVanilla("suspicious_stew"), 2, 6),
+                    Entry.uniform(1, Identifier.ofVanilla("golden_carrot"), 1, 10),
+                    Entry.uniform(1, Identifier.ofVanilla("baked_potato"), 1, 10),
+                    Entry.uniform(2, Identifier.ofVanilla("packed_ice"), 2, 6),
+                    Entry.uniform(4, Identifier.ofVanilla("snowball"), 2, 6))));
 
-    private static final List<Pool> END_CITY_POOLS = List.of(
-            new Pool(
-                    2,
-                    6,
-                    List.of(
-                            Entry.uniform(5, Items.DIAMOND, 2, 7),
-                            Entry.uniform(10, Items.IRON_INGOT, 4, 8),
-                            Entry.uniform(15, Items.GOLD_INGOT, 2, 7),
-                            Entry.uniform(2, Items.EMERALD, 2, 6),
-                            Entry.uniform(5, Items.BEETROOT_SEEDS, 1, 10),
-                            Entry.item(3, Items.SADDLE),
-                            Entry.item(1, Items.COPPER_HORSE_ARMOR),
-                            Entry.item(1, Items.IRON_HORSE_ARMOR),
-                            Entry.item(1, Items.GOLDEN_HORSE_ARMOR),
-                            Entry.item(1, Items.DIAMOND_HORSE_ARMOR),
-                            Entry.randomlyEnchanted(3, Items.DIAMOND_SWORD)
-                                    .withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39),
-                            Entry.randomlyEnchanted(3, Items.DIAMOND_SPEAR)
-                                    .withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39),
-                            Entry.randomlyEnchanted(3, Items.DIAMOND_BOOTS)
-                                    .withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39),
-                            Entry.randomlyEnchanted(3, Items.DIAMOND_CHESTPLATE)
-                                    .withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39),
-                            Entry.randomlyEnchanted(3, Items.DIAMOND_LEGGINGS)
-                                    .withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39),
-                            Entry.randomlyEnchanted(3, Items.DIAMOND_HELMET)
-                                    .withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39),
-                            Entry.randomlyEnchanted(3, Items.DIAMOND_PICKAXE)
-                                    .withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39),
-                            Entry.randomlyEnchanted(3, Items.DIAMOND_SHOVEL)
-                                    .withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39),
-                            Entry.randomlyEnchanted(3, Items.IRON_SWORD)
-                                    .withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39),
-                            Entry.randomlyEnchanted(3, Items.IRON_BOOTS)
-                                    .withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39),
-                            Entry.randomlyEnchanted(3, Items.IRON_CHESTPLATE)
-                                    .withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39),
-                            Entry.randomlyEnchanted(3, Items.IRON_LEGGINGS)
-                                    .withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39),
-                            Entry.randomlyEnchanted(3, Items.IRON_HELMET)
-                                    .withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39),
-                            Entry.randomlyEnchanted(3, Items.IRON_PICKAXE)
-                                    .withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39),
-                            Entry.randomlyEnchanted(3, Items.IRON_SHOVEL)
-                                    .withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39))),
-            new Pool(1, 1, List.of(Entry.empty(14), Entry.item(1, Items.SPIRE_ARMOR_TRIM_SMITHING_TEMPLATE))));
+    private static final List<Pool> LEGACY_DESERT_PYRAMID_POOLS = createLegacyDesertPyramidPools();
+    private static final List<Pool> LEGACY_ANCIENT_CITY_POOLS = ancientCityPools(LootVersion.V1_21_1);
+    private static final List<Pool> V1_21_11_ANCIENT_CITY_POOLS = ancientCityPools(LootVersion.V1_21_11);
+    private static final List<Pool> V26_1_ANCIENT_CITY_POOLS = ancientCityPools(LootVersion.V26_1);
+
+    private static List<Pool> createLegacyDesertPyramidPools() {
+        List<Entry> entries = new ArrayList<>(DESERT_PYRAMID_POOLS.getFirst().entries());
+        // Before 1.21.11, the leather and copper horse armor slots were a saddle slot.
+        entries.set(7, Entry.item(20, Identifier.ofVanilla("saddle")));
+        entries.remove(8);
+        return List.of(new Pool(2, 4, entries), DESERT_PYRAMID_POOLS.get(1), DESERT_PYRAMID_POOLS.get(2));
+    }
 
     private static List<Pool> ancientCityPools(LootVersion version) {
         List<Entry> entries = new ArrayList<>();
-        entries.add(Entry.uniform(1, Items.ENCHANTED_GOLDEN_APPLE, 1, 2));
-        entries.add(Entry.item(1, Items.MUSIC_DISC_OTHERSIDE));
-        entries.add(Entry.fixed(2, Items.COMPASS, 1));
-        entries.add(Entry.uniform(2, Items.SCULK_CATALYST, 1, 2));
+        entries.add(Entry.uniform(1, Identifier.ofVanilla("enchanted_golden_apple"), 1, 2));
+        entries.add(Entry.item(1, Identifier.ofVanilla("music_disc_otherside")));
+        entries.add(Entry.fixed(2, Identifier.ofVanilla("compass"), 1));
+        entries.add(Entry.uniform(2, Identifier.ofVanilla("sculk_catalyst"), 1, 2));
         if (version.ancientCityHasNameTag()) {
-            entries.add(Entry.item(2, Items.NAME_TAG));
+            entries.add(Entry.item(2, Identifier.ofVanilla("name_tag")));
         }
-        entries.add(Entry.fixed(2, Items.DIAMOND_HOE, 1)
+        entries.add(Entry.fixed(2, Identifier.ofVanilla("diamond_hoe"), 1)
                 .withDamage(0.8F, 1.0F)
                 .withEnchantment(EnchantmentOperation.WITH_LEVELS, 30, 50));
-        entries.add(Entry.fixed(2, Items.LEAD, 1));
-        entries.add(Entry.fixed(2, Items.DIAMOND_HORSE_ARMOR, 1));
+        entries.add(Entry.fixed(2, Identifier.ofVanilla("lead"), 1));
+        entries.add(Entry.fixed(2, Identifier.ofVanilla("diamond_horse_armor"), 1));
         entries.add(
                 version.ancientCityUsesLeatherInsteadOfSaddle()
-                        ? Entry.uniform(2, Items.LEATHER, 1, 5)
-                        : Entry.item(2, Items.SADDLE));
-        entries.add(Entry.item(2, Items.MUSIC_DISC_13));
-        entries.add(Entry.item(2, Items.MUSIC_DISC_CAT));
-        entries.add(Entry.item(2, Items.DIAMOND_LEGGINGS).withEnchantment(EnchantmentOperation.WITH_LEVELS, 30, 50));
-        entries.add(Entry.item(3, Items.BOOK).withEnchantment(EnchantmentOperation.RANDOM_FIXED, 1, 3));
-        entries.add(Entry.uniform(3, Items.SCULK, 4, 10));
-        entries.add(Entry.uniform(3, Items.SCULK_SENSOR, 1, 3));
-        entries.add(Entry.uniform(3, Items.CANDLE, 1, 4));
-        entries.add(Entry.uniform(3, Items.AMETHYST_SHARD, 1, 15));
-        entries.add(Entry.uniform(3, Items.EXPERIENCE_BOTTLE, 1, 3));
-        entries.add(Entry.uniform(3, Items.GLOW_BERRIES, 1, 15));
-        entries.add(Entry.item(3, Items.IRON_LEGGINGS).withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39));
-        entries.add(Entry.uniform(4, Items.ECHO_SHARD, 1, 3));
-        entries.add(Entry.uniform(4, Items.DISC_FRAGMENT_5, 1, 3));
-        entries.add(Entry.uniform(5, Items.POTION, 1, 3).withStrongRegenerationPotion());
-        entries.add(Entry.randomlyEnchanted(5, Items.BOOK));
-        entries.add(Entry.uniform(5, Items.BOOK, 3, 10));
-        entries.add(Entry.uniform(5, Items.BONE, 1, 15));
-        entries.add(Entry.uniform(5, Items.SOUL_TORCH, 1, 15));
-        entries.add(Entry.uniform(7, Items.COAL, 6, 15));
+                        ? Entry.uniform(2, Identifier.ofVanilla("leather"), 1, 5)
+                        : Entry.item(2, Identifier.ofVanilla("saddle")));
+        entries.add(Entry.item(2, Identifier.ofVanilla("music_disc_13")));
+        entries.add(Entry.item(2, Identifier.ofVanilla("music_disc_cat")));
+        entries.add(Entry.item(2, Identifier.ofVanilla("diamond_leggings")).withEnchantment(EnchantmentOperation.WITH_LEVELS, 30, 50));
+        entries.add(Entry.item(3, Identifier.ofVanilla("book")).withEnchantment(EnchantmentOperation.RANDOM_FIXED, 1, 3));
+        entries.add(Entry.uniform(3, Identifier.ofVanilla("sculk"), 4, 10));
+        entries.add(Entry.uniform(3, Identifier.ofVanilla("sculk_sensor"), 1, 3));
+        entries.add(Entry.uniform(3, Identifier.ofVanilla("candle"), 1, 4));
+        entries.add(Entry.uniform(3, Identifier.ofVanilla("amethyst_shard"), 1, 15));
+        entries.add(Entry.uniform(3, Identifier.ofVanilla("experience_bottle"), 1, 3));
+        entries.add(Entry.uniform(3, Identifier.ofVanilla("glow_berries"), 1, 15));
+        entries.add(Entry.item(3, Identifier.ofVanilla("iron_leggings")).withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39));
+        entries.add(Entry.uniform(4, Identifier.ofVanilla("echo_shard"), 1, 3));
+        entries.add(Entry.uniform(4, Identifier.ofVanilla("disc_fragment_5"), 1, 3));
+        entries.add(Entry.uniform(5, Identifier.ofVanilla("potion"), 1, 3).withStrongRegenerationPotion());
+        entries.add(Entry.randomlyEnchanted(5, Identifier.ofVanilla("book")));
+        entries.add(Entry.uniform(5, Identifier.ofVanilla("book"), 3, 10));
+        entries.add(Entry.uniform(5, Identifier.ofVanilla("bone"), 1, 15));
+        entries.add(Entry.uniform(5, Identifier.ofVanilla("soul_torch"), 1, 15));
+        entries.add(Entry.uniform(7, Identifier.ofVanilla("coal"), 6, 15));
 
         return List.of(
                 new Pool(5, 10, entries),
@@ -199,8 +166,8 @@ public final class VanillaGoldenAppleLootPredictor {
                         1,
                         List.of(
                                 Entry.empty(75),
-                                Entry.item(4, Items.WARD_ARMOR_TRIM_SMITHING_TEMPLATE),
-                                Entry.item(1, Items.SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE))));
+                                Entry.item(4, Identifier.ofVanilla("ward_armor_trim_smithing_template")),
+                                Entry.item(1, Identifier.ofVanilla("silence_armor_trim_smithing_template")))));
     }
 
     private VanillaGoldenAppleLootPredictor() {}
@@ -356,7 +323,11 @@ public final class VanillaGoldenAppleLootPredictor {
             Optional<RegistryEntryList.Named<Enchantment>> randomLootSet) {
         int count = entry.minCount();
         ItemStack stack;
-        if (entry.item() == Items.SUSPICIOUS_STEW) {
+        Item item = entry.item();
+        if (item == null) {
+            return Optional.empty();
+        }
+        if (SUSPICIOUS_STEW_ID.equals(entry.itemId())) {
             boolean nightVision = random.nextInt(2) == 0;
             int minDuration = nightVision ? 7 : 5;
             int maxDuration = nightVision ? 10 : 7;
@@ -379,7 +350,7 @@ public final class VanillaGoldenAppleLootPredictor {
                         Items.POTION, Registries.POTION.getEntry(Potions.STRONG_REGENERATION.value()));
                 stack.setCount(count);
             } else {
-                stack = new ItemStack(entry.item(), count);
+                stack = new ItemStack(item, count);
             }
         }
 
@@ -409,7 +380,7 @@ public final class VanillaGoldenAppleLootPredictor {
                 }
                 ItemStack candidateStack = stack;
                 List<RegistryEntry<Enchantment>> choices = randomLootSet.get().stream()
-                        .filter(enchantment -> entry.item() == Items.BOOK
+                        .filter(enchantment -> BOOK_ID.equals(entry.itemId())
                                 || enchantment.value().isSupportedItem(candidateStack))
                         .toList();
                 if (choices.isEmpty()) {
@@ -443,19 +414,20 @@ public final class VanillaGoldenAppleLootPredictor {
 
     private static List<Pool> poolsFor(Identifier lootTable, LootVersion lootVersion) {
         if (DESERT_PYRAMID.equals(lootTable)) {
-            return DESERT_PYRAMID_POOLS;
+            return lootVersion.hasCopperHorseArmor() ? DESERT_PYRAMID_POOLS : LEGACY_DESERT_PYRAMID_POOLS;
         }
         if (ANCIENT_CITY.equals(lootTable)) {
-            return ancientCityPools(lootVersion);
+            return switch (lootVersion) {
+                case V1_21_1, V1_21_4 -> LEGACY_ANCIENT_CITY_POOLS;
+                case V1_21_11 -> V1_21_11_ANCIENT_CITY_POOLS;
+                case V26_1 -> V26_1_ANCIENT_CITY_POOLS;
+            };
         }
         if (ANCIENT_CITY_ICE_BOX.equals(lootTable)) {
             return ANCIENT_CITY_ICE_BOX_POOLS;
         }
         if (RUINED_PORTAL.equals(lootTable)) {
-            return RUINED_PORTAL_POOLS;
-        }
-        if (END_CITY.equals(lootTable)) {
-            return END_CITY_POOLS;
+            return lootVersion.hasLodestonePortalPool() ? RUINED_PORTAL_POOLS : RUINED_PORTAL_POOLS.subList(0, 1);
         }
         return null;
     }
@@ -487,6 +459,7 @@ public final class VanillaGoldenAppleLootPredictor {
 
     private record Entry(
             int weight,
+            Identifier itemId,
             Item item,
             int minCount,
             int maxCount,
@@ -501,25 +474,26 @@ public final class VanillaGoldenAppleLootPredictor {
             return create(weight, null, 0, 0, false);
         }
 
-        private static Entry item(int weight, Item item) {
-            return create(weight, item, 1, 1, false);
+        private static Entry item(int weight, Identifier itemId) {
+            return create(weight, itemId, 1, 1, false);
         }
 
-        private static Entry fixed(int weight, Item item, int count) {
-            return create(weight, item, count, count, false);
+        private static Entry fixed(int weight, Identifier itemId, int count) {
+            return create(weight, itemId, count, count, false);
         }
 
-        private static Entry uniform(int weight, Item item, int min, int max) {
-            return create(weight, item, min, max, true);
+        private static Entry uniform(int weight, Identifier itemId, int min, int max) {
+            return create(weight, itemId, min, max, true);
         }
 
-        private static Entry randomlyEnchanted(int weight, Item item) {
-            return item(weight, item).withEnchantment(EnchantmentOperation.RANDOM_TAG, 0, 0);
+        private static Entry randomlyEnchanted(int weight, Identifier itemId) {
+            return item(weight, itemId).withEnchantment(EnchantmentOperation.RANDOM_TAG, 0, 0);
         }
 
         private Entry withDamage(float min, float max) {
             return new Entry(
                     weight,
+                    itemId,
                     item,
                     minCount,
                     maxCount,
@@ -535,6 +509,7 @@ public final class VanillaGoldenAppleLootPredictor {
         private Entry withEnchantment(EnchantmentOperation operation, int minLevel, int maxLevel) {
             return new Entry(
                     weight,
+                    itemId,
                     item,
                     minCount,
                     maxCount,
@@ -550,6 +525,7 @@ public final class VanillaGoldenAppleLootPredictor {
         private Entry withStrongRegenerationPotion() {
             return new Entry(
                     weight,
+                    itemId,
                     item,
                     minCount,
                     maxCount,
@@ -563,11 +539,23 @@ public final class VanillaGoldenAppleLootPredictor {
         }
 
         private boolean empty() {
-            return item == null;
+            return itemId == null;
         }
 
-        private static Entry create(int weight, Item item, int min, int max, boolean randomCount) {
-            return new Entry(weight, item, min, max, randomCount, null, null, EnchantmentOperation.NONE, 0, 0, false);
+        private static Entry create(int weight, Identifier itemId, int min, int max, boolean randomCount) {
+            return new Entry(
+                    weight,
+                    itemId,
+                    itemId != null && Registries.ITEM.containsId(itemId) ? Registries.ITEM.get(itemId) : null,
+                    min,
+                    max,
+                    randomCount,
+                    null,
+                    null,
+                    EnchantmentOperation.NONE,
+                    0,
+                    0,
+                    false);
         }
     }
 }
