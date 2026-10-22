@@ -934,10 +934,10 @@ public class Listener {
         connection.submit((con) -> {
             var channel = con.channel;
             if (channel.eventLoop().inEventLoop()) {
-                con.sendInternal(packet, ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE, true);
+                con.sendInternal(packet, null, true);
             } else {
                 channel.eventLoop().execute(() -> {
-                    con.sendInternal(packet, ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE, true);
+                    con.sendInternal(packet, null, true);
                 });
             }
         });

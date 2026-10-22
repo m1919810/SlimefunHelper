@@ -80,7 +80,7 @@ final class VanillaEndCityStructureGenerator {
         var structureContext = DefaultStructureTemplateResources.context(registries);
         for (EndCityGenerator.Piece piece : vanillaPieces) {
             NbtCompound pieceNbt = piece.toNbt(structureContext);
-            Identifier id = Identifier.ofVanilla("end_city/" + pieceNbt.getString("Template", ""));
+            Identifier id = Identifier.ofVanilla("end_city/" + pieceNbt.getString("Template"));
             String template = id.getPath().startsWith(TEMPLATE_PREFIX)
                     ? id.getPath().substring(TEMPLATE_PREFIX.length())
                     : id.getPath();

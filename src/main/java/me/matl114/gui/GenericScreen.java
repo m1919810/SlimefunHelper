@@ -103,7 +103,7 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
         }
         if (button == 0 || button == 1) {
             if (startDrag(this, mouseX, mouseY)) {
-                this.draggingButton = click.button();
+                this.draggingButton = button;
             }
         }
         return val;

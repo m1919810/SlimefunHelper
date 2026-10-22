@@ -82,7 +82,7 @@ public final class AncientCityStructureGenerator {
                 .filter(piece -> piece.getPoolElement() instanceof SinglePoolElement)
                 .map(piece -> {
                     SinglePoolElement element = (SinglePoolElement) piece.getPoolElement();
-                    Identifier template = element.getIdOrThrow();
+                    Identifier template = element.location.left().orElseThrow();
                     BlockPos origin = piece.getPos().toImmutable();
                     BlockRotation rotation = piece.getRotation();
                     return new Piece(

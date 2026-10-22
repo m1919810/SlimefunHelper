@@ -42,7 +42,7 @@ public abstract class ItemRenderStateEvents implements ItemRenderStateAccess {
 
     @Override
     public void setDisplayContext(ItemDisplayContext displayContext) {
-        this.displayContext = displayContext;
+        this.modelTransformationMode = displayContext;
     }
 
     @Inject(method = "render", at = @At("RETURN"))

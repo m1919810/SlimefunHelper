@@ -114,4 +114,5 @@ accessible field net/minecraft/client/render/RenderLayer$MultiPhase phases Lnet/
 accessible field net/minecraft/client/render/RenderLayer$MultiPhaseParameters texture Lnet/minecraft/client/render/RenderPhase$TextureBase;
 accessible method net/minecraft/client/render/RenderPhase$TextureBase getId ()Ljava/util/Optional;
 accessible method net/minecraft/client/render/RenderPhase$Texture getId ()Ljava/util/Optional;
-accessible method net/minecraft/network/ClientConnection sendInternal (Lnet/minecraft/network/packet/Packet;Lio/netty/channel/ChannelFutureListener;Z)V
+accessible method net/minecraft/network/ClientConnection sendInternal (Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/PacketCallbacks;Z)V
+accessible field net/minecraft/structure/pool/SinglePoolElement location Lcom/mojang/datafixers/util/Either;

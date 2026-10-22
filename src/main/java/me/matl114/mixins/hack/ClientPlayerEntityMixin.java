@@ -301,7 +301,7 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
             at =
                     @At(
                             value = "INVOKE",
-                            target = "Lnet/minecraft/client/network/ClientPlayerEntity;shouldStopSwimSprinting()Z"))
+                            target = "Lnet/minecraft/util/PlayerInput;sneak()Z"))
     private boolean nnoSlowUsingItemDoNotBlockSprint3(ClientPlayerEntity instance, Operation<Boolean> original) {
         // fix viafabric
         if (NoSlowDown.INSTANCE.workNoSlowItemThisTick) {

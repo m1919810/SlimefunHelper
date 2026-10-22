@@ -49,9 +49,9 @@ public class DrawContext_v1_21_4 implements VDrawContext {
     }
 
     @Override
-    public DrawContext popMatrix() {
+    public void popMatrix() {
         this.matrixStack.popMatrix();
-        return this.drawContext;
+        return;
     }
 
     @Override
