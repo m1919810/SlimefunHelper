@@ -20,6 +20,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(HandledScreen.class)
@@ -40,8 +41,10 @@ public abstract class HandledScreenEvents extends Screen {
     public void onRenderBegin(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         // RenderListener.renderHandledScreen(context, (HandledScreen<?>) (Object) this, mouseX, mouseY, delta);
     }
+
     @Unique
     Point cachedMouseXY;
+
     @Inject(method = "render", at = @At("HEAD"))
     private void onCacheMouseXY(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         cachedMouseXY = new Point(mouseX, mouseY);
@@ -54,10 +57,11 @@ public abstract class HandledScreenEvents extends Screen {
                             value = "INVOKE",
                             target =
                                     "Lnet/minecraft/client/gui/screen/ingame/HandledScreen;drawSlot(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/screen/slot/Slot;)V"))
-    public void onRenderSlot(
-        HandledScreen instance, DrawContext context, Slot slot, Operation<Void> original) {
-        if (cachedMouseXY != null && !RenderListener.getRenderSlot()
-            .fireEvent(new RenderSlot(VDrawContext.of(context), instance, slot, cachedMouseXY.x, cachedMouseXY.y))) {
+    public void onRenderSlot(HandledScreen instance, DrawContext context, Slot slot, Operation<Void> original) {
+        if (cachedMouseXY != null
+                && !RenderListener.getRenderSlot()
+                        .fireEvent(new RenderSlot(
+                                VDrawContext.of(context), instance, slot, cachedMouseXY.x, cachedMouseXY.y))) {
             return;
         }
         original.call(instance, context, slot);

@@ -1,10 +1,10 @@
 package me.matl114.utils;
 
+import java.util.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.*;
 import javax.annotation.Nullable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.ComponentType;

@@ -216,8 +216,7 @@ public abstract class ClientConnectionEvents extends SimpleChannelInboundHandler
     }
 
     @Inject(method = "sendImmediately", at = @At("RETURN"))
-    private void onSendImmediatelyFinish(
-        Packet<?> packet, PacketCallbacks callbacks, boolean flush, CallbackInfo ci) {
+    private void onSendImmediatelyFinish(Packet<?> packet, PacketCallbacks callbacks, boolean flush, CallbackInfo ci) {
         if (this.side != NetworkSide.SERVERBOUND) {
             Listener.getPacketPostScheduleSendPoint().broadcast(packet, this);
         }
@@ -225,7 +224,7 @@ public abstract class ClientConnectionEvents extends SimpleChannelInboundHandler
 
     @WrapMethod(method = "sendInternal")
     private void onSendPacketPost(
-        Packet<?> packet, PacketCallbacks callbacks, boolean flush, Operation<Void> original) {
+            Packet<?> packet, PacketCallbacks callbacks, boolean flush, Operation<Void> original) {
         if (this.side != NetworkSide.SERVERBOUND) {
             if (PacketManager.handleQueueOutPacket(
                     packet,

@@ -231,12 +231,7 @@ public abstract class ScreenEvents extends AbstractParentElement implements Meta
         }
     }
 
-    @Inject(
-            method = "renderWithTooltip",
-            at =
-                    @At(
-                            value = "RETURN"),
-            cancellable = true)
+    @Inject(method = "renderWithTooltip", at = @At(value = "RETURN"), cancellable = true)
     private void onRenderPost(DrawContext context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         if (!RenderListener.getRenderScreen()
                 .fireEvent(new RenderScreen(
