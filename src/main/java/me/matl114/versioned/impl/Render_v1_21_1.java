@@ -51,10 +51,11 @@ public class Render_v1_21_1 implements VRender, VRender.WrapRenderOperation {
             createPositionColorLayer("slimefunhelper:debug_triangles_no_cull", VertexFormat.DrawMode.TRIANGLES, false);
     private static final RenderLayer TRIANGLE_STRIP_LAYER =
             createPositionColorLayer("slimefunhelper:debug_triangle_strip", VertexFormat.DrawMode.TRIANGLE_STRIP, true);
-    private static final RenderLayer TRIANGLE_STRIP_NO_CULL_LAYER =
-            createPositionColorLayer("slimefunhelper:debug_triangle_strip_no_cull", VertexFormat.DrawMode.TRIANGLE_STRIP, false);
+    private static final RenderLayer TRIANGLE_STRIP_NO_CULL_LAYER = createPositionColorLayer(
+            "slimefunhelper:debug_triangle_strip_no_cull", VertexFormat.DrawMode.TRIANGLE_STRIP, false);
 
-    private static RenderLayer createPositionColorLayer(String name, VertexFormat.DrawMode drawMode, boolean hasCulling) {
+    private static RenderLayer createPositionColorLayer(
+            String name, VertexFormat.DrawMode drawMode, boolean hasCulling) {
         RenderLayer.MultiPhaseParameters.Builder phases = RenderLayer.MultiPhaseParameters.builder()
                 .program(new RenderPhase.ShaderProgram(GameRenderer::getPositionColorProgram))
                 .transparency(RenderPhase.TRANSLUCENT_TRANSPARENCY)
@@ -63,7 +64,14 @@ public class Render_v1_21_1 implements VRender, VRender.WrapRenderOperation {
         if (!hasCulling) {
             phases.cull(RenderPhase.DISABLE_CULLING);
         }
-        return RenderLayer.of(name, VertexFormats.POSITION_COLOR, drawMode, 1536, false, drawMode == VertexFormat.DrawMode.QUADS, phases.build(false));
+        return RenderLayer.of(
+                name,
+                VertexFormats.POSITION_COLOR,
+                drawMode,
+                1536,
+                false,
+                drawMode == VertexFormat.DrawMode.QUADS,
+                phases.build(false));
     }
 
     private static final RenderLayer GUI_3D_LAYER = RenderLayer.of(
@@ -217,11 +225,7 @@ public class Render_v1_21_1 implements VRender, VRender.WrapRenderOperation {
 
     @Override
     public void drawItemCameraCoord(
-            ItemStack itemStack,
-            MatrixStack stack,
-            Vec3d vec3d,
-            ItemDisplayContext context,
-            ItemDisplay displayInfo) {
+            ItemStack itemStack, MatrixStack stack, Vec3d vec3d, ItemDisplayContext context, ItemDisplay displayInfo) {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         boolean bl = Vec3d.ZERO.equals(vec3d);
         if (!bl) {

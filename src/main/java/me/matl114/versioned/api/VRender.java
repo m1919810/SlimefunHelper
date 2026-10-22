@@ -185,11 +185,7 @@ public interface VRender {
             TextDisplay displayInfo);
 
     public void drawItemCameraCoord(
-            ItemStack itemStack,
-            MatrixStack stack,
-            Vec3d vec3d,
-            ItemDisplayContext context,
-            ItemDisplay displayInfo);
+            ItemStack itemStack, MatrixStack stack, Vec3d vec3d, ItemDisplayContext context, ItemDisplay displayInfo);
 
     @With
     public record TextDisplay(boolean shadow, TextRenderer.TextLayerType layerType, int backgroundColor, int light) {}
