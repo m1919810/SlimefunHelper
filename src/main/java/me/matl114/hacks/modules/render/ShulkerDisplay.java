@@ -263,6 +263,7 @@ public class ShulkerDisplay extends BaseModule {
 
         ColorSampler sampler = ColorSampler.of(getTint(shulker));
         context.getMatrices().pushMatrix();
+        context.pushLayer(300);
         try {
             context.getMatrices().translate((float) x, (float) y);
             switch (previewMode.get()) {
@@ -288,6 +289,7 @@ public class ShulkerDisplay extends BaseModule {
             }
             if (selected) drawHighlight(context, previewWidth, previewHeight);
         } finally {
+            context.popLayer();
             context.getMatrices().popMatrix();
         }
     }
