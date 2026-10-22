@@ -207,7 +207,7 @@ public class PlayerInputUtils {
             return this;
         }
 
-        public void syncMovementVector(net.minecraft.client.input.Input input, boolean slow) {
+        public void syncMovementVector(net.minecraft.client.input.Input input, float iqBoost) {
             input.movementVector =
                     compatMovementVectorWithViaFabric(new Vec2f(this.sidewaysSpeed(), this.forwardSpeed()));
         }

@@ -21,6 +21,7 @@ import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.recipebook.ClientRecipeBook;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
 import net.minecraft.stat.StatHandler;
@@ -164,7 +165,9 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         // changed, update movementVector
         if (!Objects.equals(currentInput, this.input.playerInput)) {
             PlayerInputUtils.Input i0 = new PlayerInputUtils.Input(this.input.playerInput);
-            i0.syncMovementVector(this.input, this.shouldSlowDown());
+            i0.syncMovementVector(
+                    this.input,
+                    this.shouldSlowDown() ? (float) this.getAttributeValue(EntityAttributes.SNEAKING_SPEED) : 1.0F);
         }
     }
 

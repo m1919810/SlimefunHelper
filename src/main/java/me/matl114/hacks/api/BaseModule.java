@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import me.matl114.events.Event;
 import me.matl114.events.channels.ListenerPoint;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.complex.config.DefaultedKeyValueInputWidget;
@@ -247,6 +248,24 @@ public abstract class BaseModule implements ModuleListProvider {
     public <W> void registerListener(ListenerPoint<W> listener, Consumer<W> handler, int p) {
         listener.registerHandler(registerReason(handler, REASON_LISTENER), p);
         registeredPoints.add(listener);
+    }
+
+    public <W extends Event<?>> void registerListener(
+            ListenerPoint<W> listener, Runnable handler, boolean ignoreCancelled) {
+        registerListener(listener, handler, 0, ignoreCancelled);
+    }
+
+    public <W extends Event<?>> void registerListener(
+            ListenerPoint<W> listener, Runnable handler, int p, boolean ignoreCancelled) {
+        registerListener(
+                listener,
+                (eve) -> {
+                    if (ignoreCancelled && eve.isCancelled()) {
+                        return;
+                    }
+                    handler.run();
+                },
+                p);
     }
 
     public void registerCommandBootstrap(Consumer<MainCommand> handler) {

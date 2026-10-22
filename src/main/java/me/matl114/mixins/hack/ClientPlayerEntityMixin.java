@@ -225,7 +225,7 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
                     .forward(true)
                     .backward(false)
                     .applyInput(this.input)
-                    .syncMovementVector(this.input, shouldSlowDown());
+                    .syncMovementVector(this.input, 1.0F);
         }
         try {
             return original.call(instance);
@@ -255,7 +255,7 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
         if (shouldDirectionalSprint()) {
             clone.forward(true).backward(false);
         }
-        clone.applyInput(this.input).syncMovementVector(this.input, this.shouldSlowDown());
+        clone.applyInput(this.input).syncMovementVector(this.input, 1.0F);
         try {
             return original.call(instance);
         } finally {
@@ -287,7 +287,7 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
         if (NoSlowDown.INSTANCE.shouldNoSlowSneak()) {
             clone.sneak(false);
         }
-        clone.applyInput(this.input).syncMovementVector(this.input, this.shouldSlowDown());
+        clone.applyInput(this.input).syncMovementVector(this.input, 1.0F);
         try {
             return original.call(instance);
         } finally {
