@@ -830,7 +830,7 @@ public class ElytraBot extends BaseModule {
         }
     }
 
-    public void onPreTick(Event<Void> event) {
+    public void onPreTick() {
         var lastBehaviour = currentBehaviour;
         currentBehaviour = getBehaviour();
         if (currentBehaviour != lastBehaviour) {

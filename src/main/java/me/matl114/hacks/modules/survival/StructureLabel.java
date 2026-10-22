@@ -44,7 +44,6 @@ import me.matl114.utils.structures.StructurePosition;
 import me.matl114.utils.world.ContainerPosition;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -255,8 +254,8 @@ public class StructureLabel extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPostGameTick(), this::onTick);
         registerListener(RenderListener.getRender3DEvent(), this::onRender3D);
-        registerListener(XaeroHelper.getWorldSwitchPoint(), this::onWorldSwitch);
-        registerListener(Listener.getServerLeavePoint(), this::onServerLeave);
+        registerListener(XaeroHelper.getWorldSwitchPoint(), this::onLeave);
+        registerListener(Listener.getServerLeavePoint(), this::onLeave);
     }
 
     @Override
@@ -271,15 +270,11 @@ public class StructureLabel extends BaseModule {
         resetState(false, true);
     }
 
-    private void onWorldSwitch(Event<World> event) {
+    private void onLeave() {
         resetState(true, true);
     }
 
-    private void onServerLeave(Event<Void> event) {
-        resetState(true, true);
-    }
-
-    private void onTick(Event<ClientPlayerEntity> event) {
+    private void onTick() {
         boxCollector.clear();
         tracerCollector.clear();
         cleanupFinishedTasks();

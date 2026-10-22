@@ -192,7 +192,7 @@ public class Attack extends BaseModule {
         return 0;
     }
 
-    private void updateRenderCollector(Event<ClientPlayerEntity> event) {
+    private void updateRenderCollector() {
         targetCollector.clear();
         if (!enable.get() || mc.player == null || !renderAttackTarget.get()) return;
         if (mc.player.isUsingItem()) {

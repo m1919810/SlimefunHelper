@@ -156,7 +156,7 @@ public class AutoPlate extends BaseModule {
 
     int timer;
 
-    public void onInput(Event<Void> event) {
+    public void onInput() {
         if (checkNull()) return;
         if (enable.get()) {
             if (++timer >= delay.get()) {

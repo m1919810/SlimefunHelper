@@ -19,7 +19,6 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.render.RenderCollector;
 import me.matl114.versioned.api.VDrawContext;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -124,7 +123,7 @@ public class EntityESP extends BaseModule {
     private final RenderCollector<Entity> renderFace = RenderCollectors.createEntityFaceCollector();
     private final RenderCollector<Entity> entityTracer = RenderCollectors.createEntityTracerCollector();
 
-    public void onTick(Event<ClientPlayerEntity> event) {
+    public void onTick() {
         renderOutline.clear();
         renderFace.clear();
         entityTracer.clear();

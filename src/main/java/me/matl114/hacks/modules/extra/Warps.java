@@ -26,7 +26,6 @@ import me.matl114.utils.commands.params.api.ArgumentType;
 import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.commands.params.api.TabResult;
 import me.matl114.utils.commands.params.types.ExecutePos;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -135,7 +134,7 @@ public class Warps extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(XaeroHelper.getWorldSwitchPoint(), this::onWorldSwitch);
+        registerListener(XaeroHelper.getWorldSwitchPoint(), this::onGameJoin);
         registerListener(Listener.getGameJoinPoint(), this::onGameJoin);
         registerListener(Listener.getPostGameTick(), this::onPostGameTick);
         registerListener(Listener.getCustomListener().getChannel(MovTasks.TpaCommandEvent.class), this::onTpaToWarp);
@@ -286,17 +285,12 @@ public class Warps extends BaseModule {
                         worldName, mc.world.getRegistryKey().getValue().toString());
     }
 
-    private void onGameJoin(Event<ClientPlayerEntity> event) {
+    private void onGameJoin() {
         loadedWaypointWorld = null;
         loadCurrentWaypoints();
     }
 
-    private void onWorldSwitch(Event<World> event) {
-        loadedWaypointWorld = null;
-        loadCurrentWaypoints();
-    }
-
-    private void onPostGameTick(Event<ClientPlayerEntity> event) {
+    private void onPostGameTick() {
         if (!checkNull()) {
             if (!Objects.equals(loadedWaypointWorld, mc.world.getRegistryKey())) {
                 loadCurrentWaypoints();

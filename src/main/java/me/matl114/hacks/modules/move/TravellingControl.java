@@ -258,7 +258,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
 
     boolean currentReconfiguration = false;
 
-    private void onReconfiguration(Event<EnterReconfigurationS2CPacket> eventKick) {
+    private void onReconfiguration() {
         currentReconfiguration = true;
     }
 

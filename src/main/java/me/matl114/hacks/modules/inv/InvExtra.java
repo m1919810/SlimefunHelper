@@ -154,7 +154,7 @@ public class InvExtra extends BaseModule {
         }
     }
 
-    private void onNewTick(Event<Void> event) {
+    private void onNewTick() {
         if (checkNull()) return;
         tickNextTickCallbacks();
     }

@@ -19,7 +19,6 @@ import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.RenderCollector;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.thrown.EnderPearlEntity;
@@ -69,7 +68,7 @@ public class PearlESP extends BaseModule {
         textCollector.clear();
     }
 
-    public void onTick(Event<ClientPlayerEntity> event) {
+    public void onTick() {
         textCollector.clear();
         if (checkNull() || !enable.get() || WorldManager.INSTANCE == null) {
             return;

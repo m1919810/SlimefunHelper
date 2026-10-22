@@ -94,14 +94,10 @@ public class AutoResync extends BaseModule {
         //                Listener.getPacketPostHandlePoint().getChannel(PlayerRotationS2CPacket.class),
         // this::onPostRotate);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
-        registerListener(Listener.getPlayerRespawnPoint(), this::onWorldSwitch);
+        registerListener(Listener.getPlayerRespawnPoint(), () -> worldSwitchTick = Tasks.getTick());
     }
 
     int worldSwitchTick = 0;
-
-    public void onWorldSwitch(Event<ClientPlayerEntity> event) {
-        worldSwitchTick = Tasks.getTick();
-    }
 
     public Vec2f restoreRot = null;
 
@@ -192,7 +188,7 @@ public class AutoResync extends BaseModule {
         }
     }
 
-    public void onPreSetBack(Event<PlayerPositionLookS2CPacket> event) {
+    public void onPreSetBack() {
         if (checkNull()) return;
         if (autoResyncRot.get() && !modifyPacketRot.get()) {
             restoreRot = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
@@ -213,7 +209,7 @@ public class AutoResync extends BaseModule {
     //        }
     //    }
 
-    public void onPostSetBack(Event<PlayerPositionLookS2CPacket> event) {
+    public void onPostSetBack() {
         if (checkNull()) return;
         if (checkNull()) return;
         if (restoreRot != null) {
@@ -225,13 +221,14 @@ public class AutoResync extends BaseModule {
         }
     }
 
-    //    public void onPostRotate(Event<PlayerRotationS2CPacket> eventRotate) {
-    //        if (restoreRot != null) {
-    //            EntityUtils.setEntityPitchSafe(mc.player, restoreRot.x);
-    //            PlayerStateManager.setPlayerYawSafe(mc.player, restoreRot.y);
-    //            restoreRot = null;
-    //        }
-    //    }
+    public void onPostRotate() {
+        if (checkNull()) return;
+        if (restoreRot != null) {
+            EntityUtils.setEntityPitchSafe(mc.player, restoreRot.x);
+            PlayerStateManager.setPlayerYawSafe(mc.player, restoreRot.y);
+            restoreRot = null;
+        }
+    }
 
     public void executeResyncTo(Vec3d resyncPos, Vec3d resyncToPos, boolean currentOnGround) {
         mc.player.setPosition(resyncPos);

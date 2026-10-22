@@ -681,7 +681,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         }
     }
 
-    public void onSendStartUse(Event<PlayerInteractItemC2SPacket> eventPost) {
+    public void onSendStartUse() {
         if (useItem.get() && mc.player.isUsingItem()) {
             grimSlowedByItemFlag = true;
             lastNoSlowUseTick = 0;

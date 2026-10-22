@@ -15,7 +15,6 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.impl.CombatPlayer;
 import me.matl114.events.impl.MetadataUpdate;
-import me.matl114.events.impl.SlotClickAction;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.modules.task.PostManager;
@@ -32,7 +31,6 @@ import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VPacket;
 import me.matl114.versioned.api.VRecord;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.*;
@@ -155,7 +153,7 @@ public class PlayerStateManager extends BaseModule {
                 Integer.MAX_VALUE);
         registerListener(Listener.getPlayerWebSlowPoint(), this::handleInWeb);
         registerListener(Listener.getPlayerFluidVelocityPoint(), this::handleInFluid);
-        registerListener(Listener.getPreGameTick(), this::onPreGameTick);
+        registerListener(Listener.getPreGameTick(), this::handleTick);
         registerListener(
                 Listener.getClientPlayerSendMovementPoint(), this::onPrePlayerSendMovePacket, Integer.MAX_VALUE);
         registerListener(
@@ -166,10 +164,12 @@ public class PlayerStateManager extends BaseModule {
                 Listener.getPacketPoint().getChannel(ClientCommandC2SPacket.class),
                 this::onPlayerCommand,
                 Integer.MAX_VALUE);
-        registerListener(Listener.getPlayerInitConfiguration(), this::onPlayerInitialize);
-        //        registerListener(Listener.getPacketPostSendPoint().getChannel(ClientTickEndC2SPacket.class),
-        // this::onTickEnd);
-        registerListener(Listener.getPostGameTick(), this::onTickEnd, Integer.MAX_VALUE);
+        registerListener(Listener.getPlayerInitConfiguration(), this::onPlayerReset);
+        registerListener(
+                Listener.getPostGameTick(),
+                this::onTickEnd,
+                Integer.MAX_VALUE,
+                true);
         registerListener(Listener.getPreGameTick(), this::updateOtherPlayers);
         registerListener(Listener.getPacketPoint().getChannel(EntityStatusS2CPacket.class), this::onTotemPop);
         registerListener(Listener.getServerLeavePoint(), this::onLeave);
@@ -208,9 +208,8 @@ public class PlayerStateManager extends BaseModule {
                 Listener.getPacketPoint().getChannel(UpdateSelectedSlotC2SPacket.class),
                 this::onSelectedSlot,
                 Integer.MAX_VALUE);
-        registerListener(
-                Listener.getPacketPoint().getChannel(PlayerInteractBlockC2SPacket.class), this::onInteractBlock);
-        registerListener(Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class), this::onInteract);
+        registerListener(Listener.getPacketPoint().getChannel(PlayerInteractBlockC2SPacket.class), this::updateAFK);
+        registerListener(Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class), this::updateAFK);
 
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class),
@@ -218,9 +217,10 @@ public class PlayerStateManager extends BaseModule {
                 Integer.MAX_VALUE);
         registerListener(
                 Listener.getPacketPoint().getChannel(UpdateSelectedSlotC2SPacket.class),
-                this::onUpdateSelectSlot,
-                Integer.MAX_VALUE);
-        registerListener(Listener.getPostClickSlot(), this::onPostContainerClick, Integer.MAX_VALUE);
+                this::detectEquipmentChanges,
+                Integer.MAX_VALUE,
+                true);
+        registerListener(Listener.getPostClickSlot(), this::detectEquipmentChanges, Integer.MAX_VALUE);
     }
 
     public void onMove(Event<PlayerMoveC2SPacket> event) {
@@ -368,15 +368,11 @@ public class PlayerStateManager extends BaseModule {
         }
     }
 
-    public void onPrePlayerSendMovePacket(Event<ClientPlayerEntity> eventPre) {
+    public void onPrePlayerSendMovePacket() {
         // force resync
         if (isRotationDifferent()) {
             ClientPlayerAccess.of(mc.player).setLastRot(lastPitch, lastYaw);
         }
-    }
-
-    public void onPlayerInitialize(Event<ClientPlayerEntity> event) {
-        onPlayerReset();
     }
 
     private static boolean containsInvalidValues(double x, double y, double z) {
@@ -472,7 +468,7 @@ public class PlayerStateManager extends BaseModule {
         lastOnGround = onGround;
     }
 
-    public void handleInWeb(Event<Vec3d> vec3dEvent) {
+    public void handleInWeb() {
         fallDistance = 0.0;
         lastInWeb = true;
         inWeb = true;
@@ -488,10 +484,6 @@ public class PlayerStateManager extends BaseModule {
             realInLava = true;
             lastLavaPush = true;
         }
-    }
-
-    public void onPreGameTick(Event<ClientPlayerEntity> event) {
-        handleTick();
     }
 
     private BlockPos calculateVelocityAffectingPos() {
@@ -659,7 +651,7 @@ public class PlayerStateManager extends BaseModule {
         }
     }
 
-    public void onSwingHand(Event<HandSwingC2SPacket> event) {
+    public void onSwingHand() {
         lastAttackStrengthResetTick = Tasks.getTick();
         updateAFK();
     }
@@ -682,15 +674,6 @@ public class PlayerStateManager extends BaseModule {
         }
     }
 
-    public void onUpdateSelectSlot(Event<UpdateSelectedSlotC2SPacket> event) {
-        if (event.isCancelled()) return;
-        detectEquipmentChanges();
-    }
-
-    public void onPostContainerClick(Event<SlotClickAction> event) {
-        detectEquipmentChanges();
-    }
-
     public void detectEquipmentChanges() {
         if (!ServerFeature.INSTANCE.attributeSwap.get() && ServerFeature.INSTANCE.trackClientAttrUpdate.get()) {
             AttributeUtils.updateAttribute(mc.player);
@@ -710,14 +693,6 @@ public class PlayerStateManager extends BaseModule {
         return Tasks.getTick() - lastAttackStrengthResetTick;
     }
 
-    public void onInteractBlock(Event<PlayerInteractBlockC2SPacket> event) {
-        updateAFK();
-    }
-
-    public void onInteract(Event<PlayerInteractItemC2SPacket> event) {
-        updateAFK();
-    }
-
     public void handleMaceSmash() {
         if (fallDistance > 1.5) {
             fallDistance = 0;
@@ -732,19 +707,19 @@ public class PlayerStateManager extends BaseModule {
         updateAFK();
     }
 
-    public void onClickSlot(Event<SlotClickAction> eventClick) {
+    public void onClickSlot() {
         cooldownInvSummary = 100;
     }
 
-    public void onInventoryUpdate(Event<InventoryS2CPacket> event) {
+    public void onInventoryUpdate() {
         cooldownInvSummary = 100;
     }
 
-    public void onInventorySlotUpdate(Event<ScreenHandlerSlotUpdateS2CPacket> event) {
+    public void onInventorySlotUpdate() {
         cooldownInvSummary = 100;
     }
 
-    public void onInventoryClose(Event<CloseHandledScreenC2SPacket> event) {
+    public void onInventoryClose() {
         cooldownInvSummary = 100;
     }
 
@@ -782,7 +757,7 @@ public class PlayerStateManager extends BaseModule {
         updateAFK();
     }
 
-    public void onTickEnd(Event<ClientPlayerEntity> tickEndPacket) {
+    public void onTickEnd() {
         if (!lastTickHasMovement) {
             lastKnownMovementSpeed = Vec3d.ZERO;
             lastMovementContainsPosition = false;
@@ -883,7 +858,7 @@ public class PlayerStateManager extends BaseModule {
         return re == null ? 0 : re;
     }
 
-    public void updateOtherPlayers(Event<ClientPlayerEntity> eventUpdate) {
+    public void updateOtherPlayers() {
         for (var player : mc.world.getPlayers()) {
             if (player instanceof MetadataHolder metadataHolder) {
                 PlayerStatus status = getOrCreateStatus(player);
@@ -943,7 +918,7 @@ public class PlayerStateManager extends BaseModule {
         }
     }
 
-    public void onLeave(Event<Void> event) {
+    public void onLeave() {
         popMap.clear();
         onPlayerReset();
     }

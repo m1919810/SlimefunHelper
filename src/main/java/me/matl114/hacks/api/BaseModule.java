@@ -250,6 +250,14 @@ public abstract class BaseModule implements ModuleListProvider {
         registeredPoints.add(listener);
     }
 
+    public <W extends Event<?>> void registerListener(ListenerPoint<W> listener, Runnable handler) {
+        registerListener(listener, handler, 0, false);
+    }
+
+    public <W extends Event<?>> void registerListener(ListenerPoint<W> listener, Runnable handler, int p) {
+        registerListener(listener, handler, p, false);
+    }
+
     public <W extends Event<?>> void registerListener(
             ListenerPoint<W> listener, Runnable handler, boolean ignoreCancelled) {
         registerListener(listener, handler, 0, ignoreCancelled);

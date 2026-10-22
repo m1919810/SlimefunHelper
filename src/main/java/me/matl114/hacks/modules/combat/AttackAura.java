@@ -3,7 +3,6 @@ package me.matl114.hacks.modules.combat;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.CombatTasks;
@@ -22,7 +21,6 @@ import me.matl114.utils.AttributeUtils;
 import me.matl114.utils.DamageUtils;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.versioned.api.VItem;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
@@ -201,7 +199,7 @@ public class AttackAura extends BaseModule {
         return status != null && status.visibleStatusEffects.isEmpty();
     }
 
-    public void onTick(Event<ClientPlayerEntity> tickEvent) {
+    public void onTick() {
         if (mc.player == null) return;
         if (enable.get()) {
             Attack attack = CombatTasks.getAttack();

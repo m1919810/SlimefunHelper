@@ -216,7 +216,7 @@ public class ProjectileESP extends BaseModule {
         }
     }
 
-    private void updateRenderCollectors(Event<net.minecraft.client.network.ClientPlayerEntity> event) {
+    private void updateRenderCollectors() {
         trajectoryCollector.clear();
         entityImpactCollector.clear();
         impactCollector.clear();

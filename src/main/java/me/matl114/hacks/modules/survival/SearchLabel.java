@@ -28,7 +28,6 @@ import me.matl114.versioned.api.VDataFlag;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
@@ -312,7 +311,7 @@ public class SearchLabel extends BaseModule {
         loadedWorld = null;
     }
 
-    private void onWorldSwitch(Event<World> event) {
+    private void onWorldSwitch() {
         lastChunkPos = null;
         loadedWorld = null;
         if (enable.get() && labelInWorldMap.get()) {
@@ -320,7 +319,7 @@ public class SearchLabel extends BaseModule {
         }
     }
 
-    public void onPostTick(Event<ClientPlayerEntity> eventUpdate) {
+    public void onPostTick() {
         if (enable.get() && labelInWorldMap.get() && !Objects.equals(loadedWorld, mc.world.getRegistryKey())) {
             loadCurrentData();
         }

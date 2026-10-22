@@ -122,7 +122,7 @@ public class Misc extends BaseModule {
         if (checkNull()) return;
     }
 
-    public void onPreGameTick(Event<ClientPlayerEntity> event) {
+    public void onPreGameTick() {
         if (checkNull()) return;
         int tick = Tasks.getTick() % 10;
         if (friendsWineEnable.get() && !mc.player.isFallFlying()) {
@@ -135,7 +135,7 @@ public class Misc extends BaseModule {
         }
     }
 
-    private void updateParkour(Event<ClientPlayerEntity> event) {
+    private void updateParkour() {
         parkourTarget.clear();
         parkourTrajectory.clear();
         if (checkNull()) {
@@ -354,7 +354,7 @@ public class Misc extends BaseModule {
         event.cancel();
     }
 
-    private void onParkourQueueShutdown(Event<Void> event) {
+    private void onParkourQueueShutdown() {
         parkourPacketQueueing = false;
         parkourPacketQueueActive = false;
         parkourPacketStart = null;

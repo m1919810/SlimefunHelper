@@ -184,7 +184,7 @@ public class BadPacketsFix extends BaseModule {
 
     boolean exempt = false;
 
-    public void onTeleportConfirm(Event<TeleportConfirmC2SPacket> packetEvent) {
+    public void onTeleportConfirm() {
         exempt = true;
     }
 

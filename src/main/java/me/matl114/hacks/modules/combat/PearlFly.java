@@ -106,7 +106,7 @@ public class PearlFly extends BaseModule {
 
     Vec2f pearlThrowRotation = null;
 
-    public void onInputEvent(Event<Void> event) {
+    public void onInputEvent() {
         if (checkNull()) return;
         if (enablePearlPhase.get()) {
             var pose = mc.player.getPose();

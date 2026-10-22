@@ -57,7 +57,7 @@ public class PacketOrderManager extends BaseModule {
         }
     }
 
-    public void onInteractBlock(Event<PlayerInteractBlockC2SPacket> event) {
+    public void onInteractBlock() {
         placing = true;
     }
 
@@ -102,6 +102,16 @@ public class PacketOrderManager extends BaseModule {
                 PlayerMoveC2SPacketAccess.of(event.context).getCause();
         if (cause != PlayerMoveC2SPacketAccess.Cause.SET_BACK && cause != PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP) {
             onTick();
+        }
+    }
+
+    public void onTickEnd() {
+        if (lastTickMove) {
+            lastTickMove = false;
+        } else {
+            if (ViaFabricPlusHooks.isSupportEndTick()) {
+                onTick();
+            }
         }
     }
 }

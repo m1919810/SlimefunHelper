@@ -14,7 +14,6 @@ import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.With;
-import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.annotations.Broadcast;
 import me.matl114.events.annotations.ExtraArgs;
@@ -38,7 +37,6 @@ import me.matl114.managers.file.FileStorage;
 import me.matl114.utils.CollectionUtils;
 import me.matl114.utils.CommonUtils;
 import me.matl114.utils.Debug;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.registry.DynamicRegistryManager;
@@ -400,17 +398,17 @@ public class ServerStorage extends BaseModule {
         }
     }
 
-    public void onGameJoin(Event<ClientPlayerEntity> eventPlayerEntity) {
+    public void onGameJoin() {
         if (updateServerName()) {
             onLoadStorage();
         }
     }
 
-    public void onGameSwitchWorld(Event<World> event) {
+    public void onGameSwitchWorld() {
         processAsyncUpdateMapSnapshot(null);
     }
 
-    public void onGameLeave(Event<Void> eventVoid) {
+    public void onGameLeave() {
         processAsyncUpdateMapSnapshot(null);
         DynamicRegistryManager registry = mc.getNetworkHandler().getRegistryManager();
         CompletableFuture.runAsync(() -> onSave(registry));

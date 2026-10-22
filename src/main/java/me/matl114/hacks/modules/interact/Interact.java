@@ -237,7 +237,7 @@ public class Interact extends BaseModule {
         return null;
     }
 
-    public void onPreTick(Event<ClientPlayerEntity> event) {
+    public void onPreTick() {
         currentInteractTarget = null;
         if (enable.get()) {
             HitResult currentCrosshairTarget = mc.crosshairTarget;
@@ -735,7 +735,7 @@ public class Interact extends BaseModule {
             RenderCollectors.createEntityBoxCollector(false, true, false);
     private final RenderCollector<Box> blockTargetCollector = RenderCollectors.createBoxCollector(false, true, false);
 
-    private void updateRenderCollector(Event<ClientPlayerEntity> event) {
+    private void updateRenderCollector() {
         entityTargetCollector.clear();
         blockTargetCollector.clear();
         if (!renderAttackTarget.get() || mc.player == null || mc.world == null || currentInteractTarget == null) return;

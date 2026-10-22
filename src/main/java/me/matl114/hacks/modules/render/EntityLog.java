@@ -445,7 +445,7 @@ public class EntityLog extends BaseModule {
         }
     }
 
-    public void onPostGameTick(Event<ClientPlayerEntity> event) {
+    public void onPostGameTick() {
         if (worldDirty && !checkNull()) {
             XaeroHelper xaeroHelper = XaeroHelper.INSTANCE;
             if (xaeroHelper != null) {
@@ -475,11 +475,11 @@ public class EntityLog extends BaseModule {
         }
     }
 
-    private void onXaeroWorldSwitch(Event<World> event) {
+    private void onXaeroWorldSwitch() {
         worldDirty = true;
     }
 
-    public void onServerExit(Event<Void> eventLeave) {
+    public void onServerExit() {
         offLinePos.clear();
     }
 
@@ -489,7 +489,7 @@ public class EntityLog extends BaseModule {
     RenderCollector<Vec3d> tracing = RenderCollectors.createTracerCollector();
     RenderCollector<RenderElements.Text> texting = RenderCollectors.createTextCollector();
 
-    public void onUpdate(Event<Void> eventUpdate) {
+    public void onUpdate() {
         entityFace.clear();
         tracing.clear();
         texting.clear();

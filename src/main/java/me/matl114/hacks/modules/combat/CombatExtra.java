@@ -31,7 +31,6 @@ import net.minecraft.network.packet.s2c.play.EntityTrackerUpdateS2CPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
-import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
@@ -99,7 +98,7 @@ public class CombatExtra extends BaseModule {
 
     public int shieldExceptionspam = 0;
 
-    public void onUseAttackNoSlow(Event<HitResult> event) {
+    public void onUseAttackNoSlow() {
         //        if (shieldAttack.get() && mc.player.isUsingItem()) {
         //            MovTasks.getNoSlowDown().setPreAttackUseTick();
         //        }
@@ -207,7 +206,7 @@ public class CombatExtra extends BaseModule {
         getTracker(entity).onMovement(!tickReliable);
     }
 
-    public void onClientTickEndPacket(Event<ClientPlayerEntity> event) {
+    public void onClientTickEndPacket() {
         if (ViaFabricPlusHooks.isSupportEndTick() && !PlayerStateManager.INSTANCE.lastTickHasMovement) {
             mc.world.getPlayers().forEach(s -> {
                 if (s instanceof OtherClientPlayerEntity) {

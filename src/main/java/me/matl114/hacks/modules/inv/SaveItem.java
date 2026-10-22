@@ -41,15 +41,9 @@ public class SaveItem extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(InvTasks.getCustomItemDatabase().getItemDataBaseLoad(), (ev) -> {
-            onLoad();
-        });
-        registerListener(InvTasks.getCustomItemDatabase().getItemDataBaseSave(), (ev) -> {
-            onSave();
-        });
-        registerListener(InvTasks.getCustomItemDatabase().getItemDataBaseUnload(), (ev) -> {
-            onUnload();
-        });
+        registerListener(InvTasks.getCustomItemDatabase().getItemDataBaseLoad(), this::onLoad);
+        registerListener(InvTasks.getCustomItemDatabase().getItemDataBaseSave(), this::onSave);
+        registerListener(InvTasks.getCustomItemDatabase().getItemDataBaseUnload(), this::onUnload);
     }
 
     public boolean ensureLoad() {

@@ -79,7 +79,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
         enableSprintDirectionalThisTick = false;
     }
 
-    public void onTick(Event<ClientPlayerEntity> event) {
+    public void onTick() {
         if (autoSprintLegal.get()) {
             if (!mc.options.sprintKey.isPressed()
                     && PlayerInputUtils.of(mc.options).hasWASDMovement()) {

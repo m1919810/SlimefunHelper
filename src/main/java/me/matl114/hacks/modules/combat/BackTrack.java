@@ -60,7 +60,7 @@ public class BackTrack extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(PacketManager.getPacketQueueInEvent(), this::onQueuePlayerPosition);
-        registerListener(PacketManager.getQueueShutdownEvent(), this::onShutdownQueue);
+        registerListener(PacketManager.getQueueShutdownEvent(), this::onShutdown);
         registerListener(Listener.getPreTick(), this::onTick);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
     }
@@ -225,11 +225,7 @@ public class BackTrack extends BaseModule {
         }
     }
 
-    public void onShutdownQueue(Event<Void> event) {
-        onShutdown();
-    }
-
-    public void onTick(Event<Void> eventTick) {
+    public void onTick() {
         if (checkNull()) {
             onShutdown();
             return;

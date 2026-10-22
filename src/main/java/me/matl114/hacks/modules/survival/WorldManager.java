@@ -41,7 +41,6 @@ import net.minecraft.block.entity.TrialSpawnerBlockEntity;
 import net.minecraft.block.entity.VaultBlockEntity;
 import net.minecraft.block.enums.TrialSpawnerState;
 import net.minecraft.block.enums.VaultState;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
@@ -397,7 +396,7 @@ public class WorldManager extends BaseModule {
 
     int timer = 0;
 
-    public void onGameTick(Event<ClientPlayerEntity> event) {
+    public void onGameTick() {
         if (checkNull()) return;
         if (++timer < 10) {
             return;

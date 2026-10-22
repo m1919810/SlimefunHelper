@@ -33,7 +33,6 @@ import me.matl114.utils.algorithms.SerialExecutor;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.containers.MetaData;
 import net.minecraft.block.*;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -117,8 +116,8 @@ public class CombatManager extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreGameTick(), this::onPreTick);
-        registerListener(Listener.getPlayerRespawnPoint(), this::onWorldSwitch);
-        registerListener(Listener.getServerLeavePoint(), this::onServerLeave);
+        registerListener(Listener.getPlayerRespawnPoint(), this::clearWorldState);
+        registerListener(Listener.getServerLeavePoint(), this::clearWorldState);
         registerListener(Listener.getBlockUpdateListener(), this::onBlockUpdate);
         registerListener(Listener.getChunkUpdateListener(), this::onChunkData);
         registerListener(
@@ -474,17 +473,12 @@ public class CombatManager extends BaseModule {
         trackedHoles = holes;
     }
 
-    public void onWorldSwitch(Event<ClientPlayerEntity> event) {
+    private void clearWorldState() {
         clearCaches();
         clearCombatState();
     }
 
-    public void onServerLeave(Event<Void> event) {
-        clearCaches();
-        clearCombatState();
-    }
-
-    public void onPreTick(Event<ClientPlayerEntity> event) {
+    public void onPreTick() {
         if (checkNull()) {
             return;
         }

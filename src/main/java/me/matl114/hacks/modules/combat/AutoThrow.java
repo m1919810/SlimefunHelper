@@ -208,7 +208,7 @@ public class AutoThrow extends BaseModule {
 
     int timer = 0;
 
-    public void onPreInputEvent(Event<Void> event) {
+    public void onPreInputEvent() {
         if (checkNull()) return;
         if (canThrow()) {
             if (eatingAbort.get() && mc.player.isUsingItem()) return;

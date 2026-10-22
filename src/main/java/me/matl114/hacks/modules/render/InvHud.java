@@ -16,7 +16,6 @@ import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.inventory.ItemStackSample;
 import me.matl114.versioned.api.VDrawContext;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
@@ -66,7 +65,7 @@ public class InvHud extends BaseModule {
 
     List<ItemStack> toShow;
 
-    public void onPostTick(Event<ClientPlayerEntity> event) {
+    public void onPostTick() {
         if (enable.get()) {
             toShow = new ArrayList<>();
             Map<ItemStackSample, Integer> map;

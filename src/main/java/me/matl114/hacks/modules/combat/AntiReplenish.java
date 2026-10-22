@@ -40,7 +40,6 @@ import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.World;
 
 public class AntiReplenish extends BaseModule {
     public AntiReplenish() {
@@ -118,7 +117,7 @@ public class AntiReplenish extends BaseModule {
     boolean pendingWaitingScreen = false;
     TimerExecutor timerExecutor = new TimerExecutor();
 
-    public void onPreHandleEvent(Event<Void> event) {
+    public void onPreHandleEvent() {
         if (enable.get()) {
             cachedStolenPoses.removeIf(s -> !(mc.world.getBlockState(s).getBlock() instanceof ShulkerBoxBlock));
             if (eatingAbort.get() && mc.player.isUsingItem()) return;
@@ -177,7 +176,7 @@ public class AntiReplenish extends BaseModule {
         return InventoryUtils.streamInventory(blockEntity).anyMatch(s -> !s.isEmpty());
     }
 
-    private void onSwitchWorld(Event<World> event) {
+    private void onSwitchWorld() {
         cachedStolenPoses.clear();
     }
 

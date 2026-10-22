@@ -158,7 +158,7 @@ public class AutoSurround extends BaseModule {
     StateExecutor needPlaceState = new StateExecutor();
     BlockPos lastCenter;
 
-    public void onInput(Event<Void> inputEvent) {
+    public void onInput() {
         boolean triggerCenterFix = false;
         if (enable.get()) {
             boolean bl = mc.player.isSneaking();

@@ -150,7 +150,7 @@ public abstract class INameTag extends BaseModule {
         }
     }
 
-    public void onUpdate(Event<Void> eventGameUpdate) {
+    public void onUpdate() {
         if (!checkNull() && enable.get()) {
             nameTagInfos = new ArrayList<>();
             for (var player : mc.world.getPlayers()) {

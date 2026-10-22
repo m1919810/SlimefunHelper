@@ -59,7 +59,7 @@ public class SlimefunModels extends BaseModule {
 
     private final Map<ModelIdentifier, Optional<BakedModel>> modelCache = new HashMap<>();
 
-    public void onResourceReload(Event<ResourceManager> resourceManager) {
+    public void onResourceReload() {
         customModelDatas.clear();
         loadCustomModelDatas();
     }

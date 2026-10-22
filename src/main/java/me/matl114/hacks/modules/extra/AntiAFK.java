@@ -1,6 +1,5 @@
 package me.matl114.hacks.modules.extra;
 
-import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -49,7 +48,7 @@ public class AntiAFK extends BaseModule {
         registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvent);
     }
 
-    public void onPreInputEvent(Event<Void> event) {
+    public void onPreInputEvent() {
         if (enable.get() && PlayerStateManager.INSTANCE.lastActiveTicks < Tasks.getTick() - delay.get()) {
             if (move.get() || jump.get()) {
                 var modifier = PlayerInputManager.Modifier.empty(0);

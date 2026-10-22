@@ -80,7 +80,7 @@ public class QueueMine extends BaseModule {
     RenderCollector<Box> outline = RenderCollectors.createBoxCollector(true, false, false);
     boolean lastRequestContainsDoubleBreak = false;
 
-    public void onPostInputEvent(Event<Void> eventVoid) {
+    public void onPostInputEvent() {
         if (checkNull()) return;
 
         if (!(mc.player.isUsingItem() && eatingAbort.get())) {

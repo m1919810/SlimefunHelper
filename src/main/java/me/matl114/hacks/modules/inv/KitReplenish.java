@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import lombok.With;
-import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.WidgetUtils;
 import me.matl114.gui.basic.*;
@@ -67,7 +66,6 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.ShulkerBoxBlock;
 import net.minecraft.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.ComponentType;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ContainerComponent;
@@ -189,11 +187,11 @@ public class KitReplenish extends BaseModule {
         transaction = null;
     }
 
-    public void onSwitchWorld(Event<ClientPlayerEntity> event) {}
+    public void onSwitchWorld() {}
 
     int timerPostResortInventory = 0;
 
-    public void onPreInputEvent(Event<Void> event) {
+    public void onPreInputEvent() {
         if (checkNull()) return;
         if (transaction != null) {
             process:

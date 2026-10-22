@@ -120,7 +120,7 @@ public class BlockFarm extends BaseModule {
 
     int timer;
 
-    public void onPreInput(Event<Void> event) {
+    public void onPreInput() {
         if (checkNull()) return;
         textRenderer.clear();
         if (enable.get() && currentPlacingItem != null) {

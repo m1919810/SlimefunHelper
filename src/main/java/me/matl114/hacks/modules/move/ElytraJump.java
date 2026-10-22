@@ -133,7 +133,7 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
         }
     }
 
-    public void onPreInputEvent(Event<Void> event) {
+    public void onPreInputEvent() {
         if (workThisTick
                 && currentLandingBlock != null
                 && autoMineStoneAndNetherrackObstacles.get()
@@ -145,7 +145,7 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
         }
     }
 
-    public void onPacketFlush(Event<Void> event) {
+    public void onPacketFlush() {
         queueing = false;
     }
 

@@ -267,7 +267,7 @@ public class ItemESP extends BaseModule {
 
     final RenderCollector<RenderElements.Text> textCollector = RenderCollectors.createTextCollector();
 
-    public void onUpdate(Event<Void> eventVoid) {
+    public void onUpdate() {
         boxCollector.clear();
         tracerCollector.clear();
         textCollector.clear();

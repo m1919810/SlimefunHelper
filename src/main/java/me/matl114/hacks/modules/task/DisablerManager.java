@@ -6,7 +6,6 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
 import me.matl114.events.impl.EventContainer;
-import me.matl114.events.impl.SlotClickAction;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
@@ -115,18 +114,19 @@ public class DisablerManager extends BaseModule implements LegalMovementManager.
                 Integer.MAX_VALUE - 1);
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onFlying);
         registerListener(Listener.getPacketPoint().getChannel(CommonPongC2SPacket.class), this::onPingPong);
-        registerListener(Listener.getPreClickSlot(), this::onGhostHandSwapBack);
+        registerListener(Listener.getPreClickSlot(), this::onGhostHandSwapBack, Integer.MAX_VALUE, true);
         registerListener(
                 Listener.getPacketPoint().getChannel(UpdateSelectedSlotC2SPacket.class),
                 this::onGhostHandSwap,
-                Integer.MAX_VALUE - 1);
+                Integer.MAX_VALUE - 1,
+                true);
         registerListener(
                 Listener.getPacketPoint().getChannel(ClientCommandC2SPacket.class),
                 this::onPacketSprint,
                 Integer.MAX_VALUE);
     }
     // already fixed ,
-    public void onRespawn(Event<PlayerRespawnS2CPacket> respawn) {
+    public void onRespawn() {
         if (!grimSelfCheckDisabler) {
             grimSelfCheckDisabler = true;
         }
@@ -171,7 +171,7 @@ public class DisablerManager extends BaseModule implements LegalMovementManager.
         return enable.get() && currentAC.get() == SupportAC.GRIM && (grimMultiplace.get());
     }
 
-    public void onDisconnect(Event<Void> eventDisconnect) {
+    public void onDisconnect() {
         grimSelfCheckDisabler = false;
     }
 
@@ -218,8 +218,7 @@ public class DisablerManager extends BaseModule implements LegalMovementManager.
         return false;
     }
     // flush delayPlaceQueue when use Inv_Swap ghost hand
-    public void onGhostHandSwapBack(Event<SlotClickAction> eventSlot) {
-        if (eventSlot.isCancelled()) return;
+    public void onGhostHandSwapBack() {
         // do not flush on high version because they need to pass the post-flying rotation check
         if (enable.get()
                 && hasAnyPlaceActionGrimQueue
@@ -230,8 +229,7 @@ public class DisablerManager extends BaseModule implements LegalMovementManager.
     }
 
     // grim flush its delayPlaceQueue when swap
-    public void onGhostHandSwap(Event<UpdateSelectedSlotC2SPacket> event) {
-        if (event.isCancelled()) return;
+    public void onGhostHandSwap() {
         hasAnyPlaceActionGrimQueue = false;
     }
     // MultiPlace bypass, fix place before delayQueuePlace flush -> grim flag AirLiquidPlace
@@ -303,7 +301,7 @@ public class DisablerManager extends BaseModule implements LegalMovementManager.
         }
     }
 
-    public void onTick(Event<Void> event) {
+    public void onTick() {
         hasPlaceThisTick = false;
         hasAnySprintPacketAlreadyOrPending = false;
     }

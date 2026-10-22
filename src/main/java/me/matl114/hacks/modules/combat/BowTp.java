@@ -253,7 +253,7 @@ public class BowTp extends BaseModule {
         return false;
     }
 
-    private void updateRenderCollector(Event<ClientPlayerEntity> event) {
+    private void updateRenderCollector() {
         targetCollector.clear();
         if (!enable.get() || mc.player == null || !render.get()) return;
         if (!mc.player.isUsingItem() || !(mc.player.getActiveItem().getItem() instanceof BowItem)) return;
