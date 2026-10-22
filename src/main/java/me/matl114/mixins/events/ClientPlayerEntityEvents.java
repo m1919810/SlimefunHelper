@@ -79,6 +79,9 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     @Shadow
     private int ticksSinceLastPositionPacketSent;
 
+    @Shadow
+    public abstract boolean shouldSlowDown();
+
     public ClientPlayerEntityEvents(ClientWorld world, GameProfile profile) {
         super(world, profile);
     }
@@ -161,7 +164,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         // changed, update movementVector
         if (!Objects.equals(currentInput, this.input.playerInput)) {
             PlayerInputUtils.Input i0 = new PlayerInputUtils.Input(this.input.playerInput);
-            i0.syncMovementVector(this.input);
+            i0.syncMovementVector(this.input, this.shouldSlowDown());
         }
     }
 
