@@ -188,8 +188,24 @@ public class SequencedActionManager extends BaseModule {
         return maxAckSeq;
     }
 
-    public boolean isWaitingBreakResponse(Predicate<BlockPos> bp) {
-        return blockBreakSequences.stream().anyMatch(s -> bp.test(s.val().blockPos()));
+    public boolean isWaitingStopBreakResponse(BlockPos pos) {
+        return isWaitingStopBreakResponse(pos::equals);
+    }
+
+    public boolean isWaitingStopBreakResponse(Predicate<BlockPos> bp) {
+        return blockBreakSequences.stream()
+                .anyMatch(s -> s.val().stage() == BlockBreak.Stage.POST
+                        && bp.test(s.val().blockPos()));
+    }
+
+    public boolean isWaitingStartBreakResponse(BlockPos pos) {
+        return isWaitingStartBreakResponse(pos::equals);
+    }
+
+    public boolean isWaitingStartBreakResponse(Predicate<BlockPos> bp) {
+        return blockBreakSequences.stream()
+                .anyMatch(s -> s.val().stage() == BlockBreak.Stage.PRE
+                        && bp.test(s.val().blockPos()));
     }
 
     public boolean isWaitingBlockBreakResponse(Predicate<BlockBreak> bp) {

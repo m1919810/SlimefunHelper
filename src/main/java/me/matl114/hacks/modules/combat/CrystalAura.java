@@ -272,7 +272,7 @@ public class CrystalAura extends BaseModule {
             Pair<BlockPos, BlockState> currentPair = Pair.of(pos, mc.world.getBlockState(pos));
             if (!Objects.equals(currentPair, lastMiningTarget)) {
                 lastMiningTarget = currentPair;
-                if (SequencedActionManager.INSTANCE.isWaitingBreakResponse(pos::equals)) {
+                if (SequencedActionManager.INSTANCE.isWaitingStopBreakResponse(pos)) {
                     shouldWorkFill = true;
                 }
             }
