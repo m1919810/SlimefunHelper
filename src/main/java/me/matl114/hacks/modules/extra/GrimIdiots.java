@@ -3,7 +3,6 @@ package me.matl114.hacks.modules.extra;
 import java.util.List;
 import java.util.function.Predicate;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
-import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -570,7 +569,7 @@ public class GrimIdiots extends BaseModule {
         return false;
     }
 
-    private void onPreInputEvent(Event<Void> event) {
+    private void onPreInputEvent() {
         if (checkNull()) {
             return;
         }

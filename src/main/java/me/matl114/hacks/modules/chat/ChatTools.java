@@ -28,7 +28,6 @@ import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -112,7 +111,7 @@ public class ChatTools extends BaseModule {
 
     public int counter = 0;
 
-    public void onTick(Event<ClientPlayerEntity> gt) {
+    public void onTick() {
         if (mc.getNetworkHandler() != null && autoSend.get()) {
             counter += 1;
             if (counter >= period.getValue()) {

@@ -118,7 +118,7 @@ public class AutoTrap extends BaseModule {
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPreset);
     }
 
-    private void onInput(Event<Void> event) {
+    private void onInput() {
         if (checkNull()) {
             return;
         }

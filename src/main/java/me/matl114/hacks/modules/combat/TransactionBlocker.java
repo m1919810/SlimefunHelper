@@ -106,7 +106,7 @@ public class TransactionBlocker extends BaseModule {
         }
     }
 
-    public void onPlayerRespawnLook(Event<PlayerPositionLookS2CPacket> event) {
+    public void onPlayerRespawnLook() {
         if (enableC.get() && mc.player != null && mc.player.getAbilities().flying) {
             Debug.chat("Start");
             enable.set(true);

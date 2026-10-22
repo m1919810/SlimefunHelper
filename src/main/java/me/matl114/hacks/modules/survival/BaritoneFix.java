@@ -27,7 +27,6 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec2f;
 
 public class BaritoneFix extends BaseModule implements LegalMovementManager.MovementModifier {
     public static BaritoneFix INSTANCE;
@@ -256,7 +255,7 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
         }
     }
 
-    public void onBaritoneMoveRot(Event<Vec2f> vec2fEvent) {}
+    public void onBaritoneMoveRot() {}
 
     @Override
     public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {

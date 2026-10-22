@@ -93,7 +93,7 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
         removeCamera();
     }
 
-    public void onWorldSwitch(Event<ClientPlayerEntity> event) {
+    public void onWorldSwitch() {
         if (enable.get()) {
             Tasks.scheduleDelayed(this::initializeCamera, 1);
         }
@@ -126,7 +126,7 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
         displayEntity = null;
     }
 
-    public void onTick(Event<ClientPlayerEntity> event) {
+    public void onTick() {
         if (camera == null || mc.world == null) return;
         // nop
         // mc.world.tickEntity(camera);

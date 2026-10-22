@@ -20,7 +20,6 @@ import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.RenderCollector;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.Entity;
@@ -75,7 +74,7 @@ public class VillagerEsp extends BaseModule {
         textCollector.clear();
     }
 
-    public void onTick(Event<ClientPlayerEntity> event) {
+    public void onTick() {
         textCollector.clear();
         if (checkNull() || !enable.get() || WorldManager.INSTANCE == null) {
             return;

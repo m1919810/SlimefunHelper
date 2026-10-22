@@ -19,10 +19,8 @@ import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.CollectionUtils;
 import me.matl114.utils.InventoryUtils;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
-import net.minecraft.world.World;
 
 public class EventCommand extends BaseModule {
     public static EventCommand INSTANCE;
@@ -311,7 +309,7 @@ public class EventCommand extends BaseModule {
     //        }
     //    }
     //
-    public void onWorldChange(Event<World> event) {
+    public void onWorldChange() {
         if (enable.get()) {
             Tasks.scheduleDelayedPre(
                     () -> {
@@ -321,7 +319,7 @@ public class EventCommand extends BaseModule {
         }
     }
     //
-    public void onGameJoin(Event<ClientPlayerEntity> event) {
+    public void onGameJoin() {
         conditionCommand.clear();
         if (enable.get()) {
             Tasks.scheduleDelayedPre(
@@ -332,7 +330,7 @@ public class EventCommand extends BaseModule {
         }
     }
 
-    public void onPostTick(Event<ClientPlayerEntity> eventPost) {
+    public void onPostTick() {
         if (enable.get()) {
             onEvent(EventType.TICK, null);
             conditionCommand.removeIf(pair -> {

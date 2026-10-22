@@ -55,7 +55,6 @@ import net.minecraft.util.math.intprovider.IntProvider;
 import net.minecraft.util.math.random.ChunkRandom;
 import net.minecraft.world.HeightLimitView;
 import net.minecraft.world.Heightmap;
-import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.chunk.Chunk;
@@ -185,7 +184,7 @@ public class SeedOre extends BaseModule {
     }
 
     // -26225.23 67.00 -23482.37
-    public void onDimensionChange(Event<World> v) {
+    public void onDimensionChange() {
         onClearCachedResults();
         if (isActive()) {
             // reload config

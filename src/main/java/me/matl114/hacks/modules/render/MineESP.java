@@ -119,7 +119,7 @@ public class MineESP extends BaseModule {
     final RenderCollector<Box> progressRenderer = RenderCollectors.createBoxCollector(true, true, false);
     final RenderCollector<RenderElements.Text> textRenderer = RenderCollectors.createTextCollector();
 
-    public void onUpdate(Event<ClientPlayerEntity> eventUpdate) {
+    public void onUpdate() {
         textRenderer.clear();
         frameRenderer.clear();
         progressRenderer.clear();

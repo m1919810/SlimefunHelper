@@ -151,7 +151,7 @@ public class SpearEnhance extends BaseModule {
         return mc.player.getActiveItem();
     }
 
-    public void onPreTick(Event<ClientPlayerEntity> tickEvent) {
+    public void onPreTick() {
         if (isUsingSpear(mc.player)) {
             ItemStack stack = getSpear();
             int maxKineticTime = getMaxKineticTime(stack);
@@ -166,7 +166,7 @@ public class SpearEnhance extends BaseModule {
     private final RenderCollector<Entity> kineticPlayerCollector =
             RenderCollectors.createEntityBoxCollector(false, true, false);
 
-    private void updateKineticPlayerCollector(Event<ClientPlayerEntity> event) {
+    private void updateKineticPlayerCollector() {
         kineticPlayerCollector.clear();
         if (checkNull() || !renderKineticPlayers.get()) return;
         int color = renderColor.get().withAlpha(64);

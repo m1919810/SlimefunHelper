@@ -30,7 +30,6 @@ import me.matl114.utils.collections.IndexEntry;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.RespawnAnchorBlock;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItem;
@@ -186,7 +185,7 @@ public class AnchorAura extends BaseModule {
     private AnchorPlan pendingPlace;
     private double maxExistingDamageValue = Double.NEGATIVE_INFINITY;
 
-    public void onSwitchWorld(Event<ClientPlayerEntity> event) {
+    public void onSwitchWorld() {
         trackedAnchorPositions.clear();
         targetEntity = List.of();
         pendingPlace = null;
@@ -339,7 +338,7 @@ public class AnchorAura extends BaseModule {
 
     int timer = 0;
 
-    public void onPostInputEvents(Event<Void> event) {
+    public void onPostInputEvents() {
         if (checkNull()) return;
         if (enable.get()) {
             if (!InteractUtils.canRespawnAnchorExplode(mc.world)) {

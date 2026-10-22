@@ -1,6 +1,5 @@
 package me.matl114.hacks.modules.interact;
 
-import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -43,7 +42,7 @@ public class AutoRide extends BaseModule {
     Entity lastEntity;
     int cd1 = 0;
 
-    public void handleInput(Event<Void> event) {
+    public void handleInput() {
         if (enable.get() && !mc.player.hasVehicle()) {
             if (++cd1 > cd.get()) {
                 cd1 = 0;

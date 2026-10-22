@@ -8,7 +8,6 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.managers.Tasks;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
 
 public class PostManager extends BaseModule {
@@ -39,11 +38,11 @@ public class PostManager extends BaseModule {
         queuePackets.addLast(packet);
     }
 
-    public void onPreTick(Event<Void> tick) {
+    public void onPreTick() {
         runAllQueuePackets(mc.getNetworkHandler());
     }
 
-    public void peekPingPacketIn(Event<CommonPingS2CPacket> packetPing) {
+    public void peekPingPacketIn() {
         peekPingRequest += 1;
         lastPingTick = Tasks.getTick();
         //        Debug.info("in", packetPing.getPacketId(), peekPingRequest);
@@ -119,7 +118,7 @@ public class PostManager extends BaseModule {
         //        hasHandledPongPacket = false;
     }
 
-    private void onWatchPingLongTimeNoSent(Event<ClientPlayerEntity> v) {
+    private void onWatchPingLongTimeNoSent() {
         if (peekPingRequest > 0 && lastPingTick + 20 < Tasks.getTick()) {
             peekPingRequest = 0;
             lastPingTick = Tasks.getTick();

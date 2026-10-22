@@ -145,7 +145,7 @@ public class Blink extends BaseModule {
         Debug.chat("[Blink] Disable and flush");
     }
 
-    public void onShutdown(Event<Void> eve) {
+    public void onShutdown() {
         if (enable.get()) {
             enable.set(false);
         }
@@ -210,7 +210,7 @@ public class Blink extends BaseModule {
         }
     }
 
-    public void onTick(Event<Void> tickEvent) {
+    public void onTick() {
         if (enable.get()) {
             if (mc.player != null && startPlayerPos == null) {
                 startPlayerPos = new EntityMovementStatus<>(mc.player);
@@ -250,7 +250,7 @@ public class Blink extends BaseModule {
         }
     }
 
-    public void onDisconnect(Event<Void> disconnect) {
+    public void onDisconnect() {
         enable.set(false);
     }
 

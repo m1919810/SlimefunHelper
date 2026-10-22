@@ -18,7 +18,6 @@ import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.entity.PlayerInputUtils;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
@@ -288,7 +287,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
 
     private BlockPos lastBlockPos;
 
-    public void onPreTick(Event<ClientPlayerEntity> eventPreTick) {
+    public void onPreTick() {
         if (!enable.get()) {
             return;
         }
@@ -334,7 +333,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         }
     }
 
-    public void onBlockUpdate(Event<BlockUpdateS2CPacket> eventBlockUpdate) {
+    public void onBlockUpdate() {
         //        if(enable.get()){
         //            BlockPos pos = eventBlockUpdate.drawContext.getPos();
         //            if(pos.getSquaredDistance(mc.player.getPos()) < 10){
@@ -344,9 +343,9 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         //        }
     }
 
-    public void onPing(Event<CommonPingS2CPacket> pingEvent) {}
+    public void onPing() {}
 
-    public void onSetPosition(Event<PlayerPositionLookS2CPacket> event) {
+    public void onSetPosition() {
         lastSetBackNS = System.nanoTime();
     }
     //    public void onPlayerSetBackPacket(Event<PlayerPositionLookS2CPacket> event){
@@ -355,7 +354,7 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
     //        }
     //    }
 
-    public void onSendMove(Event<PlayerMoveC2SPacket> event) {}
+    public void onSendMove() {}
 
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {}

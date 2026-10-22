@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Set;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.events.impl.SlotClickAction;
 import me.matl114.events.impl.UseItem;
 import me.matl114.events.impl.UseItemOnBlock;
 import me.matl114.hacks.InvTasks;
@@ -21,7 +20,6 @@ import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.InventoryUtils;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -129,7 +127,7 @@ public class InvHelper extends BaseModule {
 
     int timer;
 
-    public void onInventoryTick(Event<ClientPlayerEntity> event) {
+    public void onInventoryTick() {
         if (checkNull()) return;
         preTickItems.put(
                 Hand.MAIN_HAND, mc.player.getStackInHand(Hand.MAIN_HAND).copy());
@@ -329,7 +327,7 @@ public class InvHelper extends BaseModule {
     }
 
     // prevent resupply to ghost hand
-    public void onPreSlotClick(Event<SlotClickAction> event) {
+    public void onPreSlotClick() {
         if (InteractManager.INSTANCE.duringInputEvent) {
             hasAnyUse = false;
             hasAnyUseOn = false;

@@ -60,7 +60,7 @@ public class PacketOrderManager extends BaseModule {
         }
     }
 
-    public void onInteractBlock(Event<PlayerInteractBlockC2SPacket> event) {
+    public void onInteractBlock() {
         placing = true;
     }
 
@@ -108,7 +108,7 @@ public class PacketOrderManager extends BaseModule {
         }
     }
 
-    public void onTickEnd(Event<ClientTickEndC2SPacket> event) {
+    public void onTickEnd() {
         if (lastTickMove) {
             lastTickMove = false;
         } else {

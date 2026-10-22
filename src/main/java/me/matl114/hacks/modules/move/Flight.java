@@ -485,7 +485,7 @@ public class Flight extends BaseModule implements LegalMovementManager.MovementM
         //        }
     }
 
-    public void onInterceptFlyInput(Event<PlayerInputC2SPacket> inputPacketEvent) {
+    public void onInterceptFlyInput() {
         //        if(fake1.get() && !serverSideCanFly && mc.player.getAbilities().flying){
         //            // hack fly
         //            inputPacketEvent.cancel();

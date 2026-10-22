@@ -42,7 +42,7 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getServerLeavePoint(), this::onServerLeave);
+        registerListener(Listener.getServerLeavePoint(), this::clearRequests);
         registerListener(PacketManager.getPacketQueueOutEvent(), this::onQueuePacket);
     }
 
@@ -145,10 +145,6 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
             });
         }
         return true;
-    }
-
-    private void onServerLeave(Event<Void> ignored) {
-        clearRequests();
     }
 
     private void clearRequests() {

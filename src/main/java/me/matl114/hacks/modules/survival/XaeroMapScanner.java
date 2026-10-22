@@ -3,7 +3,6 @@ package me.matl114.hacks.modules.survival;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import java.util.*;
 import java.util.function.Supplier;
-import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -19,7 +18,6 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.MathUtils;
 import me.matl114.utils.collections.FPoint;
 import me.matl114.utils.collections.IndexEntry;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
@@ -79,7 +77,7 @@ public class XaeroMapScanner extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPostGameTick(), this::onTickPost);
-        registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
+        registerListener(Listener.getWorldSwitchPoint(), this::reset);
         currentGoals = new HashMap<>();
         currentGoals.put(Mode.LIQUID, newInstance(() -> new GoalLiquidImpl(this)));
     }
@@ -144,13 +142,9 @@ public class XaeroMapScanner extends BaseModule {
         currentGoals.values().forEach(Goal::reset);
     }
 
-    public void onWorldSwitch(Event<World> event) {
-        reset();
-    }
-
     Map<Mode, Goal> currentGoals;
 
-    public void onTickPost(Event<ClientPlayerEntity> event) {
+    public void onTickPost() {
         if (enable.get()) {
             if (!XaeroHooks.getInstance().isXaeroWorldMapEnable()
                     || !XaeroHooks.getInstance().isXaeroPlusEnable()

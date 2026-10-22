@@ -29,7 +29,6 @@ import me.matl114.utils.*;
 import net.minecraft.block.BedBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.RespawnAnchorBlock;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
@@ -328,7 +327,7 @@ public class FakePlayer extends BaseModule {
 
     protected Object2LongMap<Entity> piercingCooldowns = new Object2LongOpenHashMap<>();
 
-    private void onTickKinetic(Event<ClientPlayerEntity> event) {
+    private void onTickKinetic() {
         if (checkNull()) return;
         if (SpearEnhance.isUsingSpear(mc.player) && SpearEnhance.canSpearKineticAttack(mc.player)) {
             Vec3d startEye = new Vec3d(

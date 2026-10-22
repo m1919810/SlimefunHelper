@@ -3,7 +3,6 @@ package me.matl114.hacks.modules.survival;
 import java.util.HashSet;
 import java.util.Set;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
-import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -18,7 +17,6 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ApiMethod;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -56,7 +54,7 @@ public class AntiAXray extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPlayerRespawnPoint(), this::onWorldSwitch);
+        registerListener(Listener.getPlayerRespawnPoint(), this::clearSimpleDetectionCache);
         registerListener(Listener.getPreGameTick(), this::onTick);
     }
 
@@ -69,15 +67,11 @@ public class AntiAXray extends BaseModule {
     TimerExecutor timer = new TimerExecutor();
     TimerExecutor timerClear = new TimerExecutor();
 
-    public void onTick(Event<ClientPlayerEntity> player) {
+    public void onTick() {
         if (enable.get()) {
             timerClear.run(1200, this::clearSimpleDetectionCache);
             timer.run(20, this::doSimpleDetection);
         }
-    }
-
-    public void onWorldSwitch(Event<ClientPlayerEntity> event) {
-        clearSimpleDetectionCache();
     }
 
     public void clearSimpleDetectionCache() {

@@ -125,7 +125,7 @@ public class MultiBlockHelper extends BaseModule {
         }
     }
 
-    public void onExit(Event<Void> event) {
+    public void onExit() {
         screens.clear();
         executeCursor = 0;
     }

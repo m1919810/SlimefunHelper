@@ -131,7 +131,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         registerListener(Listener.getPlayerWebSlowPoint(), this::onWeb);
     }
 
-    public void onPlayerInit(Event<ClientPlayerEntity> player) {
+    public void onPlayerInit() {
         initArguments();
         initDelegate();
     }
@@ -200,7 +200,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         return false;
     }
 
-    public void onWeb(Event<Vec3d> vec3d) {
+    public void onWeb() {
         lastOnGroundHeight = mc.player.getY();
         if (runningDelegate != null) runningDelegate.counter = 0;
     }

@@ -183,7 +183,7 @@ public class AutoBreed extends BaseModule {
         pathingSchedular.tickPathing(mc.player);
     }
 
-    private void updateRenderCollector(Event<net.minecraft.client.network.ClientPlayerEntity> event) {
+    private void updateRenderCollector() {
         entityRenderCollector.clear();
         renderCollector.clear();
         if (checkNull() || !enable.get() || !render.get() || targetAnimal == null) return;

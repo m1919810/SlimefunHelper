@@ -2,7 +2,6 @@ package me.matl114.hacks.modules.interact;
 
 import me.matl114.accessors.access.ClientAccess;
 import me.matl114.accessors.hacks.KeyBindAccess;
-import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -91,7 +90,7 @@ public class AutoUse extends BaseModule {
 
     boolean lastAutoUsingSpear = false;
 
-    public void onInputEvent(Event<Void> event) {
+    public void onInputEvent() {
         if (enable.get() && pass()) {
             if (!mc.player.isUsingItem()) {
                 ItemStack mainHand = mc.player.getMainHandStack();

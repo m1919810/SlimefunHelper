@@ -17,7 +17,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKey;
-import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
 
 public class NewStyleModel extends BaseModule {
@@ -114,7 +113,7 @@ public class NewStyleModel extends BaseModule {
         event.context().addAll(ResourceUtils.lookupOurModelResources(event.getArgs(0), "new-version"));
     }
 
-    public void onRefreshCache(Event<ResourceManager> event) {
+    public void onRefreshCache() {
         cache.clear();
         cacheItem.clear();
         for (Item item : Registries.ITEM) {

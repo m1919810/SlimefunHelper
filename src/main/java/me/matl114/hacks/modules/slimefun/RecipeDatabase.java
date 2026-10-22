@@ -90,15 +90,9 @@ public class RecipeDatabase extends BaseModule {
     public void registerAll() {
         super.registerAll();
         // specific this database
-        registerListener(InvTasks.getCustomItemDatabase().getItemDataBaseLoad(), (ev) -> {
-            onLoad();
-        });
-        registerListener(InvTasks.getCustomItemDatabase().getItemDataBaseSave(), (ev) -> {
-            onSave();
-        });
-        registerListener(InvTasks.getCustomItemDatabase().getItemDataBaseUnload(), (ev) -> {
-            onUnload();
-        });
+        registerListener(InvTasks.getCustomItemDatabase().getItemDataBaseLoad(), this::onLoad);
+        registerListener(InvTasks.getCustomItemDatabase().getItemDataBaseSave(), this::onSave);
+        registerListener(InvTasks.getCustomItemDatabase().getItemDataBaseUnload(), this::onUnload);
         // load lately
         id2CraftType.clear();
         id2Recipe.clear();

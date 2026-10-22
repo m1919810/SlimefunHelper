@@ -521,7 +521,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     private final CounterExecutor elytraUnbreakableDurabilityCounter = new CounterExecutor();
     private final CounterExecutor armorGlideAbortCounter = new CounterExecutor();
 
-    public void onArmorStateTick(Event<ClientPlayerEntity> event) {
+    public void onArmorStateTick() {
         if (armorFly.get() && mc.player.isFallFlying() && armorGlideTransactionSlot != -1) {
             if (armorMode.get() == ArmorFlyMode.TICK_LEGACY) {
                 armorGlideAbortCounter.reset();
@@ -1264,7 +1264,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     boolean setback = false;
 
-    public void onSetBack(Event<PlayerPositionLookS2CPacket> setbackPacket) {
+    public void onSetBack() {
         setback = true;
     }
 
@@ -1299,7 +1299,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         delayQueue.clear();
     }
 
-    public void onPreInputEvents(Event<Void> event) {
+    public void onPreInputEvents() {
         if (checkNull()) {
             return;
         }
@@ -1747,7 +1747,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                         .forEach(this::onRemoveFirework);
     }
 
-    public void onWorldSwitch(Event<ClientPlayerEntity> event) {
+    public void onWorldSwitch() {
         recordedWorldFireworkRockets.clear();
         lastOneFireworkRemovalTime = 0;
         delayQueue.clear();
@@ -2042,7 +2042,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         }
     }
 
-    public void onPacketQueueFlush(Event<Void> event) {
+    public void onPacketQueueFlush() {
         currentDelayingLock = null;
         lastStartDelayOrReleaseMs = 0L;
     }
@@ -2164,7 +2164,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     Packet<?> storedNoFallPacket;
     int lastLagBackTick = 0;
 
-    public void onAcceptTeleportation(Event<TeleportConfirmC2SPacket> eventLagBack) {
+    public void onAcceptTeleportation() {
         lastLagBackTick = Tasks.getTick();
         nextTickIsOnGroundTick = false;
     }

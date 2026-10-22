@@ -43,7 +43,6 @@ import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.ItemEntity;
@@ -246,7 +245,7 @@ public class CrystalAura extends BaseModule {
     boolean nextHitSkipDamageTest;
     double maxExistingDamageValue = Double.NEGATIVE_INFINITY;
 
-    public void onWorldSwitch(Event<ClientPlayerEntity> event) {
+    public void onWorldSwitch() {
         currentTarget = List.of();
         trackedGlasses.clear();
         timer = 0;
@@ -257,7 +256,7 @@ public class CrystalAura extends BaseModule {
     boolean fillWorkingTick = false;
     Pair<BlockPos, BlockState> lastMiningTarget = null;
 
-    public void onPostInputEvent(Event<Void> event) {
+    public void onPostInputEvent() {
         if (checkNull()) {
             return;
         }

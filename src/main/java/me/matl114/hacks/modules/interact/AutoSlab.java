@@ -114,7 +114,7 @@ public class AutoSlab extends BaseModule {
     public final Set<Block> availableBlocks = new HashSet<>();
     public final RenderCollector<Box> boxCollector = RenderCollectors.createBoxCollector(true, false, false);
 
-    public void onServerLeave(Event<Void> eventLeave) {
+    public void onServerLeave() {
         availableBlocks.clear();
     }
 
@@ -219,7 +219,7 @@ public class AutoSlab extends BaseModule {
         }
     }
 
-    public void onPreInputEvent(Event<Void> event) {
+    public void onPreInputEvent() {
         if (checkNull()) return;
         boxCollector.clear();
         if (enable.get()) {

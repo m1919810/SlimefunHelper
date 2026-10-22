@@ -146,7 +146,7 @@ public class Scaffold extends BaseModule {
         return stackEntry == null ? -1 : stackEntry.index();
     }
 
-    public void onPreInput(Event<Void> event) {
+    public void onPreInput() {
         if (checkNull()) {
             return;
         }

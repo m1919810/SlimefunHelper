@@ -19,7 +19,6 @@ import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.render.RenderCollector;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.damage.DamageTypes;
@@ -75,7 +74,7 @@ public class ExplosiveESP extends BaseModule {
         registerListener(CombatManager.getRequestEnableEvent(), this::onRequestCombatService);
     }
 
-    public void onTick(Event<ClientPlayerEntity> event) {
+    public void onTick() {
         boxOutlineCollector.clear();
         faceCollector.clear();
         textCollector.clear();
