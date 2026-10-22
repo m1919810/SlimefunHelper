@@ -135,7 +135,6 @@ public class MineExtra extends BaseModule {
     public final ModulePath vanillaBreak = fastbreak.add("vanilla-break");
 
     {
-        portConfigs(fastbreak.add("vanilla-break"), vanillaBreak.add("vanilla-break"));
         portConfigs(fastbreak.add("vanilla-fast-break-fix"), vanillaBreak.add("vanilla-fast-break-fix"));
         portConfigs(fastbreak.add("no-swing-for-vanilla-break"), vanillaBreak.add("no-swing-for-vanilla-break"));
     }

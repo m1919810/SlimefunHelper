@@ -7,7 +7,6 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.modules.HackModules;
-import me.matl114.managers.Configs;
 import me.matl114.managers.config.Config;
 import me.matl114.utils.Debug;
 import net.fabricmc.loader.api.FabricLoader;
@@ -121,13 +120,13 @@ public final class PluginManager {
         return Collections.unmodifiableList(plugins);
     }
 
-    public ModuleGroup registerModuleGroup(ModuleGroup group) {
+    public ModuleGroup registerModuleGroup(SlimefunHelperPlugin plugin, ModuleGroup group) {
         HackModules.registerModuleGroup(Objects.requireNonNull(group, "group"));
         return group;
     }
 
-    public <T extends Config> T registerConfig(T config) {
-        Configs.registerConfig(Objects.requireNonNull(config, "config"));
+    public <T extends Config> T registerConfig(SlimefunHelperPlugin plugin, T config) {
+        config.registerGlobal(plugin);
         return config;
     }
 

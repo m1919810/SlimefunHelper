@@ -71,10 +71,6 @@ public class AttributeUtils {
         LivingEntityAccess.of(living).updateEquipmentAttributeChange();
     }
 
-    public static Map<EquipmentSlot, ItemStack> getEquipmentChanges() {
-        return null;
-    }
-
     public static List<RegistryEntry<EntityAttribute>> ATTRIBUTES_1_21_1 = List.of(
             MOVEMENT_EFFICIENCY,
             WATER_MOVEMENT_EFFICIENCY,
@@ -82,32 +78,6 @@ public class AttributeUtils {
             SNEAKING_SPEED,
             SUBMERGED_MINING_SPEED,
             ATTACK_KNOCKBACK);
-    //    public static void removeViaFabricAttributes(AttributeContainer container){
-    //        if(ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(20, 8)){
-    //            // < 1.21.1
-    //            for (var re : ATTRIBUTES_1_21_1) {
-    //                var instance = container.getCustomInstance(re);
-    //                if(instance != null && instance.getBaseValue() != 0.0D){
-    //                    instance.setBaseValue(0.0D);
-    //                    instance.clearModifiers();
-    //                }
-    //            }
-    //        }
-    //    }
-    //
-    //    public static void convertVersionedModifierToViaValue(AttributeContainer container){
-    //        if(ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(20, 8)){
-    //            // < 1.21.1
-    //            for (var re : ATTRIBUTES_1_21_1) {
-    //                var instance = container.getCustomInstance(re);
-    //                if(instance != null && instance.getValue() != 0.0D){
-    //                    double value = instance.getValue();
-    //                    instance.setBaseValue(value);
-    //                    instance.clearModifiers();
-    //                }
-    //            }
-    //        }
-    //    }
 
     private static void setAttributeVia(
             AttributeContainer attributeContainer, RegistryEntry<EntityAttribute> attribute, double level) {

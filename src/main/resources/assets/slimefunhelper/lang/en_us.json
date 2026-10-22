@@ -4438,6 +4438,7 @@
 	"server-features.attribute-swap.tooltips": "在低于1.21.2的服务端或者非paper服务端会拥有此特性",
 	"server-features.attack-strength-update-with-hand": "切换蓄力重置",
 	"server-features.attack-strength-update-with-hand.tooltips": "在高于1.21.11的服务器拥有此特性",
+	"server-features.track-client-attr-update": "客户端属性更新",
 	"configenum.loot-version.v1_21_1": "Minecraft 1.21.1",
 	"configenum.loot-version.v1_21_4": "Minecraft 1.21.4",
 	"configenum.loot-version.v1_21_11": "Minecraft 1.21.11",
