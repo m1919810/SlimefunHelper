@@ -20,7 +20,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.OtherClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
