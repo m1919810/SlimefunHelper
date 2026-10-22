@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.With;
 import me.matl114.accessors.events.ItemRenderStateAccess;
@@ -19,7 +20,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.HeldItemContext;
 import net.minecraft.util.Identifier;
-import org.jspecify.annotations.Nullable;
 
 public interface GuiModel {
     public static final GuiModel EMPTY = new BlankGuiModel();

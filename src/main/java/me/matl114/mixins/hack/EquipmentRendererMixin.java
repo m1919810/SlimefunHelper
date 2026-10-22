@@ -1,6 +1,7 @@
 package me.matl114.mixins.hack;
 
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
+import javax.annotation.Nullable;
 import me.matl114.hacks.modules.render.NoRender;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -11,7 +12,6 @@ import net.minecraft.client.render.command.RenderCommandQueue;
 import net.minecraft.client.render.entity.equipment.EquipmentRenderer;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
-import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
