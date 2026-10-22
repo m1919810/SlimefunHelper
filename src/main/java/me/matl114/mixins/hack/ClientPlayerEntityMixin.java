@@ -138,6 +138,9 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
     @Shadow
     private boolean inSneakingPose;
 
+    @Shadow
+    public abstract boolean shouldSlowDown();
+
     @Getter
     @Unique
     public HandledScreen keepedInv = null;
@@ -252,7 +255,7 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
                     .forward(true)
                     .backward(false)
                     .applyInput(this.input)
-                    .syncMovementVector(this.input);
+                    .syncMovementVector(this.input, shouldSlowDown());
         }
         try {
             return original.call(instance);
@@ -283,7 +286,7 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
         if (shouldDirectionalSprint()) {
             clone.forward(true).backward(false);
         }
-        clone.applyInput(this.input).syncMovementVector(this.input);
+        clone.applyInput(this.input).syncMovementVector(this.input, this.shouldSlowDown());
         try {
             return original.call(instance);
         } finally {

@@ -158,11 +158,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         PlayerInputUtils.Input newInput = PlayerInputUtils.of(this.input);
         if (!Objects.equals(currentInput, this.input.playerInput)) {
             PlayerInputUtils.Input i0 = new PlayerInputUtils.Input(this.input.playerInput);
-            i0.syncMovementVector(this.input);
-            if (this.shouldSlowDown()) {
-                this.input.movementForward *= f;
-                this.input.movementSideways *= f;
-            }
+            i0.syncMovementVector(this.input, this.shouldSlowDown());
         }
     }
 
