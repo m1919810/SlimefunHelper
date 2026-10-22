@@ -244,7 +244,11 @@ public class Render_v1_21_1 implements VRender, VRender.WrapRenderOperation {
 
     @Override
     public void drawItemCameraCoord(
-            ItemStack itemStack, MatrixStack stack, Vec3d vec3d, ModelTransformationMode context, ItemDisplay displayInfo) {
+            ItemStack itemStack,
+            MatrixStack stack,
+            Vec3d vec3d,
+            ModelTransformationMode context,
+            ItemDisplay displayInfo) {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         boolean bl = Vec3d.ZERO.equals(vec3d);
         if (!bl) {

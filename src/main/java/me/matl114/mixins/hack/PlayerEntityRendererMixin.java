@@ -24,10 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class PlayerEntityRendererMixin {
     private static final HandFaceRenderer_v1_21_11 MODEL_FACE = ModelFaceFactory.getInstance();
 
-    @Inject(
-            method =
-                    "renderArm",
-            at = @At("RETURN"))
+    @Inject(method = "renderArm", at = @At("RETURN"))
     private void captureFirstPersonArm(
             MatrixStack matrices,
             VertexConsumerProvider vertexConsumers,
