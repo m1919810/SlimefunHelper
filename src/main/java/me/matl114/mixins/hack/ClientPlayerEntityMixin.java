@@ -278,14 +278,11 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
         }
         PlayerInputUtils.Input playerInput = PlayerInputUtils.of(this.input);
         Vec2f movementVector = this.input.getMovementInput();
+        PlayerInputUtils.Input clone = playerInput.clone();
         if (shouldDirectionalSprint()) {
-            playerInput
-                    .clone()
-                    .forward(true)
-                    .backward(false)
-                    .applyInput(this.input)
-                    .syncMovementVector(this.input);
+            clone.forward(true).backward(false);
         }
+        clone.applyInput(this.input).syncMovementVector(this.input);
         try {
             return original.call(instance);
         } finally {
@@ -301,19 +298,31 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
             at =
                     @At(
                             value = "INVOKE",
-                            target = "Lnet/minecraft/util/PlayerInput;sneak()Z"))
-    private boolean nnoSlowUsingItemDoNotBlockSprint3(ClientPlayerEntity instance, Operation<Boolean> original) {
+                            target = "Lnet/minecraft/client/network/ClientPlayerEntity;shouldStopSwimSprinting()Z"))
+    private boolean canStopSprintSwimAddConditionWrapperBecauseOfViaFabricShit(
+            ClientPlayerEntity instance, Operation<Boolean> original) {
         // fix viafabric
+        boolean v = usingItem;
         if (NoSlowDown.INSTANCE.workNoSlowItemThisTick) {
-            boolean v = usingItem;
             usingItem = false;
-            try {
-                return original.call(instance);
-            } finally {
-                usingItem = v;
-            }
         }
-        return original.call(instance);
+        PlayerInputUtils.Input playerInput = PlayerInputUtils.of(this.input);
+        Vec2f movementVector = this.input.movementVector;
+        PlayerInputUtils.Input clone = playerInput.clone();
+        if (shouldDirectionalSprint()) {
+            clone.forward(true).backward(false);
+        }
+        if (NoSlowDown.INSTANCE.shouldNoSlowSneak()) {
+            clone.sneak(false);
+        }
+        clone.applyInput(this.input).syncMovementVector(this.input);
+        try {
+            return original.call(instance);
+        } finally {
+            usingItem = v;
+            playerInput.applyInput(this.input);
+            this.input.movementVector = movementVector;
+        }
     }
 
     @ModifyExpressionValue(

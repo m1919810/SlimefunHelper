@@ -64,7 +64,12 @@ public final class VanillaGoldenAppleLootPredictor {
                             Entry.uniform(10, Identifier.ofVanilla("rotten_flesh"), 1, 8),
                             Entry.uniform(10, Identifier.ofVanilla("string"), 1, 8),
                             Entry.uniform(10, Identifier.ofVanilla("sand"), 1, 8))),
-            new Pool(1, 1, List.of(Entry.empty(6), Entry.fixed(1, Identifier.ofVanilla("dune_armor_trim_smithing_template"), 2))));
+            new Pool(
+                    1,
+                    1,
+                    List.of(
+                            Entry.empty(6),
+                            Entry.fixed(1, Identifier.ofVanilla("dune_armor_trim_smithing_template"), 2))));
 
     private static final List<Pool> RUINED_PORTAL_POOLS = List.of(
             new Pool(
@@ -141,15 +146,18 @@ public final class VanillaGoldenAppleLootPredictor {
                         : Entry.item(2, Identifier.ofVanilla("saddle")));
         entries.add(Entry.item(2, Identifier.ofVanilla("music_disc_13")));
         entries.add(Entry.item(2, Identifier.ofVanilla("music_disc_cat")));
-        entries.add(Entry.item(2, Identifier.ofVanilla("diamond_leggings")).withEnchantment(EnchantmentOperation.WITH_LEVELS, 30, 50));
-        entries.add(Entry.item(3, Identifier.ofVanilla("book")).withEnchantment(EnchantmentOperation.RANDOM_FIXED, 1, 3));
+        entries.add(Entry.item(2, Identifier.ofVanilla("diamond_leggings"))
+                .withEnchantment(EnchantmentOperation.WITH_LEVELS, 30, 50));
+        entries.add(
+                Entry.item(3, Identifier.ofVanilla("book")).withEnchantment(EnchantmentOperation.RANDOM_FIXED, 1, 3));
         entries.add(Entry.uniform(3, Identifier.ofVanilla("sculk"), 4, 10));
         entries.add(Entry.uniform(3, Identifier.ofVanilla("sculk_sensor"), 1, 3));
         entries.add(Entry.uniform(3, Identifier.ofVanilla("candle"), 1, 4));
         entries.add(Entry.uniform(3, Identifier.ofVanilla("amethyst_shard"), 1, 15));
         entries.add(Entry.uniform(3, Identifier.ofVanilla("experience_bottle"), 1, 3));
         entries.add(Entry.uniform(3, Identifier.ofVanilla("glow_berries"), 1, 15));
-        entries.add(Entry.item(3, Identifier.ofVanilla("iron_leggings")).withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39));
+        entries.add(Entry.item(3, Identifier.ofVanilla("iron_leggings"))
+                .withEnchantment(EnchantmentOperation.WITH_LEVELS, 20, 39));
         entries.add(Entry.uniform(4, Identifier.ofVanilla("echo_shard"), 1, 3));
         entries.add(Entry.uniform(4, Identifier.ofVanilla("disc_fragment_5"), 1, 3));
         entries.add(Entry.uniform(5, Identifier.ofVanilla("potion"), 1, 3).withStrongRegenerationPotion());

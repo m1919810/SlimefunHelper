@@ -359,13 +359,11 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     }
 
     public boolean shouldNoSlowSneak() {
-        return sneak.get()
-                && (!lastPredictWasSneakEdge || !fakeSneakBypass.get().hasAc());
+        return sneak.get() && (!fakeSneakBypass.get().hasAc());
     }
 
     public boolean shouldFakeSneakStatus() {
-        return (sneakStatus || isFakeSneakActive() || (isFakeSneakEnabled() && lastPredictWasSneakEdge))
-                && mc.player.isOnGround();
+        return (sneakStatus || isFakeSneakActive() || (isFakeSneakEnabled())) && mc.player.isOnGround();
     }
 
     private boolean isFakeSneakEnabled() {
@@ -847,29 +845,6 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
 
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
-        if (shouldFakeSneakStatus()) {
-            // do not sync sneak status
-            if (lastPredictWasSneakEdge) {
-                ClientPlayerAccess.of(mc.player).resyncSneak();
-            }
-
-            // args.setOnGround(true);
-            // only consider on ground to avoid jump
-            //
-            //            if(args.isOnGround()){
-            //                if(lastPredictWasSneakEdge){
-            //
-            //                    // met edge
-            //                    movementManagerEvent.drawContext.playerStatus.restorePos();
-            //                    PlayerInput input = args.input.playerInput;
-            //                    //stop input packets
-            //                    args.input.playerInput =
-            // PlayerInputUtils.of(input).forward(true).backward(true).left(true).right(true).toPlayerInput();
-            //                }
-            //
-            //            }
-
-        }
         onSendMovePreNoSlowUse(null);
         lastPredictWasSneakEdge = false;
     }
