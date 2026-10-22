@@ -188,7 +188,7 @@ public abstract class ScreenEvents extends AbstractParentElement implements Meta
     }
 
     @Inject(
-            method = "renderWithTooltip",
+            method = "render",
             at =
                     @At(
                             value = "INVOKE",
@@ -235,9 +235,7 @@ public abstract class ScreenEvents extends AbstractParentElement implements Meta
             method = "renderWithTooltip",
             at =
                     @At(
-                            value = "INVOKE",
-                            target = "Lnet/minecraft/client/gui/DrawContext;drawDeferredElements()V",
-                            shift = At.Shift.BEFORE),
+                            value = "RETURN"),
             cancellable = true)
     private void onRenderPost(DrawContext context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         if (!RenderListener.getRenderScreen()

@@ -559,7 +559,7 @@ public class CombatManager extends BaseModule {
         boolean centeredExplosion = Objects.equals(event.context.center(), explosionBlock.toCenterPos());
         boolean respawnAnchor = centeredExplosion && explosionState.getBlock() instanceof RespawnAnchorBlock;
         boolean bed = centeredExplosion && explosionState.getBlock() instanceof BedBlock;
-        float radius = event.context.radius();
+        float radius = 0;
         if (radius <= 0.0F) {
             radius = respawnAnchor
                     ? ExplosionUtils.RESPAWN_ANCHOR_POWER

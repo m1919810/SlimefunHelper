@@ -51,7 +51,7 @@ public class WorldTasks {
         NbtCompound nbt = seedMapSave.asReadOnly(NbtOps.INSTANCE);
         for (var entry : nbt.entrySet()) {
             if (entry.getValue() instanceof NbtLong value) {
-                seedMap.put(entry.getKey(), value.value());
+                seedMap.put(entry.getKey(), value.longValue());
             }
         }
     }
