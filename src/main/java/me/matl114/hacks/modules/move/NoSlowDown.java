@@ -7,6 +7,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.impl.EventContainer;
 import me.matl114.events.impl.MetadataUpdate;
+import me.matl114.events.impl.SlowMovement;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
@@ -24,6 +25,7 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VDataFlag;
+import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityStatuses;
@@ -63,7 +65,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         registerListener(Listener.getEntityTrackDataUpdate().getChannel(EntityType.PLAYER), this::onServerSyncSneak);
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class), this::onInteractSend);
-        registerListener(Listener.getPlayerWebSlowPoint(), this::onWeb);
+        registerListener(Listener.getPlayerSlowedByBlockPoint(), this::onWeb);
         registerListener(Listener.getEntityTrackDataUpdate().getChannel(EntityType.PLAYER), this::onEntityDataUpdate);
         registerListener(Listener.getPacketPostHandlePoint().getChannel(EntityStatusS2CPacket.class), this::onConsume);
         registerListener(Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class), this::onSendStartUse);
@@ -180,35 +182,31 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
         }
     }
 
-    public void onWeb(Event<Vec3d> slowMovement) {
+    public void onWeb(Event<SlowMovement> slowMovementEvent) {
         if (blockIn.get()) {
             Vec3d currentMovementSpeed = mc.player.getVelocity();
-            Vec3d stuckSimulation = currentMovementSpeed.multiply(slowMovement.context);
+            SlowMovement slowMovement = slowMovementEvent.context;
+            Vec3d stuckSimulation = currentMovementSpeed.multiply(slowMovement.movementModifier());
             double delta = stuckSimulation.subtract(currentMovementSpeed).horizontalLengthSquared();
             if (delta > 0.0625) {
                 return;
             }
-            BlockPos pos = slowMovement.getArgs(0);
+            BlockPos pos = slowMovement.pos();
             switch (blockInBypass.get()) {
                 case GRIM_SPEED -> {
-                    if (blockInKeepYVelocity.get()) {
-                        slowMovement.context(slowMovement.context().withAxis(Direction.Axis.Y, 1.0F));
+                    if (slowMovement.state().isOf(Blocks.COBWEB) && blockInKeepYVelocity.get()) {
+                        slowMovement.movementModifier(
+                                slowMovement.movementModifier().withAxis(Direction.Axis.Y, 1.0F));
                     }
                     // todo: why
                     var input = PlayerInputUtils.of(mc.player);
                     if (blockInMineWhenJump.get()
                             && !mc.player.isFallFlying()
                             && (mc.player.getVelocity().y >= 0 || mc.player.isOnGround())
-                            && input.jump()) {
-                        // todo: can we fix it, it may destroy the fucking packetMine
-                        // todo: add check if blocks above is solid
-                        //                        mc.interactionManager.sendSequencedPacket(
-                        //                                mc.world,
-                        //                                (seq) -> new PlayerActionC2SPacket(
-                        //                                        PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, pos,
-                        // Direction.UP, seq));
+                            && input.jump()
+                            && slowMovement.state().isOf(Blocks.COBWEB)) {
                         FakeBlockManager.INSTANCE.addFakeCompensateState(pos);
-                        slowMovement.cancel();
+                        slowMovementEvent.cancel();
                         return;
                     }
                     if (mc.player.isFallFlying()) {
@@ -225,15 +223,17 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                     return;
                 }
                 case GRIM_FAKE_MINE -> {
-                    var input = PlayerInputUtils.of(mc.player);
-                    if (mc.player.isFallFlying() || input.hasWASDMovement() || input.jump()) {
-                        FakeBlockManager.INSTANCE.addFakeCompensateState(pos.toImmutable());
-                        slowMovement.cancel();
-                        return;
+                    if (slowMovement.state().isOf(Blocks.COBWEB)) {
+                        var input = PlayerInputUtils.of(mc.player);
+                        if (mc.player.isFallFlying() || input.hasWASDMovement() || input.jump()) {
+                            FakeBlockManager.INSTANCE.addFakeCompensateState(pos.toImmutable());
+                            slowMovementEvent.cancel();
+                            return;
+                        }
                     }
                 }
                 case NO_BYPASS -> {
-                    slowMovement.cancel();
+                    slowMovementEvent.cancel();
                     return;
                 }
             }

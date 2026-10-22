@@ -164,7 +164,9 @@ public class AutoWeb extends BaseModule {
     private BlockHitResult searchPlaceOption() {
         if (selfWeb.get() && (!selfWebOnlySlow.get() || mc.player.hasStatusEffect(StatusEffects.SLOWNESS))) {
             BlockPos pos = mc.player.getBlockPos();
-            if (mc.world.getBlockState(pos) != WEB_STATE && !PlayerStateManager.INSTANCE.lastInWeb) {
+            if (mc.world.getBlockState(pos) != WEB_STATE
+                    && !PlayerStateManager.INSTANCE.lastInWeb
+                    && !PlayerStateManager.INSTANCE.lastSlowByBlock) {
                 FlagEntry<BlockHitResult> hitResult = createWebHitResult(mc.player, pos);
                 if (hitResult != null) {
                     return hitResult.val();
