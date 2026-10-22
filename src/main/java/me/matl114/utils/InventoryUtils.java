@@ -643,6 +643,6 @@ public class InventoryUtils {
         for (var re = 0; re < InventoryUtils.getPlayerInvSize(); ++re) {
             to.setStack(re, from.getStack(re).copy());
         }
-        to.setSelectedSlot(from.getSelectedSlot());
+        to.selectedSlot = from.selectedSlot;
     }
 }
