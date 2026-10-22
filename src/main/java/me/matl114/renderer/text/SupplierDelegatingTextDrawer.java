@@ -3,7 +3,6 @@ package me.matl114.renderer.text;
 import java.util.List;
 import java.util.function.Supplier;
 import net.minecraft.client.font.TextHandler;
-import net.minecraft.client.font.TextRenderer.GlyphDrawable;
 import net.minecraft.client.font.TextRenderer.TextLayerType;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.text.OrderedText;
@@ -80,17 +79,6 @@ public final class SupplierDelegatingTextDrawer implements TextDrawer {
     @Override
     public StringVisitable trimToWidth(StringVisitable text, int width) {
         return getDelegate().trimToWidth(text, width);
-    }
-
-    @Override
-    public GlyphDrawable prepare(String text, float x, float y, int color, boolean shadow, int backgroundColor) {
-        return getDelegate().prepare(text, x, y, color, shadow, backgroundColor);
-    }
-
-    @Override
-    public GlyphDrawable prepare(
-            OrderedText text, float x, float y, int color, boolean shadow, boolean trackEmpty, int backgroundColor) {
-        return getDelegate().prepare(text, x, y, color, shadow, trackEmpty, backgroundColor);
     }
 
     @Override

@@ -19,12 +19,9 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import me.matl114.plugins.MainPlugin;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.EffectGlyph;
 import net.minecraft.client.font.Font;
 import net.minecraft.client.font.FontLoader;
 import net.minecraft.client.font.FontStorage;
-import net.minecraft.client.font.GlyphBaker;
-import net.minecraft.client.font.GlyphProvider;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.resource.InputSupplier;
 import net.minecraft.resource.Resource;
@@ -33,7 +30,6 @@ import net.minecraft.resource.ResourcePack;
 import net.minecraft.resource.ResourcePackInfo;
 import net.minecraft.resource.ResourcePackSource;
 import net.minecraft.resource.ResourceType;
-import net.minecraft.text.StyleSpriteSource;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
@@ -89,12 +85,12 @@ public final class LocalFontTextDrawer extends ResourceFontTextDrawer implements
                     .left()
                     .orElseThrow(() -> new IllegalStateException("Failed to create TTF loader"))
                     .load(new LocalFontResourceManager(client.getResourceManager(), FONT_LOCATION, path));
-            FontStorage storage = new FontStorage(new GlyphBaker(client.getTextureManager(), fontId));
+            FontStorage storage = new FontStorage(client.getTextureManager(), fontId);
             storage.setFonts(
                     List.of(new Font.FontFilterPair(
                             provider, net.minecraft.client.font.FontFilterType.FilterMap.NO_FILTER)),
                     Set.of());
-            TextRenderer renderer = new TextRenderer(new LocalGlyphsProvider(storage));
+            TextRenderer renderer = new TextRenderer(id -> storage, false);
             return new LoadedFont(fontId, provider, storage, renderer, fontSize);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to load local font: " + path, e);
@@ -206,24 +202,6 @@ public final class LocalFontTextDrawer extends ResourceFontTextDrawer implements
 
     private record LoadedFont(
             Identifier fontId, Font provider, FontStorage storage, TextRenderer renderer, float fontSize) {}
-
-    private static final class LocalGlyphsProvider implements TextRenderer.GlyphsProvider {
-        private final FontStorage storage;
-
-        private LocalGlyphsProvider(FontStorage storage) {
-            this.storage = storage;
-        }
-
-        @Override
-        public GlyphProvider getGlyphs(StyleSpriteSource source) {
-            return storage.getGlyphs(false);
-        }
-
-        @Override
-        public EffectGlyph getRectangleGlyph() {
-            return storage.getRectangleBakedGlyph();
-        }
-    }
 
     private static final class LocalFontResourceManager implements ResourceManager {
         private final ResourceManager delegate;
