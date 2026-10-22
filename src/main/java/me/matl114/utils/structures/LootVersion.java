@@ -14,7 +14,10 @@ public enum LootVersion implements ConfigEnum {
     private final boolean ancientCityUsesLeatherInsteadOfSaddle;
     private final boolean hasCopperHorseArmor;
 
-    LootVersion(String gameVersion, boolean ancientCityHasNameTag, boolean ancientCityUsesLeatherInsteadOfSaddle,
+    LootVersion(
+            String gameVersion,
+            boolean ancientCityHasNameTag,
+            boolean ancientCityUsesLeatherInsteadOfSaddle,
             boolean hasCopperHorseArmor) {
         this.gameVersion = gameVersion;
         this.ancientCityHasNameTag = ancientCityHasNameTag;
