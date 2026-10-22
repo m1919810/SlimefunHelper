@@ -177,7 +177,7 @@ public class PlayerInputUtils {
             return this;
         }
 
-        public void syncMovementVector(net.minecraft.client.input.Input input, boolean shouldSlow) {
+        public void syncMovementVector(net.minecraft.client.input.Input input, float shouldSlow) {
             Vec2f movement = compatMovementVectorWithViaFabric(new Vec2f(this.sidewaysSpeed(), this.forwardSpeed()));
             input.movementSideways = movement.x;
             input.movementForward = movement.y;
