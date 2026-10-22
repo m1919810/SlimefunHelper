@@ -8,7 +8,7 @@ loom {
 	accessWidenerPath = file("src/main/resources/overrideList.accesswidener")
 }
 
-version = "beta-${project.mod_version}"
+version = "${project.mod_version}"
 group = project.maven_group
 
 base {
