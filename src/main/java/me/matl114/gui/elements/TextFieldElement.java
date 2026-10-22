@@ -574,10 +574,6 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
     }
 
     protected void drawSelection(DrawContext context, int x1, int y1, int x2, int y2, boolean invert) {
-        if (invert) {
-            context.fill(RenderLayer.getGui(), x1, y1, x2, y2, -1);
-        }
-
         context.fill(RenderLayer.getGuiTextHighlight(), x1, y1, x2, y2, -16776961);
     }
 
@@ -657,14 +653,23 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
             }
 
             if (selectionOffset != cursorOffset) {
-                int selectionX = this.textX + textDrawer.getWidth(visibleText.substring(0, selectionOffset));
-                drawSelection(
-                        drawContext,
-                        Math.min(cursorX, element.getTextureWidth()),
-                        this.textY - 1,
-                        Math.min(selectionX - 1, element.getTextureWidth()),
-                        this.textY + 10,
-                        this.invertSelectionBackground);
+                int cursorSelectionX = this.textX
+                        + textDrawer.getWidth(this.format(
+                                visibleText.substring(0, MathHelper.clamp(cursorOffset, 0, visibleText.length())),
+                                this.firstCharacterIndex));
+                int selectionX = this.textX
+                        + textDrawer.getWidth(
+                                this.format(visibleText.substring(0, selectionOffset), this.firstCharacterIndex));
+                int padding = this.drawsBackground ? 4 : 0;
+                int textLeft = Math.min(padding, element.getTextureWidth());
+                int textRight = Math.max(textLeft, element.getTextureWidth() - padding);
+                int left = MathHelper.clamp(Math.min(cursorSelectionX, selectionX), textLeft, textRight);
+                int right = MathHelper.clamp(Math.max(cursorSelectionX, selectionX), textLeft, textRight);
+                int top = Math.max(0, this.textY - 1);
+                int bottom = Math.min(element.getTextureHeight(), this.textY + 10);
+                if (right > left && bottom > top) {
+                    drawSelection(drawContext, left, top, right, bottom, this.invertSelectionBackground);
+                }
             }
 
             if (showBlink) {

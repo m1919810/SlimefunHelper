@@ -12,6 +12,8 @@ import me.matl114.utils.render.Quad;
 import me.matl114.utils.render.UV;
 import me.matl114.versioned.api.VRender;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.Defines;
+import net.minecraft.client.gl.ShaderProgramKey;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.item.ItemRenderState;
 import net.minecraft.client.texture.Sprite;
@@ -184,6 +186,12 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
                         .build(false));
     });
 
+    private static final RenderPhase.ShaderProgram ENTITY_HIGHLIGHT_PROGRAM = new RenderPhase.ShaderProgram(
+            new ShaderProgramKey(
+                    Identifier.of("slimefunhelper", "core/entity_highlight"),
+                    VertexFormats.POSITION_TEXTURE_COLOR,
+                    Defines.EMPTY));
+
     public static final Function<Identifier, RenderLayer> ENTITY_HIGHLIGHT_FACTORY = Util.memoize(texture ->
             RenderLayer.of(
                     "slimefunhelper:entity_highlight/" + texture,
@@ -192,7 +200,7 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
                     1536,
                     RenderLayer.MultiPhaseParameters.builder()
                             .texture(new RenderPhase.Texture(texture, TriState.DEFAULT, false))
-                            .program(RenderLayer.OUTLINE_PROGRAM)
+                            .program(ENTITY_HIGHLIGHT_PROGRAM)
                             .transparency(RenderLayer.TRANSLUCENT_TRANSPARENCY)
                             .depthTest(DISABLE_DEPTH_TEST)
                             .writeMaskState(RenderLayer.COLOR_MASK)
