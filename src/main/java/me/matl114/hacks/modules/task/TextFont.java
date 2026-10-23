@@ -17,6 +17,7 @@ import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.StringRef;
 import me.matl114.renderer.TextRenderers;
+import me.matl114.renderer.text.CustomFontTextDrawer;
 import me.matl114.renderer.text.LocalFontTextDrawer;
 import me.matl114.renderer.text.ResourceFontTextDrawer;
 import me.matl114.renderer.text.TextDrawer;
@@ -89,7 +90,7 @@ public class TextFont extends BaseModule {
 
     public TextDrawer getTextDrawer() {
         return switch (textStyle.get()) {
-            case VANILLA -> new VanillaTextDrawer();
+            case VANILLA -> new CustomFontTextDrawer();
             case SYSTEM -> LocalFontTextDrawer.findFont(textFontType.get())
                     .map(LocalFontTextDrawer.FontFile::path)
                     .map(path -> new LocalFontTextDrawer(path, (float) fontSize.get()))

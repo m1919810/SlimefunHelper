@@ -196,6 +196,11 @@ public record GuiSetting(
 
     @Override
     public WrapRGBA textColor() {
+        return textConfig.color();
+    }
+
+    @Override
+    public WrapRGBA inputTextColor() {
         return customConfig(inputStyle).textColor();
     }
 

@@ -37,9 +37,6 @@ import me.matl114.hacks.modules.combat.TargetSelector;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.GuiSetting;
 import me.matl114.hacks.utils.config.Vec2;
-import me.matl114.hacks.utils.config.WrapRGBA;
-import me.matl114.hacks.utils.gui.AlignType;
-import me.matl114.hacks.utils.gui.GuiColorSamplier;
 import me.matl114.hooks.BaritoneHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.FileManager;
@@ -63,7 +60,7 @@ import net.minecraft.text.Text;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 
-public class ClickGui extends BaseModule implements GuiColorSamplier {
+public class ClickGui extends BaseModule {
     public static ClickGui INSTANCE;
 
     public final NBTType<GuiSetting> configInputWidget = GuiSetting.TYPE;
@@ -476,8 +473,10 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                                     TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
                                             "widget.click-gui.module-group.header.tooltips", ""))))
                             .combineRender(((element, context, mouseX, mouseY, delta, alpha, shouldHighlight) -> {
-                                context.setShaderColor(
-                                        textColor().withAlpha(255).color());
+                                context.setShaderColor(getGuiSettings()
+                                        .textColor()
+                                        .withAlpha(255)
+                                        .color());
                                 context.drawGuiTexture(
                                         slideMeta.slidingDown
                                                 ? Constants.EXPAND_GUI_ON_SPRITE
@@ -514,8 +513,10 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                     .setElementHandler(new AbstractElement()
                             .withInputHandler(InputHandler.clickRun(toggle))
                             .combineRender((element, context, mouseX, mouseY, delta, alpha, shouldHighlight) -> {
-                                context.setShaderColor(
-                                        textColor().withAlpha(255).color());
+                                context.setShaderColor(getGuiSettings()
+                                        .textColor()
+                                        .withAlpha(255)
+                                        .color());
                                 context.drawGuiTexture(
                                         expanded.getAsBoolean()
                                                 ? Constants.EXPAND_GUI_ON_SPRITE
@@ -828,8 +829,10 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                     .setRenderHandler(new AbstractElement()
                             .combineRender(guiElementFactory.createBackground())
                             .combineRender(((element, context, mouseX, mouseY, delta, alpha, shouldHighlight) -> {
-                                context.setShaderColor(
-                                        textColor().withAlpha(255).color());
+                                context.setShaderColor(getGuiSettings()
+                                        .textColor()
+                                        .withAlpha(255)
+                                        .color());
                                 context.drawGuiTexture(
                                         showFlag.booleanValue()
                                                 ? Constants.EXPAND_GUI_ON_SPRITE
@@ -908,8 +911,10 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                                     TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
                                             "widget.click-gui.module-group.header.tooltips", ""))))
                             .combineRender(((element, context, mouseX, mouseY, delta, alpha, shouldHighlight) -> {
-                                context.setShaderColor(
-                                        textColor().withAlpha(255).color());
+                                context.setShaderColor(getGuiSettings()
+                                        .textColor()
+                                        .withAlpha(255)
+                                        .color());
                                 context.drawGuiTexture(
                                         slideMeta.slidingDown
                                                 ? Constants.EXPAND_GUI_ON_SPRITE
@@ -922,61 +927,6 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
                                 context.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
                             })));
         }
-    }
-
-    @Override
-    public WrapRGBA activeFrameColor() {
-        return clickGuiConfig.get().activeFrameColor();
-    }
-
-    @Override
-    public WrapRGBA inactiveFrameColor() {
-        return clickGuiConfig.get().inactiveFrameColor();
-    }
-
-    @Override
-    public WrapRGBA backgroundColor() {
-        return clickGuiConfig.get().backgroundColor();
-    }
-
-    @Override
-    public WrapRGBA plateColor() {
-        return clickGuiConfig.get().plateColor();
-    }
-
-    @Override
-    public WrapRGBA titleColor() {
-        return clickGuiConfig.get().titleColor();
-    }
-
-    @Override
-    public WrapRGBA labelColor() {
-        return clickGuiConfig.get().labelColor();
-    }
-
-    @Override
-    public WrapRGBA buttonActiveColor() {
-        return clickGuiConfig.get().buttonActiveColor();
-    }
-
-    @Override
-    public WrapRGBA buttonInactiveColor() {
-        return clickGuiConfig.get().buttonInactiveColor();
-    }
-
-    @Override
-    public WrapRGBA textColor() {
-        return clickGuiConfig.get().textColor();
-    }
-
-    @Override
-    public WrapRGBA textBackground() {
-        return clickGuiConfig.get().textBackground();
-    }
-
-    @Override
-    public WrapRGBA sliderColor() {
-        return clickGuiConfig.get().sliderColor();
     }
 
     public ClickGui() {
@@ -1022,12 +972,6 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
             .defaultValue(true)
             .build();
 
-    public final ModulePath configType = clickGui.add("config-editor-style");
-
-    public final NBTRef<GuiSetting> configGuiConfig = builder(configType.add("setting"), GuiSetting.class)
-            .defaultValue(GuiSetting.DEFAULT)
-            .build();
-
     public final ModulePath widgetType = clickGui.add("widget-style");
 
     public final NBTRef<GuiSetting> widgetGuiConfig = builder(widgetType.add("setting"), GuiSetting.class)
@@ -1042,8 +986,17 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
             .show(() -> guiStyle.get() == ClickGuiStyle.SLIDER)
             .build();
 
-    private final CustomElementFactory guiElementFactory = new CustomElementFactory(
-            () -> guiStyle.get() == ClickGuiStyle.SLIDER ? sliderWidgetGuiConfig.get() : widgetGuiConfig.get());
+    public final ModulePath configType = clickGui.add("config-editor-style");
+
+    public final NBTRef<GuiSetting> configGuiConfig = builder(configType.add("setting"), GuiSetting.class)
+            .defaultValue(GuiSetting.DEFAULT)
+            .build();
+
+    public GuiSetting getGuiSettings() {
+        return guiStyle.get() == ClickGuiStyle.SLIDER ? sliderWidgetGuiConfig.get() : widgetGuiConfig.get();
+    }
+
+    private final CustomElementFactory guiElementFactory = new CustomElementFactory(this::getGuiSettings);
 
     private boolean onHotkey(IHotKey iHotKey, IInputManager manager) {
         if (HotKeyUtils.isValidState()) {
@@ -1353,25 +1306,6 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
         return new ConditionalWidget(() -> showCondition.getAsBoolean() && extraShowCondition.getAsBoolean(), keyValue);
     }
 
-    public NBTRef<GuiSetting> clickGuiConfig = builder(clickGui.add("gui-config"), GuiSetting.class)
-            .defaultValue(GuiSetting.DEFAULT)
-            .build();
-
-    @Override
-    public AlignType buttonTextAlign() {
-        return clickGuiConfig.get().buttonTextAlign();
-    }
-
-    @Override
-    public AlignType inputTextAlign() {
-        return clickGuiConfig.get().inputTextAlign();
-    }
-
-    @Override
-    public AlignType sliderTextAlign() {
-        return clickGuiConfig.get().sliderTextAlign();
-    }
-
     public void openConfigurateScreen(BaseModule baseModule) {
         openConfigurateScreen(baseModule, getClickGuiMetadata());
     }
@@ -1386,7 +1320,7 @@ public class ClickGui extends BaseModule implements GuiColorSamplier {
 
     {
         CONFIG_FACTORY = new CombinedElementFactory(configGuiConfig::get);
-        ELEMENT_FACTORY = new CombinedElementFactory(widgetGuiConfig::get);
+        ELEMENT_FACTORY = guiElementFactory;
     }
 
     private @NotNull DrawableWidget getKeyValueWidget(Ref<?> wrapper, String keyName) {
