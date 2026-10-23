@@ -21,6 +21,10 @@ public interface GuiColorSamplier {
 
     WrapRGBA textColor();
 
+    default WrapRGBA inputTextColor() {
+        return textColor();
+    }
+
     WrapRGBA textBackground();
 
     WrapRGBA sliderColor();

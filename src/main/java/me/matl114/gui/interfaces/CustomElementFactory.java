@@ -24,7 +24,11 @@ public class CustomElementFactory implements ElementFactory {
     }
 
     protected ColorSampler textColor() {
-        return () -> colors().textColor().withAlpha(255).color();
+        return () -> colors().textColor().color();
+    }
+
+    protected ColorSampler inputTextColor() {
+        return () -> colors().inputTextColor().color();
     }
 
     protected ColorSampler labelBackground() {
@@ -183,7 +187,7 @@ public class CustomElementFactory implements ElementFactory {
     public <T> ElementHandler createInput(Value<T> value, @Nullable TextAlign overrideAlign) {
         return TextFieldElement.ofValue(value)
                 .setBackgroundColor(() -> colors().textBackground().color())
-                .setTextColor(textColor())
+                .setTextColor(inputTextColor())
                 .setAlign(overrideAlign == null ? inputTextAlign() : overrideAlign);
     }
 
@@ -198,7 +202,7 @@ public class CustomElementFactory implements ElementFactory {
         return new SlidingInputElement<>(value, sliderFactory)
                 .setSliderColor(() -> colors().sliderColor().color())
                 .setBackgroundColor(() -> colors().textBackground().color())
-                .setTextColor(textColor())
+                .setTextColor(inputTextColor())
                 .setAlign(overrideAlign == null ? sliderTextAlign() : overrideAlign);
     }
 }
