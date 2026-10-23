@@ -299,7 +299,7 @@ public class AutoSurround extends BaseModule {
         Set<BlockPos> scaffoldPoses = new LinkedHashSet<>();
         if (scaffold.get()) {
             for (var re : directionTestPoses) {
-                BlockPos test = re.withY(minY);
+                BlockPos test = re.withY(minY - 1);
                 if (occupiedPoses.contains(test)) {
                     continue;
                 }
