@@ -503,6 +503,7 @@ public class AutoSurround extends BaseModule {
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
         ModulePreset preset = event.context.getValue();
+        ghostHand.set(preset.getGhostHandMode(ghostHand.get()));
         if (preset.isAirplacePreset()) airplace.set(preset.getAirplace(airplace.get()));
         if (preset.isSwingPlacePreset()) swingHand.set(preset.getSwingPlace(swingHand.get()));
         if (preset.isMultitaskPreset()) eatingAbort.set(preset.getEatingAbort(eatingAbort.get()));

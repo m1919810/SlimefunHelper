@@ -95,6 +95,11 @@ public class AutoPlate extends BaseModule {
     public final FlagRef returnBlock =
             flagBuilder(autoPlate.add("ghost-hand-swap-back")).build();
 
+    public final EnumRef<GhostHandMode> preferredGhostHand = builder(
+                    autoPlate.add("preferred-ghost-hand-mode"), GhostHandMode.class)
+            .defaultValue(GhostHandMode.INV_SWAP)
+            .build();
+
     public final FlagRef swingHand = builder(autoPlate.add("swing-hand"), Boolean.class)
             .defaultValue(true)
             .build();
@@ -222,7 +227,8 @@ public class AutoPlate extends BaseModule {
                     && InteractUtils.getBlockPlacement(state.getBlock(), mc.player, mc.world, blockHitResult.val())
                             != null) {
                 if (!InteractionTasks.canHandleInteract(mode.get(), blockHitResult.val())) break;
-                Runnable runnable = InvExtra.INSTANCE.swapItemToHand(supplyBlock, false, GhostHandMode.INV_SWAP);
+                Runnable runnable = InvExtra.INSTANCE.swapItemToHand(
+                        supplyBlock, false, preferredGhostHand.get().getPreferredMode(supplyBlock));
                 if (runnable == null) break;
                 stack.add(runnable);
                 if (useBlockRotate.get()) {
@@ -260,6 +266,7 @@ public class AutoPlate extends BaseModule {
 
     public void onPresetReload(Event<EventContainer<ModulePreset>> event) {
         ModulePreset preset = event.context.getValue();
+        preferredGhostHand.set(preset.getGhostHandMode(preferredGhostHand.get()));
         if (preset.isAirplacePreset()) airplace.set(preset.getAirplace(airplace.get()));
         if (preset.isSwingPlacePreset()) swingHand.set(preset.getSwingPlace(swingHand.get()));
         if (!preset.isOptionPreset()) {

@@ -890,7 +890,7 @@ public class ElytraBot extends BaseModule {
 
     private boolean shouldUseMaceFix() {
         if (maceFix.get() && mc.player.isFallFlying() && !ElytraExtra.INSTANCE.isCurrentArmorGliding()) {
-            if (ElytraExtra.INSTANCE.maceFixMode.get().test(s -> s.get().isIn(BypassMode.NO_BYPASS))) {
+            if (Attack.INSTANCE.maceFixMode.get().test(s -> s.get().isIn(BypassMode.NO_BYPASS))) {
                 return false;
             }
             return true;
@@ -1452,6 +1452,7 @@ public class ElytraBot extends BaseModule {
             if (shouldAttackMace()
                     && base.shouldUseMaceFix()
                     && !ElytraExtra.INSTANCE.hasPendingFallFlyingReset()
+                    && !ElytraExtra.INSTANCE.isThisTickGlideMovementServerSideGlide()
                     && Tasks.getTick() - PlayerStateManager.INSTANCE.lastStartGlidingTick
                             >= base.maceSwapMinDelay.get()) {
                 Vec3d predictedPosition = PositionPredict.INSTANCE
