@@ -1,6 +1,9 @@
 package me.matl114.hacks.modules.render;
 
 import java.awt.Color;
+import me.matl114.events.Event;
+import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render2D;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.Vec3;
@@ -9,6 +12,7 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.NBTRef;
+import me.matl114.versioned.api.ModelFaceFactory;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Hand;
 
@@ -25,11 +29,30 @@ public class HandView extends BaseModule {
         INSTANCE = this;
     }
 
+    @Override
+    public void registerAll() {
+        super.registerAll();
+        registerListener(RenderListener.getRender2DEvent(), this::renderHandOutline);
+    }
+
+    private void renderHandOutline(Event<Render2D> event) {
+        var renderer = ModelFaceFactory.getInstance();
+        if (!isActive() || !glow.get() || event.context.hudHidden()) {
+            renderer.clear();
+            return;
+        }
+        renderer.render2D(boundaryColor.get().withAlpha(255));
+    }
+
     public final FlagRef enable = flagBuilder(handView.addEnable()).build();
 
     public final FlagRef glow = flagBuilder(handView.add("glow")).build();
 
     public final NBTRef<WrapColor> glowColor = builder(handView.add("glow-color"), WrapColor.class)
+            .defaultValue(new WrapColor(Color.CYAN))
+            .build();
+
+    public final NBTRef<WrapColor> boundaryColor = builder(handView.add("boundary-color"), WrapColor.class)
             .defaultValue(new WrapColor(Color.CYAN))
             .build();
 

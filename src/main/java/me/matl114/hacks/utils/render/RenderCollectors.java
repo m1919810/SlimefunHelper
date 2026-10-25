@@ -14,10 +14,12 @@ import me.matl114.utils.ChatUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.render.ColorQuad;
+import me.matl114.utils.render.EntityBoundaryCollector;
 import me.matl114.utils.render.EntityBoxCollector;
 import me.matl114.utils.render.EntityFaceCollector;
 import me.matl114.utils.render.EntityFrameCollector;
 import me.matl114.utils.render.EntityOutlineCollector;
+import me.matl114.utils.render.EntityOutlineRenderer;
 import me.matl114.utils.render.RenderCollector;
 import me.matl114.versioned.api.VDrawContext;
 import me.matl114.versioned.api.VRender;
@@ -266,8 +268,16 @@ public class RenderCollectors {
         return new EntityOutlineCollector();
     }
 
+    public static RenderCollector<Entity> createEntityOutlineRenderer() {
+        return new EntityOutlineRenderer();
+    }
+
     public static RenderCollector<Entity> createEntityFaceCollector() {
         return new EntityFaceCollector();
+    }
+
+    public static RenderCollector<Entity> createEntityBoundaryCollector() {
+        return new EntityBoundaryCollector();
     }
 
     public static RenderCollector<Entity> createEntityFrameCollector() {
