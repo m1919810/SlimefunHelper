@@ -9,6 +9,7 @@ import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.managers.config.Config;
 import me.matl114.utils.Debug;
+import me.matl114.versioned.ModVersion;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
 import net.fabricmc.loader.api.metadata.ModMetadata;
@@ -97,6 +98,7 @@ public final class PluginManager {
      * {@code main} entrypoints.
      */
     private void discoverExtensions() {
+        ModVersion hostVersion = getHostVersion();
         for (EntrypointContainer<SlimefunHelperPlugin> entrypoint :
                 FabricLoader.getInstance().getEntrypointContainers(ENTRYPOINT, SlimefunHelperPlugin.class)) {
             ModMetadata metadata = entrypoint.getProvider().getMetadata();
@@ -111,9 +113,22 @@ public final class PluginManager {
                 throw new IllegalStateException(
                         "Plugin entrypoint \"%s\" returned null.".formatted(metadata.getName()));
             }
+            ModVersion minimumVersion = Objects.requireNonNull(
+                    plugin.getMinimumVersion(), "Plugin minimum version cannot be null: " + metadata.getName());
+            if (!hostVersion.higherOrEqual(minimumVersion)) {
+                throw new IllegalStateException(
+                        "Plugin \"%s\" requires SlimefunHelper %s or newer, but the current version is %s."
+                                .formatted(metadata.getName(), minimumVersion, hostVersion));
+            }
             plugin.onDiscovered(entrypoint.getProvider());
             plugins.add(plugin);
         }
+    }
+
+    private ModVersion getHostVersion() {
+        String version =
+                plugins.get(0).getContainer().getMetadata().getVersion().getFriendlyString();
+        return ModVersion.parseTrailing(version);
     }
 
     public List<SlimefunHelperPlugin> getPlugins() {
