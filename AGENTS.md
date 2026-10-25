@@ -18,3 +18,23 @@
 - If `spotlessCheck` reports formatting violations and automatic formatting is appropriate, run `.\gradlew spotlessApply`, then inspect `git diff`.
 - If Spotless cannot run because of Gradle or environment configuration, report the failure and continue with targeted static verification.
 - Do not investigate Gradle merely because Spotless cannot run.
+
+## Verified Windows Build Environment
+
+This workspace targets Java 21. The verified paths on this workstation are:
+
+- `GRADLE_HOME=C:\gradle\gradle-9.2.0`
+- `GRADLE_USER_HOME=C:\Users\mtl\.gradle` (contains the Gradle distribution and dependency caches)
+- `JAVA_HOME=C:\Intellij_Idea\jetbrainRuntime\jbr_jcef-21.0.7-windows-x64-b1038.54`
+
+For an explicitly requested build, invoke the cached Gradle installation directly:
+
+```powershell
+$env:GRADLE_HOME = 'C:\gradle\gradle-9.2.0'
+$env:GRADLE_USER_HOME = 'C:\Users\mtl\.gradle'
+$env:JAVA_HOME = 'C:\Intellij_Idea\jetbrainRuntime\jbr_jcef-21.0.7-windows-x64-b1038.54'
+$gradleExe = Join-Path $env:GRADLE_HOME 'bin\gradle.bat'
+& $gradleExe runClient
+```
+
+The workspace `gradlew.bat` redirects `distributionUrl` to the local Gradle ZIP and fails on a later invocation when the value is already identical. Direct invocation avoids that wrapper side effect. Update these workstation-specific paths when building elsewhere.

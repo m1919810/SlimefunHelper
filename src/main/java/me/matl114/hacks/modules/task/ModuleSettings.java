@@ -9,6 +9,7 @@ import me.matl114.gui.presets.single.KeyBindConfigurateWidget;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.config.StringFormat;
+import me.matl114.hacks.utils.gui.ClassicClickGuiScreen;
 import me.matl114.managers.Configs;
 import me.matl114.managers.command.MainCommand;
 import me.matl114.managers.config.*;
@@ -85,7 +86,7 @@ public class ModuleSettings extends BaseModule {
     }
 
     public boolean shouldNotExecuteInInput() {
-        if (mc.currentScreen instanceof ClickGui.ClickGuiMainScreen clickGui) {
+        if (mc.currentScreen instanceof ClassicClickGuiScreen clickGui) {
             return false;
         }
         var focused = mc.currentScreen.getFocused();

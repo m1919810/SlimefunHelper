@@ -1,5 +1,6 @@
 package me.matl114.renderer.text;
 
+import it.unimi.dsi.fastutil.ints.IntSet;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -19,6 +20,8 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import me.matl114.plugins.MainPlugin;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.BakedGlyph;
+import net.minecraft.client.font.EffectGlyph;
 import net.minecraft.client.font.Font;
 import net.minecraft.client.font.FontLoader;
 import net.minecraft.client.font.FontStorage;
@@ -34,11 +37,14 @@ import net.minecraft.resource.metadata.ResourceMetadataReader;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
+import net.minecraft.util.math.random.Random;
 import org.jetbrains.annotations.Nullable;
 
 public final class LocalFontTextDrawer extends ResourceFontTextDrawer implements AutoCloseable {
     private static final AtomicLong FONT_INSTANCES = new AtomicLong();
     private static final Identifier FONT_LOCATION = MainPlugin.identifier("local-font.ttf");
+    private static final StyleSpriteSource.Font UNICODE_FONT_SOURCE =
+            new StyleSpriteSource.Font(CustomFontTextDrawer.UNICODE_FONT_ID);
     public static final float DEFAULT_FONT_SIZE = 11.0F;
     private static final float OVERSAMPLE = 4.0F;
     private static final net.minecraft.client.font.TrueTypeFontLoader.Shift SHIFT =

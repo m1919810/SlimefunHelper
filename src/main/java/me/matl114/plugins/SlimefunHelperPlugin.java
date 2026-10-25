@@ -3,10 +3,12 @@ package me.matl114.plugins;
 import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.managers.config.Config;
 import me.matl114.managers.config.ConfigLoader;
+import me.matl114.versioned.ModVersion;
 import net.fabricmc.loader.api.ModContainer;
 
 /** Entry point implemented by extensions loaded through the {@code slimefunhelper} Fabric entrypoint. */
 public interface SlimefunHelperPlugin {
+    ModVersion DEFAULT_MINIMUM_VERSION = ModVersion.parse("1.2.1.1");
 
     /** Called before core configuration is read. Register plugin-owned configs here. */
     public void onConfigBootstrap();
@@ -22,6 +24,11 @@ public interface SlimefunHelperPlugin {
 
     /** Returns the mod id that owns this plugin. */
     public String getPluginId();
+
+    /** Returns the minimum SlimefunHelper host version required by this plugin. */
+    default ModVersion getMinimumVersion() {
+        return DEFAULT_MINIMUM_VERSION;
+    }
 
     default String getId() {
         return getPluginId();
