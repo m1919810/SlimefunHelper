@@ -290,6 +290,7 @@ public class Scaffold extends BaseModule {
 
     public void onPresetReload(Event<EventContainer<ModulePreset>> event) {
         ModulePreset preset = event.context.getValue();
+        ghostHand.set(preset.getGhostHandMode(ghostHand.get()));
         if (preset.isAirplacePreset()) airplace.set(preset.getAirplace(airplace.get()));
         if (preset.isSwingPlacePreset()) swingHand.set(preset.getSwingPlace(swingHand.get()));
         if (!preset.isOptionPreset()) {

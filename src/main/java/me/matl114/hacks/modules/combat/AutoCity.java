@@ -105,6 +105,9 @@ public class AutoCity extends BaseModule {
     public void onInputEvent() {
         if (enable.get()) {
             pendingSwitchPos = false;
+            if (PacketMine.INSTANCE.getRequestedBlock() != null) {
+                return;
+            }
             refreshTarget();
             if (eatingAbort.get() && mc.player.isUsingItem()) {
                 return;

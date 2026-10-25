@@ -13,9 +13,11 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.utils.config.WrapColor;
+import me.matl114.hacks.utils.enums.LegalMiningMode;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
+import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
@@ -60,6 +62,11 @@ public class QueueMine extends BaseModule {
 
     public final FlagRef eatingAbort =
             flagBuilder(packetMine.add("eating-abort")).build();
+
+    public final EnumRef<LegalMiningMode> legalMiningMode = builder(
+                    packetMine.add("legal-mining-mode"), LegalMiningMode.class)
+            .defaultValue(LegalMiningMode.NONE)
+            .build();
 
     public final FlagRef render = flagBuilder(packetMine.add("render")).build();
 
@@ -123,6 +130,9 @@ public class QueueMine extends BaseModule {
                     breakRequest.poll();
                     continue;
                 }
+                if (!MineExtra.INSTANCE.handleMineMode(posLatest, legalMiningMode.get())) {
+                    break;
+                }
                 BlockPos currentMiningPos = access.getCurrentMiningPos();
                 if (!Objects.equals(currentMiningPos, posLatest)) {
                     // change
@@ -157,7 +167,8 @@ public class QueueMine extends BaseModule {
         if (!breakRequest.isEmpty()) {
             BlockPos posLatest = breakRequest.peek();
             if (Objects.equals(posLatest, access.getCurrentMiningPos())
-                    && InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), posLatest)) {
+                    && InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), posLatest)
+                    && MineExtra.INSTANCE.handleMineMode(posLatest, legalMiningMode.get())) {
                 if (access.breakIfComplete()) {
                     breakRequest.poll();
                 }

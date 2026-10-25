@@ -27,4 +27,8 @@ public enum GhostHandMode implements ConfigEnum {
     public boolean isAcceptable(int index) {
         return index == 40 || index < searchSize;
     }
+
+    public GhostHandMode getPreferredMode(int index) {
+        return isAcceptable(index) ? this : INV_SWAP;
+    }
 }
