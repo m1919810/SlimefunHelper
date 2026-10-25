@@ -13,9 +13,5 @@ public interface EntityInternalAccess<T extends Entity> extends EntityAccess<T> 
     byte RENDER_LEVEL_WHITELIST = 1;
     byte RENDER_LEVEL_FORCE = 2;
 
-    public byte renderTrackedLevel();
-
-    public void markRenderTracked(byte tracked);
-
     public Predictor getPositionPredictor();
 }

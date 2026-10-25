@@ -1,6 +1,7 @@
 package me.matl114.mixins.hack;
 
 import me.matl114.hacks.modules.render.HandView;
+import me.matl114.utils.render.EntityModelCollector;
 import me.matl114.versioned.api.ModelFaceFactory;
 import me.matl114.versioned.impl.HandFaceRenderer_v1_21_11;
 import net.fabricmc.api.EnvType;
@@ -23,6 +24,42 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ItemRenderer.class)
 public abstract class ItemRendererMixin {
     private static final HandFaceRenderer_v1_21_11 MODEL_FACE = ModelFaceFactory.getInstance();
+
+    @Inject(
+            method =
+                    "renderItem(Lnet/minecraft/item/ItemDisplayContext;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;II[ILjava/util/List;Lnet/minecraft/client/render/RenderLayer;Lnet/minecraft/client/render/item/ItemRenderState$Glint;)V",
+            at = @At("HEAD"))
+    private static void captureEntityItemStart(
+            ItemDisplayContext displayContext,
+            MatrixStack matrices,
+            VertexConsumerProvider vertexConsumers,
+            int light,
+            int overlay,
+            int[] tintLayers,
+            List<BakedQuad> quads,
+            RenderLayer renderLayer,
+            ItemRenderState.Glint glintType,
+            CallbackInfo ci) {
+        EntityModelCollector.captureItemQuads(vertexConsumers, matrices, quads, renderLayer);
+    }
+
+    @Inject(
+            method =
+                    "renderItem(Lnet/minecraft/item/ItemDisplayContext;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;II[ILjava/util/List;Lnet/minecraft/client/render/RenderLayer;Lnet/minecraft/client/render/item/ItemRenderState$Glint;)V",
+            at = @At("RETURN"))
+    private static void captureEntityItemEnd(
+            ItemDisplayContext displayContext,
+            MatrixStack matrices,
+            VertexConsumerProvider vertexConsumers,
+            int light,
+            int overlay,
+            int[] tintLayers,
+            List<BakedQuad> quads,
+            RenderLayer renderLayer,
+            ItemRenderState.Glint glintType,
+            CallbackInfo ci) {
+        EntityModelCollector.finishItemQuads(vertexConsumers);
+    }
 
     @Inject(
             method =

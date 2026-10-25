@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import me.matl114.accessors.access.RenderLayerAccess;
+import me.matl114.events.RenderListener;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.versioned.api.VDrawContext;
@@ -17,10 +18,15 @@ import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.client.render.entity.state.EntityRenderState;
+import net.minecraft.client.render.model.BakedQuad;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector2f;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 public abstract class EntityModelCollector implements RenderCollector<Entity> {
     protected static final MinecraftClient mc = MinecraftClient.getInstance();
@@ -40,7 +46,20 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
     @Override
     public void clear() {
         entities.clear();
-        clearCollected();
+        clearCaptured();
+    }
+
+    public static void captureItemQuads(
+            VertexConsumerProvider provider, MatrixStack matrices, List<BakedQuad> quads, RenderLayer layer) {
+        if (provider instanceof EntityVertexConsumerProvider collector) {
+            collector.captureItem(matrices, quads, layer);
+        }
+    }
+
+    public static void finishItemQuads(VertexConsumerProvider provider) {
+        if (provider instanceof EntityVertexConsumerProvider collector) {
+            collector.finishItem();
+        }
     }
 
     @Override
@@ -49,16 +68,55 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
         EntityRenderDispatcher entityRenderDispatcher = mc.getEntityRenderDispatcher();
         if (entityRenderDispatcher == null) return;
         for (IndexEntry<Entity> entry : entities) {
-            clearCollected();
+            clearCaptured();
             vertexConsumers.setColor(entry.index());
             submitEntity(entityRenderDispatcher, entry.val(), partialTick);
             renderCollected(matrices);
         }
-        clearCollected();
+        clearCaptured();
     }
 
     @Override
-    public void render2D(VDrawContext vDrawContext, float partialTick) {}
+    public void render2D(VDrawContext vDrawContext, float partialTick) {
+        renderQuads2D(
+                partialTick,
+                (quads, camera, projection, color) -> maskRenderer.draw(quads, camera, projection, color, 0));
+    }
+
+    protected final void renderQuads2D(float partialTick, MaskConsumer consumer) {
+        if (entities.isEmpty()) return;
+
+        EntityRenderManager entityRenderManager = mc.getEntityRenderDispatcher();
+        if (entityRenderManager == null) return;
+        Matrix4f camera = RenderListener.getWorldModelViewMatrix();
+        Matrix4f projection = RenderListener.getWorldBasicProjectionMatrix();
+        for (IndexEntry<Entity> entry : entities) {
+            clearCaptured();
+            try {
+                vertexConsumers.setColor(entry.index());
+                submitEntity(entityRenderManager, entry.val(), partialTick, entry.index());
+                clearTextCommands();
+                renderDispatcher.render();
+                vertexConsumers.finishCapture();
+
+                List<MaskPostRenderer.Quad> quads = new ArrayList<>();
+                for (IndexEntry<CapturedQuad> captured : capturedQuads) {
+                    Vec3d[] vertices = captured.val().vertices();
+                    if (vertices.length == 4) {
+                        Identifier texture = captured.val().texture();
+                        if (texture == null && captured.val().sprite() != null) {
+                            texture = captured.val().sprite().getAtlasId();
+                        }
+                        quads.add(new MaskPostRenderer.Quad(
+                                vertices, captured.val().us(), captured.val().vs(), texture));
+                    }
+                }
+                consumer.accept(quads, camera, projection, entry.index());
+            } finally {
+                clearCaptured();
+            }
+        }
+    }
 
     private void submitEntity(EntityRenderDispatcher entityRenderDispatcher, Entity entity, float partialTick) {
         renderEntity(entityRenderDispatcher.getRenderer(entity), entity, partialTick);
@@ -70,6 +128,8 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
         state.displayName = null;
         state.leashData = null;
         state.onFire = false;
+        state.shadowPieces.clear();
+        configureRenderState(state, color);
 
         Vec3d cameraPos = RenderUtils.getCameraPos();
         Vec3d positionOffset = renderer.getPositionOffset(state);
@@ -90,7 +150,9 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
 
     protected abstract void clearCollected();
 
-    protected record CapturedQuad(Vec3d[] vertices, UV uv, Identifier texture) {}
+    protected void configureRenderState(EntityRenderState state, int color) {}
+
+    protected record CapturedQuad(Vec3d[] vertices, UV uv, Identifier texture, Sprite sprite, float[] us, float[] vs) {}
 
     @FunctionalInterface
     private interface QuadConsumer {
@@ -101,6 +163,7 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
         private final Map<RenderLayer, VertexConsumer> buffers = new HashMap<>();
         private final QuadConsumer quadConsumer;
         private int color;
+        private int itemCaptureDepth;
 
         private EntityVertexConsumerProvider(QuadConsumer quadConsumer) {
             super(null, new LinkedHashMap<>());
@@ -111,8 +174,40 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
             this.color = color;
         }
 
+        private void finishCapture() {
+            for (VertexConsumer buffer : buffers.values()) {
+                ((EntityVertexConsumer) buffer).finishCapture();
+            }
+        }
+
+        private void captureItem(MatrixStack matrices, List<BakedQuad> quads, RenderLayer layer) {
+            itemCaptureDepth++;
+            Identifier texture = RenderLayerAccess.of(layer).getRenderTexture().orElse(null);
+            Matrix4f transform = matrices.peek().getPositionMatrix();
+            for (BakedQuad baked : quads) {
+                Vec3d[] vertices = new Vec3d[4];
+                float[] us = new float[4];
+                float[] vs = new float[4];
+                for (int i = 0; i < 4; i++) {
+                    Vector3f position = transform.transformPosition(baked.getPosition(i), new Vector3f());
+                    vertices[i] = new Vec3d(position.x, position.y, position.z);
+                    long packedUV = baked.getTexcoords(i);
+                    us[i] = Vector2f.getX(packedUV);
+                    vs[i] = Vector2f.getY(packedUV);
+                }
+                quadConsumer.accept(
+                        new CapturedQuad(vertices, new UV(us[0], vs[0], us[2], vs[2]), texture, baked.sprite(), us, vs),
+                        color);
+            }
+        }
+
+        private void finishItem() {
+            itemCaptureDepth--;
+        }
+
         @Override
         public VertexConsumer getBuffer(RenderLayer layer) {
+            if (itemCaptureDepth > 0) return NoopVertexConsumer.INSTANCE;
             if (layer.getDrawMode() != VertexFormat.DrawMode.QUADS) return NoopVertexConsumer.INSTANCE;
             return buffers.computeIfAbsent(
                     layer,
@@ -151,6 +246,7 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
 
         @Override
         public VertexConsumer vertex(float x, float y, float z) {
+            if (count == 4) finishCapture();
             currentVertex = count;
             vertices[count++] = new Vec3d(x, y, z);
             return this;
@@ -170,6 +266,7 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
         public VertexConsumer texture(float u, float v) {
             us[currentVertex] = u;
             vs[currentVertex] = v;
+            if (count == 4) finishCapture();
             return this;
         }
 
@@ -185,14 +282,24 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
 
         @Override
         public VertexConsumer normal(float x, float y, float z) {
-            if (count == 4 && currentVertex == 3) {
-                quadConsumer.accept(
-                        new CapturedQuad(vertices.clone(), new UV(us[0], vs[0], us[2], vs[2]), texture),
-                        colorSupplier.getAsInt());
-                count = 0;
-                currentVertex = 0;
-            }
+            if (count == 4) finishCapture();
             return this;
+        }
+
+        private void finishCapture() {
+            if (count == 4) {
+                quadConsumer.accept(
+                        new CapturedQuad(
+                                vertices.clone(),
+                                new UV(us[0], vs[0], us[2], vs[2]),
+                                texture,
+                                null,
+                                us.clone(),
+                                vs.clone()),
+                        colorSupplier.getAsInt());
+            }
+            count = 0;
+            currentVertex = 0;
         }
     }
 
