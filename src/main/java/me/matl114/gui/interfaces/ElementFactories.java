@@ -28,6 +28,10 @@ public final class ElementFactories {
         return style;
     }
 
+    public static boolean unregister(ElementStyle style) {
+        return STYLES.remove(style.id(), style);
+    }
+
     public static ElementStyle get(Identifier id) {
         return STYLES.get(id);
     }
