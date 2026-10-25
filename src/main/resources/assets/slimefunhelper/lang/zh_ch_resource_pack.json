@@ -259,6 +259,7 @@
 	"text-fonts.font-name": "系统字体",
 	"text-fonts.resource-font": "资源包字体",
 	"text-fonts.font-size": "字体大小",
+	"message.viafabric.dup-rot-required": "此功能需要 ViaFabricPlus 连接到 1.20.7 或更低版本。",
 	"message.module.structure-label.input-seed": "请输入世界种子以使用结构标签。",
 	"message.module.misc.parkour-jump-failed": "跑酷跳跃失败，位置已回档。",
 	"configenum.text-style.vanilla": "原版字体",

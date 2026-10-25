@@ -247,6 +247,15 @@ public class InvExtra extends BaseModule {
         return Runnables.doNothing();
     }
 
+    public boolean canSwapItemToHand(int hand, boolean offhand, GhostHandMode mode) {
+        if (mc.player == null || hand < 0 || hand >= InventoryUtils.getPlayerInvSize()) return false;
+        if (mode == GhostHandMode.HOT_BAR_ONLY && !offhand && hand != 40) return hand < 9;
+        return mc.player
+                .currentScreenHandler
+                .getSlotIndex(mc.player.getInventory(), hand)
+                .isPresent();
+    }
+
     public Runnable swapItemToHand(int hand, boolean offhand, GhostHandMode mode) {
         if (offhand) {
             return swapInventoryIndexToOffhand(hand);
