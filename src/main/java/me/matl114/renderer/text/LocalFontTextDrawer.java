@@ -1,5 +1,6 @@
 package me.matl114.renderer.text;
 
+import it.unimi.dsi.fastutil.ints.IntSet;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -19,6 +20,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import me.matl114.plugins.MainPlugin;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.BakedGlyph;
 import net.minecraft.client.font.EffectGlyph;
 import net.minecraft.client.font.Font;
 import net.minecraft.client.font.FontLoader;
@@ -37,10 +39,13 @@ import net.minecraft.text.StyleSpriteSource;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
+import net.minecraft.util.math.random.Random;
 
 public final class LocalFontTextDrawer extends ResourceFontTextDrawer implements AutoCloseable {
     private static final AtomicLong FONT_INSTANCES = new AtomicLong();
     private static final Identifier FONT_LOCATION = MainPlugin.identifier("local-font.ttf");
+    private static final StyleSpriteSource.Font UNICODE_FONT_SOURCE =
+            new StyleSpriteSource.Font(CustomFontTextDrawer.UNICODE_FONT_ID);
     public static final float DEFAULT_FONT_SIZE = 11.0F;
     private static final float OVERSAMPLE = 4.0F;
     private static final net.minecraft.client.font.TrueTypeFontLoader.Shift SHIFT =
@@ -94,7 +99,8 @@ public final class LocalFontTextDrawer extends ResourceFontTextDrawer implements
                     List.of(new Font.FontFilterPair(
                             provider, net.minecraft.client.font.FontFilterType.FilterMap.NO_FILTER)),
                     Set.of());
-            TextRenderer renderer = new TextRenderer(new LocalGlyphsProvider(storage));
+            TextRenderer renderer =
+                    new TextRenderer(new LocalGlyphsProvider(fontId, provider, storage, client.textRenderer.fonts));
             return new LoadedFont(fontId, provider, storage, renderer, fontSize);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to load local font: " + path, e);
@@ -208,15 +214,42 @@ public final class LocalFontTextDrawer extends ResourceFontTextDrawer implements
             Identifier fontId, Font provider, FontStorage storage, TextRenderer renderer, float fontSize) {}
 
     private static final class LocalGlyphsProvider implements TextRenderer.GlyphsProvider {
+        private final Identifier fontId;
+        private final IntSet providedGlyphs;
         private final FontStorage storage;
+        private final TextRenderer.GlyphsProvider fallbackFonts;
+        private final GlyphProvider localGlyphs;
+        private final GlyphProvider localGlyphsWithFallback;
 
-        private LocalGlyphsProvider(FontStorage storage) {
+        private LocalGlyphsProvider(
+                Identifier fontId, Font font, FontStorage storage, TextRenderer.GlyphsProvider fallbackFonts) {
+            this.fontId = fontId;
+            this.providedGlyphs = font.getProvidedGlyphs();
             this.storage = storage;
+            this.fallbackFonts = fallbackFonts;
+            this.localGlyphs = storage.getGlyphs(false);
+            this.localGlyphsWithFallback = new GlyphProvider() {
+                @Override
+                public BakedGlyph get(int codePoint) {
+                    return providedGlyphs.contains(codePoint)
+                            ? localGlyphs.get(codePoint)
+                            : fallbackFonts.getGlyphs(UNICODE_FONT_SOURCE).get(codePoint);
+                }
+
+                @Override
+                public BakedGlyph getObfuscated(Random random, int width) {
+                    return localGlyphs.getObfuscated(random, width);
+                }
+            };
         }
 
         @Override
         public GlyphProvider getGlyphs(StyleSpriteSource source) {
-            return storage.getGlyphs(false);
+            if (!(source instanceof StyleSpriteSource.Font fontSource) || !fontId.equals(fontSource.id())) {
+                return fallbackFonts.getGlyphs(source);
+            }
+
+            return localGlyphsWithFallback;
         }
 
         @Override

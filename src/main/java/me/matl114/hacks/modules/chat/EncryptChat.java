@@ -196,7 +196,7 @@ public class EncryptChat extends BaseModule {
                         }))
                 .addToSub(subScreen);
         DisplayWidget.instance(45, 0, 100, 20)
-                .setRenderHandler(ClickGui.INSTANCE.getGuiElementFactory().createBackground())
+                .setRenderHandler(ClickGui.INSTANCE.configElementFactory().createBackground())
                 .addToSub(subScreen);
         ExecutableWidget.instance(45, 0, 100, 20)
                 .setElementHandler(new MultiLineTextElement(

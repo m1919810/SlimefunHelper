@@ -108,14 +108,17 @@ public class DrawContext_v1_21_11 implements VDrawContext {
     }
 
     private static final ArrayDeque<IndexEntry<LayerSnapshot>> depthDeque = new ArrayDeque<>(4);
+    private static final Map<DrawContext, Integer> maxLayerDepthByContext = new WeakHashMap<>();
 
     private record LayerSnapshot(GuiRenderState.Layer layer, @Nullable ScreenRect bounds) {}
 
     public void pushLayer(int depth) {
         int level = getCurrentDepthLevel();
+        int layerDepth = depth + level;
+        maxLayerDepthByContext.merge(drawContext, layerDepth, Math::max);
         LayerSnapshot snapshot =
                 new LayerSnapshot(drawContext.state.currentLayer, drawContext.state.currentLayerBounds);
-        depthDeque.addLast(new IndexEntry<>(depth + level, snapshot));
+        depthDeque.addLast(new IndexEntry<>(layerDepth, snapshot));
         GuiRendererStateAccess.of(drawContext.state).setLayerToDepth();
         drawContext.state.currentLayerBounds = null;
     }
@@ -561,12 +564,23 @@ public class DrawContext_v1_21_11 implements VDrawContext {
                     .map(TooltipComponent::of)
                     .collect(Util.toArrayList());
             data.ifPresent((datax) -> list.add(list.isEmpty() ? 0 : 1, TooltipComponent.of(datax)));
-            var context = pushMatrix();
+            int maxDepth = maxLayerDepthByContext.getOrDefault(drawContext, 0);
+            pushLayer(maxDepth - getCurrentDepthLevel());
             try {
-                context.drawTooltipImmediately(
-                        textRenderer, list, (int) point1.x, (int) point1.y, HoveredTooltipPositioner.INSTANCE, null);
+                var context = pushMatrix();
+                try {
+                    context.drawTooltipImmediately(
+                            textRenderer,
+                            list,
+                            (int) point1.x,
+                            (int) point1.y,
+                            HoveredTooltipPositioner.INSTANCE,
+                            null);
+                } finally {
+                    popMatrix();
+                }
             } finally {
-                popMatrix();
+                popLayer();
             }
         });
     }
