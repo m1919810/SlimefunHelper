@@ -43,7 +43,7 @@ public class TextFont extends BaseModule {
 
     public final StringRef textFontType = builder(root.add("font-name"), StringRef.TYPE)
             .defaultValue("")
-            .show(() -> textStyle.get().isIn(TextStyle.SYSTEM))
+            .show(() -> textStyle.get().isIn(TextStyle.VANILLA))
             .updateListener(s -> updateTextFont())
             .build();
 
