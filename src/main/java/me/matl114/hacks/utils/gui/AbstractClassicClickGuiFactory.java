@@ -9,7 +9,6 @@ import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.hacks.modules.task.ClickGui;
 import me.matl114.hacks.modules.task.ClickGui.ClickGuiMetaData;
-import me.matl114.hooks.BaritoneHooks;
 import net.minecraft.client.gui.screen.Screen;
 
 /** Shared screen-opening behavior for the classic ClickGui layouts. */
@@ -30,17 +29,10 @@ public abstract class AbstractClassicClickGuiFactory<F extends ElementFactory> i
         this.clickGui = clickGui;
         List<String> modules = clickGui.getModules();
         Map<String, Function<Screen, DrawableWidget>> selections = new LinkedHashMap<>();
+        // The module browser precedes selections shared with other ClickGui styles.
         selections.put("Module", screen -> createModuleGroupList(modules, meta));
-        selections.put("Friends", screen -> clickGui.createFriendSettings(screen, meta));
-        selections.put("CmdMacros", screen -> clickGui.createCmdMacrosSettings(screen, meta));
-        selections.put("Hotkeys", screen -> clickGui.createKeyBindListSettings(screen, meta));
-        selections.put("BaseSettings", screen -> clickGui.createBaseSettings(screen, meta));
-        selections.put("GuiSettings", screen -> clickGui.createGuiSettings(screen, meta));
-        selections.put("Font", screen -> clickGui.createFontSettings(screen, meta));
-        selections.put("Config", screen -> clickGui.createConfig(meta));
-        if (BaritoneHooks.getInstance().isBaritoneAPISupported()) {
-            selections.put("Baritone", screen -> clickGui.createBaritoneScreen(screen, meta));
-        }
+        clickGui.getExtraSelections(meta)
+                .forEach((name, selection) -> selections.put(name, selection.screenFactory()));
 
         Screen screen = new ClassicClickGuiScreen(selections, elementFactory);
         ScreenAccess.of(screen).addCloseFuture(() -> clickGui.setClickGuiMeta(meta));
