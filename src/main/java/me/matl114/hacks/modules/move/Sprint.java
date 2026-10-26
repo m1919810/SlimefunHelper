@@ -50,6 +50,10 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     public final FlagRef directionalSprint =
             flagBuilder(sprint.add("all-direction-sprint")).build();
 
+    public final KeyBindRef hotkeyDirectional = toggleHotkey(
+                    sprint.add("all-direction-sprint-hotkey"), new MultiKeyBind(), sprint.add("all-direction-sprint"))
+            .build();
+
     public final EnumRef<BypassMode> directionalSprintMode = builder(sprint.add("bypass-mode"), BypassMode.class)
             .defaultValue(BypassMode.NO_BYPASS)
             .build();

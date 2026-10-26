@@ -125,11 +125,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public final FlagRef timeoutReflight =
             flagBuilder(elytraTweaks.add("timeout-reflight")).build();
 
-    public final FlagRef fireworkSpeedLimitWeb =
-            flagBuilder(elytraTweaks.add("firwork-speed-limit-web")).build();
-
-    public final FlagRef fireworksLiquidFly =
-            flagBuilder(elytraTweaks.add("firework-liquid-fly")).hideConfig().build();
+    public final NBTRef<OptionalPrimitive<Integer>> takeOffForceCooldown = builder(
+                    elytraTweaks.add("take-off-force-cooldown"), OptionalPrimitive.INT_TYPE)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.INT_TYPE, 7))
+            .build();
 
     public final FlagRef antiKick = builder(elytraTweaks.add("anti-kick"), Boolean.class)
             .defaultValue(true)
@@ -222,11 +221,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public final FireworkTimer timerVanilla = new FireworkTimer(fireworkMaxTicks);
 
-    public final IntRef rocketExtraEffectiveTicks = intBuilder(customFireworksPath.add("rocket-extra-effect-ticks"))
-            .defaultValue(1)
-            .validator(Configs.INT_NONNEGATIVE)
-            .build();
-
     public final FlagRef autoRescale =
             flagBuilder(customFireworksPath.add("auto-rescale-firework-box")).build();
 
@@ -234,6 +228,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             .defaultValue(1.65D)
             .validator(Configs.doubleRange(0.0D, Double.MAX_VALUE))
             .show(this.autoRescale::get)
+            .build();
+
+    public final FlagRef fireworkSpeedLimitWeb = flagBuilder(customFireworksPath.add("firwork-speed-limit-web"), true)
             .build();
 
     public final NBTRef<OptionalPrimitive<Double>> fireworkSpeedLimitUp = builder(
@@ -332,6 +329,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         registerListener(Listener.getPlayerFallFlyingTick(), this::runElytraUnbreakable);
         registerListener(
                 Listener.getEntityTrackDataUpdate().getChannel(EntityType.PLAYER), this::handleEntityDataUpdate);
+        registerListener(Listener.getPlayerSwitchFallFlying(), this::onLimitStartFallFlyingSpeed, Integer.MIN_VALUE);
         registerListener(Listener.getPlayerSwitchFallFlying(), this::onStartFallFlying);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(PlayerPositionLookS2CPacket.class), this::onSetBack);
@@ -983,6 +981,14 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     int manuallySwitchTick = 0;
 
+    public void onLimitStartFallFlyingSpeed(Event<Boolean> eventBoolean) {
+        if (takeOffForceCooldown.get().isPresent()
+                && takeOffForceCooldown.get().getValue() + PlayerStateManager.INSTANCE.lastStartGlidingTick
+                        > Tasks.getTick()) {
+            eventBoolean.cancel();
+        }
+    }
+
     public void onStartFallFlying(Event<Boolean> booleanEvent) {
         // not fallFlying, and not suitable for gliding
         // check armor fly
@@ -1283,6 +1289,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     int nextFlyFireworksTicks = 0;
 
     public void onElytraFlightStart(Event<Boolean> takeOff) {
+        if (takeOff.isCancelled()) return;
         if (takeOff.context
                 && (flyRocketOnFirstOff.get()
                         ||
@@ -1728,7 +1735,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     public boolean canFireworkControlMotion() {
-        return canFireworkControlMotion(Math.max(1, rocketExtraEffectiveTicks.get()));
+        return canFireworkControlMotion(1);
     }
 
     public boolean canFireworkControlMotion(int extraTicks) {
