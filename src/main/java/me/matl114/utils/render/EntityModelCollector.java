@@ -212,8 +212,9 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
 
         @Override
         public VertexConsumer getBuffer(RenderLayer layer) {
-            if (itemCaptureDepth > 0) return NoopVertexConsumer.INSTANCE;
-            if (layer.getDrawMode() != VertexFormat.DrawMode.QUADS) return NoopVertexConsumer.INSTANCE;
+            if (itemCaptureDepth > 0 || layer.getDrawMode() != VertexFormat.DrawMode.QUADS) {
+                return new NoopVertexConsumer();
+            }
             return buffers.computeIfAbsent(
                     layer,
                     ignored -> new EntityVertexConsumer(
