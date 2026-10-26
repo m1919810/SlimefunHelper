@@ -21,6 +21,7 @@ public class HandView extends BaseModule {
 
     public final ModulePath handView = makePath(Configs.RENDER_CONFIG, "hand-view");
     public final ModulePath mainHand = handView.add("main-hand");
+    public final ModulePath mainHandEmpty = handView.add("main-hand-empty");
     public final ModulePath offHand = handView.add("off-hand");
 
     public HandView() {
@@ -69,6 +70,14 @@ public class HandView extends BaseModule {
             .defaultValue(new Vec3(0, 0, 0))
             .build();
 
+    public final NBTRef<Vec3> mainHandEmptyScale = builder(mainHandEmpty.add("scale"), Vec3.class)
+            .defaultValue(new Vec3(1, 1, 1))
+            .build();
+
+    public final NBTRef<Vec3> mainHandEmptyPosition = builder(mainHandEmpty.add("position"), Vec3.class)
+            .defaultValue(new Vec3(0, 0, 0))
+            .build();
+
     public final NBTRef<Vec3> offHandScale = builder(offHand.add("scale"), Vec3.class)
             .defaultValue(new Vec3(1, 1, 1))
             .build();
@@ -77,9 +86,13 @@ public class HandView extends BaseModule {
             .defaultValue(new Vec3(0, 0, 0))
             .build();
 
-    public void applyHandTransform(MatrixStack matrices, Hand hand) {
-        Vec3 scale = hand == Hand.MAIN_HAND ? mainHandScale.get() : offHandScale.get();
-        Vec3 position = hand == Hand.MAIN_HAND ? mainHandPosition.get() : offHandPosition.get();
+    public void applyHandTransform(MatrixStack matrices, Hand hand, boolean handEmpty) {
+        Vec3 scale = hand == Hand.MAIN_HAND
+                ? (handEmpty ? mainHandEmptyScale.get() : mainHandScale.get())
+                : offHandScale.get();
+        Vec3 position = hand == Hand.MAIN_HAND
+                ? (handEmpty ? mainHandEmptyPosition.get() : mainHandPosition.get())
+                : offHandPosition.get();
         applyTransform(matrices, scale, position);
     }
 
