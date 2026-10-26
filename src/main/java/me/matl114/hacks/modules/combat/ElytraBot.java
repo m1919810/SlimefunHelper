@@ -173,12 +173,6 @@ public class ElytraBot extends BaseModule {
             .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
-    public final DoubleRef maceEstimatedDelay = doubleBuilder(attackMace.add("mace-pre-swap-delay"))
-            .defaultValue(3.0D)
-            .validator(Configs.doubleRange(0, 10))
-            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
-            .build();
-
     public final NBTRef<LabelVec2> macePreSwapSpeed = builder(
                     attackMace.add("mace-pre-swap-self-speed-prediction"), LabelVec2.class)
             .defaultValue(new LabelVec2(
@@ -1927,7 +1921,10 @@ public class ElytraBot extends BaseModule {
 
         @Override
         public synchronized void onAttack(Entity entity) {
-            if ((mc.player.isFallFlying() || mc.player.getAbilities().flying)
+            if (((mc.player.isFallFlying()
+                                    && (ElytraExtra.INSTANCE.hasPendingFallFlyingReset()
+                                            || ElytraExtra.INSTANCE.isThisTickGlideMovementServerSideGlide()))
+                            || mc.player.getAbilities().flying)
                     && stateMachine.getState() != STATE_PULL_UP) {
                 // just in few ticks for the attack(current tick)
                 // pull up only when after mace attack to miss
@@ -2247,7 +2244,10 @@ public class ElytraBot extends BaseModule {
 
         @Override
         public void onAttack(Entity entity) {
-            if ((mc.player.isFallFlying() || mc.player.getAbilities().flying)
+            if (((mc.player.isFallFlying()
+                                    && (ElytraExtra.INSTANCE.hasPendingFallFlyingReset()
+                                            || ElytraExtra.INSTANCE.isThisTickGlideMovementServerSideGlide()))
+                            || mc.player.getAbilities().flying)
                     && stateMachine.getState() != STATE_FOLLOW) {
                 // just in few ticks for the attack(current tick)
                 // pull up only when after mace attack to miss

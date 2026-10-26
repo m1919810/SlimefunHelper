@@ -1386,7 +1386,7 @@ public class KitReplenish extends BaseModule {
         if (mc.interactionManager.getCurrentGameMode().isCreative()) {
             Rule rule = kit.rule();
             Inventory inventory = createInventory(kit);
-            for (var i = rule.from(); i < rule.to(); ++i) {
+            for (var i = 0; i < inventory.size(); ++i) {
                 InvTasks.setCreativeInventory(inventory.getStack(i), i);
             }
         } else {

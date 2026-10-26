@@ -93,14 +93,10 @@ public class Attack extends BaseModule {
             .show(() -> !legalTargetingMode.get().isLegal() && tpRange.get().isPresent())
             .build();
 
-    public final FlagRef targetPredict = flagBuilder(attack.add("use-delay-movement-pos-predict"))
-            .show(() -> legalTargetingMode.get().isMovement())
-            .build();
-
     public final FlagRef postFix = builder(attack.add("attack-post-fix"), Boolean.class)
             .defaultValue(true)
             .show(() -> !legalTargetingMode.get().isLegal()
-                    && legalTargetingMode.get().isIn(LegalTargetingMode.DELAY_MOVEMENT))
+                    && legalTargetingMode.get().isIn(LegalTargetingMode.MOVEMENT_POST))
             .build();
 
     public final FlagRef autoAntiShield =
