@@ -34,7 +34,7 @@ public abstract class HeldItemRendererMixin {
             return;
         }
         matrices.push();
-        HandView.INSTANCE.applyHandTransform(matrices, hand);
+        HandView.INSTANCE.applyHandTransform(matrices, hand, item.isEmpty());
     }
 
     @Inject(method = "renderFirstPersonItem", at = @At("RETURN"))

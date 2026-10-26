@@ -52,7 +52,9 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
                 mc.getBlockRenderManager(),
                 vertexConsumers,
                 mc.getAtlasManager(),
-                outlineVertexConsumers,
+                outlineVertexConsumers == NoopOutlineVertexConsumerProvider.INSTANCE
+                        ? outlineVertexConsumers
+                        : new GuardedOutlineVertexConsumerProvider(outlineVertexConsumers),
                 NoopImmediateVertexConsumerProvider.INSTANCE,
                 mc.textRenderer);
     }
@@ -247,8 +249,9 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
 
         @Override
         public VertexConsumer getBuffer(RenderLayer layer) {
-            if (itemCaptureDepth > 0) return NoopVertexConsumer.INSTANCE;
-            if (layer.getDrawMode() != VertexFormat.DrawMode.QUADS) return NoopVertexConsumer.INSTANCE;
+            if (itemCaptureDepth > 0 || layer.getDrawMode() != VertexFormat.DrawMode.QUADS) {
+                return new NoopVertexConsumer();
+            }
             return buffers.computeIfAbsent(
                     layer,
                     ignored -> new EntityVertexConsumer(
@@ -412,6 +415,32 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
 
         @Override
         public void draw(RenderLayer layer) {}
+    }
+
+    private static final class GuardedOutlineVertexConsumerProvider extends OutlineVertexConsumerProvider {
+        private final OutlineVertexConsumerProvider delegate;
+
+        private GuardedOutlineVertexConsumerProvider(OutlineVertexConsumerProvider delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public VertexConsumer getBuffer(RenderLayer layer) {
+            if (!layer.isOutline() && layer.getAffectedOutline().isEmpty()) {
+                return NoopVertexConsumer.INSTANCE;
+            }
+            return delegate.getBuffer(layer);
+        }
+
+        @Override
+        public void setColor(int color) {
+            delegate.setColor(color);
+        }
+
+        @Override
+        public void draw() {
+            delegate.draw();
+        }
     }
 
     private static final class NoopOutlineVertexConsumerProvider extends OutlineVertexConsumerProvider {
