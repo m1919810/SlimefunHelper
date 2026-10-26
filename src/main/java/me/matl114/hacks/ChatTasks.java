@@ -180,7 +180,7 @@ public class ChatTasks {
                     .helper("message.command.sfh.reset.help")
                     .arg(SimpleCommandArgs.argumentBuilder()
                             .name("what")
-                            .select(List.of("clickgui"))
+                            .select(List.of("clickgui", "config"))
                             .build())
                     .post(e -> e.executor(CommandContext.run(this::onReset)))
                     .complete();
@@ -190,6 +190,7 @@ public class ChatTasks {
             var re = args.nextNonnullString();
             switch (re) {
                 case "clickgui" -> Tasks.scheduleDelayed(MainTasks.getClickGui()::resetGui, 1);
+                case "config" -> Tasks.scheduleDelayed(MainTasks.getConfigManager()::resetAll, 1);
             }
         }
 
