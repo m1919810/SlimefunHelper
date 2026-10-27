@@ -7,6 +7,7 @@ import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.List;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
@@ -528,6 +529,33 @@ public class ClickGui extends BaseModule {
         ConfigMultiLevelListScreen screen =
                 new ConfigMultiLevelListScreen(Config.REGISTRY.stream().toList(), CONFIG_FACTORY);
         ScreenAccess.of(screen).openFromCurrent();
+    }
+
+    /** Builders for the classic screen and the window layout of the same selection. */
+    public record ExtraSelection(
+            Function<Screen, DrawableWidget> screenFactory,
+            Function<WidgetUtils.ConfigScreenLayout, DrawableWidget> layoutFactory) {}
+
+    public Map<String, ExtraSelection> getExtraSelections(ClickGuiMetaData meta) {
+        Map<String, ExtraSelection> selections = new LinkedHashMap<>();
+        selections.put("Friends", new ExtraSelection(
+                screen -> createFriendSettings(screen, meta), layout -> createFriendSettings(layout, meta)));
+        selections.put("CmdMacros", new ExtraSelection(
+                screen -> createCmdMacrosSettings(screen, meta), layout -> createCmdMacrosSettings(layout, meta)));
+        selections.put("Hotkeys", new ExtraSelection(
+                screen -> createKeyBindListSettings(screen, meta), layout -> createKeyBindListSettings(layout, meta)));
+        selections.put("BaseSettings", new ExtraSelection(
+                screen -> createBaseSettings(screen, meta), layout -> createBaseSettings(layout, meta)));
+        selections.put("GuiSettings", new ExtraSelection(
+                screen -> createGuiSettings(screen, meta), layout -> createGuiSettings(layout, meta)));
+        selections.put("Font", new ExtraSelection(
+                screen -> createFontSettings(screen, meta), layout -> createFontSettings(layout, meta)));
+        selections.put("Config", new ExtraSelection(screen -> createConfig(meta), null));
+        if (BaritoneHooks.getInstance().isBaritoneAPISupported()) {
+            selections.put("Baritone", new ExtraSelection(
+                    screen -> createBaritoneScreen(screen, meta), layout -> createBaritoneScreen(layout, meta)));
+        }
+        return selections;
     }
 
     public DrawableWidget createBaseSettings(Screen screen, ClickGuiMetaData meta) {
