@@ -29,10 +29,8 @@ public abstract class AbstractClassicClickGuiFactory<F extends ElementFactory> i
         this.clickGui = clickGui;
         List<String> modules = clickGui.getModules();
         Map<String, Function<Screen, DrawableWidget>> selections = new LinkedHashMap<>();
-        // The module browser precedes selections shared with other ClickGui styles.
         selections.put("Module", screen -> createModuleGroupList(modules, meta));
-        clickGui.getExtraSelections(meta)
-                .forEach((name, selection) -> selections.put(name, selection.screenFactory()));
+        selections.putAll(clickGui.getExtraSelections(meta));
 
         Screen screen = new ClassicClickGuiScreen(selections, elementFactory);
         ScreenAccess.of(screen).addCloseFuture(() -> clickGui.setClickGuiMeta(meta));
