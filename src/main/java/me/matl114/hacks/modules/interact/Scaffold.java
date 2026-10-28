@@ -205,6 +205,7 @@ public class Scaffold extends BaseModule {
                         legalMode.get().canMultiRotPlace())
                 ? mul.get()
                 : 1;
+        cnt = Math.min(cnt, path.size());
         int ccc = 0;
         for (var i = 0; i < cnt; ++i) {
             BlockPos next = path.get(i);

@@ -57,6 +57,9 @@ public class BlockRotate extends BaseModule {
             .defaultValue(BypassMode.NO_BYPASS)
             .build();
 
+    public final FlagRef enableAirPlace =
+            flagBuilder(blockRotate.add("enable-air-place")).build();
+
     public final FlagRef enable3 = builder(tempSchematic.add("enable"), Boolean.class)
             .defaultValue(true)
             .build();
@@ -219,7 +222,7 @@ public class BlockRotate extends BaseModule {
                 return;
             }
             BlockHitResult newPacketHitResult =
-                    handlePlaceCorrect(item, modifyingBlockPos, litematicaState, packet, true);
+                    handlePlaceCorrect(item, modifyingBlockPos, litematicaState, packet, useContext, true);
             if (newPacketHitResult != null) {
                 // wrong state, need correct
                 // do not rotate, because other module will rotate itself
@@ -256,7 +259,8 @@ public class BlockRotate extends BaseModule {
                     modifyingBlockPos,
                     litematicaState,
                     packet,
-                    useContext.oldState().isAir());
+                    useContext,
+                    useContext.oldState().isAir() && !enableAirPlace.get());
             if (newPacketHitResult != null) {
                 // wrong state, need correct
                 packetHitResult = newPacketHitResult;
@@ -327,6 +331,7 @@ public class BlockRotate extends BaseModule {
             BlockPos modifyingBlockPos,
             BlockState targetState,
             PlayerInteractBlockC2SPacket packet,
+            PlayerInteractBlockC2SPacketAccess.UseContext useContext,
             boolean forceCorrect) {
         BlockHitResult packetHitResult = packet.getBlockHitResult();
         BlockState clientState = mc.world.getBlockState(modifyingBlockPos);
@@ -336,7 +341,8 @@ public class BlockRotate extends BaseModule {
             // sb easy place, use illegal hitResult or shit
             if (forceCorrect) {
                 // handle airplace shit
-                BlockHitResult hitResult = correctEasyPlaceHitResult(packetHitResult, targetState);
+                BlockHitResult hitResult = correctEasyPlaceHitResult(
+                        packetHitResult, modifyingBlockPos, targetState, useContext.oldPlaceState());
                 // RenderTasks.debugBlockHitResult(hitResult);
                 PlayerInteractBlockC2SPacketAccess.of(packet).setBlockHitResult(hitResult);
                 packetHitResult = hitResult;
@@ -346,14 +352,27 @@ public class BlockRotate extends BaseModule {
         return null;
     }
 
-    public BlockHitResult correctEasyPlaceHitResult(BlockHitResult hitResult, BlockState targetState) {
-        BlockPos placingPos = InteractUtils.getCurrentPlacePos(mc.player, hitResult);
-        var result = InteractionTasks.createSpecificStateHitResult(
-                hitResult.getSide().getOpposite(), placingPos, targetState, false, false);
-        return result == null ? hitResult : result.val();
+    public BlockHitResult correctEasyPlaceHitResult(
+            BlockHitResult hitResult, BlockPos placingPos, BlockState targetState, BlockState oldPlaceState) {
+        BlockState placedState = mc.world.getBlockState(placingPos);
+        try {
+            if (placedState != oldPlaceState) {
+                mc.world.setBlockState(placingPos, oldPlaceState, WorldUtils.UPDATE_BLOCK_NO_PHYSICS);
+            }
+            var result = InteractionTasks.createSpecificStateHitResult(
+                    hitResult.getSide().getOpposite(), placingPos, targetState, enableAirPlace.get(), false);
+            return result == null ? hitResult : result.val();
+        } finally {
+            if (placedState != oldPlaceState) {
+                mc.world.setBlockState(placingPos, placedState, WorldUtils.UPDATE_BLOCK_NO_PHYSICS);
+            }
+        }
     }
 
     public void onPresetLoad(Event<EventContainer<ModulePreset>> e) {
+        if (e.context().getValue().isAirplacePreset()) {
+            enableAirPlace.set(e.context.getValue().getAirplace(enableAirPlace.get()));
+        }
         if (e.context().getValue().isOptionPreset()) return;
         switch (e.context.getValue()) {
             case AC_GRIM, AC_GRIM_LEGACY -> bypassMode.set(BypassMode.BYPASS_GRIM);

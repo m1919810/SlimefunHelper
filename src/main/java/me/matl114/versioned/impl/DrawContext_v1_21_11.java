@@ -565,7 +565,7 @@ public class DrawContext_v1_21_11 implements VDrawContext {
                     .collect(Util.toArrayList());
             data.ifPresent((datax) -> list.add(list.isEmpty() ? 0 : 1, TooltipComponent.of(datax)));
             int maxDepth = maxLayerDepthByContext.getOrDefault(drawContext, 0);
-            pushLayer(maxDepth - getCurrentDepthLevel());
+            pushLayer(maxDepth + 1 - getCurrentDepthLevel());
             try {
                 var context = pushMatrix();
                 try {

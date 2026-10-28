@@ -211,7 +211,7 @@ public class ClickGui extends BaseModule {
     }
 
     public void openConfigMenu() {
-        MainTasks.openConfigNewStyleScreen();
+        MainTasks.openConfigMultiLevelScreen();
     }
 
     private WeakReference<ContentDelegateWidget<ExecutableWidget>> delegateWidget = null;
