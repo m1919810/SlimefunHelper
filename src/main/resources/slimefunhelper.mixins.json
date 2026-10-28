@@ -114,6 +114,7 @@
 		"hack.ResourcePackPositionMixin",
 		"hack.ScreenMixin",
 		"hack.SlimeBlockMixin",
+		"hack.SkyRenderingMixin",
 		"hack.SplashOverlayMixin",
 		"hack.SpriteAtlasTextureMixin",
 		"hack.StatusEffectFogModifierMixin",
