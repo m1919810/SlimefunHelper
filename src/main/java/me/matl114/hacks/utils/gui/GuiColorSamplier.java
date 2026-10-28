@@ -29,6 +29,18 @@ public interface GuiColorSamplier {
 
     WrapRGBA sliderColor();
 
+    default WrapRGBA selectorSelectedColor() {
+        return CustomGuiConfig.DEFAULT_SELECTOR_SELECTED_COLOR;
+    }
+
+    default WrapRGBA selectorHoverColor() {
+        return CustomGuiConfig.DEFAULT_SELECTOR_HOVER_COLOR;
+    }
+
+    default WrapRGBA selectorNormalColor() {
+        return CustomGuiConfig.DEFAULT_SELECTOR_NORMAL_COLOR;
+    }
+
     default AlignType textAlign() {
         return AlignType.MIDDLE;
     }
