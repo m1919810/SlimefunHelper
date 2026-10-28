@@ -44,6 +44,7 @@ public record GuiSetting(
         Identifier buttonStyle,
         Identifier inputStyle,
         Identifier sliderStyle,
+        Identifier selectorTabStyle,
         boolean enableSlider)
         implements NBTParsable<GuiSetting>, GuiColorSamplier {
 
@@ -54,6 +55,31 @@ public record GuiSetting(
             if (style.useConfig()) configs.putIfAbsent(style.id(), style.defaultedConfig());
         }
         customConfig = Map.copyOf(configs);
+    }
+
+    public GuiSetting(
+            TextConfig textConfig,
+            Map<Identifier, CustomGuiConfig> customConfig,
+            AlignConfig alignConfig,
+            Identifier backgroundStyle,
+            Identifier titleStyle,
+            Identifier labelStyle,
+            Identifier buttonStyle,
+            Identifier inputStyle,
+            Identifier sliderStyle,
+            boolean enableSlider) {
+        this(
+                textConfig,
+                customConfig,
+                alignConfig,
+                backgroundStyle,
+                titleStyle,
+                labelStyle,
+                buttonStyle,
+                inputStyle,
+                sliderStyle,
+                GuiStyle.CUSTOM,
+                enableSlider);
     }
 
     public static final GuiSetting DEFAULT = new GuiSetting(
@@ -103,6 +129,9 @@ public record GuiSetting(
                     Identifier.CODEC
                             .optionalFieldOf("slider_style", GuiStyle.CUSTOM)
                             .forGetter(GuiSetting::sliderStyle),
+                    Identifier.CODEC
+                            .optionalFieldOf("selector_tab_style", GuiStyle.CUSTOM)
+                            .forGetter(GuiSetting::selectorTabStyle),
                     Codec.BOOL.optionalFieldOf("enable_slider", true).forGetter(GuiSetting::enableSlider))
             .apply(instance, GuiSetting::new));
 
@@ -151,6 +180,7 @@ public record GuiSetting(
             case BUTTON -> buttonStyle;
             case INPUT -> inputStyle;
             case SLIDER -> sliderStyle;
+            case SELECTOR_TAB -> selectorTabStyle;
         };
     }
 
@@ -215,6 +245,21 @@ public record GuiSetting(
     }
 
     @Override
+    public WrapRGBA selectorSelectedColor() {
+        return customConfig(selectorTabStyle).selectorSelectedColor();
+    }
+
+    @Override
+    public WrapRGBA selectorHoverColor() {
+        return customConfig(selectorTabStyle).selectorHoverColor();
+    }
+
+    @Override
+    public WrapRGBA selectorNormalColor() {
+        return customConfig(selectorTabStyle).selectorNormalColor();
+    }
+
+    @Override
     public AlignType textAlign() {
         return textConfig.textAlign();
     }
@@ -242,6 +287,7 @@ public record GuiSetting(
             case BUTTON -> withButtonStyle(value);
             case INPUT -> withInputStyle(value);
             case SLIDER -> withSliderStyle(value);
+            case SELECTOR_TAB -> withSelectorTabStyle(value);
         };
     }
 
@@ -338,6 +384,7 @@ public record GuiSetting(
         ValueAccessor<StringEnum> buttonStyle = styleAccessor(source, ElementType.BUTTON);
         ValueAccessor<StringEnum> inputStyle = styleAccessor(source, ElementType.INPUT);
         ValueAccessor<StringEnum> sliderStyle = styleAccessor(source, ElementType.SLIDER);
+        ValueAccessor<StringEnum> selectorTabStyle = styleAccessor(source, ElementType.SELECTOR_TAB);
         ValueAccessor<Boolean> enableSlider = accessor(
                 source, () -> source.get().enableSlider(), value -> source.get().withEnableSlider(value));
 
@@ -569,6 +616,52 @@ public record GuiSetting(
                 layout,
                 factory);
 
+        addGroup(
+                list,
+                "selector-tab",
+                List.of(
+                        field("widget.gui-settings.selector-tab.style", selectorTabStyle, () -> true, layout, factory),
+                        field(
+                                "widget.gui-settings.selector-tab.selected_color",
+                                colorAccessor(
+                                        source,
+                                        () -> selectedConfig(source, selectorTabStyle)
+                                                .selectorSelectedColor(),
+                                        value -> updateConfig(
+                                                source,
+                                                selectorTabStyle,
+                                                config -> config.withSelectorSelectedColor(value))),
+                                () -> usesConfig(selectorTabStyle),
+                                layout,
+                                factory),
+                        field(
+                                "widget.gui-settings.selector-tab.hover_color",
+                                colorAccessor(
+                                        source,
+                                        () -> selectedConfig(source, selectorTabStyle)
+                                                .selectorHoverColor(),
+                                        value -> updateConfig(
+                                                source,
+                                                selectorTabStyle,
+                                                config -> config.withSelectorHoverColor(value))),
+                                () -> usesConfig(selectorTabStyle),
+                                layout,
+                                factory),
+                        field(
+                                "widget.gui-settings.selector-tab.normal_color",
+                                colorAccessor(
+                                        source,
+                                        () -> selectedConfig(source, selectorTabStyle)
+                                                .selectorNormalColor(),
+                                        value -> updateConfig(
+                                                source,
+                                                selectorTabStyle,
+                                                config -> config.withSelectorNormalColor(value))),
+                                () -> usesConfig(selectorTabStyle),
+                                layout,
+                                factory)),
+                layout,
+                factory);
         return list;
     }
 
