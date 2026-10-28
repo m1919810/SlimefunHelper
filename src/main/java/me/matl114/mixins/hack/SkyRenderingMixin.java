@@ -42,6 +42,12 @@ public abstract class SkyRenderingMixin {
     @Unique
     private AbstractTexture skyRender$loadedBackgroundTexture;
 
+    @Unique
+    private int skyRender$backgroundWidth;
+
+    @Unique
+    private int skyRender$backgroundHeight;
+
     @ModifyExpressionValue(
             method = "renderEndSky",
             at =
@@ -90,8 +96,24 @@ public abstract class SkyRenderingMixin {
         skyRender$loadedBackgroundTexture = background != null
                 ? MinecraftClient.getInstance().getTextureManager().getTexture(background)
                 : null;
-        if (skyRender$loadedBackgroundTexture != null && skyRender$backgroundVertices == null) {
-            skyRender$backgroundVertices = skyRender$createBackgroundVertices();
+        if (skyRender$loadedBackgroundTexture != null) {
+            var texture = skyRender$loadedBackgroundTexture.getGlTexture();
+            if (texture != null) {
+                int width = texture.getWidth(0);
+                int height = texture.getHeight(0);
+                if (width > 0
+                        && height > 0
+                        && (skyRender$backgroundVertices == null
+                                || width != skyRender$backgroundWidth
+                                || height != skyRender$backgroundHeight)) {
+                    if (skyRender$backgroundVertices != null) {
+                        skyRender$backgroundVertices.close();
+                    }
+                    skyRender$backgroundVertices = skyRender$createBackgroundVertices(width, height);
+                    skyRender$backgroundWidth = width;
+                    skyRender$backgroundHeight = height;
+                }
+            }
         }
         if (module == null) return;
         if (module.hasCustomColor()) {
@@ -111,12 +133,28 @@ public abstract class SkyRenderingMixin {
     }
 
     @Unique
-    private GpuBuffer skyRender$createBackgroundVertices() {
+    private GpuBuffer skyRender$createBackgroundVertices(int textureWidth, int textureHeight) {
+        boolean sixTileAtlas = textureWidth % 3 == 0
+                && textureHeight % 2 == 0
+                && textureWidth / 3 == textureHeight / 2;
         try (var allocator = BufferAllocator.fixedSized(
                 skyRender$FACE_COUNT * 4 * VertexFormats.POSITION_TEXTURE_COLOR.getVertexSize())) {
             var builder =
                     new BufferBuilder(allocator, VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
             for (int face = 0; face < skyRender$FACE_COUNT; face++) {
+                int tile = switch (face) {
+                    case 0 -> 4; // North
+                    case 1 -> 5; // West
+                    case 2 -> 2; // South
+                    case 3 -> 3; // East
+                    case 4 -> 1; // Top
+                    case 5 -> 0; // Bottom
+                    default -> throw new IllegalStateException("Unexpected sky face: " + face);
+                };
+                float minU = sixTileAtlas ? (tile % 3) / 3.0f : 0.0f;
+                float maxU = sixTileAtlas ? minU + 1.0f / 3.0f : 1.0f;
+                float minV = sixTileAtlas ? (tile / 3) / 2.0f : 0.0f;
+                float maxV = sixTileAtlas ? minV + 0.5f : 1.0f;
                 var matrix = new Matrix4f();
                 switch (face) {
                     case 1 -> matrix.rotationY((float) (Math.PI / 2));
@@ -125,10 +163,10 @@ public abstract class SkyRenderingMixin {
                     case 4 -> matrix.rotationX((float) (Math.PI / 2));
                     case 5 -> matrix.rotationX((float) (-Math.PI / 2));
                 }
-                builder.vertex(matrix, -100, 100, -100).texture(0, 0).color(-1);
-                builder.vertex(matrix, -100, -100, -100).texture(0, 1).color(-1);
-                builder.vertex(matrix, 100, -100, -100).texture(1, 1).color(-1);
-                builder.vertex(matrix, 100, 100, -100).texture(1, 0).color(-1);
+                builder.vertex(matrix, -100, 100, -100).texture(minU, minV).color(-1);
+                builder.vertex(matrix, -100, -100, -100).texture(minU, maxV).color(-1);
+                builder.vertex(matrix, 100, -100, -100).texture(maxU, maxV).color(-1);
+                builder.vertex(matrix, 100, 100, -100).texture(maxU, minV).color(-1);
             }
             try (var built = builder.end()) {
                 return RenderSystem.getDevice().createBuffer(() -> "SkyRender background", 32, built.getBuffer());
@@ -143,5 +181,7 @@ public abstract class SkyRenderingMixin {
             skyRender$backgroundVertices.close();
             skyRender$backgroundVertices = null;
         }
+        skyRender$backgroundWidth = 0;
+        skyRender$backgroundHeight = 0;
     }
 }

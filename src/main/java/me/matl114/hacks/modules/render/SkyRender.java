@@ -25,7 +25,7 @@ public class SkyRender extends BaseModule {
     public final FlagRef skyBackground =
             flagBuilder(backgroundSettings.addEnable()).build();
     public final StringRef background = builder(backgroundSettings.add("texture"), StringRef.TYPE)
-            .defaultValue("slimefunhelper:textures/custom/genshin_impact.png")
+            .defaultValue("slimefunhelper:textures/custom/skybox_example.png")
             .validator(value -> value.isEmpty() || Configs.IDENTIFIER_VALIDATOR.test(value))
             .build();
 

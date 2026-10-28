@@ -9,7 +9,7 @@
 	"config.index.sky-render.background": "天空背景",
 	"sky-render.background.enable": "启用天空背景",
 	"sky-render.background.texture": "背景纹理路径",
-	"sky-render.background.texture.tooltips": "默认关闭且路径留空，保留原版背景。启用后填写资源包纹理路径，例如 minecraft:textures/environment/end_sky.png。同一张图片绘制在天空盒六个面上。颜色覆盖启用时也会为图片着色。仅影响原本有天空的维度。",
+	"sky-render.background.texture.tooltips": "背景纹理仍使用原有配置路径。正方形图片会重复绘制在六个面上；3N×2N 图片按 MCPatcher/Skyboxify 天空盒格式切分：上排为 Bottom、Top、South，下排为 West、North、East。颜色覆盖启用时也会为图片着色。仅影响原本有天空的维度。",
 	"module-toggle.sky-render.enable": "SkyRender",
 	"itemstack-display.item-display.storage-display.enable-storage-display": "存储显示",
 	"itemstack-display.item-display.storage-display.enable-info-display": "物品信息显示",
