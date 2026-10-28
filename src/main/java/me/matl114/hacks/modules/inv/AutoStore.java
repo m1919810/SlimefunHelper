@@ -76,12 +76,7 @@ public class AutoStore extends BaseModule {
                                             || InvTasks.getCurrentServerScreenHandler(mc.player) != handler) {
                                         return false;
                                     }
-                                    mc.interactionManager.clickSlot(
-                                            handledScreen.getScreenHandler().syncId,
-                                            slot,
-                                            0,
-                                            SlotActionType.PICKUP,
-                                            player);
+                                    InvTasks.clickSlotAsync(slot, 0, SlotActionType.PICKUP);
                                     return true;
                                 });
                             } else {
@@ -90,8 +85,7 @@ public class AutoStore extends BaseModule {
                                             || InvTasks.getCurrentServerScreenHandler(mc.player) != handler) {
                                         return false;
                                     }
-                                    mc.interactionManager.clickSlot(
-                                            handler.syncId, slot, 0, SlotActionType.THROW, player);
+                                    InvTasks.clickSlotAsync(slot, 0, SlotActionType.THROW);
                                     return true;
                                 });
                             }
@@ -107,8 +101,8 @@ public class AutoStore extends BaseModule {
                                         || InvTasks.getCurrentServerScreenHandler(mc.player) != handler) {
                                     return false;
                                 }
-                                mc.interactionManager.clickSlot(handler.syncId, i, 1, SlotActionType.PICKUP, player);
-                                mc.interactionManager.clickSlot(handler.syncId, slot, 0, SlotActionType.PICKUP, player);
+                                InvTasks.clickSlotAsync(i, 1, SlotActionType.PICKUP);
+                                InvTasks.clickSlotAsync(slot, 0, SlotActionType.PICKUP);
                                 return true;
                             });
                             return;

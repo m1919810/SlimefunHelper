@@ -170,7 +170,7 @@ public class AutoSteal extends BaseModule {
                 return 0;
             }
             if (!supply) {
-                mc.interactionManager.clickSlot(handler.syncId, slotIndex, 0, SlotActionType.QUICK_MOVE, mc.player);
+                InvTasks.clickSlotAsync(slotIndex, 0, SlotActionType.QUICK_MOVE);
                 return current.getCount();
             }
 
@@ -182,7 +182,7 @@ public class AutoSteal extends BaseModule {
                 return 0;
             }
             if (amount >= current.getCount()) {
-                mc.interactionManager.clickSlot(handler.syncId, slotIndex, 0, SlotActionType.QUICK_MOVE, mc.player);
+                InvTasks.clickSlotAsync(slotIndex, 0, SlotActionType.QUICK_MOVE);
                 return current.getCount();
             }
 

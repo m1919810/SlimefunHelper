@@ -74,6 +74,9 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             .defaultValue(true)
             .build();
 
+    public final FlagRef fakeGroundNewGrim =
+            flagBuilder(noFallPath.add("fake-ground-new-grim")).build();
+
     @Override
     public int priority() {
         return PRIORITY_MONITOR;

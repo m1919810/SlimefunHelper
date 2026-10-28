@@ -40,6 +40,9 @@ public class SurvivalTasks {
     private static AutoLibrarian autoLibrarian;
 
     @Getter
+    private static AutoEnchant autoEnchant;
+
+    @Getter
     private static AutoBreed autoBreed;
 
     @Getter
@@ -76,6 +79,7 @@ public class SurvivalTasks {
         antiAXray = new AntiAXray().register(m);
         seedOre = new SeedOre().register(m);
         autoLibrarian = new AutoLibrarian().register(m);
+        autoEnchant = new AutoEnchant().register(m);
         autoBreed = new AutoBreed().register(m);
         walkControl = new WalkControl().register(m);
         searchControl = new SearchControl().register(m);

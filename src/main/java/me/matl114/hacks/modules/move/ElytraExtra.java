@@ -776,25 +776,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         if (ClientPlayerAccess.of(mc.player).getServerScreenHandler() == mc.player.playerScreenHandler) {
             Predicate<ItemStack> canUnbreakablePredicate = this::canStopFallFlying;
             // use cached autoSwitch slot
-            if (armorGlideTransactionSlot != -1
-                    && mc.player.playerScreenHandler.slots.size() > armorGlideTransactionSlot
-                    && canUnbreakablePredicate.test(mc.player
-                            .playerScreenHandler
-                            .slots
-                            .get(armorGlideTransactionSlot)
-                            .getStack())) {
-                return armorGlideTransactionSlot;
-            }
-            if (autoSwitchTransactionSlot != -1
-                    && mc.player.playerScreenHandler.slots.size() > autoSwitchTransactionSlot
-                    && canUnbreakablePredicate.test(mc.player
-                            .playerScreenHandler
-                            .slots
-                            .get(autoSwitchTransactionSlot)
-                            .getStack())) {
-                return autoSwitchTransactionSlot;
-            }
-
             var re = InventoryUtils.findBestPlayerInventory(
                     (entry) -> {
                         if (entry.index() >= 36 && entry.index() != 40) return null;

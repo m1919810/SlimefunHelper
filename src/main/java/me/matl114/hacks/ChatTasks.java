@@ -216,7 +216,7 @@ public class ChatTasks {
                 case "saved" -> Tasks.scheduleDelayed(SlimefunTasks.getSlimefunGuide()::openSaveItemMenu, 1);
                 case "itemedit" -> Tasks.scheduleDelayed(InvTasks::openEditorForPlayer, 1);
                 case "invcache" -> Tasks.scheduleDelayed(InvTasks::openInventoryCacheScreen, 1);
-                case "config" -> Tasks.scheduleDelayed(MainTasks::openConfigNewStyleScreen, 1);
+                case "config" -> Tasks.scheduleDelayed(MainTasks::openConfigMultiLevelScreen, 1);
                 case "scanner" -> Tasks.scheduleDelayed(ExtraTasks.getServerScanner()::openScannerScreen, 1);
                 case "clickgui" -> Tasks.scheduleDelayed(MainTasks.getClickGui()::openClickGui, 1);
                 default -> Tasks.scheduleDelayed(SlimefunTasks.getSlimefunGuide()::openMainGuideMenu, 1);
