@@ -108,8 +108,7 @@ public class FastInv extends BaseModule {
                                     return false;
                                 }
 
-                                mc.interactionManager.clickSlot(
-                                        handler.syncId, idx, 0, SlotActionType.QUICK_MOVE, mc.player);
+                                InvTasks.clickSlotAsync(idx, 0, SlotActionType.QUICK_MOVE);
                                 return true;
                             });
                         }
@@ -159,13 +158,11 @@ public class FastInv extends BaseModule {
                             if (!ItemStack.areItemsEqual(stack, cleanedStack)
                                     || !ItemStack.areItemsAndComponentsEqual(
                                             ItemStackUtils.getCleanedItem(stack, false, false), cleanedStack)) {
-                                mc.interactionManager.clickSlot(
-                                        handler.syncId, index, 0, SlotActionType.PICKUP, mc.player);
-                                mc.interactionManager.clickSlot(
-                                        handler.syncId, -999, 0, SlotActionType.PICKUP, mc.player);
+                                InvTasks.clickSlotAsync(index, 0, SlotActionType.PICKUP);
+                                InvTasks.clickSlotAsync(-999, 0, SlotActionType.PICKUP);
                                 return true;
                             }
-                            mc.interactionManager.clickSlot(handler.syncId, -999, 0, SlotActionType.PICKUP, mc.player);
+                            InvTasks.clickSlotAsync(-999, 0, SlotActionType.PICKUP);
                             return true;
                         });
                         for (var re = 0; re < slots.size(); re++) {
@@ -183,8 +180,7 @@ public class FastInv extends BaseModule {
                                     return false;
                                 }
 
-                                mc.interactionManager.clickSlot(
-                                        handler.syncId, idx, 1, SlotActionType.THROW, mc.player);
+                                InvTasks.clickSlotAsync(idx, 1, SlotActionType.THROW);
                                 return true;
                             });
                         }
@@ -212,8 +208,7 @@ public class FastInv extends BaseModule {
                         }
                         ItemStack stack = slot.getStack();
                         if (enableEmptyClick.get() || !stack.isEmpty()) {
-                            mc.interactionManager.clickSlot(
-                                    handler.syncId, index, 1, SlotActionType.QUICK_MOVE, mc.player);
+                            InvTasks.clickSlotAsync(index, 1, SlotActionType.QUICK_MOVE);
                             return true;
                         } else {
                             return false;
@@ -240,8 +235,7 @@ public class FastInv extends BaseModule {
                         }
                         ItemStack stack = slot.getStack();
                         if (enableEmptyClick.get() || !stack.isEmpty()) {
-                            mc.interactionManager.clickSlot(
-                                    handler.syncId, index, 1, SlotActionType.QUICK_MOVE, mc.player);
+                            InvTasks.clickSlotAsync(index, 1, SlotActionType.QUICK_MOVE);
                             return true;
                         } else {
                             return false;

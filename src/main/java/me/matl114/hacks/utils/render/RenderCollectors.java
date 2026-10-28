@@ -399,6 +399,8 @@ public class RenderCollectors {
                     var text = entry.val().text();
                     var delta = vec3d.add(cameraNeg);
                     float scale = entry.val().scale();
+                    double renderDistance = 256.0 * scale;
+                    if (delta.lengthSquared() > renderDistance * renderDistance) continue;
                     stack.push();
                     stack.translate(delta.x, delta.y, delta.z);
                     stack.multiply(RenderUtils.getBillboardRotation(DisplayEntity.BillboardMode.CENTER, 0, 0));

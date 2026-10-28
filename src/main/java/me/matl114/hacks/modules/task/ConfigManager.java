@@ -33,7 +33,7 @@ import net.minecraft.util.Util;
 
 public class ConfigManager extends BaseModule {
     public ConfigManager() {
-        super("ConfigManager");
+        super("Config");
     }
 
     @Override
@@ -73,6 +73,9 @@ public class ConfigManager extends BaseModule {
                 .build();
         SimpleCommandArgs.Argument manualPathArgument = SimpleCommandArgs.argumentBuilder()
                 .name("path")
+                .tabCompletor(TabResult.ofStreamSupplier(CommandUtils.fileSupplier(
+                        FileManager.CONFIG_SAVE_FOLDER,
+                        (sx) -> sx.endsWith(".nbt") || sx.endsWith(".dat") || sx.endsWith(".json"))))
                 .tabCompletor(TabResult.ofStreamSupplier(() -> Stream.of("<填写路径>")))
                 .build();
         SimpleCommandArgs.Argument pathPrefixArgument = SimpleCommandArgs.argumentBuilder()
@@ -243,7 +246,7 @@ public class ConfigManager extends BaseModule {
     }
 
     public void onOpen() {
-        Tasks.scheduleDelayed(MainTasks::openConfigNewStyleScreen, 1);
+        Tasks.scheduleDelayed(MainTasks::openConfigMultiLevelScreen, 1);
         Debug.chat(Text.literal("成功打开配置文件界面").formatted(Formatting.GREEN));
     }
 

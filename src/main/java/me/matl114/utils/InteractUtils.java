@@ -68,7 +68,7 @@ public class InteractUtils {
         ItemPlacementContext placement =
                 new ItemPlacementContext(player, Hand.MAIN_HAND, new ItemStack(blockItem), blockHitResult);
         placement = blockItem.getPlacementContext(placement);
-        return blockItem.getPlacementState(placement);
+        return placement == null ? null : blockItem.getPlacementState(placement);
     }
 
     @Nullable
@@ -274,7 +274,9 @@ public class InteractUtils {
             return isInteractableRespawnAnchor(state, interactStack);
         }
         if (block instanceof LecternBlock) {
-            return state.contains(LecternBlock.HAS_BOOK) && state.get(LecternBlock.HAS_BOOK);
+            // With a nonempty hand, even an empty lectern consumes the default block action.
+            return !interactStack.isEmpty()
+                    || (state.contains(LecternBlock.HAS_BOOK) && state.get(LecternBlock.HAS_BOOK));
         }
         if (block instanceof FenceBlock) {
             return canFenceConsume(world, pos, player);
@@ -387,6 +389,19 @@ public class InteractUtils {
                         || entry instanceof ButtonBlock
                         || entry instanceof RedstoneOreBlock
                         || entry instanceof NoteBlock
+                        || entry instanceof ChiseledBookshelfBlock
+                        || entry instanceof ShelfBlock
+                        || entry instanceof EnchantingTableBlock
+                        || entry instanceof CopperGolemStatueBlock
+                        || entry instanceof ComparatorBlock
+                        || entry instanceof RepeaterBlock
+                        || entry instanceof DaylightDetectorBlock
+                        || entry instanceof RedstoneWireBlock
+                        || entry instanceof SweetBerryBushBlock
+                        || entry instanceof CaveVinesHeadBlock
+                        || entry instanceof CaveVinesBodyBlock
+                        || entry instanceof VaultBlock
+                        || entry instanceof PistonExtensionBlock
                         || entry instanceof LightBlock
                         || entry instanceof DragonEggBlock
                         || entry instanceof ChestBlock

@@ -125,7 +125,8 @@ public class PacketHelper {
                                 .copy(),
                         mc.world.getBlockState(hitResult.getBlockPos()),
                         ActionResult.SUCCESS,
-                        Optional.empty()));
+                        Optional.empty(),
+                        mc.world.getBlockState(hitResult.getBlockPos())));
             }
             return packet;
         });
