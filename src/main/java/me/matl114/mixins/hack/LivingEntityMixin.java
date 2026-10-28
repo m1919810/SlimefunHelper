@@ -9,6 +9,7 @@ import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.move.ElytraExtra;
 import me.matl114.hacks.modules.move.Velocity;
+import me.matl114.hacks.modules.render.HandView;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.fabricmc.api.EnvType;
@@ -26,6 +27,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
 @Mixin(LivingEntity.class)
@@ -42,6 +44,19 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
 
     public LivingEntityMixin(EntityType<?> type, World world) {
         super(type, world);
+    }
+
+    @Inject(method = "getHandSwingDuration", at = @At("RETURN"), cancellable = true)
+    private void applyHandViewSwingSpeed(CallbackInfoReturnable<Integer> cir) {
+        HandView handView = HandView.INSTANCE;
+        if (checkClientPlayer()
+                && handView != null
+                && handView.isActive()
+                && handView.swingSpeedEnabled.get()
+                && handView.swingSpeed.get() != 1.0D) {
+            // Keep vanilla item/effect modifiers and ensure the duration remains at least one tick.
+            cir.setReturnValue(Math.max(1, (int) Math.round(cir.getReturnValue() / handView.swingSpeed.get())));
+        }
     }
 
     @Shadow
