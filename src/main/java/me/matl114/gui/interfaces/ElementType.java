@@ -6,5 +6,6 @@ public enum ElementType {
     LABEL,
     BUTTON,
     INPUT,
-    SLIDER
+    SLIDER,
+    SELECTOR_TAB
 }
