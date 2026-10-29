@@ -36,7 +36,12 @@ public abstract class PlayerEntityRendererMixin {
         if (HandView.INSTANCE == null || !HandView.INSTANCE.isActive() || !HandView.INSTANCE.glow.get()) return;
         MODEL_FACE.begin();
         MODEL_FACE.submitArm(arm, matrices, player.getSkinTextures().texture(), light);
+        MODEL_FACE.submitArm(arm, matrices, texture, light);
+        if (vertexConsumers instanceof VertexConsumerProvider.Immediate immediate) {
+            immediate.draw();
+        }
         MODEL_FACE.render(HandView.INSTANCE.glowColor.get().withAlpha(HandView.INSTANCE.glowAlpha.get()));
+        MODEL_FACE.render2D(0);
     }
 
     @ModifyExpressionValue(

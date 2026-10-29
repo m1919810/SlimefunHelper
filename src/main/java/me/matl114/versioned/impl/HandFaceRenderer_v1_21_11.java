@@ -29,6 +29,7 @@ public final class HandFaceRenderer_v1_21_11 {
 
     public void begin() {
         quads.clear();
+        pending.clear();
         collecting = true;
     }
 
@@ -43,7 +44,9 @@ public final class HandFaceRenderer_v1_21_11 {
         Matrix4f transform = new Matrix4f(matrices.peek().getPositionMatrix());
         for (BakedQuad baked : bakedQuads) {
             int[] data = baked.getVertexData();
+            if (data.length % 4 != 0) continue;
             int stride = data.length / 4;
+            if (stride < 6) continue;
             Vec3d[] vertices = new Vec3d[4];
             float[] us = new float[4];
             float[] vs = new float[4];
@@ -64,6 +67,14 @@ public final class HandFaceRenderer_v1_21_11 {
 
     public void render(int color) {
         finish(color);
+    }
+
+    private void finish(int color) {
+        collecting = false;
+        for (TexturedQuad quad : quads) {
+            pending.add(new ColoredQuad(quad, color));
+        }
+        quads.clear();
     }
 
     public void clear() {
@@ -122,6 +133,7 @@ public final class HandFaceRenderer_v1_21_11 {
 
         @Override
         public VertexConsumer vertex(float x, float y, float z) {
+            if (count == 4) finishCapture();
             current = count;
             vertices[count++] = new Vec3d(x, y, z);
             return this;
@@ -141,6 +153,7 @@ public final class HandFaceRenderer_v1_21_11 {
         public VertexConsumer texture(float u, float v) {
             us[current] = u;
             vs[current] = v;
+            if (count == 4) finishCapture();
             return this;
         }
 
@@ -156,12 +169,18 @@ public final class HandFaceRenderer_v1_21_11 {
 
         @Override
         public VertexConsumer normal(float x, float y, float z) {
-            if (count == 4 && current == 3) {
-                quads.add(new TexturedQuad(texture, null, vertices.clone(), us.clone(), vs.clone()));
-                count = 0;
-                current = 0;
+            if (count == 4) {
+                finishCapture();
             }
             return this;
+        }
+
+        private void finishCapture() {
+            if (count == 4) {
+                quads.add(new TexturedQuad(texture, null, vertices.clone(), us.clone(), vs.clone()));
+            }
+            count = 0;
+            current = 0;
         }
 
         @Override

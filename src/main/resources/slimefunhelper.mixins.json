@@ -21,6 +21,7 @@
 		"access.PlayerInteractItemC2SPacketMixin",
 		"access.PlayerMoveC2SPacketMixin",
 		"access.RenderLayerMixin",
+		"access.TextRendererMixin",
 		"access.SoundInstanceMixin",
 		"command.ChatInputSuggestorEvents",
 		"events.AtlasLoaderEvents",
