@@ -7,6 +7,7 @@ import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.events.impl.Render2D;
 import me.matl114.events.impl.Render3D;
+import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.survival.XaeroHelper;
@@ -615,9 +616,11 @@ public class EntityLog extends BaseModule {
     }
 
     private Text createTracking(String name) {
-        return ChatUtils.stringToText("&a&l[&aTrack&a&l]").styled(s -> s.withClickEvent(
-                        ChatUtils.getSuggestCommand(MainCommand.getMainCommandPrefix() + "pqueue add " + name))
-                .withHoverEvent(ChatUtils.getHoverShowText(List.of(Text.literal("Click to track player in queue")))));
+        return ChatTasks.createCallbackText(
+                        ChatUtils.stringToText("&a&l[&aTrack&a&l]"),
+                        () -> MainCommand.dispatchClientCommand("pqueue add " + name))
+                .styled(s -> s.withHoverEvent(
+                        ChatUtils.getHoverShowText(List.of(Text.literal("Click to track player in queue")))));
     }
 
     public void handleReLogin(UUID uuid) {

@@ -379,12 +379,16 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
         return checkWeapon(target, true) && canAttack(target);
     }
 
-    public boolean isInFriendList(PlayerEntity e) {
-        FriendListStorage list = playerList;
-        if (list != null && list.contains(e.getNameForScoreboard())) {
-            return true;
+    public boolean isFriend(String playerName) {
+        if (playerName == null || playerName.isBlank()) {
+            return false;
         }
-        return false;
+        FriendListStorage list = playerList;
+        return (list != null && list.contains(playerName));
+    }
+
+    public boolean isInFriendList(PlayerEntity e) {
+        return isFriend(e.getNameForScoreboard());
     }
 
     public boolean isNotFriend(Entity e) {
