@@ -90,7 +90,6 @@ public abstract class ItemRendererMixin {
                 immediate.draw(renderLayer);
             }
             MODEL_FACE.render(HandView.INSTANCE.glowColor.get().withAlpha(HandView.INSTANCE.glowAlpha.get()));
-            MODEL_FACE.render2D(0);
         }
     }
 }

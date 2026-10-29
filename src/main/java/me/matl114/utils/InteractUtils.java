@@ -390,9 +390,7 @@ public class InteractUtils {
                         || entry instanceof RedstoneOreBlock
                         || entry instanceof NoteBlock
                         || entry instanceof ChiseledBookshelfBlock
-                        || entry instanceof ShelfBlock
                         || entry instanceof EnchantingTableBlock
-                        || entry instanceof CopperGolemStatueBlock
                         || entry instanceof ComparatorBlock
                         || entry instanceof RepeaterBlock
                         || entry instanceof DaylightDetectorBlock

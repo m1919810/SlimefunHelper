@@ -29,7 +29,6 @@ public final class HandFaceRenderer_v1_21_11 {
 
     public void begin() {
         quads.clear();
-        pending.clear();
         collecting = true;
     }
 
@@ -61,7 +60,7 @@ public final class HandFaceRenderer_v1_21_11 {
                 us[i] = Float.intBitsToFloat(data[offset + 4]);
                 vs[i] = Float.intBitsToFloat(data[offset + 5]);
             }
-            quads.add(new TexturedQuad(texture, baked.sprite(), vertices, us, vs));
+            quads.add(new TexturedQuad(texture, baked.sprite, vertices, us, vs));
         }
     }
 

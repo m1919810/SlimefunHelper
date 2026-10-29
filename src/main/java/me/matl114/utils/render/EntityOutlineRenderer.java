@@ -15,7 +15,8 @@ public final class EntityOutlineRenderer extends EntityModelCollector {
 
     @Override
     public void render2D(VDrawContext context, float partialTick) {
-        renderQuads2D(partialTick, (quads, camera, projection, color) ->
-                maskRenderer.draw(quads, camera, projection, 0, color));
+        renderQuads2D(
+                partialTick,
+                (quads, camera, projection, color) -> maskRenderer.draw(quads, camera, projection, 0, color));
     }
 }

@@ -118,7 +118,6 @@
 		"hack.SkyRenderingMixin",
 		"hack.SplashOverlayMixin",
 		"hack.SpriteAtlasTextureMixin",
-		"hack.StatusEffectFogModifierMixin",
 		"hack.SweetBerryBushBlockMixin",
 		"hack.VillagerTradeScreenMixin",
 		"hack.WorldRenderMixin",
