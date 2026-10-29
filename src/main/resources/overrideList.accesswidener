@@ -1,4 +1,5 @@
 accessWidener	v1	named
+
 accessible method net/minecraft/client/world/ClientWorld getPendingUpdateManager ()Lnet/minecraft/client/network/PendingUpdateManager;
 accessible method net/minecraft/client/network/ClientPlayerInteractionManager sendSequencedPacket (Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/client/network/SequencedPacketCreator;)V
 accessible class net/minecraft/client/render/BackgroundRenderer$StatusEffectFogModifier
@@ -116,3 +117,4 @@ accessible method net/minecraft/client/render/RenderPhase$TextureBase getId ()Lj
 accessible method net/minecraft/client/render/RenderPhase$Texture getId ()Ljava/util/Optional;
 accessible method net/minecraft/network/ClientConnection sendInternal (Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/PacketCallbacks;Z)V
 accessible field net/minecraft/structure/pool/SinglePoolElement location Lcom/mojang/datafixers/util/Either;
+accessible field net/minecraft/client/render/model/BakedQuad sprite Lnet/minecraft/client/texture/Sprite;

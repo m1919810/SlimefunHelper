@@ -1730,6 +1730,9 @@ public class MovTasks {
     private static SwimControl swimControl;
 
     @Getter
+    private static BoatFly boatFly;
+
+    @Getter
     private static MoveTimer moveTimer;
 
     @Getter
@@ -1786,6 +1789,7 @@ public class MovTasks {
         flight = new Flight().register(m);
         sprint = new Sprint().register(m);
         swimControl = new SwimControl().register(m);
+        boatFly = new BoatFly().register(m);
         moveTimer = new MoveTimer().register(m);
         stepHeight = new StepHeight().register(m);
         elytraExtra = new ElytraExtra().register(m);

@@ -105,6 +105,10 @@ public class CombatExtra extends BaseModule {
         //        }
     }
 
+    public void onPreInputTick() {
+        if (checkNull()) return;
+    }
+
     public void onShieldSetback(Event<EntityTrackerUpdateS2CPacket> trackerUpdateS2CPacketEvent) {
         if (trackerUpdateS2CPacketEvent.isCancelled()) {
             return;

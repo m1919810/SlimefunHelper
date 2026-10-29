@@ -1,13 +1,13 @@
 ---
 name: grim-elytra-movement-simulation
-description: Grim 中 Elytra 预测、烟花容错、offset 判定与 setback 回滚的结果逻辑。用于直接回答滑翔检测、fireworksBox、1.7 来源与拉回后高速原因。
+description: Grim 中 Elytra 预测、烟花容错、offset 判定与 setback 回滚，以及客户端 V5_PULLUP_ONLY 在 -89.9° / -90° 的分支差异、速度耦合与有界性分析。
 disable-model-invocation: true
 ---
 
 # Grim Elytra Movement Simulation
 
 ## 结论范围
-- 只解释 Grim 当前实现里的 Elytra / Firework / offset / setback 链路。
+- 解释 Grim 当前实现里的 Elytra / Firework / offset / setback 链路，以及单独标明的客户端 V5 优化实现。
 - 默认输出模块关系、状态流、容错层级和因果链。
 - 不把 `1.7` 解释成“全局鞘翅速度上限”。
 - 不把 `fireworksBox` 解释成“直接修改某个固定 movementThreshold 常量”。
@@ -559,6 +559,89 @@ v1_{next} = p^*
 答：
 - 因为安全点保存的速度又被 `simulateFriction()` 当成 Elytra 下一 tick 起始速度，再跑了一次 Elytra 更新和摩擦。
 - 本质是安全速度被二次演化，不是单纯传送导致的瞬移感。
+
+## 客户端 V5_PULLUP_ONLY：-89.9° 与 -90° 的差异
+
+### 核查范围与证据
+
+- 核查日期：2026-10-27。
+- 客户端实现：`src/main/java/me/matl114/hacks/utils/move/ElytraOptimizeUtils.java`、`src/main/java/me/matl114/hacks/utils/EntityUtils.java`、`src/main/java/me/matl114/hacks/modules/move/ElytraExtra.java`。
+- `MathHelper` 查表行为依据本地 Minecraft 1.21.11 合并源码，并复算 float 输入和查表索引。
+- 以下是源码分析与数值复算，不是游戏运行实测，也不证明服务端一定接受所有客户端候选速度。
+- 分析针对支持重复旋转包、未触发优化中止、非水和熔岩中的 V5 路径；否则存在 V3 或 V2 等回退路径。
+
+### 最佳角度搜索实际做什么
+
+`calculateBestPullupSpeed` 的 `V5_PULLUP_ONLY` 分支调用 `calculateBestV5ClimbingSpeed`：
+
+1. 固定 `V5_PITCH = -89.9F`，并不搜索 pitch。
+2. 搜索 360 个当前 yaw 和四个额外水平 yaw（0、90、180、270）。
+3. 用 `simulateV5Velocity` 模拟下一 tick，再通过 `calculateV5Bounds` 构造允许速度盒。
+4. 按 `max(uMinX², uMaxX²) + max(uMinZ², uMaxZ²)` 评分，优化的是下一 tick 水平速度平方，不是上升速度。
+
+实际应用走 `applyAxisLimit5_0 → applyAxisLimit30_Greedy`，后者分别选择 X、Z 绝对值最大的盒边界，因此可以改变水平速度分量的符号。
+
+### 核心差异是分支开关，不是 0.1° 的微小增益
+
+`EntityUtils.pitchYawToRotation` 用 `MathHelper.cos` 计算水平缩放。当前查表实现为：
+
+```java
+SINE_TABLE[(int)((long)(value * 10430.378350470453 + 16384.0) & 65535L)]
+```
+
+按代码中的 float 弧度转换复算：
+
+| pitch | cos 查表索引 | 水平长度约值 |
+| --- | --- | --- |
+| -90.0F | 0 | 0 |
+| -89.9F | 18 | 0.00172573 |
+
+因此 -90° 时视线为 `(0, 1, 0)`，当前 yaw 不再改变视线。`calculateGlidingVelocity` 中依赖 `lookHorizLen > 0.0` 的下降抬升、抬头转换、水平转向分支全部跳过。
+
+-89.9° 时水平长度虽然很小，却仍大于零。转换项使用 `look.x / lookHorizLen` 和 `look.z / lookHorizLen`，会把这点水平投影归一化成完整的水平方向；作用强度不会随水平投影一起趋近零。
+
+注意该方法中“俯冲加速（向下看时）”的注释与条件不一致：`pitchRad < 0` 实际对应抬头。
+
+补充数值扫描：水平分量并非仅在精确 -90° 时归零。最后一个非零余弦的 float pitch 为 `-89.9945068359375`，紧邻的 `-89.99451446533203` 已进入索引 0；因此 -89.995、-89.999 与 -90 的相关分支效果相同。当前默认配置下的长期速度、量化平台和复现方法见 [V5 pitch 扫描报告](../scripts/elytra_v5_pitch_limit.md)。
+
+### 对速度递推和 Greedy 选择的影响
+
+设旧水平速度向量为 `v_h`，长度为 `s`，视线水平单位方向为 `d`，重力为 `g`。在正常上升阶段，忽略查表微小误差：
+
+```text
+pitch = -89.9°：
+模拟水平速度 ≈ 0.891 v_h + 0.06336 s d
+模拟垂直速度 ≈ 0.98 × (vy - g + 0.128 s)
+
+pitch = -90.0°：
+模拟水平速度 = 0.99 v_h
+模拟垂直速度 ≈ 0.98 × (vy - g)
+```
+
+V5 的盒边界逐轴按以下形式计算，其中余量来自 `autoRescaleThreshold`：
+
+```text
+允许下界 = 模拟速度 + min(0, 烟花下界 - 旧速度) + 余量
+允许上界 = 模拟速度 + max(0, 烟花上界 - 旧速度) - 余量
+```
+
+- -89.9° 保留随已有水平速度变化的转向项和抬升项。yaw 搜索可以调整 `d`，再配合额外 yaw 的烟花盒和逐轴端点选择，提高后续水平速度；水平速度增大也会增加抬升量。
+- -90° 关闭这些耦合，当前 yaw 搜索对滑翔模拟失效，只剩水平阻尼和有限的烟花盒补偿，能够解释其速度趋于稳定或有界周期的现象。
+- 两个角度的突变主要来自 `lookHorizLen > 0`，不能解释成烟花盒在 -89.9° 突然大幅变宽，也不能解释成原版抬头本身无条件提供无限能量。
+
+### 持续增速不等于数学上无界
+
+烟花盒尺度为 `min(autoRescaleAmount, currentMotion.length())`，固定有限的 `autoRescaleAmount` 会限制盒尺寸。正常上升近似下，滑翔水平递推仍有阻尼：沿速度方向取 `d` 时系数约为 `0.95436 < 1`。
+
+逐轴选择也不能据此推出无界增长：设盒边界绝对值上限为 `T`、余量绝对值为 `a`，上述上升近似可给出保守界：
+
+```text
+s_next ≤ 0.95436 s + sqrt(2) × (T + a)
+```
+
+其中另一端点包含的旧速度系数绝对值约为 `0.109`，小于用于该界的 `0.891`。因此，在配置固定、持续正常上升、无其他速度注入的这些假设下，该递推有界。此界用于说明有界性，不是精确终端速度；下降、流体、碰撞和外部速度修改须另行分析。
+
+准确表述是：-89.9° 保留了 -90° 丢失的速度耦合，使 V5 能继续增速并达到更高速度；仅凭一段时间的增速现象，不能称为数学上的“无限加速”。实际速度还受 `applySpeedLimit` 和其他运行条件影响。
 
 ## 使用约束
 - 回答时始终区分三件事：

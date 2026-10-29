@@ -12,6 +12,8 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.InteractUtils;
 import me.matl114.utils.MathUtils;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.ItemSteerable;
+import net.minecraft.entity.RideableInventory;
 import net.minecraft.entity.vehicle.VehicleEntity;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.Box;
@@ -48,7 +50,7 @@ public class AutoRide extends BaseModule {
                 cd1 = 0;
                 double reach = CombatExtra.INSTANCE.getAttackRange();
                 Box box = mc.player.getBoundingBox().expand(reach + 3, reach + 3, reach + 3);
-                var entites = mc.world.getOtherEntities(mc.player, box, re -> re instanceof VehicleEntity);
+                var entites = mc.world.getOtherEntities(mc.player, box, this::isRideable);
                 Entity selected = null;
                 for (var re : entites) {
                     if (re == lastEntity) {
@@ -70,5 +72,11 @@ public class AutoRide extends BaseModule {
                 }
             }
         }
+    }
+
+    private boolean isRideable(Entity entity) {
+        return entity instanceof VehicleEntity
+                || entity instanceof RideableInventory
+                || entity instanceof ItemSteerable;
     }
 }

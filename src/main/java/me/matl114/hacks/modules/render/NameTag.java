@@ -6,15 +6,20 @@ import java.util.function.Function;
 import me.matl114.events.Event;
 import me.matl114.events.RenderListener;
 import me.matl114.events.impl.Render2D;
+import me.matl114.events.impl.Render3D;
 import me.matl114.gui.Constants;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.render.ItemStackDisplayUtils;
+import me.matl114.hacks.utils.render.RenderMode;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
+import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.*;
 import me.matl114.versioned.api.VDrawContext;
+import me.matl114.versioned.api.VDrawContext3d;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.entry.RegistryEntry;
@@ -23,6 +28,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 import org.joml.Vector2d;
+import org.joml.Vector4f;
 
 public class NameTag extends INameTag {
     public NameTag() {
@@ -38,6 +44,9 @@ public class NameTag extends INameTag {
                 .defaultValue(1.0D)
                 .build();
         size = doubleBuilder(nameTag.add("player-size")).defaultValue(1.0D).build();
+        renderMode = builder(nameTag.add("render-mode"), RenderMode.class)
+                .defaultValue(RenderMode.RENDER_2D)
+                .build();
         hideName = flagBuilder(nameTag.add("hide-vanilla")).build();
     }
 
@@ -52,13 +61,21 @@ public class NameTag extends INameTag {
 
     public DoubleRef size;
 
+    public EnumRef<RenderMode> renderMode;
+
     public FlagRef hideName;
+
+    @Override
+    public void registerAll() {
+        super.registerAll();
+        registerListener(RenderListener.getRender3DEvent(), this::onRender3D);
+    }
 
     public void onRender(Event<Render2D> event) {
         if (checkNull()) {
             return;
         }
-        if (enable.get() && nameTagInfos != null) {
+        if (enable.get() && renderMode.get().isIn(RenderMode.RENDER_2D) && nameTagInfos != null) {
             var stack = event.context.drawContext();
             Matrix4f cam = RenderListener.getWorldModelViewMatrix();
             Matrix4f proj = RenderListener.getWorldBasicProjectionMatrix();
@@ -71,6 +88,64 @@ public class NameTag extends INameTag {
                     onRenderPlayer(entity, stack, projector, (event.context.partialTicks()));
                 }
             }
+        }
+    }
+
+    public void onRender3D(Event<Render3D> event) {
+        if (checkNull() || !enable.get() || !renderMode.get().isIn(RenderMode.RENDER_3D) || nameTagInfos == null) {
+            return;
+        }
+
+        float tick = event.context().partialTicks();
+        Vec3d cameraPos = RenderUtils.getCameraPos();
+        Matrix4f viewMatrix = RenderListener.getWorldModelViewMatrix();
+        Matrix4f projectionMatrix = RenderListener.getWorldBasicProjectionMatrix();
+        float guiHeight =
+                (float) (mc.getWindow().getFramebufferHeight() / mc.getWindow().getScaleFactor());
+        var matrices = event.context().stack();
+        RenderUtils.startDrawVirtual(matrices);
+        try {
+            for (PlayerNameTagInfo player : nameTagInfos) {
+                if (player.player == mc.getCameraEntity() || (hideSelf.get() && player.player == mc.player)) {
+                    continue;
+                }
+
+                Vec3d headPos = player.player.getLerpedPos(tick).add(0, player.player.getHeight() + 0.5, 0);
+                Vec3d relativePos = headPos.subtract(cameraPos);
+                Vector4f clipPos = new Vector4f(
+                                (float) relativePos.x, (float) relativePos.y, (float) relativePos.z, 1.0F)
+                        .mul(viewMatrix)
+                        .mul(projectionMatrix);
+                if (clipPos.w <= 0 || projectionMatrix.m11() <= 0 || guiHeight <= 0) {
+                    continue;
+                }
+                float worldPerGuiPixel = 2.0F * clipPos.w / (projectionMatrix.m11() * guiHeight);
+                float pixelScale = worldPerGuiPixel * (float) size.get();
+                if (!Float.isFinite(pixelScale) || pixelScale <= 0) {
+                    continue;
+                }
+                Vec3d anchor =
+                        headPos.add(0, height.get() * worldPerGuiPixel, 0).subtract(cameraPos);
+
+                matrices.push();
+                try {
+                    matrices.translate(anchor.x, anchor.y, anchor.z);
+                    matrices.multiply(RenderUtils.getBillboardRotation(DisplayEntity.BillboardMode.CENTER, 0, 0));
+                    matrices.scale(pixelScale, -pixelScale, pixelScale);
+                    VDrawContext3d drawContext = VDrawContext3d.createDrawContext(matrices);
+                    VDrawContext worldDraw = VDrawContext.of(drawContext.cast());
+                    handleNameLinePlayer(worldDraw, player);
+                    handleEquipmentPlayer(worldDraw, player);
+                    handleOtherInfoLine(worldDraw, player);
+                    handleEffectDisplayPlayer(worldDraw, player);
+                    worldDraw.tryDraw();
+                    drawContext.render();
+                } finally {
+                    matrices.pop();
+                }
+            }
+        } finally {
+            RenderUtils.stopDrawVirtual(matrices);
         }
     }
 

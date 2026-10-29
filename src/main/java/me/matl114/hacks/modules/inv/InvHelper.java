@@ -153,8 +153,7 @@ public class InvHelper extends BaseModule {
                                 var handler = InvTasks.getCurrentServerScreenHandler(mc.player);
                                 var slotIndex = handler.getSlotIndex(inventory, idx);
                                 if (slotIndex.isPresent()) {
-                                    mc.interactionManager.clickSlot(
-                                            handler.syncId, slotIndex.getAsInt(), 1, SlotActionType.THROW, mc.player);
+                                    InvTasks.clickSlotAsync(slotIndex.getAsInt(), 1, SlotActionType.THROW);
                                     return true;
                                 }
                             }
@@ -195,26 +194,11 @@ public class InvHelper extends BaseModule {
                                     if (slotIndex.isPresent() && targetIndex.isPresent()) {
                                         boolean needPickUp =
                                                 !handler.getCursorStack().isEmpty();
-                                        mc.interactionManager.clickSlot(
-                                                handler.syncId,
-                                                slotIndex.getAsInt(),
-                                                0,
-                                                SlotActionType.PICKUP,
-                                                mc.player);
-                                        mc.interactionManager.clickSlot(
-                                                handler.syncId,
-                                                targetIndex.getAsInt(),
-                                                0,
-                                                SlotActionType.PICKUP,
-                                                mc.player);
+                                        InvTasks.clickSlotAsync(slotIndex.getAsInt(), 0, SlotActionType.PICKUP);
+                                        InvTasks.clickSlotAsync(targetIndex.getAsInt(), 0, SlotActionType.PICKUP);
                                         needPickUp |= !handler.getCursorStack().isEmpty();
                                         if (needPickUp) {
-                                            mc.interactionManager.clickSlot(
-                                                    handler.syncId,
-                                                    slotIndex.getAsInt(),
-                                                    0,
-                                                    SlotActionType.PICKUP,
-                                                    mc.player);
+                                            InvTasks.clickSlotAsync(slotIndex.getAsInt(), 0, SlotActionType.PICKUP);
                                         }
                                         return true;
                                     }
@@ -344,8 +328,7 @@ public class InvHelper extends BaseModule {
                 if (ItemStack.areItemsAndComponentsEqual(stack, handler.getCursorStack())) {
                     var slotIndex = handler.getSlotIndex(inventory, idx);
                     if (slotIndex.isPresent()) {
-                        mc.interactionManager.clickSlot(
-                                handler.syncId, slotIndex.getAsInt(), 0, SlotActionType.PICKUP, mc.player);
+                        InvTasks.clickSlotAsync(slotIndex.getAsInt(), 0, SlotActionType.PICKUP);
                         return true;
                     }
                 }
@@ -371,31 +354,15 @@ public class InvHelper extends BaseModule {
                             var targetIndex = handler.getSlotIndex(inventory, findIndex);
                             if (targetIndex.isPresent()) {
                                 if (stack4.getCount() >= stack4.getMaxCount()) {
-                                    mc.interactionManager.clickSlot(
-                                            handler.syncId,
-                                            targetIndex.getAsInt(),
-                                            idx,
-                                            SlotActionType.SWAP,
-                                            mc.player);
+                                    InvTasks.clickSlotAsync(targetIndex.getAsInt(), idx, SlotActionType.SWAP);
                                 } else if (slotIndex.isPresent()) {
                                     boolean needPickUp =
                                             !handler.getCursorStack().isEmpty();
-                                    mc.interactionManager.clickSlot(
-                                            handler.syncId,
-                                            targetIndex.getAsInt(),
-                                            0,
-                                            SlotActionType.PICKUP,
-                                            mc.player);
-                                    mc.interactionManager.clickSlot(
-                                            handler.syncId, slotIndex.getAsInt(), 0, SlotActionType.PICKUP, mc.player);
+                                    InvTasks.clickSlotAsync(targetIndex.getAsInt(), 0, SlotActionType.PICKUP);
+                                    InvTasks.clickSlotAsync(slotIndex.getAsInt(), 0, SlotActionType.PICKUP);
                                     needPickUp |= !handler.getCursorStack().isEmpty();
                                     if (needPickUp) {
-                                        mc.interactionManager.clickSlot(
-                                                handler.syncId,
-                                                targetIndex.getAsInt(),
-                                                0,
-                                                SlotActionType.PICKUP,
-                                                mc.player);
+                                        InvTasks.clickSlotAsync(targetIndex.getAsInt(), 0, SlotActionType.PICKUP);
                                     }
                                 }
                                 return true;
@@ -418,8 +385,7 @@ public class InvHelper extends BaseModule {
                             var handler = InvTasks.getCurrentServerScreenHandler(mc.player);
                             var targetIndex = handler.getSlotIndex(inventory, findIndex);
                             if (targetIndex.isPresent()) {
-                                mc.interactionManager.clickSlot(
-                                        handler.syncId, targetIndex.getAsInt(), idx, SlotActionType.SWAP, mc.player);
+                                InvTasks.clickSlotAsync(targetIndex.getAsInt(), idx, SlotActionType.SWAP);
                                 return true;
                             }
                         }
@@ -475,18 +441,11 @@ public class InvHelper extends BaseModule {
                             var targetIndex = handler.getSlotIndex(inventory, findIndex);
                             if (targetIndex.isPresent() && slotIndex.isPresent()) {
                                 boolean needPickUp = !handler.getCursorStack().isEmpty();
-                                mc.interactionManager.clickSlot(
-                                        handler.syncId, targetIndex.getAsInt(), 0, SlotActionType.PICKUP, mc.player);
-                                mc.interactionManager.clickSlot(
-                                        handler.syncId, slotIndex.getAsInt(), 0, SlotActionType.PICKUP, mc.player);
+                                InvTasks.clickSlotAsync(targetIndex.getAsInt(), 0, SlotActionType.PICKUP);
+                                InvTasks.clickSlotAsync(slotIndex.getAsInt(), 0, SlotActionType.PICKUP);
                                 needPickUp |= !handler.getCursorStack().isEmpty();
                                 if (needPickUp) {
-                                    mc.interactionManager.clickSlot(
-                                            handler.syncId,
-                                            targetIndex.getAsInt(),
-                                            0,
-                                            SlotActionType.PICKUP,
-                                            mc.player);
+                                    InvTasks.clickSlotAsync(targetIndex.getAsInt(), 0, SlotActionType.PICKUP);
                                     locked[idx] = true;
                                 } else {
                                     locked[findIndex] = true;

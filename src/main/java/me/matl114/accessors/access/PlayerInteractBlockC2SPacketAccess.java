@@ -28,12 +28,19 @@ public interface PlayerInteractBlockC2SPacketAccess {
     void setUseContext(UseContext stack);
 
     public static record UseContext(
-            ItemStack stack, BlockState oldState, ActionResult actionResult, Optional<BlockPos> placePos) {
+            ItemStack stack,
+            BlockState oldState,
+            ActionResult actionResult,
+            Optional<BlockPos> placePos,
+            BlockState oldPlaceState) {
         public boolean isEmpty() {
             return stack.isEmpty() || !(stack.getItem() instanceof BlockItem);
         }
 
         public BlockPos getPlaceBlockPos(Hand hand, BlockHitResult blockHitResult) {
+            if (placePos.isPresent()) {
+                return placePos.get();
+            }
             // optimize air place
             if (oldState.isAir()) {
                 return blockHitResult.getBlockPos();

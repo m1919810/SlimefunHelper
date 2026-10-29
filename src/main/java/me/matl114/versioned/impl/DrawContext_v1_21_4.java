@@ -32,6 +32,7 @@ public class DrawContext_v1_21_4 implements VDrawContext {
     private final DrawContext drawContext;
     private final MatrixStack matrixStack;
     private Runnable delayedDrawing = null;
+    private int maxDepth;
 
     public DrawContext_v1_21_4(DrawContext context) {
         this.drawContext = context;
@@ -58,6 +59,8 @@ public class DrawContext_v1_21_4 implements VDrawContext {
     public void pushLayer(int depth) {
         this.matrixStack.pushMatrix();
         this.drawContext.getMatrices().translate(0, 0, depth);
+        this.maxDepth = Math.max(this.maxDepth, (int)
+                this.drawContext.getMatrices().peek().getPositionMatrix().m32());
     }
 
     @Override
@@ -339,9 +342,21 @@ public class DrawContext_v1_21_4 implements VDrawContext {
     public void drawTooltip(List<Text> text, Optional<TooltipData> data, int x, int y) {
         var trans = matrixStack.peek3D();
         var point1 = new Vector4f(x, y, 0, 1).mul(trans);
-        addInternal(() -> this.drawContext.drawTooltip(
-                net.minecraft.client.MinecraftClient.getInstance().textRenderer, text, data, (int) point1.x, (int)
-                        point1.y));
+        addInternal(() -> {
+            int depth = this.maxDepth + 1;
+            matrixStack.pushMatrix();
+            drawContext.getMatrices().translate(0, 0, depth);
+            try {
+                drawContext.drawTooltip(
+                        net.minecraft.client.MinecraftClient.getInstance().textRenderer,
+                        text,
+                        data,
+                        (int) point1.x,
+                        (int) point1.y);
+            } finally {
+                matrixStack.popMatrix();
+            }
+        });
     }
 
     @Override

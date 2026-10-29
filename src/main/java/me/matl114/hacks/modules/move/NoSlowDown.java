@@ -87,16 +87,6 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     public final FlagRef blockSpecial =
             flagBuilder(noSlowdown.add("when-special-block")).build();
 
-    public final FlagRef enableFakeSneak =
-            flagBuilder(noSlowdown.add("fake-sneak")).build();
-
-    public final FlagRef onlySneakPress =
-            flagBuilder(noSlowdown.add("only-sneak-press")).build();
-
-    public final KeyBindRef keyBindRef = moduleEntry(
-                    noSlowdown.add("fake-sneak-hotkey"), new MultiKeyBind(), noSlowdown.add("fake-sneak"))
-            .build();
-
     public final EnumRef<UseBypassMode> useItemBypass = builder(noSlowdown.add("use-item-bypass"), UseBypassMode.class)
             .defaultValue(UseBypassMode.NO_BYPASS)
             .build();
@@ -126,13 +116,22 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             .defaultValue(BypassMode.NO_BYPASS)
             .build();
 
-    public final KeyBindRef fakeStatus = hotkey(fakeSneakStatusPath)
+    public final ModulePath safeSneak = moveSpeed.add("safe-sneak");
+    public final FlagRef enableFakeSneak = flagBuilder(safeSneak.addEnable()).build();
+
+    public final KeyBindRef keyBindRef = moduleEntry(safeSneak.addHotkey(), new MultiKeyBind(), safeSneak.addEnable())
+            .build();
+
+    public final FlagRef onlySneakPress =
+            flagBuilder(safeSneak.add("only-sneak-press")).build();
+
+    public final KeyBindRef fakeStatus = hotkey(fakeSneakStatusPath.add("hotkey"))
             .defaultValue(new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::onSneakStatus))
             .build();
 
     public final EnumRef<PacketSneakMode> fakeStatusBypass = builder(
-                    noSlowdown.add("fake-sneak-status-mode"), PacketSneakMode.class)
+                    fakeSneakStatusPath.add("mode"), PacketSneakMode.class)
             .defaultValue(PacketSneakMode.BAD_PACKET)
             .build();
 

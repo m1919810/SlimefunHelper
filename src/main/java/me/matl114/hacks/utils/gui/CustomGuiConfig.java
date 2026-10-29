@@ -17,7 +17,10 @@ public record CustomGuiConfig(
         WrapRGBA inactiveFrameColor,
         WrapRGBA textColor,
         WrapRGBA textBackground,
-        WrapRGBA sliderColor)
+        WrapRGBA sliderColor,
+        WrapRGBA selectorSelectedColor,
+        WrapRGBA selectorHoverColor,
+        WrapRGBA selectorNormalColor)
         implements GuiColorSamplier {
     public static final WrapRGBA DEFAULT_MODULE_LIST_COLOR = new WrapRGBA("#984FDB", 255);
     public static final WrapRGBA DEFAULT_TITLE_COLOR = new WrapRGBA("#984FDB", 255);
@@ -30,6 +33,38 @@ public record CustomGuiConfig(
     public static final WrapRGBA DEFAULT_TEXT_COLOR = new WrapRGBA("#FFFFFF", 255);
     public static final WrapRGBA DEFAULT_TEXT_BACKGROUND = new WrapRGBA("#000000", 255);
     public static final WrapRGBA DEFAULT_SLIDER_COLOR = DEFAULT_TITLE_COLOR.withAlpha(192);
+    public static final WrapRGBA DEFAULT_SELECTOR_SELECTED_COLOR = new WrapRGBA("#607090", 160);
+    public static final WrapRGBA DEFAULT_SELECTOR_HOVER_COLOR = new WrapRGBA("#505050", 128);
+    public static final WrapRGBA DEFAULT_SELECTOR_NORMAL_COLOR = new WrapRGBA("#282828", 48);
+
+    public CustomGuiConfig(
+            WrapRGBA titleColor,
+            WrapRGBA labelColor,
+            WrapRGBA backgroundColor,
+            WrapRGBA plateColor,
+            WrapRGBA buttonActiveColor,
+            WrapRGBA buttonInactiveColor,
+            WrapRGBA activeFrameColor,
+            WrapRGBA inactiveFrameColor,
+            WrapRGBA textColor,
+            WrapRGBA textBackground,
+            WrapRGBA sliderColor) {
+        this(
+                titleColor,
+                labelColor,
+                backgroundColor,
+                plateColor,
+                buttonActiveColor,
+                buttonInactiveColor,
+                activeFrameColor,
+                inactiveFrameColor,
+                textColor,
+                textBackground,
+                sliderColor,
+                DEFAULT_SELECTOR_SELECTED_COLOR,
+                DEFAULT_SELECTOR_HOVER_COLOR,
+                DEFAULT_SELECTOR_NORMAL_COLOR);
+    }
 
     public static final CustomGuiConfig DEFAULT = new CustomGuiConfig(
             DEFAULT_TITLE_COLOR,
@@ -88,6 +123,18 @@ public record CustomGuiConfig(
                     WrapRGBA.TYPE
                             .typeCodec()
                             .optionalFieldOf("slider_color", DEFAULT_SLIDER_COLOR)
-                            .forGetter(CustomGuiConfig::sliderColor))
+                            .forGetter(CustomGuiConfig::sliderColor),
+                    WrapRGBA.TYPE
+                            .typeCodec()
+                            .optionalFieldOf("selector_selected_color", DEFAULT_SELECTOR_SELECTED_COLOR)
+                            .forGetter(CustomGuiConfig::selectorSelectedColor),
+                    WrapRGBA.TYPE
+                            .typeCodec()
+                            .optionalFieldOf("selector_hover_color", DEFAULT_SELECTOR_HOVER_COLOR)
+                            .forGetter(CustomGuiConfig::selectorHoverColor),
+                    WrapRGBA.TYPE
+                            .typeCodec()
+                            .optionalFieldOf("selector_normal_color", DEFAULT_SELECTOR_NORMAL_COLOR)
+                            .forGetter(CustomGuiConfig::selectorNormalColor))
             .apply(instance, CustomGuiConfig::new));
 }

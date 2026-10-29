@@ -19,14 +19,11 @@ import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.interact.InteractExtra;
-import me.matl114.hacks.modules.inv.InvExtra;
-import me.matl114.hacks.modules.mine.MineExtra;
-import me.matl114.hacks.modules.move.PlayerStateManager;
-import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.modules.mine.MineBot;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.enums.GhostHandMode;
-import me.matl114.hacks.utils.enums.MineTargetingMode;
+import me.matl114.hacks.utils.enums.LegalMiningMode;
 import me.matl114.hacks.utils.move.PathingSchedular;
 import me.matl114.hacks.utils.move.goal.GoalNear;
 import me.matl114.hacks.utils.move.goal.IPathGoal;
@@ -39,37 +36,21 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.InventoryUtils;
-import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.MathUtils;
-import me.matl114.utils.RegistryUtils;
-import me.matl114.utils.WorldUtils;
-import me.matl114.utils.collections.IndexEntry;
-import me.matl114.versioned.api.VPacket;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
 
 public class AutoMine extends BaseModule {
     private static final int DEFAULT_MAX_INSTANT_MINE = 30;
     private static final int SEARCH_VERTICAL_MARGIN = 2;
-    private static final int DURABILITY_MULTIPLY = 4;
-    private static final int MIN_DURABILITY_LIMIT = 9;
 
     private final PathingSchedular pathingSchedular = new PathingSchedular();
     private BatchPhase batchPhase = BatchPhase.PREPARE;
@@ -146,9 +127,14 @@ public class AutoMine extends BaseModule {
             .validator(Configs.INT_NONNEGATIVE)
             .build();
 
-    public final EnumRef<MineTargetingMode> legalMode = builder(root.add("legal-mode"), MineTargetingMode.class)
-            .defaultValue(MineTargetingMode.NO_BYPASS)
+    public final EnumRef<LegalMiningMode> legalMiningMode = builder(
+                    root.add("legal-mining-mode"), LegalMiningMode.class)
+            .defaultValue(LegalMiningMode.NONE)
             .build();
+
+    public final FlagRef swingHand = flagBuilder(root.add("swing-hand")).build();
+
+    public final FlagRef rotate = flagBuilder(root.add("rotate")).build();
 
     public final FlagRef considerCooldown = builder(root.add("consider-cooldown"), Boolean.class)
             .defaultValue(true)
@@ -528,116 +514,44 @@ public class AutoMine extends BaseModule {
     private int onMineCommon(Supplier<BlockPos> posFinder) {
         int tryMine = 0;
         Vec2f originPy = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
-        do {
+        MineBot.MiningSettings settings = new MineBot.MiningSettings(
+                considerCooldown.get(),
+                toolProtect.get(),
+                autoSwap.get(),
+                doubleBreak.get(),
+                swingHand.get(),
+                rotate.get(),
+                legalMiningMode.get(),
+                GhostHandMode.INV_SWAP);
+        while (true) {
+            if (tryMine >= DEFAULT_MAX_INSTANT_MINE) {
+                break;
+            }
             if (!checkDistanceAndCondition(lastMinePos)) {
                 lastMinePos = posFinder.get();
             }
             if (lastMinePos == null) {
                 break;
             }
-            if (considerCooldown.get() && MineExtra.INSTANCE.getMiningPacketCooldown(1) > 0) {
+            tryMine += 1;
+            MineBot.TickMineResult result = MineBot.INSTANCE.tickMine(lastMinePos, settings);
+            if (result == MineBot.TickMineResult.TOOL_PROTECTED) {
+                enable.set(false);
+            }
+            if (result != MineBot.TickMineResult.CONTINUE) {
                 break;
             }
-            PlayerInteractionAccess.of(mc.interactionManager).setMiningCooldown(0);
-
-            BlockState mineState = mc.world.getBlockState(lastMinePos);
-            IndexEntry<ItemStack> bestStack = autoSwap.get()
-                    ? InventoryUtils.findBestPlayerItem(
-                            stack -> {
-                                if (isDurabilityOk(stack)) {
-                                    return (double) WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
-                                            mc.player, mineState, stack);
-                                }
-                                return null;
-                            },
-                            true,
-                            true)
-                    : InventoryUtils.getSelectedItem();
-            if (bestStack == null || !isDurabilityOk(bestStack.val())) {
-                if (toolProtect.get()) {
-                    enable.set(false);
-                    break;
-                } else {
-                    bestStack = InventoryUtils.getSelectedItem();
-                }
+            lastMinePos = posFinder.get();
+            if (lastMinePos == null) {
+                break;
             }
-            InvExtra.INSTANCE.swapItemToHand(bestStack.index(), false, GhostHandMode.INV_SWAP);
-            float speed = MineExtra.INSTANCE.predictBlockBreakingSpeedAt(lastMinePos);
-            tryMine += 1;
-            Vec3d shouldFacing = lastMinePos.toCenterPos().subtract(mc.player.getEyePos());
-            Direction dir = Direction.getFacing(shouldFacing).getOpposite();
-            switch (legalMode.get()) {
-                case SWING_HAND_AND_ROT -> {
-                    Vec3d rotate2f = mc.player.getRotationVector();
-                    Vec3d rotateXZ = new Vec3d(rotate2f.x, 0, rotate2f.z);
-                    if (rotateXZ.dotProduct(shouldFacing) < 0) {
-                        PlayerStateManager.setPlayerYawSafe(mc.player, mc.player.getYaw() + 180);
-                        mc.getNetworkHandler()
-                                .sendPacket(VPacket.newLookAndOnGround(
-                                        mc.player.getYaw(),
-                                        mc.player.getPitch(),
-                                        mc.player.isOnGround(),
-                                        mc.player.horizontalCollision));
-                    }
-                }
-                case SWING_HAND_AND_TARGET -> {
-                    Vec3d facing = shouldFacing.normalize();
-                    Vec2f pitchYaw = EntityUtils.rotationToPitchYaw(facing);
-                    if (Math.abs(EntityUtils.getSafeYawDiff(mc.player.getYaw(), pitchYaw.y)) > 30) {
-                        mc.player.setPitch(pitchYaw.x);
-                        mc.player.setYaw(pitchYaw.y);
-                        mc.getNetworkHandler()
-                                .sendPacket(VPacket.newLookAndOnGround(
-                                        mc.player.getYaw(),
-                                        mc.player.getPitch(),
-                                        mc.player.isOnGround(),
-                                        mc.player.horizontalCollision));
-                    }
-                }
-            }
-            mc.interactionManager.updateBlockBreakingProgress(lastMinePos, dir);
-            if (legalMode.get().hasSwing()) {
-                mc.player.swingHand(Hand.MAIN_HAND);
-            }
-            if (!MineExtra.INSTANCE.shouldTreatAsInstantBreak(speed)) {
-                var access = PlayerInteractionAccess.of(mc.interactionManager);
-                if (doubleBreak.get()
-                        && Objects.equals(access.getCurrentMiningPos(), lastMinePos)
-                        && access.isFailBreakEmpty()) {
-                    access.sendFailBreakCurrentPos(null);
-                } else {
-                    break;
-                }
-            }
-        } while (!mc.interactionManager.isBreakingBlock() && tryMine < DEFAULT_MAX_INSTANT_MINE);
+        }
         if (mc.player.getPitch() != originPy.x || mc.player.getYaw() != originPy.y) {
             mc.player.setPitch(originPy.x);
             mc.player.setYaw(originPy.y);
             ClientPlayerAccess.of(mc.player).resyncRot();
         }
         return tryMine;
-    }
-
-    private boolean isDurabilityOk(ItemStack item) {
-        if (item.isEmpty()) {
-            return true;
-        }
-        int durabilityLimit;
-        if (item.get(DataComponentTypes.UNBREAKABLE) != null) {
-            durabilityLimit = 0;
-        } else if (item.get(DataComponentTypes.MAX_DAMAGE) != null) {
-            RegistryEntry<Enchantment> unbreaking =
-                    RegistryUtils.getRegistryEntry(ItemStackUtils.registry(), Enchantments.UNBREAKING);
-            int multiply = 1;
-            if (unbreaking != null) {
-                multiply = EnchantmentHelper.getLevel(unbreaking, item) + 1;
-            }
-            durabilityLimit = (DURABILITY_MULTIPLY * 2) / multiply;
-        } else {
-            return true;
-        }
-        int max = Math.max(MIN_DURABILITY_LIMIT, durabilityLimit);
-        return item.getDamage() <= item.getMaxDamage() - max;
     }
 
     private boolean isNear(BlockPos pos, double distance) {

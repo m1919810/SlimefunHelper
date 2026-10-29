@@ -9,7 +9,7 @@ import java.util.Set;
 import lombok.Getter;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.events.Listener;
-import me.matl114.gui.complex.config.ConfigurateNewStyleScreen;
+import me.matl114.gui.complex.config.ConfigMultiLevelListScreen;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModuleEntry;
 import me.matl114.hacks.api.ModuleGroup;
@@ -232,17 +232,17 @@ public class MainTasks {
     public static void fillFakeSubChunkWithStone() {}
 
     @ApiMethod
-    public static void openConfigNewStyleScreen() {
-        ScreenAccess.of(new ConfigurateNewStyleScreen(Config.REGISTRY.stream().toList()))
+    public static void openConfigMultiLevelScreen() {
+        ScreenAccess.of(new ConfigMultiLevelListScreen(Config.REGISTRY.stream().toList()))
                 .openFromCurrent();
     }
 
     @ApiMethod
     public static void openConfigScreen(Config config) {
-        ConfigurateNewStyleScreen newStyleScreen =
-                new ConfigurateNewStyleScreen(Config.REGISTRY.stream().toList());
-        newStyleScreen.setGlobal(config);
-        ScreenAccess.of(newStyleScreen).openFromCurrent();
+        ConfigMultiLevelListScreen screen =
+                new ConfigMultiLevelListScreen(Config.REGISTRY.stream().toList());
+        screen.setGlobal(config);
+        ScreenAccess.of(screen).openFromCurrent();
     }
 
     @ApiMethod

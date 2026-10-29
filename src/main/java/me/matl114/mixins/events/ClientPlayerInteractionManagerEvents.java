@@ -22,6 +22,7 @@ import net.minecraft.client.network.SequencedPacketCreator;
 import net.minecraft.client.recipebook.ClientRecipeBook;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.NetworkRecipeId;
@@ -140,17 +141,27 @@ public abstract class ClientPlayerInteractionManagerEvents {
         ItemStack stackCopy = client.player.getStackInHand(hand).copy();
         BlockState state = client.world.getBlockState(hitResult.getBlockPos());
         MutableBoolean placeBlock = new MutableBoolean(false);
-        BlockPos predictingPlace = new ItemPlacementContext(client.player, hand, stackCopy, hitResult).getBlockPos();
+        ItemPlacementContext placementContext = new ItemPlacementContext(client.player, hand, stackCopy, hitResult);
+        if (stackCopy.getItem() instanceof BlockItem blockItem) {
+            ItemPlacementContext correctedContext = blockItem.getPlacementContext(placementContext);
+            if (correctedContext != null) {
+                placementContext = correctedContext;
+            }
+        }
+        BlockPos predictingPlace = placementContext.getBlockPos();
+        BlockState oldPlaceState = world.getBlockState(predictingPlace);
         original.call(instance, world, (SequencedPacketCreator) (seq) -> {
             lastInteractCaptureBlockPlace.addLast(placeBlock);
             try {
+                // predict() runs interactBlockInternal and BlockItem.place before the packet is sent.
                 var packet = packetCreator.predict(seq);
                 if (packet instanceof PlayerInteractBlockC2SPacketAccess access) {
                     access.setUseContext(new PlayerInteractBlockC2SPacketAccess.UseContext(
                             stackCopy,
                             state,
                             actionResult.getValue(),
-                            placeBlock.booleanValue() ? Optional.of(predictingPlace) : Optional.empty()));
+                            placeBlock.booleanValue() ? Optional.of(predictingPlace) : Optional.empty(),
+                            oldPlaceState));
                 }
                 return packet;
             } finally {

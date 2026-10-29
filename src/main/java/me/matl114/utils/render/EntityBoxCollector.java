@@ -23,16 +23,22 @@ public final class EntityBoxCollector extends RenderCollector.Impl<Entity> {
 
     @Override
     public void render3D(MatrixStack matrices, float partialTick) {
-        submitLerpedBoxes(partialTick);
-        boxCollector.render3D(matrices, partialTick);
-        boxCollector.clear();
+        try {
+            submitLerpedBoxes(partialTick);
+            boxCollector.render3D(matrices, partialTick);
+        } finally {
+            boxCollector.clear();
+        }
     }
 
     @Override
     public void render2D(VDrawContext vDrawContext, float partialTick) {
-        submitLerpedBoxes(partialTick);
-        boxCollector.render2D(vDrawContext, partialTick);
-        boxCollector.clear();
+        try {
+            submitLerpedBoxes(partialTick);
+            boxCollector.render2D(vDrawContext, partialTick);
+        } finally {
+            boxCollector.clear();
+        }
     }
 
     private void submitLerpedBoxes(float partialTick) {

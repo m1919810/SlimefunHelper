@@ -6,6 +6,7 @@ import me.matl114.events.Event;
 import me.matl114.events.RenderListener;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.math.MatrixStack;
@@ -81,14 +82,16 @@ public abstract class GameRendererEvents {
     }
 
     @Inject(method = "getFov", at = @At("RETURN"), cancellable = true)
-    public void onGetFov(CallbackInfoReturnable<Float> cir) {
+    public void onGetFov(Camera camera, float tickProgress, boolean changingFov, CallbackInfoReturnable<Float> cir) {
         float fov = cir.getReturnValueF();
         Event<Float> fovEvent = new Event<>(fov, false, true);
         RenderListener.getFovGetListener().handleValue(fovEvent);
         float fov2 = fovEvent.context;
         if (fov2 != fov) {
             cir.setReturnValue(fov2);
-            return;
+        }
+        if (!changingFov) {
+            RenderListener.setHandFov(cir.getReturnValueF());
         }
     }
 }
