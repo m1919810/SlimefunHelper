@@ -2,6 +2,8 @@ package me.matl114.hacks;
 
 import com.google.common.base.Predicates;
 import com.mojang.brigadier.tree.CommandNode;
+import com.mojang.datafixers.util.Pair;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -45,6 +47,8 @@ import net.minecraft.nbt.visitor.NbtTextFormatter;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.scoreboard.Team;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
@@ -55,6 +59,11 @@ import net.minecraft.world.World;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 public class ChatTasks {
+    private static final int CALLBACK_SESSION_TTL_TICKS = 1200;
+    private static final SecureRandom CALLBACK_SESSION_RANDOM = new SecureRandom();
+    private static final Map<Integer, Pair<Integer, Runnable>> callbackSessions = new HashMap<>();
+    private static final Set<Integer> issuedCallbackSessionIds = new HashSet<>();
+
     public static void init() {}
 
     @Getter
@@ -83,6 +92,9 @@ public class ChatTasks {
     private static PlayerChat playerChat;
 
     @Getter
+    private static RemoteCommand remoteCommand;
+
+    @Getter
     private static ChatSpamFix chatSpamFix;
 
     private static void initModules(ModuleManager m) {
@@ -97,6 +109,8 @@ public class ChatTasks {
 
         encryptChat = new EncryptChat().register(m);
 
+        remoteCommand = new RemoteCommand().register(m);
+
         playerChat = new PlayerChat().register(m);
 
         chatSpamFix = new ChatSpamFix().register(m);
@@ -108,6 +122,82 @@ public class ChatTasks {
     }
     // ========================================== utilities ========================================
     private static final MinecraftClient mc = MinecraftClient.getInstance();
+
+    @ApiMethod
+    public static MutableText createCallbackText(Runnable callback) {
+        return createCallbackText(Text.translatable("widget.chat.callback.confirm"), callback);
+    }
+
+    @ApiMethod
+    public static MutableText createCallbackText(MutableText text, Runnable callback) {
+        return text.styled(style ->
+                style.withClickEvent(createCallbackClickAction(callback)).withFormatting(Formatting.GREEN));
+    }
+
+    @ApiMethod
+    public static ClickEvent createCallbackClickAction(Runnable callback) {
+        return ChatUtils.getRunCommand(
+                MainCommand.getMainCommandPrefix() + "callback " + createCallbackSession(callback));
+    }
+
+    @ApiMethod
+    public static int createCallbackSession(Runnable callback) {
+        Objects.requireNonNull(callback);
+        expireCallbackSessions();
+        synchronized (callbackSessions) {
+            int sessionId;
+            do {
+                sessionId = -1 - CALLBACK_SESSION_RANDOM.nextInt(Integer.MAX_VALUE);
+            } while (!issuedCallbackSessionIds.add(sessionId));
+            callbackSessions.put(sessionId, Pair.of(Tasks.getTick(), callback));
+            return sessionId;
+        }
+    }
+
+    private static Runnable consumeCallbackSession(int sessionId) {
+        synchronized (callbackSessions) {
+            Pair<Integer, Runnable> session = callbackSessions.remove(sessionId);
+            if (session == null || Tasks.getTick() - session.getFirst() >= CALLBACK_SESSION_TTL_TICKS) {
+                return null;
+            }
+            return session.getSecond();
+        }
+    }
+
+    private static void expireCallbackSessions() {
+        int currentTick = Tasks.getTick();
+        synchronized (callbackSessions) {
+            callbackSessions
+                    .entrySet()
+                    .removeIf(entry -> currentTick - entry.getValue().getFirst() >= CALLBACK_SESSION_TTL_TICKS);
+        }
+    }
+
+    private static void onCallbackPostTick(Event<Void> event) {
+        expireCallbackSessions();
+    }
+
+    private static TaskSubCommand createCallbackCommand() {
+        return SubCommand.taskBuilder()
+                .name("callback")
+                .arg(SimpleCommandArgs.argumentBuilder().name("sessionid").build())
+                .post(builder -> builder.executor((sender, streamArgs, argsReader) -> {
+                    String rawSessionId = streamArgs.nextArgOrDefault(() -> null);
+                    if (rawSessionId == null || argsReader.hasNext()) {
+                        return true;
+                    }
+                    try {
+                        Runnable callback = consumeCallbackSession(Integer.parseInt(rawSessionId));
+                        if (callback != null) {
+                            callback.run();
+                        }
+                    } catch (NumberFormatException ignored) {
+                        // Invalid or expired local callback IDs are ignored.
+                    }
+                    return true;
+                }))
+                .build();
+    }
 
     // modified from @ChatScreen.class
     public static void sayMessage(String chatText, boolean addToHistory) {
@@ -124,6 +214,11 @@ public class ChatTasks {
                 MinecraftClient.getInstance().player.networkHandler.sendChatMessage(chatText);
             }
         }
+    }
+
+    @ApiMethod
+    public static boolean sendRemoteCommand(String command) {
+        return remoteCommand != null && remoteCommand.sendRemoteCommand(command);
     }
 
     @Getter
@@ -896,5 +991,8 @@ public class ChatTasks {
 
     static {
         MainCommand.registerCommands(SlimefunHelperCommand::new);
+        MainCommand.registerCommandBootstrap(
+                main -> main.registerSub(new BridgeSubCommand("callback", createCallbackCommand())));
+        Listener.getPostTick().registerHandler(ChatTasks::onCallbackPostTick);
     }
 }
