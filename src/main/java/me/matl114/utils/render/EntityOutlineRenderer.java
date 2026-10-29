@@ -7,7 +7,7 @@ import net.minecraft.client.util.math.MatrixStack;
 
 public final class EntityOutlineRenderer extends EntityModelCollector {
     public EntityOutlineRenderer() {
-        super(Render_v1_21_11.getOutlineVCP());
+        super(Render_v1_21_11::getOutlineVCP);
     }
 
     @Override
