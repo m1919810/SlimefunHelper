@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import me.matl114.accessors.access.RenderLayerAccess;
 import me.matl114.events.RenderListener;
 import me.matl114.utils.RenderUtils;
@@ -32,31 +33,44 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 public abstract class EntityModelCollector implements RenderCollector<Entity> {
-    protected static final MinecraftClient mc = MinecraftClient.getInstance();
 
     protected final List<IndexEntry<Entity>> entities = new ArrayList<>();
     private final List<IndexEntry<CapturedQuad>> capturedQuads = new ArrayList<>();
     protected final MaskPostRenderer maskRenderer = new MaskPostRenderer();
     private final OrderedRenderCommandQueueImpl commandQueue = new OrderedRenderCommandQueueImpl();
     private final EntityVertexConsumerProvider vertexConsumers;
-    private final RenderDispatcher renderDispatcher;
+    private final Supplier<OutlineVertexConsumerProvider> outlineVertexConsumers;
 
     protected EntityModelCollector() {
-        this(NoopOutlineVertexConsumerProvider.INSTANCE);
+        this(() -> NoopOutlineVertexConsumerProvider.INSTANCE);
     }
 
-    protected EntityModelCollector(OutlineVertexConsumerProvider outlineVertexConsumers) {
+    protected EntityModelCollector(Supplier<OutlineVertexConsumerProvider> outlineVertexConsumers) {
         this.vertexConsumers = new EntityVertexConsumerProvider(this::captureQuad);
-        this.renderDispatcher = new RenderDispatcher(
+        this.outlineVertexConsumers = outlineVertexConsumers;
+    }
+
+    private RenderDispatcher createDispatcher() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        OutlineVertexConsumerProvider outlineConsumers = outlineVertexConsumers.get();
+        return new RenderDispatcher(
                 commandQueue,
-                mc.getBlockRenderManager(),
+                client.getBlockRenderManager(),
                 vertexConsumers,
-                mc.getAtlasManager(),
-                outlineVertexConsumers == NoopOutlineVertexConsumerProvider.INSTANCE
-                        ? outlineVertexConsumers
-                        : new GuardedOutlineVertexConsumerProvider(outlineVertexConsumers),
+                client.getAtlasManager(),
+                outlineConsumers == NoopOutlineVertexConsumerProvider.INSTANCE
+                        ? outlineConsumers
+                        : new GuardedOutlineVertexConsumerProvider(outlineConsumers),
                 NoopImmediateVertexConsumerProvider.INSTANCE,
-                mc.textRenderer);
+                client.textRenderer);
+    }
+
+    private void renderCommands(RenderDispatcher dispatcher) {
+        try {
+            dispatcher.render();
+        } finally {
+            dispatcher.endLayeredCustoms();
+        }
     }
 
     @Override
@@ -86,18 +100,27 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
     @Override
     public final void render3D(MatrixStack matrices, float partialTick) {
         if (entities.isEmpty()) return;
-        EntityRenderManager entityRenderManager = mc.getEntityRenderDispatcher();
+        EntityRenderManager entityRenderManager = MinecraftClient.getInstance().getEntityRenderDispatcher();
         if (entityRenderManager == null) return;
-        for (IndexEntry<Entity> entry : entities) {
-            clearCaptured();
-            vertexConsumers.setColor(entry.index());
-            submitEntity(entityRenderManager, entry.val(), partialTick, entry.index());
-            clearTextCommands();
-            renderDispatcher.render();
-            vertexConsumers.finishCapture();
-            renderCollected(matrices);
+        try (RenderDispatcher dispatcher = createDispatcher()) {
+            for (IndexEntry<Entity> entry : entities) {
+                clearCaptured();
+                try {
+                    try {
+                        vertexConsumers.setColor(entry.index());
+                        submitEntity(entityRenderManager, entry.val(), partialTick, entry.index());
+                        clearTextCommands();
+                        renderCommands(dispatcher);
+                    } finally {
+                        vertexConsumers.finishCapture();
+                    }
+                    renderCollected(matrices);
+                } finally {
+                    commandQueue.clear();
+                    clearCaptured();
+                }
+            }
         }
-        clearCaptured();
     }
 
     @Override
@@ -110,34 +133,43 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
     protected final void renderQuads2D(float partialTick, MaskConsumer consumer) {
         if (entities.isEmpty()) return;
 
-        EntityRenderManager entityRenderManager = mc.getEntityRenderDispatcher();
+        EntityRenderManager entityRenderManager = MinecraftClient.getInstance().getEntityRenderDispatcher();
         if (entityRenderManager == null) return;
         Matrix4f camera = RenderListener.getWorldModelViewMatrix();
         Matrix4f projection = RenderListener.getWorldBasicProjectionMatrix();
-        for (IndexEntry<Entity> entry : entities) {
-            clearCaptured();
-            try {
-                vertexConsumers.setColor(entry.index());
-                submitEntity(entityRenderManager, entry.val(), partialTick, entry.index());
-                clearTextCommands();
-                renderDispatcher.render();
-                vertexConsumers.finishCapture();
-
-                List<MaskPostRenderer.Quad> quads = new ArrayList<>();
-                for (IndexEntry<CapturedQuad> captured : capturedQuads) {
-                    Vec3d[] vertices = captured.val().vertices();
-                    if (vertices.length == 4) {
-                        Identifier texture = captured.val().texture();
-                        if (texture == null && captured.val().sprite() != null) {
-                            texture = captured.val().sprite().getAtlasId();
-                        }
-                        quads.add(new MaskPostRenderer.Quad(
-                                vertices, captured.val().us(), captured.val().vs(), texture));
-                    }
-                }
-                consumer.accept(quads, camera, projection, entry.index());
-            } finally {
+        try (RenderDispatcher dispatcher = createDispatcher()) {
+            for (IndexEntry<Entity> entry : entities) {
                 clearCaptured();
+                try {
+                    try {
+                        vertexConsumers.setColor(entry.index());
+                        submitEntity(entityRenderManager, entry.val(), partialTick, entry.index());
+                        clearTextCommands();
+                        renderCommands(dispatcher);
+                    } finally {
+                        vertexConsumers.finishCapture();
+                    }
+
+                    List<MaskPostRenderer.Quad> quads = new ArrayList<>();
+                    for (IndexEntry<CapturedQuad> captured : capturedQuads) {
+                        Vec3d[] vertices = captured.val().vertices();
+                        if (vertices.length == 4) {
+                            Identifier texture = captured.val().texture();
+                            if (texture == null && captured.val().sprite() != null) {
+                                texture = captured.val().sprite().getAtlasId();
+                            }
+                            quads.add(new MaskPostRenderer.Quad(
+                                    vertices,
+                                    captured.val().us(),
+                                    captured.val().vs(),
+                                    texture));
+                        }
+                    }
+                    consumer.accept(quads, camera, projection, entry.index());
+                } finally {
+                    commandQueue.clear();
+                    clearCaptured();
+                }
             }
         }
     }
@@ -182,8 +214,15 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
                 lerpedPos.x - cameraPos.x + positionOffset.x,
                 lerpedPos.y - cameraPos.y + positionOffset.y,
                 lerpedPos.z - cameraPos.z + positionOffset.z);
-        renderer.render(state, entityMatrices, commandQueue, mc.gameRenderer.getEntityRenderStates().cameraRenderState);
-        entityMatrices.pop();
+        try {
+            renderer.render(
+                    state,
+                    entityMatrices,
+                    commandQueue,
+                    MinecraftClient.getInstance().gameRenderer.getEntityRenderStates().cameraRenderState);
+        } finally {
+            entityMatrices.pop();
+        }
     }
 
     protected abstract void collectQuad(CapturedQuad quad, int color);

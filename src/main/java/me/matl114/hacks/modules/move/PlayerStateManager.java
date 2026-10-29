@@ -142,6 +142,10 @@ public class PlayerStateManager extends BaseModule {
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onMove, Integer.MAX_VALUE);
         registerListener(
+                Listener.getPacketPoint().getChannel(VehicleMoveC2SPacket.class),
+                this::onVehicleMove,
+                Integer.MAX_VALUE);
+        registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(EntityVelocityUpdateS2CPacket.class),
                 this::onPostPlayerVelocityUpdate,
                 Integer.MAX_VALUE);
@@ -290,6 +294,18 @@ public class PlayerStateManager extends BaseModule {
                 updateAFK();
             }
         }
+    }
+
+    public void onVehicleMove(Event<VehicleMoveC2SPacket> event) {
+        if (event.isCancelled() || mc.player == null || !mc.player.hasVehicle()) return;
+
+        Entity vehicle = mc.player.getRootVehicle();
+        Vec3d passengerOffset = mc.player.getPos().subtract(vehicle.getPos());
+        Vec3d playerPosition = event.context.position().add(passengerOffset);
+        lastX = playerPosition.x;
+        lastY = playerPosition.y;
+        lastZ = playerPosition.z;
+        fallDistance = 0.0D;
     }
 
     public void onPostPlayerPositionLook(Event<PlayerPositionLookS2CPacket> eventPositionLook) {
@@ -546,6 +562,11 @@ public class PlayerStateManager extends BaseModule {
     private int cooldownInvSummary = 0;
 
     public void handleTick() {
+        if (mc.player.hasVehicle()) {
+            lastX = mc.player.getX();
+            lastY = mc.player.getY();
+            lastZ = mc.player.getZ();
+        }
         // base flag ticks;
         lastInLava = mc.player.isInLava();
         lastInWater = checkRegionFluid(FluidTags.WATER);

@@ -557,10 +557,8 @@ public class RenderTasks {
     @Getter
     private static ShulkerDisplay shulkerDisplay;
 
-
     @Getter
     private static SkyRender skyRender;
-
 
     private static void initModules(ModuleManager m) {
         renderExtra = new RenderExtra().register(m);
@@ -592,7 +590,6 @@ public class RenderTasks {
         itemDisplay = new ItemDisplay().register(m);
         shulkerDisplay = new ShulkerDisplay().register(m);
         skyRender = new SkyRender().register(m);
-
     }
 
     static {

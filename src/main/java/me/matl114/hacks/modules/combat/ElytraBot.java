@@ -13,6 +13,7 @@ import javax.annotation.Nullable;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import me.matl114.SlimefunHelper;
+import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.PlayerInteractEntityC2SPacketAccess;
 import me.matl114.accessors.hacks.EntityInternalAccess;
 import me.matl114.events.Event;
@@ -29,6 +30,7 @@ import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.ElytraExtra;
+import me.matl114.hacks.modules.move.MovExtra;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
@@ -38,6 +40,7 @@ import me.matl114.hacks.utils.enums.BypassMode;
 import me.matl114.hacks.utils.enums.PredictionMode;
 import me.matl114.hacks.utils.move.ElytraMotion;
 import me.matl114.hacks.utils.move.ElytraOptimizeUtils;
+import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -626,6 +629,10 @@ public class ElytraBot extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPreTick(), this::onPreTick);
         registerListener(Listener.getCustomListener().getChannel(ElytraMotion.class), this::onElytraChase);
+        registerListener(
+                Listener.getCustomListener().getChannel(FlightVelocity.class),
+                this::onFlightVelocity,
+                Integer.MIN_VALUE);
         registerListener(Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class), this::onAttack);
         registerListener(Listener.getPreHandleInputEvents(), this::onInputEvent);
         registerListener(Listener.getPacketPoint().getChannel(EntityStatusS2CPacket.class), this::onEntityStatus);
@@ -919,6 +926,31 @@ public class ElytraBot extends BaseModule {
                 behaviour.onElytra(event);
             }
         }
+    }
+
+    public void onFlightVelocity(Event<EventContainer<FlightVelocity>> event) {
+        AbstractBotBehaviour behaviour = currentBehaviour;
+        var player = mc.player;
+        if (behaviour == null || player == null || !canControlFlight() || !MovExtra.INSTANCE.isFlyingControlled())
+            return;
+        if (onlyWhenNoWASD.get() && PlayerInputUtils.of(mc.options).hasMovementControl()) {
+            behaviour.onPauseControl();
+            return;
+        }
+
+        FlightVelocity velocity = event.context().getValue();
+        if (velocity.mode() != FlightVelocity.Mode.MOTION_FLIGHT) return;
+
+        Vec3d direction = behaviour.simulateMovement(behaviour.movementDirection);
+        if (direction.lengthSquared() < 1E-12) return;
+        direction = direction.normalize();
+        if (direction.horizontalLengthSquared() < 1E-12) {
+            EntityUtils.setEntityPitchSafe(player, direction.y >= 0.0D ? -90.0F : 90.0F);
+        } else {
+            PlayerStateManager.setPlayerRotationSafe(player, direction);
+        }
+        ClientPlayerAccess.of(player).getLegalMovementManager().markForResetRot();
+        velocity.velocity(direction.multiply(velocity.maxVelocity()));
     }
 
     public void onAttack(Event<PlayerInteractEntityC2SPacket> attack) {
@@ -1288,7 +1320,7 @@ public class ElytraBot extends BaseModule {
         public synchronized void onUpdate() {
             super.onUpdate();
             this.thisTickStartFallFlying = ElytraExtra.INSTANCE.isThisTickGlideMovementServerSideGlide();
-            if (mc.player.isFallFlying() || mc.player.getAbilities().flying) {
+            if (mc.player.isFallFlying() || MovExtra.INSTANCE.isFlyingControlled()) {
                 maxHeightInAttack = Math.max(maxHeightInAttack, mc.player.getY());
                 stateMachine.step();
                 // Debug.info("State", stateMachine.getState(), "height", PlayerStateManager.INSTANCE.fallDistance);
@@ -1924,7 +1956,7 @@ public class ElytraBot extends BaseModule {
             if (((mc.player.isFallFlying()
                                     && (ElytraExtra.INSTANCE.hasPendingFallFlyingReset()
                                             || ElytraExtra.INSTANCE.isThisTickGlideMovementServerSideGlide()))
-                            || mc.player.getAbilities().flying)
+                            || MovExtra.INSTANCE.isFlyingControlled())
                     && stateMachine.getState() != STATE_PULL_UP) {
                 // just in few ticks for the attack(current tick)
                 // pull up only when after mace attack to miss
@@ -2247,7 +2279,7 @@ public class ElytraBot extends BaseModule {
             if (((mc.player.isFallFlying()
                                     && (ElytraExtra.INSTANCE.hasPendingFallFlyingReset()
                                             || ElytraExtra.INSTANCE.isThisTickGlideMovementServerSideGlide()))
-                            || mc.player.getAbilities().flying)
+                            || MovExtra.INSTANCE.isFlyingControlled())
                     && stateMachine.getState() != STATE_FOLLOW) {
                 // just in few ticks for the attack(current tick)
                 // pull up only when after mace attack to miss
@@ -2305,24 +2337,20 @@ public class ElytraBot extends BaseModule {
         }
 
         private Vec3d getTargetPosition() {
-            Vec3d predictedPosition = base.spearUsePredictor.get()
+            return base.spearUsePredictor.get()
                     ? PositionPredict.INSTANCE
                             .getPredictor(base.target)
                             .predict(2, PredictionMode.PREDICTOR_NV.ordinal(), 10)
                     : base.getCurrentSyncedPos();
-            if (base.currentOnGround) {
-                return predictedPosition.add(0, base.target.dimensions.eyeHeight(), 0);
-            }
-
-            return predictedPosition.add(0, base.target.dimensions.height() * 2 / 3, 0);
         }
 
         public int onStateFollow(StateMachine machine) {
             Vec3d targetPos = getTargetPosition();
+            Vec3d targetEyePos = targetPos.add(0, base.target.dimensions.eyeHeight(), 0);
             if (base.spearAntiSpearPullOverWhenPredictHit.get() && predictMayHitAntiSpear(targetPos)) {
                 return STATE_PULL_OVER;
             }
-            if (mc.player.getEyePos().squaredDistanceTo(targetPos) < MathUtils.s2(getActiveRange())) {
+            if (mc.player.getEyePos().squaredDistanceTo(targetEyePos) < MathUtils.s2(getActiveRange())) {
                 return STATE_NEAR_FOLLOW;
             }
             machine.markForEndState();
@@ -2333,6 +2361,7 @@ public class ElytraBot extends BaseModule {
 
         public int onStateNearFollow(StateMachine machine) {
             Vec3d targetPosition = getTargetPosition();
+            Vec3d targetEyePos = targetPosition.add(0, base.target.dimensions.eyeHeight(), 0);
             if (base.spearAntiSpearPullOverWhenPredictHit.get() && predictMayHitAntiSpear(targetPosition)) {
                 return STATE_PULL_OVER;
             }
@@ -2343,7 +2372,7 @@ public class ElytraBot extends BaseModule {
                     return STATE_PULL_OVER;
                 }
             }
-            double sqDist = mc.player.getEyePos().squaredDistanceTo(targetPosition);
+            double sqDist = mc.player.getEyePos().squaredDistanceTo(targetEyePos);
             if (sqDist > MathUtils.s2(getActiveRange())) {
                 return STATE_FOLLOW;
             } else {
@@ -2365,6 +2394,7 @@ public class ElytraBot extends BaseModule {
                 return STATE_FOLLOW;
             } else {
                 targetPosition = getTargetPosition();
+                Vec3d targetEyePos = targetPosition.add(0, base.target.dimensions.eyeHeight(), 0);
                 predictMayHit = predictMayHitAntiSpear((targetPosition));
                 // calculate left time
                 if (!predictMayHit && base.currentAction != null) {
@@ -2374,7 +2404,7 @@ public class ElytraBot extends BaseModule {
                             || base.currentAction == TargetAction.ESCAPING) {
                         // stable
                         double canChaseDistance = getMinRange();
-                        if (mc.player.getEyePos().squaredDistanceTo(targetPosition) > MathUtils.s2(canChaseDistance)) {
+                        if (mc.player.getEyePos().squaredDistanceTo(targetEyePos) > MathUtils.s2(canChaseDistance)) {
                             Vec3d currentPos = base.getCurrentPos();
                             Vec3d predictMovement = targetPosition.subtract(currentPos);
                             if (predictMovement.y < -predictMovement.horizontalLength()) {
@@ -2391,7 +2421,7 @@ public class ElytraBot extends BaseModule {
                         // meeting
                         // escape their attack range, can hit
                         double canChaseDistance = getActiveRange();
-                        if (mc.player.getEyePos().squaredDistanceTo(targetPosition) > MathUtils.s2(canChaseDistance)) {
+                        if (mc.player.getEyePos().squaredDistanceTo(targetEyePos) > MathUtils.s2(canChaseDistance)) {
                             return STATE_FOLLOW;
                         }
                     }
@@ -2493,7 +2523,7 @@ public class ElytraBot extends BaseModule {
         @Override
         public synchronized void onUpdate() {
             super.onUpdate();
-            if (mc.player.isFallFlying() || mc.player.getAbilities().flying) {
+            if (mc.player.isFallFlying() || MovExtra.INSTANCE.isFlyingControlled()) {
                 stateMachine.step();
             } else {
                 setSpeed(0.0D);

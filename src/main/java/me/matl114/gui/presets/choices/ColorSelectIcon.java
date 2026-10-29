@@ -36,10 +36,6 @@ public class ColorSelectIcon extends BoxElement {
     final ValueAccessor<TextColor> color;
     final ElementFactory elementFactory;
 
-    public ColorSelectIcon(ValueAccessor<TextColor> color) {
-        this(color, DefaultElementFactory.INSTANCE);
-    }
-
     public ColorSelectIcon(ValueAccessor<TextColor> color, ElementFactory elementFactory) {
         super(ButtonAction.isLeft(s -> {
             if (ScreenUtils.hasShiftDown()) {
@@ -58,10 +54,6 @@ public class ColorSelectIcon extends BoxElement {
             tooltip.addAll(ChatUtils.parseTooltipsTranslation("widget.gui.color-select-icon.swap-color.tooltips", ""));
             return tooltip;
         }));
-    }
-
-    public ColorSelectIcon(ValueAccessor<TextColor> color, ButtonAction buttonAction) {
-        this(color, buttonAction, DefaultElementFactory.INSTANCE);
     }
 
     public ColorSelectIcon(ValueAccessor<TextColor> color, ButtonAction buttonAction, ElementFactory elementFactory) {
