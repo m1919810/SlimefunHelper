@@ -182,7 +182,7 @@ public class BoatFly extends BaseModule implements LegalMovementManager.Movement
 
         if (mc.getNetworkHandler() != null) {
             Entity vehicle = player.getRootVehicle();
-            mc.getNetworkHandler().sendPacket(VehicleMoveC2SPacket.fromVehicle(vehicle));
+            mc.getNetworkHandler().sendPacket(new VehicleMoveC2SPacket(vehicle));
         }
     }
 

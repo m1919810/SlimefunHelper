@@ -8,14 +8,13 @@ import net.minecraft.client.util.math.MatrixStack;
 /** Draws GUI elements directly on the supplied world-facing matrix stack. */
 public final class DrawContext3d_v1_21_4 extends DrawContext implements VDrawContext3d {
     public DrawContext3d_v1_21_4(MatrixStack matrices) {
-        super(MinecraftClient.getInstance(), Render_v1_21_4.getVCP());
+        super(MinecraftClient.getInstance(), MinecraftClient.getInstance().getBufferBuilders().getEntityVertexConsumers());
         getMatrices().multiplyPositionMatrix(matrices.peek().getPositionMatrix());
     }
 
     public void render() {
-        draw();
-        Render_v1_21_4.getVCP().draw();
-        Render_v1_21_4.getOutlineVCP().draw();
+        tryDraw();
+        MinecraftClient.getInstance().getBufferBuilders().getEntityVertexConsumers().draw();
     }
 
     @Override

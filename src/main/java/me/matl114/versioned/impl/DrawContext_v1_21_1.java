@@ -32,6 +32,8 @@ import org.joml.Vector3f;
 import org.joml.Vector4f;
 
 public class DrawContext_v1_21_1 implements VDrawContext {
+    private static final Map<DrawContext, ArrayDeque<Integer>> layerDepthByContext = new WeakHashMap<>();
+    private static final Map<DrawContext, Integer> maxLayerDepthByContext = new WeakHashMap<>();
     private final DrawContext drawContext;
     private final MatrixStack matrixStack;
     private Runnable delayedDrawing = null;
@@ -299,6 +301,7 @@ public class DrawContext_v1_21_1 implements VDrawContext {
             this.delayedDrawing = null;
         }
         this.drawContext.tryDraw();
+        maxLayerDepthByContext.remove(drawContext);
     }
 
     @Override

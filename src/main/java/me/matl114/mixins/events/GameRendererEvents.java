@@ -99,8 +99,6 @@ public abstract class GameRendererEvents {
         if (fov2 != fov) {
             cir.setReturnValue(fov2);
         }
-        if (!changingFov) {
-            RenderListener.setHandFov(cir.getReturnValueF());
-        }
+        RenderListener.setHandFov(cir.getReturnValueF());
     }
 }

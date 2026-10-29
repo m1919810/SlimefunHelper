@@ -17,7 +17,6 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.render.entity.EntityRenderer;
-import net.minecraft.client.render.entity.state.EntityRenderState;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.texture.Sprite;
@@ -147,16 +146,10 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
 
     private void submitEntity(
             EntityRenderDispatcher entityRenderDispatcher, Entity entity, float partialTick, int color) {
-        renderEntity(entityRenderDispatcher.getRenderer(entity), entity, partialTick, color);
+        renderEntity(entityRenderDispatcher.getRenderer(entity), entity, partialTick);
     }
 
     private <T extends Entity> void renderEntity(EntityRenderer<? super T> renderer, T entity, float partialTick) {
-        S state = renderer.getAndUpdateRenderState(entity, partialTick);
-        state.displayName = null;
-        state.leashData = null;
-        state.onFire = false;
-        configureRenderState(state, color);
-
         Vec3d cameraPos = RenderUtils.getCameraPos();
         Vec3d positionOffset = renderer.getPositionOffset(entity, partialTick);
         MatrixStack entityMatrices = new MatrixStack();
@@ -170,11 +163,9 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
                 lerpedPos.y - cameraPos.y + positionOffset.y,
                 lerpedPos.z - cameraPos.z + positionOffset.z);
         float yaw = MathHelper.lerp(partialTick, entity.prevYaw, entity.getYaw());
-        renderer.render(
-                entity, yaw, partialTick, entityMatrices, vertexConsumers, renderer.getLight(entity, partialTick));
-        entityMatrices.pop();
         try {
-            renderer.render(state, entityMatrices, vertexConsumers, renderer.getLight(entity, partialTick));
+            renderer.render(
+                    entity, yaw, partialTick, entityMatrices, vertexConsumers, renderer.getLight(entity, partialTick));
         } finally {
             entityMatrices.pop();
         }
@@ -186,7 +177,6 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
 
     protected abstract void clearCollected();
 
-    protected void configureRenderState(EntityRenderState state, int color) {}
 
     protected record CapturedQuad(Vec3d[] vertices, UV uv, Identifier texture, Sprite sprite, float[] us, float[] vs) {}
 

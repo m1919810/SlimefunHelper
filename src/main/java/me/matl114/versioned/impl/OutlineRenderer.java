@@ -1,5 +1,6 @@
 package me.matl114.versioned.impl;
 
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.OutlineVertexConsumerProvider;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
@@ -13,12 +14,12 @@ public final class OutlineRenderer {
     }
 
     private void draw(Iterable<? extends Quad> quads, int color) {
-        OutlineVertexConsumerProvider vertexConsumers = Render_v1_21_4.getOutlineVCP();
+        OutlineVertexConsumerProvider vertexConsumers = MinecraftClient.getInstance().getBufferBuilders().getOutlineVertexConsumers();
         vertexConsumers.setColor(
-                ColorHelper.getRed(color),
-                ColorHelper.getGreen(color),
-                ColorHelper.getBlue(color),
-                ColorHelper.getAlpha(color));
+                ColorHelper.Argb.getRed(color),
+                ColorHelper.Argb.getGreen(color),
+                ColorHelper.Argb.getBlue(color),
+                ColorHelper.Argb.getAlpha(color));
         MatrixStack matrices = new MatrixStack();
         MatrixStack.Entry matrix = matrices.peek();
         for (Quad quad : quads) {

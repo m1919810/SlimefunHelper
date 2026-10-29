@@ -1226,7 +1226,7 @@ public class InteractionTasks {
                 || block instanceof TripwireHookBlock
                 || block instanceof DeadCoralWallFanBlock
                 || block instanceof CocoaBlock
-                || block instanceof MultifaceBlock
+                || block instanceof MultifaceGrowthBlock
                 || block instanceof LanternBlock
                 || block instanceof LadderBlock;
     }
@@ -1286,7 +1286,7 @@ public class InteractionTasks {
             BlockState aboveState = mc.world.getBlockState(placeTargetBlock.up());
             return aboveState.isOf(block) && aboveState.get(property);
         }
-        if (block instanceof MultifaceBlock multiface) {
+        if (block instanceof MultifaceGrowthBlock multiface) {
             var property = ConnectingBlock.FACING_PROPERTIES.get(direction);
             BlockState currentState = mc.world.getBlockState(placeTargetBlock);
             return targetState.contains(property)

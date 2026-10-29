@@ -27,37 +27,33 @@ public abstract class ItemRendererMixin {
     private static final HandFaceRenderer_v1_21_11 MODEL_FACE = ModelFaceFactory.getInstance();
 
     @Inject(
-            method =
-                    "renderItem(Lnet/minecraft/item/ItemDisplayContext;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;II[ILnet/minecraft/client/render/model/BakedModel;Lnet/minecraft/client/render/RenderLayer;Lnet/minecraft/client/render/item/ItemRenderState$Glint;)V",
+            method = "renderItem(Lnet/minecraft/item/ItemStack;Lnet/minecraft/item/ItemDisplayContext;ZLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;IILnet/minecraft/client/render/model/BakedModel;)V",
             at = @At("HEAD"))
-    private static void captureEntityItemStart(
-            ItemDisplayContext displayContext,
+    private void captureEntityItemStart(
+            ItemStack stack,
+            ItemDisplayContext renderMode,
+            boolean leftHanded,
             MatrixStack matrices,
             VertexConsumerProvider vertexConsumers,
             int light,
             int overlay,
-            int[] tintLayers,
             BakedModel model,
-            RenderLayer renderLayer,
-            ItemRenderState.Glint glintType,
             CallbackInfo ci) {
-        EntityModelCollector.captureItemQuads(vertexConsumers, matrices, model, renderLayer);
+        EntityModelCollector.captureItemQuads(vertexConsumers, matrices, model, RenderLayers.getItemLayer(stack, true));
     }
 
     @Inject(
-            method =
-                    "renderItem(Lnet/minecraft/item/ItemDisplayContext;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;II[ILnet/minecraft/client/render/model/BakedModel;Lnet/minecraft/client/render/RenderLayer;Lnet/minecraft/client/render/item/ItemRenderState$Glint;)V",
+            method = "renderItem(Lnet/minecraft/item/ItemStack;Lnet/minecraft/item/ItemDisplayContext;ZLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;IILnet/minecraft/client/render/model/BakedModel;)V",
             at = @At("RETURN"))
-    private static void captureEntityItemEnd(
-            ItemDisplayContext displayContext,
+    private void captureEntityItemEnd(
+            ItemStack stack,
+            ItemDisplayContext renderMode,
+            boolean leftHanded,
             MatrixStack matrices,
             VertexConsumerProvider vertexConsumers,
             int light,
             int overlay,
-            int[] tintLayers,
             BakedModel model,
-            RenderLayer renderLayer,
-            ItemRenderState.Glint glintType,
             CallbackInfo ci) {
         EntityModelCollector.finishItemQuads(vertexConsumers);
     }
