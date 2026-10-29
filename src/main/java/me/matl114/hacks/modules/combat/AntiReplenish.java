@@ -44,8 +44,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
 
 public class AntiReplenish extends BaseModule {
-    private static final String KEY_NEWLY_PLACED_SHULKER_BOX =
-            "slimefunhelper:anti_replenish/newly_placed_shulker_box";
+    private static final String KEY_NEWLY_PLACED_SHULKER_BOX = "slimefunhelper:anti_replenish/newly_placed_shulker_box";
 
     public AntiReplenish() {
         super("AntiReplenish");
@@ -64,14 +63,16 @@ public class AntiReplenish extends BaseModule {
             .updateListener(s -> blockSeq = MathUtils.create3DPointListAroundPlayer(s))
             .build();
 
-    public final FlagRef onlyWhenEnemyNearby = flagBuilder(root.add("only-when-enemy-nearby")).build();
+    public final FlagRef onlyWhenEnemyNearby =
+            flagBuilder(root.add("only-when-enemy-nearby")).build();
 
     public final DoubleRef enemyDistance = doubleBuilder(root.add("enemy-distance"))
             .defaultValue(8.0D)
             .validator(Configs.doubleRange(0, 100))
             .build();
 
-    public final FlagRef onlyNewPlacedBoxes = flagBuilder(root.add("only-new-boxes")).build();
+    public final FlagRef onlyNewPlacedBoxes =
+            flagBuilder(root.add("only-new-boxes")).build();
 
     public final IntRef delay = intBuilder(root.add("delay"))
             .defaultValue(10)

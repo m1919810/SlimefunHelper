@@ -36,6 +36,7 @@ public class Flight extends BaseModule implements LegalMovementManager.MovementM
     public final ModulePath flight = moveSafety.add("flight");
     public final ModulePath moveSpeed = makePath(Configs.MOV_CONFIG, "move-speed");
     public static Flight INSTANCE;
+
     public Flight() {
         super("Flight");
         INSTANCE = this;
