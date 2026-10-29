@@ -120,7 +120,6 @@
 		"hack.SlimeBlockMixin",
 		"hack.SplashOverlayMixin",
 		"hack.SpriteAtlasTextureMixin",
-		"hack.StatusEffectFogModifierMixin",
 		"hack.SweetBerryBushBlockMixin",
 		"hack.VillagerTradeScreenMixin",
 		"hack.WorldRenderMixin",
