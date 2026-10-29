@@ -8,7 +8,6 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.task.MovementManager;
-import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.enums.BypassMode;
 import me.matl114.managers.Configs;
@@ -120,12 +119,12 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
                     yaw = 180 + input.sidewaysSpeed() * 90;
                 }
                 if (yaw != 0.0F) {
-                    RotationManager.INSTANCE.request(RotationManager.ofDirection(
-                                    Optional.empty(), Optional.of(mc.player.getYaw() + yaw))
-                            .preTick(() -> {
-                                PlayerInputManager.INSTANCE.addSprintModifier(0, true, 0);
-                            })
-                            .priority(0));
+                    RotationManager.INSTANCE.request(
+                            RotationManager.ofDirection(Optional.empty(), Optional.of(mc.player.getYaw() + yaw))
+                                    .preTick(() -> {
+                                        PlayerInputManager.INSTANCE.addSprintModifier(0, true, 0);
+                                    })
+                                    .priority(0));
                 }
             }
         }
