@@ -18,7 +18,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.*;
 import me.matl114.versioned.api.VDrawContext;
 import me.matl114.versioned.api.VDrawContext3d;
-import me.matl114.versioned.impl.DrawContext3d_v1_21_11;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.entity.effect.StatusEffect;
@@ -133,8 +132,8 @@ public class NameTag extends INameTag {
                     matrices.translate(anchor.x, anchor.y, anchor.z);
                     matrices.multiply(RenderUtils.getBillboardRotation(DisplayEntity.BillboardMode.CENTER, 0, 0));
                     matrices.scale(pixelScale, -pixelScale, pixelScale);
-                    DrawContext3d_v1_21_11 drawContext = VDrawContext3d.createDrawContext(matrices);
-                    VDrawContext worldDraw = VDrawContext.of(drawContext);
+                    VDrawContext3d drawContext = VDrawContext3d.createDrawContext(matrices);
+                    VDrawContext worldDraw = VDrawContext.of(drawContext.cast());
                     handleNameLinePlayer(worldDraw, player);
                     handleEquipmentPlayer(worldDraw, player);
                     handleOtherInfoLine(worldDraw, player);

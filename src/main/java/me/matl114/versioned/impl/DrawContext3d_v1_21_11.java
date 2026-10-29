@@ -3,6 +3,7 @@ package me.matl114.versioned.impl;
 import me.matl114.utils.render.ColorQuad;
 import me.matl114.utils.render.Quad;
 import me.matl114.utils.render.UV;
+import me.matl114.versioned.api.VDrawContext3d;
 import me.matl114.versioned.api.VRender;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer.TextLayerType;
@@ -21,7 +22,7 @@ import org.joml.Matrix3x2fc;
 import org.joml.Matrix4f;
 
 /** Replays the GUI element states used by NameTag on its world-facing plane. */
-public final class DrawContext3d_v1_21_11 extends DrawContext {
+public final class DrawContext3d_v1_21_11 extends DrawContext implements VDrawContext3d {
     private static final int FULL_BRIGHT = 15728880;
     private final MatrixStack worldMatrices;
 
@@ -53,6 +54,11 @@ public final class DrawContext3d_v1_21_11 extends DrawContext {
         } finally {
             matrices.pop();
         }
+    }
+
+    @Override
+    public DrawContext cast() {
+        return this;
     }
 
     private static void renderItem(ItemGuiElementRenderState item, MatrixStack matrices) {
