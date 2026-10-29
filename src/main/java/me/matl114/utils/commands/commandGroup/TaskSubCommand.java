@@ -6,6 +6,7 @@ import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import me.matl114.utils.commands.interruption.PermissionDenyError;
 import me.matl114.utils.commands.params.ArgumentReader;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.utils.commands.params.api.CommandExecution;
@@ -38,6 +39,9 @@ public class TaskSubCommand extends SubCommandImpl {
 
     @Override
     public boolean onCustomCommand(CommandExecution sender, ArgumentReader arguments) {
+        if (!hasPermission(sender)) {
+            throw new PermissionDenyError(permissionRequired(), arguments);
+        }
         return executor != null && executor.execute(sender, parseInput(sender, arguments), arguments);
     }
 
