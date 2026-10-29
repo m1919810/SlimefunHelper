@@ -1,8 +1,11 @@
 package me.matl114.versioned.impl;
 
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.WeakHashMap;
 import java.util.function.Function;
 import me.matl114.renderer.TextRenderers;
 import me.matl114.renderer.text.ResourceFontTextDrawer;
@@ -29,6 +32,9 @@ import org.joml.Vector3f;
 import org.joml.Vector4f;
 
 public class DrawContext_v1_21_4 implements VDrawContext {
+    private static final Map<DrawContext, ArrayDeque<Integer>> layerDepthByContext = new WeakHashMap<>();
+    private static final Map<DrawContext, Integer> maxLayerDepthByContext = new WeakHashMap<>();
+
     private final DrawContext drawContext;
     private final MatrixStack matrixStack;
     private Runnable delayedDrawing = null;
@@ -58,11 +64,24 @@ public class DrawContext_v1_21_4 implements VDrawContext {
     public void pushLayer(int depth) {
         this.matrixStack.pushMatrix();
         this.drawContext.getMatrices().translate(0, 0, depth);
+        ArrayDeque<Integer> layerDepths =
+                layerDepthByContext.computeIfAbsent(drawContext, ignored -> new ArrayDeque<>());
+        int currentDepth = layerDepths.isEmpty() ? 0 : layerDepths.peekLast();
+        int layerDepth = currentDepth + depth;
+        layerDepths.addLast(layerDepth);
+        maxLayerDepthByContext.merge(drawContext, layerDepth, Math::max);
     }
 
     @Override
     public void popLayer() {
         this.matrixStack.popMatrix();
+        ArrayDeque<Integer> layerDepths = layerDepthByContext.get(drawContext);
+        if (layerDepths != null && !layerDepths.isEmpty()) {
+            layerDepths.removeLast();
+            if (layerDepths.isEmpty()) {
+                layerDepthByContext.remove(drawContext);
+            }
+        }
     }
 
     @Override
@@ -339,9 +358,21 @@ public class DrawContext_v1_21_4 implements VDrawContext {
     public void drawTooltip(List<Text> text, Optional<TooltipData> data, int x, int y) {
         var trans = matrixStack.peek3D();
         var point1 = new Vector4f(x, y, 0, 1).mul(trans);
-        addInternal(() -> this.drawContext.drawTooltip(
-                net.minecraft.client.MinecraftClient.getInstance().textRenderer, text, data, (int) point1.x, (int)
-                        point1.y));
+        addInternal(() -> {
+            int depth = maxLayerDepthByContext.getOrDefault(drawContext, 0) + 1;
+            matrixStack.pushMatrix();
+            drawContext.getMatrices().translate(0, 0, depth);
+            try {
+                drawContext.drawTooltip(
+                        net.minecraft.client.MinecraftClient.getInstance().textRenderer,
+                        text,
+                        data,
+                        (int) point1.x,
+                        (int) point1.y);
+            } finally {
+                matrixStack.popMatrix();
+            }
+        });
     }
 
     @Override

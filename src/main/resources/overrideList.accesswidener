@@ -119,3 +119,4 @@ accessible method net/minecraft/client/render/RenderPhase$TextureBase getId ()Lj
 accessible method net/minecraft/client/render/RenderPhase$Texture getId ()Ljava/util/Optional;
 accessible method net/minecraft/network/ClientConnection sendInternal (Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/PacketCallbacks;Z)V
 accessible field net/minecraft/structure/pool/SinglePoolElement location Lcom/mojang/datafixers/util/Either;
+accessible field net/minecraft/client/render/model/BakedQuad sprite Lnet/minecraft/client/texture/Sprite;

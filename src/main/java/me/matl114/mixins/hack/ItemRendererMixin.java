@@ -27,7 +27,7 @@ public abstract class ItemRendererMixin {
 
     @Inject(
             method =
-                    "renderItem(Lnet/minecraft/item/ItemDisplayContext;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;II[ILjava/util/List;Lnet/minecraft/client/render/RenderLayer;Lnet/minecraft/client/render/item/ItemRenderState$Glint;)V",
+                    "renderItem(Lnet/minecraft/item/ItemDisplayContext;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;II[ILnet/minecraft/client/render/model/BakedModel;Lnet/minecraft/client/render/RenderLayer;Lnet/minecraft/client/render/item/ItemRenderState$Glint;)V",
             at = @At("HEAD"))
     private static void captureEntityItemStart(
             ItemDisplayContext displayContext,
@@ -36,16 +36,16 @@ public abstract class ItemRendererMixin {
             int light,
             int overlay,
             int[] tintLayers,
-            List<BakedQuad> quads,
+            BakedModel model,
             RenderLayer renderLayer,
             ItemRenderState.Glint glintType,
             CallbackInfo ci) {
-        EntityModelCollector.captureItemQuads(vertexConsumers, matrices, quads, renderLayer);
+        EntityModelCollector.captureItemQuads(vertexConsumers, matrices, model, renderLayer);
     }
 
     @Inject(
             method =
-                    "renderItem(Lnet/minecraft/item/ItemDisplayContext;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;II[ILjava/util/List;Lnet/minecraft/client/render/RenderLayer;Lnet/minecraft/client/render/item/ItemRenderState$Glint;)V",
+                    "renderItem(Lnet/minecraft/item/ItemDisplayContext;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;II[ILnet/minecraft/client/render/model/BakedModel;Lnet/minecraft/client/render/RenderLayer;Lnet/minecraft/client/render/item/ItemRenderState$Glint;)V",
             at = @At("RETURN"))
     private static void captureEntityItemEnd(
             ItemDisplayContext displayContext,
@@ -54,7 +54,7 @@ public abstract class ItemRendererMixin {
             int light,
             int overlay,
             int[] tintLayers,
-            List<BakedQuad> quads,
+            BakedModel model,
             RenderLayer renderLayer,
             ItemRenderState.Glint glintType,
             CallbackInfo ci) {
@@ -90,6 +90,7 @@ public abstract class ItemRendererMixin {
                 immediate.draw(renderLayer);
             }
             MODEL_FACE.render(HandView.INSTANCE.glowColor.get().withAlpha(HandView.INSTANCE.glowAlpha.get()));
+            MODEL_FACE.render2D(0);
         }
     }
 }

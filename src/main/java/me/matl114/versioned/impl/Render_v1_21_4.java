@@ -30,16 +30,18 @@ import org.joml.Vector3f;
 
 public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
 
-    private static final MinecraftClient mc = MinecraftClient.getInstance();
+    private static MinecraftClient client() {
+        return MinecraftClient.getInstance();
+    }
     // mapping MultiBufferSource - VertexConsumerProvider
     // BufferSource - Immediate
     // PoseStack - MatrixStack
     public static VertexConsumerProvider.Immediate getVCP() {
-        return mc.getBufferBuilders().getEntityVertexConsumers();
+        return client().getBufferBuilders().getEntityVertexConsumers();
     }
 
     public static OutlineVertexConsumerProvider getOutlineVCP() {
-        return mc.getBufferBuilders().getOutlineVertexConsumers();
+        return client().getBufferBuilders().getOutlineVertexConsumers();
     }
 
     public static final RenderPhase.DepthTest DISABLE_DEPTH_TEST = new RenderPhase.DepthTest("never", 519) {
@@ -299,7 +301,7 @@ public class Render_v1_21_4 implements VRender, VRender.WrapRenderOperation {
             stack.translate(vec3d.x, vec3d.y, vec3d.z);
         }
         ItemRenderState state = new ItemRenderState();
-        mc.getItemModelManager().update(state, itemStack, context, false, mc.world, null, -999);
+        client().getItemModelManager().update(state, itemStack, context, false, client().world, null, -999);
         state.render(stack, getVCP(), displayInfo.light(), displayInfo.overlay());
 
         if (!bl) {

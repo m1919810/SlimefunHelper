@@ -1,39 +1,24 @@
 package me.matl114.versioned.impl;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import net.minecraft.client.render.OutlineVertexConsumerProvider;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.Vec3d;
 
 public final class OutlineRenderer {
     public void render(Iterable<? extends Quad> quads, int color) {
-        draw(quads, color, true);
+        draw(quads, color);
     }
 
-    public void renderDeferred(Iterable<? extends Quad> quads, OrderedRenderCommandQueue queue, int color) {
-        Map<RenderLayer, List<Quad>> quadsByLayer = new LinkedHashMap<>();
-        for (Quad quad : quads) {
-            quadsByLayer
-                    .computeIfAbsent(quad.layer(), ignored -> new ArrayList<>())
-                    .add(quad);
-        }
-        for (Map.Entry<RenderLayer, List<Quad>> group : quadsByLayer.entrySet()) {
-            List<Quad> layerQuads = List.copyOf(group.getValue());
-            queue.submitCustom(new MatrixStack(), group.getKey(), (entry, vertexConsumer) -> {
-                draw(layerQuads, color, false);
-            });
-        }
-    }
-
-    private void draw(Iterable<? extends Quad> quads, int color, boolean flush) {
-        OutlineVertexConsumerProvider vertexConsumers = Render_v1_21_11.getOutlineVCP();
-        vertexConsumers.setColor(color);
+    private void draw(Iterable<? extends Quad> quads, int color) {
+        OutlineVertexConsumerProvider vertexConsumers = Render_v1_21_4.getOutlineVCP();
+        vertexConsumers.setColor(
+                ColorHelper.getRed(color),
+                ColorHelper.getGreen(color),
+                ColorHelper.getBlue(color),
+                ColorHelper.getAlpha(color));
         MatrixStack matrices = new MatrixStack();
         MatrixStack.Entry matrix = matrices.peek();
         for (Quad quad : quads) {
@@ -46,9 +31,7 @@ public final class OutlineRenderer {
                         .color(color);
             }
         }
-        if (flush) {
-            vertexConsumers.draw();
-        }
+        vertexConsumers.draw();
     }
 
     public interface Quad {
