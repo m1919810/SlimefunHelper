@@ -65,8 +65,8 @@ public class DrawContext_v1_21_1 implements VDrawContext {
     public void pushLayer(int depth) {
         this.drawContext.getMatrices().push();
         this.drawContext.getMatrices().translate(0, 0, depth);
-        this.maxDepth =
-                Math.max(this.maxDepth, (int) this.drawContext.getMatrices().peek().getPositionMatrix().m32());
+        this.maxDepth = Math.max(this.maxDepth, (int)
+                this.drawContext.getMatrices().peek().getPositionMatrix().m32());
     }
 
     @Override
