@@ -145,7 +145,7 @@ public class ConnectionProxy extends BaseModule {
                         () -> argsMap == index.getValue()))
                 .addToSub(subScreen);
         DisplayWidget.instance(45, 0, 100, 20)
-                .setRenderHandler(ClickGui.INSTANCE.getGuiElementFactory().createBackground())
+                .setRenderHandler(ClickGui.INSTANCE.configElementFactory().createBackground())
                 .addToSub(subScreen);
         ExecutableWidget.instance(45, 0, 100, 20)
                 .setElementHandler(factory.createText(

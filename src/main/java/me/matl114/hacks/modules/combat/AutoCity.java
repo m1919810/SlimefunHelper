@@ -17,6 +17,7 @@ import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.interact.SelfTrap;
 import me.matl114.hacks.modules.mine.MineExtra;
 import me.matl114.hacks.modules.mine.PacketMine;
+import me.matl114.hacks.modules.mine.QueueMine;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
@@ -105,6 +106,17 @@ public class AutoCity extends BaseModule {
     public void onInputEvent() {
         if (enable.get()) {
             pendingSwitchPos = false;
+            if (PacketMine.INSTANCE.getRequestedBlock() != null
+                    || (QueueMine.INSTANCE != null && !QueueMine.INSTANCE.breakRequest.isEmpty())) {
+                return;
+            }
+            BlockPos currentMining = PacketMine.INSTANCE.getCurrentMiningPos();
+            if (currentMining != null
+                    && InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), currentMining)
+                    && PacketMine.INSTANCE.isMineable(mc.world.getBlockState(currentMining))) {
+                PacketMine.INSTANCE.tickMine();
+                return;
+            }
             refreshTarget();
             if (eatingAbort.get() && mc.player.isUsingItem()) {
                 return;

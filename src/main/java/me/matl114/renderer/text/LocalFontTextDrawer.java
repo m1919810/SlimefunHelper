@@ -1,5 +1,6 @@
 package me.matl114.renderer.text;
 
+import it.unimi.dsi.fastutil.ints.IntSet;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -17,11 +18,13 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import me.matl114.accessors.access.TextRendererAccess;
 import me.matl114.plugins.MainPlugin;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.Font;
 import net.minecraft.client.font.FontLoader;
 import net.minecraft.client.font.FontStorage;
+import net.minecraft.client.font.Glyph;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.resource.InputSupplier;
 import net.minecraft.resource.Resource;
@@ -87,12 +90,24 @@ public final class LocalFontTextDrawer extends ResourceFontTextDrawer implements
                     .left()
                     .orElseThrow(() -> new IllegalStateException("Failed to create TTF loader"))
                     .load(new LocalFontResourceManager(client.getResourceManager(), FONT_LOCATION, path));
-            FontStorage storage = new FontStorage(client.getTextureManager(), fontId);
+            TextRendererAccess textRendererAccess = (TextRendererAccess) client.textRenderer;
+            FontStorage fallbackStorage =
+                    textRendererAccess.slimefunhelper$getFontStorage(CustomFontTextDrawer.UNICODE_FONT_ID);
+            IntSet providedGlyphs = provider.getProvidedGlyphs();
+            FontStorage storage = new FontStorage(client.getTextureManager(), fontId) {
+                @Override
+                public Glyph getGlyph(int codePoint, boolean validateAdvance) {
+                    return providedGlyphs.contains(codePoint)
+                            ? super.getGlyph(codePoint, validateAdvance)
+                            : fallbackStorage.getGlyph(codePoint, validateAdvance);
+                }
+            };
             storage.setFonts(
                     List.of(new Font.FontFilterPair(
                             provider, net.minecraft.client.font.FontFilterType.FilterMap.NO_FILTER)),
                     Set.of());
-            TextRenderer renderer = new TextRenderer(id -> storage, false);
+            TextRenderer renderer = new TextRenderer(
+                    id -> fontId.equals(id) ? storage : textRendererAccess.slimefunhelper$getFontStorage(id), false);
             return new LoadedFont(fontId, provider, storage, renderer, fontSize);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to load local font: " + path, e);

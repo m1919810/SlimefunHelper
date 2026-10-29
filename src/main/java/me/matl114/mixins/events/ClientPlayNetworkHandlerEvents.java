@@ -35,6 +35,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Environment(EnvType.CLIENT)
@@ -73,6 +74,37 @@ public abstract class ClientPlayNetworkHandlerEvents {
                 commandRef.set(valueChange.substring(1));
             } else {
                 // change a command to a chat message
+                ci.cancel();
+                escapeSendEvent = true;
+                sendChatMessage(valueChange);
+            }
+        }
+    }
+
+    @Inject(method = "sendCommand", at = @At("HEAD"), cancellable = true)
+    private void onClickRunCommand(
+            String command, CallbackInfoReturnable<Boolean> ci, @Local(argsOnly = true) LocalRef<String> commandRef) {
+        if (escapeSendEvent) {
+            escapeSendEvent = false;
+            return;
+        }
+        String chatContent = "/" + command;
+        Event<String> value = new Event<>(chatContent, true, true);
+        Listener.getChatSend().handleValue(value);
+        if (value.isCancelled()) {
+            ci.cancel();
+            return;
+        }
+        String valueChange = value.context();
+        if (valueChange == null || valueChange.isEmpty()) {
+            ci.cancel();
+            return;
+        }
+        if (!Objects.equals(chatContent, valueChange)) {
+            if (valueChange.startsWith("/")) {
+                commandRef.set(valueChange.substring(1));
+            } else {
+                // Change the clicked command to a chat message.
                 ci.cancel();
                 escapeSendEvent = true;
                 sendChatMessage(valueChange);

@@ -72,7 +72,7 @@ public class AntiLiquid extends BaseModule implements LegalMovementManager.Movem
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         if (currentArmorGlidingSaveState) {
-            if (ElytraExtra.INSTANCE.hasPendingFallFlyingReset()) {
+            if (ElytraExtra.INSTANCE.hasResetFallFlyingQueue()) {
                 movementManagerEvent.cancel();
                 movementManagerEvent.context.markForResetPos();
                 FloatingUtils.INSTANCE.setGrimFloatingTick(true);

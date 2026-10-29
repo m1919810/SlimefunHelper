@@ -138,6 +138,7 @@ public class PathingSchedular {
 
     @Nonnull
     @Setter
+    @Getter
     PathingEngine engine;
 
     @Setter
@@ -709,6 +710,11 @@ public class PathingSchedular {
 
     @Nullable
     private static BlockPos findNearbyStandableStop(BlockPos targetPos) {
+        return findNearbyStandableStop(targetPos, pos -> true);
+    }
+
+    @Nullable
+    public static BlockPos findNearbyStandableStop(BlockPos targetPos, Predicate<BlockPos> acceptable) {
         if (mc.world == null || mc.player == null) {
             return null;
         }
@@ -732,7 +738,7 @@ public class PathingSchedular {
                     for (int y = maxY; y >= minY; y--) {
                         supportPos.set(x, y, z);
                         standPos.set(x, y + 1, z);
-                        if (!isValidLandingSpot(supportPos, standPos)) {
+                        if (!isValidLandingSpot(supportPos, standPos) || !acceptable.test(standPos)) {
                             continue;
                         }
                         double score =

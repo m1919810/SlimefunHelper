@@ -8,6 +8,7 @@ import me.matl114.gui.complex.RawTextElement;
 import me.matl114.gui.elements.*;
 import me.matl114.hacks.utils.gui.GuiColorSamplier;
 import me.matl114.utils.config.Value;
+import me.matl114.utils.config.ValueAccessor;
 import me.matl114.utils.config.WrapperFactory;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
@@ -23,8 +24,21 @@ public class CustomElementFactory implements ElementFactory {
         return colorSupplier.get();
     }
 
+    @Override
+    public SelectBackgroundElement createSelectorTab(ValueAccessor<Boolean> selected) {
+        return createSelectorTab(
+                selected,
+                () -> colors().selectorSelectedColor().color(),
+                () -> colors().selectorHoverColor().color(),
+                () -> colors().selectorNormalColor().color());
+    }
+
     protected ColorSampler textColor() {
-        return () -> colors().textColor().withAlpha(255).color();
+        return () -> colors().textColor().color();
+    }
+
+    protected ColorSampler inputTextColor() {
+        return () -> colors().inputTextColor().color();
     }
 
     protected ColorSampler labelBackground() {
@@ -183,7 +197,7 @@ public class CustomElementFactory implements ElementFactory {
     public <T> ElementHandler createInput(Value<T> value, @Nullable TextAlign overrideAlign) {
         return TextFieldElement.ofValue(value)
                 .setBackgroundColor(() -> colors().textBackground().color())
-                .setTextColor(textColor())
+                .setTextColor(inputTextColor())
                 .setAlign(overrideAlign == null ? inputTextAlign() : overrideAlign);
     }
 
@@ -198,7 +212,7 @@ public class CustomElementFactory implements ElementFactory {
         return new SlidingInputElement<>(value, sliderFactory)
                 .setSliderColor(() -> colors().sliderColor().color())
                 .setBackgroundColor(() -> colors().textBackground().color())
-                .setTextColor(textColor())
+                .setTextColor(inputTextColor())
                 .setAlign(overrideAlign == null ? sliderTextAlign() : overrideAlign);
     }
 }

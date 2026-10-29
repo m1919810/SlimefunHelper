@@ -6,6 +6,7 @@ import me.matl114.plugins.MainPlugin;
 import me.matl114.plugins.PluginManager;
 import me.matl114.plugins.PluginManager.BootstrapPhase;
 import me.matl114.utils.Debug;
+import me.matl114.utils.render.MaskPostRenderer;
 import me.matl114.versioned.impl.Render_v1_21_1;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.CoreShaderRegistrationCallback;
@@ -53,6 +54,20 @@ public class SlimefunHelper implements ModInitializer {
                 Identifier.of(MOD_ID, "entity_highlight"),
                 VertexFormats.POSITION_TEXTURE_COLOR,
                 Render_v1_21_1::setEntityHighlightProgram));
+        CoreShaderRegistrationCallback.EVENT.register(context -> {
+            context.register(
+                    Identifier.of(MOD_ID, "mask_capture"),
+                    VertexFormats.POSITION_TEXTURE_COLOR,
+                    MaskPostRenderer::setCaptureProgram);
+            context.register(
+                    Identifier.of(MOD_ID, "mask_face"),
+                    VertexFormats.POSITION_TEXTURE,
+                    MaskPostRenderer::setFaceProgram);
+            context.register(
+                    Identifier.of(MOD_ID, "mask_outline"),
+                    VertexFormats.POSITION_TEXTURE,
+                    MaskPostRenderer::setOutlineProgram);
+        });
         authentication();
         initializeEnvironment();
         Debug.info("SlimefunHelper, start!");

@@ -1,7 +1,6 @@
 package me.matl114.plugins;
 
 import java.util.Collection;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import me.matl114.SlimefunHelper;
 import me.matl114.events.Listener;
@@ -65,17 +64,22 @@ public final class MainPlugin implements SlimefunHelperPlugin {
 
                     @Override
                     public void reload(ResourceManager manager) {
-                        Debug.info("Resource reload for SlimefunHelper");
+                        Debug.info("Resource reload called for SlimefunHelper");
                         Config.reloadAll();
                         RenderListener.onResourceReload(manager);
                     }
                 });
         ModelLoadingPluginManager.<Collection<Identifier>>registerPlugin(
                 (resourceManager, executor) -> CompletableFuture.supplyAsync(() -> {
+                    Debug.info("check model plugin work");
                     Config.reloadAll();
-                    return Set.of();
+                    // we removed the itemModel auto register to ItemAssetsLoader
+                    return RenderListener.getReloadingResources(resourceManager);
                 }),
-                (PreparableModelLoadingPlugin<Collection<Identifier>>) (data, pluginContext) -> {});
+                (PreparableModelLoadingPlugin<Collection<Identifier>>) (data, pluginContext) -> {
+                    // here we should auto register these to BasicItemModel s or SpecialItemModels
+                    pluginContext.addModels(data);
+                });
         GuiMain.init();
         RegistryBootstrap.init();
         SlimefunHelperApi.init();
