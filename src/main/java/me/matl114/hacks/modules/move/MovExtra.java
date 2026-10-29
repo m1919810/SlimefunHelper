@@ -5,7 +5,6 @@ import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.events.EntityAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.task.DisablerManager;
@@ -50,10 +49,14 @@ public class MovExtra extends BaseModule {
     }
 
     public boolean isFlyingControlled() {
-        if(checkNull())return false;
+        if (checkNull()) return false;
         var flightModule = Flight.INSTANCE;
         var boatFlyModule = BoatFly.INSTANCE;
-        return (flightModule != null && flightModule.isActive() && mc.player.getAbilities().flying && !mc.player.hasVehicle()) || (boatFlyModule != null && boatFlyModule.isActive() && mc.player.hasVehicle());
+        return (flightModule != null
+                        && flightModule.isActive()
+                        && mc.player.getAbilities().flying
+                        && !mc.player.hasVehicle())
+                || (boatFlyModule != null && boatFlyModule.isActive() && mc.player.hasVehicle());
     }
 
     public void onFlightToggle() {
