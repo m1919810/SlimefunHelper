@@ -118,7 +118,6 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
 
     public final DoubleRef multiplyPlayer = builder(attack.add("player-attack-multiply"), DoubleRef.TYPE)
             .defaultValue(0.0D)
-            .show(this.multiplyBackward::get)
             .build();
 
     public final FlagRef fakePlayerDetect =
@@ -378,12 +377,16 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
         return checkWeapon(target, true) && canAttack(target);
     }
 
-    public boolean isInFriendList(PlayerEntity e) {
-        FriendListStorage list = playerList;
-        if (list != null && list.contains(e.getNameForScoreboard())) {
-            return true;
+    public boolean isFriend(String playerName) {
+        if (playerName == null || playerName.isBlank()) {
+            return false;
         }
-        return false;
+        FriendListStorage list = playerList;
+        return (list != null && list.contains(playerName));
+    }
+
+    public boolean isInFriendList(PlayerEntity e) {
+        return isFriend(e.getNameForScoreboard());
     }
 
     public boolean isNotFriend(Entity e) {
@@ -493,14 +496,13 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
     }
 
     public List<Entity> getAttackableEntities(double nearbyOverride, int ticks, Predicate<Entity> predicate) {
-        List<Entity> entities = new ArrayList<>();
-        List<Entity> et = ImmutableList.copyOf(mc.world.getEntities());
-        for (var e : et) {
-            if (predicate.test(e) && isTargetInRange(e, nearbyOverride, ticks)) {
-                entities.add(e);
-            }
+        if (mc.world == null) {
+            return List.of();
         }
-        return entities;
+        return mc.world.getOtherEntities(
+                null,
+                mc.player.getBoundingBox().expand(nearbyOverride + 6),
+                (en) -> predicate.test(en) && isTargetInRange(en, nearbyOverride, ticks));
     }
 
     public boolean checkWeapon(Entity e, boolean commonBow) {

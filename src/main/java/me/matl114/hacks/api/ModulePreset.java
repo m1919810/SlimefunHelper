@@ -1,5 +1,7 @@
 package me.matl114.hacks.api;
 
+import me.matl114.hacks.utils.enums.GhostHandMode;
+
 public enum ModulePreset {
     HACKING,
     VANILLA,
@@ -13,7 +15,21 @@ public enum ModulePreset {
     ENABLE_NOSWINGPLACE,
     DISABLE_NOSWINGPLACE,
     ENABLE_MULTITASK,
-    DISABLE_MULTITASK;
+    DISABLE_MULTITASK,
+    HOTBAR_GHOSTHAND,
+    INV_GHOSTHAND;
+
+    public GhostHandMode getGhostHandMode(GhostHandMode defaultValue) {
+        return switch (this) {
+            case HOTBAR_GHOSTHAND -> GhostHandMode.HOT_BAR_ONLY;
+            case INV_GHOSTHAND -> GhostHandMode.INV_SWAP;
+            default -> defaultValue;
+        };
+    }
+
+    public boolean isGhostHandPreset() {
+        return this == HOTBAR_GHOSTHAND || this == INV_GHOSTHAND;
+    }
 
     public boolean hasAC() {
         return !(this == VANILLA || this == AC_VULCAN);
@@ -56,6 +72,6 @@ public enum ModulePreset {
     }
 
     public boolean isOptionPreset() {
-        return isAirplacePreset() || isSwingPlacePreset() || isMultitaskPreset();
+        return isAirplacePreset() || isSwingPlacePreset() || isMultitaskPreset() || isGhostHandPreset();
     }
 }

@@ -36,33 +36,30 @@ for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
 @rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
 set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
 
-set WRAPPER_PROPS=%APP_HOME%\gradle\wrapper\gradle-wrapper.properties
-set LOCAL_GRADLE_ZIP=
-set DEFAULT_GRADLE_DIST_URL=
+set "WRAPPER_PROPS=%APP_HOME%\gradle\wrapper\gradle-wrapper.properties"
+set "LOCAL_GRADLE_ZIP="
+for /f "usebackq tokens=1,* delims==" %%a in ("%WRAPPER_PROPS%") do if /i "%%a"=="localDistributionUrl" set "LOCAL_GRADLE_ZIP=%%b"
+set "CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar"
+set "TEMP_WRAPPER="
+set "EXIT_CODE="
 
-if exist "%WRAPPER_PROPS%" (
-    for /f "usebackq tokens=1,* delims==" %%a in ("%WRAPPER_PROPS%") do (
-        if /i "%%a"=="localDistributionUrl" set LOCAL_GRADLE_ZIP=%%b
-        if /i "%%a"=="distributionUrl" set DEFAULT_GRADLE_DIST_URL=%%b
-    )
-)
+if not defined LOCAL_GRADLE_ZIP goto wrapperReady
+for %%i in ("%LOCAL_GRADLE_ZIP%") do set "LOCAL_GRADLE_ZIP=%%~fi"
+if not exist "%LOCAL_GRADLE_ZIP%" goto wrapperReady
 
-for %%i in ("%LOCAL_GRADLE_ZIP%") do set LOCAL_GRADLE_ZIP=%%~fi
-set LOCAL_GRADLE_DIST_URL=file:///%LOCAL_GRADLE_ZIP:\=/%
+set "TEMP_WRAPPER=%TEMP%\gradle-wrapper-%RANDOM%-%RANDOM%"
+mkdir "%TEMP_WRAPPER%"
+if errorlevel 1 goto fail
+copy /y "%APP_HOME%\gradle\wrapper\gradle-wrapper.jar" "%TEMP_WRAPPER%\gradle-wrapper.jar" >NUL
+if errorlevel 1 goto fail
+copy /y "%WRAPPER_PROPS%" "%TEMP_WRAPPER%\gradle-wrapper.properties" >NUL
+if errorlevel 1 goto fail
+set "WRAPPER_TEMP_PROPS=%TEMP_WRAPPER%\gradle-wrapper.properties"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$props = $env:WRAPPER_TEMP_PROPS; $url = [Uri]::new($env:LOCAL_GRADLE_ZIP).AbsoluteUri; $content = [IO.File]::ReadAllText($props); if ($content -notmatch '(?m)^distributionUrl=') { throw 'distributionUrl not found in temporary wrapper properties' }; $updated = [regex]::Replace($content, '(?m)^distributionUrl=.*$', ('distributionUrl=' + $url)); [IO.File]::WriteAllText($props, $updated, [Text.Encoding]::ASCII)"
+if errorlevel 1 goto fail
+set "CLASSPATH=%TEMP_WRAPPER%\gradle-wrapper.jar"
 
-if exist "%LOCAL_GRADLE_ZIP%" (
-    set GRADLE_DIST_URL=%LOCAL_GRADLE_DIST_URL%
-) else (
-    set GRADLE_DIST_URL=%DEFAULT_GRADLE_DIST_URL%
-)
-
-echo [gradlew] Using LOCAL_GRADLE_ZIP: %LOCAL_GRADLE_ZIP%
-echo [gradlew] Using DEFAULT_GRADLE_DIST_URL: %DEFAULT_GRADLE_DIST_URL%
-echo [gradlew] Using Gradle distribution URL: %GRADLE_DIST_URL%
-
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$props = '%WRAPPER_PROPS%'; $url = '%GRADLE_DIST_URL%'; $content = Get-Content -Raw -LiteralPath $props; $updated = [regex]::Replace($content, '(?m)^distributionUrl=.*$', ('distributionUrl=' + $url)); if ($updated -eq $content) { throw 'distributionUrl not found in gradle-wrapper.properties' }; Set-Content -LiteralPath $props -Value $updated -NoNewline"
-if %ERRORLEVEL% neq 0 goto fail
-
+:wrapperReady
 @rem Find java.exe
 if defined JAVA_HOME goto findJavaFromJavaHome
 
@@ -95,25 +92,27 @@ goto fail
 :execute
 @rem Setup the command line
 
-set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
-
 
 @rem Execute Gradle
 "%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %*
 
 :end
-@rem End local scope for the variables with windows NT shell
-if %ERRORLEVEL% equ 0 goto mainEnd
+set "EXIT_CODE=%ERRORLEVEL%"
+if defined TEMP_WRAPPER if exist "%TEMP_WRAPPER%\" rmdir /s /q "%TEMP_WRAPPER%" >NUL 2>&1
+if %EXIT_CODE% equ 0 goto mainEnd
+goto fail
 
 :fail
 rem Set variable GRADLE_EXIT_CONSOLE if you need the _script_ return code instead of
 rem the _cmd.exe /c_ return code!
-set EXIT_CODE=%ERRORLEVEL%
+if not defined EXIT_CODE set "EXIT_CODE=%ERRORLEVEL%"
+if defined TEMP_WRAPPER if exist "%TEMP_WRAPPER%\" rmdir /s /q "%TEMP_WRAPPER%" >NUL 2>&1
 if %EXIT_CODE% equ 0 set EXIT_CODE=1
 if not ""=="%GRADLE_EXIT_CONSOLE%" exit %EXIT_CODE%
 exit /b %EXIT_CODE%
 
 :mainEnd
+@rem End local scope for the variables with windows NT shell
 if "%OS%"=="Windows_NT" endlocal
 
 :omega

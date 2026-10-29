@@ -10,8 +10,10 @@ import me.matl114.gui.basic.ElementHandler;
 import me.matl114.gui.basic.TextAlign;
 import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.basic.TooltipHandler;
+import me.matl114.gui.elements.SelectBackgroundElement;
 import me.matl114.hacks.utils.config.GuiSetting;
 import me.matl114.utils.config.Value;
+import me.matl114.utils.config.ValueAccessor;
 import me.matl114.utils.config.WrapperFactory;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
@@ -28,6 +30,20 @@ public final class CombinedElementFactory implements ElementFactory {
         Identifier id = settingSupplier.get().style(type);
         ElementStyle style = ElementFactories.getOrCustom(id);
         return delegates.computeIfAbsent(style.id(), ignored -> style.factory().apply(settingSupplier));
+    }
+
+    @Override
+    public SelectBackgroundElement createSelectorTab(ValueAccessor<Boolean> selected) {
+        return delegate(ElementType.SELECTOR_TAB).createSelectorTab(selected);
+    }
+
+    @Override
+    public SelectBackgroundElement createSelectorTab(
+            ValueAccessor<Boolean> selected,
+            ColorSampler selectedColor,
+            ColorSampler hoverColor,
+            ColorSampler normalColor) {
+        return delegate(ElementType.SELECTOR_TAB).createSelectorTab(selected, selectedColor, hoverColor, normalColor);
     }
 
     @Override

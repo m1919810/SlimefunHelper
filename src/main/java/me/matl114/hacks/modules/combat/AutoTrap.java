@@ -104,7 +104,7 @@ public class AutoTrap extends BaseModule {
             builder(root.add("swing-hand"), Boolean.class).defaultValue(true).build();
     public final ModulePath autoCrawlConfig = root.add("auto-crawl");
     public final FlagRef autoCrawl = flagBuilder(autoCrawlConfig.addEnable()).build();
-    public final KeyBindRef hotkey2 = toggleHotkey(
+    public final KeyBindRef hotkey2 = moduleEntry(
                     autoCrawlConfig.addHotkey(), new MultiKeyBind(), autoCrawlConfig.addEnable())
             .build();
     public final FlagRef autoCrawlZeroTickInteract =

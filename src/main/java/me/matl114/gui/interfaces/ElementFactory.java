@@ -1,8 +1,11 @@
 package me.matl114.gui.interfaces;
 
+import java.io.File;
 import java.util.List;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import me.matl114.gui.basic.ButtonAction;
 import me.matl114.gui.basic.ColorSampler;
@@ -15,6 +18,10 @@ import me.matl114.gui.basic.TextAlign;
 import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.basic.TooltipHandler;
 import me.matl114.gui.complex.BoxElement;
+import me.matl114.gui.complex.file.FileSaveWidget;
+import me.matl114.gui.complex.file.FileSelectWidget;
+import me.matl114.gui.complex.file.FileTreeWidget;
+import me.matl114.gui.elements.SelectBackgroundElement;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.config.Value;
 import me.matl114.utils.config.ValueAccessor;
@@ -23,6 +30,51 @@ import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 
 public interface ElementFactory {
+    default SelectBackgroundElement createSelectBackground(ValueAccessor<Boolean> selected) {
+        return createSelectorTab(selected);
+    }
+
+    default SelectBackgroundElement createSelectBackground(
+            ValueAccessor<Boolean> selected,
+            ColorSampler selectedColor,
+            ColorSampler hoverColor,
+            ColorSampler normalColor) {
+        return createSelectorTab(selected, selectedColor, hoverColor, normalColor);
+    }
+
+    default SelectBackgroundElement createSelectorTab(ValueAccessor<Boolean> selected) {
+        return new SelectBackgroundElement(selected);
+    }
+
+    default SelectBackgroundElement createSelectorTab(
+            ValueAccessor<Boolean> selected,
+            ColorSampler selectedColor,
+            ColorSampler hoverColor,
+            ColorSampler normalColor) {
+        return new SelectBackgroundElement(selected, selectedColor, hoverColor, normalColor);
+    }
+
+    default FileTreeWidget createFileTree(File root, int x, int y, int width, int height) {
+        return new FileTreeWidget(x, y, width, height, root, this);
+    }
+
+    default FileSelectWidget createFileSelector(
+            File root, Predicate<File> predicate, Consumer<File> onConfirm, int x, int y, int width, int height) {
+        return new FileSelectWidget(x, y, width, height, root, predicate, onConfirm, this);
+    }
+
+    default FileSaveWidget createFileSaver(
+            File root,
+            String initialName,
+            Predicate<String> namePredicate,
+            Consumer<File> onConfirm,
+            int x,
+            int y,
+            int width,
+            int height) {
+        return new FileSaveWidget(x, y, width, height, root, initialName, namePredicate, onConfirm, this);
+    }
+
     default ElementHandler createLabel(String translationKey) {
         return createLabel(
                 TextProvider.of(Text.translatable(translationKey)),

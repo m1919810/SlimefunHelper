@@ -1,0 +1,39 @@
+package me.matl114.hacks.utils.gui;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import me.matl114.accessors.gui.ScreenAccess;
+import me.matl114.gui.basic.DrawableWidget;
+import me.matl114.gui.interfaces.ElementFactory;
+import me.matl114.hacks.modules.task.ClickGui;
+import me.matl114.hacks.modules.task.ClickGui.ClickGuiMetaData;
+import net.minecraft.client.gui.screen.Screen;
+
+/** Shared screen-opening behavior for the classic ClickGui layouts. */
+public abstract class AbstractClassicClickGuiFactory<F extends ElementFactory> implements ClickGuiFactory {
+    protected static final String SEARCH_MODULE = "Search";
+
+    protected ClickGui clickGui;
+    protected final F elementFactory;
+
+    protected AbstractClassicClickGuiFactory(F elementFactory) {
+        this.elementFactory = elementFactory;
+    }
+
+    protected abstract DrawableWidget createModuleGroupList(List<String> modules, ClickGuiMetaData meta);
+
+    @Override
+    public void openClickGui(ClickGui clickGui, ClickGuiMetaData meta) {
+        this.clickGui = clickGui;
+        List<String> modules = clickGui.getModules();
+        Map<String, Function<Screen, DrawableWidget>> selections = new LinkedHashMap<>();
+        selections.put("Module", screen -> createModuleGroupList(modules, meta));
+        selections.putAll(clickGui.getExtraSelections(meta));
+
+        Screen screen = new ClassicClickGuiScreen(selections, elementFactory);
+        ScreenAccess.of(screen).addCloseFuture(() -> clickGui.setClickGuiMeta(meta));
+        ScreenAccess.of(screen).openFromCurrent();
+    }
+}

@@ -35,19 +35,6 @@ public abstract class EntityMixin<T extends Entity> implements EntityAccess<T>, 
         return Tasks.getTick() - spawnTicks;
     }
 
-    @Unique
-    byte renderTracked = 0;
-
-    @Unique
-    public byte renderTrackedLevel() {
-        return renderTracked;
-    }
-
-    @Unique
-    public void markRenderTracked(byte tracked) {
-        renderTracked = tracked;
-    }
-
     //    @Inject(
     //            method = "slowMovement",
     //            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;onLanding()V", shift =

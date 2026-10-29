@@ -181,6 +181,10 @@ public class RenderListener {
     private static Matrix4f worldProjectionMatrix = new Matrix4f().identity();
 
     @Getter
+    @Setter
+    private static float handFov = 70.0F;
+
+    @Getter
     @Modifiable
     private static final EventChannel<Float> fovGetListener = new EventChannel<>();
 }

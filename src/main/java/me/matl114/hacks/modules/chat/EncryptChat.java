@@ -196,13 +196,18 @@ public class EncryptChat extends BaseModule {
                         }))
                 .addToSub(subScreen);
         DisplayWidget.instance(45, 0, 100, 20)
-                .setRenderHandler(ClickGui.INSTANCE.getGuiElementFactory().createBackground())
+                .setRenderHandler(ClickGui.INSTANCE.configElementFactory().createBackground())
                 .addToSub(subScreen);
         ExecutableWidget.instance(45, 0, 100, 20)
                 .setElementHandler(new MultiLineTextElement(
                         el -> Text.literal("%s\n(%s)"
                                 .formatted(entry.getName(), entry.getAlgorithm().name())),
-                        ClickGui.INSTANCE.labelColor().withAlpha(255).color(),
+                        ClickGui.INSTANCE
+                                .configGuiConfig
+                                .get()
+                                .labelColor()
+                                .withAlpha(255)
+                                .color(),
                         TextAlign.MIDDLE))
                 .addToSub(subScreen);
         ExecutableWidget.instance(155, 0, 60, 20)

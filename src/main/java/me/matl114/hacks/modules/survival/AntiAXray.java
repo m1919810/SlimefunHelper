@@ -8,6 +8,7 @@ import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.interact.InteractExtra;
+import me.matl114.hacks.modules.mine.MineExtra;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.utils.tasks.TimerExecutor;
 import me.matl114.hooks.ViaFabricPlusHooks;
@@ -94,12 +95,14 @@ public class AntiAXray extends BaseModule {
                     Vec3d shouldFacing = testPos.toCenterPos().subtract(mc.player.getEyePos());
                     Direction dir = Direction.getFacing(shouldFacing).getOpposite();
                     if (legal.get()) {
-                        mc.interactionManager.sendSequencedPacket(mc.world, (sequence) -> {
-                            // use real direction
-                            return new PlayerActionC2SPacket(
-                                    PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, testPos, dir, sequence);
-                        });
-                        PlayerInteractionAccess.of(mc.interactionManager).sendAbortBreakPacket();
+                        if (MineExtra.INSTANCE.getMiningPacketCooldown(1) <= 0) {
+                            mc.interactionManager.sendSequencedPacket(mc.world, (sequence) -> {
+                                // use real direction
+                                return new PlayerActionC2SPacket(
+                                        PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, testPos, dir, sequence);
+                            });
+                            PlayerInteractionAccess.of(mc.interactionManager).sendAbortBreakPacket();
+                        }
                     } else {
                         mc.interactionManager.sendSequencedPacket(mc.world, (sequence) -> {
                             // use real direction

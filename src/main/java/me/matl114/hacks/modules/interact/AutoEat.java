@@ -8,10 +8,12 @@ import me.matl114.accessors.access.ClientAccess;
 import me.matl114.accessors.hacks.KeyBindAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.events.impl.UseItem;
 import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.combat.TargetSelector;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.ElytraExtra;
@@ -201,6 +203,12 @@ public class AutoEat extends BaseModule {
                 this::onInteractPacket,
                 114514,
                 true);
+        registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
+    }
+
+    public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        ModulePreset preset = event.context.getValue();
+        ghostHand.set(preset.getGhostHandMode(ghostHand.get()));
     }
 
     @Override
