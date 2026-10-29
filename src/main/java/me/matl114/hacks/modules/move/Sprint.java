@@ -107,6 +107,7 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
         }
         if (directionalSprint.get()
                 && directionalSprintMode.getValue().hasAc()
+                && !mc.player.hasVehicle()
                 && mayWorkSprint()
                 && PlayerInputUtils.of(mc.options).sprint()) {
             var input = PlayerInputUtils.of(mc.options);
@@ -122,12 +123,6 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
                     RotationManager.INSTANCE.request(RotationManager.ofDirection(
                                     Optional.empty(), Optional.of(mc.player.getYaw() + yaw))
                             .preTick(() -> {
-                                if (lastTickLandingRotateJump
-                                        && Math.abs(EntityUtils.getSafeYawDiff(
-                                                        mc.player.getYaw() + yaw, PlayerStateManager.INSTANCE.lastYaw))
-                                                >= 60) {
-                                    PlayerInputManager.INSTANCE.addJumpModifier(0, false, 0);
-                                }
                                 PlayerInputManager.INSTANCE.addSprintModifier(0, true, 0);
                             })
                             .priority(0));
@@ -141,8 +136,6 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
         // the least important shit
         return PRIORITY_HIGHEST;
     }
-
-    boolean lastTickLandingRotateJump = false;
 
     public boolean mayWorkSprint() {
         return !mc.player.isFallFlying()
@@ -161,7 +154,9 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
 
         // Debug.info(player.input.movementForward);
         enableSprintDirectionalThisTick = false;
-        if (directionalSprint.get() && directionalSprintMode.getValue() == BypassMode.NO_BYPASS) {
+        if (directionalSprint.get()
+                && directionalSprintMode.getValue() == BypassMode.NO_BYPASS
+                && !player.hasVehicle()) {
             PlayerInputUtils.Input input = PlayerInputUtils.of(player);
             if (mayWorkSprint() && input.hasWASDMovement() && !input.forward()) {
                 // there is no rotation here
@@ -188,12 +183,6 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
 
     @Override
     public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-        lastTickLandingRotateJump = false;
-        if (!movementManagerEvent.context.playerStatus.onGround
-                && movementManagerEvent.context.playerStatus.entity.isOnGround()) {
-            lastTickLandingRotateJump = true;
-        }
-
         if (fakeSprintThisTick) {
             movementManagerEvent.context.playerStatus.entity.setSprinting(true);
             fakeSprintThisTick = false;

@@ -8,6 +8,7 @@ import me.matl114.accessors.access.LivingEntityAccess;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.move.ElytraExtra;
+import me.matl114.hacks.modules.move.Sprint;
 import me.matl114.hacks.modules.move.Velocity;
 import me.matl114.hacks.modules.render.HandView;
 import me.matl114.hacks.utils.EntityUtils;
@@ -103,7 +104,7 @@ public abstract class LivingEntityMixin extends Entity implements LivingEntityAc
                             shift = At.Shift.BEFORE),
             cancellable = true)
     private void fixJumpingWhileSprintingBackward(CallbackInfo ci, @Local Vec3d vec3d) {
-        if (MovTasks.getSprint().directionalSprint.get()) {
+        if (Sprint.INSTANCE.directionalSprint.get() && Sprint.INSTANCE.enableSprintDirectionalThisTick) {
             //            float g = this.getYaw() * 0.017453292F;
             Vec3d rot = EntityUtils.pitchYawToRotation(0.0F, this.getYaw());
             if (rot.x * vec3d.x + rot.z * vec3d.z < 0) {

@@ -17,12 +17,16 @@ public class AbstractElement implements ElementHandler {
     @Getter
     protected boolean showTooltips = true;
 
-    public AbstractElement combineRender(RenderHandler handler) {
+    public AbstractElement combineExtraRender(RenderHandler handler) {
         if (extraRender == null) {
             extraRender = new ArrayList<>();
         }
         extraRender.add(handler);
         return this;
+    }
+
+    public AbstractElement combineRender(RenderHandler handler) {
+        return combineExtraRender(handler).combineAbsoluteRender(handler);
     }
 
     public AbstractElement withRenderer(RenderHandler handler) {

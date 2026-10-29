@@ -23,7 +23,6 @@ import me.matl114.utils.render.EntityOutlineRenderer;
 import me.matl114.utils.render.RenderCollector;
 import me.matl114.versioned.api.VDrawContext;
 import me.matl114.versioned.api.VRender;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.decoration.DisplayEntity;
@@ -34,8 +33,6 @@ import org.joml.Matrix4f;
 import org.joml.Vector2d;
 
 public class RenderCollectors {
-    public static final MinecraftClient mc = MinecraftClient.getInstance();
-
     public static RenderCollector<Box> createBoxCollector(
             boolean drawOutline, boolean drawSolid, boolean drawTraceLine) {
         return new RenderCollector.Impl<Box>() {
@@ -343,23 +340,33 @@ public class RenderCollectors {
             @Override
             public void render3D(MatrixStack matrices, float partialTick) {
                 if (entries.isEmpty()) return;
-                for (var entry : entries) {
-                    tracerCollector.submit(
-                            RenderUtils.getLerpedBox(entry.val(), partialTick).getCenter(), entry.index());
+                try {
+                    for (var entry : entries) {
+                        tracerCollector.submit(
+                                RenderUtils.getLerpedBox(entry.val(), partialTick)
+                                        .getCenter(),
+                                entry.index());
+                    }
+                    tracerCollector.render3D(matrices, partialTick);
+                } finally {
+                    tracerCollector.clear();
                 }
-                tracerCollector.render3D(matrices, partialTick);
-                tracerCollector.clear();
             }
 
             @Override
             public void render2D(VDrawContext vdraw, float partialTick) {
                 if (entries.isEmpty()) return;
-                for (var entry : entries) {
-                    tracerCollector.submit(
-                            RenderUtils.getLerpedBox(entry.val(), partialTick).getCenter(), entry.index());
+                try {
+                    for (var entry : entries) {
+                        tracerCollector.submit(
+                                RenderUtils.getLerpedBox(entry.val(), partialTick)
+                                        .getCenter(),
+                                entry.index());
+                    }
+                    tracerCollector.render2D(vdraw, partialTick);
+                } finally {
+                    tracerCollector.clear();
                 }
-                tracerCollector.render2D(vdraw, partialTick);
-                tracerCollector.clear();
             }
         };
     }
@@ -402,23 +409,26 @@ public class RenderCollectors {
                     double renderDistance = 256.0 * scale;
                     if (delta.lengthSquared() > renderDistance * renderDistance) continue;
                     stack.push();
-                    stack.translate(delta.x, delta.y, delta.z);
-                    stack.multiply(RenderUtils.getBillboardRotation(DisplayEntity.BillboardMode.CENTER, 0, 0));
-                    stack.scale(0.03125F * scale, 0.03125F * scale, 1);
-                    List<Text> listText = ChatUtils.splitToMultiLineText(text, Integer.MAX_VALUE);
-                    int index = 0;
-                    for (var re : listText) {
-                        VRender.getInstance()
-                                .drawTextCameraCoord(
-                                        re.asOrderedText(),
-                                        stack,
-                                        Vec3d.ZERO.add(0, -index * textHeight, 0),
-                                        entry.val().offSetFlag(),
-                                        new Color(col),
-                                        VRender.DEFAULT_TEXT);
-                        index += 1;
+                    try {
+                        stack.translate(delta.x, delta.y, delta.z);
+                        stack.multiply(RenderUtils.getBillboardRotation(DisplayEntity.BillboardMode.CENTER, 0, 0));
+                        stack.scale(0.03125F * scale, 0.03125F * scale, 1);
+                        List<Text> listText = ChatUtils.splitToMultiLineText(text, Integer.MAX_VALUE);
+                        int index = 0;
+                        for (var re : listText) {
+                            VRender.getInstance()
+                                    .drawTextCameraCoord(
+                                            re.asOrderedText(),
+                                            stack,
+                                            Vec3d.ZERO.add(0, -index * textHeight, 0),
+                                            entry.val().offSetFlag(),
+                                            new Color(col),
+                                            VRender.DEFAULT_TEXT);
+                            index += 1;
+                        }
+                    } finally {
+                        stack.pop();
                     }
-                    stack.pop();
                 }
             }
 
@@ -449,12 +459,15 @@ public class RenderCollectors {
                             for (var re : listText) {
                                 double dd = vdraw.getTextDrawer().getWidth(re);
                                 vdraw.getMatrices().pushMatrix();
-                                vdraw.getMatrices()
-                                        .translate(
-                                                (float) (-((dd * xAlign) / 2.0D)),
-                                                (float) (-((textHeight * yAlign) / 2.0D)) + index * textHeight);
-                                vdraw.drawText(vdraw.getTextDrawer(), re.asOrderedText(), 0, 0, color, false);
-                                vdraw.getMatrices().popMatrix();
+                                try {
+                                    vdraw.getMatrices()
+                                            .translate(
+                                                    (float) (-((dd * xAlign) / 2.0D)),
+                                                    (float) (-((textHeight * yAlign) / 2.0D)) + index * textHeight);
+                                    vdraw.drawText(vdraw.getTextDrawer(), re.asOrderedText(), 0, 0, color, false);
+                                } finally {
+                                    vdraw.getMatrices().popMatrix();
+                                }
                                 index += 1;
                             }
 
