@@ -55,11 +55,17 @@ public class SlimefunHelper implements ModInitializer {
                 VertexFormats.POSITION_TEXTURE_COLOR,
                 Render_v1_21_1::setEntityHighlightProgram));
         CoreShaderRegistrationCallback.EVENT.register(context -> {
-            context.register(Identifier.of(MOD_ID, "mask_capture"), VertexFormats.POSITION_TEXTURE_COLOR,
+            context.register(
+                    Identifier.of(MOD_ID, "mask_capture"),
+                    VertexFormats.POSITION_TEXTURE_COLOR,
                     MaskPostRenderer::setCaptureProgram);
-            context.register(Identifier.of(MOD_ID, "mask_face"), VertexFormats.POSITION_TEXTURE,
+            context.register(
+                    Identifier.of(MOD_ID, "mask_face"),
+                    VertexFormats.POSITION_TEXTURE,
                     MaskPostRenderer::setFaceProgram);
-            context.register(Identifier.of(MOD_ID, "mask_outline"), VertexFormats.POSITION_TEXTURE,
+            context.register(
+                    Identifier.of(MOD_ID, "mask_outline"),
+                    VertexFormats.POSITION_TEXTURE,
                     MaskPostRenderer::setOutlineProgram);
         });
         authentication();

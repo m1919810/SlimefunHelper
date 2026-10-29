@@ -293,8 +293,8 @@ public class PlayerStateManager extends BaseModule {
 
         Entity vehicle = mc.player.getRootVehicle();
         Vec3d passengerOffset = mc.player.getPos().subtract(vehicle.getPos());
-        Vec3d playerPosition = new Vec3d(event.context.getX(), event.context.getY(), event.context.getZ())
-                .add(passengerOffset);
+        Vec3d playerPosition =
+                new Vec3d(event.context.getX(), event.context.getY(), event.context.getZ()).add(passengerOffset);
         lastX = playerPosition.x;
         lastY = playerPosition.y;
         lastZ = playerPosition.z;

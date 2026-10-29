@@ -7,7 +7,6 @@ import me.matl114.hacks.modules.render.SkyRender;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.BufferRenderer;
 import net.minecraft.client.render.GameRenderer;
@@ -30,13 +29,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Environment(EnvType.CLIENT)
 @Mixin(WorldRenderer.class)
 public abstract class SkyRenderingMixin {
-    @Unique private Identifier skyRender$cachedTexture;
-    @Unique private net.minecraft.resource.ResourceManager skyRender$cachedResourceManager;
-    @Unique private boolean skyRender$cachedAtlas;
+    @Unique
+    private Identifier skyRender$cachedTexture;
+
+    @Unique
+    private net.minecraft.resource.ResourceManager skyRender$cachedResourceManager;
+
+    @Unique
+    private boolean skyRender$cachedAtlas;
 
     @ModifyArg(
             method = "renderSky",
-            at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderColor(FFFF)V", ordinal = 0),
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderColor(FFFF)V",
+                            ordinal = 0),
             index = 0)
     private float skyRender$red(float original) {
         return skyRender$color(original, 0);
@@ -44,7 +52,11 @@ public abstract class SkyRenderingMixin {
 
     @ModifyArg(
             method = "renderSky",
-            at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderColor(FFFF)V", ordinal = 0),
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderColor(FFFF)V",
+                            ordinal = 0),
             index = 1)
     private float skyRender$green(float original) {
         return skyRender$color(original, 1);
@@ -52,7 +64,11 @@ public abstract class SkyRenderingMixin {
 
     @ModifyArg(
             method = "renderSky",
-            at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderColor(FFFF)V", ordinal = 0),
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderColor(FFFF)V",
+                            ordinal = 0),
             index = 2)
     private float skyRender$blue(float original) {
         return skyRender$color(original, 2);
@@ -72,13 +88,21 @@ public abstract class SkyRenderingMixin {
 
     @Inject(
             method = "renderSky",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/client/gl/VertexBuffer;draw(Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;Lnet/minecraft/client/gl/ShaderProgram;)V",
-                    shift = At.Shift.AFTER,
-                    ordinal = 0))
-    private void skyRender$drawOverSky(Matrix4f view, Matrix4f projection, float tickDelta,
-            net.minecraft.client.render.Camera camera, boolean thickFog, Runnable fogCallback, CallbackInfo ci) {
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/gl/VertexBuffer;draw(Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;Lnet/minecraft/client/gl/ShaderProgram;)V",
+                            shift = At.Shift.AFTER,
+                            ordinal = 0))
+    private void skyRender$drawOverSky(
+            Matrix4f view,
+            Matrix4f projection,
+            float tickDelta,
+            net.minecraft.client.render.Camera camera,
+            boolean thickFog,
+            Runnable fogCallback,
+            CallbackInfo ci) {
         skyRender$drawBackground(view);
     }
 
@@ -100,24 +124,26 @@ public abstract class SkyRenderingMixin {
         Identifier texture = skyRender$getBackground();
         if (texture == null) return;
         SkyRender module = SkyRender.INSTANCE;
-        int color = module != null && module.hasCustomColor() ? module.color.get().asRGB() : -1;
+        int color =
+                module != null && module.hasCustomColor() ? module.color.get().asRGB() : -1;
         boolean atlas = skyRender$isSixTileAtlas(texture);
         RenderSystem.setShader(GameRenderer::getPositionTexColorProgram);
         RenderSystem.setShaderTexture(0, texture);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         boolean cull = GL11.glIsEnabled(GL11.GL_CULL_FACE);
         RenderSystem.disableCull();
-        BufferBuilder buffer = Tessellator.getInstance().begin(
-                VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
+        BufferBuilder buffer =
+                Tessellator.getInstance().begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
         for (int face = 0; face < 6; face++) {
-            int tile = switch (face) {
-                case 0 -> 4;
-                case 1 -> 5;
-                case 2 -> 2;
-                case 3 -> 3;
-                case 4 -> 1;
-                default -> 0;
-            };
+            int tile =
+                    switch (face) {
+                        case 0 -> 4;
+                        case 1 -> 5;
+                        case 2 -> 2;
+                        case 3 -> 3;
+                        case 4 -> 1;
+                        default -> 0;
+                    };
             float u = atlas ? (tile % 3) / 3.0F : 0.0F;
             float v = atlas ? (tile / 3) / 2.0F : 0.0F;
             float u2 = atlas ? u + 1.0F / 3.0F : 1.0F;
@@ -153,12 +179,12 @@ public abstract class SkyRenderingMixin {
         var resource = resourceManager.getResource(texture).orElse(null);
         if (resource == null) return false;
         try (var input = new DataInputStream(resource.getInputStream())) {
-            if (input.readLong() != 0x89504E470D0A1A0AL || input.readInt() != 13
-                    || input.readInt() != 0x49484452) return false;
+            if (input.readLong() != 0x89504E470D0A1A0AL || input.readInt() != 13 || input.readInt() != 0x49484452)
+                return false;
             int width = input.readInt();
             int height = input.readInt();
-            skyRender$cachedAtlas = width > 0 && height > 0 && width % 3 == 0 && height % 2 == 0
-                    && width / 3 == height / 2;
+            skyRender$cachedAtlas =
+                    width > 0 && height > 0 && width % 3 == 0 && height % 2 == 0 && width / 3 == height / 2;
             return skyRender$cachedAtlas;
         } catch (IOException exception) {
             return false;

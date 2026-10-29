@@ -234,24 +234,24 @@ public class PacketMine extends BaseModule {
                 BlockState blockState = mc.world.getBlockState(pos);
                 IndexEntry<ItemStack> currentItemSlot = getCurrentUsableTool(blockState);
 
-                    ItemStack currentTool = currentItemSlot.val();
-                    if (canMine(blockState, currentTool)) {
-                        progress = PlayerInteractionAccess.of(mc.interactionManager)
-                                .predictCurrentMiningProgressWithTool(currentTool);
-                        Event<BlockBreak> eventPre = new Event<>(
-                                new BlockBreak(pos, BlockBreak.Stage.PRE, currentTool, progress), true, false);
-                        packetMineAction.handleValue(eventPre);
-                        if (!eventPre.isCancelled()) {
-                            if (!MineExtra.INSTANCE.handleMineMode(pos, legalMiningMode.get())) {
-                                return;
+                ItemStack currentTool = currentItemSlot.val();
+                if (canMine(blockState, currentTool)) {
+                    progress = PlayerInteractionAccess.of(mc.interactionManager)
+                            .predictCurrentMiningProgressWithTool(currentTool);
+                    Event<BlockBreak> eventPre =
+                            new Event<>(new BlockBreak(pos, BlockBreak.Stage.PRE, currentTool, progress), true, false);
+                    packetMineAction.handleValue(eventPre);
+                    if (!eventPre.isCancelled()) {
+                        if (!MineExtra.INSTANCE.handleMineMode(pos, legalMiningMode.get())) {
+                            return;
+                        }
+                        if (groundDeceive.get() && !mc.player.isOnGround()) {
+                            boolean shouldExecute = true;
+                            if (groundOnlyWhenNoControl.get()
+                                    && !PlayerInputUtils.of(mc.options).hasMovementControl()) {
+                                shouldExecute = false;
                             }
-                            if (groundDeceive.get() && !mc.player.isOnGround()) {
-                                boolean shouldExecute = true;
-                                if (groundOnlyWhenNoControl.get()
-                                        && !PlayerInputUtils.of(mc.options).hasMovementControl()) {
-                                    shouldExecute = false;
-                                }
-                                if (shouldExecute) {
+                            if (shouldExecute) {
 
                                 mc.getNetworkHandler()
                                         .sendPacket(LegacySnapRotManager.INSTANCE.createSnapAt(

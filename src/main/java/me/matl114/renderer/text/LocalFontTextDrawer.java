@@ -37,7 +37,6 @@ import net.minecraft.resource.metadata.ResourceMetadataReader;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
-import net.minecraft.util.math.random.Random;
 import org.jetbrains.annotations.Nullable;
 
 public final class LocalFontTextDrawer extends ResourceFontTextDrawer implements AutoCloseable {

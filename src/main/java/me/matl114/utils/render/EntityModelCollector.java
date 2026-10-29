@@ -177,7 +177,6 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
 
     protected abstract void clearCollected();
 
-
     protected record CapturedQuad(Vec3d[] vertices, UV uv, Identifier texture, Sprite sprite, float[] us, float[] vs) {}
 
     @FunctionalInterface

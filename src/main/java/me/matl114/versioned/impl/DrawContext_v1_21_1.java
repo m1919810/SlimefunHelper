@@ -3,14 +3,12 @@ package me.matl114.versioned.impl;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import me.matl114.renderer.TextRenderers;
 import me.matl114.renderer.text.ResourceFontTextDrawer;
 import me.matl114.renderer.text.TextDrawer;
 import me.matl114.renderer.text.VanillaTextDrawer;
 import me.matl114.versioned.api.MatrixStack;
 import me.matl114.versioned.api.VDrawContext;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.font.TextRenderer.TextLayerType;
 import net.minecraft.client.gui.DrawContext;
@@ -286,7 +284,7 @@ public class DrawContext_v1_21_1 implements VDrawContext {
             this.delayedDrawing = null;
         }
         this.drawContext.tryDraw();
-        maxLayerDepthByContext.remove(drawContext);
+        this.maxDepth = 0;
     }
 
     @Override

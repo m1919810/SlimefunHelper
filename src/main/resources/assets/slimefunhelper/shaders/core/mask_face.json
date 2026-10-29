@@ -1,6 +1,6 @@
 {
-  "vertex": "minecraft:core/position_tex",
-  "fragment": "slimefunhelper:core/mask_face",
+  "vertex": "minecraft:position_tex",
+  "fragment": "slimefunhelper:mask_face",
   "samplers": [{ "name": "Sampler0" }],
   "uniforms": [
     { "name": "ModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ] },

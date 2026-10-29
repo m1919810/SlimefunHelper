@@ -11,10 +11,10 @@ import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.gl.SimpleFramebuffer;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.BufferRenderer;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
-import net.minecraft.client.render.GameRenderer;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.Vec3d;
@@ -26,9 +26,17 @@ public final class MaskPostRenderer {
     private static ShaderProgram faceProgram;
     private static ShaderProgram outlineProgram;
 
-    public static void setCaptureProgram(ShaderProgram program) { captureProgram = program; }
-    public static void setFaceProgram(ShaderProgram program) { faceProgram = program; }
-    public static void setOutlineProgram(ShaderProgram program) { outlineProgram = program; }
+    public static void setCaptureProgram(ShaderProgram program) {
+        captureProgram = program;
+    }
+
+    public static void setFaceProgram(ShaderProgram program) {
+        faceProgram = program;
+    }
+
+    public static void setOutlineProgram(ShaderProgram program) {
+        outlineProgram = program;
+    }
 
     private SimpleFramebuffer framebuffer;
 
@@ -36,9 +44,11 @@ public final class MaskPostRenderer {
 
     public void draw(
             List<Quad> quads, Matrix4f modelViewMatrix, Matrix4f projectionMatrix, int faceColor, int outlineColor) {
-        if (quads.isEmpty() || captureProgram == null || faceProgram == null || outlineProgram == null
-                || (ColorHelper.Argb.getAlpha(faceColor) == 0 && ColorHelper.Argb.getAlpha(outlineColor) == 0))
-            return;
+        if (quads.isEmpty()
+                || captureProgram == null
+                || faceProgram == null
+                || outlineProgram == null
+                || (ColorHelper.Argb.getAlpha(faceColor) == 0 && ColorHelper.Argb.getAlpha(outlineColor) == 0)) return;
         MinecraftClient mc = MinecraftClient.getInstance();
         int width = mc.getWindow().getFramebufferWidth();
         int height = mc.getWindow().getFramebufferHeight();

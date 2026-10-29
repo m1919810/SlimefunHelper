@@ -14,7 +14,8 @@ public final class OutlineRenderer {
     }
 
     private void draw(Iterable<? extends Quad> quads, int color) {
-        OutlineVertexConsumerProvider vertexConsumers = MinecraftClient.getInstance().getBufferBuilders().getOutlineVertexConsumers();
+        OutlineVertexConsumerProvider vertexConsumers =
+                MinecraftClient.getInstance().getBufferBuilders().getOutlineVertexConsumers();
         vertexConsumers.setColor(
                 ColorHelper.Argb.getRed(color),
                 ColorHelper.Argb.getGreen(color),
