@@ -77,6 +77,7 @@ public final class MaskPostRenderer {
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             RenderSystem.setProjectionMatrix(projectionMatrix, VertexSorter.BY_DISTANCE);
             modelView.set(modelViewMatrix);
+            RenderSystem.applyModelViewMatrix();
             framebuffer.clear(MinecraftClient.IS_SYSTEM_MAC);
             framebuffer.beginWrite(true);
             capture(quads);
@@ -84,6 +85,7 @@ public final class MaskPostRenderer {
             mc.getFramebuffer().beginWrite(true);
             RenderSystem.setProjectionMatrix(new Matrix4f(), VertexSorter.BY_Z);
             modelView.identity();
+            RenderSystem.applyModelViewMatrix();
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
             RenderSystem.setShaderTexture(0, framebuffer.getColorAttachment());
@@ -92,6 +94,7 @@ public final class MaskPostRenderer {
         } finally {
             mc.getFramebuffer().beginWrite(true);
             modelView.popMatrix();
+            RenderSystem.applyModelViewMatrix();
             RenderSystem.restoreProjectionMatrix();
             RenderSystem.setShaderColor(shaderColor[0], shaderColor[1], shaderColor[2], shaderColor[3]);
             RenderSystem.setShaderTexture(0, texture);

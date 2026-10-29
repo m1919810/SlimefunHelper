@@ -125,7 +125,7 @@ public abstract class SkyRenderingMixin {
         if (texture == null) return;
         SkyRender module = SkyRender.INSTANCE;
         int color =
-                module != null && module.hasCustomColor() ? module.color.get().asRGB() : -1;
+                module != null && module.hasCustomColor() ? module.color.get().withAlpha(255) : -1;
         boolean atlas = skyRender$isSixTileAtlas(texture);
         RenderSystem.setShader(GameRenderer::getPositionTexColorProgram);
         RenderSystem.setShaderTexture(0, texture);

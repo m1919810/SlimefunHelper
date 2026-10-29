@@ -29,8 +29,13 @@ public abstract class ItemRendererMixin {
     @Inject(
             method =
                     "renderItem(Lnet/minecraft/item/ItemStack;Lnet/minecraft/item/ItemDisplayContext;ZLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;IILnet/minecraft/client/render/model/BakedModel;)V",
-            at = @At("HEAD"))
-    private void captureEntityItemStart(
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/render/RenderLayers;getItemLayer(Lnet/minecraft/item/ItemStack;Z)Lnet/minecraft/client/render/RenderLayer;",
+                            shift = At.Shift.AFTER))
+    private void captureEntityItemAfterTransform(
             ItemStack stack,
             ItemDisplayContext renderMode,
             boolean leftHanded,
