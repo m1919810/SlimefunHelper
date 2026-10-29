@@ -14,7 +14,6 @@ import me.matl114.utils.MathUtils;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemSteerable;
 import net.minecraft.entity.RideableInventory;
-import net.minecraft.entity.passive.HappyGhastEntity;
 import net.minecraft.entity.vehicle.VehicleEntity;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.Box;
@@ -78,7 +77,6 @@ public class AutoRide extends BaseModule {
     private boolean isRideable(Entity entity) {
         return entity instanceof VehicleEntity
                 || entity instanceof RideableInventory
-                || entity instanceof ItemSteerable
-                || entity instanceof HappyGhastEntity;
+                || entity instanceof ItemSteerable;
     }
 }

@@ -41,7 +41,6 @@ public abstract class PlayerEntityRendererMixin {
             immediate.draw();
         }
         MODEL_FACE.render(HandView.INSTANCE.glowColor.get().withAlpha(HandView.INSTANCE.glowAlpha.get()));
-        MODEL_FACE.render2D(0);
     }
 
     @ModifyExpressionValue(

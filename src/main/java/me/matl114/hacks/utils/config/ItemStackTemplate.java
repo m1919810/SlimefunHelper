@@ -72,7 +72,8 @@ public final class ItemStackTemplate implements NBTParsable<ItemStackTemplate> {
     }
 
     public Identifier itemId() {
-        Identifier id = Identifier.tryParse(nbt.getString("id", "minecraft:air"));
+        String item = nbt.getString("id");
+        Identifier id = item != null ? Identifier.tryParse(item) : null;
         return id != null && Registries.ITEM.containsId(id) ? id : Registries.ITEM.getId(Items.AIR);
     }
 

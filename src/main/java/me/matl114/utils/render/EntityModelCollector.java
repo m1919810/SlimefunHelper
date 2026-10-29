@@ -68,7 +68,8 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
     @Override
     public final void render3D(MatrixStack matrices, float partialTick) {
         if (entities.isEmpty()) return;
-        EntityRenderDispatcher entityRenderDispatcher = MinecraftClient.getInstance().getEntityRenderDispatcher();
+        EntityRenderDispatcher entityRenderDispatcher =
+                MinecraftClient.getInstance().getEntityRenderDispatcher();
         if (entityRenderDispatcher == null) return;
 
         for (IndexEntry<Entity> entry : entities) {
@@ -97,7 +98,8 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
     protected final void renderQuads2D(float partialTick, MaskConsumer consumer) {
         if (entities.isEmpty()) return;
 
-        EntityRenderDispatcher entityRenderDispatcher = MinecraftClient.getInstance().getEntityRenderDispatcher();
+        EntityRenderDispatcher entityRenderDispatcher =
+                MinecraftClient.getInstance().getEntityRenderDispatcher();
         if (entityRenderDispatcher == null) return;
         Matrix4f camera = RenderListener.getWorldModelViewMatrix();
         Matrix4f projection = RenderListener.getWorldBasicProjectionMatrix();
@@ -255,8 +257,7 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
                     vs[i] = Float.intBitsToFloat(data[offset + 5]);
                 }
                 quadConsumer.accept(
-                        new CapturedQuad(
-                                vertices, new UV(us[0], vs[0], us[2], vs[2]), texture, baked.sprite, us, vs),
+                        new CapturedQuad(vertices, new UV(us[0], vs[0], us[2], vs[2]), texture, baked.sprite, us, vs),
                         color);
             }
         }

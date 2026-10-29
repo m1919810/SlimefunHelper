@@ -108,10 +108,7 @@ public final class LocalFontTextDrawer extends ResourceFontTextDrawer implements
                             provider, net.minecraft.client.font.FontFilterType.FilterMap.NO_FILTER)),
                     Set.of());
             TextRenderer renderer = new TextRenderer(
-                    id -> fontId.equals(id)
-                            ? storage
-                            : textRendererAccess.slimefunhelper$getFontStorage(id),
-                    false);
+                    id -> fontId.equals(id) ? storage : textRendererAccess.slimefunhelper$getFontStorage(id), false);
             return new LoadedFont(fontId, provider, storage, renderer, fontSize);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to load local font: " + path, e);

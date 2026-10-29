@@ -101,7 +101,7 @@ public class NameTag extends INameTag {
         Matrix4f viewMatrix = RenderListener.getWorldModelViewMatrix();
         Matrix4f projectionMatrix = RenderListener.getWorldBasicProjectionMatrix();
         float guiHeight =
-                (float) mc.getWindow().getFramebufferHeight() / mc.getWindow().getScaleFactor();
+                (float) (mc.getWindow().getFramebufferHeight() / mc.getWindow().getScaleFactor());
         var matrices = event.context().stack();
         RenderUtils.startDrawVirtual(matrices);
         try {

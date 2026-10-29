@@ -5,8 +5,6 @@ accessible class net/minecraft/client/render/model/BakedModelManager$BakingResul
 accessible field net/minecraft/client/render/model/BakedModelManager$BakingResult readyForUpload Ljava/util/concurrent/CompletableFuture;
 accessible method net/minecraft/client/gui/widget/ClickableWidget clicked (DD)Z
 
-accessible field net/minecraft/client/font/TextRenderer fonts Lnet/minecraft/client/font/TextRenderer$GlyphsProvider;
-
 accessible method net/minecraft/client/world/ClientWorld getPendingUpdateManager ()Lnet/minecraft/client/network/PendingUpdateManager;
 accessible method net/minecraft/client/network/ClientPlayerInteractionManager sendSequencedPacket (Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/client/network/SequencedPacketCreator;)V
 accessible class net/minecraft/client/render/BackgroundRenderer$StatusEffectFogModifier

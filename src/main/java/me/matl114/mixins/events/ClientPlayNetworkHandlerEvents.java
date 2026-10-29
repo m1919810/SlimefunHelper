@@ -14,7 +14,6 @@ import me.matl114.events.impl.Teleportation;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.PlayerListEntry;
@@ -36,6 +35,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Environment(EnvType.CLIENT)
@@ -81,12 +81,9 @@ public abstract class ClientPlayNetworkHandlerEvents {
         }
     }
 
-    @Inject(method = "runClickEventCommand", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "sendCommand", at = @At("HEAD"), cancellable = true)
     private void onClickRunCommand(
-            String command,
-            Screen afterActionScreen,
-            CallbackInfo ci,
-            @Local(argsOnly = true) LocalRef<String> commandRef) {
+            String command, CallbackInfoReturnable<Boolean> ci, @Local(argsOnly = true) LocalRef<String> commandRef) {
         if (escapeSendEvent) {
             escapeSendEvent = false;
             return;
