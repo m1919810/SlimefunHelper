@@ -389,8 +389,7 @@ public class SlimefunDispensorSuggestBookWidget extends SubScreenWidget {
                                 if (button == 2) {
                                     if (type == Type.MOUSE_CLICK) {
                                         // init
-                                        setHoveringRecipe(
-                                                recipeEntry, element.getX() + mouseX, element.getY() + mouseY);
+                                        setHoveringRecipe(recipeEntry, element.x() + mouseX, element.y() + mouseY);
                                         // what can I say?
                                         // 最好加一个
                                         Tasks.scheduleDelayed(

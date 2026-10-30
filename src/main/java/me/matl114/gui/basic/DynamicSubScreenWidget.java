@@ -30,11 +30,11 @@ public class DynamicSubScreenWidget extends SubScreenWidget {
     }
 
     @Override
-    public int getX() {
+    public int x() {
         return xCoord.getValue();
     }
 
-    public int getY() {
+    public int y() {
         return yCoord.getValue();
     }
 

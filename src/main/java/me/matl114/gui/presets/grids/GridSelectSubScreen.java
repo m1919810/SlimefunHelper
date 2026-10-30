@@ -83,7 +83,7 @@ public class GridSelectSubScreen<R> extends SubScreenWidget {
         if (newHeight != dy) {
             dy = newHeight;
             int gridHeight = newHeight - baseHeight - this.filterDistance - this.filterHeight;
-            this.textFieldWidget.setY(newHeight - this.filterHeight);
+            this.textFieldWidget.y(newHeight - this.filterHeight);
             if (this.gridSubScreen != null) this.remove(this.gridSubScreen);
             this.gridSubScreen = new GridSubScreen<DrawableWidget>(
                             0, this.baseHeight, dx, gridHeight, elementX, elementY)
