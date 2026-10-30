@@ -60,6 +60,14 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
         refreshWidgets();
     }
 
+    public int getWidth() {
+        return this.width;
+    }
+
+    public int getHeight() {
+        return this.height;
+    }
+
     @MustBeInvokedByOverriders
     protected void refreshWidgets() {}
 

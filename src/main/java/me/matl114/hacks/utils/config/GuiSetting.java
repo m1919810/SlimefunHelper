@@ -393,7 +393,7 @@ public record GuiSetting(
                 List::of,
                 0,
                 0,
-                list.getWidth(),
+                list.width(),
                 layout.buttonHeight()));
 
         addGroup(
@@ -687,10 +687,10 @@ public record GuiSetting(
                 List::of,
                 0,
                 2,
-                list.getWidth() - height,
+                list.width() - height,
                 height,
                 true);
         WidgetUtils.addCollapsibleGroup(
-                list, header, ValueAccessor.holder(true), fields, factory, list.getWidth() - height, 2, height, height);
+                list, header, ValueAccessor.holder(true), fields, factory, list.width() - height, 2, height, height);
     }
 }
