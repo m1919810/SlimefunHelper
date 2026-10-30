@@ -166,8 +166,8 @@ public class ConfigMultiLevelList extends DynamicListWidget {
     private void addGroupHeader(
             ModulePath groupPath, int indentWidth, BooleanSupplier visible, ValueAccessor<Boolean> expanded) {
         int depth = groupPath.toPath().length - 1;
-        int indent = Math.min(getWidth(), depth * indentWidth);
-        int groupWidth = Math.max(1, getWidth() - indent);
+        int indent = Math.min(width(), depth * indentWidth);
+        int groupWidth = Math.max(1, width() - indent);
         int headerHeight = 12;
         DrawableWidget header = factory.createLabel(
                 () -> {
@@ -213,12 +213,12 @@ public class ConfigMultiLevelList extends DynamicListWidget {
     }
 
     private WidgetUtils.ConfigScreenLayout layoutForDepth(int indentWidth, int depth) {
-        int availableWidth = Math.max(1, getWidth() - Math.min(getWidth(), depth * indentWidth));
+        int availableWidth = Math.max(1, width() - Math.min(width(), depth * indentWidth));
         int minimumWidth = layout.indexWidth() + layout.blankWidth() + 1;
         return layout.forWidth(Math.max(minimumWidth, availableWidth));
     }
 
     private DrawableWidget indentWidget(DrawableWidget widget, int indent) {
-        return new SubScreenWidget(indent, 0, widget.getWidth(), widget.getHeight()).addDrawableChild(widget);
+        return new SubScreenWidget(indent, 0, widget.width(), widget.height()).addDrawableChild(widget);
     }
 }

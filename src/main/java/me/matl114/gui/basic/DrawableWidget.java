@@ -12,11 +12,11 @@ import net.minecraft.client.gui.navigation.GuiNavigationPath;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.ClickableWidget;
+import net.minecraft.client.gui.widget.Widget;
 import org.jetbrains.annotations.Nullable;
 
 @Environment(EnvType.CLIENT)
-public abstract class DrawableWidget
-        implements Element, Drawable, net.minecraft.client.gui.widget.Widget, Selectable, Draggable {
+public abstract class DrawableWidget implements Element, Drawable, Widget, Selectable, Draggable {
     public DrawableWidget(int x, int y, int dx, int dy) {
         this.x = x;
         this.y = y;
@@ -145,10 +145,10 @@ public abstract class DrawableWidget
         this.selected = !disableSelect && isMouseOver(mouseX, mouseY);
         float textureScale = getTextureScale();
 
-        boolean shouldRescale = getX() != 0 || getY() != 0 || textureScale != 1.0F;
+        boolean shouldRescale = x() != 0 || y() != 0 || textureScale != 1.0F;
         if (shouldRescale) {
             context.getMatrices().pushMatrix();
-            context.getMatrices().translate(getX(), getY());
+            context.getMatrices().translate(x(), y());
         }
 
         // compat low version
@@ -183,10 +183,10 @@ public abstract class DrawableWidget
     }
 
     public boolean isMouseOver(double mouseX, double mouseY) {
-        return mouseX >= this.getX()
-                && mouseY >= this.getY()
-                && mouseX < this.getX() + this.textureWidth
-                && mouseY < this.getY() + this.textureHeight;
+        return mouseX >= this.x()
+                && mouseY >= this.y()
+                && mouseX < this.x() + this.textureWidth
+                && mouseY < this.y() + this.textureHeight;
     }
 
     public void setFocused(boolean focused) {
@@ -198,37 +198,77 @@ public abstract class DrawableWidget
         return focused;
     }
 
-    public void setX(int x) {
+    // coord api
+
+    public void x(int x) {
         this.x = x;
     }
 
-    public void setY(int y) {
+    public void y(int y) {
         this.y = y;
     }
 
-    public int getX() {
+    public int x() {
         return this.x;
     }
 
-    public int getY() {
+    public int y() {
         return this.y;
     }
 
-    public int getWidth() {
+    public int width() {
         return dx;
     }
 
-    public void setWidth(int width) {
+    public void width(int width) {
         this.dx = width;
     }
 
-    public void setHeight(int height) {
+    public void height(int height) {
         this.dy = height;
     }
 
-    public int getHeight() {
+    public int height() {
         return dy;
     }
+
+    // size compat
+    // Size compatibility
+
+    // Size compatibility
+
+    public final void setX(int x) {
+        x(x);
+    }
+
+    public final void setY(int y) {
+        y(y);
+    }
+
+    public final void setWidth(int width) {
+        width(width);
+    }
+
+    public final void setHeight(int height) {
+        height(height);
+    }
+
+    public final int getX() {
+        return x();
+    }
+
+    public final int getY() {
+        return y();
+    }
+
+    public final int getWidth() {
+        return width();
+    }
+
+    public final int getHeight() {
+        return height();
+    }
+    //
 
     public <T extends DrawableWidget> T cast() {
         return (T) this;
