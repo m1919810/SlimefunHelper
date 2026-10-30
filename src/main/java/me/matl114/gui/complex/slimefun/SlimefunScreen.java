@@ -61,8 +61,8 @@ public class SlimefunScreen extends GenericBackGroundScreen {
         super.initBackground();
     }
 
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
         this.guideIcon = ExecutableWidget.instance(this.x - 19, this.y + 16, 18, 18)
                 .setRenderHandler(SlotElement.instance(SlimefunTasks.GUIDE_ICON)
                         .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(

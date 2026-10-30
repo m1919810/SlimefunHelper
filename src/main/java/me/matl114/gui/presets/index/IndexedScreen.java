@@ -69,8 +69,8 @@ public abstract class IndexedScreen<T, W extends Element & Drawable & Selectable
     protected abstract W createSelectingDisplayWidget(T val);
 
     @Override
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
         saveSelected();
         createDelegate();
         addDrawableChild(this.subScreenDelegate);

@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.objects.ReferenceArraySet;
 import it.unimi.dsi.fastutil.objects.ReferenceSet;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
@@ -32,7 +33,6 @@ import net.minecraft.network.packet.PlayPackets;
 import net.minecraft.network.packet.c2s.common.KeepAliveC2SPacket;
 import net.minecraft.network.packet.c2s.config.ReadyC2SPacket;
 import net.minecraft.network.packet.c2s.play.*;
-import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
 import net.minecraft.network.packet.s2c.common.KeepAliveS2CPacket;
 import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.world.World;
@@ -74,6 +74,12 @@ public class PacketManager {
     public static boolean startFlushIn = false;
     public static boolean startFlushOut = false;
     private static final MinecraftClient mc = MinecraftClient.getInstance();
+    private static Set<PacketType<?>> disconnectTypes =
+            Set.of(CommonPackets.DISCONNECT, PlayPackets.START_CONFIGURATION, PlayPackets.RESPAWN);
+
+    public static boolean isDisconnectOrRespawn(PacketType<?> recv) {
+        return disconnectTypes.contains(recv);
+    }
 
     public static boolean handleQueueInPacket(Packet<?> packet, ClientConnection connection) {
         // do not handle flushing packets
@@ -83,24 +89,16 @@ public class PacketManager {
         checkImmediatelyFlush();
         // todo: what about BundlePacket
         if (connection.getPacketListener() instanceof ClientPlayPacketListener play) {
-            if (packet instanceof DisconnectS2CPacket
-                    || (packet instanceof HealthUpdateS2CPacket hl && hl.getHealth() <= 0.0)
-                    || packet instanceof PlayerRespawnS2CPacket
-                    || packet instanceof EnterReconfigurationS2CPacket) {
-                // clear all
-                clearAndShutdown();
-            } else {
-                Event<PacketStorage.Recv> queueEvent = new Event<>(
-                        new PacketStorageRecvImpl(packet, System.currentTimeMillis(), connection),
-                        true,
-                        false,
-                        connection,
-                        true);
-                packetQueueInEvent.handleValue(queueEvent);
-                if (queueEvent.isCancelled()) {
-                    handleQueueIn(queueEvent.context());
-                    return true;
-                }
+            Event<PacketStorage.Recv> queueEvent = new Event<>(
+                    new PacketStorageRecvImpl(packet, System.currentTimeMillis(), connection),
+                    true,
+                    false,
+                    connection,
+                    true);
+            packetQueueInEvent.handleValue(queueEvent);
+            if (queueEvent.isCancelled()) {
+                handleQueueIn(queueEvent.context());
+                return true;
             }
         }
         return false;
@@ -157,19 +155,12 @@ public class PacketManager {
             return false;
         }
         if (connection.getPacketListener() instanceof ClientPlayPacketListener play) {
-            if (packet instanceof AcknowledgeReconfigurationC2SPacket) {
-                clearAndShutdown();
-            } else {
-                Event<PacketStorage.Send> queueEvent = new Event<>(
-                        new PacketStorageSendImpl(packet, System.currentTimeMillis(), callback),
-                        true,
-                        false,
-                        connection);
-                packetQueueOutEvent.handleValue(queueEvent);
-                if (queueEvent.isCancelled()) {
-                    handleQueueOut(queueEvent.context());
-                    return true;
-                }
+            Event<PacketStorage.Send> queueEvent = new Event<>(
+                    new PacketStorageSendImpl(packet, System.currentTimeMillis(), callback), true, false, connection);
+            packetQueueOutEvent.handleValue(queueEvent);
+            if (queueEvent.isCancelled()) {
+                handleQueueOut(queueEvent.context());
+                return true;
             }
         }
         return false;
