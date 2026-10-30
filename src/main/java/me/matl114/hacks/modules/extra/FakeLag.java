@@ -59,6 +59,9 @@ public class FakeLag extends BaseModule {
             if (PacketManager.isAsyncOrNotTransactionS2CPacket(type)) {
                 return;
             }
+            if (PacketManager.isDisconnectOrRespawn(type)) {
+                return;
+            }
             long systemMs = System.currentTimeMillis();
             if (systemMs > event.context.timestampMS() + delayMs.get() - 1) {
                 return;

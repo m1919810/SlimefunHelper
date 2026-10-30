@@ -14,8 +14,8 @@ public class SimpleScreen extends GenericBackGroundScreen {
     }
 
     @Override
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
 
         new ContentDelegateWidget<>(this.x, this.y, 0, 0)
                 .setContentDelegate(this.widget)

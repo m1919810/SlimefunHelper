@@ -33,7 +33,7 @@ public class ExecutableWidget extends DrawableWidget {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean onMouseClicked(double mouseX, double mouseY, int button) {
         if (handler != null && isMouseOver(mouseX, mouseY)) {
             return handler.onAction(this, mouseX, mouseY, button, InputHandler.Type.MOUSE_CLICK);
         }
@@ -41,7 +41,7 @@ public class ExecutableWidget extends DrawableWidget {
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    public boolean onMouseReleased(double mouseX, double mouseY, int button) {
         if (handler != null && isMouseOver(mouseX, mouseY)) {
             return handler.onAction(this, mouseX, mouseY, button, InputHandler.Type.MOUSE_RELEASE);
         }
@@ -73,7 +73,7 @@ public class ExecutableWidget extends DrawableWidget {
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+    public boolean onMouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         if (handler != null) {
             // drag do not need MouseOver
             return this.handler.onAction(this, mouseX, mouseY, button, InputHandler.Type.MOUSE_DRAG);
@@ -81,21 +81,21 @@ public class ExecutableWidget extends DrawableWidget {
         return false;
     }
 
-    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+    public boolean onMouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         // should not scrolled
 
         return this.handler != null && this.handler.onScroll(this, mouseX, mouseY, horizontalAmount, verticalAmount);
     }
 
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean onKeyPressed(int keyCode, int scanCode, int modifiers) {
         return this.handler != null && this.handler.onKey(this, keyCode, scanCode, modifiers, true);
     }
 
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+    public boolean onKeyReleased(int keyCode, int scanCode, int modifiers) {
         return this.handler != null && this.handler.onKey(this, keyCode, scanCode, modifiers, false);
     }
 
-    public boolean charTyped(char chr, int modifiers) {
+    public boolean onCharTyped(char chr, int modifiers) {
         return this.handler != null && this.handler.onTyped(this, chr, modifiers);
     }
 }

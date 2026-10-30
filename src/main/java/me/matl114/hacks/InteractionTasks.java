@@ -64,6 +64,15 @@ public class InteractionTasks {
     //
     //    }
 
+    public static boolean interactItem(Hand hand, boolean realInteract, boolean swingHand) {
+        return interactItem(
+                hand,
+                PlayerStateManager.INSTANCE.lastPitch,
+                PlayerStateManager.INSTANCE.lastYaw,
+                realInteract,
+                swingHand);
+    }
+
     public static boolean interactItem(Hand hand, Vec3d rot, boolean realInteract, boolean swingHand) {
         return interactItem(
                 hand, EntityUtils.rotationToPitch(rot), EntityUtils.rotationToYaw(rot), realInteract, swingHand);

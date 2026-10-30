@@ -35,8 +35,8 @@ public class ConfirmingWidgetScreen extends ConfirmingBigScreen {
     }
 
     @Override
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
         currentWidget = widget.apply(this);
         var sbscreen = new DynamicSubScreenWidget(
                 ValueAccessor.ofIgnore(this::getCenteredX), ValueAccessor.ofIgnore(this::getCenteredY));

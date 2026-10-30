@@ -147,6 +147,13 @@ public class BackTrack extends BaseModule {
     }
 
     public void onQueuePlayerPosition(Event<PacketStorage.Recv> event) {
+        if (PacketManager.isDisconnectOrRespawn(event.context.packetType())) {
+            if (shouldDelay) {
+                event.cancel();
+                onShutdown();
+            }
+            return;
+        }
         if (shouldDelay) {
             long currentMs = System.currentTimeMillis();
             if (event.context.timestampMS() + maxDelay.get() < currentMs) {

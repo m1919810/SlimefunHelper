@@ -130,8 +130,8 @@ public class NBTListModifyScreen<T> extends ConfirmingBigScreen {
     //    }
 
     @Override
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
         int listWidth = this.widgetDx + 80;
 
         new ListModifyWidget(

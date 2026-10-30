@@ -110,7 +110,7 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean onMouseClicked(double mouseX, double mouseY, int button) {
         // this should not be scaled because, scale do not change bounding box
         double translatedMouseX = mouseX - this.getX();
         double translatedMouseY = mouseY - this.getY();
@@ -121,7 +121,7 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
         }
         int yLevel = 0;
         for (var ch : children) {
-            if (ch.mouseClicked(translatedMouseX, translatedMouseY - yLevel, button)) {
+            if (ch.onMouseClicked(translatedMouseX, translatedMouseY - yLevel, button)) {
                 setSelected(ch);
                 return true;
             }
@@ -132,7 +132,7 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    public boolean onMouseReleased(double mouseX, double mouseY, int button) {
 
         double translatedMouseX = mouseX - this.getX();
         double translatedMouseY = mouseY - this.getY();
@@ -143,7 +143,7 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
         }
         int yLevel = 0;
         for (var ch : children) {
-            if (ch.mouseReleased(translatedMouseX, translatedMouseY - yLevel, button)) {
+            if (ch.onMouseReleased(translatedMouseX, translatedMouseY - yLevel, button)) {
                 return true;
             }
             yLevel += ch.getY() + ch.getHeight();
@@ -152,7 +152,7 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+    public boolean onMouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         if (this.dragging != null && this.dragging.isDragging()) {
             int yLevel = 0;
             for (var ch : children) {
@@ -162,7 +162,7 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
                 yLevel += ch.getY() + ch.getHeight();
             }
             float textureScale = getTextureScale();
-            return this.dragging.mouseDragged(
+            return this.dragging.onMouseDragged(
                     (mouseX - this.getX()) / textureScale,
                     ((mouseY - this.getY()) / textureScale) - yLevel,
                     button,
@@ -231,7 +231,7 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
         }
     }
 
-    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+    public boolean onMouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         // should not scrolled
         double translatedMouseX = mouseX - this.getX();
         double translatedMouseY = mouseY - this.getY();
@@ -242,7 +242,7 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
         }
         int yLevel = 0;
         for (var ch : children) {
-            if (ch.mouseScrolled(translatedMouseX, translatedMouseY - yLevel, horizontalAmount, verticalAmount)) {
+            if (ch.onMouseScrolled(translatedMouseX, translatedMouseY - yLevel, horizontalAmount, verticalAmount)) {
                 return true;
             }
             yLevel += ch.getY() + ch.getHeight();
@@ -250,18 +250,18 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
         return false;
     }
 
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean onKeyPressed(int keyCode, int scanCode, int modifiers) {
         for (var ch : children) {
-            if (ch.keyPressed(keyCode, scanCode, modifiers)) {
+            if (ch.onKeyPressed(keyCode, scanCode, modifiers)) {
                 return true;
             }
         }
         return false;
     }
 
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+    public boolean onKeyReleased(int keyCode, int scanCode, int modifiers) {
         for (var ch : children) {
-            if (ch.keyReleased(keyCode, scanCode, modifiers)) {
+            if (ch.onKeyReleased(keyCode, scanCode, modifiers)) {
                 return true;
             }
         }
@@ -269,9 +269,9 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
     }
 
     @Override
-    public boolean charTyped(char chr, int modifiers) {
+    public boolean onCharTyped(char chr, int modifiers) {
         for (var ch : children) {
-            if (ch.charTyped(chr, modifiers)) {
+            if (ch.onCharTyped(chr, modifiers)) {
                 return true;
             }
         }

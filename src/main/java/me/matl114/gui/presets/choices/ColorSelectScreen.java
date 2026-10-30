@@ -35,8 +35,8 @@ public class ColorSelectScreen extends ConfirmingBigScreen {
     int bValue;
 
     @Override
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
         SubScreenWidget subScreenWidget =
                 new SubScreenWidget(this.x, this.y, this.backgroundWidth, this.backgroundHeight);
         new ContentDelegateWidget<>(30, 30, 0, 0)
