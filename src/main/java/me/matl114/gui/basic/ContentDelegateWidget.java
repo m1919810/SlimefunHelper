@@ -86,8 +86,7 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
                     return true;
                 }
             } else {
-                if (this.getDelegate()
-                    .mouseClicked(translatedMouseX, translatedMouseY, button)) {
+                if (this.getDelegate().mouseClicked(translatedMouseX, translatedMouseY, button)) {
                     return true;
                 }
             }
@@ -158,8 +157,12 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
                 }
             } else {
                 if (this.getDelegate()
-                    .mouseDragged(
-                        translatedMouseX, translatedMouseY, button, deltaX * textureScale, deltaY * textureScale)) {
+                        .mouseDragged(
+                                translatedMouseX,
+                                translatedMouseY,
+                                button,
+                                deltaX * textureScale,
+                                deltaY * textureScale)) {
                     return true;
                 }
             }
@@ -192,15 +195,13 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
     public boolean onKeyPressed(int keyCode, int scanCode, int modifiers) {
         if (this.getDelegate() instanceof DrawableWidget drawable) {
             return drawable.onKeyPressed(keyCode, scanCode, modifiers);
-        } else
-            return this.getDelegate() != null && this.getDelegate().keyPressed(keyCode, scanCode, modifiers);
+        } else return this.getDelegate() != null && this.getDelegate().keyPressed(keyCode, scanCode, modifiers);
     }
 
     public boolean onKeyReleased(int keyCode, int scanCode, int modifiers) {
         if (this.getDelegate() instanceof DrawableWidget drawable) {
             return drawable.onKeyReleased(keyCode, scanCode, modifiers);
-        } else
-            return this.getDelegate() != null && this.getDelegate().keyReleased(keyCode, scanCode, modifiers);
+        } else return this.getDelegate() != null && this.getDelegate().keyReleased(keyCode, scanCode, modifiers);
     }
 
     @Override
