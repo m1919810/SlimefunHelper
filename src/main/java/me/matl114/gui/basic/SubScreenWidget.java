@@ -141,7 +141,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean onMouseClicked(double mouseX, double mouseY, int button) {
         // this should not be scaled because, scale do not change bounding box
         double translatedMouseX = mouseX - this.getX();
         double translatedMouseY = mouseY - this.getY();
@@ -151,7 +151,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
             translatedMouseY = (int) (translatedMouseY / textureScale);
         }
         for (var ch : childrenInteractOrder()) {
-            if (ch.mouseClicked(translatedMouseX, translatedMouseY, button)) {
+            if (ch.onMouseClicked(translatedMouseX, translatedMouseY, button)) {
                 setSelected(ch);
                 return true;
             }
@@ -161,7 +161,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    public boolean onMouseReleased(double mouseX, double mouseY, int button) {
 
         double translatedMouseX = mouseX - this.getX();
         double translatedMouseY = mouseY - this.getY();
@@ -172,7 +172,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
         }
 
         for (var ch : childrenInteractOrder()) {
-            if (ch.mouseReleased(translatedMouseX, translatedMouseY, button)) {
+            if (ch.onMouseReleased(translatedMouseX, translatedMouseY, button)) {
                 return true;
             }
         }
@@ -180,11 +180,11 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+    public boolean onMouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         float textureScale = getTextureScale();
         return this.dragging != null
                 && this.dragging.isDragging()
-                && this.dragging.mouseDragged(
+                && this.dragging.onMouseDragged(
                         (mouseX - this.getX()) / textureScale,
                         (mouseY - this.getY()) / textureScale,
                         button,
@@ -241,7 +241,7 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
         }
     }
 
-    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+    public boolean onMouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         // should not scrolled
         double translatedMouseX = mouseX - this.getX();
         double translatedMouseY = mouseY - this.getY();
@@ -251,25 +251,25 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
             translatedMouseY = (int) (translatedMouseY / textureScale);
         }
         for (var ch : childrenInteractOrder()) {
-            if (ch.mouseScrolled(translatedMouseX, translatedMouseY, horizontalAmount, verticalAmount)) {
+            if (ch.onMouseScrolled(translatedMouseX, translatedMouseY, horizontalAmount, verticalAmount)) {
                 return true;
             }
         }
         return false;
     }
 
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean onKeyPressed(int keyCode, int scanCode, int modifiers) {
         for (var ch : childrenInteractOrder()) {
-            if (ch.keyPressed(keyCode, scanCode, modifiers)) {
+            if (ch.onKeyPressed(keyCode, scanCode, modifiers)) {
                 return true;
             }
         }
         return false;
     }
 
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+    public boolean onKeyReleased(int keyCode, int scanCode, int modifiers) {
         for (var ch : childrenInteractOrder()) {
-            if (ch.keyReleased(keyCode, scanCode, modifiers)) {
+            if (ch.onKeyReleased(keyCode, scanCode, modifiers)) {
                 return true;
             }
         }
@@ -277,9 +277,9 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
     }
 
     @Override
-    public boolean charTyped(char chr, int modifiers) {
+    public boolean onCharTyped(char chr, int modifiers) {
         for (var ch : childrenInteractOrder()) {
-            if (ch.charTyped(chr, modifiers)) {
+            if (ch.onCharTyped(chr, modifiers)) {
                 return true;
             }
         }

@@ -21,6 +21,7 @@ import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.chat.*;
 import me.matl114.hacks.modules.inv.ChestHistory;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.modules.task.ClickGui;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.managers.Tasks;
@@ -311,7 +312,7 @@ public class ChatTasks {
                 case "saved" -> Tasks.scheduleDelayed(SlimefunTasks.getSlimefunGuide()::openSaveItemMenu, 1);
                 case "itemedit" -> Tasks.scheduleDelayed(InvTasks::openEditorForPlayer, 1);
                 case "invcache" -> Tasks.scheduleDelayed(InvTasks::openInventoryCacheScreen, 1);
-                case "config" -> Tasks.scheduleDelayed(MainTasks::openConfigMultiLevelScreen, 1);
+                case "config" -> Tasks.scheduleDelayed(ClickGui.INSTANCE::openConfigScreen, 1);
                 case "scanner" -> Tasks.scheduleDelayed(ExtraTasks.getServerScanner()::openScannerScreen, 1);
                 case "clickgui" -> Tasks.scheduleDelayed(MainTasks.getClickGui()::openClickGui, 1);
                 default -> Tasks.scheduleDelayed(SlimefunTasks.getSlimefunGuide()::openMainGuideMenu, 1);

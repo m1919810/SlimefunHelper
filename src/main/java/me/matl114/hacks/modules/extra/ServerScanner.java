@@ -579,8 +579,8 @@ public class ServerScanner extends BaseModule {
         DrawableWidget outputWidget = createOutputWidget();
         var screen = new GenericScreen(Text.literal("Server Scanner"), 400, 360) {
             @Override
-            protected void init() {
-                super.init();
+            protected void refreshWidgets() {
+                super.refreshWidgets();
                 SubScreenWidget delegate = new SubScreenWidget(this.x, this.y, 400, 360);
                 delegate.addDrawableChild(inputWidget);
                 delegate.addDrawableChild(selectWidget);

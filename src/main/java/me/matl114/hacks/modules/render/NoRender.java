@@ -13,8 +13,11 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityStatusEffectS2CPacket;
@@ -93,6 +96,14 @@ public class NoRender extends BaseModule {
     public final FlagRef noTextureOffset =
             flagBuilder(worldEffect.add("texture-offset")).build();
 
+    public final FlagRef noBlockEntityRender =
+            flagBuilder(worldEffect.add("no-block-entity-render")).build();
+
+    public final NBTRef<EntrySet<BlockEntityType<?>>> blockEntityTypes = builder(
+                    worldEffect.add("block-entity-types"), EntrySet.<BlockEntityType<?>>parameter())
+            .defaultValue(new EntrySet<>(new Regex("^()$"), Registries.BLOCK_ENTITY_TYPE))
+            .build();
+
     public final FlagRef noNausea = flagBuilder(effectSetting.add("no-nausea")).build();
 
     public final FlagRef noDarkNess =
@@ -125,6 +136,12 @@ public class NoRender extends BaseModule {
             .defaultValue(new EntityTypeEntrySet(new Regex("^()$")))
             .build();
 
+    public final FlagRef ignoreRender = flagBuilder(entity.add("ignore-render")).build();
+
+    public final NBTRef<EntityTypeEntrySet> types2 = builder(entity.add("render-types"), EntityTypeEntrySet.class)
+            .defaultValue(new EntityTypeEntrySet(new Regex("^()$")))
+            .build();
+
     public final FlagRef noArmorRender = flagBuilder(entity.add("armor-model")).build();
 
     public final FlagRef noArmorTrimRender =
@@ -153,6 +170,8 @@ public class NoRender extends BaseModule {
         registerListener(
                 Listener.getParticleCreateListener().getChannel(ParticleTypes.SNOWFLAKE), this::doParticleSpawnWeather);
         registerListener(Listener.getParticleCreateListener(), this::doParticleSpawnTyped);
+        registerListener(RenderListener.getBlockEntityRenderListener(), this::doCancelBERender);
+        registerListener(RenderListener.getEntityRenderListener(), this::doCancelRender);
     }
 
     public void doCancelEffect(Event<EntityStatusEffectS2CPacket> packet) {
@@ -168,6 +187,20 @@ public class NoRender extends BaseModule {
         if (checkNull()) return;
         if (enable.get() && ignoreSpawn.get() && types.get().test(packet.context.getEntityType())) {
             packet.cancel();
+        }
+    }
+
+    public void doCancelBERender(Event<BlockEntity> be) {
+        if (checkNull()) return;
+        if (enable.get() && noBlockEntityRender.get() && blockEntityTypes.get().test(be.context.getType())) {
+            be.cancel();
+        }
+    }
+
+    public void doCancelRender(Event<Entity> renderEvent) {
+        if (checkNull()) return;
+        if (enable.get() && ignoreRender.get() && types2.get().test(renderEvent.context.getType())) {
+            renderEvent.cancel();
         }
     }
 

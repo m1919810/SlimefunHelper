@@ -7,9 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import lombok.Getter;
-import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.events.Listener;
-import me.matl114.gui.complex.config.ConfigMultiLevelListScreen;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModuleEntry;
 import me.matl114.hacks.api.ModuleGroup;
@@ -28,6 +26,7 @@ import me.matl114.utils.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ProgressScreen;
 import net.minecraft.client.gui.screen.TitleScreen;
+import net.minecraft.client.gui.screen.ingame.BookEditScreen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.BookUpdateC2SPacket;
@@ -35,6 +34,7 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableTextContent;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Hand;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 
@@ -91,11 +91,27 @@ public class MainTasks {
         if (mc.player != null) {
             if (mc.player.getMainHandStack().getItem() == Items.WRITABLE_BOOK) {
                 Debug.chat("生成了书内容");
-                String generatedContent = "§b§k" + ("1a锕β".repeat(250));
+                if (!(mc.currentScreen instanceof BookEditScreen)) {
+
+                    InteractionTasks.interactItem(Hand.MAIN_HAND, true, true);
+                }
+                int nCopies;
+                if (args.length >= 1) {
+                    nCopies = Integer.parseInt(args[0]);
+                } else {
+                    nCopies = 100;
+                }
+                int len;
+                if (args.length >= 2) {
+                    len = Integer.parseInt(args[1]);
+                } else {
+                    len = 250;
+                }
+                String generatedContent = "§b§k" + ("1a锕β".repeat(len));
                 mc.getNetworkHandler()
                         .sendPacket(new BookUpdateC2SPacket(
                                 InventoryUtils.getSelectedSlot(),
-                                Collections.nCopies(100, generatedContent),
+                                Collections.nCopies(nCopies, generatedContent),
                                 args.length > 0 ? Optional.of(String.join("\n", args)) : Optional.empty()));
             } else {
                 Debug.chat("手持物品不是书");
@@ -232,17 +248,13 @@ public class MainTasks {
     public static void fillFakeSubChunkWithStone() {}
 
     @ApiMethod
-    public static void openConfigMultiLevelScreen() {
-        ScreenAccess.of(new ConfigMultiLevelListScreen(Config.REGISTRY.stream().toList()))
-                .openFromCurrent();
+    public static void openConfigScreen() {
+        ClickGui.INSTANCE.openConfigScreen();
     }
 
     @ApiMethod
     public static void openConfigScreen(Config config) {
-        ConfigMultiLevelListScreen screen =
-                new ConfigMultiLevelListScreen(Config.REGISTRY.stream().toList());
-        screen.setGlobal(config);
-        ScreenAccess.of(screen).openFromCurrent();
+        ClickGui.INSTANCE.openConfigScreen(config);
     }
 
     @ApiMethod

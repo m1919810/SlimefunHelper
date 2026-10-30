@@ -52,8 +52,8 @@ public final class ClassicClickGuiScreen extends GenericScreen {
     }
 
     @Override
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
         int size = widgets.size();
         int blank;
         int width;

@@ -64,13 +64,17 @@ public abstract class LazilyRegisterTypeRef<T, W> extends ObjectRef<T> {
                 && what.getClass() == this.getClass()
                 && Objects.equals(what.enumType, enumType)) {
             try {
+                if (!what.resolved) {
+                    what.tryResolve();
+                }
+                if (!this.resolved) {
+                    this.tryResolve();
+                }
                 if (!resolved && what.resolved) {
-                    tryResolve();
-                    return resolved;
+                    return false;
                 }
                 if (!what.resolved && resolved) {
-                    what.tryResolve();
-                    return what.resolved;
+                    return false;
                 }
             } catch (Throwable e) {
                 return false;

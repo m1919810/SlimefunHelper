@@ -20,7 +20,6 @@ import me.matl114.gui.complex.file.FileTreeWidget;
 import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.gui.presets.single.CenterScreen;
 import me.matl114.hacks.ChatTasks;
-import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.HackModules;
@@ -352,7 +351,7 @@ public class ConfigManager extends BaseModule {
     }
 
     public void onOpen() {
-        Tasks.scheduleDelayed(MainTasks::openConfigMultiLevelScreen, 1);
+        Tasks.scheduleDelayed(ClickGui.INSTANCE::openConfigScreen, 1);
         Debug.chat(Text.translatable("message.command.config.open.success").formatted(Formatting.GREEN));
     }
 
