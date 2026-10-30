@@ -48,8 +48,8 @@ public abstract class DrawableWidget implements Element, Drawable, Widget, Selec
     private float alpha = 1.0f;
     private boolean subWidget = false;
     private RenderHandler renderHandler;
-    protected boolean selected;
-    protected boolean focused;
+    protected boolean currentMouseHighlighting;
+    protected boolean interacting;
 
     public RenderHandler getRenderHandler() {
         return this.renderHandler;
@@ -79,8 +79,8 @@ public abstract class DrawableWidget implements Element, Drawable, Widget, Selec
         return subWidget;
     }
 
-    public boolean isSelected() {
-        return selected;
+    public boolean shouldHighlight() {
+        return currentMouseHighlighting;
     }
     // this should be set before they join any delegates or something, as they often causes problem
     public final <T extends DrawableWidget> T setPriority(int depth) {
@@ -101,10 +101,6 @@ public abstract class DrawableWidget implements Element, Drawable, Widget, Selec
 
     public void setSubWidget(boolean s) {
         this.subWidget = s;
-    }
-
-    public void setSelected(boolean s) {
-        this.selected = s;
     }
 
     public <T extends DrawableWidget> T setRenderHandler(RenderHandler renderHandler) {
@@ -135,16 +131,12 @@ public abstract class DrawableWidget implements Element, Drawable, Widget, Selec
         vd.tryDraw();
     }
 
-    protected void checkSelect(boolean disableSelect, int mouseX, int mouseY) {
-        this.selected = !disableSelect && isMouseOver(mouseX, mouseY);
-    }
-
     public boolean canSelect() {
         return renderHandler != null && renderHandler.canBeSelected(this);
     }
 
     public void render0(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
-        this.selected = !disableSelect && isMouseOver(mouseX, mouseY);
+        this.currentMouseHighlighting = !disableSelect && isOver(mouseX, mouseY);
         float textureScale = getTextureScale();
 
         boolean shouldRescale = x() != 0 || y() != 0 || textureScale != 1.0F;
@@ -173,31 +165,45 @@ public abstract class DrawableWidget implements Element, Drawable, Widget, Selec
     public void renderInDefaultMatrix(
             VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
         if (this.renderHandler != null) {
-            this.renderHandler.renderAtCentered(this, context, mouseX, mouseY, delta, this.alpha, this.selected);
+            this.renderHandler.renderAtCentered(
+                    this, context, mouseX, mouseY, delta, this.alpha, this.currentMouseHighlighting);
         }
     }
 
     public void renderAbsolute(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
         if (this.renderHandler != null) {
             this.renderHandler.renderExtraAbsoluteCoord(
-                    this, context, mouseX, mouseY, delta, this.alpha, this.selected);
+                    this, context, mouseX, mouseY, delta, this.alpha, this.currentMouseHighlighting);
         }
     }
+    // focusing api,
 
-    public boolean isMouseOver(double mouseX, double mouseY) {
+    public boolean isOver(double mouseX, double mouseY) {
         return mouseX >= this.x()
                 && mouseY >= this.y()
                 && mouseX < this.x() + this.textureWidth
                 && mouseY < this.y() + this.textureHeight;
     }
 
-    public void setFocused(boolean focused) {
-        this.focused = focused;
-        // Debug.info("This method should not be called!");
+    public void setSelected(boolean focused) {
+        this.interacting = focused;
+    }
+
+    public boolean isSelected() {
+        return interacting;
+    }
+    // compat element
+
+    public final boolean isMouseOver(double mouseX, double mouseY) {
+        return isOver(mouseX, mouseY);
     }
 
     public boolean isFocused() {
-        return focused;
+        return isSelected();
+    }
+
+    public void setFocused(boolean bl) {
+        setSelected(bl);
     }
 
     // coord api
@@ -331,7 +337,7 @@ public abstract class DrawableWidget implements Element, Drawable, Widget, Selec
     public final void forEachChild(Consumer<ClickableWidget> consumer) {}
 
     public Selectable.SelectionType getType() {
-        return this.selected ? Selectable.SelectionType.HOVERED : Selectable.SelectionType.NONE;
+        return this.currentMouseHighlighting ? Selectable.SelectionType.HOVERED : Selectable.SelectionType.NONE;
     }
 
     public final void appendNarrations(NarrationMessageBuilder builder) {}

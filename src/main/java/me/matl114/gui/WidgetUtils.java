@@ -384,7 +384,7 @@ public class WidgetUtils {
             @Override
             public boolean onAction(ExecutableWidget element, double mouseX, double mouseY, int button, Type type) {
                 if (type == Type.MOUSE_START_DRAG) {
-                    return element.isMouseOver(mouseX, mouseY);
+                    return element.isOver(mouseX, mouseY);
                 }
                 if (type == Type.MOUSE_DRAG) {
                     return onClick(element, mouseX, mouseY, button);

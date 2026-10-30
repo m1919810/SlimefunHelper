@@ -100,7 +100,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
 
     public void render0(VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
         resizeMaxHeight();
-        this.selected = !disableSelect && isMouseOver(mouseX, mouseY);
+        this.currentMouseHighlighting = !disableSelect && isOver(mouseX, mouseY);
         if (scoll != null) {
             scoll.render0(context, mouseX, mouseY, delta, disableSelect);
         }
@@ -145,9 +145,9 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
             // 通过计算高度限制这个f
             if (ch.y() + ch.height() > currentPose && ch.y() < currentPose + this.height()) {
                 // 尝试是否要在这里进行selected计算
-                if (this.selected) {
+                if (this.shouldHighlight()) {
                     boolean disable = true;
-                    if (!selected && ch.canSelect() && ch.isMouseOver(translatedMouseX, translatedMouseY)) {
+                    if (!selected && ch.canSelect() && ch.isOver(translatedMouseX, translatedMouseY)) {
                         disable = false;
                         // select only one in a subScreen
                         selected = true;
@@ -165,11 +165,11 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
     @Override
     public <T extends SubSelectable> T setSelected(DrawableWidget subWidget) {
         if (this.selectedElement != null) {
-            this.selectedElement.setFocused(false);
+            this.selectedElement.setSelected(false);
         }
         this.selectedElement = subWidget;
-        if (this.selectedElement != null && super.isFocused()) {
-            this.selectedElement.setFocused(true);
+        if (this.selectedElement != null && super.isSelected()) {
+            this.selectedElement.setSelected(true);
         }
         return (T) this;
     }
@@ -191,7 +191,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
             setSelected(this.scrollableBorder);
             return true;
         }
-        if (isMouseOver(mouseX, mouseY)) {
+        if (isOver(mouseX, mouseY)) {
             double translatedMouseX = mouseX - this.x();
             int currentPose = getCurrentPose();
             double translatedMouseY = mouseY - this.y() + currentPose;
@@ -215,7 +215,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
             return true;
         }
         // force check, only if the mouse is on the template can the mouse interact with subwidgets
-        if (isMouseOver(mouseX, mouseY)) {
+        if (isOver(mouseX, mouseY)) {
             double translatedMouseX = mouseX - this.x();
             int currentPose = getCurrentPose();
             double translatedMouseY = mouseY - this.y() + currentPose;
@@ -233,7 +233,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
         resizeMaxHeight();
         super.onMouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
 
-        if (this.isMouseOver(mouseX, mouseY) || (this.scoll != null && this.scoll.isMouseOver(mouseX, mouseY))) {
+        if (this.isOver(mouseX, mouseY) || (this.scoll != null && this.scoll.isOver(mouseX, mouseY))) {
             this.scoll.onMouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
         }
         return false;
@@ -300,15 +300,15 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
     }
 
     @Override
-    public boolean isFocused() {
-        return this.selectedElement != null && this.selectedElement.isFocused();
+    public boolean isSelected() {
+        return this.selectedElement != null && this.selectedElement.isSelected();
     }
 
-    public void setFocused(boolean val) {
+    public void setSelected(boolean val) {
         // save focus state
-        super.setFocused(val);
+        super.setSelected(val);
         if (this.selectedElement != null) {
-            this.selectedElement.setFocused(val);
+            this.selectedElement.setSelected(val);
         }
     }
     // delegate scoll 's drag
@@ -339,7 +339,7 @@ public class ScrollableListWidget extends DrawableWidget implements SubSelectabl
             this.draggingElement = scoll;
             return true;
         }
-        if (isMouseOver(mouseX, mouseY)) {
+        if (isOver(mouseX, mouseY)) {
             double translatedMouseX = mouseX - this.x();
             int currentPose = getCurrentPose();
             double translatedMouseY = mouseY - this.y() + currentPose;

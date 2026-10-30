@@ -48,8 +48,8 @@ public class DelegateWidget extends DrawableWidget implements Draggable {
         return this.delegate != null && this.delegate.isSubWidget();
     }
 
-    public boolean isSelected() {
-        return this.delegate != null && this.delegate.isSelected();
+    public boolean shouldHighlight() {
+        return this.delegate != null && this.delegate.shouldHighlight();
     }
     // remove the extra Depth here, do not set this
     //    public <T extends DrawableWidget> T setExtraDepth(int depth){
@@ -76,12 +76,6 @@ public class DelegateWidget extends DrawableWidget implements Draggable {
     public void setSubWidget(boolean s) {
         if (this.delegate != null) {
             this.delegate.setSubWidget(s);
-        }
-    }
-
-    public void setSelected(boolean s) {
-        if (this.delegate != null) {
-            this.delegate.setSelected(s);
         }
     }
 
@@ -153,19 +147,19 @@ public class DelegateWidget extends DrawableWidget implements Draggable {
         return this.delegate != null && this.delegate.onKeyReleased(keyCode, scanCode, modifiers);
     }
 
-    public boolean isMouseOver(double mouseX, double mouseY) {
-        return this.delegate != null && this.delegate.isMouseOver(mouseX, mouseY);
+    public boolean isOver(double mouseX, double mouseY) {
+        return this.delegate != null && this.delegate.isOver(mouseX, mouseY);
     }
 
-    public void setFocused(boolean focused) {
+    public void setSelected(boolean focused) {
         if (delegate != null) {
-            this.delegate.setFocused(focused);
+            this.delegate.setSelected(focused);
         }
         // Debug.info("This method should not be called!");
     }
 
-    public boolean isFocused() {
-        return this.delegate != null && this.delegate.focused;
+    public boolean isSelected() {
+        return this.delegate != null && this.delegate.interacting;
     }
 
     public void x(int x) {
