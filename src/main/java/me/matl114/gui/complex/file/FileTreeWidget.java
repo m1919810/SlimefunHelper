@@ -307,7 +307,7 @@ public class FileTreeWidget extends SubScreenWidget {
         RenameEdit edit = new RenameEdit(entry, entry.delegate().getDelegate(), input, name, screen);
         renameEdit = edit;
         entry.delegate().setContentDelegate(input);
-        input.setFocused(true);
+        input.setSelected(true);
 
         // Observe raw presses so clicks outside this tree (including other screen widgets) also commit.
         Predicate<Event<MouseClickAction>> mouseListener = event -> {
@@ -355,7 +355,7 @@ public class FileTreeWidget extends SubScreenWidget {
 
     private void cancelRename(RenameEdit edit) {
         if (renameEdit != edit) return;
-        edit.input().setFocused(false);
+        edit.input().setSelected(false);
         edit.entry().delegate().setContentDelegate(edit.original());
         renameEdit = null;
     }
@@ -409,7 +409,7 @@ public class FileTreeWidget extends SubScreenWidget {
             finishRename(renameEdit);
             return true;
         }
-        if (renameEdit != null) renameEdit.input().setFocused(true);
+        if (renameEdit != null) renameEdit.input().setSelected(true);
         return super.onKeyPressed(keyCode, scanCode, modifiers);
     }
 
@@ -425,7 +425,7 @@ public class FileTreeWidget extends SubScreenWidget {
     @Override
     public boolean onCharTyped(char chr, int modifiers) {
         if (renameEdit == null) return super.onCharTyped(chr, modifiers);
-        renameEdit.input().setFocused(true);
+        renameEdit.input().setSelected(true);
         return renameEdit.input().onCharTyped(chr, modifiers);
     }
 
@@ -473,7 +473,7 @@ public class FileTreeWidget extends SubScreenWidget {
             if (selectedEntry != null) select(selectedEntry.file(), selectedEntry.directory());
             dirty = false;
         }
-        if (renameEdit != null) renameEdit.input().setFocused(true);
+        if (renameEdit != null) renameEdit.input().setSelected(true);
         super.render0(context, mouseX, mouseY, delta, disableSelect);
     }
 

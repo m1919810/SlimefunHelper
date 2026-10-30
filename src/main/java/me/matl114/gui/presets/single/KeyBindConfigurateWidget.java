@@ -44,13 +44,13 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
                                         "widget.gui.key-bind-configurate-widget.keycode-configure.tooltips", "")),
                                 (ButtonAction) ((element, widget, mouseButton) -> {
                                     // select the widget for the first press, and set code for the second
-                                    if (this.isFocused() && widget == this.selected) {
+                                    if (this.isSelected() && widget == this.selected) {
                                         onAnyKeyPressed(KeyCode.getKeyCodeFromMouseAction(mouseButton));
                                     }
                                     return true;
                                 })))
                         .withInputHandler(InputHandler.keyboard((widget, keyCode, scanCode, modifiers, isPress) -> {
-                            if (this.isFocused() && widget == this.selected && isPress) {
+                            if (this.isSelected() && widget == this.selected && isPress) {
                                 onAnyKeyPressed(keyCode);
                                 return true;
                             }
@@ -96,7 +96,7 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
     @Override
     public boolean onMouseClicked(double mouseX, double mouseY, int button) {
         super.onMouseClicked(mouseX, mouseY, button);
-        return isMouseOver(mouseX, mouseY);
+        return isOver(mouseX, mouseY);
     }
 
     private List<String> getKeys() {
@@ -108,7 +108,7 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
         List<String> keyCodes = getKeys();
         String context = keyCodes.isEmpty() ? "None" : String.join(",", keyCodes);
 
-        return (this.isFocused() && el == selected)
+        return (this.isSelected() && el == selected)
                 ? Text.literal("> " + context + " <").formatted(Formatting.GOLD)
                 : Text.literal(context);
     }

@@ -20,7 +20,7 @@ public class BoxElement extends AbstractElement {
     @Override
     public boolean onKey(ExecutableWidget widget, int keyCode, int scanCode, int modifiers, boolean isPress) {
         // add shift-press-trigger-press feature
-        if (this.action != null && widget.isSelected()) {
+        if (this.action != null && widget.shouldHighlight()) {
             if (ScreenUtils.isToggle(keyCode)) {
                 return this.action.onClick(this, widget, 0);
             }
