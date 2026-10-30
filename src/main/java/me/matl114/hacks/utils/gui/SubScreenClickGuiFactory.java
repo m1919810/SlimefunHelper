@@ -257,7 +257,7 @@ public final class SubScreenClickGuiFactory extends AbstractClassicClickGuiFacto
                             public boolean onAction(
                                     ExecutableWidget element, double mouseX, double mouseY, int button, Type type) {
                                 if (type == Type.MOUSE_START_DRAG) {
-                                    if (element.isMouseOver(mouseX, mouseY)) {
+                                    if (element.isOver(mouseX, mouseY)) {
                                         startMouseX = mouseX;
                                         startMouseY = mouseY;
                                         move = false;
@@ -278,7 +278,7 @@ public final class SubScreenClickGuiFactory extends AbstractClassicClickGuiFacto
                                 if ((type == Type.MOUSE_RELEASE && button == 0)
                                         || (type == Type.MOUSE_CLICK && button != 0)) {
                                     if (!move) {
-                                        if (element.isMouseOver(mouseX, mouseY)) {
+                                        if (element.isOver(mouseX, mouseY)) {
                                             slideMeta.setSlidingDown(!slideMeta.isSlidingDown());
                                         }
                                     } else {

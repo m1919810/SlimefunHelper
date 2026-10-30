@@ -34,7 +34,7 @@ public class ExecutableWidget extends DrawableWidget {
 
     @Override
     public boolean onMouseClicked(double mouseX, double mouseY, int button) {
-        if (handler != null && isMouseOver(mouseX, mouseY)) {
+        if (handler != null && isOver(mouseX, mouseY)) {
             return handler.onAction(this, mouseX, mouseY, button, InputHandler.Type.MOUSE_CLICK);
         }
         return false;
@@ -42,7 +42,7 @@ public class ExecutableWidget extends DrawableWidget {
 
     @Override
     public boolean onMouseReleased(double mouseX, double mouseY, int button) {
-        if (handler != null && isMouseOver(mouseX, mouseY)) {
+        if (handler != null && isOver(mouseX, mouseY)) {
             return handler.onAction(this, mouseX, mouseY, button, InputHandler.Type.MOUSE_RELEASE);
         }
         return false;

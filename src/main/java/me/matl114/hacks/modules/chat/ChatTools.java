@@ -160,7 +160,7 @@ public class ChatTools extends BaseModule {
         if (mc.currentScreen instanceof ChatScreen chat && chat.getFocused() instanceof TextFieldWidget textField) {
             return textField;
         } else if (basicSubScreenWidget != null
-                && basicSubScreenWidget.isFocused()
+                && basicSubScreenWidget.isSelected()
                 && basicSubScreenWidget.getSelected() instanceof ContentDelegateWidget<?> contentDelegateWidget
                 && contentDelegateWidget.getDelegate() instanceof TextFieldWidget text) {
             return text;

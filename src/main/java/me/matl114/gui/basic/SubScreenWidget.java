@@ -37,11 +37,11 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
 
     public <T extends SubSelectable> T setSelected(DrawableWidget subWidget) {
         if (selected != null) {
-            this.selected.setFocused(false);
+            this.selected.setSelected(false);
         }
         this.selected = subWidget;
-        if (this.selected != null && super.isFocused()) {
-            this.selected.setFocused(true);
+        if (this.selected != null && super.isSelected()) {
+            this.selected.setSelected(true);
         }
         return (T) this;
     }
@@ -119,13 +119,13 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
             translatedMouseY = (int) (translatedMouseY / textureScale);
         }
         DrawableWidget selected = null;
-        if (this.isSelected()) {
+        if (this.shouldHighlight()) {
             // use super.selected as a cache value to show whether there is a child which is selecting
             // it is calculated in render0
             //
             // use interact order to search the first widget that is selectable
             for (var ch : childrenInteractOrder()) {
-                if (ch.canSelect() && ch.isMouseOver(translatedMouseX, translatedMouseY)) {
+                if (ch.canSelect() && ch.isOver(translatedMouseX, translatedMouseY)) {
                     selected = ch;
                     break;
                 }
@@ -287,24 +287,24 @@ public class SubScreenWidget extends DrawableWidget implements SubSelectable {
     }
 
     @Override
-    public boolean isMouseOver(double mouseX, double mouseY) {
+    public boolean isOver(double mouseX, double mouseY) {
         float textureScale = getTextureScale();
         for (var entry : this.childrenInteractOrder()) {
-            if (entry.isMouseOver((mouseX - this.x()) / textureScale, (mouseY - this.y()) / textureScale)) return true;
+            if (entry.isOver((mouseX - this.x()) / textureScale, (mouseY - this.y()) / textureScale)) return true;
         }
         return false;
     }
 
     @Override
-    public boolean isFocused() {
-        return this.selected != null && this.selected.isFocused();
+    public boolean isSelected() {
+        return this.selected != null && this.selected.isSelected();
     }
 
-    public void setFocused(boolean val) {
+    public void setSelected(boolean val) {
         // save focus state
-        super.setFocused(val);
+        super.setSelected(val);
         if (this.selected != null) {
-            this.selected.setFocused(val);
+            this.selected.setSelected(val);
         }
     }
 

@@ -133,7 +133,7 @@ public interface InputHandler {
 
         default boolean onScroll(
                 ExecutableWidget widget, double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-            return widget.isMouseOver(mouseX, mouseY) && scroll(widget, verticalAmount);
+            return widget.isOver(mouseX, mouseY) && scroll(widget, verticalAmount);
         }
 
         @Override

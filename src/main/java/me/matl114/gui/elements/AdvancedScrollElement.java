@@ -70,12 +70,12 @@ public class AdvancedScrollElement extends AbstractElement {
     @Override
     public boolean onAction(ExecutableWidget element, double mouseX, double mouseY, int button, Type type) {
         if (shouldActive()) {
-            if (type == Type.MOUSE_CLICK && element.isMouseOver(mouseX, mouseY) && !isMouseOverBar(element, mouseY)) {
+            if (type == Type.MOUSE_CLICK && element.isOver(mouseX, mouseY) && !isMouseOverBar(element, mouseY)) {
                 // snap to location
 
             }
             if (type == Type.MOUSE_START_DRAG) {
-                if (element.isMouseOver(mouseX, mouseY)) {
+                if (element.isOver(mouseX, mouseY)) {
                     if (isMouseOverBar(element, mouseY)) {
                         double barStartY = getCurrentStartY(element.height());
                         startDragDeltaY = (mouseY - barStartY - element.y());
@@ -140,7 +140,7 @@ public class AdvancedScrollElement extends AbstractElement {
             }
 
             context.fill(1, y1 + 1, element.getTextureWidth() - 1, y2 - 1, Colors.GRAY);
-            if (element.isDragging() || (element.isMouseOver(mouseX, mouseY) && isMouseOverBar(element, mouseY))) {
+            if (element.isDragging() || (element.isOver(mouseX, mouseY) && isMouseOverBar(element, mouseY))) {
                 RenderHandler.drawHighlightFrame(context, 0, y1, element.getTextureWidth(), y2 - y1, Colors.WHITE);
             }
         }
