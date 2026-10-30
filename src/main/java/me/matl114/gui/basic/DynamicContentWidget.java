@@ -42,27 +42,27 @@ public class DynamicContentWidget<W extends Element & Drawable & Selectable> ext
             int y) {
         super(x, y, 0, 0);
         this.contentSupplier = supplier != null ? supplier : super::getDelegate;
-        this.xSupplier = xSupplier != null ? xSupplier : ValueAccessor.of(super::getX, super::setX);
-        this.ySupplier = ySupplier != null ? ySupplier : ValueAccessor.of(super::getY, super::setY);
+        this.xSupplier = xSupplier != null ? xSupplier : ValueAccessor.of(super::x, super::x);
+        this.ySupplier = ySupplier != null ? ySupplier : ValueAccessor.of(super::y, super::y);
     }
 
     @Override
-    public int getX() {
+    public int x() {
         return xSupplier.getValue();
     }
 
     @Override
-    public int getY() {
+    public int y() {
         return ySupplier.getValue();
     }
 
     @Override
-    public void setX(int x) {
+    public void x(int x) {
         xSupplier.setValue(x);
     }
 
     @Override
-    public void setY(int y) {
+    public void y(int y) {
         ySupplier.setValue(y);
     }
 

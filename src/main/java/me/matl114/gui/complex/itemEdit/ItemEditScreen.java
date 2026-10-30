@@ -303,8 +303,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             }
             this.widget = this.itemAttrValue
                     .generateEditBox(
-                            ItemEditScreen.this.processingSubScreen.getX() + 10,
-                            ItemEditScreen.this.processingSubScreen.getY() + 10,
+                            ItemEditScreen.this.processingSubScreen.x() + 10,
+                            ItemEditScreen.this.processingSubScreen.y() + 10,
                             ItemEditScreen.this.processingSubScreen.getTextureWidth() - 20,
                             ItemEditScreen.this.processingSubScreen.getTextureHeight() - 20)
                     .getDelegate();
@@ -348,8 +348,8 @@ public class ItemEditScreen extends ConfirmingBigScreen {
             // refresh widget with absolute coord
             this.widget = this.itemAttrValue
                     .generateEditBox(
-                            ItemEditScreen.this.processingSubScreen.getX() + 10,
-                            ItemEditScreen.this.processingSubScreen.getY() + 10,
+                            ItemEditScreen.this.processingSubScreen.x() + 10,
+                            ItemEditScreen.this.processingSubScreen.y() + 10,
                             ItemEditScreen.this.processingSubScreen.getTextureWidth() - 20,
                             ItemEditScreen.this.processingSubScreen.getTextureHeight() - 20)
                     .getDelegate();

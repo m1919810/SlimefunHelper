@@ -130,8 +130,8 @@ public class RegistryRegex<T> implements NBTParsable<RegistryRegex<T>>, Predicat
                                 originalCopy.addListener(s -> selectSubScreen.updateFilterList());
                                 SubScreenWidget subScreenWidget = selectSubScreen.getScrollableBorder();
                                 subScreenWidget.clearChildren();
-                                subScreenWidget.addDrawableChild(regexWrapper.generateValueWidget(
-                                        factory, 0, -20, subScreenWidget.getWidth(), 20));
+                                subScreenWidget.addDrawableChild(
+                                        regexWrapper.generateValueWidget(factory, 0, -20, subScreenWidget.width(), 20));
                                 subScreenWidget.addDrawableChild(generateInformationButton(subScreenWidget));
                             }
 
@@ -142,7 +142,7 @@ public class RegistryRegex<T> implements NBTParsable<RegistryRegex<T>>, Predicat
                                                         original.get().getRules())),
                                         null,
                                         null,
-                                        subScreenWidget.getWidth(),
+                                        subScreenWidget.width(),
                                         -20,
                                         20,
                                         20);

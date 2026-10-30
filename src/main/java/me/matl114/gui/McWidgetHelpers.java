@@ -175,8 +175,8 @@ public class McWidgetHelpers {
                 float textureScale = getTextureScale();
                 TextFieldAccess.of(delegate)
                         .dragSelect(
-                                (int) ((mouseX - this.getX() - delegate.getX()) / textureScale),
-                                (int) ((mouseY - this.getY() - delegate.getY()) / textureScale),
+                                (int) ((mouseX - this.x() - delegate.getX()) / textureScale),
+                                (int) ((mouseY - this.y() - delegate.getY()) / textureScale),
                                 true);
             }
             return super.onMouseDragged(mouseX, mouseY, button, deltaX, deltaY);
@@ -185,7 +185,7 @@ public class McWidgetHelpers {
         @Override
         public boolean startDrag(Screen screen, double mouseX, double mouseY) {
             if (getDelegate() != null
-                    && TextFieldAccess.of(getDelegate()).canStartDrag(mouseX - this.getX(), mouseY - this.getY())) {
+                    && TextFieldAccess.of(getDelegate()).canStartDrag(mouseX - this.x(), mouseY - this.y())) {
                 this.startDrag = true;
                 return true;
             }

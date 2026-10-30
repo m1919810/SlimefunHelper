@@ -153,8 +153,8 @@ public class WeakRegistryRegex<T> implements NBTParsable<WeakRegistryRegex<T>>, 
                                 originalCopy.addListener(s -> selectSubScreen.updateFilterList());
                                 SubScreenWidget subScreenWidget = selectSubScreen.getScrollableBorder();
                                 subScreenWidget.clearChildren();
-                                subScreenWidget.addDrawableChild(regexWrapper.generateValueWidget(
-                                        factory, 0, -20, subScreenWidget.getWidth(), 20));
+                                subScreenWidget.addDrawableChild(
+                                        regexWrapper.generateValueWidget(factory, 0, -20, subScreenWidget.width(), 20));
                                 subScreenWidget.addDrawableChild(generateInformationButton(subScreenWidget));
                             }
 
@@ -165,7 +165,7 @@ public class WeakRegistryRegex<T> implements NBTParsable<WeakRegistryRegex<T>>, 
                                                         original.get().getRules())),
                                         null,
                                         null,
-                                        subScreenWidget.getWidth(),
+                                        subScreenWidget.width(),
                                         -20,
                                         20,
                                         20);

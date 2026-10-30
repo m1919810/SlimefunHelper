@@ -33,11 +33,11 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
         return this;
     }
 
-    public int getHeight() {
+    public int height() {
         return this.getDelegate() instanceof Widget widget ? widget.getHeight() : this.dy;
     }
 
-    public int getWidth() {
+    public int width() {
         return this.getDelegate() instanceof Widget widget ? widget.getWidth() : this.dx;
     }
 
@@ -51,9 +51,9 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
             VDrawContext context, int mouseX, int mouseY, float delta, boolean disableSelect) {
         super.renderInDefaultMatrix(context, mouseX, mouseY, delta, disableSelect);
         if (this.getDelegate() != null) {
-            int translatedMouseX = (mouseX - this.getX());
+            int translatedMouseX = (mouseX - this.x());
 
-            int translatedMouseY = mouseY - this.getY();
+            int translatedMouseY = mouseY - this.y();
             float textureScale = getTextureScale();
             if (textureScale != 1.0f) {
                 translatedMouseX = (int) (translatedMouseX / textureScale);
@@ -77,9 +77,9 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
     public boolean onMouseClicked(double mouseX, double mouseY, int button) {
 
         if (this.getDelegate() != null) {
-            int translatedMouseX = (int) (mouseX - this.getX());
+            int translatedMouseX = (int) (mouseX - this.x());
 
-            int translatedMouseY = (int) (mouseY - this.getY());
+            int translatedMouseY = (int) (mouseY - this.y());
             float textureScale = getTextureScale();
             if (textureScale != 1.0f) {
                 translatedMouseX = (int) (translatedMouseX / textureScale);
@@ -108,9 +108,9 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
     @Override
     public boolean onMouseReleased(double mouseX, double mouseY, int button) {
         if (this.getDelegate() != null) {
-            int translatedMouseX = (int) (mouseX - this.getX());
+            int translatedMouseX = (int) (mouseX - this.x());
 
-            int translatedMouseY = (int) (mouseY - this.getY());
+            int translatedMouseY = (int) (mouseY - this.y());
             float textureScale = getTextureScale();
             if (textureScale != 1.0f) {
                 translatedMouseX = (int) (translatedMouseX / textureScale);
@@ -137,9 +137,9 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
     public void onMouseMoved(double mouseX, double mouseY) {
         // should not move
         if (this.getDelegate() != null) {
-            int translatedMouseX = (int) (mouseX - this.getX());
+            int translatedMouseX = (int) (mouseX - this.x());
 
-            int translatedMouseY = (int) (mouseY - this.getY());
+            int translatedMouseY = (int) (mouseY - this.y());
             float textureScale = getTextureScale();
             if (textureScale != 1.0f) {
                 translatedMouseX = (int) (translatedMouseX / textureScale);
@@ -156,9 +156,9 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
     public boolean onMouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         // should not drag
         if (this.getDelegate() != null) {
-            int translatedMouseX = (int) (mouseX - this.getX());
+            int translatedMouseX = (int) (mouseX - this.x());
 
-            int translatedMouseY = (int) (mouseY - this.getY());
+            int translatedMouseY = (int) (mouseY - this.y());
             float textureScale = getTextureScale();
             if (textureScale != 1.0f) {
                 translatedMouseX = (int) (translatedMouseX / textureScale);
@@ -189,9 +189,9 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
     public boolean onMouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         // should not scrolled
         if (this.getDelegate() != null) {
-            int translatedMouseX = (int) (mouseX - this.getX());
+            int translatedMouseX = (int) (mouseX - this.x());
 
-            int translatedMouseY = (int) (mouseY - this.getY());
+            int translatedMouseY = (int) (mouseY - this.y());
             float textureScale = getTextureScale();
             if (textureScale != 1.0f) {
                 translatedMouseX = (int) (translatedMouseX / textureScale);
@@ -235,7 +235,7 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
         float textureScale = getTextureScale();
         return this.getDelegate() != null
                 && this.getDelegate()
-                        .isMouseOver((mouseX - this.getX()) / textureScale, (mouseY - this.getY()) / textureScale);
+                        .isMouseOver((mouseX - this.x()) / textureScale, (mouseY - this.y()) / textureScale);
     }
 
     @Override
@@ -264,7 +264,7 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
     public void releaseDrag(Screen screen, double mouseX, double mouseY) {
         if (getDelegate() instanceof Draggable draggable) {
             float textureScale = getTextureScale();
-            draggable.releaseDrag(screen, (mouseX - this.getX()) / textureScale, (mouseY - this.getY()) / textureScale);
+            draggable.releaseDrag(screen, (mouseX - this.x()) / textureScale, (mouseY - this.y()) / textureScale);
         }
     }
 
@@ -272,8 +272,7 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
     public boolean startDrag(Screen screen, double mouseX, double mouseY) {
         if (getDelegate() instanceof Draggable draggable) {
             float textureScale = getTextureScale();
-            return draggable.startDrag(
-                    screen, (mouseX - this.getX()) / textureScale, (mouseY - this.getY()) / textureScale);
+            return draggable.startDrag(screen, (mouseX - this.x()) / textureScale, (mouseY - this.y()) / textureScale);
         }
         return false;
     }
