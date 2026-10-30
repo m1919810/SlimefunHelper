@@ -1832,6 +1832,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 acceptFireworkRemovalDuringDelay = true;
             }
             if (notWorking
+                    || PacketManager.isDisconnectOrRespawn(event.context.packetType())
                     || (Tasks.getTick() - PlayerStateManager.INSTANCE.lastStartGlidingTick
                                     >= armorGlideMaxDelayTicks.get().getValue()
                             || (event.context instanceof PacketStorageRecvImpl impl
@@ -1967,6 +1968,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         if (currentDelayingLock != null) {
             eventRemoval.cancel();
             if (notWork
+                    || PacketManager.isDisconnectOrRespawn(eventRemoval.context.packetType())
                     || eventRemoval.context.packetType() == PlayPackets.PLAYER_POSITION
                     || eventRemoval.context.timestampMS() > lastStartDelayOrReleaseMs + fireworksDelayMS.get()) {
                 currentDelayingLock = null;

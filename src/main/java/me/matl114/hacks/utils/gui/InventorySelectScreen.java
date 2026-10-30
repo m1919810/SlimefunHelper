@@ -134,8 +134,8 @@ public class InventorySelectScreen extends GenericBackGroundScreen {
                                 .anyMatch(i -> FilterService.nameMatch(i, value)));
     }
 
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
         int availableRenderSpace = this.backgroundHeight - LABEL_OCCUPIED;
         this.grid.resetGridHeightAndRefresh(availableRenderSpace);
         new ContentDelegateWidget<>(this.x, this.y, 0, 0)

@@ -76,8 +76,8 @@ public class EntityTypeEntrySetScreen extends ConfirmingBigScreen {
     }
 
     @Override
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
 
         sectionList = new DynamicListWidget(0, 0, WIDTH);
         for (SpawnGroup group : SpawnGroup.values()) {

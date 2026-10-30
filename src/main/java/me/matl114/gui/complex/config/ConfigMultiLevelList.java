@@ -1,6 +1,10 @@
 package me.matl114.gui.complex.config;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BooleanSupplier;
 import me.matl114.gui.Constants;
 import me.matl114.gui.WidgetUtils;
@@ -69,7 +73,19 @@ public class ConfigMultiLevelList extends DynamicListWidget {
         if (!(ref instanceof MapRef mapRef)) {
             return;
         }
-        addMapEntries(path, mapRef, indentWidth, initiallyExpanded, () -> true);
+        Map<String, Integer> visiblePathOrder = new HashMap<>();
+        int order = 0;
+        for (String visiblePath : path.getConfig().getVisiblePaths()) {
+            visiblePathOrder.put(visiblePath, order++);
+        }
+        addMapEntries(
+                path,
+                mapRef,
+                indentWidth,
+                initiallyExpanded,
+                () -> true,
+                visiblePathOrder,
+                visiblePathOrder.containsKey(path.asString()));
     }
 
     private void addMapEntries(
@@ -77,26 +93,75 @@ public class ConfigMultiLevelList extends DynamicListWidget {
             MapRef mapRef,
             int indentWidth,
             boolean initiallyExpanded,
-            BooleanSupplier visible) {
+            BooleanSupplier visible,
+            Map<String, Integer> visiblePathOrder,
+            boolean parentPathVisible) {
+        List<MapEntry> options = new ArrayList<>();
+        List<MapEntry> groups = new ArrayList<>();
         for (String key : mapRef.getKeys()) {
             ModulePath childPath = currentPath.add(key);
+            String childPathString = childPath.asString();
+            boolean childPathVisible = parentPathVisible || visiblePathOrder.containsKey(childPathString);
             Ref<?> childRef = resolve(childPath);
             if (childRef instanceof MapRef childMap) {
-                ValueAccessor<Boolean> expanded = ValueAccessor.holder(initiallyExpanded);
-                addGroupHeader(childPath, indentWidth, visible, expanded);
-                BooleanSupplier childrenVisible = () -> visible.getAsBoolean() && expanded.getValue();
-                addMapEntries(childPath, childMap, indentWidth, initiallyExpanded, childrenVisible);
-            } else if (childRef != null) {
-                int depth = childPath.toPath().length - 1;
-                WidgetUtils.ConfigScreenLayout childLayout = layoutForDepth(indentWidth, depth);
-                addVisibleWidget(
-                        indentWidget(
-                                WidgetUtils.createKeyValueWidget(childRef, childPath.asString(), childLayout, factory),
-                                depth * indentWidth),
-                        visible);
+                if (!childPathVisible
+                        && visiblePathOrder(childPathString, visiblePathOrder, true) == Integer.MAX_VALUE) {
+                    continue;
+                }
+                groups.add(new MapEntry(childPath, childMap, childPathVisible));
+            } else if (childRef != null && childPathVisible) {
+                options.add(new MapEntry(childPath, childRef, true));
             }
         }
+
+        options.sort(
+                Comparator.comparingInt(entry -> visiblePathOrder(entry.path().asString(), visiblePathOrder, false)));
+        groups.sort(
+                Comparator.comparingInt(entry -> visiblePathOrder(entry.path().asString(), visiblePathOrder, true)));
+
+        for (MapEntry option : options) {
+            int depth = option.path().toPath().length - 1;
+            WidgetUtils.ConfigScreenLayout childLayout = layoutForDepth(indentWidth, depth);
+            addVisibleWidget(
+                    indentWidget(
+                            WidgetUtils.createKeyValueWidget(
+                                    option.ref(), option.path().asString(), childLayout, factory),
+                            depth * indentWidth),
+                    visible);
+        }
+
+        for (MapEntry group : groups) {
+            ModulePath groupPath = group.path();
+            ValueAccessor<Boolean> expanded = ValueAccessor.holder(initiallyExpanded);
+            addGroupHeader(groupPath, indentWidth, visible, expanded);
+            BooleanSupplier childrenVisible = () -> visible.getAsBoolean() && expanded.getValue();
+            addMapEntries(
+                    groupPath,
+                    (MapRef) group.ref(),
+                    indentWidth,
+                    initiallyExpanded,
+                    childrenVisible,
+                    visiblePathOrder,
+                    group.pathVisible());
+        }
     }
+
+    private static int visiblePathOrder(
+            String path, Map<String, Integer> visiblePathOrder, boolean includeDescendants) {
+        int firstOrder = visiblePathOrder.getOrDefault(path, Integer.MAX_VALUE);
+        if (!includeDescendants) {
+            return firstOrder;
+        }
+        String prefix = path + ".";
+        for (Map.Entry<String, Integer> visiblePath : visiblePathOrder.entrySet()) {
+            if (visiblePath.getKey().startsWith(prefix)) {
+                firstOrder = Math.min(firstOrder, visiblePath.getValue());
+            }
+        }
+        return firstOrder;
+    }
+
+    private record MapEntry(ModulePath path, Ref<?> ref, boolean pathVisible) {}
 
     private void addGroupHeader(
             ModulePath groupPath, int indentWidth, BooleanSupplier visible, ValueAccessor<Boolean> expanded) {

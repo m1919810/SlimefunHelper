@@ -4,7 +4,6 @@ import java.util.List;
 import me.matl114.events.Listener;
 import me.matl114.gui.WidgetUtils;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.interfaces.DefaultElementFactory;
 import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.gui.presets.index.IndexedScreen;
 import me.matl114.hacks.api.ModulePath;
@@ -22,10 +21,6 @@ public class ConfigMultiLevelListScreen extends IndexedScreen<Config, DrawableWi
     private final ElementFactory factory;
     private StringRef filterWidget;
     private Config selectingConfig;
-
-    public ConfigMultiLevelListScreen(List<Config> list) {
-        this(list, DefaultElementFactory.INSTANCE);
-    }
 
     public ConfigMultiLevelListScreen(List<Config> list, ElementFactory factory) {
         super(list, 400, 320);

@@ -164,7 +164,7 @@ public class McWidgetHelpers {
         boolean startDrag = false;
 
         @Override
-        public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        public boolean onMouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
             if (this.startDrag && this.getDelegate() != null) {
                 var delegate = this.getDelegate();
                 // 设置cursor位置
@@ -175,7 +175,7 @@ public class McWidgetHelpers {
                                 (int) ((mouseY - this.getY() - delegate.getY()) / textureScale),
                                 true);
             }
-            return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+            return super.onMouseDragged(mouseX, mouseY, button, deltaX, deltaY);
         }
 
         @Override

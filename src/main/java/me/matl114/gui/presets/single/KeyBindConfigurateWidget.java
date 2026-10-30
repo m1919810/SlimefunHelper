@@ -94,8 +94,8 @@ public class KeyBindConfigurateWidget extends SubScreenWidget {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        super.mouseClicked(mouseX, mouseY, button);
+    public boolean onMouseClicked(double mouseX, double mouseY, int button) {
+        super.onMouseClicked(mouseX, mouseY, button);
         return isMouseOver(mouseX, mouseY);
     }
 

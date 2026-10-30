@@ -29,8 +29,8 @@ public class QuestionScreen extends GenericBackGroundScreen {
     }
 
     @Override
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
         int background = this.backgroundWidth - 10;
         var re = TextRenderers.get().wrapLines(this.q, background);
         int height = Math.max(40, 10 * re.size());
