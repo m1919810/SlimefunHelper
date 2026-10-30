@@ -327,7 +327,7 @@ public abstract class DrawableWidget implements Element, Drawable, Widget, Selec
 
     public final void forEachChild(Consumer<ClickableWidget> consumer) {}
 
-    public final Selectable.SelectionType getType() {
+    public Selectable.SelectionType getType() {
         return this.selected ? Selectable.SelectionType.HOVERED : Selectable.SelectionType.NONE;
     }
 
