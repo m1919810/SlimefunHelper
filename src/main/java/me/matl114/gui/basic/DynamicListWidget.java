@@ -16,11 +16,11 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
 
     public <T extends SubSelectable> T setSelected(DrawableWidget subWidget) {
         if (selected != null) {
-            this.selected.setFocused(false);
+            this.selected.setSelected(false);
         }
         this.selected = subWidget;
-        if (this.selected != null && super.isFocused()) {
-            this.selected.setFocused(true);
+        if (this.selected != null && super.isSelected()) {
+            this.selected.setSelected(true);
         }
         return (T) this;
     }
@@ -76,14 +76,14 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
             translatedMouseY = (int) (translatedMouseY / textureScale);
         }
         DrawableWidget selected = null;
-        if (this.isSelected()) {
+        if (this.shouldHighlight()) {
             // use super.selected as a cache value to show whether there is a child which is selecting
             // it is calculated in render0
             //
             // use interact order to search the first widget that is selectable
             int yLevel = 0;
             for (var ch : children) {
-                if (ch.canSelect() && ch.isMouseOver(translatedMouseX, translatedMouseY - yLevel)) {
+                if (ch.canSelect() && ch.isOver(translatedMouseX, translatedMouseY - yLevel)) {
                     selected = ch;
                     break;
                 }
@@ -279,11 +279,11 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
     }
 
     @Override
-    public boolean isMouseOver(double mouseX, double mouseY) {
+    public boolean isOver(double mouseX, double mouseY) {
         int yLevel = 0;
         for (var entry : children) {
             float textureScale = getTextureScale();
-            if (entry.isMouseOver((mouseX - this.x()) / textureScale, ((mouseY - this.y()) / textureScale) - yLevel)) {
+            if (entry.isOver((mouseX - this.x()) / textureScale, ((mouseY - this.y()) / textureScale) - yLevel)) {
                 return true;
             }
             yLevel += entry.height();
@@ -292,15 +292,15 @@ public class DynamicListWidget extends DrawableWidget implements SubSelectable {
     }
 
     @Override
-    public boolean isFocused() {
-        return this.selected != null && this.selected.isFocused();
+    public boolean isSelected() {
+        return this.selected != null && this.selected.isSelected();
     }
 
-    public void setFocused(boolean val) {
+    public void setSelected(boolean val) {
         // save focus state
-        super.setFocused(val);
+        super.setSelected(val);
         if (this.selected != null) {
-            this.selected.setFocused(val);
+            this.selected.setSelected(val);
         }
     }
 }
