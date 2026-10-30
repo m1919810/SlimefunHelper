@@ -182,10 +182,6 @@ public abstract class DrawableWidget
         }
     }
 
-    public abstract boolean mouseClicked(double mouseX, double mouseY, int button);
-
-    public abstract boolean mouseReleased(double mouseX, double mouseY, int button);
-
     public boolean isMouseOver(double mouseX, double mouseY) {
         return mouseX >= this.getX()
                 && mouseY >= this.getY()
@@ -259,30 +255,32 @@ public abstract class DrawableWidget
         screen.addDrawableChild(this);
     }
 
-    public void mouseMoved(double mouseX, double mouseY) {
-        // should not move
-    }
+    // input methods api
 
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+    public abstract boolean onMouseClicked(double mouseX, double mouseY, int button);
+
+    public abstract boolean onMouseReleased(double mouseX, double mouseY, int button);
+
+    public void onMouseMoved(double mouseX, double mouseY) {}
+
+    public boolean onMouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         // should not drag
         return false;
     }
 
-    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        // should not scrolled
-
+    public boolean onMouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         return false;
     }
 
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean onKeyPressed(int keyCode, int scanCode, int modifiers) {
         return false;
     }
 
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+    public boolean onKeyReleased(int keyCode, int scanCode, int modifiers) {
         return false;
     }
 
-    public boolean charTyped(char chr, int modifiers) {
+    public boolean onCharTyped(char chr, int modifiers) {
         return false;
     }
 
@@ -309,6 +307,8 @@ public abstract class DrawableWidget
     public final ScreenRect getNavigationFocus() {
         return ScreenRect.empty();
     }
+    // -------------------------------- API compat
+    // dragging api
 
     public boolean isDragging() {
         return false;
@@ -318,5 +318,51 @@ public abstract class DrawableWidget
 
     public boolean startDrag(Screen screen, double mouseX, double mouseY) {
         return false;
+    }
+
+    // will only be modified on main thread
+    public static int THREAD_SAFE_MODIFIER_CACHE = 0;
+    public static boolean THREAD_SAFE_DOUBLE_CLICK = false;
+
+    public final boolean mouseClicked(Click click, boolean doubled) {
+        THREAD_SAFE_MODIFIER_CACHE = click.modifiers();
+        THREAD_SAFE_DOUBLE_CLICK = doubled;
+        return this.onMouseClicked(click.x(), click.y(), click.button());
+    }
+
+    public final boolean mouseReleased(Click click) {
+        THREAD_SAFE_MODIFIER_CACHE = click.modifiers();
+        return this.onMouseReleased(click.x(), click.y(), click.button());
+    }
+
+    public final boolean mouseDragged(Click click, double offsetX, double offsetY) {
+        THREAD_SAFE_MODIFIER_CACHE = click.modifiers();
+        return this.onMouseDragged(click.x(), click.y(), click.button(), offsetX, offsetY);
+    }
+
+    public final boolean keyPressed(KeyInput input) {
+        THREAD_SAFE_MODIFIER_CACHE = input.modifiers();
+        return this.onKeyPressed(input.key(), input.scancode(), input.modifiers());
+    }
+
+    public final boolean keyReleased(KeyInput input) {
+        THREAD_SAFE_MODIFIER_CACHE = input.modifiers();
+        return this.onKeyReleased(input.key(), input.scancode(), input.modifiers());
+    }
+
+    public final boolean charTyped(CharInput input) {
+        THREAD_SAFE_MODIFIER_CACHE = input.modifiers();
+        return this.onCharTyped((char) input.codepoint(), input.modifiers());
+    }
+
+    public final void mouseMoved(double mouseX, double mouseY) {
+        // should not move
+        onMouseMoved(mouseX, mouseY);
+    }
+
+    public final boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        // should not scrolled
+
+        return onMouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
 }

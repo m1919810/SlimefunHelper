@@ -404,13 +404,13 @@ public class FileTreeWidget extends SubScreenWidget {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean onKeyPressed(int keyCode, int scanCode, int modifiers) {
         if (renameEdit != null && (keyCode == KEY_ENTER || keyCode == KEY_KP_ENTER)) {
             finishRename(renameEdit);
             return true;
         }
         if (renameEdit != null) renameEdit.input().setFocused(true);
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.onKeyPressed(keyCode, scanCode, modifiers);
     }
 
     /** Add after all other widgets in the outermost container so inputs consume keys first. */
@@ -423,10 +423,10 @@ public class FileTreeWidget extends SubScreenWidget {
     }
 
     @Override
-    public boolean charTyped(char chr, int modifiers) {
-        if (renameEdit == null) return super.charTyped(chr, modifiers);
+    public boolean onCharTyped(char chr, int modifiers) {
+        if (renameEdit == null) return super.onCharTyped(chr, modifiers);
         renameEdit.input().setFocused(true);
-        return renameEdit.input().charTyped(chr, modifiers);
+        return renameEdit.input().onCharTyped(chr, modifiers);
     }
 
     private void select(@Nullable File file, boolean directory) {

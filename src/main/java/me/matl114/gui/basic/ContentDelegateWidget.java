@@ -70,7 +70,7 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean onMouseClicked(double mouseX, double mouseY, int button) {
 
         if (this.getDelegate() != null) {
             int translatedMouseX = (int) (mouseX - this.getX());
@@ -81,8 +81,15 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
                 translatedMouseX = (int) (translatedMouseX / textureScale);
                 translatedMouseY = (int) (translatedMouseY / textureScale);
             }
-            if (this.getDelegate().mouseClicked(translatedMouseX, translatedMouseY, button)) {
-                return true;
+            if (this.getDelegate() instanceof DrawableWidget widget) {
+                if (widget.onMouseClicked(translatedMouseX, translatedMouseY, button)) {
+                    return true;
+                }
+            } else {
+                if (this.getDelegate()
+                    .mouseClicked(translatedMouseX, translatedMouseY, button)) {
+                    return true;
+                }
             }
         }
 
@@ -90,7 +97,7 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    public boolean onMouseReleased(double mouseX, double mouseY, int button) {
         if (this.getDelegate() != null) {
             int translatedMouseX = (int) (mouseX - this.getX());
 
@@ -100,15 +107,21 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
                 translatedMouseX = (int) (translatedMouseX / textureScale);
                 translatedMouseY = (int) (translatedMouseY / textureScale);
             }
-            if (this.getDelegate().mouseReleased(translatedMouseX, translatedMouseY, button)) {
-                return true;
+            if (this.getDelegate() instanceof DrawableWidget widget) {
+                if (widget.onMouseReleased(translatedMouseX, translatedMouseY, button)) {
+                    return true;
+                }
+            } else {
+                if (this.getDelegate().mouseReleased(translatedMouseX, translatedMouseY, button)) {
+                    return true;
+                }
             }
         }
 
         return false;
     }
 
-    public void mouseMoved(double mouseX, double mouseY) {
+    public void onMouseMoved(double mouseX, double mouseY) {
         // should not move
         if (this.getDelegate() != null) {
             int translatedMouseX = (int) (mouseX - this.getX());
@@ -119,11 +132,15 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
                 translatedMouseX = (int) (translatedMouseX / textureScale);
                 translatedMouseY = (int) (translatedMouseY / textureScale);
             }
-            this.getDelegate().mouseMoved(translatedMouseX, translatedMouseY);
+            if (this.getDelegate() instanceof DrawableWidget drawableWidget) {
+                drawableWidget.onMouseMoved(translatedMouseX, translatedMouseY);
+            } else {
+                this.getDelegate().mouseMoved(translatedMouseX, translatedMouseY);
+            }
         }
     }
 
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+    public boolean onMouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         // should not drag
         if (this.getDelegate() != null) {
             int translatedMouseX = (int) (mouseX - this.getX());
@@ -134,17 +151,24 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
                 translatedMouseX = (int) (translatedMouseX / textureScale);
                 translatedMouseY = (int) (translatedMouseY / textureScale);
             }
-            if (this.getDelegate()
+            if (this.getDelegate() instanceof DrawableWidget widget) {
+                if (widget.onMouseDragged(
+                        translatedMouseX, translatedMouseY, button, deltaX * textureScale, deltaY * textureScale)) {
+                    return true;
+                }
+            } else {
+                if (this.getDelegate()
                     .mouseDragged(
-                            translatedMouseX, translatedMouseY, button, deltaX * textureScale, deltaY * textureScale)) {
-                return true;
+                        translatedMouseX, translatedMouseY, button, deltaX * textureScale, deltaY * textureScale)) {
+                    return true;
+                }
             }
         }
 
         return false;
     }
 
-    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+    public boolean onMouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         // should not scrolled
         if (this.getDelegate() != null) {
             int translatedMouseX = (int) (mouseX - this.getX());
@@ -155,25 +179,35 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
                 translatedMouseX = (int) (translatedMouseX / textureScale);
                 translatedMouseY = (int) (translatedMouseY / textureScale);
             }
-            if (this.getDelegate()
-                    .mouseScrolled(translatedMouseX, translatedMouseY, horizontalAmount, verticalAmount)) {
-                return true;
+            if (this.getDelegate() instanceof DrawableWidget drawable) {
+                return drawable.onMouseScrolled(translatedMouseX, translatedMouseY, horizontalAmount, verticalAmount);
+            } else {
+                return this.getDelegate()
+                        .mouseScrolled(translatedMouseX, translatedMouseY, horizontalAmount, verticalAmount);
             }
         }
         return false;
     }
 
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        return this.getDelegate() != null && this.getDelegate().keyPressed(keyCode, scanCode, modifiers);
+    public boolean onKeyPressed(int keyCode, int scanCode, int modifiers) {
+        if (this.getDelegate() instanceof DrawableWidget drawable) {
+            return drawable.onKeyPressed(keyCode, scanCode, modifiers);
+        } else
+            return this.getDelegate() != null && this.getDelegate().keyPressed(keyCode, scanCode, modifiers);
     }
 
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        return this.getDelegate() != null && this.getDelegate().keyReleased(keyCode, scanCode, modifiers);
+    public boolean onKeyReleased(int keyCode, int scanCode, int modifiers) {
+        if (this.getDelegate() instanceof DrawableWidget drawable) {
+            return drawable.onKeyReleased(keyCode, scanCode, modifiers);
+        } else
+            return this.getDelegate() != null && this.getDelegate().keyReleased(keyCode, scanCode, modifiers);
     }
 
     @Override
-    public boolean charTyped(char chr, int modifiers) {
-        return this.getDelegate() != null && this.getDelegate().charTyped(chr, modifiers);
+    public boolean onCharTyped(char chr, int modifiers) {
+        if (this.getDelegate() instanceof DrawableWidget drawable) {
+            return drawable.onCharTyped(chr, modifiers);
+        } else return this.getDelegate() != null && this.getDelegate().charTyped(chr, modifiers);
     }
 
     @Override

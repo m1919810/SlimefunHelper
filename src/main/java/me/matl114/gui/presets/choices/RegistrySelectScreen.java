@@ -61,8 +61,8 @@ public class RegistrySelectScreen<T> extends ConfirmingBigScreen {
     }
 
     @Override
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
         this.selectSubScreen = ListRegistryMultiSelectWidget.registry(
                 this.registry,
                 this.selectSubScreen.getSelectedRegistries(),

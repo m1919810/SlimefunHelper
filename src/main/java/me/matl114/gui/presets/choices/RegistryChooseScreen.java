@@ -57,8 +57,8 @@ public class RegistryChooseScreen<T> extends ConfirmingBigScreen {
     }
 
     @Override
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
         var selectSubScreen = ListRegistrySelectWidget.registry(
                 this.registry,
                 this.filterInput,

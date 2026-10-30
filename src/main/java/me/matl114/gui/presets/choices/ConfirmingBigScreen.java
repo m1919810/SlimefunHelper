@@ -34,8 +34,8 @@ public abstract class ConfirmingBigScreen extends GenericBackGroundScreen {
     }
 
     @Override
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
         this.content_end_y = this.backgroundHeight - 30;
         // 按钮大小 80, 20
         // 放在240 - 90 = 150

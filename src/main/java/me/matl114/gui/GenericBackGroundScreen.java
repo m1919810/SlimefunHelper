@@ -37,8 +37,8 @@ public class GenericBackGroundScreen extends GenericScreen {
                 .addTo(this);
     }
 
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
         initBackground();
     }
 }

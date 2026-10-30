@@ -72,7 +72,7 @@ public class ClickGui extends BaseModule {
     public ModulePath clickGui = makePath(Configs.MISC_CONFIG, "click-gui");
     public final KeyBindRef keyBindConfigScreen = hotkey(hotkeys.add("open-menu"))
             .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_CONTROL, KeyCode.KEY_G))
-            .registerHotkey(HotKeyUtils.wrapAsHandler(this::openConfigMenu))
+            .registerHotkey(HotKeyUtils.wrapAsHandler((Runnable) this::openConfigScreen))
             .build();
 
     public final KeyBindRef optionsKeyBind = hotkey(hotkeys.add("open-options-menu"))
@@ -170,10 +170,6 @@ public class ClickGui extends BaseModule {
                 Listener.getPostInitializeScreen().getChannel(MultiplayerScreen.class), this::onScreenInitialize);
     }
 
-    public void openConfigScreen(Config config) {
-        MainTasks.openConfigScreen(config);
-    }
-
     public void openGameOptionsMenu() {
         GameOptions options = mc.options;
         List<SimpleOption<?>> options1 = new ArrayList<>();
@@ -208,10 +204,6 @@ public class ClickGui extends BaseModule {
         SimpleScreen screen = new SimpleScreen(Text.literal("Options Screen"), 400, 320, widget);
 
         ScreenAccess.of(screen).openFromCurrent();
-    }
-
-    public void openConfigMenu() {
-        MainTasks.openConfigMultiLevelScreen();
     }
 
     private WeakReference<ContentDelegateWidget<ExecutableWidget>> delegateWidget = null;
@@ -525,9 +517,16 @@ public class ClickGui extends BaseModule {
         return WidgetUtils.createKeyValueWidget(wrapper, keyName, layout, factory);
     }
 
-    public void openFullConfigScreen() {
+    public void openConfigScreen() {
         ConfigMultiLevelListScreen screen =
                 new ConfigMultiLevelListScreen(Config.REGISTRY.stream().toList(), CONFIG_FACTORY);
+        ScreenAccess.of(screen).openFromCurrent();
+    }
+
+    public void openConfigScreen(Config config) {
+        ConfigMultiLevelListScreen screen =
+                new ConfigMultiLevelListScreen(Config.REGISTRY.stream().toList(), CONFIG_FACTORY);
+        screen.setGlobal(config);
         ScreenAccess.of(screen).openFromCurrent();
     }
 

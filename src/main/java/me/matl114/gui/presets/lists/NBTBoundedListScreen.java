@@ -129,8 +129,8 @@ public class NBTBoundedListScreen<W, T> extends ConfirmingBigScreen {
     }
 
     @Override
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
         int listWidth = this.widgetDx;
 
         new ListUnmodifiableWidget(

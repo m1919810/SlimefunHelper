@@ -34,8 +34,8 @@ public class ConfigureScreen extends GenericScreen {
     //    private HashMap<String, TextFieldWidget> textEntryBox = new HashMap<>();
     private final StringRef filterWidget = new StringRef("");
 
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
         if (configs != null) {
             configs.saveSelected();
             Config.launchSaveTasks();
