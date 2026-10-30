@@ -13,6 +13,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
+import org.jetbrains.annotations.MustBeInvokedByOverriders;
 
 public class GenericScreen extends Screen implements Selectable, Draggable {
     protected int backgroundWidth;
@@ -41,6 +42,7 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
         this.backgroundHeight = backgroundDefaultHeight;
     }
 
+    @MustBeInvokedByOverriders
     protected void init0() {
         this.x = (this.width - this.backgroundWidth) / 2;
         if (this.height > this.backgroundDefaultHeight + 24) {
@@ -52,14 +54,17 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
         }
     }
 
-    @Override
     protected void init() {
         super.init();
         init0();
+        refreshWidgets();
     }
 
+    @MustBeInvokedByOverriders
+    protected void refreshWidgets() {}
+
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+    public final boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         // call for all children
         Iterator var5 = this.children().iterator();
         Element element;
@@ -132,7 +137,7 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
         return true;
     }
 
-    public void renderBackground(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
+    public final void renderBackground(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
         if (client.world == null) {
             super.renderBackground(context, mouseX, mouseY, deltaTicks);
         }

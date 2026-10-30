@@ -87,8 +87,8 @@ public class InventoryViewScreen extends GenericBackGroundScreen {
     }
 
     @Override
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
         ExecutableWidget.instance(this.x + 40, this.y + TITLE_OCCUPIED + 2, 16, 16)
                 .setElementHandler(this.iconStack)
                 .addTo(this);

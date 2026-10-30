@@ -339,7 +339,7 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
         // open edit screen
         keyValue.addListener((pairList) -> onListChange(FriendListStorage.create(pairList.list())));
 
-        drawableWidget.mouseClicked(150, 10, 0);
+        drawableWidget.onMouseClicked(150, 10, 0);
     }
 
     public boolean canAttack(Entity target) {

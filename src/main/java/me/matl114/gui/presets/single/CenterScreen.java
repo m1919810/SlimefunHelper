@@ -21,8 +21,8 @@ public class CenterScreen extends GenericScreen {
     }
 
     @Override
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
         DrawableWidget dynamic = WidgetUtils.createCenterScreenWidget(widget, this.width, this.height);
         dynamic.addTo(this);
     }

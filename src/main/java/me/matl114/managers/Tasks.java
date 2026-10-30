@@ -47,43 +47,35 @@ public class Tasks {
     }
 
     public static void doPostTick() {
-        var iter = postTaskQueue.iterator();
-        while (iter.hasNext()) {
-            try {
-                var task = iter.next();
-                if (task.execute()) {
-                    iter.remove();
-                }
-            } catch (CrashException | StackOverflowError e) {
-                // remove exceptional task
-                iter.remove();
-                throw e;
-            } catch (Throwable e) {
-                // log exception and remove
-                Debug.info("unexpected error while executing TimedTask:");
-                Debug.info(e);
-                iter.remove();
-            }
-        }
+        runTasks(postTaskQueue);
     }
 
     public static void doPreTick() {
-        var iter = preTaskQueue.iterator();
-        while (iter.hasNext()) {
-            try {
-                var task = iter.next();
-                if (task.execute()) {
-                    iter.remove();
+        runTasks(preTaskQueue);
+    }
+
+    private static void runTasks(Deque<Task> taskQueue) {
+        Deque<Task> pendingTasks = new ArrayDeque<>();
+        try {
+            while (!taskQueue.isEmpty()) {
+                Task task = taskQueue.poll();
+                if (task == null) {
+                    continue;
                 }
-            } catch (CrashException | StackOverflowError e) {
-                // remove exceptional task
-                iter.remove();
-                throw e;
-            } catch (Throwable e) {
-                // log exception and remove
-                Debug.info("unexpected error while executing TimedTask:");
-                Debug.info(e);
-                iter.remove();
+                try {
+                    if (!task.execute()) {
+                        pendingTasks.addLast(task);
+                    }
+                } catch (CrashException | StackOverflowError e) {
+                    throw e;
+                } catch (Throwable e) {
+                    Debug.info("unexpected error while executing TimedTask:");
+                    Debug.info(e);
+                }
+            }
+        } finally {
+            while (!pendingTasks.isEmpty()) {
+                taskQueue.addFirst(pendingTasks.removeLast());
             }
         }
     }

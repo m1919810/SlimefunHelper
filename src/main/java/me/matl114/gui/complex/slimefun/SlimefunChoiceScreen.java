@@ -177,8 +177,8 @@ public class SlimefunChoiceScreen<T> extends SlimefunScreen {
     // todo add More filter
     // change vanilla recipe display to vanilla item display
     @Override
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
 
         int availableRenderSpace = this.backgroundHeight - LABEL_OCCUPIED;
         this.selectGrid.resetGridHeightAndRefresh(availableRenderSpace);

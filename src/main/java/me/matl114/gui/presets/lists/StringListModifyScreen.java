@@ -65,8 +65,8 @@ public class StringListModifyScreen<T> extends ConfirmingBigScreen {
     }
 
     @Override
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
         int listWidth = WIDTH + 80;
 
         new ListModifyWidget(

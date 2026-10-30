@@ -57,8 +57,8 @@ public abstract class SlimefunEntryListScreen<T> extends SlimefunPageScreen {
         return SlimefunGuide.TOOLTIPS_ITEM_RULE;
     }
 
-    protected void init() {
-        super.init();
+    protected void refreshWidgets() {
+        super.refreshWidgets();
         int availableRenderSpace = this.backgroundHeight - LABEL_OCCUPIED - LABEL_MIN_DISTANCE;
         int maxinum_entry = Math.max(1, availableRenderSpace / (64 + 4));
         this.entryPerPage = maxinum_entry;
