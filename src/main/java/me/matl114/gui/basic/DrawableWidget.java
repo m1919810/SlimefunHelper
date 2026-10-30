@@ -320,39 +320,34 @@ public abstract class DrawableWidget
         return false;
     }
 
-    // will only be modified on main thread
-    public static int THREAD_SAFE_MODIFIER_CACHE = 0;
-    public static boolean THREAD_SAFE_DOUBLE_CLICK = false;
-
-    public final boolean mouseClicked(Click click, boolean doubled) {
-        THREAD_SAFE_MODIFIER_CACHE = click.modifiers();
-        THREAD_SAFE_DOUBLE_CLICK = doubled;
-        return this.onMouseClicked(click.x(), click.y(), click.button());
+    @Override
+    public final boolean mouseClicked(double mouseX, double mouseY, int button) {
+        return this.onMouseClicked(mouseX, mouseY, button);
     }
 
-    public final boolean mouseReleased(Click click) {
-        THREAD_SAFE_MODIFIER_CACHE = click.modifiers();
-        return this.onMouseReleased(click.x(), click.y(), click.button());
+    @Override
+    public final boolean mouseReleased(double mouseX, double mouseY, int button) {
+        return this.onMouseReleased(mouseX, mouseY, button);
     }
 
-    public final boolean mouseDragged(Click click, double offsetX, double offsetY) {
-        THREAD_SAFE_MODIFIER_CACHE = click.modifiers();
-        return this.onMouseDragged(click.x(), click.y(), click.button(), offsetX, offsetY);
+    @Override
+    public final boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        return this.onMouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
 
-    public final boolean keyPressed(KeyInput input) {
-        THREAD_SAFE_MODIFIER_CACHE = input.modifiers();
-        return this.onKeyPressed(input.key(), input.scancode(), input.modifiers());
+    @Override
+    public final boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        return this.onKeyPressed(keyCode, scanCode, modifiers);
     }
 
-    public final boolean keyReleased(KeyInput input) {
-        THREAD_SAFE_MODIFIER_CACHE = input.modifiers();
-        return this.onKeyReleased(input.key(), input.scancode(), input.modifiers());
+    @Override
+    public final boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        return this.onKeyReleased(keyCode, scanCode, modifiers);
     }
 
-    public final boolean charTyped(CharInput input) {
-        THREAD_SAFE_MODIFIER_CACHE = input.modifiers();
-        return this.onCharTyped((char) input.codepoint(), input.modifiers());
+    @Override
+    public final boolean charTyped(char chr, int modifiers) {
+        return this.onCharTyped(chr, modifiers);
     }
 
     public final void mouseMoved(double mouseX, double mouseY) {
@@ -362,7 +357,6 @@ public abstract class DrawableWidget
 
     public final boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         // should not scrolled
-
         return onMouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
 }
