@@ -231,7 +231,7 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
     }
 
     @Override
-    public boolean isMouseOver(double mouseX, double mouseY) {
+    public boolean isOver(double mouseX, double mouseY) {
         float textureScale = getTextureScale();
         return this.getDelegate() != null
                 && this.getDelegate()
@@ -239,11 +239,11 @@ public class ContentDelegateWidget<W extends Element & Drawable & Selectable> ex
     }
 
     @Override
-    public boolean isFocused() {
+    public boolean isSelected() {
         return this.getDelegate() != null && this.getDelegate().isFocused();
     }
 
-    public void setFocused(boolean focused) {
+    public void setSelected(boolean focused) {
         if (this.getDelegate() != null) this.getDelegate().setFocused(focused);
     }
 

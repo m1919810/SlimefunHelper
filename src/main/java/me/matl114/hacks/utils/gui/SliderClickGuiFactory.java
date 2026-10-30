@@ -379,7 +379,7 @@ public final class SliderClickGuiFactory extends AbstractClassicClickGuiFactory<
                                     startMouseX = mouseX;
                                     startMouseY = mouseY;
                                     move = false;
-                                    return element.isMouseOver(mouseX, mouseY);
+                                    return element.isOver(mouseX, mouseY);
                                 }
                                 if (type == Type.MOUSE_DRAG) {
                                     int currentX = groupMeta.getX();
@@ -395,7 +395,7 @@ public final class SliderClickGuiFactory extends AbstractClassicClickGuiFactory<
                                 }
                                 if ((type == Type.MOUSE_RELEASE && button == 0)
                                         || (type == Type.MOUSE_CLICK && button != 0)) {
-                                    if (!move && element.isMouseOver(mouseX, mouseY)) {
+                                    if (!move && element.isOver(mouseX, mouseY)) {
                                         slideMeta.setSlidingDown(!slideMeta.isSlidingDown());
                                     }
                                     move = false;

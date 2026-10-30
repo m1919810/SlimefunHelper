@@ -234,7 +234,7 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
 
     protected void syncWidgetState(DrawableWidget element) {
         getText();
-        boolean nextFocused = element.isFocused();
+        boolean nextFocused = element.isSelected();
         if (this.focusUnlocked || nextFocused) {
             if (this.focused != nextFocused) {
                 this.focused = nextFocused;

@@ -633,7 +633,7 @@ public class ServerScanner extends BaseModule {
                                     lastRenderTick.put(ip, Tasks.getTick());
                                 }
                             }
-                            if (element.isMouseOver(mouseX, mouseY)) {
+                            if (element.isOver(mouseX, mouseY)) {
                                 RenderHandler.drawHighlightFrame(
                                         context,
                                         0,
@@ -783,7 +783,7 @@ public class ServerScanner extends BaseModule {
                         return true;
                     }
                 })
-                .setHighLightColor((el, h) -> ((DrawableWidget) el).isFocused() ? Colors.WHITE : null)
+                .setHighLightColor((el, h) -> ((DrawableWidget) el).isSelected() ? Colors.WHITE : null)
                 .setShowTooltips(false);
     }
 

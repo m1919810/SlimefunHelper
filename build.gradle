@@ -148,8 +148,6 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 java {
-	withSourcesJar()
-
 	sourceCompatibility = JavaVersion.VERSION_21
 	targetCompatibility = JavaVersion.VERSION_21
 }
@@ -206,7 +204,13 @@ tasks.named("runClient", JavaExec) {
 //}
 
 
-build.dependsOn spotlessApply
+tasks.named("compileJava") {
+	dependsOn tasks.named("spotlessApply")
+}
+
+tasks.named("spotlessCheck") {
+	mustRunAfter tasks.named("spotlessApply")
+}
 
 // configure the maven publication
 publishing {
