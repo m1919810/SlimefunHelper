@@ -248,11 +248,11 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
     }
 
     protected double translateMouseX(DrawableWidget element, double mouseX) {
-        return (mouseX - element.getX()) / element.getTextureScale();
+        return (mouseX - element.x()) / element.getTextureScale();
     }
 
     protected double translateMouseY(DrawableWidget element, double mouseY) {
-        return (mouseY - element.getY()) / element.getTextureScale();
+        return (mouseY - element.y()) / element.getTextureScale();
     }
 
     protected int translateRenderMouseX(DrawableWidget element, int mouseX) {
@@ -522,10 +522,10 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
     }
 
     protected boolean canStartDrag(DrawableWidget element, double mouseX, double mouseY) {
-        return mouseX >= element.getX()
-                && mouseY >= element.getY()
-                && mouseX < element.getX() + element.getWidth()
-                && mouseY < element.getY() + element.getHeight();
+        return mouseX >= element.x()
+                && mouseY >= element.y()
+                && mouseX < element.x() + element.width()
+                && mouseY < element.y() + element.height();
     }
 
     protected boolean handleMouseClick(ExecutableWidget element, double mouseX, double mouseY, int button) {
