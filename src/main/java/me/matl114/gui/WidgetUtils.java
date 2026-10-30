@@ -115,8 +115,8 @@ public class WidgetUtils {
             int arrowY,
             int arrowWidth,
             int arrowHeight) {
-        int headerX = header.getX();
-        int headerWidth = list.getWidth();
+        int headerX = header.x();
+        int headerWidth = list.width();
         boolean hasAlwaysVisibleWidget =
                 widgets.stream().anyMatch(widget -> widget.condition() == ConditionalWidget.ALWAYS_TRUE);
 
@@ -304,11 +304,11 @@ public class WidgetUtils {
         var re =
                 new DynamicSubScreenWidget(
                         ValueAccessor.ofIgnore(() -> {
-                            return ((totalX - widget.getWidth()) / 2) - widget.getX();
+                            return ((totalX - widget.width()) / 2) - widget.x();
                         }),
                         ValueAccessor.of(
                                 () -> {
-                                    int y = ((totalY - widget.getHeight()) / 2) - widget.getY();
+                                    int y = ((totalY - widget.height()) / 2) - widget.y();
                                     if (y < 0) {
                                         yLock.setValue(false);
                                         return overrideYAcc.getValue();
@@ -337,28 +337,28 @@ public class WidgetUtils {
         ExecutableWidget scroll = ExecutableWidget.instance(0, 0, 12, totalY)
                 .setElementHandler(new AdvancedScrollElement(
                         ValueAccessor.ofIgnore(totalY),
-                        ValueAccessor.ofIgnore(() -> widget.getY() + widget.getHeight()),
+                        ValueAccessor.ofIgnore(() -> widget.y() + widget.height()),
                         ValueAccessor.of(
                                 () -> {
-                                    int currentTotalY = widget.getY() + widget.getHeight() - totalY;
+                                    int currentTotalY = widget.y() + widget.height() - totalY;
                                     int pos = -overrideYAcc.getValue();
                                     return Math.clamp(((double) pos / currentTotalY), 0, 1);
                                 },
                                 (p) -> {
-                                    int currentTotalY = widget.getY() + widget.getHeight() - totalY;
+                                    int currentTotalY = widget.y() + widget.height() - totalY;
                                     int pos = (int) (currentTotalY * p);
                                     overrideYAcc.setValue(-pos);
                                 })));
         DrawableWidget scrollableWidget = new DynamicContentWidget<>(
                 () -> {
-                    if (widget.getY() + widget.getHeight() > 1.14514 * totalY) {
+                    if (widget.y() + widget.height() > 1.14514 * totalY) {
                         return scroll;
                     } else {
                         return null;
                     }
                 },
                 ValueAccessor.ofIgnore(() -> {
-                    return ((totalX + widget.getWidth()) / 2) - widget.getX();
+                    return ((totalX + widget.width()) / 2) - widget.x();
                 }),
                 ValueAccessor.ofIgnore(0));
         subScreenWidget.addDrawableChild(scrollableWidget);
@@ -370,12 +370,12 @@ public class WidgetUtils {
             @Override
             public boolean onClick(ExecutableWidget element, double mouseX, double mouseY, int button) {
                 boolean val = false;
-                if (mouseX >= element.getX() && mouseX <= element.getX() + element.getWidth()) {
-                    xAccessor.accept((int) mouseX - element.getX());
+                if (mouseX >= element.x() && mouseX <= element.x() + element.width()) {
+                    xAccessor.accept((int) mouseX - element.x());
                     val = true;
                 }
-                if (mouseY >= element.getY() && mouseY <= element.getY() + element.getHeight()) {
-                    yAccessor.accept((int) mouseY - element.getY());
+                if (mouseY >= element.y() && mouseY <= element.y() + element.height()) {
+                    yAccessor.accept((int) mouseY - element.y());
                     val = true;
                 }
                 return val;

@@ -14,7 +14,6 @@ import me.matl114.hacks.modules.task.ClickGui.ClickGuiMetaData;
 import me.matl114.hacks.modules.task.ClickGui.ModuleSlideMeta;
 import me.matl114.hacks.utils.config.GuiSetting;
 import me.matl114.managers.config.*;
-import me.matl114.managers.input.*;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.algorithms.SerialExecutor;
 import me.matl114.utils.config.Value;
@@ -51,7 +50,7 @@ public final class SubScreenClickGuiFactory extends AbstractClassicClickGuiFacto
         subScreen.addDrawableChild(expandHead);
         SubScreenWidget moduleList = createModuleList(moduleGroup, metaData);
         subScreen.addDrawableChild(new DynamicContentWidget<>(
-                () -> (slideMeta.isSlidingDown() ? moduleList : null), 0, expandHead.getHeight()));
+                () -> (slideMeta.isSlidingDown() ? moduleList : null), 0, expandHead.height()));
         return subScreen;
     }
 
@@ -70,7 +69,7 @@ public final class SubScreenClickGuiFactory extends AbstractClassicClickGuiFacto
         for (var entry : baseModules) {
             DrawableWidget widget = createClickableModuleWidget(entry, metaData);
             subScreen.addDrawableChild(new ContentDelegateWidget<>(0, yLevel, 0, 0).setContentDelegate(widget));
-            yLevel += widget.getHeight();
+            yLevel += widget.height();
         }
         return subScreen;
     }
@@ -101,7 +100,7 @@ public final class SubScreenClickGuiFactory extends AbstractClassicClickGuiFacto
         subScreen.addDrawableChild(expandHead);
         DrawableWidget searchContent = createSearchListContent(metaData);
         subScreen.addDrawableChild(new DynamicContentWidget<>(
-                () -> (slideMeta.isSlidingDown() ? searchContent : null), 0, expandHead.getHeight()));
+                () -> (slideMeta.isSlidingDown() ? searchContent : null), 0, expandHead.height()));
         return subScreen;
     }
 

@@ -168,44 +168,44 @@ public class DelegateWidget extends DrawableWidget implements Draggable {
         return this.delegate != null && this.delegate.focused;
     }
 
-    public void setX(int x) {
+    public void x(int x) {
         if (this.delegate != null) {
-            this.delegate.setX(x);
+            this.delegate.x(x);
         }
     }
 
-    public void setY(int y) {
+    public void y(int y) {
         if (delegate != null) {
-            this.delegate.setY(y);
+            this.delegate.y(y);
         }
     }
 
-    public void setWidth(int x) {
+    public void width(int x) {
         if (this.delegate != null) {
-            this.delegate.setWidth(x);
+            this.delegate.width(x);
         }
     }
 
-    public void setHeight(int y) {
+    public void height(int y) {
         if (delegate != null) {
-            this.delegate.setHeight(y);
+            this.delegate.height(y);
         }
     }
 
-    public final int getX() {
-        return this.delegate == null ? 0 : this.delegate.getX();
+    public final int x() {
+        return this.delegate == null ? 0 : this.delegate.x();
     }
 
-    public final int getY() {
-        return this.delegate == null ? 0 : this.delegate.getY();
+    public final int y() {
+        return this.delegate == null ? 0 : this.delegate.y();
     }
 
-    public final int getWidth() {
-        return this.delegate == null ? 0 : this.delegate.getWidth();
+    public final int width() {
+        return this.delegate == null ? 0 : this.delegate.width();
     }
 
-    public final int getHeight() {
-        return this.delegate == null ? 0 : this.delegate.getHeight();
+    public final int height() {
+        return this.delegate == null ? 0 : this.delegate.height();
     }
 
     public <T extends DrawableWidget> T addToSub(SubScreenWidget screen) {
