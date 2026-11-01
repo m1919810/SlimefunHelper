@@ -16,6 +16,7 @@ import me.matl114.events.impl.MetadataUpdate;
 import me.matl114.events.packets.PacketStorage;
 import me.matl114.events.packets.PacketStorageRecvImpl;
 import me.matl114.hacks.CombatTasks;
+import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -755,7 +756,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public static int findElytra() {
         // only backpack can operate
-        if (ClientPlayerAccess.of(mc.player).getServerScreenHandler() == mc.player.playerScreenHandler) {
+        if (InvTasks.getCurrentServerScreenHandler(mc.player) == mc.player.playerScreenHandler) {
             // check hotbar first
             var re = InventoryUtils.findPlayerItem(ElytraExtra::isValidElytra, true, false, false);
             if (re != null) {
@@ -773,7 +774,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     public int findEmptySlotForElytra() {
-        if (ClientPlayerAccess.of(mc.player).getServerScreenHandler() == mc.player.playerScreenHandler) {
+        if (InvTasks.getCurrentServerScreenHandler(mc.player) == mc.player.playerScreenHandler) {
             Predicate<ItemStack> canUnbreakablePredicate = this::canStopFallFlying;
             // use cached autoSwitch slot
             var re = InventoryUtils.findBestPlayerInventory(
@@ -909,7 +910,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public void switchSlotToArmor(int idx) {
         int armorSlot = 6;
         int targetSlot = idx;
-        if (mc.player.playerScreenHandler == ClientPlayerAccess.of(mc.player).getServerScreenHandler()) {
+        if (mc.player.playerScreenHandler == InvTasks.getCurrentServerScreenHandler(mc.player)) {
             InvExtra.INSTANCE.swapScreenSlots(armorSlot, targetSlot);
         }
     }

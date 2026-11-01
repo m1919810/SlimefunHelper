@@ -54,6 +54,13 @@ public abstract class ClientPlayNetworkHandlerEvents {
         }
     }
 
+    @Inject(method = "onOpenMountScreen", at = @At("RETURN"))
+    private void onPostMountInventoryOpen(OpenMountScreenS2CPacket packet, CallbackInfo ci) {
+        if (MinecraftClient.getInstance().currentScreen instanceof HandledScreen<?> screen) {
+            Listener.getPostOpenHandledScreen().broadcast(screen);
+        }
+    }
+
     @Unique
     boolean escapeSendEvent = false;
 

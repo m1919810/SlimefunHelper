@@ -1,37 +1,14 @@
 package me.matl114.accessors.access;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import me.matl114.accessors.events.ClientPlayerEntityAccess;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.screen.ScreenHandler;
 
 public interface ClientPlayerAccess extends ClientPlayerEntityAccess {
-
-    @Nullable
-    public HandledScreen getKeepedInv();
-
-    @Nullable
-    public ScreenHandler getKeepedInvHandler();
-
-    public void clearKeepedInventory(boolean closeInv);
 
     @Nonnull
     public static ClientPlayerAccess of(@Nonnull ClientPlayerEntity player) {
         return (ClientPlayerAccess) player;
-    }
-    // get the Screen object which handler related to the server(should)
-    default HandledScreen getServerOpeningScreen() {
-        if (getKeepedInv() != null) return getKeepedInv();
-        else return MinecraftClient.getInstance().currentScreen instanceof HandledScreen<?> han ? han : null;
-    }
-
-    @Nonnull
-    default ScreenHandler getServerScreenHandler() {
-        if (getKeepedInvHandler() != null) return getKeepedInvHandler();
-        else return ((ClientPlayerEntity) this).currentScreenHandler;
     }
 
     public boolean isForceNoFall();
