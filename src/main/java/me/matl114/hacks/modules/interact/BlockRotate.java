@@ -499,6 +499,11 @@ public class BlockRotate extends BaseModule {
             deceive.yaw = EntityUtils.rotationToYaw(facing);
             return;
         }
+        if (block instanceof BedBlock) {
+            Direction facing = targetState.get(BedBlock.FACING);
+            deceive.yaw = EntityUtils.rotationToYaw(facing);
+            return;
+        }
         if (block instanceof CampfireBlock) {
             Direction facing = targetState.get(CampfireBlock.FACING);
             deceive.yaw = EntityUtils.rotationToYaw(facing);

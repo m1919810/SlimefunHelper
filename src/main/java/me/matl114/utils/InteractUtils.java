@@ -98,6 +98,14 @@ public class InteractUtils {
         return placement.getBlockPos();
     }
 
+    @Nullable
+    public static BlockPos getCurrentPlacePos(BlockItem blockItem, PlayerEntity player, BlockHitResult blockHitResult) {
+        ItemPlacementContext placement =
+                new ItemPlacementContext(player, Hand.MAIN_HAND, new ItemStack(blockItem), blockHitResult);
+        placement = blockItem.getPlacementContext(placement);
+        return placement == null ? null : placement.getBlockPos();
+    }
+
     public static boolean canCubePlace(PlayerEntity player, BlockHitResult state) {
         BlockPos pos = getCurrentPlacePos(player, state);
         return canCubePlace(player, pos);

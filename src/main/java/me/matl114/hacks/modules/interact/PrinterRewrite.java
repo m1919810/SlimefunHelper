@@ -40,6 +40,7 @@ import net.minecraft.block.enums.SlabType;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
+import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -328,6 +329,12 @@ public class PrinterRewrite extends BaseModule {
         }
         var result = InteractionTasks.createSpecificStateHitResult(
                 mc.player.getFacing(), pos, targetState, useAirPlace, usePositionPlace);
+        BlockPos placementPos = needBlock.asItem() instanceof BlockItem blockItem
+                ? InteractUtils.getCurrentPlacePos(blockItem, mc.player, result.val())
+                : null;
+        if (placementPos != null && desyncWaitBlocks.contains(placementPos)) {
+            return false;
+        }
         // add placement collision check
         if (result != null
                 && InteractExtra.INSTANCE.isWithinInteractRange(

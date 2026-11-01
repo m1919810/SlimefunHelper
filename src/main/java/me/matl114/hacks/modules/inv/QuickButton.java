@@ -124,7 +124,8 @@ public class QuickButton extends BaseModule {
             String fullKey = TaskManagers.PREFIX_BUTTON_TOGGLE + "." + key;
             final Runnable stateChange =
                     flagRef != null ? HotKeyUtils.wrapFlagAsToggle(fullKey, flagRef) : Runnables.doNothing();
-            createToggleButton(
+            ELEMENT_FACTORY
+                    .createToggleButton(
                             () -> Text.literal(key),
                             List::of,
                             ValueAccessor.of(() -> flagRef == null || flagRef.get(), (bl) -> {
@@ -149,7 +150,8 @@ public class QuickButton extends BaseModule {
         y0 = buttonHeight + 2;
         for (Map.Entry<String, Runnable> entry : buttonTasks.entrySet()) {
             final Runnable task = entry.getValue();
-            createExecuteButton(
+            ELEMENT_FACTORY
+                    .createExecuteButton(
                             () -> Text.literal(entry.getKey()),
                             List::of,
                             ButtonAction.run(task),

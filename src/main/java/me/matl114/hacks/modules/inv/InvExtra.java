@@ -121,19 +121,9 @@ public class InvExtra extends BaseModule {
         if (player == null) {
             return;
         }
-        InventoryManager manager = InvTasks.getInventoryManager();
-        try {
-            int syncId = manager != null && manager.currentOpenScreenHandler != null
-                    ? manager.currentOpenScreenHandler.syncId
-                    : player.currentScreenHandler.syncId;
-            if (mc.getNetworkHandler() != null) {
-                mc.getNetworkHandler().sendPacket(new CloseHandledScreenC2SPacket(syncId));
-            }
-        } catch (Throwable e) {
-            e.printStackTrace();
-        } finally {
-            player.closeScreen();
-        }
+        int syncId = InventoryManager.INSTANCE.getCurrentServerScreenHandler(mc.player).syncId;
+        mc.getNetworkHandler().sendPacket(new CloseHandledScreenC2SPacket(syncId));
+        player.closeScreen();
     }
 
     List<Runnable> inventoryCallbacks = new ArrayList<>();
@@ -229,24 +219,22 @@ public class InvExtra extends BaseModule {
                 PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(hand);
                 return wrapHotbarTask(selected);
             } else {
-                OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), hand);
+                ScreenHandler handler = InventoryManager.INSTANCE.getCurrentServerScreenHandler(mc.player);
+                OptionalInt slotIndex = handler.getSlotIndex(mc.player.getInventory(), hand);
                 if (slotIndex.isPresent()) {
                     int swapped = slotIndex.getAsInt();
                     if (swapped >= 0) {
                         MovExtra.INSTANCE.sendPacketsForInventoryAction();
                         mc.interactionManager.clickSlot(
-                                mc.player.currentScreenHandler.syncId,
-                                swapped,
-                                selected,
-                                SlotActionType.SWAP,
-                                mc.player);
+                                handler.syncId, swapped, selected, SlotActionType.SWAP, mc.player);
                         return wrapInvTask(() -> {
-                            mc.interactionManager.clickSlot(
-                                    mc.player.currentScreenHandler.syncId,
-                                    swapped,
-                                    selected,
-                                    SlotActionType.SWAP,
-                                    mc.player);
+                            ScreenHandler handler2 = InventoryManager.INSTANCE.getCurrentServerScreenHandler(mc.player);
+                            OptionalInt slotIndex2 = handler2.getSlotIndex(mc.player.getInventory(), hand);
+                            if (slotIndex2.isPresent()) {
+                                int swapped2 = slotIndex2.getAsInt();
+                                mc.interactionManager.clickSlot(
+                                        handler2.syncId, swapped2, selected, SlotActionType.SWAP, mc.player);
+                            }
                         });
                     } else {
                         return null;
@@ -262,10 +250,8 @@ public class InvExtra extends BaseModule {
     public boolean canSwapItemToHand(int hand, boolean offhand, GhostHandMode mode) {
         if (mc.player == null || hand < 0 || hand >= InventoryUtils.getPlayerInvSize()) return false;
         if (mode == GhostHandMode.HOT_BAR_ONLY && !offhand && hand != 40) return hand < 9;
-        return mc.player
-                .currentScreenHandler
-                .getSlotIndex(mc.player.getInventory(), hand)
-                .isPresent();
+        ScreenHandler handler2 = InventoryManager.INSTANCE.getCurrentServerScreenHandler(mc.player);
+        return handler2.getSlotIndex(mc.player.getInventory(), hand).isPresent();
     }
 
     public Runnable swapItemToHand(int hand, boolean offhand, GhostHandMode mode) {
@@ -290,20 +276,21 @@ public class InvExtra extends BaseModule {
             //                    PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(selected);
             //                };
             //            } else {
-            OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), hand);
+            ScreenHandler handler = InventoryManager.INSTANCE.getCurrentServerScreenHandler(mc.player);
+            OptionalInt slotIndex = handler.getSlotIndex(mc.player.getInventory(), hand);
             if (slotIndex.isPresent()) {
                 int swapped = slotIndex.getAsInt();
                 if (swapped >= 0) {
                     MovTasks.getMovExtra().sendPacketsForInventoryAction();
-                    mc.interactionManager.clickSlot(
-                            mc.player.currentScreenHandler.syncId, swapped, selected, SlotActionType.SWAP, mc.player);
+                    mc.interactionManager.clickSlot(handler.syncId, swapped, selected, SlotActionType.SWAP, mc.player);
                     return wrapInvTask(() -> {
-                        mc.interactionManager.clickSlot(
-                                mc.player.currentScreenHandler.syncId,
-                                swapped,
-                                selected,
-                                SlotActionType.SWAP,
-                                mc.player);
+                        ScreenHandler handler2 = InventoryManager.INSTANCE.getCurrentServerScreenHandler(mc.player);
+                        OptionalInt slotIndex2 = handler2.getSlotIndex(mc.player.getInventory(), hand);
+                        if (slotIndex2.isPresent()) {
+                            int swapped2 = slotIndex2.getAsInt();
+                            mc.interactionManager.clickSlot(
+                                    handler2.syncId, swapped2, selected, SlotActionType.SWAP, mc.player);
+                        }
                     });
                 } else {
                     return null;
@@ -318,17 +305,21 @@ public class InvExtra extends BaseModule {
 
     private Runnable swapInventoryIndexToOffhand(int hand) {
         if (hand == 40) return Runnables.doNothing();
-        OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), hand);
+        ScreenHandler handler = InventoryManager.INSTANCE.getCurrentServerScreenHandler(mc.player);
+        OptionalInt slotIndex = handler.getSlotIndex(mc.player.getInventory(), hand);
         if (slotIndex.isPresent()) {
             int swapped = slotIndex.getAsInt();
             if (swapped >= 0) {
                 MovTasks.getMovExtra().sendPacketsForInventoryAction();
 
-                mc.interactionManager.clickSlot(
-                        mc.player.currentScreenHandler.syncId, swapped, 40, SlotActionType.SWAP, mc.player);
+                mc.interactionManager.clickSlot(handler.syncId, swapped, 40, SlotActionType.SWAP, mc.player);
                 return wrapInvTask(() -> {
-                    mc.interactionManager.clickSlot(
-                            mc.player.currentScreenHandler.syncId, swapped, 40, SlotActionType.SWAP, mc.player);
+                    ScreenHandler handler2 = InventoryManager.INSTANCE.getCurrentServerScreenHandler(mc.player);
+                    OptionalInt slotIndex2 = handler2.getSlotIndex(mc.player.getInventory(), hand);
+                    if (slotIndex2.isPresent()) {
+                        int swapped2 = slotIndex2.getAsInt();
+                        mc.interactionManager.clickSlot(handler2.syncId, swapped2, 40, SlotActionType.SWAP, mc.player);
+                    }
                 });
             } else {
                 return null;
@@ -354,7 +345,8 @@ public class InvExtra extends BaseModule {
 
     public Runnable swapInventorySlotToHand(int slot) {
         int selected = InventoryUtils.getSelectedSlot();
-        OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), selected);
+        ScreenHandler handler = InventoryManager.INSTANCE.getCurrentServerScreenHandler(mc.player);
+        OptionalInt slotIndex = handler.getSlotIndex(mc.player.getInventory(), selected);
         if (slotIndex.isPresent()) {
             return swapScreenSlots(slot, slotIndex.getAsInt());
         } else {
@@ -364,7 +356,8 @@ public class InvExtra extends BaseModule {
 
     public Runnable swapInventorySlotToOffhand(int slot) {
         int selected = 40;
-        OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), selected);
+        ScreenHandler handler = InventoryManager.INSTANCE.getCurrentServerScreenHandler(mc.player);
+        OptionalInt slotIndex = handler.getSlotIndex(mc.player.getInventory(), selected);
         if (slotIndex.isPresent()) {
             return swapScreenSlots(slot, slotIndex.getAsInt());
         } else {
@@ -374,8 +367,9 @@ public class InvExtra extends BaseModule {
 
     public Runnable swapInventoryIndexes(int slot1, int slot2) {
         ;
-        OptionalInt slotIndex = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), slot1);
-        OptionalInt slotIndex2 = mc.player.currentScreenHandler.getSlotIndex(mc.player.getInventory(), slot2);
+        ScreenHandler handler = InventoryManager.INSTANCE.getCurrentServerScreenHandler(mc.player);
+        OptionalInt slotIndex = handler.getSlotIndex(mc.player.getInventory(), slot1);
+        OptionalInt slotIndex2 = handler.getSlotIndex(mc.player.getInventory(), slot2);
         if (slotIndex.isPresent() && slotIndex2.isPresent()) {
             return swapScreenSlots(slotIndex.getAsInt(), slotIndex2.getAsInt());
         } else {
@@ -385,7 +379,7 @@ public class InvExtra extends BaseModule {
 
     public Runnable swapScreenSlots(int armorSlot, int targetSlot) {
         if (armorSlot == targetSlot) return Runnables.doNothing();
-        var handler = InvTasks.getCurrentServerScreenHandler(mc.player);
+        var handler = InventoryManager.INSTANCE.getCurrentServerScreenHandler(mc.player);
         var slots = handler.slots;
         if (slots.size() <= armorSlot || slots.size() <= targetSlot) {
             return null;

@@ -2,7 +2,7 @@ package me.matl114.hacks.utils.gui;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import me.matl114.gui.GenericScreen;
 import me.matl114.gui.basic.ButtonAction;
 import me.matl114.gui.basic.ContentDelegateWidget;
@@ -13,22 +13,22 @@ import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.basic.TooltipHandler;
 import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.utils.ChatUtils;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 
 /** Main screen for the classic tabbed ClickGui layouts. */
 public final class ClassicClickGuiScreen extends GenericScreen {
-    private final Map<String, Function<Screen, DrawableWidget>> widgets;
+    private final Map<String, BiFunction<Integer, Integer, DrawableWidget>> widgets;
     private final ElementFactory elementFactory;
     private DrawableWidget widget;
     private String selecting;
     private ContentDelegateWidget<DrawableWidget> widgetDelegate;
 
-    public ClassicClickGuiScreen(Map<String, Function<Screen, DrawableWidget>> widgets, ElementFactory elementFactory) {
+    public ClassicClickGuiScreen(
+            Map<String, BiFunction<Integer, Integer, DrawableWidget>> widgets, ElementFactory elementFactory) {
         super(Text.empty(), 0, 0);
         this.widgets = widgets;
         this.elementFactory = elementFactory;
-        setGlobal(this.widgets.keySet().iterator().next());
+        this.selecting = this.widgets.keySet().iterator().next();
     }
 
     @Override
@@ -44,7 +44,7 @@ public final class ClassicClickGuiScreen extends GenericScreen {
     private void setGlobal(String string) {
         if (!Objects.equals(string, selecting)) {
             selecting = string;
-            widget = widgets.get(selecting).apply(this);
+            widget = widgets.get(selecting).apply(this.width, this.height - 2 * BUTTON_HEIGHT);
             if (widgetDelegate != null) {
                 widgetDelegate.setContentDelegate(widget);
             }

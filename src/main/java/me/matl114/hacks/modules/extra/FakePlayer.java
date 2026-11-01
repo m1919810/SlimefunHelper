@@ -14,6 +14,7 @@ import me.matl114.events.Listener;
 import me.matl114.gui.Constants;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.elements.IconElement;
+import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.combat.SpearEnhance;
@@ -163,7 +164,7 @@ public class FakePlayer extends BaseModule {
         DynamicListWidget list = new DynamicListWidget(0, dblank, dx);
         for (var re : mc.world.getEntities()) {
             if (re instanceof FakePlayerEntity fakePlayer) {
-                createWidgetForFakePlayer(fakePlayer, list, dx, dy, dblank);
+                createWidgetForFakePlayer(fakePlayer, list, dx, dy, dblank, factory);
             }
         }
         int dxx = (dx - dy) / 2;
@@ -171,17 +172,22 @@ public class FakePlayer extends BaseModule {
         acceptor.accept(ExecutableWidget.instance(dxx, dblank, dy, dy)
                 .setElementHandler(IconElement.fixedGui(Constants.ADD_SPRITE, ButtonAction.run(() -> {
                             FakePlayerEntity fakePlayer = createNewFakePlayer();
-                            createWidgetForFakePlayer(fakePlayer, list, dx, dy, dblank);
+                            createWidgetForFakePlayer(fakePlayer, list, dx, dy, dblank, factory);
                         }))
                         .withTooltips(TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
                                 "widget.fake-player.fake-player-list.add.tooltips", "")))));
     }
 
     private DrawableWidget createWidgetForFakePlayer(
-            FakePlayerEntity fakePlayer, @Nullable DynamicListWidget list, int dx, int dy, int dblank) {
+            FakePlayerEntity fakePlayer,
+            @Nullable DynamicListWidget list,
+            int dx,
+            int dy,
+            int dblank,
+            ElementFactory factory) {
         DynamicContentWidget<DrawableWidget> widget = new DynamicContentWidget<>(() -> null, 0, 0);
         SubScreenWidget subScreenWidget = new SubScreenWidget(0, 0, dx, dy + dblank);
-        subScreenWidget.addDrawableChild(createExecuteButton(
+        subScreenWidget.addDrawableChild(factory.createExecuteButton(
                 () -> Text.translatable(
                         "widget.fake-player.fake-player-list.info",
                         fakePlayer.getDisplayName(),

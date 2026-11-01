@@ -22,9 +22,11 @@ import me.matl114.managers.Tasks;
 import me.matl114.utils.*;
 import me.matl114.utils.collections.FlagEntry;
 import net.minecraft.block.*;
+import net.minecraft.block.enums.BedPart;
 import net.minecraft.block.enums.BlockFace;
 import net.minecraft.block.enums.BlockHalf;
 import net.minecraft.block.enums.ChestType;
+import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.block.enums.SlabType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
@@ -540,8 +542,35 @@ public class InteractionTasks {
             BlockState targetState,
             boolean enableAirPlace,
             boolean enablePositionPlace) {
-        boolean currentSneaking = mc.player.shouldCancelInteraction();
         Block block = targetState.getBlock();
+        // place the correct place for multi-block place
+        if (block instanceof BedBlock && targetState.get(BedBlock.PART) == BedPart.HEAD) {
+            BlockPos footPos =
+                    placeTargetBlock.offset(targetState.get(BedBlock.FACING).getOpposite());
+            return createSpecificStateHitResult(
+                    preferredDirection,
+                    footPos,
+                    targetState.with(BedBlock.PART, BedPart.FOOT),
+                    enableAirPlace,
+                    enablePositionPlace);
+        }
+        if (block instanceof TallPlantBlock && targetState.get(TallPlantBlock.HALF) == DoubleBlockHalf.UPPER) {
+            return createSpecificStateHitResult(
+                    preferredDirection,
+                    placeTargetBlock.down(),
+                    targetState.with(TallPlantBlock.HALF, DoubleBlockHalf.LOWER),
+                    enableAirPlace,
+                    enablePositionPlace);
+        }
+        if (block instanceof DoorBlock && targetState.get(DoorBlock.HALF) == DoubleBlockHalf.UPPER) {
+            return createSpecificStateHitResult(
+                    preferredDirection,
+                    placeTargetBlock.down(),
+                    targetState.with(DoorBlock.HALF, DoubleBlockHalf.LOWER),
+                    enableAirPlace,
+                    enablePositionPlace);
+        }
+        boolean currentSneaking = mc.player.shouldCancelInteraction();
         BlockState currentState = mc.world.getBlockState(placeTargetBlock);
         if (block instanceof ScaffoldingBlock) {
             return getScaffoldingPlacement(
