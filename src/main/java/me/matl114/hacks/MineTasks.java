@@ -48,6 +48,12 @@ public class MineTasks {
     @Getter
     private static MineArua mineArua;
 
+    @Getter
+    private static ChainMine chainMine;
+
+    @Getter
+    private static AutoDig autoDig;
+
     private static void initModules(ModuleManager m) {
         mineExtra = new MineExtra().register(m);
         miningProgressManager = new MiningProgressManager().register(m);
@@ -55,7 +61,9 @@ public class MineTasks {
         mineBot = new MineBot().register(m);
         queueMine = new QueueMine().register(m);
         packetMine = new PacketMine().register(m);
+        chainMine = new ChainMine().register(m);
         mineArua = new MineArua().register(m);
+        autoDig = new AutoDig().register(m);
     }
 
     static {
