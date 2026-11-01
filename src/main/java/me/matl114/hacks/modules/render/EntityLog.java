@@ -37,7 +37,6 @@ import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKey;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Box;
@@ -108,6 +107,12 @@ public class EntityLog extends BaseModule {
 
     public final FlagRef renderFaraway =
             flagBuilder(entityLog.add("render-reason-faraway")).build();
+
+    public final NBTRef<StringFormat> renderTextFormat = builder(
+                    entityLog.add("render-text-format"), StringFormat.class)
+            .defaultValue(
+                    new StringFormat(List.of("name", "reason", "position"), "{name}&l {reason} at {position}", true))
+            .build();
 
     public final FlagRef logLogReconnect =
             flagBuilder(entityLog.add("log-log-reconnect")).build();
@@ -523,13 +528,18 @@ public class EntityLog extends BaseModule {
                     if (op.box() && re.leaveEntity != null) {
                         entityFace.submit(re.leaveEntity, color.withAlpha(64));
                     }
-                    var builder = ChatUtils.builder();
-                    builder.withText(re.displayName, Style.EMPTY.withBold(true));
-                    builder.withColorString("&l %s at ".formatted(LEAVE_REASON[re.exitCode]));
-                    builder.withText(ChatUtils.getDisplayedLocation(re.leavePos), Style.EMPTY.withBold(true));
-                    builder.end();
                     texting.submit(
-                            new RenderElements.Text(builder.build(), re.leavePos.add(0, 2, 0), 0.66F),
+                            new RenderElements.Text(
+                                    renderTextFormat
+                                            .get()
+                                            .formatText(
+                                                    re.displayName.copy().styled(style -> style.withBold(true)),
+                                                    LEAVE_REASON[re.exitCode],
+                                                    ChatUtils.getDisplayedLocation(re.leavePos)
+                                                            .copy()
+                                                            .styled(style -> style.withBold(true))),
+                                    re.leavePos.add(0, 2, 0),
+                                    0.66F),
                             color.withAlpha(255));
                 }
             }

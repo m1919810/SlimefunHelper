@@ -150,7 +150,8 @@ public class FastCraft extends BaseModule {
         DynamicSubScreenWidget recipeSubScreen =
                 new DynamicSubScreenWidget(ValueAccessor.ofIgnore(access::getScreenX), ValueAccessor.ofIgnore(0));
 
-        createExecuteButton(
+        ELEMENT_FACTORY
+                .createExecuteButton(
                         "widget.fast-craft.craft",
                         ButtonAction.run(() -> placeLastCraftingRecipe(screen, ScreenUtils.hasShiftDown())),
                         120,
@@ -159,7 +160,8 @@ public class FastCraft extends BaseModule {
                         12)
                 .addToSub(recipeSubScreen);
 
-        createToggleButton(
+        ELEMENT_FACTORY
+                .createToggleButton(
                         "widget.fast-craft.lock",
                         ValueAccessor.of(() -> lock, (bl) -> lock = (boolean) bl),
                         95,
@@ -168,7 +170,8 @@ public class FastCraft extends BaseModule {
                         12)
                 .addToSub(recipeSubScreen);
         Runnable toggle = HotKeyUtils.wrapFlagAsToggle("fast-craft.drop-craft", dropCraft);
-        createToggleButton(
+        ELEMENT_FACTORY
+                .createToggleButton(
                         "widget.fast-craft.toggle-drop",
                         ValueAccessor.of(dropCraft::get, (bl) -> {
                             if (bl != dropCraft.get()) {
@@ -181,7 +184,8 @@ public class FastCraft extends BaseModule {
                         12)
                 .addToSub(recipeSubScreen);
 
-        createElement(
+        ELEMENT_FACTORY
+                .createElement(
                         new SlotElement(this::getDisplayItemStack).setSlotFrame(false),
                         null,
                         null,
@@ -191,7 +195,8 @@ public class FastCraft extends BaseModule {
                         18)
                 .addToSub(recipeSubScreen);
 
-        createElement(
+        ELEMENT_FACTORY
+                .createElement(
                         new SlotElement(this::getLockItem)
                                 .setInSlot(false)
                                 .setSlotFrame(false)
@@ -217,7 +222,8 @@ public class FastCraft extends BaseModule {
         DynamicSubScreenWidget recipeSubScreen =
                 new DynamicSubScreenWidget(ValueAccessor.ofIgnore(access::getScreenX), ValueAccessor.ofIgnore(0));
 
-        createExecuteButton(
+        ELEMENT_FACTORY
+                .createExecuteButton(
                         "widget.fast-craft.craft",
                         ButtonAction.run(() -> placeLastCraftingRecipe(screen, ScreenUtils.hasShiftDown())),
                         150,
@@ -226,7 +232,8 @@ public class FastCraft extends BaseModule {
                         12)
                 .addToSub(recipeSubScreen);
 
-        createToggleButton(
+        ELEMENT_FACTORY
+                .createToggleButton(
                         "widget.fast-craft.lock",
                         ValueAccessor.of(() -> lock, (bl) -> lock = (boolean) bl),
                         150,
@@ -235,7 +242,8 @@ public class FastCraft extends BaseModule {
                         12)
                 .addToSub(recipeSubScreen);
         Runnable toggle = HotKeyUtils.wrapFlagAsToggle("fast-craft.drop-craft", dropCraft);
-        createToggleButton(
+        ELEMENT_FACTORY
+                .createToggleButton(
                         "widget.fast-craft.toggle-drop",
                         ValueAccessor.of(dropCraft::get, (bl) -> {
                             if (bl != dropCraft.get()) {
@@ -248,7 +256,8 @@ public class FastCraft extends BaseModule {
                         12)
                 .addToSub(recipeSubScreen);
 
-        createElement(
+        ELEMENT_FACTORY
+                .createElement(
                         new SlotElement(this::getDisplayItemStack)
                                 .setSlotFrame(false)
                                 .setInSlot(false),
@@ -260,7 +269,8 @@ public class FastCraft extends BaseModule {
                         18)
                 .addToSub(recipeSubScreen);
 
-        createElement(
+        ELEMENT_FACTORY
+                .createElement(
                         new SlotElement(this::getLockItem)
                                 .setInSlot(false)
                                 .setSlotFrame(false)

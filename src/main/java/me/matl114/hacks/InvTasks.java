@@ -897,9 +897,6 @@ public class InvTasks {
     private static AutoSteal autoSteal;
 
     @Getter
-    private static AutoShulker autoShulker;
-
-    @Getter
     private static ChestHistory chestHistory;
 
     @Getter
@@ -944,7 +941,6 @@ public class InvTasks {
         noQDrop = new NoQDrop().register(m);
         autoStore = new AutoStore().register(m);
         autoSteal = new AutoSteal().register(m);
-        autoShulker = new AutoShulker().register(m);
         chestHistory = new ChestHistory().register(m);
         kitReplenish = new KitReplenish().register(m);
 

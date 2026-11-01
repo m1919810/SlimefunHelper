@@ -3,7 +3,7 @@ package me.matl114.hacks.utils.gui;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.interfaces.ElementFactory;
@@ -28,8 +28,8 @@ public abstract class AbstractClassicClickGuiFactory<F extends ElementFactory> i
     public void openClickGui(ClickGui clickGui, ClickGuiMetaData meta) {
         this.clickGui = clickGui;
         List<String> modules = clickGui.getModules();
-        Map<String, Function<Screen, DrawableWidget>> selections = new LinkedHashMap<>();
-        selections.put("Module", screen -> createModuleGroupList(modules, meta));
+        Map<String, BiFunction<Integer, Integer, DrawableWidget>> selections = new LinkedHashMap<>();
+        selections.put("Module", (width, height) -> createModuleGroupList(modules, meta));
         selections.putAll(clickGui.getExtraSelections(meta));
 
         Screen screen = new ClassicClickGuiScreen(selections, elementFactory);

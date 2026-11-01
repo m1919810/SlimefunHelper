@@ -35,9 +35,14 @@ public class InventoryManager extends BaseModule {
         registerListener(Listener.getPacketPoint().getChannel(OpenScreenS2CPacket.class), this::onOpenScreen);
         registerListener(Listener.getPacketPoint().getChannel(OpenMountScreenS2CPacket.class), this::onOpenMountScreen);
         registerListener(Listener.getPostOpenHandledScreen(), this::onOpenHandledScreen, Integer.MIN_VALUE);
-        registerListener(Listener.getPacketPoint().getChannel(CloseScreenS2CPacket.class), this::onCloseScreen, Integer.MAX_VALUE);
         registerListener(
-                Listener.getPacketPoint().getChannel(CloseHandledScreenC2SPacket.class), this::onCloseHandledScreen, Integer.MAX_VALUE);
+                Listener.getPacketPoint().getChannel(CloseScreenS2CPacket.class),
+                this::onCloseScreen,
+                Integer.MAX_VALUE);
+        registerListener(
+                Listener.getPacketPoint().getChannel(CloseHandledScreenC2SPacket.class),
+                this::onCloseHandledScreen,
+                Integer.MAX_VALUE);
 
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(ScreenHandlerSlotUpdateS2CPacket.class),
@@ -92,15 +97,15 @@ public class InventoryManager extends BaseModule {
             return;
         }
         currentOpenScreenHandler = screen.getScreenHandler();
-        if(screen.getScreenHandler() == mc.player.currentScreenHandler){
+        if (screen.getScreenHandler() == mc.player.currentScreenHandler) {
             currentOpenScreen = screen;
-        }else{
+        } else {
             currentOpenScreen = null;
         }
     }
 
     private void onCloseScreen(Event<CloseScreenS2CPacket> event) {
-        if(event.isCancelled())return;
+        if (event.isCancelled()) return;
         int syncId = event.context.getSyncId();
         if (currentOpenScreenHandler != null && currentOpenScreenHandler.syncId == syncId) {
             resetTrackedScreen();
@@ -108,7 +113,7 @@ public class InventoryManager extends BaseModule {
     }
 
     private void onCloseHandledScreen(Event<CloseHandledScreenC2SPacket> event) {
-        if(event.isCancelled())return;
+        if (event.isCancelled()) return;
         if (currentOpenScreenHandler != null && currentOpenScreenHandler.syncId == event.context.getSyncId()) {
             resetTrackedScreen();
         }
