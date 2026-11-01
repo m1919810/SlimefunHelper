@@ -2026,6 +2026,7 @@
 	"configenum.travel-control-type.mov_void_2": "FastMove Sky Mode",
 	"configenum.travel-control-type.pearl": "Pearl Travel(测试中)",
 	"configenum.travel-control-type.test": "测试中...",
+	"configenum.travel-control-type.flight_motion": "Flight Motion",
 	"configenum.path-manager-flight-mode.baritone": "Baritone",
 	"configenum.path-manager-flight-mode.elytra_flight": "鞘翅飞行",
 	"configenum.path-manager-flight-mode.baritone_goal": "BaritoneGoal",

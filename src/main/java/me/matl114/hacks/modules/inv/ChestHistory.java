@@ -10,7 +10,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import lombok.Getter;
-import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.PlayerInteractBlockC2SPacketAccess;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.accessors.interfaces.MetadataHolder;
@@ -19,6 +18,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.events.impl.Render3D;
+import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.task.ServerStorage;
@@ -307,7 +307,7 @@ public class ChestHistory extends BaseModule {
             return;
         }
         if (currentEntry != null && currentEntry.optionalScreen != null) {
-            if (ClientPlayerAccess.of(mc.player).getServerScreenHandler().syncId
+            if (InvTasks.getCurrentServerScreenHandler(mc.player).syncId
                     == currentEntry.optionalScreen.getScreenHandler().syncId) {
                 currentEntry.dirty = true;
             } else {
