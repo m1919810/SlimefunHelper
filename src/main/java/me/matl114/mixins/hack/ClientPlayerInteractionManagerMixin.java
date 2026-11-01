@@ -7,10 +7,10 @@ import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.datafixers.util.Pair;
 import java.util.Objects;
 import javax.annotation.Nullable;
-import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.hacks.CombatTasks;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.modules.inv.InventoryManager;
 import me.matl114.hacks.modules.mine.MineExtra;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.task.DisablerManager;
@@ -684,7 +684,9 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
                             target =
                                     "Lnet/minecraft/entity/player/PlayerEntity;currentScreenHandler:Lnet/minecraft/screen/ScreenHandler;"))
     public ScreenHandler onClickSlot(ScreenHandler original, @Local(argsOnly = true) PlayerEntity player) {
-        return player instanceof ClientPlayerAccess clientPlayer ? clientPlayer.getServerScreenHandler() : original;
+        return player instanceof ClientPlayerEntity clientPlayer
+                ? InventoryManager.INSTANCE.getCurrentServerScreenHandler(clientPlayer)
+                : original;
     }
 
     @Inject(method = "isCurrentlyBreaking", at = @At("HEAD"), cancellable = true)

@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.catchers.TimedPacketCatcherImpl;
@@ -239,7 +238,7 @@ public class RecipeDatabase extends BaseModule {
 
     public void onScreenOpen(Event<OpenScreenS2CPacket> event) {
         if (mc.player == null) return;
-        HandledScreen screen = ClientPlayerAccess.of(mc.player).getServerOpeningScreen();
+        HandledScreen screen = InvTasks.getCurrentServerOpeningScreen(mc.player);
         if (screen == null || screen.getScreenHandler().syncId != event.context.getSyncId()) {
             return;
         }

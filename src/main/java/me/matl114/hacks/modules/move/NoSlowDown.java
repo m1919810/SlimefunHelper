@@ -8,6 +8,7 @@ import me.matl114.events.Listener;
 import me.matl114.events.impl.EventContainer;
 import me.matl114.events.impl.MetadataUpdate;
 import me.matl114.events.impl.SlowMovement;
+import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
@@ -446,7 +447,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             }
         }
         ItemStack stackEmpty = mc.player.getInventory().getStack(selectedEmpty);
-        var handler = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
+        var handler = InvTasks.getCurrentServerScreenHandler(mc.player);
         // may use MultiActionsC to resync inventory, wierd
         // MovTasks.getMovExtra().sendInputPacketsForInventoryAction();
         // save current server sprinting status
