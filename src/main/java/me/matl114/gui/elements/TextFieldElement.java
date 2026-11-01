@@ -47,6 +47,7 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
     private boolean focusUnlocked = true;
     private boolean invertSelectionBackground = true;
     private int firstCharacterIndex;
+    private int lastTextureWidth = -1;
     private int selectionStart;
     private int selectionEnd;
     private ColorSampler backgroundColor = ColorSampler.of(-16777216);
@@ -67,6 +68,7 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
     private boolean draggingSelection;
     private boolean focused;
     private ColorProvider borderColorProvider;
+    private TextDrawer lastTextDrawer;
     private long lastClickTime;
     private int lastClickCursor = -1;
     private int lastClickButton = -1;
@@ -232,6 +234,7 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
     }
 
     protected void syncWidgetState(DrawableWidget element) {
+        this.lastTextureWidth = element.getTextureWidth();
         getText();
         boolean nextFocused = element.isSelected();
         if (this.focusUnlocked || nextFocused) {
@@ -559,9 +562,8 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
     }
 
     protected void dragSelect(int mouseX, int mouseY, boolean shiftDownAction, int textureWidth) {
-        int innerX = MathHelper.clamp(mouseX - this.textX, 0, this.getInnerWidth(textureWidth));
-        String string = TextRenderers.get()
-                .trimToWidth(this.getText().substring(this.firstCharacterIndex), this.getInnerWidth(textureWidth));
+        int innerX = Math.min(mouseX - this.textX, this.getInnerWidth(textureWidth));
+        String string = this.getText().substring(this.firstCharacterIndex);
         this.setCursor(
                 TextRenderers.get().trimToWidth(string, innerX).length() + this.firstCharacterIndex, shiftDownAction);
     }
@@ -584,8 +586,9 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
             float delta,
             float alpha,
             boolean shouldHighlight) {
-        syncWidgetState(element);
         TextDrawer textDrawer = context.getTextDrawer();
+        this.lastTextDrawer = textDrawer;
+        syncWidgetState(element);
         this.updateFirstCharacterIndex(this.selectionStart, element.getTextureWidth(), textDrawer);
         this.updateTextPosition(element.getTextureWidth(), element.getTextureHeight(), textDrawer);
         int translatedMouseX = translateRenderMouseX(element, mouseX);
@@ -778,8 +781,12 @@ public class TextFieldElement extends AbstractElement implements InputElement, T
     }
 
     protected void updateFirstCharacterIndex(int cursor) {
-        String currentText = this.getText();
-        this.firstCharacterIndex = MathHelper.clamp(cursor, 0, currentText.length());
+        if (this.lastTextureWidth >= 0 && this.lastTextDrawer != null) {
+            this.updateFirstCharacterIndex(cursor, this.lastTextureWidth, this.lastTextDrawer);
+        } else {
+            String currentText = this.getText();
+            this.firstCharacterIndex = MathHelper.clamp(cursor, 0, currentText.length());
+        }
     }
 
     protected void updateFirstCharacterIndex(int cursor, int textureWidth) {
