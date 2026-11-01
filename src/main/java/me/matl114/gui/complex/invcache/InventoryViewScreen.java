@@ -22,6 +22,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
+import net.minecraft.util.Colors;
 import net.minecraft.util.math.BlockPos;
 import org.apache.commons.lang3.function.Consumers;
 
@@ -94,16 +95,22 @@ public class InventoryViewScreen extends GenericBackGroundScreen {
                 .addTo(this);
         ElementHandler labelElement;
         if (blockPos != null) {
-            labelElement = LabelElement.instance(Text.literal("%s [%d, %d, %d] "
-                                    .formatted(
-                                            this.blockWorld
+            labelElement = new LabelElement(
+                            element -> Text.literal("%s "
+                                            .formatted(this.blockWorld
                                                     .getRegistryKey()
                                                     .getValue()
-                                                    .toString(),
-                                            blockPos.getX(),
-                                            blockPos.getY(),
-                                            blockPos.getZ()))
-                            .append(Text.translatable("widget.gui.inventory-view-screen.click-slot")))
+                                                    .toString()))
+                                    .append(
+                                            ScreenUtils.hasCtrlDown()
+                                                    ? Text.literal("[%d, %d, %d]"
+                                                            .formatted(
+                                                                    blockPos.getX(), blockPos.getY(), blockPos.getZ()))
+                                                    : Text.translatable(
+                                                            "widget.gui.inventory-view-screen.press-ctrl-to-show"))
+                                    .append(Text.literal(" "))
+                                    .append(Text.translatable("widget.gui.inventory-view-screen.click-slot")),
+                            Colors.WHITE)
                     .withInputHandler(InputHandler.run(() -> {
                         MinecraftClient.getInstance()
                                 .keyboard

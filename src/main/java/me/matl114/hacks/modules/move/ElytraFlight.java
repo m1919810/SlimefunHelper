@@ -45,9 +45,9 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     moduleMeta(() -> this.controlMode))
             .build();
 
-    public final DoubleRef packetMotion = builder(customFireworks.add("motion-amount"), DoubleRef.TYPE)
-            .defaultValue(0.05)
-            .validator(Configs.doubleRange(0.0, 10000.0))
+    public final DoubleRef packetMotion = builder(simpleFlightControl.add("motion-amount"), DoubleRef.TYPE)
+            .defaultValue(1.7)
+            .validator(Configs.doubleRange(0.0, 1000.0))
             .build();
 
     public final EnumRef<ElytraExtra.MotionMode> motionMode = builder(
@@ -200,7 +200,6 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     }
 
     PressExecutor holdJump = new PressExecutor();
-    boolean controllingThisTick = false;
 
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
@@ -210,7 +209,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
         if (mc.options.jumpKey.isPressed()) {
             holdJump.press();
         }
-        controllingThisTick = false;
+
         if (shouldControlFlight()) {
             if (!player.isFallFlying()
                     && takeOffOptimize.get().isPresent()
@@ -435,7 +434,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                                     : motion.movement());
                 }
                 if (shouldControl || shouldControlRotation) {
-                    controllingThisTick = true;
+                    PlayerInputManager.INSTANCE.addSneakModifier(0, false, 0);
                 }
                 if (shouldCheckRocket) {
                     MovTasks.getElytraExtra().launchFirework(mc.player.getPitch(), mc.player.getYaw());
@@ -457,15 +456,6 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                         .run();
             }
             currentTakeOff = false;
-        }
-    }
-
-    @Override
-    public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
-        LegalMovementManager.MovementModifier.super.applyAfterInputTick(movementManagerEvent);
-        if (controllingThisTick) {
-            // remove sneak because sneak is part of the WASD control
-            PlayerInputUtils.of(mc.player).sneak(false).applyInput(mc.player);
         }
     }
 

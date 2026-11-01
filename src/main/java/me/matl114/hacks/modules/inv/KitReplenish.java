@@ -1806,7 +1806,7 @@ public class KitReplenish extends BaseModule {
             MutableRecord record,
             ElementFactory factory) {
         SubScreenWidget widget = new SubScreenWidget(0, 0, 250, 45);
-        widget.addDrawableChild(createToggleButton(
+        widget.addDrawableChild(factory.createToggleButton(
                 Text::empty,
                 List::of,
                 ValueAccessor.of(() -> indexOf.getValue() == record, (bl) -> {
@@ -1841,7 +1841,7 @@ public class KitReplenish extends BaseModule {
 
         widget.addDrawableChild(maxSize.generateKeyValueInput(factory, 120, 1, 30, 0, 20, 20));
         String ruleKey = Kit.KEYS.get(3);
-        widget.addDrawableChild(createLabel(
+        widget.addDrawableChild(factory.createLabel(
                 () -> {
                     Rule rule = record.getOrPut(ruleKey, Rule.DEFAULT);
                     return Text.translatable(
@@ -1858,7 +1858,7 @@ public class KitReplenish extends BaseModule {
                 23,
                 150,
                 20));
-        widget.addDrawableChild(createExecuteButton(
+        widget.addDrawableChild(factory.createExecuteButton(
                 "widget.kit-manager.open-kit-list.rule.edit",
                 ButtonAction.run(() -> {
                     Rule rule = record.getOrPut(ruleKey, Rule.DEFAULT);
@@ -1914,7 +1914,7 @@ public class KitReplenish extends BaseModule {
             screen.access().openFromCurrent();
         };
         if (mc.getNetworkHandler() != null) {
-            widget.addDrawableChild(createExecuteButton(
+            widget.addDrawableChild(factory.createExecuteButton(
                     "widget.kit-manager.open-kit-list.items",
                     ButtonAction.run(() -> {
                         Kit temporaryKit = record.toRecord(Kit.class);
@@ -1924,7 +1924,7 @@ public class KitReplenish extends BaseModule {
                     1,
                     40,
                     20));
-            widget.addDrawableChild(createExecuteButton(
+            widget.addDrawableChild(factory.createExecuteButton(
                     "widget.kit-manager.open-kit-list.items.import",
                     ButtonAction.run(() -> {
                         if (mc.player != null) {
@@ -1941,7 +1941,8 @@ public class KitReplenish extends BaseModule {
                     40,
                     20));
         } else {
-            widget.addDrawableChild(createLabel("widget.kit-manager.open-kit-list.items.error", 180, 1, 70, 20));
+            widget.addDrawableChild(
+                    factory.createLabel("widget.kit-manager.open-kit-list.items.error", 180, 1, 70, 20));
         }
         return widget;
     }

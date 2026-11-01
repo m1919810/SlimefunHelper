@@ -3,9 +3,14 @@ package me.matl114.hooks.mixin.sodium;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.hacks.modules.render.Xray;
+import net.caffeinemc.mods.sodium.client.model.color.ColorProvider;
+import net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
+import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
+import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -44,16 +49,16 @@ public abstract class SodiumDefaultFluidRendererXrayMixin {
 
     @Inject(method = "render", at = @At("HEAD"), cancellable = true, require = 0, expect = 0)
     private void slimefunhelper$applyXray(
-            @Coerce Object level,
+            LevelSlice level,
             BlockState blockState,
             FluidState fluidState,
             BlockPos blockPos,
             BlockPos offset,
-            @Coerce Object collector,
-            @Coerce Object meshBuilder,
+            TranslucentGeometryCollector collector,
+            ChunkModelBuilder meshBuilder,
             Material material,
-            @Coerce Object colorProvider,
-            @Coerce Object sprites,
+            ColorProvider<FluidState> colorProvider,
+            Sprite[] sprites,
             CallbackInfo ci) {
         slimefunhelper$xrayAlpha = Xray.getFluidAlpha(fluidState, blockPos);
         slimefunhelper$forceXrayFluidSides = slimefunhelper$xray != null && slimefunhelper$xray.isActive();

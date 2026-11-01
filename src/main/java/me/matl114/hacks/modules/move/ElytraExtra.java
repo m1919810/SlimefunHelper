@@ -605,7 +605,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 && serializedEntryUpdateEvent.metadata().id() == VDataFlag.ID_FLAGS) {
             var entry = serializedEntryUpdateEvent.metadata();
             byte data = (byte) entry.value();
-            boolean fallFlyingSyncState = (data & (1 << VDataFlag.FALL_FLYING_FLAG_INDEX)) != 0;
             fallFlyingSyncStartTick = -1;
             if (event.isCancelled() || !player.isFallFlying()) {
                 return;
@@ -1006,24 +1005,20 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         if (booleanEvent.isCancelled()) return;
         if (booleanEvent.context) {
             manuallySwitchTick = Tasks.getTick();
-            if (!(Boolean) booleanEvent.getArgs(0) && timeoutReflight.get()) {
+            if (!(Boolean) booleanEvent.getArgs(0)) {
                 fallFlyingSyncStartTick = Tasks.getTick();
             }
         }
     }
 
-    private static final int FALL_FLYING_SYNC_TIMEOUT_TICKS = 40;
+    private static final int FALL_FLYING_SYNC_TIMEOUT_TICKS = 20;
     private int fallFlyingSyncStartTick = -1;
 
-    public void onFallFlyingSyncTimeout(Event<ClientPlayerEntity> event) {
-        if (!timeoutReflight.get()) {
-            fallFlyingSyncStartTick = -1;
-            return;
-        }
+    public void onFallFlyingSyncTimeout() {
         if (fallFlyingSyncStartTick == -1) {
             return;
         }
-        if (checkNull() || event.context != mc.player || !mc.player.isFallFlying()) {
+        if (checkNull() || !mc.player.isFallFlying()) {
             fallFlyingSyncStartTick = -1;
             return;
         }
@@ -1032,8 +1027,11 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         }
 
         fallFlyingSyncStartTick = -1;
-        EntityInternalAccess.of(mc.player).setDataFlag(VDataFlag.FALL_FLYING_FLAG_INDEX, false);
-        Tasks.scheduleDelayedPre(this::autoTakeoff, 0);
+        if (timeoutReflight.get()) {
+            PlayerInputManager.INSTANCE.addSneakModifier(Integer.MAX_VALUE, true, 2);
+            fallFlyingSyncStartTick = Tasks.getTick();
+        }
+        // todo:
     }
 
     public boolean onSwitchItemArmorFallFlying() {
@@ -2104,11 +2102,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 }
             }
         }
-
-        //        if(armorFly.get() && player.isFallFlying() && this.armorGlideTransactionSlot != -1){
-        //            player.input.playerInput =
-        // PlayerInputUtils.of(player.input.playerInput).sprint(false).sneak(false).jump(false).forward(false).backward(false).right(false).left(false).toPlayerInput();
-        //        }
     }
 
     @Override

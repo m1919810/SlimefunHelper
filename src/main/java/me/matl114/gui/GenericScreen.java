@@ -148,10 +148,18 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
         }
     }
 
-    public void resetScreen() {
+    protected final void clearAndInit() {
+        super.clearAndInit();
+    }
+
+    public final void resetScreen() {
         // schedule refresh
         this.clearAndInit();
         // mc.executeSync(()->this.init(mc,mc.getWindow().getScaledWidth(), mc.getWindow().getScaledHeight()));
+    }
+
+    public final void resizeScreen(int width, int height) {
+        this.init(width, height);
     }
 
     @Override
