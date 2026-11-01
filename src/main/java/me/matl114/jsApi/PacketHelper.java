@@ -56,7 +56,7 @@ public class PacketHelper {
     }
 
     public static int getLastServerScreenSyncId() {
-        return InvTasks.LAST_SYNC_ID;
+        return InvTasks.getInventoryManager().lastSyncId;
     }
 
     public static void sendCloseInventory(int syncId) {

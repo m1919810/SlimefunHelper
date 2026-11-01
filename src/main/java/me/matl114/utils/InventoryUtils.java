@@ -12,7 +12,6 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
-import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.hacks.InvTasks;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.inventory.*;
@@ -295,8 +294,7 @@ public class InventoryUtils {
         }
         // while player is open Screen
         if (doNotFSearchWhenOpenOtherScreen
-                && ClientPlayerAccess.of(mc.player).getServerScreenHandler().syncId
-                        != mc.player.playerScreenHandler.syncId) {
+                && InvTasks.getCurrentServerScreenHandler(mc.player).syncId != mc.player.playerScreenHandler.syncId) {
             return result;
         }
         for (var i = 0; i < searchTo; ++i) {
@@ -403,8 +401,7 @@ public class InventoryUtils {
         IndexEntry<ItemStack> result = null;
         IndexEntry<ItemStack> test = null;
         boolean ret = doNotFSearchWhenOpenOtherScreen
-                && ClientPlayerAccess.of(mc.player).getServerScreenHandler().syncId
-                        != mc.player.playerScreenHandler.syncId;
+                && InvTasks.getCurrentServerScreenHandler(mc.player).syncId != mc.player.playerScreenHandler.syncId;
         if (handPriority || ret) {
             if ((acceptEmpty || !item.isEmpty())) {
                 test = new IndexEntry<>(selecedSlot, item);
@@ -452,7 +449,7 @@ public class InventoryUtils {
     public static IndexEntry<Slot> findPlayerBackpackSlot(
             Predicate<Slot> predicate, boolean acceptEmpty, boolean includeCraft) {
         var handler = mc.player.playerScreenHandler;
-        var serverHandler = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
+        var serverHandler = InvTasks.getCurrentServerScreenHandler(mc.player);
         if (serverHandler.syncId == handler.syncId) {
             if (includeCraft) {
                 for (var i = 1; i < 5; ++i) {
