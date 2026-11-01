@@ -486,6 +486,9 @@ public class RenderTasks {
     private static NoRender noRender;
 
     @Getter
+    private static Xray xray;
+
+    @Getter
     private static HandView handView;
 
     @Getter
@@ -563,6 +566,7 @@ public class RenderTasks {
     private static void initModules(ModuleManager m) {
         renderExtra = new RenderExtra().register(m);
         noRender = new NoRender().register(m);
+        xray = new Xray().register(m);
         handView = new HandView().register(m);
         entityLog = new EntityLog().register(m);
         entityESP = new EntityESP().register(m);

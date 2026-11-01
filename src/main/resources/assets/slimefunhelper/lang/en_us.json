@@ -4650,5 +4650,18 @@
 	"configenum.loot-version.v1_21_1": "Minecraft 1.21.1",
 	"configenum.loot-version.v1_21_4": "Minecraft 1.21.4",
 	"configenum.loot-version.v1_21_11": "Minecraft 1.21.11",
-	"configenum.loot-version.v26_1": "Minecraft 26.1"
+	"configenum.loot-version.v26_1": "Minecraft 26.1",
+	"xray.enable": "透视",
+	"xray.hotkey": "透视",
+	"xray.whitelist": "白名单",
+	"xray.opacity": "透明度",
+	"xray.fluid-opacity": "流体透明度",
+	"xray.exposed-only": "仅暴露矿石",
+	"xray.affect-block-entities": "剔除方块实体",
+	"config.index.xray": "透视",
+	"configenum.xray-fluid-opacity.none": "None",
+	"configenum.xray-fluid-opacity.water": "水",
+	"configenum.xray-fluid-opacity.lava": "岩浆",
+	"configenum.xray-fluid-opacity.both": "所有",
+	"module-toggle.xray.enable": "Xray"
 }
