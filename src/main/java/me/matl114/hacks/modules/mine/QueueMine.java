@@ -116,6 +116,11 @@ public class QueueMine extends BaseModule {
         }
         var access = PlayerInteractionAccess.of(mc.interactionManager);
         if (access == null) return;
+        // do not try mine which is far away from us, it may stuck here
+        while (!breakRequest.isEmpty()
+                && !InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), breakRequest.peek())) {
+            breakRequest.poll();
+        }
 
         if (shouldTryStartBreak) {
             boolean currentCanDoubleBreak = access.getCurrentFailBreakPos() == null && useDoubleBreak.get();
