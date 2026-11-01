@@ -134,23 +134,22 @@ public abstract class SkyRenderingMixin {
 
     @Unique
     private GpuBuffer skyRender$createBackgroundVertices(int textureWidth, int textureHeight) {
-        boolean sixTileAtlas = textureWidth % 3 == 0
-                && textureHeight % 2 == 0
-                && textureWidth / 3 == textureHeight / 2;
+        boolean sixTileAtlas = textureWidth % 3 == 0 && textureHeight % 2 == 0 && textureWidth / 3 == textureHeight / 2;
         try (var allocator = BufferAllocator.fixedSized(
                 skyRender$FACE_COUNT * 4 * VertexFormats.POSITION_TEXTURE_COLOR.getVertexSize())) {
             var builder =
                     new BufferBuilder(allocator, VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
             for (int face = 0; face < skyRender$FACE_COUNT; face++) {
-                int tile = switch (face) {
-                    case 0 -> 4; // North
-                    case 1 -> 5; // West
-                    case 2 -> 2; // South
-                    case 3 -> 3; // East
-                    case 4 -> 1; // Top
-                    case 5 -> 0; // Bottom
-                    default -> throw new IllegalStateException("Unexpected sky face: " + face);
-                };
+                int tile =
+                        switch (face) {
+                            case 0 -> 4; // North
+                            case 1 -> 5; // West
+                            case 2 -> 2; // South
+                            case 3 -> 3; // East
+                            case 4 -> 1; // Top
+                            case 5 -> 0; // Bottom
+                            default -> throw new IllegalStateException("Unexpected sky face: " + face);
+                        };
                 float minU = sixTileAtlas ? (tile % 3) / 3.0f : 0.0f;
                 float maxU = sixTileAtlas ? minU + 1.0f / 3.0f : 1.0f;
                 float minV = sixTileAtlas ? (tile / 3) / 2.0f : 0.0f;

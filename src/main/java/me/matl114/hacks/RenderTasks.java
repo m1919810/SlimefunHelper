@@ -486,6 +486,9 @@ public class RenderTasks {
     private static NoRender noRender;
 
     @Getter
+    private static Xray xray;
+
+    @Getter
     private static HandView handView;
 
     @Getter
@@ -557,14 +560,13 @@ public class RenderTasks {
     @Getter
     private static ShulkerDisplay shulkerDisplay;
 
-
     @Getter
     private static SkyRender skyRender;
-
 
     private static void initModules(ModuleManager m) {
         renderExtra = new RenderExtra().register(m);
         noRender = new NoRender().register(m);
+        xray = new Xray().register(m);
         handView = new HandView().register(m);
         entityLog = new EntityLog().register(m);
         entityESP = new EntityESP().register(m);
@@ -592,7 +594,6 @@ public class RenderTasks {
         itemDisplay = new ItemDisplay().register(m);
         shulkerDisplay = new ShulkerDisplay().register(m);
         skyRender = new SkyRender().register(m);
-
     }
 
     static {
