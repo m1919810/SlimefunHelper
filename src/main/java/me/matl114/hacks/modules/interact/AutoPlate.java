@@ -223,7 +223,7 @@ public class AutoPlate extends BaseModule {
                     bp, state, airplace.get(), !mode.get().isLegal());
             if (InteractUtils.canInteractAndPlace(mc.player, blockHitResult)
                     && InteractExtra.INSTANCE.isWithinInteractRange(
-                            mc.player.getPos(), blockHitResult.val().getBlockPos(), range.get())
+                            mc.player.getPos(), blockHitResult.val().getBlockPos())
                     && InteractUtils.getBlockPlacement(state.getBlock(), mc.player, mc.world, blockHitResult.val())
                             != null) {
                 if (!InteractionTasks.canHandleInteract(mode.get(), blockHitResult.val())) break;

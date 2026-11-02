@@ -19,6 +19,9 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.combat.SpearEnhance;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.modules.task.ServerFeature;
+import me.matl114.hacks.utils.DamageUtils;
+import me.matl114.hacks.utils.ExplosionUtils;
 import me.matl114.hacks.utils.config.EntryPrimitiveMap;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.StringFormat;
@@ -324,7 +327,7 @@ public class FakePlayer extends BaseModule {
                 weapon,
                 PlayerStateManager.INSTANCE.fallDistance,
                 PlayerStateManager.INSTANCE.getTicksSinceLastAttack(),
-                false);
+                ServerFeature.INSTANCE.attributeSwap.get());
         onDamage(fake, DamageUtils.createDirectDamageSource(DamageTypes.PLAYER_ATTACK, mc.player), damage);
     }
 

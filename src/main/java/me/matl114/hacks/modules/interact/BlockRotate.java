@@ -17,6 +17,7 @@ import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.RaycastUtils;
 import me.matl114.hacks.utils.enums.BypassMode;
 import me.matl114.hooks.LitematicaHooks;
 import me.matl114.hooks.ViaFabricPlusHooks;

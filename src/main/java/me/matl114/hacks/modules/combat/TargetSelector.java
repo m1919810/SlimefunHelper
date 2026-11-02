@@ -18,6 +18,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.RayCastCalculator;
+import me.matl114.hacks.utils.RaycastUtils;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.managers.Configs;
 import me.matl114.managers.FileManager;

@@ -40,7 +40,7 @@ public class ChainMine extends BaseModule {
             .build();
     public final IntRef chainDepth = intBuilder(chainMining.add("chain-depth"))
             .defaultValue(8)
-            .validator(Configs.intRange(0, 64))
+            .validator(Configs.intRange(0, 1000))
             .build();
     public final FlagRef whitelistEnabled =
             flagBuilder(chainMining.add("enable-whitelist")).build();
@@ -77,6 +77,7 @@ public class ChainMine extends BaseModule {
         List<BlockPos> targets = new ArrayList<>();
         frontier.add(origin.toImmutable());
         visited.add(origin.toImmutable());
+        targets.add(origin.toImmutable());
 
         int maxTargets = chainDepth.get();
         while (targets.size() < maxTargets && !frontier.isEmpty()) {

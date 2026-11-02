@@ -9,6 +9,7 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.hacks.CombatTasks;
+import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.inv.InventoryManager;
 import me.matl114.hacks.modules.mine.MineExtra;
@@ -523,7 +524,7 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
             return false;
         }
         ClientPlayerEntity playerEntity = this.client.player;
-        if (!playerEntity.canInteractWithBlockAt(this.currentBreakingPos, 1.0D)) {
+        if (!InteractExtra.INSTANCE.isWithinInteractRange(playerEntity.getPos(), this.currentBreakingPos)) {
             return false;
         }
         BlockState state = this.client.world.getBlockState(this.currentBreakingPos);

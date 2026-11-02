@@ -9,6 +9,7 @@ import java.lang.reflect.Modifier;
 import java.util.*;
 import me.matl114.hacks.*;
 import me.matl114.hacks.modules.HackModules;
+import me.matl114.hacks.utils.RaycastUtils;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.*;
 import org.objectweb.asm.*;

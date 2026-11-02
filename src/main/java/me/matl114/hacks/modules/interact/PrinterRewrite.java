@@ -338,7 +338,7 @@ public class PrinterRewrite extends BaseModule {
         // add placement collision check
         if (result != null
                 && InteractExtra.INSTANCE.isWithinInteractRange(
-                        mc.player.getPos(), result.val().getBlockPos(), interactRangeOverride.get())
+                        mc.player.getPos(), result.val().getBlockPos())
                 && InteractUtils.getBlockPlacement(needBlock, mc.player, mc.world, result.val()) != null) {
             if (result.flag()) {
                 needSneak = true;

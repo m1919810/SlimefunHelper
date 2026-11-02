@@ -3,7 +3,7 @@ package me.matl114.hacks.utils.entity;
 import com.mojang.authlib.GameProfile;
 import java.util.function.Consumer;
 import me.matl114.accessors.events.ClientConnectionAccess;
-import me.matl114.utils.DamageUtils;
+import me.matl114.hacks.utils.DamageUtils;
 import me.matl114.utils.InventoryUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.OtherClientPlayerEntity;

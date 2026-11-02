@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.interact;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -14,8 +15,13 @@ import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.mine.PacketMine;
 import me.matl114.hacks.modules.move.PlayerInputManager;
+import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.modules.move.RotationManager;
 import me.matl114.hacks.modules.task.DisablerManager;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.config.EntrySet;
+import me.matl114.hacks.utils.config.NBTTypes;
+import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.hacks.utils.tasks.StateExecutor;
@@ -28,6 +34,7 @@ import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
+import net.minecraft.entity.EntityPose;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -37,6 +44,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 
 public class SelfTrap extends BaseModule {
     public static SelfTrap INSTANCE;
@@ -72,9 +80,17 @@ public class SelfTrap extends BaseModule {
 
     public final FlagRef airplace = flagBuilder(selfTrap.add("air-place")).build();
 
-    public final FlagRef scaffold = flagBuilder(selfTrap.add("lower")).build();
+    public final FlagRef placeLower =
+            flagBuilder(selfTrap.add("place-lower"), true).build();
+
+    public final NBTRef<OptionalPrimitive<Integer>> scaffold = builder(
+                    selfTrap.add("lower"), OptionalPrimitive.INT_TYPE)
+            .defaultValue(new OptionalPrimitive<>(true, NBTTypes.INT_TYPE, 1))
+            .build();
 
     public final FlagRef onlyGround = flagBuilder(selfTrap.add("only-ground")).build();
+
+    public final FlagRef autoCenter = flagBuilder(selfTrap.add("auto-center")).build();
 
     public final FlagRef autoSneak = flagBuilder(selfTrap.add("auto-sneak")).build();
 
@@ -125,15 +141,21 @@ public class SelfTrap extends BaseModule {
         }
     }
 
+    BlockPos lastSurround;
+    BlockPos lastCenter;
+
     public void onInput() {
         if (checkNull() || !enable.get()) {
             return;
         }
-
+        boolean triggerCenterFix = lastCenter != null;
         boolean wasSneaking = mc.player.isSneaking();
         if (++delayTicks >= delay.get()) {
             if (!eatingAbort.get() || !mc.player.isUsingItem()) {
                 if (checkSelfTrap()) {
+                    if (autoCenter.get() && mc.player.getPose() != EntityPose.SWIMMING) {
+                        triggerCenterFix = true;
+                    }
                     delayTicks = 0;
                     needPlaceState.state(true);
                 } else {
@@ -159,6 +181,32 @@ public class SelfTrap extends BaseModule {
                 }
             }
         }
+        if (triggerCenterFix && mc.player.isOnGround()) {
+            if (lastCenter == null || !MathUtils.isInBox(lastCenter.toCenterPos(), mc.player.getPos(), 0.75)) {
+                lastCenter = lastSurround == null ? PlayerStateManager.INSTANCE.lastVelocityAffectingPos : lastSurround;
+            }
+            var blockPos = lastCenter;
+            boolean fixed = mc.player.getX() - blockPos.getX() - 0.5 <= 0.2
+                    && mc.player.getX() - blockPos.getX() - 0.5 >= -0.2
+                    && mc.player.getZ() - blockPos.getZ() - 0.5 <= 0.2
+                    && mc.player.getZ() - 0.5 - blockPos.getZ() >= -0.2;
+            if (!fixed) {
+                PlayerInputUtils.Input inputUtils = PlayerInputUtils.of(mc.options);
+                if (!inputUtils.hasMovement()) {
+                    Vec3d lookHorizontal = blockPos.toCenterPos().subtract(mc.player.getPos());
+                    float yaw = EntityUtils.rotationToYaw(lookHorizontal);
+                    RotationManager.INSTANCE.request(RotationManager.ofDirection(Optional.empty(), Optional.of(yaw))
+                            .preTick(() -> {
+                                PlayerInputManager.INSTANCE.addForwardModifier(0, true, 0);
+                                PlayerInputManager.INSTANCE.addBackwardModifier(0, false, 0);
+                            })
+                            .applyMoveFix(false)
+                            .priority(0));
+                }
+            } else {
+                lastCenter = null;
+            }
+        }
     }
 
     public Set<BlockPos> getTargetingPos() {
@@ -177,11 +225,7 @@ public class SelfTrap extends BaseModule {
         }
 
         Set<BlockPos> result = new LinkedHashSet<>();
-        if (!onlyGround.get()
-                || !CollisionUtil.isBoxCollided(
-                        mc.world,
-                        mc.player,
-                        playerBox.withMinY(playerBox.minY - 1.5).withMaxY(playerBox.minY))) {
+        if (placeLower.get()) {
             for (BlockPos occupied : occupiedFeet) {
                 result.add(occupied.down());
             }
@@ -192,12 +236,19 @@ public class SelfTrap extends BaseModule {
                 BlockPos candidate = occupied.offset(direction);
                 if (!occupiedFeet.contains(candidate)) {
                     result.add(candidate);
-                    if (scaffold.get()) {
+                    if (scaffold.get().isPresent()) {
                         BlockState state = mc.world.getBlockState(candidate);
                         if (state.isAir() || state.isLiquid()) {
-                            BlockPos candidateDown = candidate.down();
-                            if (!occupiedFeet.contains(candidateDown)) {
-                                scaffoldPoses.add(candidateDown);
+                            for (var i = 1; i <= scaffold.get().getValue(); ++i) {
+                                BlockPos candidateDown = candidate.offset(Direction.DOWN, i);
+                                BlockState currentState = mc.world.getBlockState(candidateDown);
+                                if (!occupiedFeet.contains(candidateDown)) {
+                                    if (currentState.isAir() || currentState.isLiquid()) {
+                                        scaffoldPoses.add(candidateDown);
+                                    } else {
+                                        break;
+                                    }
+                                }
                             }
                         }
                     }
@@ -212,6 +263,7 @@ public class SelfTrap extends BaseModule {
         if (onlyGround.get() && !mc.player.isOnGround() && !CollisionUtil.isEntitySupported(mc.player, 1.5D)) {
             return false;
         }
+        lastSurround = PlayerStateManager.INSTANCE.lastVelocityAffectingPos;
 
         boolean legal = mode.get().isLegal();
         int maxPlace =
