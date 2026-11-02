@@ -199,7 +199,7 @@ public class PacketMine extends BaseModule {
             BlockPos request = getRequestedBlock();
             if (checkNull()) return;
             if (delayMine) {
-                if (MineExtra.INSTANCE.getMiningPacketCooldown(0) == 0) {
+                if (MineExtra.INSTANCE.getOptimMiningPacketCooldown(1) == 0) {
                     if (request != null) {
                         if (!MineExtra.INSTANCE.handleMineMode(request, legalMiningMode.get())) {
                             return;

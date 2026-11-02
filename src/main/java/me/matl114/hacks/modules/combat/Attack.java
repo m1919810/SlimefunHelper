@@ -25,7 +25,9 @@ import me.matl114.hacks.modules.move.PlayerInputManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.modules.move.RotationManager;
 import me.matl114.hacks.modules.task.ServerFeature;
+import me.matl114.hacks.utils.DamageUtils;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.RaycastUtils;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.config.WrapColor;
@@ -125,6 +127,9 @@ public class Attack extends BaseModule {
             .defaultValue(new OptionalPrimitive<>(
                     false, NBTTypes.CONFIG_ENUM_TYPE.cast(), new WrapEnum<>(BypassMode.NO_BYPASS)))
             .build();
+
+    public final FlagRef tryCriticSprint =
+            flagBuilder(attack.add("try-critical-sprint")).build();
 
     // todo: ghosthand mace enchantment
 
@@ -278,7 +283,11 @@ public class Attack extends BaseModule {
                 && PlayerStateManager.INSTANCE.fallDistance > 1.5
                 && willUseMaceAttack(maceSwap);
         boolean legal = legalTargetingMode.get().isLegal();
-        boolean criticalSprint = !legal && mc.player.isSprinting();
+        boolean criticalSprint = tryCriticSprint.get()
+                && mc.player.isSprinting()
+                && !mc.player.isFallFlying()
+                && DamageUtils.canDealCriticalEnvironmentSelf()
+                && PlayerStateManager.INSTANCE.fallDistance > 0;
         boolean maceVClip = canUseMaceTp() && !legal;
         if (maceVClip
                 && autoMaceSwap.get().isPresent()
@@ -445,7 +454,7 @@ public class Attack extends BaseModule {
         }
         IndexEntry<ItemStack> invResult = selectBestWeapon(attackSettings, target);
         Runnable callback = InvExtra.INSTANCE.swapItemToHand(invResult.index(), false, attackSettings.ghostHandMode());
-        attackWithCritic(player, target, attackSettings.criticalSprint(), attackSettings.swingHand());
+        attackWithCritic(player, target, attackSettings.swingHand());
         Optional<Integer> fastDestroyShield = attackSettings.fastBreakShieldSwap();
         if (fastDestroyShield.isPresent()
                 && player.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE) >= 15.0D
@@ -455,7 +464,7 @@ public class Attack extends BaseModule {
                 && livingTarget.getActiveItem().getItem() instanceof ShieldItem
                 && isWithinShieldBlockingAngle(livingTarget, player)) {
             for (int i = 0; i < fastDestroyShield.get(); i++) {
-                attackWithCritic(player, target, attackSettings.criticalSprint(), attackSettings.swingHand());
+                attackWithCritic(player, target, attackSettings.swingHand());
             }
         }
         if (callback != null) {
@@ -478,12 +487,7 @@ public class Attack extends BaseModule {
     }
 
     @ApiMethod
-    public static void attackWithCritic(PlayerEntity player, Entity target, boolean criticSprint) {
-        attackWithCritic(player, target, criticSprint, true);
-    }
-
-    @ApiMethod
-    public static void attackWithCritic(PlayerEntity player, Entity target, boolean criticSprint, boolean swing) {
+    public static void attackWithCritic(PlayerEntity player, Entity target, boolean swing) {
         //        if (criticSprint) {
         //            mc.getNetworkHandler()
         //                    .sendPacket(new ClientCommandC2SPacket(player,
@@ -537,24 +541,41 @@ public class Attack extends BaseModule {
             case MOVEMENT_POST -> processDelayMovementAttack(target, settings, false);
             case LEGACY_SLIENT_ROT -> processLegacySnapAttack(target, settings);
             case NONE -> {
+                if (settings.criticalSprint() && !Criticals.canCritWithPlayerMovement()) {
+                    PlayerStateManager.INSTANCE.sendSprintStatus(false, true);
+                }
                 attackWithSettings(mc.player, target, settings);
                 yield false;
             }
         };
     }
 
+    private boolean maySwitchSprintCriticalItem(ItemStack stack) {
+        return (!ServerFeature.INSTANCE.attackStrengthUpdateWithHand.get()
+                        || ItemStack.areItemsEqual(stack, mc.player.getMainHandStack()))
+                && Criticals.canCritWithPlayerMovement(stack);
+    }
+
     private boolean processDelayMovementAttack(Entity target, AttackSettings settings, boolean attackBeforeMovement) {
         ElytraExtra elytraExtra = MovTasks.getElytraExtra();
         double attackRange = CombatExtra.INSTANCE.getAttackAtTargetRange(target);
         attackBeforeMovement = attackBeforeMovement && !settings.useAttack();
-
+        IndexEntry<ItemStack> bestWeapon = selectBestWeapon(settings, target);
+        if (settings.elytraDelaySwitch() && !bestWeapon.val().isOf(Items.MACE)) {
+            settings = settings.withElytraDelaySwitch(false);
+            settings = settings.withMaceSwap(false);
+        }
+        boolean maySwitchSprint = settings.criticalSprint()
+                && PlayerStateManager.INSTANCE.fallDistance > 0
+                && PlayerStateManager.INSTANCE.lastSprint
+                && maySwitchSprintCriticalItem(bestWeapon.val());
         boolean canDirectlyHit = RaycastUtils.canRaycastHit(
                 mc.player,
                 PlayerStateManager.INSTANCE.lastPitch,
                 PlayerStateManager.INSTANCE.lastYaw,
                 target,
                 attackRange);
-        if (settings.isNoDelay() && canDirectlyHit) {
+        if (settings.isNoDelay() && canDirectlyHit && !maySwitchSprint) {
             attackWithSettings(mc.player, target, settings);
             return false;
         }
@@ -565,6 +586,18 @@ public class Attack extends BaseModule {
             } else if (!elytraExtra.hasPendingFallFlyingReset()) {
                 elytraExtra.requestManualArmorSwapAndResetFallFlying(20);
                 attackBeforeMovement = false;
+            }
+        }
+        if (maySwitchSprint) {
+            if (attackBeforeMovement) {
+                AttackSettings newSettings = settings.withCriticalSprint(false);
+                Tasks.scheduleDelayedPre(
+                        () -> {
+                            processDelayMovementAttack(target, newSettings, true);
+                        },
+                        0);
+                PlayerInputManager.INSTANCE.addSprintModifier(1, false, 0);
+                return true;
             }
         }
 
@@ -589,7 +622,13 @@ public class Attack extends BaseModule {
 
         delayAttacking = true;
         DelayMovementAttackTask task = new DelayMovementAttackTask(
-                target, settings, attackRange, settings.elytraDelaySwitch(), playerPosition, precomputedTeleportTarget);
+                target,
+                settings,
+                attackRange,
+                settings.elytraDelaySwitch(),
+                playerPosition,
+                precomputedTeleportTarget,
+                maySwitchSprint && !attackBeforeMovement);
         if (!task.submit()) {
             task.finish();
             return true;
@@ -611,6 +650,7 @@ public class Attack extends BaseModule {
         private boolean distancePassAttack = true;
         private boolean runThisTick = true;
         private boolean finished;
+        private final boolean noSprint;
 
         private DelayMovementAttackTask(
                 Entity target,
@@ -618,13 +658,15 @@ public class Attack extends BaseModule {
                 double attackRange,
                 boolean useMaceAttack,
                 Vec3d precomputedFromPosition,
-                Vec3d precomputedTeleportTarget) {
+                Vec3d precomputedTeleportTarget,
+                boolean noSprint) {
             this.target = target;
             this.settings = settings;
             this.attackRange = attackRange;
             this.useMaceAttack = useMaceAttack;
             this.precomputedFromPosition = precomputedFromPosition;
             this.precomputedTeleportTarget = precomputedTeleportTarget;
+            this.noSprint = noSprint;
         }
 
         private boolean submit() {
@@ -671,9 +713,8 @@ public class Attack extends BaseModule {
             }
 
             player.setVelocity(velocity);
-            if (distancePassAttack && !player.isFallFlying() && PlayerInputManager.INSTANCE != null) {
+            if (distancePassAttack && !player.isFallFlying() && noSprint) {
                 PlayerInputManager.INSTANCE.addSprintModifier(Integer.MAX_VALUE, false, 0);
-                ClientPlayerAccess.of(player).getLegalMovementManager().markForMoveFix();
             }
         }
 
@@ -717,12 +758,28 @@ public class Attack extends BaseModule {
     }
 
     private boolean processLegacySnapAttack(Entity target, AttackSettings settings) {
+        IndexEntry<ItemStack> bestWeapon = selectBestWeapon(settings, target);
+        if (settings.elytraDelaySwitch() && !bestWeapon.val().isOf(Items.MACE)) {
+            settings = settings.withElytraDelaySwitch(false);
+        }
+        boolean delay = false;
+        if (settings.criticalSprint()
+                && PlayerStateManager.INSTANCE.fallDistance > 0
+                && PlayerStateManager.INSTANCE.lastSprint
+                && maySwitchSprintCriticalItem(bestWeapon.val())) {
+            delay = true;
+            settings = settings.withCriticalSprint(false);
+        }
+        AttackSettings settings1 = settings;
         if (settings.elytraDelaySwitch()) {
             // Legacy snap may attack even on a server-side glide tick.
             ElytraExtra elytraExtra = MovTasks.getElytraExtra();
             if (!elytraExtra.isThisTickGlideMovementServerSideGlide() && !elytraExtra.hasPendingFallFlyingReset()) {
                 elytraExtra.requestManualArmorSwapAndResetFallFlying(20);
                 delayAttacking = true;
+                if (delay) {
+                    PlayerInputManager.INSTANCE.addSprintModifier(0, false, 0);
+                }
                 Tasks.scheduleRepeatedPre(
                         () -> {
                             if (!elytraExtra.isThisTickGlideMovementServerSideGlide()
@@ -741,7 +798,7 @@ public class Attack extends BaseModule {
                                 return true;
                             }
                             try {
-                                processLegacySnapAttackNow(target, settings);
+                                processLegacySnapAttackNow(target, settings1);
                             } finally {
                                 delayAttacking = false;
                             }
@@ -752,7 +809,17 @@ public class Attack extends BaseModule {
                 return true;
             }
         }
-        return processLegacySnapAttackNow(target, settings);
+        if (delay && !mc.player.isFallFlying()) {
+            delayAttacking = false;
+            Tasks.scheduleDelayedPre(
+                    () -> {
+                        processLegacySnapAttackNow(target, settings1);
+                        delayAttacking = false;
+                    },
+                    0);
+            return true;
+        }
+        return processLegacySnapAttackNow(target, settings1);
     }
 
     private boolean canLegacySnapAttack(Entity target, double attackRange) {
@@ -769,7 +836,6 @@ public class Attack extends BaseModule {
     }
 
     private boolean processLegacySnapAttackNow(Entity target, AttackSettings settings) {
-        boolean sprintFlag = mc.player.isSprinting();
         double attackRange = CombatTasks.getCombatExtra().getAttackAtTargetRange(target);
         boolean canDirectlyHit = RaycastUtils.canRaycastHit(
                 mc.player,
@@ -777,6 +843,7 @@ public class Attack extends BaseModule {
                 PlayerStateManager.INSTANCE.lastYaw,
                 target,
                 attackRange);
+
         if (settings.isNoDelay() && canDirectlyHit) {
             // already actioned in caller
             // may not actioned in caller, fix it
@@ -817,8 +884,6 @@ public class Attack extends BaseModule {
                 mc.player.setPosition(vec3d);
             }
         }
-
-        mc.player.setSprinting(sprintFlag);
         return false;
     }
 
@@ -1204,6 +1269,8 @@ public class Attack extends BaseModule {
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        if (event.context().getValue().isGhostHandPreset())
+            ghostHand.set(event.context.getValue().getGhostHandMode(ghostHand.get()));
         if (event.context().getValue().isOptionPreset()) return;
         ModulePreset preset = event.context().getValue();
         legalTargetingMode.set(LegalTargetingMode.getFromPreset(preset));

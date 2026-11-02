@@ -48,6 +48,9 @@ public class ElytraOptimizeUtils {
                 return calculateBestV3GreedyClimbingSpeed();
             }
             case V4 -> {
+                if (!ViaFabricPlusHooks.isSupportDupRot()) {
+                    calculateBestV3ClimbingSpeed(pitch, yaw);
+                }
                 return calculateBestV4ClimbingSpeed(pitch, yaw);
             }
             case V5 -> {
@@ -64,6 +67,9 @@ public class ElytraOptimizeUtils {
                 return new Vec2f(V5_PITCH, yaw);
             }
             case V5_PULLUP_ONLY -> {
+                if (!ViaFabricPlusHooks.isSupportDupRot()) {
+                    calculateBestV3GreedyClimbingSpeed();
+                }
                 return calculateBestV5ClimbingSpeed(pitch, yaw);
             }
             case V1 -> {
@@ -350,7 +356,10 @@ public class ElytraOptimizeUtils {
         if (al.isIn(ElytraExtra.Al.V3, ElytraExtra.Al.V3_PULLUP_ONLY)) {
             return downwardLimitor(pitch, yaw, 30.5F, natural, downward);
         }
-        if (al.isIn(ElytraExtra.Al.V4, ElytraExtra.Al.V5)) {
+        if (al.isIn(ElytraExtra.Al.V4, ElytraExtra.Al.V5, ElytraExtra.Al.V5_PULLUP_ONLY)) {
+            if (ViaFabricPlusHooks.isSupportDupRot()) {
+                return downwardLimitor(pitch, yaw, 30.5F, natural, downward);
+            }
             return downwardLimitor(pitch, yaw, 5.0F, natural, downward);
         }
         if (al.isIn(ElytraExtra.Al.V1)) {

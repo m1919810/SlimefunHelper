@@ -1,10 +1,10 @@
-package me.matl114.utils;
+package me.matl114.hacks.utils;
 
 import com.google.common.base.Preconditions;
 import com.mojang.datafixers.util.Pair;
 import java.util.*;
 import java.util.function.Predicate;
-import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.utils.ApiMethod;
 import me.matl114.utils.world.AlignedFace;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;

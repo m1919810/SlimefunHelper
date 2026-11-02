@@ -1888,8 +1888,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                             event.context.timestampMS(),
                             impl.connection()));
                     currentDelayingLastTransaction = lastTransactionRecv;
-                } else {
-                    Debug.chat("Debug1");
                 }
                 event.cancel();
             }
@@ -2132,7 +2130,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             if (isThisTickGlideMovementServerSideGlide() && antiKick.get()) {
                 // must send packet to reset flight, which is a common case when player is not freezing or player is
                 // freezing using FUtils
-                ClientPlayerAccess.of(player).resyncPos();
+                ClientPlayerAccess.of(player).setForceSendPacketUpdate(true);
                 FloatingUtils.INSTANCE.setSendPacketIgnoreRotation(true);
                 FloatingUtils.INSTANCE.setForceSilent(false);
             } else if (isCurrentArmorGliding()) {

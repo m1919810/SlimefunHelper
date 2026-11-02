@@ -81,8 +81,11 @@ public class InvExtra extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPreClickSlot(), this::onClickSlot);
         registerListener(Listener.getPacketPoint().getChannel(CloseHandledScreenC2SPacket.class), this::onCloseScreen);
-        registerListener(Listener.getPostGameTick(), this::onClientTickEnd, Integer.MAX_VALUE);
-        registerListener(Listener.getPreTick(), this::onNewTick);
+        registerListener(
+                Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class),
+                this::onClientTickEnd,
+                Integer.MAX_VALUE);
+        registerListener(Listener.getPreTick(), this::onNewTick, Integer.MIN_VALUE + 1);
         registerListener(Listener.getServerLeavePoint(), event -> postTickGhostHandCallbacks.clear());
         TaskManagers.getToggleManager().register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + "keep-inv", enableKeepInv);
         TaskManagers.getTaskManager().register(TaskManagers.PREFIX_BUTTON_TASKS + "." + CLEAR_KEEP, this::clearKeep);

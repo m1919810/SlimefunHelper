@@ -11,6 +11,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.mine.QueueMine;
 import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.RaycastUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.move.goal.GoalNearBlockPos;
 import me.matl114.hooks.BaritoneHooks;
@@ -21,7 +22,6 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.CollisionUtil;
-import me.matl114.utils.RaycastUtils;
 import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.network.packet.PacketType;
@@ -251,7 +251,7 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
             }
             if (lastStableHeight == currentLandingBlock.getY()) {
                 Vec3d playerPos = mc.player.getPos().withAxis(Direction.Axis.Y, lastStableHeight + 1);
-                Vec3d velocity = PlayerStateManager.INSTANCE.lastKnownClientVelocity.withAxis(Direction.Axis.Y, 0);
+                Vec3d velocity = PlayerStateManager.INSTANCE.lastKnownRealMovementSpeed.withAxis(Direction.Axis.Y, 0);
                 if (velocity.lengthSquared() < 1.0E-4) {
                     velocity = EntityUtils.pitchYawToRotation(0, PlayerStateManager.INSTANCE.lastYaw);
                 }

@@ -8,28 +8,28 @@ import me.matl114.gui.basic.DynamicContentWidget;
 import me.matl114.gui.basic.SubScreenWidget;
 import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.hacks.api.BaseModule;
-import me.matl114.hacks.api.BaseModule.WrapperConfigRef;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 
-public class Hotkey extends BaseModule {
+public class HotkeyList extends BaseModule {
     public final ModulePath hotkeys = makePath(Configs.MISC_CONFIG, "hotkeys");
-
+    public static HotkeyList INSTANCE;
     public final KeyBindRef filter =
             hotkey(hotkeys.add("filter")).defaultValue(new MultiKeyBind()).build();
 
-    public Hotkey() {
+    public HotkeyList() {
         super("Hotkey");
+        INSTANCE = this;
     }
 
     @Override
     public void addCustomWidgets(
             Consumer<DrawableWidget> acceptor, int dx, int dy, int dblank, ElementFactory factory) {
         super.addCustomWidgets(acceptor, dx, dy, dblank, factory);
-        acceptor.accept(factory.createLabel("widget.hotkey-manager.list", 0, dblank, dx, dy));
+        acceptor.accept(factory.createTitle("widget.hotkey-manager.list", 0, dblank, dx, dy));
         var layout = WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT.forWidth(dx);
         int width = layout.totalWidth();
         int rowHeight = layout.buttonHeight() + layout.buttonBlank();
@@ -51,17 +51,16 @@ public class Hotkey extends BaseModule {
 
     private boolean matchesFilter(MultiKeyBind keyBind) {
         int[] filterKeyCodes = filter.get().getKeyCodes();
-        if (filterKeyCodes.length == 0) {
-            return true;
-        }
-
-        for (int keyCode : keyBind.getKeyCodes()) {
-            for (int filterKeyCode : filterKeyCodes) {
+        for (int filterKeyCode : filterKeyCodes) {
+            boolean match = false;
+            for (int keyCode : keyBind.getKeyCodes()) {
                 if (keyCode == filterKeyCode) {
-                    return true;
+                    match = true;
                 }
             }
+            if (!match) return false;
         }
-        return false;
+
+        return true;
     }
 }

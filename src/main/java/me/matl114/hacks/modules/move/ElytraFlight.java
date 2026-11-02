@@ -23,7 +23,9 @@ import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
+import me.matl114.utils.MathUtils;
 import me.matl114.utils.entity.PlayerInputUtils;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.util.math.Vec2f;
@@ -78,6 +80,9 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
 
     public final FlagRef useFloatingUtils =
             flagBuilder(simpleFlightControl.add("use-floating-utils")).build();
+    public final FlagRef freezeWhenSetup = flagBuilder(simpleFlightControl.add("floating-when-set-up-fireworks"))
+            .build();
+
     public final FlagRef horizontalFlyNoGravity = builder(
                     simpleFlightControl.add("horizontal-no-gravity"), Boolean.class)
             .defaultValue(true)
@@ -131,18 +136,19 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             .build();
 
     boolean currentTakeOff = false;
-    public final FlagRef autoFly =
-            flagBuilder(simpleFlightControl.add("auto-fly")).build();
+
+    public final ModulePath autoFlyModule = simpleFlightControl.add("auto-fly");
+    public final FlagRef autoFly = flagBuilder(autoFlyModule.addEnable()).build();
 
     public final KeyBindRef autoFlyKey = toggleHotkey(
-                    simpleFlightControl.add("auto-fly-hotkey"), new MultiKeyBind(), simpleFlightControl.add("auto-fly"))
+                    autoFlyModule.addHotkey(), new MultiKeyBind(), autoFlyModule.addEnable())
             .build();
 
     public final FlagRef autoFlyAutoJumpOff =
-            flagBuilder(simpleFlightControl.add("auto-fly-auto-jump-off")).build();
+            flagBuilder(autoFlyModule.add("auto-fly-auto-jump-off")).build();
 
     public final FlagRef autoFlyLandAutoClose =
-            flagBuilder(simpleFlightControl.add("auto-fly-land-auto-close")).build();
+            flagBuilder(autoFlyModule.add("auto-fly-land-auto-close")).build();
 
     private static LegalMovementManager.DelegateMovementModifier instance;
 
@@ -388,6 +394,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                         } else {
                             motion.speed(0);
                             FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                            // here we set
                             shouldControl = true;
                             shouldCheckRocket = false;
                             shouldControlRotation = false;
@@ -432,6 +439,17 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                                             motion.yaw(),
                                             !mc.player.hasNoGravity())
                                     : motion.movement());
+                } else if (freezeWhenSetup.get()
+                        && PlayerStateManager.INSTANCE.lastKnownMovementSpeed.length() < 1E-8
+                        && shouldCheckRocket
+                        && MathUtils.getOccupiedBlockPositions(
+                                        mc.player.getBoundingBox().expand(5, 5, 5))
+                                .stream()
+                                .allMatch(s -> {
+                                    BlockState nearState = mc.world.getBlockState(s);
+                                    return nearState.isAir() || nearState.isLiquid();
+                                })) {
+                    FloatingUtils.INSTANCE.setGrimFloatingTick(true);
                 }
                 if (shouldControl || shouldControlRotation) {
                     PlayerInputManager.INSTANCE.addSneakModifier(0, false, 0);

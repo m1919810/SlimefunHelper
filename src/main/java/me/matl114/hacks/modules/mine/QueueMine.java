@@ -84,7 +84,7 @@ public class QueueMine extends BaseModule {
     }
 
     int lastSumitTick = 0;
-    RenderCollector<Box> outline = RenderCollectors.createBoxCollector(true, false, false);
+    final RenderCollector<Box> outline = RenderCollectors.createBoxCollector(true, false, false);
     boolean lastRequestContainsDoubleBreak = false;
 
     public void onPostInputEvent() {
@@ -103,17 +103,14 @@ public class QueueMine extends BaseModule {
                 lastRequestContainsDoubleBreak = false;
             }
         }
-
+        outline.clear();
         for (var re : breakRequest) {
             outline.submit(new Box(re).expand(-0.2), color.get().withAlpha(255));
         }
     }
 
     public void tickQueue() {
-        boolean shouldTryStartBreak = true;
-        if (!ignoreCooldown.get() && MineExtra.INSTANCE.getMiningPacketCooldown(1) > 0) {
-            shouldTryStartBreak = false;
-        }
+
         var access = PlayerInteractionAccess.of(mc.interactionManager);
         if (access == null) return;
         // do not try mine which is far away from us, it may stuck here
@@ -122,10 +119,25 @@ public class QueueMine extends BaseModule {
             breakRequest.poll();
         }
 
-        if (shouldTryStartBreak) {
-            boolean currentCanDoubleBreak = access.getCurrentFailBreakPos() == null && useDoubleBreak.get();
-            while (!breakRequest.isEmpty()) {
-                BlockPos posLatest = breakRequest.peek();
+        while (!breakRequest.isEmpty()) {
+            BlockPos posLatest = breakRequest.peek();
+            BlockPos currentMiningPos = access.getCurrentMiningPos();
+            boolean currentCanDoubleBreak = useDoubleBreak.get() && access.getCurrentFailBreakPos() == null;
+
+            if (Objects.equals(currentMiningPos, posLatest)) {
+                if (currentCanDoubleBreak && access.sendFailBreakCurrentPos(null)) {
+                    lastRequestContainsDoubleBreak = true;
+                    breakRequest.poll();
+                } else {
+                    break;
+                }
+            } else {
+                boolean shouldTryStartBreak =
+                        ignoreCooldown.get() || MineExtra.INSTANCE.getOptimMiningPacketCooldown(1) <= 0;
+                if (!shouldTryStartBreak) {
+                    break;
+                }
+
                 if (!InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), posLatest)) {
                     breakRequest.poll();
                     continue;
@@ -138,34 +150,18 @@ public class QueueMine extends BaseModule {
                 if (!MineExtra.INSTANCE.handleMineMode(posLatest, legalMiningMode.get())) {
                     break;
                 }
-                BlockPos currentMiningPos = access.getCurrentMiningPos();
-                if (!Objects.equals(currentMiningPos, posLatest)) {
-                    // change
-                    //                if(rotate.get()){
-                    //
-                    //                }
-                    access.sendStartBreakPacket(posLatest);
-                    if (currentCanDoubleBreak) {
-                        access.sendFailBreakCurrentPos(null);
-                        currentCanDoubleBreak = false;
-                        lastRequestContainsDoubleBreak = true;
-                        breakRequest.poll();
-                    } else {
-                        if (Objects.equals(access.getCurrentMiningPos(), posLatest)) {
-                            access.sendAbortBreakPacket();
-                            break;
-                        } else {
-                            // instant break, next block
-                            breakRequest.poll();
-                        }
-                    }
-                } else if (currentCanDoubleBreak) {
-                    access.sendFailBreakCurrentPos(null);
-                    currentCanDoubleBreak = false;
+                access.sendStartBreakPacket(posLatest);
+                if (currentCanDoubleBreak && access.sendFailBreakCurrentPos(null)) {
                     lastRequestContainsDoubleBreak = true;
                     breakRequest.poll();
                 } else {
-                    break;
+                    if (Objects.equals(access.getCurrentMiningPos(), posLatest)) {
+                        access.sendAbortBreakPacket();
+                        break;
+                    } else {
+                        // instant break, next block
+                        breakRequest.poll();
+                    }
                 }
             }
         }

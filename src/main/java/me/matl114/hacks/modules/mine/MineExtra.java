@@ -21,6 +21,7 @@ import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.modules.move.RotationManager;
 import me.matl114.hacks.modules.task.ServerFeature;
+import me.matl114.hacks.utils.RaycastUtils;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.config.WrapColor;
@@ -33,7 +34,6 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.NetworkUtils;
-import me.matl114.utils.RaycastUtils;
 import me.matl114.utils.RenderUtils;
 import me.matl114.utils.WorldUtils;
 import me.matl114.utils.collections.IndexEntry;
@@ -114,6 +114,11 @@ public class MineExtra extends BaseModule {
     public final IntRef breakCooldown = builder(cooldownGroup.add("break-cooldown"), Integer.class)
             .defaultValue(5)
             .validator(Configs.INT_NONNEGATIVE)
+            .build();
+
+    public final IntRef optimCooldown = builder(cooldownGroup.add("optim-cooldown"), Integer.class)
+            .defaultValue(0)
+            .validator(Configs.intRange(0, 5))
             .build();
 
     public final IntRef grimAcCooldownThreshold = builder(
@@ -382,7 +387,10 @@ public class MineExtra extends BaseModule {
                 currentMiningBlock = null;
                 // FastBreak cooldown tryBypass
                 lastFinishBreakingTick = Tasks.getTick();
-                lastFinishBreakingCooldownTill = Tasks.getTick() + cooldownManaging();
+                lastFinishBreakingCooldownTill = Tasks.getTick()
+                        + cooldownManaging(
+                                (cooldownOverride.get() && breakCooldown.get() >= 0) ? breakCooldown.get() : 5);
+                lastOptimFinishBreakCooldownTill = Tasks.getTick() + cooldownManaging(optimCooldown.get());
             }
             case ABORT_DESTROY_BLOCK -> {
                 if (!Objects.equals(lastGrimACWrongBreakCheck, packet.getPos())) {
@@ -452,7 +460,10 @@ public class MineExtra extends BaseModule {
     }
 
     public void onGrimSBFastBreakExplode(Event<PlayerActionC2SPacket> event) {
-        if (quickMine.get() && fastBreakBypassMode.get() == Mode.BYPASS_GRIM_BAD_PACKETS && mc.player != null) {
+        if (quickMine.get()
+                && fastBreakBypassMode.get() == Mode.BYPASS_GRIM_BAD_PACKETS
+                && mc.player != null
+                && !recursivelySendingPackets) {
             var packet = event.context();
             if (packet.getAction() == PlayerActionC2SPacket.Action.START_DESTROY_BLOCK
                     && packet.getPos().getY() < 1145
@@ -504,6 +515,7 @@ public class MineExtra extends BaseModule {
     }
 
     int thisTickStartBreakPackets = 0;
+    boolean recursivelySendingPackets = false;
 
     public void onGrimCooldownResetPackets() {
         thisTickStartBreakPackets = 0;
@@ -515,7 +527,7 @@ public class MineExtra extends BaseModule {
                 }
                 if (!cooldownFix.get().isPresent()) return;
                 int cnt = cooldownFix.get().getValue();
-                while (gainedAdvantageCooldown > 150 && thisTickStartBreakPackets < cnt) {
+                while (gainedAdvantageCooldown > 50 && thisTickStartBreakPackets < cnt) {
                     mc.interactionManager.sendSequencedPacket(
                             mc.world,
                             (seq) -> new PlayerActionC2SPacket(
@@ -602,6 +614,7 @@ public class MineExtra extends BaseModule {
 
     public int lastFinishBreakingTick;
     public int lastFinishBreakingCooldownTill;
+    public int lastOptimFinishBreakCooldownTill;
 
     public int gainedAdvantageCooldown;
 
@@ -616,6 +629,7 @@ public class MineExtra extends BaseModule {
     public void resetStatistics() {
         lastFinishBreakingTick = 0;
         lastFinishBreakingCooldownTill = 0;
+        lastOptimFinishBreakCooldownTill = 0;
         gainedAdvantageCooldown = 0;
         lastStartingMineIsInstantBreak = false;
         gainedAdvantageMining = 0;
@@ -625,6 +639,10 @@ public class MineExtra extends BaseModule {
 
     public boolean isVanillaMineCooldownComplete(int extra) {
         return Tasks.getTick() - lastFinishBreakingTick >= 6 + extra;
+    }
+
+    public int getOptimMiningPacketCooldown(int extra) {
+        return Math.max(0, lastOptimFinishBreakCooldownTill + extra - Tasks.getTick());
     }
 
     public int getMiningPacketCooldown(int extra) {
@@ -675,11 +693,11 @@ public class MineExtra extends BaseModule {
             } else if (fastBreakBypassMode.get() == Mode.BYPASS_GRIM_BAD_PACKETS) {
                 // still magic numbers...
                 if (doubleBreak.get()) {
-                    if (gainedAdvantageCooldown > 150) {
+                    if (gainedAdvantageCooldown > 50) {
                         return false;
                     }
                 } else {
-                    if (gainedAdvantageCooldown > 300) {
+                    if (gainedAdvantageCooldown > 500) {
                         return false;
                     }
                 }
@@ -689,10 +707,7 @@ public class MineExtra extends BaseModule {
         return true;
     }
 
-    private int cooldownManaging() {
-        boolean fastBreak = cooldownOverride.get();
-        int cooldownOverride = (fastBreak && breakCooldown.get() >= 0) ? breakCooldown.get() : 5;
-
+    private int cooldownManaging(int cooldownOverride) {
         if (cooldownOverride < 5) {
             if (!isSafeCooldownThreshold()) {
                 // shit......
@@ -710,7 +725,6 @@ public class MineExtra extends BaseModule {
         int thisCurrentTick = Tasks.getTick();
         // this means it is ok to directly mine
         boolean canResetThisTime = false;
-        int threshold = mineExtra.grimAcCooldownThreshold.get();
         if (!mc.player.getAbilities().creativeMode) {
             if (thisCurrentTick >= lastFinishBreakingTick + 6) {
                 canResetThisTime = true;
@@ -719,13 +733,13 @@ public class MineExtra extends BaseModule {
                 gainedAdvantageCooldown += 300 - (thisCurrentTick - lastFinishBreakingTick) * 50;
             }
         } else {
-            gainedAdvantageCooldown = Math.min(threshold, gainedAdvantageCooldown);
+            gainedAdvantageCooldown = Math.min(grimAcCooldownThreshold.get(), gainedAdvantageCooldown);
         }
         gainedAdvantageCooldown = MathHelper.clamp(gainedAdvantageCooldown, -1000, 1000);
 
         // we will deal the cooldown shit of bad packets mode in the duplication count of bad packets
-        if (gainedAdvantageCooldown > threshold
-                && canResetThisTime
+        if (canResetThisTime
+                && gainedAdvantageCooldown > 50
                 && isVanillaMineCooldownComplete(1)
                 && mineExtra.fastBreakBypassMode.get().isIn(Mode.BYPASS_GRIM_LEGIT, Mode.BYPASS_GRIM_BAD_PACKETS)
                 && (startCooldownFix.get().isPresent() || doubleBreak.get())
@@ -745,17 +759,24 @@ public class MineExtra extends BaseModule {
                 return;
             }
             int duplicatedMax = startCooldownFix.get().orElse(5);
-            PacketManager.schedulePostScheduleCallback(event.context, () -> {
-                if (thisTickStartBreakPackets < duplicatedMax) {
-                    mc.interactionManager.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence -> {
-                        return new PlayerActionC2SPacket(
-                                PlayerActionC2SPacket.Action.START_DESTROY_BLOCK,
-                                pos,
-                                event.context.getDirection(),
-                                sequence);
-                    }));
+            // send now, do not delay
+            if (thisTickStartBreakPackets < duplicatedMax) {
+                boolean isRecursive = recursivelySendingPackets;
+                if (!isRecursive) {
+                    recursivelySendingPackets = true;
                 }
-            });
+
+                mc.interactionManager.sendSequencedPacket(MinecraftClient.getInstance().world, (sequence -> {
+                    return new PlayerActionC2SPacket(
+                            PlayerActionC2SPacket.Action.START_DESTROY_BLOCK,
+                            pos,
+                            event.context.getDirection(),
+                            sequence);
+                }));
+                if (!isRecursive) {
+                    recursivelySendingPackets = false;
+                }
+            }
         }
     }
 
@@ -920,7 +941,7 @@ public class MineExtra extends BaseModule {
                     if (doubleMinePos != null) {
                         Vec3d doubleMineVec = Vec3d.of(doubleMinePos);
                         if (mc.player.getPos().squaredDistanceTo(doubleMineVec) < 40000
-                                && !Objects.equals(doubleMineVec, pos)) {
+                                && (!Objects.equals(doubleMineVec, pos) || !shouldRenderMine())) {
                             float progressFail;
                             if (lastTickGhostHandFailBreak > Tasks.getTick() - 2) {
                                 progressFail = PlayerInteractionAccess.of(mc.interactionManager)
