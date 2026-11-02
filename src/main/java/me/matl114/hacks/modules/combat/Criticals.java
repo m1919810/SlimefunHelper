@@ -20,7 +20,10 @@ import me.matl114.hacks.modules.move.FloatingUtils;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.modules.task.MovementManager;
+import me.matl114.hacks.modules.task.ServerFeature;
+import me.matl114.hacks.utils.DamageUtils;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.RaycastUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.enums.SetBackTriggerType;
@@ -156,16 +159,26 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
         ;
     }
 
-    private boolean canNotCrit() {
-        return mc.player.isTouchingWater()
-                || mc.player.hasVehicle()
-                || PlayerStateManager.INSTANCE.lastInWeb
-                || PlayerStateManager.INSTANCE.lastSlowByBlock;
+    public static boolean canCritWithPlayerMovement() {
+        return DamageUtils.canDealCriticalEnvironmentSelf()
+                && isAttackStrengthEnoughForCritic(mc.player.getStackInHand(Hand.MAIN_HAND));
+    }
+
+    public static boolean canCritWithPlayerMovement(ItemStack stack) {
+        return DamageUtils.canDealCriticalEnvironmentSelf() && isAttackStrengthEnoughForCritic(stack);
+    }
+
+    public static boolean isAttackStrengthEnoughForCritic(ItemStack stack) {
+        return DamageUtils.canDealCriticalProgress(DamageUtils.getAttackProgress(
+                mc.player,
+                stack,
+                PlayerStateManager.INSTANCE.getTicksSinceLastAttack(),
+                ServerFeature.INSTANCE.attributeSwap.get()));
     }
 
     public void onPlayerAttack(Event<PlayerInteractEntityC2SPacket> event) {
         // can not crit in water or boat
-        if (checkNull() || event.isCancelled() || canNotCrit()) return;
+        if (checkNull() || event.isCancelled() || canCritWithPlayerMovement()) return;
         if (PlayerStateManager.INSTANCE.fallDistance > 1E-6) return;
         boolean canRun = cooldownTimer.canRun(cooldownCritical.get());
         cooldownTimer.mark();
@@ -475,7 +488,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
         }
         if (enable.get()
                 && mode.get() == Mode.GRIM_GROUND_SIMULATION
-                && !canNotCrit()
+                && !canCritWithPlayerMovement()
                 && lastSetBackCriticalTick + 2 <= Tasks.getTick()
                 && shouldApplyGrimGroundSimulationAutoFakeGround()) {
             double yLevel = mc.player.getY();

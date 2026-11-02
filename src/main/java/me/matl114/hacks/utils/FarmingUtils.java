@@ -1,4 +1,4 @@
-package me.matl114.utils;
+package me.matl114.hacks.utils;
 
 import com.mojang.datafixers.util.Pair;
 import java.util.Arrays;

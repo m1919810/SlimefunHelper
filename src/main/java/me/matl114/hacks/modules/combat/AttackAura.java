@@ -10,6 +10,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.modules.task.ServerFeature;
+import me.matl114.hacks.utils.DamageUtils;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
@@ -18,7 +19,6 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.AttributeUtils;
-import me.matl114.utils.DamageUtils;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.entity.Entity;
@@ -89,10 +89,16 @@ public class AttackAura extends BaseModule {
     public final FlagRef doNotAttackWhenSpear =
             flagBuilder(attBot.add("stop-attack-when-spear")).build();
 
+    public final ModulePath critical = attBot.add("critical-settings");
+
+    public final FlagRef considerJump =
+            flagBuilder(critical.add("consider-jump")).build();
+
     @Override
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreGameTick(), this::onTick);
+        registerListener(Listener.getPlayerNotFlyJumpPoint(), this::onJumpEvent);
     }
 
     @Override
@@ -109,6 +115,8 @@ public class AttackAura extends BaseModule {
     private int interval;
     private int lastArua;
 
+    private int lastStartGroundJump = 0;
+
     public boolean checkEating() {
         return doNotAttackWhenEat.get()
                 && mc.player.isUsingItem()
@@ -123,6 +131,12 @@ public class AttackAura extends BaseModule {
 
     public boolean checkUsing() {
         return checkEating() || checkSpear();
+    }
+
+    public void onJumpEvent() {
+        if (mc.player.isOnGround()) {
+            lastStartGroundJump = Tasks.getTick();
+        }
     }
 
     private boolean isCooldown(Attack.AttackSettings settings, Entity entity) {
@@ -149,9 +163,6 @@ public class AttackAura extends BaseModule {
                         > 3.1F) {
             return true;
         }
-        if (cooldownUsePacketTime.get() && Tasks.getTick() - lastArua >= maxAttackInterval.get()) {
-            return true;
-        }
         int lastTime = cooldownUsePacketTime.get() ? PlayerStateManager.INSTANCE.lastAttackStrengthResetTick : lastArua;
         int strength = Tasks.getTick() - lastTime;
         if (settings.maceSwap()
@@ -168,6 +179,15 @@ public class AttackAura extends BaseModule {
                 }
             }
         }
+        if (considerJump.get() && DamageUtils.canDealCriticalEnvironmentSelf() && !mc.player.isFallFlying()) {
+            if (((Tasks.getTick() < lastStartGroundJump + 8) && (PlayerStateManager.INSTANCE.fallDistance == 0))) {
+                return false;
+            }
+        }
+        if (cooldownUsePacketTime.get() && Tasks.getTick() - lastArua >= maxAttackInterval.get()) {
+            return true;
+        }
+
         if (deathPredict.get()
                 && entity instanceof LivingEntity target
                 && canPredictLethalAttack(target)

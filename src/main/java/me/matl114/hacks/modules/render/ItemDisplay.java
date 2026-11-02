@@ -131,6 +131,9 @@ public class ItemDisplay extends BaseModule {
     public final FlagRef shulkerDisplay =
             flagBuilder(modelConfig.add("enable-shulker-display")).build();
 
+    public final FlagRef bundleDisplay =
+            flagBuilder(modelConfig.add("bundle-display")).build();
+
     public final EnumRef<Mode> mode = builder(modelConfig.add("display-mode"), Mode.class)
             .defaultValue(Mode.ALL)
             .build();
@@ -220,6 +223,42 @@ public class ItemDisplay extends BaseModule {
                         Map<ItemStackSample, Integer> map = new LinkedHashMap<>();
                         loop_items:
                         for (var item : con.iterateNonEmpty()) {
+                            if (item.isEmpty()) {
+                                continue loop_items;
+                            }
+                            for (var re : map.entrySet()) {
+                                if (ItemStackUtils.matchItemWithout(
+                                        item, re.getKey().sample(), false, false, false)) {
+                                    re.setValue(re.getValue() + item.getCount());
+                                    continue loop_items;
+                                }
+                            }
+                            map.put(ItemStackSample.of(item), item.getCount());
+                        }
+                        return map.entrySet().stream()
+                                .sorted(Comparator.comparingInt(v -> -v.getValue()))
+                                .map(Map.Entry::getKey)
+                                .map(ItemStackSample::sample)
+                                .toList();
+                    }
+                    return null;
+                }));
+                // all the same, render
+                List<ItemStack> result = timeStamp.itemStack;
+                appendContainerInfos(event.context, result);
+            }
+        }
+        if (bundleDisplay.get()) {
+            ItemStack stack = event.getArgs(0);
+            var container = stack.get(DataComponentTypes.BUNDLE_CONTENTS);
+            if (container != null) {
+                ItemStackWithTimeStamp timeStamp = asyncUpdateItemInfo(stack, ((st0) -> {
+                    ItemStack st = (ItemStack) st0;
+                    var con = st.get(DataComponentTypes.BUNDLE_CONTENTS);
+                    if (con != null) {
+                        Map<ItemStackSample, Integer> map = new LinkedHashMap<>();
+                        loop_items:
+                        for (var item : con.iterate()) {
                             if (item.isEmpty()) {
                                 continue loop_items;
                             }

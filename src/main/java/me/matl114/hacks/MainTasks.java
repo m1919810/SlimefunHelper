@@ -300,7 +300,7 @@ public class MainTasks {
     private static ClickGui clickGui;
 
     @Getter
-    private static Hotkey hotkey;
+    private static HotkeyList hotkey;
 
     @Getter
     private static TextFont textFont;
@@ -341,7 +341,7 @@ public class MainTasks {
     private static void initModule(ModuleManager m) {
         moduleSettings = new ModuleSettings().register(m);
         clickGui = new ClickGui().register(m);
-        hotkey = new Hotkey().register(m);
+        hotkey = new HotkeyList().register(m);
         textFont = new TextFont().register(m);
         configManager = new ConfigManager().register(m);
         bindCommand = new BindCommand().register(m);

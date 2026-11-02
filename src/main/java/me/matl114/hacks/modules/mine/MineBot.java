@@ -261,7 +261,7 @@ public class MineBot extends BaseModule {
         if (bp == null || mc.player == null || mc.world == null || mc.interactionManager == null) {
             return TickMineResult.STOP;
         }
-        if (settings.considerCooldown() && MineExtra.INSTANCE.getMiningPacketCooldown(1) > 0) {
+        if (settings.considerCooldown() && MineExtra.INSTANCE.getOptimMiningPacketCooldown(1) > 0) {
             return TickMineResult.STOP;
         }
         if (settings.rotate()) {

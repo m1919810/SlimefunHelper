@@ -16,6 +16,7 @@ import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.render.ProjectileESP;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.RaycastUtils;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.render.RenderCollectors;

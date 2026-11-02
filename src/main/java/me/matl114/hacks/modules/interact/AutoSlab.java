@@ -263,7 +263,7 @@ public class AutoSlab extends BaseModule {
                         testPos, targetState, airplace.get(), !mode.get().isLegal());
                 if (InteractUtils.canInteractAndPlace(mc.player, hitResult)
                         && InteractExtra.INSTANCE.isWithinInteractRange(
-                                mc.player.getPos(), hitResult.val().getBlockPos(), range.get())
+                                mc.player.getPos(), hitResult.val().getBlockPos())
                         && InteractUtils.getBlockPlacement(bl, mc.player, mc.world, hitResult.val()) != null) {
                     if (!InteractionTasks.canHandleInteract(mode.get(), hitResult.val())) break;
                     Runnable runnable = InvExtra.INSTANCE.swapItemToHand(

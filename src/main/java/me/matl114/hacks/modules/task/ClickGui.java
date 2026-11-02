@@ -579,20 +579,7 @@ public class ClickGui extends BaseModule {
     }
 
     public DrawableWidget createKeyBindListSettings(int width, int height, ClickGuiMetaData meta) {
-        Hotkey hotkey = MainTasks.getHotkey();
-        WidgetUtils.ConfigScreenLayout layout = WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT;
-        DynamicListWidget widget = createConfigScreen(
-                Text.translatable("widget.click-gui.selection.Hotkeys"),
-                List::of,
-                hotkey.getEditableConfig(),
-                layout,
-                CONFIG_FACTORY);
-        hotkey.addCustomWidgets(
-                widget::addDrawableChild,
-                layout.totalWidth(),
-                layout.buttonHeight(),
-                layout.buttonBlank(),
-                CONFIG_FACTORY);
+        DrawableWidget widget = createBaseModuleConfigurateScreen(HotkeyList.INSTANCE, meta);
         return WidgetUtils.createCenterScreenWidget(widget, width, height);
     }
 

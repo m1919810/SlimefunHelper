@@ -146,6 +146,14 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         this.ticksSinceLastPositionPacketSent = ticks;
     }
 
+    public boolean forceSendPacket;
+
+    @Override
+    @Unique
+    public void setForceSendPacketUpdate(boolean force) {
+        this.forceSendPacket = force;
+    }
+
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onClientPlayerInitConfiguration(
             MinecraftClient client,
@@ -214,6 +222,15 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
             if (!this.movementManager.preMovementProgress((ClientPlayerEntity) (AbstractClientPlayerEntity) this)
                     || event.isCancelled()) {
                 lastCancelTick = Tasks.getTick();
+            }
+        }
+        if (lastCancelTick != Tasks.getTick()) {
+            if (forceSendPacket) {
+                forceSendPacket = false;
+                // trigger a minimum update
+                if (!hasVehicle()) {
+                    lastOnGround = !this.isOnGround();
+                }
             }
         }
     }

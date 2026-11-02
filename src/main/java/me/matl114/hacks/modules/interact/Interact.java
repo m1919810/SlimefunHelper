@@ -20,6 +20,7 @@ import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.modules.move.RotationManager;
+import me.matl114.hacks.utils.RaycastUtils;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.hacks.utils.enums.LegalTargetingMode;
@@ -194,10 +195,13 @@ public class Interact extends BaseModule {
         });
     }
 
-    public boolean canInteract(BlockPos bp, double range) {
+    private boolean canInteract(BlockPos bp, double extra) {
         BlockState state = mc.world.getBlockState(bp);
         if (!state.isAir() && !state.isLiquid() && blockWhiteList.get().test(state.getBlock())) {
-            if (!InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), bp, range)) {
+            if (!(extra > 0
+                    ? InteractExtra.INSTANCE.isWithinInteractRange(
+                            mc.player.getPos(), bp, InteractExtra.INSTANCE.getBlockReachDistance() + extra)
+                    : InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), bp))) {
                 return false;
             }
             if (blockOnlyInteractable.get()
@@ -215,22 +219,20 @@ public class Interact extends BaseModule {
     }
 
     public BlockPos searchInteractableBlock() {
-        double search = InteractExtra.INSTANCE.getBlockReachDistance();
-        if (canUseTp()) {
-            search += tpInteract.get().getValue();
-        }
+        double searchExtra = canUseTp() ? tpInteract.get().getValue() : 0.0D;
         Vec3d playerEye = mc.player.getEyePos();
         Vec3d rot = mc.player.getRotationVector();
-        Vec3d endPos = playerEye.add(rot.normalize().multiply(search));
+        Vec3d endPos =
+                playerEye.add(rot.normalize().multiply(InteractExtra.INSTANCE.getBlockReachDistance() + searchExtra));
         for (var bp : RaycastUtils.createRaycastBlockPoses(playerEye, endPos)) {
-            if (canInteract(bp, search)) {
+            if (canInteract(bp, searchExtra)) {
                 return bp;
             }
         }
         BlockPos playerPos = mc.player.getSteppingPos().add(0, 1, 0);
         for (var bd : InteractExtra.INSTANCE.getBlocksAround()) {
             BlockPos testPos = playerPos.add(bd);
-            if (canInteract(testPos, search)) {
+            if (canInteract(testPos, searchExtra)) {
                 return testPos;
             }
         }
@@ -689,15 +691,14 @@ public class Interact extends BaseModule {
 
     @ApiMethod
     public boolean interactBlock(BlockHitResult hitResult) {
-        double reach = InteractExtra.INSTANCE.getBlockReachDistance();
         boolean isWithinDistance =
-                InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), hitResult.getBlockPos(), reach);
+                InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), hitResult.getBlockPos());
         boolean canDirectlyHit = RaycastUtils.canRaycastHit(
                 mc.player,
                 PlayerStateManager.INSTANCE.lastPitch,
                 PlayerStateManager.INSTANCE.lastYaw,
                 hitResult.getBlockPos(),
-                reach);
+                InteractExtra.INSTANCE.getBlockReachDistance());
         if (canDirectlyHit) {
             InteractionTasks.interactBlock(Hand.MAIN_HAND, hitResult, swingHandBlock.get());
             return true;

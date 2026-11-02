@@ -1,4 +1,4 @@
-package me.matl114.utils;
+package me.matl114.hacks.utils;
 
 import java.util.*;
 import java.util.HashMap;
@@ -6,6 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.utils.AttributeUtils;
+import me.matl114.utils.EnchantmentUtils;
+import me.matl114.utils.RegistryUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.ComponentType;
 import net.minecraft.component.EnchantmentEffectComponentTypes;
@@ -47,10 +51,32 @@ public class DamageUtils {
 
     public static float getMaxRealAttackDamage(
             PlayerEntity player, Entity livingEntity, ItemStack stack, double fallDistance, boolean attributeSwap) {
-        var attribute = AttributeUtils.getAttributeWith(
-                player, attributeSwap ? Map.of() : Map.of(EquipmentSlot.MAINHAND, stack));
-        float f = (float) attribute.getValue(EntityAttributes.ATTACK_DAMAGE);
-        return getAttackDamage(player, livingEntity, stack, fallDistance, f, 1.0F);
+        return getAttackDamage(
+                player,
+                livingEntity,
+                stack,
+                fallDistance,
+                getAttackDamageAttribute(player, stack, attributeSwap),
+                1.0F);
+    }
+
+    public static float getAttackDamageAttribute(PlayerEntity player, ItemStack stack, boolean attributeSwap) {
+        var attribute = attributeSwap
+                ? PlayerStateManager.INSTANCE.getOrCreatePlayerStatus(player).getAttribute()
+                : AttributeUtils.getAttributeWith(player, Map.of(EquipmentSlot.MAINHAND, stack));
+        return (float) attribute.getValue(EntityAttributes.ATTACK_DAMAGE);
+    }
+
+    public static float getAttackProgress(
+            PlayerEntity player, ItemStack stack, int cooldownTicks, boolean attributeSwap) {
+        var attribute = attributeSwap
+                ? PlayerStateManager.INSTANCE.getOrCreatePlayerStatus(player).getAttribute()
+                : AttributeUtils.getAttributeWith(player, Map.of(EquipmentSlot.MAINHAND, stack));
+        return (float) MathHelper.clamp(
+                ((float) cooldownTicks + 0.5)
+                        / (float) (1.0 / attribute.getValue(EntityAttributes.ATTACK_SPEED) * 20.0),
+                0.0F,
+                1.0F);
     }
 
     public static float getRealAttackDamage(
@@ -60,15 +86,14 @@ public class DamageUtils {
             double fallDistance,
             int cooldownTicks,
             boolean attributeSwap) {
-        var attribute = AttributeUtils.getAttributeWith(
-                player, attributeSwap ? Map.of() : Map.of(EquipmentSlot.MAINHAND, stack));
-        float f = (float) attribute.getValue(EntityAttributes.ATTACK_DAMAGE);
-        float g = (float) MathHelper.clamp(
-                ((float) cooldownTicks + 0.5)
-                        / (float) (1.0 / attribute.getValue(EntityAttributes.ATTACK_SPEED) * 20.0),
-                0.0F,
-                1.0F);
-        return getAttackDamage(player, livingEntity, stack, fallDistance, f, g);
+
+        return getAttackDamage(
+                player,
+                livingEntity,
+                stack,
+                fallDistance,
+                getAttackDamageAttribute(player, stack, attributeSwap),
+                getAttackProgress(player, stack, cooldownTicks, attributeSwap));
     }
 
     private static float getAttackDamage(
@@ -86,7 +111,7 @@ public class DamageUtils {
         if (stack.getItem() instanceof MaceItem mace) {
             f += (float) getSmashDamageBonus(stack, entity, damageSource, fallDistance);
         }
-        if (canDealCritical(player, fallDistance)) {
+        if (canDealCriticalProgress(g) && canDealCritical(player, fallDistance)) {
             f *= 1.5F;
         }
         return f + h;
@@ -158,13 +183,30 @@ public class DamageUtils {
     }
 
     public static boolean canDealCritical(LivingEntity attacker, double fallDistance) {
-        return fallDistance > 0.0
-                && !attacker.isOnGround()
-                && !attacker.isClimbing()
+        return canDealCriticalGround(attacker, fallDistance)
+                && canDealCriticalEnvironment(attacker)
+                && !attacker.isSprinting();
+    }
+
+    public static boolean canDealCriticalGround(LivingEntity attacker, double fallDistance) {
+        return fallDistance > 0.0 && !attacker.isOnGround();
+    }
+
+    public static boolean canDealCriticalEnvironmentSelf() {
+        return !PlayerStateManager.INSTANCE.lastInWeb
+                && !PlayerStateManager.INSTANCE.lastSlowByBlock
+                && canDealCriticalEnvironment(mc.player);
+    }
+
+    public static boolean canDealCriticalEnvironment(LivingEntity attacker) {
+        return !attacker.isClimbing()
                 && !attacker.isTouchingWater()
                 && !attacker.hasStatusEffect(StatusEffects.BLINDNESS)
-                && !attacker.hasVehicle()
-                && !attacker.isSprinting();
+                && !attacker.hasVehicle();
+    }
+
+    public static boolean canDealCriticalProgress(float g) {
+        return g > 0.9;
     }
 
     public static double getSmashDamageBonus(ItemStack stack, Entity target, DamageSource source, double f) {

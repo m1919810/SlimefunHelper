@@ -16,6 +16,7 @@ import me.matl114.hacks.modules.move.RotationManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
+import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.MathUtils;
@@ -56,6 +57,10 @@ public class AutoDig extends BaseModule {
             })
             .build();
     public final FlagRef fromBottom = flagBuilder(autoTunnel.add("from-bottom")).build();
+    public final IntRef searchRange = intBuilder(autoTunnel.add("search-range"))
+            .defaultValue(3)
+            .validator(Configs.intRange(1, 100))
+            .build();
 
     @Override
     public void registerAll() {
@@ -76,8 +81,9 @@ public class AutoDig extends BaseModule {
 
         BlockPos occupiedPos = mc.player.getBlockPos();
         int topTargetY = occupiedPos.getY() - 1;
+        int minTargetY = Math.max(occupiedPos.getY() - searchRange.get(), mc.world.getBottomY());
         List<List<BlockPos>> targetLayers = new ArrayList<>();
-        for (int y = topTargetY; y >= mc.world.getBottomY(); y--) {
+        for (int y = topTargetY; y >= minTargetY; y--) {
             List<BlockPos> layerTargets = new ArrayList<>();
             boolean layerInRange = false;
             for (BlockPos target : MathUtils.getOccupiedHorizontalBlockPositions(playerBox, y)) {

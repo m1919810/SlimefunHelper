@@ -1,6 +1,7 @@
-package me.matl114.utils;
+package me.matl114.hacks.utils;
 
 import java.util.*;
+import me.matl114.utils.MathUtils;
 import me.matl114.utils.annotations.NeedTest;
 import net.minecraft.block.BedBlock;
 import net.minecraft.block.BlockState;

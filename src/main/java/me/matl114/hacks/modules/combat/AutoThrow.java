@@ -136,6 +136,7 @@ public class AutoThrow extends BaseModule {
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
         ModulePreset preset = event.context.getValue();
+        if (preset.isGhostHandPreset()) ghostHand.set(preset.getGhostHandMode(ghostHand.get()));
         if (preset.isMultitaskPreset()) eatingAbort.set(preset.getEatingAbort(eatingAbort.get()));
     }
 
@@ -183,7 +184,7 @@ public class AutoThrow extends BaseModule {
                 continue;
             }
 
-            if (stack.getDamage() >= stopFixArmorDur.get()) {
+            if (stack.getDamage() > stopFixArmorDur.get()) {
                 return true;
             }
         }
@@ -199,7 +200,7 @@ public class AutoThrow extends BaseModule {
             if (stack.isEmpty() || !stack.isDamageable()) {
                 continue;
             }
-            if (stack.getDamage() >= startFix) {
+            if (stack.getDamage() > startFix) {
                 return true;
             }
         }
