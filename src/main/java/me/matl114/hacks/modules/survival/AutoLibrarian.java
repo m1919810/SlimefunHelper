@@ -265,6 +265,10 @@ public class AutoLibrarian extends BaseModule {
         return null;
     }
 
+    public BlockPos findWorkStation(VillagerEntity villager) {
+        return locateWorkStation(villager);
+    }
+
     public void refreshTarget() {
         if (targetVillager != null) {
             targetWorkStationBase = locateWorkStation(targetVillager);

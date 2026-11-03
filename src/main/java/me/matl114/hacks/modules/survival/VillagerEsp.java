@@ -148,11 +148,13 @@ public class VillagerEsp extends BaseModule {
         RegistryEntry<Enchantment> enchantment = firstEnchantment.getKey();
         int level = firstEnchantment.getIntValue();
         int price = Math.max(trade.buy1().getCount(), trade.buy2().getCount());
-        return enchantment
+        MutableText display = enchantment
                 .value()
                 .description()
                 .copy()
                 .append(Text.literal(String.valueOf(level)))
                 .append(Text.literal(" " + price));
+        trade.realPrice().ifPresent(price -> display.append(Text.literal(" (" + price + ")")));
+        return display;
     }
 }

@@ -46,6 +46,12 @@ public class SurvivalTasks {
     private static AutoBreed autoBreed;
 
     @Getter
+    private static AutoFarm autoFarm;
+
+    @Getter
+    private static AutoTrade autoTrade;
+
+    @Getter
     private static WalkControl walkControl;
 
     @Getter
@@ -81,6 +87,8 @@ public class SurvivalTasks {
         autoLibrarian = new AutoLibrarian().register(m);
         autoEnchant = new AutoEnchant().register(m);
         autoBreed = new AutoBreed().register(m);
+        autoFarm = new AutoFarm().register(m);
+        autoTrade = new AutoTrade().register(m);
         walkControl = new WalkControl().register(m);
         searchControl = new SearchControl().register(m);
         searchLabel = new SearchLabel().register(m);
