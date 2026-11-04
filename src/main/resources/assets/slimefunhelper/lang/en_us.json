@@ -4479,7 +4479,7 @@
 	"survival-move-utils.walk-control.auto-jump": "跳跃避障",
 	"module-toggle.survival-move-utils.walk-control.enable": "WalkControl",
 	"widget.click-gui.module-name.Survival.AutoBreed": "AutoBreed(待测)",
-	"widget.click-gui.module-name.Survival.AutoEnchant": "自动附魔",
+	"widget.click-gui.module-name.Survival.AutoEnchant": "AutoEnchant",
 	"module-toggle.survival-interact-utils.auto-farm.enable": "AutoFarm",
 	"widget.click-gui.module-name.Survival.AutoFarm": "AutoFarm",
 	"module-toggle.survival-interact-utils.auto-trade.enable": "AutoTrade",

@@ -17,7 +17,6 @@ import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.config.TracingOption;
 import me.matl114.hacks.utils.config.WrapColor;
-import me.matl114.hacks.utils.move.goal.GoalBlockPos;
 import me.matl114.hacks.utils.move.goal.GoalList;
 import me.matl114.hacks.utils.move.goal.GoalNearBlockPos;
 import me.matl114.hacks.utils.move.goal.IPathGoal;
@@ -159,7 +158,7 @@ public class TrialInfoESP extends BaseModule {
                         == TrialSpawnerState.WAITING_FOR_PLAYERS);
         if (!found && enterTrialPosition != null) {
             BaritoneHooks.getInstance()
-                    .setBaritoneCurrentGoal(new GoalBlockPos(BlockPos.ofFloored(enterTrialPosition)));
+                    .setBaritoneCurrentGoal(new GoalNearBlockPos(BlockPos.ofFloored(enterTrialPosition)));
         }
     }
 

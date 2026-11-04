@@ -22,7 +22,7 @@ import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.move.AdjustmentSchedular;
 import me.matl114.hacks.utils.move.PathingSchedular;
-import me.matl114.hacks.utils.move.goal.GoalBlockPos;
+import me.matl114.hacks.utils.move.goal.GoalNearBlockPos;
 import me.matl114.hacks.utils.move.goal.IPathGoal;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -417,7 +417,7 @@ public class AutoTrade extends BaseModule {
             return null;
         }
         if (currentTarget.pathPos() != null) {
-            return new GoalBlockPos(currentTarget.pathPos());
+            return new GoalNearBlockPos(currentTarget.pathPos());
         }
         return PathingSchedular.pathToOrNearStopGoal(currentTarget.villager().getBlockPos(), PATH_STOP_DISTANCE);
     }

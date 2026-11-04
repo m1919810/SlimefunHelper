@@ -3,6 +3,7 @@ package me.matl114.hacks.modules.interact;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Streams;
 import java.util.*;
+import javax.annotation.Nullable;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -695,7 +696,7 @@ public class Interact extends BaseModule {
         return interactBlock(hitResult, null);
     }
 
-    private boolean interactBlock(BlockHitResult hitResult, BlockState targetState) {
+    private boolean interactBlock(BlockHitResult hitResult, @Nullable BlockState targetState) {
         boolean isWithinDistance =
                 InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), hitResult.getBlockPos());
         boolean canDirectlyHit = RaycastUtils.canRaycastHit(
@@ -704,7 +705,7 @@ public class Interact extends BaseModule {
                 PlayerStateManager.INSTANCE.lastYaw,
                 hitResult.getBlockPos(),
                 InteractExtra.INSTANCE.getBlockReachDistance());
-        boolean deceive = BlockRotate.INSTANCE.hasPlaceYawDeceive(hitResult, targetState);
+        boolean deceive = targetState != null && BlockRotate.INSTANCE.hasPlaceYawDeceive(hitResult, targetState);
         if (deceive) {
             if (!canDirectlyHit && blockMode.get() == LegalInteractMode.NONE && canUseTp() && !isWithinDistance) {
                 return TpInteract.INSTANCE.tpAndInteractBlock(
