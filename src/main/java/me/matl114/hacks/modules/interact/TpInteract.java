@@ -173,9 +173,14 @@ public class TpInteract extends BaseModule {
     }
 
     public boolean tpAndInteractBlock(BlockHitResult hitResult, Hand hand, boolean swing) {
+        return tpAndInteractBlock(hitResult, hand, swing, () -> {});
+    }
+
+    public boolean tpAndInteractBlock(BlockHitResult hitResult, Hand hand, boolean swing, Runnable beforeInteract) {
         return tpToBlock(
                 hitResult.getBlockPos(),
                 (sel) -> executeTp(sel, () -> {
+                    beforeInteract.run();
                     InteractionTasks.interactBlock(hand, hitResult, swing);
                 }));
     }
