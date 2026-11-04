@@ -24,7 +24,6 @@ import me.matl114.gui.presets.lists.NBTListModifyScreen;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.CodecUtils;
-import me.matl114.utils.collections.InitializationTask;
 import me.matl114.utils.config.*;
 import me.matl114.utils.config.kv.*;
 import net.minecraft.nbt.NbtCompound;
@@ -634,7 +633,7 @@ public interface NBTTypes {
         return (Codec) CODEC;
     }
 
-    public static void init() {
+    public static int init() {
         Field[] fields = NBTTypes.class.getDeclaredFields();
         for (Field field : fields) {
             try {
@@ -648,7 +647,8 @@ public interface NBTTypes {
                 throw new IllegalStateException("Failed to inspect NBTType field " + field.getName(), e);
             }
         }
+        return fields.length;
     }
 
-    public InitializationTask INIT = InitializationTask.of(NBTTypes::init);
+    public int SIZE = init();
 }

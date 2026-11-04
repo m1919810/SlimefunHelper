@@ -6,7 +6,7 @@ import java.util.Comparator;
 import java.util.List;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.basic.*;
-import me.matl114.gui.complex.BoxElement;
+import me.matl114.gui.elements.BoxElement;
 import me.matl114.gui.interfaces.DefaultElementFactory;
 import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.utils.ChatUtils;

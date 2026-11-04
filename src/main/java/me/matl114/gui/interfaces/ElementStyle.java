@@ -4,7 +4,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import me.matl114.hacks.utils.config.GuiSetting;
-import me.matl114.hacks.utils.gui.CustomGuiConfig;
+import me.matl114.hacks.utils.widgets.CustomGuiConfig;
 import net.minecraft.util.Identifier;
 
 /** A registered element style and its configuration policy. */

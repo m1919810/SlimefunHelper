@@ -4,7 +4,6 @@ import lombok.experimental.Accessors;
 import me.matl114.gui.basic.ColorSampler;
 import me.matl114.gui.basic.TextAlign;
 import me.matl114.gui.basic.TextProvider;
-import me.matl114.gui.complex.RawTextElement;
 import net.minecraft.text.Text;
 
 @Accessors(chain = true)

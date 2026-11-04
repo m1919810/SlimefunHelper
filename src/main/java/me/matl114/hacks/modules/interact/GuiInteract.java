@@ -4,7 +4,7 @@ import com.google.common.base.Suppliers;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
-import me.matl114.accessors.hacks.KeyBindAccess;
+import me.matl114.accessors.access.KeyBindAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;

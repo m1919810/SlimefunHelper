@@ -13,7 +13,6 @@ import me.matl114.events.Listener;
 import me.matl114.events.impl.EventContainer;
 import me.matl114.events.impl.UseItemOnBlock;
 import me.matl114.gui.basic.ContentDelegateWidget;
-import me.matl114.gui.complex.slimefun.SlimefunDispensorSuggestBookWidget;
 import me.matl114.hacks.SlimefunTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -23,6 +22,7 @@ import me.matl114.hacks.modules.move.RotationManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.RaycastUtils;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
+import me.matl114.hacks.utils.gui.slimefun.SlimefunDispensorSuggestBookWidget;
 import me.matl114.hacks.utils.multiblock.BlockMatcher;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -30,7 +30,7 @@ import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.utils.Debug;
-import me.matl114.utils.containers.MetaData;
+import me.matl114.utils.collections.MetaData;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.gui.screen.Screen;
@@ -69,7 +69,7 @@ public class MultiBlockHelper extends BaseModule {
 
     public final EnumRef<LegalInteractMode> legalMode = builder(
                     multiblock.add("bypass-targeting-mode"), LegalInteractMode.class)
-            .defaultValue(LegalInteractMode.USEITEM_PACKET)
+            .defaultValue(LegalInteractMode.LEGACY_SLIENT_ROT)
             .build();
 
     @Override
@@ -209,7 +209,6 @@ public class MultiBlockHelper extends BaseModule {
                         interactLook.subtract(mc.player.getEyePos()).normalize();
                 Vec2f pitchYaw = EntityUtils.rotationToPitchYaw(cacheDirection);
                 switch (legalMode.get()) {
-                    case USEITEM_PACKET -> clickUsePacket(result, pitchYaw, rateLimit);
                     case LEGACY_SLIENT_ROT -> clickSnap(result, pitchYaw, rateLimit);
                     case DELAY_MOVEMENT, MOVEMENT_POST -> clickDelayMovement(result, pitchYaw, rateLimit);
                 }
