@@ -79,6 +79,8 @@ public class PlayerStateManager extends BaseModule {
     public double lastY;
     public float lastPitch;
     public float lastYaw;
+    public float lastServerSidePitch;
+    public float lastServerSideYaw;
     public boolean lastOnGround;
     public boolean lastPlayerOnGround;
     public boolean lastSprint;
@@ -231,6 +233,10 @@ public class PlayerStateManager extends BaseModule {
                 Integer.MAX_VALUE);
         registerListener(Listener.getPacketPoint().getChannel(PlayerInteractBlockC2SPacket.class), this::updateAFK);
         registerListener(Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class), this::updateAFK);
+        registerListener(
+                Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class),
+                this::onUseItem,
+                Integer.MAX_VALUE);
 
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class),
@@ -273,6 +279,8 @@ public class PlayerStateManager extends BaseModule {
             if (packet.changesLook()) {
                 lastPitch = packet.getPitch(lastPitch);
                 lastYaw = packet.getYaw(lastYaw);
+                lastServerSidePitch = lastPitch;
+                lastServerSideYaw = lastYaw;
                 updateAFK();
             }
             lastKnownMovementSpeed = new Vec3d(lastX - oldMove.x, lastY - oldMove.y, lastZ - oldMove.z);
@@ -297,6 +305,8 @@ public class PlayerStateManager extends BaseModule {
             if (packet.changesLook()) {
                 lastPitch = packet.getPitch(lastPitch);
                 lastYaw = packet.getYaw(lastYaw);
+                lastServerSidePitch = lastPitch;
+                lastServerSideYaw = lastYaw;
                 updateAFK();
             }
         }
@@ -307,6 +317,15 @@ public class PlayerStateManager extends BaseModule {
                 updateAFK();
             }
         }
+    }
+
+    public void onUseItem(Event<PlayerInteractItemC2SPacket> event) {
+        if (event.isCancelled()
+                || !ViaFabricPlusHooks.getInstance().getCurrentVersion().isHigherOrEqualTo(21, 1)) {
+            return;
+        }
+        lastServerSidePitch = event.context.getPitch();
+        lastServerSideYaw = event.context.getYaw();
     }
 
     public void onVehicleMove(Event<VehicleMoveC2SPacket> event) {
@@ -793,6 +812,8 @@ public class PlayerStateManager extends BaseModule {
         lastRealMovementPacketTick = Integer.MIN_VALUE;
         lastPitch = 0.0F;
         lastYaw = 0.0F;
+        lastServerSidePitch = 0.0F;
+        lastServerSideYaw = 0.0F;
         lastSprint = false;
         lastInput = PlayerInputUtils.EMPTY.clone();
         lastVelocityAffectingPos = BlockPos.ORIGIN;

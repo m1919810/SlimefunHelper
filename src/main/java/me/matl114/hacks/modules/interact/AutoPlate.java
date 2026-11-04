@@ -231,11 +231,11 @@ public class AutoPlate extends BaseModule {
                         supplyBlock, false, preferredGhostHand.get().getPreferredMode(supplyBlock));
                 if (runnable == null) break;
                 stack.add(runnable);
-                if (useBlockRotate.get()) {
-                    BlockRotate.INSTANCE.addTempStateSchematic(bp, state);
-                }
-                boolean completed = InteractionTasks.handlePlaceMode(
-                        mode.get(), blockHitResult.val(), Hand.MAIN_HAND, swingHand.get());
+                boolean completed = useBlockRotate.get()
+                        ? BlockRotate.INSTANCE.handleYawDeceivePlace(
+                                mode.get(), blockHitResult.val(), Hand.MAIN_HAND, state, swingHand.get())
+                        : InteractionTasks.handlePlaceMode(
+                                mode.get(), blockHitResult.val(), Hand.MAIN_HAND, swingHand.get());
                 if (completed) {
                     mc.world.setBlockState(bp, state, WorldUtils.UPDATE_BLOCK_NO_PHYSICS);
                 }

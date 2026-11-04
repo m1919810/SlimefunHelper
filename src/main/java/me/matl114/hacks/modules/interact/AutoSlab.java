@@ -270,11 +270,11 @@ public class AutoSlab extends BaseModule {
                             entry.index(), false, preferredGhostHand.get().getPreferredMode(entry.index()));
                     if (runnable == null) break;
                     stack.add(runnable);
-                    if (useBlockRotate.get()) {
-                        BlockRotate.INSTANCE.addTempStateSchematic(testPos, targetState);
-                    }
-                    boolean completed = InteractionTasks.handlePlaceMode(
-                            mode.get(), hitResult.val(), Hand.MAIN_HAND, swingHand.get());
+                    boolean completed = useBlockRotate.get()
+                            ? BlockRotate.INSTANCE.handleYawDeceivePlace(
+                                    mode.get(), hitResult.val(), Hand.MAIN_HAND, targetState, swingHand.get())
+                            : InteractionTasks.handlePlaceMode(
+                                    mode.get(), hitResult.val(), Hand.MAIN_HAND, swingHand.get());
                     cnt += 1;
                     if (!completed || cnt >= multiply) {
                         break;
