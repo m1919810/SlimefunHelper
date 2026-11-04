@@ -1,33 +1,38 @@
 package me.matl114.mixins.events;
 
-import com.llamalad7.mixinextras.sugar.Local;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import java.util.List;
 import java.util.Map;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.TagGroupLoader;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.registry.tag.TagPacketSerializer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 @Environment(EnvType.CLIENT)
-@Mixin(TagPacketSerializer.Serialized.class)
+@Mixin(TagPacketSerializer.class)
 public abstract class TagPacketSerializerEvents {
-    @ModifyArg(
-            method = "loadTo",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/registry/Registry;populateTags(Ljava/util/Map;)V"))
-    public <T> Map<TagKey<T>, List<RegistryEntry<T>>> modifyTagLoad(
-            Map<TagKey<T>, List<RegistryEntry<T>>> tagEntries, @Local(argsOnly = true) Registry<T> registry) {
-        Event<Map<TagKey<T>, List<RegistryEntry<T>>>> event = new Event<>(tagEntries, false, true, registry.getKey());
+    @WrapOperation(
+            method = "toRegistryTags",
+            at =
+                    @At(
+                            value = "NEW",
+                            target =
+                                    "(Lnet/minecraft/registry/RegistryKey;Ljava/util/Map;)Lnet/minecraft/registry/tag/TagGroupLoader$RegistryTags;"))
+    private static <T> TagGroupLoader.RegistryTags<T> onRegistryTagLoad(
+            RegistryKey<T> key,
+            Map<TagKey<T>, List<RegistryEntry<T>>> tags,
+            Operation<TagGroupLoader.RegistryTags<T>> original) {
+        Map<TagKey<T>, List<RegistryEntry<T>>> tagMap = tags;
+        Event<Map<TagKey<T>, List<RegistryEntry<T>>>> event = new Event<>(tagMap, false, true, key);
         Listener.getRegistryTagKeyReload().handleValue((Event) event);
-        if (event.context != tagEntries) {
-            return event.context;
-        }
-        return tagEntries;
+        return original.call(key, event.context);
     }
 }
