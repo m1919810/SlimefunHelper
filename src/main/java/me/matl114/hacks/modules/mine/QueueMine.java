@@ -8,9 +8,11 @@ import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.enums.LegalMiningMode;
@@ -81,6 +83,7 @@ public class QueueMine extends BaseModule {
         registerListener(Listener.getPostHandleInputEvents(), this::onPostInputEvent);
         registerListener(Listener.getMineBlockAction(), this::handleQueueSumbit);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
+        registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
     }
 
     int lastSumitTick = 0;
@@ -217,5 +220,10 @@ public class QueueMine extends BaseModule {
                 RenderUtils.stopDrawVirtual(eventRender.context.stack());
             }
         }
+    }
+
+    public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        ModulePreset preset = event.context.getValue();
+        if (preset.isMultitaskPreset()) eatingAbort.set(preset.getEatingAbort(eatingAbort.get()));
     }
 }

@@ -154,7 +154,7 @@ public class VillagerEsp extends BaseModule {
                 .copy()
                 .append(Text.literal(String.valueOf(level)))
                 .append(Text.literal(" " + price));
-        trade.realPrice().ifPresent(price -> display.append(Text.literal(" (" + price + ")")));
+        trade.realPrice().ifPresent(price2 -> display.append(Text.literal(" (" + price2 + ")")));
         return display;
     }
 }
