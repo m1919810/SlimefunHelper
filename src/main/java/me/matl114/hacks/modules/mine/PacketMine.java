@@ -359,6 +359,9 @@ public class PacketMine extends BaseModule {
             } else {
                 calS = currentState;
             }
+            if (calS.getBlock().getHardness() <= 0) {
+                return InventoryUtils.getSelectedItem();
+            }
             var re = InventoryUtils.findBestPlayerItem(
                     item -> {
                         return (double)

@@ -315,12 +315,7 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
         if (MineExtra.INSTANCE.ghostHandMine.get()) {
             var bestTool = MineExtra.INSTANCE.getGhostHandMiningTool(instance);
             if (MineExtra.INSTANCE.ghostHandSwapWhenStart.get()
-                    || WorldUtils.calcBlockBreakingDelta(
-                                    instance,
-                                    client.world,
-                                    pos,
-                                    WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
-                                            client.player, instance, bestTool.val()))
+                    || WorldUtils.calcBlockBreakingDelta(instance, client.world, pos, client.player, bestTool.val())
                             > 1.01) {
                 GhostHandMode preferred = MineExtra.INSTANCE.ghostHandPreferredMode.get();
                 GhostHandMode modeSelect =
@@ -739,5 +734,16 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
             player.setStackInHand(hand, itemStack);
             return actionResult;
         }
+    }
+
+    public float predictCurrentMiningProgressWithTool(ItemStack tool, int extraTicks) {
+        BlockPos currentBreakingPos = getCurrentMiningPos();
+        BlockState block = client.world.getBlockState(currentBreakingPos);
+        if (block.isAir()) {
+            return -1.0F;
+        }
+        float speed = WorldUtils.calcBlockBreakingDelta(block, client.world, currentBreakingPos, client.player, tool);
+        int ticksSinceLastStart = getCurrentMiningTicks() + extraTicks;
+        return speed * ticksSinceLastStart;
     }
 }

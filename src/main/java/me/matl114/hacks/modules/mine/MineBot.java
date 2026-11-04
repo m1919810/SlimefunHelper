@@ -291,7 +291,7 @@ public class MineBot extends BaseModule {
         PlayerInteractionAccess access = PlayerInteractionAccess.of(mc.interactionManager);
         access.setMiningCooldown(0);
         BlockState mineState = mc.world.getBlockState(bp);
-        IndexEntry<ItemStack> bestStack = settings.autoSwap()
+        IndexEntry<ItemStack> bestStack = settings.autoSwap() && mineState.getHardness(mc.world, bp) > 0
                 ? InventoryUtils.findBestPlayerItem(
                         item -> isDurabilityOk(item)
                                 ? (double) WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(

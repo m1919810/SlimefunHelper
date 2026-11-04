@@ -44,6 +44,7 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.network.packet.s2c.play.SetTradeOffersS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
@@ -116,6 +117,8 @@ public class AutoLibrarian extends BaseModule {
         registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvent);
         registerListener(Listener.getPostGameTick(), this::updateRenderCollector);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
+        registerListener(
+                Listener.getPacketPostHandlePoint().getChannel(SetTradeOffersS2CPacket.class), this::onMerchantUpdate);
     }
 
     final PathingSchedular pathingSchedular = new PathingSchedular();
@@ -299,6 +302,8 @@ public class AutoLibrarian extends BaseModule {
         }
     }
 
+    public void onMerchantUpdate() {}
+
     public void onRender(Event<Render3D> event) {
         if (enable.get() && render.get()) {
             if (targetVillager != null && targetWorkStationBase != null) {
@@ -330,6 +335,8 @@ public class AutoLibrarian extends BaseModule {
             clearTarget();
             // end
             if (mc.currentScreen instanceof MerchantScreen merchant) {
+                // remove map
+                onMerchantScreenUpdate(merchant);
                 merchant.close();
             }
             return;
@@ -397,7 +404,9 @@ public class AutoLibrarian extends BaseModule {
                     mc.player.swingHand(Hand.MAIN_HAND);
                     access.sendBreakPacket(true);
                 } else if (!WorldManager.canVillagerResetTrade(merchantScreen.getScreenHandler())) {
-                    WorldManager.INSTANCE.setVillagerTradeLock(targetVillager, true);
+                    if (targetVillager != null) {
+                        WorldManager.INSTANCE.setVillagerTradeLock(targetVillager, true);
+                    }
                 }
             } else if (mc.currentScreen == null || mc.currentScreen instanceof HandledScreen<?>) {
                 if (!hasOpened && lastInteractTick + 5 < Tasks.getTick()) {
@@ -414,7 +423,7 @@ public class AutoLibrarian extends BaseModule {
                     new LinkedHashMap<>(enchantments.get().idMap());
             Integer val = map.remove(remove.getKey().get().getValue());
             if (val != null && val >= price) {
-                if (!onlyMaxLeve.get() && level >= remove.value().getMaxLevel()) {
+                if (!onlyMaxLeve.get() || level >= remove.value().getMaxLevel()) {
                     map.remove(remove.getKey().get().getValue());
                     if (log.get()) {
                         logI18N(
@@ -481,7 +490,7 @@ public class AutoLibrarian extends BaseModule {
             }
             currentAccepted = true;
             if (autoLockTrade.get()) {
-                if (InventoryUtils.findPlayerItem(s -> s.isOf(Items.BOOK), true, false) != null) {
+                if (InventoryUtils.findPlayerItem(s -> s.isOf(Items.BOOK), false, false) != null) {
                     if (InventoryUtils.computePlayerInventory(Items.EMERALD) >= price) {
                         var access = MerchantScreenAccess.of(screen);
                         access.setSelectedIndex(access.getSelectedIndex());
@@ -498,7 +507,9 @@ public class AutoLibrarian extends BaseModule {
                 }
             }
         } else {
-            WorldManager.INSTANCE.setVillagerTradeLock(targetVillager, true);
+            if (targetVillager != null) {
+                WorldManager.INSTANCE.setVillagerTradeLock(targetVillager, true);
+            }
             currentAccepted = true;
             IndexEntry<Pair<Integer, RegistryEntry<Enchantment>>> findIndex = checkTradingIndex(handler);
             if (findIndex != null) {
@@ -562,17 +573,20 @@ public class AutoLibrarian extends BaseModule {
                 return new GoalNearBlockPos(nearest.getBlockPos());
             }
         } else {
+            if (MathUtils.isInBox(mc.player.getPos(), targetWorkStationBase.toCenterPos(), 1.5)) {
+                return null;
+            }
             Direction lastDirection = MathUtils.getHorizontalFacing(
                     targetWorkStationBase.toCenterPos().subtract(targetVillager.getPos()));
-            Direction clockWise = lastDirection.rotateClockwise(Direction.Axis.Y);
-            BlockPos testPos = targetWorkStationBase.add(0, 1, 0).offset(clockWise);
+            BlockPos testPos = targetWorkStationBase.add(0, 1, 0).offset(lastDirection);
             BlockState testState = mc.world.getBlockState(testPos);
             if (!testState
                     .getCollisionShape(mc.world, testPos, ShapeContext.of(mc.player))
                     .isEmpty()) {
-                testPos = targetWorkStationBase.add(0, 1, 0).offset(clockWise.getOpposite());
+                testPos = targetWorkStationBase.add(0, 1, 0).offset(lastDirection.getOpposite());
             }
-            return new GoalBlockPos(testPos);
+
+            return new GoalNearBlockPos(testPos);
         }
     }
 
@@ -585,51 +599,66 @@ public class AutoLibrarian extends BaseModule {
     }
 
     {
-        adjustmentSchedular.adjustRange(1.5);
+        adjustmentSchedular.adjustRange(2.5);
         adjustmentSchedular.center(this::adjustmentGoal);
     }
 
     public Vec3d adjustmentGoal() {
         if (adjustmentControl.get() && targetVillager != null && targetWorkStationBase != null) {
             BlockPos targetWorkSpace = targetWorkStationBase.add(0, 1, 0);
-            BlockPos playerPos = mc.player.getBlockPos();
-            int manDistance = MathUtils.getManhattanDistance(targetWorkSpace, playerPos);
-            if (manDistance <= 1) {
-                Direction lastDirection = MathUtils.getHorizontalFacing(
-                        targetWorkStationBase.toCenterPos().subtract(targetVillager.getPos()));
-                Direction leftPos = lastDirection.rotateYClockwise();
-                Direction rightPos = lastDirection.rotateYCounterclockwise();
-                BlockPos leftBp = targetWorkSpace.offset(leftPos);
-                BlockPos rightBp = targetWorkSpace.offset(rightPos);
-                if (Objects.equals(playerPos, leftBp)) {
-                    Vec3d corner = playerPos
-                            .toBottomCenterPos()
-                            .offset(lastDirection.getOpposite(), 0.2)
-                            .offset(rightPos, 0.15);
-                    if (MathUtils.isInBox(corner, mc.player.getPos(), 0.05)) {
-                        return null;
-                    }
-                    return corner.offset(lastDirection.getOpposite(), 0.5);
+            Vec3d playerVec = mc.player.getPos();
 
-                } else if (Objects.equals(playerPos, rightBp)) {
-                    Vec3d corner = playerPos
-                            .toBottomCenterPos()
-                            .offset(lastDirection.getOpposite(), 0.23)
-                            .offset(leftPos, 0.15);
-                    if (MathUtils.isInBox(corner, mc.player.getPos(), 0.05)) {
-                        return null;
-                    }
-                    return corner.offset(lastDirection.getOpposite(), 0.5);
-                } else if (Objects.equals(playerPos, targetWorkSpace)) {
-                    if (MathUtils.isInBox(leftBp.toCenterPos(), mc.player.getPos(), 1)) {
-                        return leftBp.toBottomCenterPos();
-                    } else {
-                        return rightBp.toBottomCenterPos();
-                    }
+            Direction lastDirection = MathUtils.getHorizontalFacing(
+                    targetWorkStationBase.toCenterPos().subtract(targetVillager.getPos()));
+            Direction leftPos = lastDirection.rotateYClockwise();
+            Direction rightPos = lastDirection.rotateYCounterclockwise();
+
+            BlockPos leftBp = targetWorkSpace.offset(leftPos);
+            BlockPos rightBp = targetWorkSpace.offset(rightPos);
+            Vec3d leftCorner = leftBp.toBottomCenterPos()
+                    .offset(lastDirection.getOpposite(), 0.2)
+                    .offset(rightPos, 0.15);
+            Vec3d rightCorner = rightBp.toBottomCenterPos()
+                    .offset(lastDirection.getOpposite(), 0.23)
+                    .offset(leftPos, 0.15);
+            if (MathUtils.isInBox(leftBp.toCenterPos(), playerVec, 0.75)) {
+                if (MathUtils.isInBox(leftCorner, playerVec, 0.05)) {
+                    return null;
                 }
-            } else if (manDistance == 2) {
-                return targetVillager.getPos();
+                return leftCorner.offset(lastDirection.getOpposite(), 0.5);
+
+            } else if (MathUtils.isInBox(rightBp.toCenterPos(), playerVec, 0.75)) {
+
+                if (MathUtils.isInBox(rightCorner, playerVec, 0.05)) {
+                    return null;
+                }
+                return rightCorner.offset(lastDirection.getOpposite(), 0.5);
             }
+
+            Vec3d leftGoal = leftBp.toBottomCenterPos().offset(lastDirection, 0.8);
+            Vec3d rightGoal = rightBp.toBottomCenterPos().offset(lastDirection, 0.8);
+            if (MathUtils.isInBox(leftGoal, playerVec, 0.2)) {
+                return leftCorner;
+            } else if (MathUtils.isInBox(rightGoal, playerVec, 0.2)) {
+                return rightCorner;
+            }
+
+            double leftDistance = playerVec.squaredDistanceTo(leftGoal);
+            double rightDistance = playerVec.squaredDistanceTo(rightGoal);
+            double captureRangeSq = 1.5 * 1.5;
+
+            if (leftDistance > captureRangeSq && rightDistance > captureRangeSq) {
+                if (MathUtils.isInBox(targetWorkStationBase.toCenterPos(), mc.player.getPos(), 2.5)) {
+                    return targetWorkStationBase.toBottomCenterPos().add(0, 1, 0);
+                }
+                return null;
+            }
+
+            if (leftDistance <= captureRangeSq && (leftDistance <= rightDistance || rightDistance > captureRangeSq)) {
+                return leftGoal;
+            }
+
+            return rightGoal;
         }
         return null;
     }

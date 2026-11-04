@@ -220,8 +220,14 @@ public class MineExtra extends BaseModule {
         IndexEntry<ItemStack> defaultEntry = InventoryUtils.getSelectedItem();
         BlockState calculatingState =
                 (currentState.isAir() || currentState.isLiquid()) ? Blocks.OBSIDIAN.getDefaultState() : currentState;
-        double defaultSpeed = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
+        float defaultSpeed = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
                 mc.player, calculatingState, defaultEntry.val());
+        float hardNess = currentState.getBlock().getHardness();
+        float predictProgress = hardNess < 0 ? 0 : (defaultSpeed / hardNess);
+        // consider insta break situation
+        if (predictProgress > 1.1f) {
+            return defaultEntry;
+        }
         // only select speed > handItem, in the case that player holding a low dur tool
         IndexEntry<ItemStack> result = InventoryUtils.findBestPlayerItem(
                 item -> {
@@ -997,8 +1003,8 @@ public class MineExtra extends BaseModule {
         if (mc.player.isCreative()) return 10000.0F;
         BlockState state = mc.world.getBlockState(pos);
         IndexEntry<ItemStack> stackEntry = getGhostHandMiningTool(state);
-        float speed1 = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(mc.player, state, stackEntry.val());
-        return WorldUtils.calcBlockBreakingDelta(state, MinecraftClient.getInstance().world, pos, speed1);
+        return WorldUtils.calcBlockBreakingDelta(
+                state, MinecraftClient.getInstance().world, pos, mc.player, stackEntry.val());
     }
 
     public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {

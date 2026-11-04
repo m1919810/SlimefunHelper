@@ -461,7 +461,7 @@ public class WorldManager extends BaseModule {
     }
 
     private boolean isAlive(Entity entity) {
-        return (!(entity instanceof LivingEntity lv) || lv.getHealth() > 0.0);
+        return entity != null && (!(entity instanceof LivingEntity lv) || lv.getHealth() > 0.0);
     }
 
     public void onEntityDeath(Event<Entity> event) {
