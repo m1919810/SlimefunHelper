@@ -5,7 +5,6 @@ import me.matl114.events.Listener;
 import me.matl114.gui.WidgetUtils;
 import me.matl114.gui.basic.*;
 import me.matl114.gui.interfaces.ElementFactory;
-import me.matl114.gui.presets.index.IndexedScreen;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.config.Config;
 import me.matl114.managers.config.StringRef;

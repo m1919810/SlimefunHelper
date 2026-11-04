@@ -10,6 +10,7 @@ import me.matl114.events.impl.Render2D;
 import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hacks.utils.render.RenderMode;

@@ -1,7 +1,7 @@
 package me.matl114.hacks.modules.move;
 
 import me.matl114.accessors.access.ClientPlayerAccess;
-import me.matl114.accessors.hacks.KeyBindAccess;
+import me.matl114.accessors.access.KeyBindAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.impl.EventContainer;
@@ -12,6 +12,7 @@ import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.PlayerInputUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.*;
@@ -19,7 +20,6 @@ import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
-import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.MovementType;

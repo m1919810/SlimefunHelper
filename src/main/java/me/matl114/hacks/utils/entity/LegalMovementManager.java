@@ -7,7 +7,7 @@ import lombok.Getter;
 import me.matl114.events.Event;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.EntityUtils;
-import me.matl114.utils.entity.PlayerInputUtils;
+import me.matl114.hacks.utils.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.math.Vec3d;
 

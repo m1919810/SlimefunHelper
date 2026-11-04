@@ -15,7 +15,7 @@ import me.matl114.hacks.modules.inv.InventoryManager;
 import me.matl114.hacks.modules.move.*;
 import me.matl114.hacks.modules.render.NoRender;
 import me.matl114.hacks.modules.task.DisablerManager;
-import me.matl114.utils.entity.PlayerInputUtils;
+import me.matl114.hacks.utils.PlayerInputUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;

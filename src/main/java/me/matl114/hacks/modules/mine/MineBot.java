@@ -17,6 +17,7 @@ import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.WorldUtils;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.enums.GhostHandMode;

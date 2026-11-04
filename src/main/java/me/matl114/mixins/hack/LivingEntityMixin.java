@@ -12,7 +12,7 @@ import me.matl114.hacks.modules.move.Sprint;
 import me.matl114.hacks.modules.move.Velocity;
 import me.matl114.hacks.modules.render.HandView;
 import me.matl114.hacks.utils.EntityUtils;
-import me.matl114.utils.entity.PlayerInputUtils;
+import me.matl114.hacks.utils.PlayerInputUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;

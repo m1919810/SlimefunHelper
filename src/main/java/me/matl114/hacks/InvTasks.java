@@ -16,6 +16,7 @@ import me.matl114.hacks.api.ModuleGroup;
 import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.inv.*;
+import me.matl114.hacks.utils.InteractUtils;
 import me.matl114.hacks.utils.ItemCache;
 import me.matl114.managers.*;
 import me.matl114.managers.config.DoubleRef;

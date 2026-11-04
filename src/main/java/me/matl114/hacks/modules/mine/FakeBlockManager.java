@@ -7,7 +7,7 @@ import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
-import me.matl114.utils.NetworkUtils;
+import me.matl114.hacks.utils.NetworkUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlayerActionResponseS2CPacket;

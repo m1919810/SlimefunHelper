@@ -31,6 +31,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
+import oshi.util.tuples.Triplet;
 
 /** A set of entity types assembled from spawn groups, additions, and removals. */
 public class EntityTypeEntrySet implements NBTParsable<EntityTypeEntrySet>, Predicate<EntityType<?>> {
@@ -245,7 +246,10 @@ public class EntityTypeEntrySet implements NBTParsable<EntityTypeEntrySet>, Pred
 
     private static void openEditor(ElementFactory factory, AttrKeyValue<EntityTypeEntrySet> attr) {
         EntityTypeEntrySet current = attr.get();
-        ScreenAccess.of(new EntityTypeEntrySetScreen(current, attr::accept, factory))
+        ScreenAccess.of(new EntityTypeEntrySetScreen(
+                        new Triplet<>(current.groups(), current.additional(), current.excluded()),
+                        (trip) -> attr.accept(new EntityTypeEntrySet(trip.getA(), trip.getB(), trip.getC())),
+                        factory))
                 .openFromCurrent();
     }
 

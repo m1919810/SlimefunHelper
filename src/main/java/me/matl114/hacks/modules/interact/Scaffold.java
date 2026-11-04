@@ -11,6 +11,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.task.DisablerManager;
+import me.matl114.hacks.utils.InteractUtils;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.managers.Configs;
@@ -20,7 +21,6 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.CollisionUtil;
-import me.matl114.utils.InteractUtils;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.collections.FlagEntry;
 import me.matl114.utils.collections.IndexEntry;
@@ -56,7 +56,7 @@ public class Scaffold extends BaseModule {
 
     public final EnumRef<LegalInteractMode> legalMode = builder(
                     scaffold.add("legal-targeting"), LegalInteractMode.class)
-            .defaultValue(LegalInteractMode.USEITEM_PACKET)
+            .defaultValue(LegalInteractMode.LEGACY_SLIENT_ROT)
             .build();
 
     public final FlagRef airplace = flagBuilder(scaffold.add("air-place")).build();

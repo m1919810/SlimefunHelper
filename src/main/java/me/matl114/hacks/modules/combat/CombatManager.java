@@ -31,7 +31,7 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.algorithms.SerialExecutor;
 import me.matl114.utils.collections.IndexEntry;
-import me.matl114.utils.containers.MetaData;
+import me.matl114.utils.collections.MetaData;
 import net.minecraft.block.*;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;

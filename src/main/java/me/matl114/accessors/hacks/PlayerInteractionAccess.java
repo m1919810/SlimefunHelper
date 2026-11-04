@@ -1,7 +1,7 @@
 package me.matl114.accessors.hacks;
 
 import javax.annotation.Nullable;
-import me.matl114.utils.WorldUtils;
+import me.matl114.hacks.utils.WorldUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
@@ -109,19 +109,7 @@ public interface PlayerInteractionAccess {
         return predictCurrentMiningProgressWithTool(tool, 0);
     }
 
-    default float predictCurrentMiningProgressWithTool(ItemStack tool, int extraTicks) {
-        BlockPos currentBreakingPos = getCurrentMiningPos();
-        BlockState block = MinecraftClient.getInstance().world.getBlockState(currentBreakingPos);
-        if (block.isAir()) {
-            return -1.0F;
-        }
-        float miningSpeed = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
-                MinecraftClient.getInstance().player, block, tool);
-        float speed = WorldUtils.calcBlockBreakingDelta(
-                block, MinecraftClient.getInstance().world, currentBreakingPos, miningSpeed);
-        int ticksSinceLastStart = getCurrentMiningTicks() + extraTicks;
-        return speed * ticksSinceLastStart;
-    }
+    float predictCurrentMiningProgressWithTool(ItemStack tool, int extraTicks);
 
     public int getFailBreakMiningTicks();
     /**
