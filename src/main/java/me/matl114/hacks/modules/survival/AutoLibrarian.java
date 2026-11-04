@@ -18,7 +18,6 @@ import me.matl114.hacks.modules.interact.Interact;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.config.*;
-import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.move.AdjustmentSchedular;
 import me.matl114.hacks.utils.move.PathingSchedular;
 import me.matl114.hacks.utils.move.goal.*;
@@ -352,8 +351,7 @@ public class AutoLibrarian extends BaseModule {
                         InventoryUtils.findPlayerItem(s -> s.isOf(Items.LECTERN), true, false);
                 if (findStack != null) {
                     noLecternNotify = false;
-                    Runnable callback =
-                            InvExtra.INSTANCE.swapItemToHand(findStack.index(), false, GhostHandMode.INV_SWAP);
+                    Runnable callback = InvExtra.INSTANCE.swapItemToHand(findStack.index(), false);
                     if (callback != null) {
                         Direction direction = MathUtils.getHorizontalFacing(
                                 targetWorkspace.toCenterPos().subtract(targetVillager.getPos()));

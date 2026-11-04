@@ -1002,6 +1002,20 @@ public class MineExtra extends BaseModule {
     }
 
     public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {
+        ModulePreset preset = presetEvent.context.getValue();
+        if (preset.isGhostHandPreset()) {
+            ghostHandFailBreakMode.set(preset.getGhostHandMode(ghostHandFailBreakMode.get()));
+            ghostHandPreferredMode.set(preset.getGhostHandMode(ghostHandPreferredMode.get()));
+        }
+        if (preset.isSwingMinePreset()) {
+            if (preset.getSwingMine(false)) {
+                swingFix.set(true);
+                noSwing.set(false);
+            } else {
+                swingFix.set(false);
+                noSwing.set(true);
+            }
+        }
         if (presetEvent.context().getValue().isOptionPreset()) return;
         var modulePreset = presetEvent.context().getValue();
         switch (modulePreset) {

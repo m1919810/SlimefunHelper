@@ -1391,9 +1391,7 @@ public class CrystalAura extends BaseModule {
             return;
         }
         // tracked glass
-        if (SequencedActionManager.INSTANCE.isWaitingBlockUseOnResponse(
-                s -> s.placingBlockPos().isPresent()
-                        && Objects.equals(pos, s.placingBlockPos().get()))) {
+        if (SequencedActionManager.INSTANCE.isWaitingBlockPlaceResponse(pos)) {
             eventPreMine.cancel();
             return;
         }

@@ -81,6 +81,21 @@ public class PacketMine extends BaseModule {
     public final FlagRef autoToolDoubleBreak =
             flagBuilder(packetMine.add("auto-pickaxe-double-break")).build();
 
+    public final FlagRef eatingAbort = builder(packetMine.add("using-item-abort"), Boolean.class)
+            .defaultValue(false)
+            .build();
+
+    public final EnumRef<GhostHandMode> ghostHand = builder(packetMine.add("ghost-hand-mode"), GhostHandMode.class)
+            .defaultValue(GhostHandMode.INV_SWAP)
+            .build();
+
+    public final FlagRef swingHand = flagBuilder(packetMine.add("swing-hand")).build();
+
+    public final EnumRef<LegalMiningMode> legalMiningMode = builder(
+                    packetMine.add("legal-mining-mode"), LegalMiningMode.class)
+            .defaultValue(LegalMiningMode.NONE)
+            .build();
+
     public final FlagRef groundDeceive =
             flagBuilder(packetMine.add("ground-deceive")).build();
 
@@ -96,21 +111,6 @@ public class PacketMine extends BaseModule {
     public final NBTRef<EntrySet<Block>> whiteListRegex = builder(
                     packetMine.add("mine-white-list"), EntrySet.<Block>parameter())
             .defaultValue(new EntrySet<>(new Regex("^()$"), Registries.BLOCK))
-            .build();
-
-    public final FlagRef eatingAbort = builder(packetMine.add("using-item-abort"), Boolean.class)
-            .defaultValue(false)
-            .build();
-
-    public final EnumRef<GhostHandMode> ghostHand = builder(packetMine.add("ghost-hand-mode"), GhostHandMode.class)
-            .defaultValue(GhostHandMode.INV_SWAP)
-            .build();
-
-    public final FlagRef swingHand = flagBuilder(packetMine.add("swing-hand")).build();
-
-    public final EnumRef<LegalMiningMode> legalMiningMode = builder(
-                    packetMine.add("legal-mining-mode"), LegalMiningMode.class)
-            .defaultValue(LegalMiningMode.NONE)
             .build();
 
     BlockPos lastMinePos;
@@ -166,6 +166,8 @@ public class PacketMine extends BaseModule {
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
         ModulePreset preset = event.context.getValue();
         if (preset.isMultitaskPreset()) eatingAbort.set(preset.getEatingAbort(eatingAbort.get()));
+        if (preset.isGhostHandPreset()) ghostHand.set(preset.getGhostHandMode(ghostHand.get()));
+        if (preset.isSwingMinePreset()) swingHand.set(preset.getSwingMine(swingHand.get()));
     }
 
     public boolean hasMiningTarget() {

@@ -162,6 +162,12 @@ public class SequencedActionManager extends BaseModule {
                 .anyMatch(s -> Objects.equals(s.val().hitResult().getBlockPos(), bp));
     }
 
+    public boolean isWaitingBlockPlaceResponse(BlockPos pos) {
+        return blockPlaceSequences.stream()
+                .anyMatch(s -> s.val().placingBlockPos().isPresent()
+                        && Objects.equals(s.val().placingBlockPos().get(), pos));
+    }
+
     public boolean isWaitingBlockResponse(BlockPos bp, Predicate<ItemStack> placeBlock) {
         return blockPlaceSequences.stream()
                 .anyMatch(s -> Objects.equals(s.val().hitResult().getBlockPos(), bp)

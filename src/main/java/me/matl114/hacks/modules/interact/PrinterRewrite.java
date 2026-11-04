@@ -183,11 +183,7 @@ public class PrinterRewrite extends BaseModule {
         var blockIter = desyncWaitBlocks.iterator();
         while (blockIter.hasNext()) {
             BlockPos pos = blockIter.next();
-            if (!actionManager.isWaitingBlockUseOnResponse(
-                            (useItemOn) -> useItemOn.placingBlockPos().isPresent()
-                                    && Objects.equals(
-                                            useItemOn.placingBlockPos().get(), pos))
-                    && !actionManager.isWaitingBlockResponse(pos)) {
+            if (!actionManager.isWaitingBlockPlaceResponse(pos) && !actionManager.isWaitingBlockResponse(pos)) {
                 blockIter.remove();
             }
         }
@@ -329,17 +325,18 @@ public class PrinterRewrite extends BaseModule {
         }
         var result = InteractionTasks.createSpecificStateHitResult(
                 mc.player.getFacing(), pos, targetState, useAirPlace, usePositionPlace);
-        BlockPos placementPos = needBlock.asItem() instanceof BlockItem blockItem
-                ? InteractUtils.getCurrentPlacePos(blockItem, mc.player, result.val())
-                : null;
-        if (placementPos != null && desyncWaitBlocks.contains(placementPos)) {
-            return false;
-        }
+
         // add placement collision check
         if (result != null
                 && InteractExtra.INSTANCE.isWithinInteractRange(
                         mc.player.getPos(), result.val().getBlockPos())
                 && InteractUtils.getBlockPlacement(needBlock, mc.player, mc.world, result.val()) != null) {
+            BlockPos placementPos = needBlock.asItem() instanceof BlockItem blockItem
+                    ? InteractUtils.getCurrentPlacePos(blockItem, mc.player, result.val())
+                    : null;
+            if (placementPos != null && desyncWaitBlocks.contains(placementPos)) {
+                return false;
+            }
             if (result.flag()) {
                 needSneak = true;
 
