@@ -14,7 +14,6 @@ import me.matl114.hacks.modules.interact.Interact;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.config.EntrySet;
-import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hacks.utils.render.RenderElements;
 import me.matl114.managers.Configs;
@@ -178,7 +177,7 @@ public class BlockFarm extends BaseModule {
                     }
                     var entry = supplyItems(blockItem);
                     if (entry != null) {
-                        callback = InvExtra.INSTANCE.swapItemToHand(entry.index(), false, GhostHandMode.INV_SWAP);
+                        callback = InvExtra.INSTANCE.swapItemToHand(entry.index(), false);
                     } else {
                         break;
                     }

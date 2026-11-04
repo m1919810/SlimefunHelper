@@ -7,10 +7,13 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
+import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.EntityUtils;
@@ -106,6 +109,8 @@ public class MineBot extends BaseModule {
     public final FlagRef autoSwap = flagBuilder(mineBot.add("auto-swap")).build();
 
     public final FlagRef swing = flagBuilder(mineBot.add("swing-hand")).build();
+
+    public final FlagRef eatingAbort = flagBuilder(mineBot.add("eating-abort")).build();
 
     public final EnumRef<GhostHandMode> ghostHand = builder(mineBot.add("ghost-hand-mode"), GhostHandMode.class)
             .defaultValue(GhostHandMode.INV_SWAP)
@@ -360,6 +365,7 @@ public class MineBot extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreGameTick(), this::onTick);
+        registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
     }
 
     public static enum MineBotMode implements ConfigEnum {
@@ -502,5 +508,12 @@ public class MineBot extends BaseModule {
         }
         // holy shit, who needs it
         return availablePos.isEmpty() ? null : availablePos.get(rand.nextInt(0, availablePos.size()));
+    }
+
+    public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        ModulePreset preset = event.context.getValue();
+        if (preset.isSwingMinePreset()) swing.set(preset.getSwingMine(swing.get()));
+        if (preset.isMultitaskPreset()) eatingAbort.set(preset.getEatingAbort(eatingAbort.get()));
+        if (preset.isGhostHandPreset()) ghostHand.set(preset.getGhostHandMode(ghostHand.get()));
     }
 }

@@ -454,12 +454,8 @@ public class ElytraOptimizeUtils {
 
         double maxScale = Math.max(exceedX, exceedZ);
 
-        // 退化情况：所有 scale 为 0
-        if (maxScale < 1E-6) {
-            if (realApply) setOverridingFireworkVelocity(null);
-            return currentMotion;
-        }
-        Vec3d clampedMotion = currentMotion.multiply(1 / maxScale);
+        // 特殊情况: dx = dz = 0
+        Vec3d clampedMotion = maxScale > 1E-6 ? currentMotion.multiply(1 / maxScale) : currentMotion;
         // todo : add more angle restrict
         if (clampedMotion.y > 0) {
             clampedMotion = clampedMotion.withAxis(Direction.Axis.Y, uMaxY);
@@ -775,13 +771,6 @@ public class ElytraOptimizeUtils {
         double uMinZ = v3.z + eMinZ - zeroPointThreeTest + thresoldLeft;
         double uMaxZ = v3.z + eMaxZ + zeroPointThreeTest - thresoldLeft;
         double dx = currentMotion.x, dz = currentMotion.z;
-        double exceedX = 0.0, exceedZ = 0.0;
-
-        if (dx > 0) exceedX = dx / uMaxX;
-        else if (dx < 0) exceedX = dx / uMinX; // 注意 dx 为负，uMinX 也为负，比值 >1 若 dx < uMinX
-
-        if (dz > 0) exceedZ = dz / uMaxZ;
-        else if (dz < 0) exceedZ = dz / uMinZ;
 
         // ??????????????????????????????????????????????????????????????????????????
         // dy

@@ -31,6 +31,7 @@ import me.matl114.hacks.utils.world.WorldStorage;
 import me.matl114.managers.Configs;
 import me.matl114.managers.FileManager;
 import me.matl114.managers.ScheduleService;
+import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.file.FileStorage;
@@ -380,9 +381,13 @@ public class ServerStorage extends BaseModule {
                 15 * 1000);
         // hot load
         if (!checkNull()) {
-            if (updateServerName()) {
-                onLoadStorage();
-            }
+            Tasks.scheduleDelayed(
+                    () -> {
+                        if (!checkNull() && updateServerName()) {
+                            onLoadStorage();
+                        }
+                    },
+                    1);
         }
     }
 

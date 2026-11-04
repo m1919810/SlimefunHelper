@@ -13,22 +13,24 @@ import me.matl114.hacks.InvTasks;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.ScreenUtils;
+import me.matl114.utils.world.ContainerPosition;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import org.apache.commons.lang3.function.Consumers;
 
 public class InventoryViewScreen extends GenericBackGroundScreen {
     protected BlockPos blockPos;
-    protected ClientWorld blockWorld;
+    protected RegistryKey<World> blockWorld;
     //    protected HandledScreen<?> handledScreen;
     protected final GridSubScreen<DrawableWidget> grid;
     protected final GridSubScreen<DrawableWidget> modifyPlayerInventoryGrid;
@@ -46,8 +48,14 @@ public class InventoryViewScreen extends GenericBackGroundScreen {
                 InvTasks.generateIconForScreen(handledScreen));
         if (handledScreen instanceof TileInventory tile && !tile.isVirtual()) {
             blockPos = tile.getPos();
-            this.blockWorld = tile.getWorld();
+            this.blockWorld = tile.getWorld().getRegistryKey();
         }
+    }
+
+    public InventoryViewScreen withContainerPosition(ContainerPosition containerPosition) {
+        this.blockPos = containerPosition.getFirst().getPos();
+        this.blockWorld = containerPosition.world();
+        return this;
     }
 
     private static List<Slot> streamInventoryToSlot(Inventory inventory, int size) {
@@ -97,10 +105,8 @@ public class InventoryViewScreen extends GenericBackGroundScreen {
         if (blockPos != null) {
             labelElement = new LabelElement(
                             element -> Text.literal("%s "
-                                            .formatted(this.blockWorld
-                                                    .getRegistryKey()
-                                                    .getValue()
-                                                    .toString()))
+                                            .formatted(
+                                                    this.blockWorld.getValue().toString()))
                                     .append(
                                             ScreenUtils.hasCtrlDown()
                                                     ? Text.literal("[%d, %d, %d]"

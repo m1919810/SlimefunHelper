@@ -167,14 +167,15 @@ public class BlockRotate extends BaseModule {
                         // to ensure the rotate is successfully done
                         // use a wrong sequence id to ensure that this packet cancelled by grimac
                         Listener.sendPacketNoEvents(new PlayerInteractBlockC2SPacket(
-                                Hand.OFF_HAND, e.context.getBlockHitResult(), e.context.getSequence() - 1));
+                                Hand.OFF_HAND, e.context.getBlockHitResult(), e.context.getSequence()));
                     }
                     mc.getNetworkHandler()
                             .sendPacket(new PlayerInteractItemC2SPacket(
                                     Hand.MAIN_HAND,
-                                    e.context.getSequence(),
+                                    e.context.getSequence() + 1,
                                     deceivePy.getYaw(currentPy.y),
                                     deceivePy.getPitch(currentPy.x)));
+                    NetworkUtils.generateNextSequence();
                     PlayerInteractBlockC2SPacketAccess.of(e.context).setSequence(NetworkUtils.generateNextSequence());
                 }
                 if (deceivePy != null

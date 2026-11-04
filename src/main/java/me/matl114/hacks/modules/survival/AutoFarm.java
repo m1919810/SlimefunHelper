@@ -1,11 +1,6 @@
 package me.matl114.hacks.modules.survival;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
@@ -14,9 +9,10 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.interact.Interact;
 import me.matl114.hacks.modules.interact.InteractExtra;
+import me.matl114.hacks.modules.interact.SequencedActionManager;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.mine.QueueMine;
-import me.matl114.hacks.utils.enums.GhostHandMode;
+import me.matl114.hacks.utils.FarmingUtils;
 import me.matl114.hacks.utils.move.AdjustmentSchedular;
 import me.matl114.hacks.utils.move.PathingSchedular;
 import me.matl114.managers.Configs;
@@ -25,7 +21,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.FarmingUtils;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.collections.IndexEntry;
 import net.minecraft.block.BlockState;
@@ -110,7 +105,6 @@ public class AutoFarm extends BaseModule {
     private void clearState() {
         target = null;
         replantRecords.clear();
-        queuedHarvests.clear();
         lastReplantAttemptPos = null;
         lastReplantAttemptFailed = false;
         lastActionTick = Integer.MIN_VALUE;
@@ -123,7 +117,6 @@ public class AutoFarm extends BaseModule {
         }
 
         refreshRecords();
-        refreshQueuedHarvests();
         target = findTarget();
 
         if (target != null
@@ -171,6 +164,9 @@ public class AutoFarm extends BaseModule {
         return replantRecords.entrySet().stream()
                 .map(entry -> {
                     BlockPos pos = entry.getKey();
+                    if (!mc.world.getBlockState(pos).isAir()) {
+                        return null;
+                    }
                     FarmingUtils.PlantType type = entry.getValue();
                     BlockHitResult hit = FarmingUtils.tryPlantAt(mc.world, pos, type);
                     if (hit == null || findSeed(type) == null) {
@@ -178,7 +174,7 @@ public class AutoFarm extends BaseModule {
                     }
                     return new FarmTarget(pos, type, Action.REPLANT);
                 })
-                .filter(candidate -> candidate != null)
+                .filter(Objects::nonNull)
                 .min(Comparator.comparingDouble(
                         candidate -> candidate.pos().toCenterPos().squaredDistanceTo(mc.player.getPos())))
                 .orElse(null);
@@ -190,7 +186,8 @@ public class AutoFarm extends BaseModule {
 
     private FarmTarget findBoneMealTarget() {
         return findCropTarget(
-                (type, pos, state) -> state.getBlock() instanceof Fertilizable fertilizable
+                (type, pos, state) -> !SequencedActionManager.INSTANCE.isWaitingBlockResponse(pos)
+                        && state.getBlock() instanceof Fertilizable fertilizable
                         && fertilizable.isFertilizable(mc.world, pos, state),
                 Action.BONE_MEAL);
     }
@@ -217,9 +214,6 @@ public class AutoFarm extends BaseModule {
                     if (type == null || !predicate.test(type, plantPos, state)) {
                         continue;
                     }
-                    if (queuedHarvests.contains(plantPos) && type.canHarvest(mc.world, plantPos)) {
-                        continue;
-                    }
                     FarmTarget candidate = new FarmTarget(plantPos, type, action);
                     if (best == null
                             || candidate.pos().toCenterPos().squaredDistanceTo(mc.player.getPos())
@@ -237,7 +231,8 @@ public class AutoFarm extends BaseModule {
                 replantRecords.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<BlockPos, FarmingUtils.PlantType> entry = iterator.next();
-            if (isReplanted(entry.getKey(), entry.getValue())) {
+            if (!SequencedActionManager.INSTANCE.isWaitingBlockPlaceResponse(entry.getKey())
+                    && isReplanted(entry.getKey(), entry.getValue())) {
                 if (entry.getKey().equals(lastReplantAttemptPos)) {
                     lastReplantAttemptPos = null;
                     lastReplantAttemptFailed = false;
@@ -249,14 +244,6 @@ public class AutoFarm extends BaseModule {
             lastReplantAttemptPos = null;
             lastReplantAttemptFailed = false;
         }
-    }
-
-    private void refreshQueuedHarvests() {
-        queuedHarvests.removeIf(pos -> {
-            FarmingUtils.PlantType type =
-                    FarmingUtils.getPlantType(mc.world.getBlockState(pos).getBlock());
-            return type == null || !type.canHarvest(mc.world, pos);
-        });
     }
 
     private boolean performTarget(FarmTarget target) {
@@ -273,7 +260,6 @@ public class AutoFarm extends BaseModule {
         }
         boolean submitted = QueueMine.INSTANCE.sumitMine(target.pos());
         if (submitted) {
-            queuedHarvests.add(target.pos());
             if (target.type().needReplant()) {
                 replantRecords.putIfAbsent(target.pos(), target.type());
             }
@@ -289,7 +275,7 @@ public class AutoFarm extends BaseModule {
         if (seed == null) {
             return false;
         }
-        Runnable restore = InvExtra.INSTANCE.swapItemToHand(seed.index(), false, GhostHandMode.INV_SWAP);
+        Runnable restore = InvExtra.INSTANCE.swapItemToHand(seed.index(), false);
         if (restore == null) {
             return false;
         }
@@ -326,13 +312,16 @@ public class AutoFarm extends BaseModule {
         if (boneMeal == null) {
             return false;
         }
-        Runnable restore = InvExtra.INSTANCE.swapItemToHand(boneMeal.index(), false, GhostHandMode.INV_SWAP);
+        Runnable restore = InvExtra.INSTANCE.swapItemToHand(boneMeal.index(), false);
         if (restore == null) {
             return false;
         }
 
         boolean attempted = false;
         try {
+            if (SequencedActionManager.INSTANCE.isWaitingBlockResponse(target.pos())) {
+                return false;
+            }
             for (int i = 0; i < mul.get(); i++) {
                 BlockState state = mc.world.getBlockState(target.pos());
                 if (!(state.getBlock() instanceof Fertilizable fertilizable)
