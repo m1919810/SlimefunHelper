@@ -19,6 +19,7 @@ import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.FloatingUtils;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.modules.task.ServerFeature;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.enums.GhostHandMode;
@@ -197,6 +198,9 @@ public class PacketMine extends BaseModule {
     }
 
     public void onTick() {
+        if (!mc.options.attackKey.isPressed()) {
+            clearRequest();
+        }
         if (isActive()) {
             BlockPos request = getRequestedBlock();
             if (checkNull()) return;
@@ -236,24 +240,29 @@ public class PacketMine extends BaseModule {
                 BlockState blockState = mc.world.getBlockState(pos);
                 IndexEntry<ItemStack> currentItemSlot = getCurrentUsableTool(blockState);
 
-                ItemStack currentTool = currentItemSlot.val();
-                if (canMine(blockState, currentTool)) {
-                    progress = PlayerInteractionAccess.of(mc.interactionManager)
-                            .predictCurrentMiningProgressWithTool(currentTool);
-                    Event<BlockBreak> eventPre =
-                            new Event<>(new BlockBreak(pos, BlockBreak.Stage.PRE, currentTool, progress), true, false);
-                    packetMineAction.handleValue(eventPre);
-                    if (!eventPre.isCancelled()) {
-                        if (!MineExtra.INSTANCE.handleMineMode(pos, legalMiningMode.get())) {
-                            return;
-                        }
-                        if (groundDeceive.get() && !mc.player.isOnGround()) {
-                            boolean shouldExecute = true;
-                            if (groundOnlyWhenNoControl.get()
-                                    && !PlayerInputUtils.of(mc.options).hasMovementControl()) {
-                                shouldExecute = false;
+                    ItemStack currentTool = currentItemSlot.val();
+                    int extraTick = autoTool.get()
+                                    && ServerFeature.INSTANCE.attributeSwap.get()
+                                    && currentItemSlot.index() != InventoryUtils.getSelectedSlot()
+                            ? 1
+                            : 0;
+                    if (canMine(blockState, currentTool, extraTick)) {
+                        progress = PlayerInteractionAccess.of(mc.interactionManager)
+                                .predictCurrentMiningProgressWithTool(currentTool, extraTick);
+                        Event<BlockBreak> eventPre = new Event<>(
+                                new BlockBreak(pos, BlockBreak.Stage.PRE, currentTool, progress), true, false);
+                        packetMineAction.handleValue(eventPre);
+                        if (!eventPre.isCancelled()) {
+                            if (!MineExtra.INSTANCE.handleMineMode(pos, legalMiningMode.get())) {
+                                return;
                             }
-                            if (shouldExecute) {
+                            if (groundDeceive.get() && !mc.player.isOnGround()) {
+                                boolean shouldExecute = true;
+                                if (groundOnlyWhenNoControl.get()
+                                        && !PlayerInputUtils.of(mc.options).hasMovementControl()) {
+                                    shouldExecute = false;
+                                }
+                                if (shouldExecute) {
 
                                 mc.getNetworkHandler()
                                         .sendPacket(LegacySnapRotManager.INSTANCE.createSnapAt(
@@ -369,12 +378,17 @@ public class PacketMine extends BaseModule {
     }
 
     public boolean canMine(BlockState state, ItemStack tool) {
+        int extraTick = autoTool.get() && ServerFeature.INSTANCE.attributeSwap.get() ? 1 : 0;
+        return canMine(state, tool, extraTick);
+    }
+
+    private boolean canMine(BlockState state, ItemStack tool, int extraTick) {
         // do not mine liquid, that's a disaster
         // do not mine air, shit
         if (isMineable(state)) {
             if (mineThreshold.get() > 0) {
                 var access = PlayerInteractionAccess.of(mc.interactionManager);
-                float speed = access.predictCurrentMiningProgressWithTool(tool);
+                float speed = access.predictCurrentMiningProgressWithTool(tool, extraTick);
                 if (groundDeceive.get() && !mc.player.isOnGround()) {
                     speed *= 5;
                 }

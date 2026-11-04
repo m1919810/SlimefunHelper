@@ -37,7 +37,6 @@ import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.util.ActionResult;
@@ -71,8 +70,8 @@ public class InteractionTasks {
     public static boolean interactItem(Hand hand, boolean realInteract, boolean swingHand) {
         return interactItem(
                 hand,
-                PlayerStateManager.INSTANCE.lastPitch,
-                PlayerStateManager.INSTANCE.lastYaw,
+                PlayerStateManager.INSTANCE.lastServerSidePitch,
+                PlayerStateManager.INSTANCE.lastServerSideYaw,
                 realInteract,
                 swingHand);
     }
@@ -103,8 +102,8 @@ public class InteractionTasks {
     public static void interactBlock(Hand hand, BlockHitResult result, boolean swing) {
         Vec2f storePY = new Vec2f(mc.player.getPitch(), mc.player.getYaw());
         // use true fucking rotation .
-        mc.player.setPitch(PlayerStateManager.INSTANCE.lastPitch);
-        mc.player.setYaw(PlayerStateManager.INSTANCE.lastYaw);
+        mc.player.setPitch(PlayerStateManager.INSTANCE.lastServerSidePitch);
+        mc.player.setYaw(PlayerStateManager.INSTANCE.lastServerSideYaw);
         ActionResult actionResult2 = mc.interactionManager.interactBlock(mc.player, hand, result);
         mc.player.setPitch(storePY.x);
         mc.player.setYaw(storePY.y);
@@ -146,13 +145,13 @@ public class InteractionTasks {
             return true;
         }
         return switch (mode) {
-            case USEITEM_PACKET, LEGACY_SLIENT_ROT, NONE -> true;
+            case LEGACY_SLIENT_ROT, NONE -> true;
             case DELAY_MOVEMENT -> !RotationManager.INSTANCE.isOccupied();
             case MOVEMENT_POST -> false;
         };
     }
 
-    private static boolean canDirectHit(BlockHitResult result) {
+    public static boolean canDirectHit(BlockHitResult result) {
         return RaycastUtils.canRaycastHit(
                 mc.player,
                 PlayerStateManager.INSTANCE.lastPitch,
@@ -164,14 +163,6 @@ public class InteractionTasks {
     public static boolean handlePlaceMode(LegalInteractMode mode, BlockHitResult result, Hand hand, boolean swingHand) {
         boolean directlyHit = canDirectHit(result);
         switch (mode) {
-            case USEITEM_PACKET -> {
-                Vec2f rotation = EntityUtils.rotationToPitchYaw(
-                        createBlockRayCastDirection(result.getBlockPos()).normalize());
-                mc.interactionManager.sendSequencedPacket(
-                        mc.world, (i) -> new PlayerInteractItemC2SPacket(hand, i, rotation.y, rotation.x));
-                InteractionTasks.interactBlock(hand, result, swingHand);
-                return true;
-            }
             case DELAY_MOVEMENT -> {
                 if (!directlyHit) {
                     if (!RotationManager.INSTANCE.request(RotationManager.ofBlock(result::getBlockPos))) {

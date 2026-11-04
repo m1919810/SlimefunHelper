@@ -162,17 +162,22 @@ public class NoInteract extends BaseModule {
                             return;
                         }
                         if (autoCorrect.get()) {
-                            BlockPos targetPos = InteractUtils.getCurrentPlacePos(mc.player, hitResult);
                             BlockState targetState = InteractUtils.getBlockPlacement(mc.player, hand, stack, hitResult);
                             if (targetState != null) {
                                 BlockHitResult hitResultOverride = handleMayAutoCorrect(hitResult);
                                 if (hitResultOverride != null) {
                                     if (correctState.get()) {
-
-                                        BlockRotate.INSTANCE.addTempStateSchematic(targetPos, targetState);
+                                        BlockRotate.INSTANCE.handleYawDeceivePlace(
+                                                correctMode.get(),
+                                                hitResultOverride,
+                                                hand,
+                                                targetState,
+                                                swingHand.get());
+                                    } else {
+                                        InteractionTasks.handlePlaceMode(
+                                                correctMode.get(), hitResultOverride, hand, swingHand.get());
                                     }
-                                    InteractionTasks.handlePlaceMode(
-                                            correctMode.get(), hitResultOverride, hand, swingHand.get());
+
                                     event.cancel();
                                     event.context.actionResult(ActionResult.SUCCESS);
                                     return;

@@ -657,8 +657,7 @@ public class Interact extends BaseModule {
         FlagEntry<BlockHitResult> hitResult = InteractionTasks.getPlaceSupportingResult(
                 pos, blockAirPlace.get(), !blockMode.get().isLegal());
         if (InteractUtils.canInteractAndPlace(mc.player, hitResult)) {
-            BlockRotate.INSTANCE.addTempStateSchematic(pos, state);
-            return interactBlock(hitResult.val());
+            return interactBlock(hitResult.val(), state);
         } else return false;
     }
 
@@ -691,6 +690,10 @@ public class Interact extends BaseModule {
 
     @ApiMethod
     public boolean interactBlock(BlockHitResult hitResult) {
+        return interactBlock(hitResult, null);
+    }
+
+    private boolean interactBlock(BlockHitResult hitResult, BlockState targetState) {
         boolean isWithinDistance =
                 InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), hitResult.getBlockPos());
         boolean canDirectlyHit = RaycastUtils.canRaycastHit(
@@ -699,6 +702,20 @@ public class Interact extends BaseModule {
                 PlayerStateManager.INSTANCE.lastYaw,
                 hitResult.getBlockPos(),
                 InteractExtra.INSTANCE.getBlockReachDistance());
+        boolean deceive = BlockRotate.INSTANCE.hasPlaceYawDeceive(hitResult, targetState);
+        if (deceive) {
+            if (!canDirectlyHit && blockMode.get() == LegalInteractMode.NONE && canUseTp() && !isWithinDistance) {
+                return TpInteract.INSTANCE.tpAndInteractBlock(
+                        hitResult,
+                        Hand.MAIN_HAND,
+                        swingHandBlock.get(),
+                        () -> BlockRotate.INSTANCE.handleYawDeceivePlace(
+                                blockMode.get(), hitResult, Hand.MAIN_HAND, targetState, swingHandBlock.get()));
+            }
+            if (!canDirectlyHit && !isWithinDistance && blockMode.get() != LegalInteractMode.NONE) return false;
+            return BlockRotate.INSTANCE.handleYawDeceivePlace(
+                    blockMode.get(), hitResult, Hand.MAIN_HAND, targetState, swingHandBlock.get());
+        }
         if (canDirectlyHit) {
             InteractionTasks.interactBlock(Hand.MAIN_HAND, hitResult, swingHandBlock.get());
             return true;
