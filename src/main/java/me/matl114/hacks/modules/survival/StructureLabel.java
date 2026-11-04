@@ -18,6 +18,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.inv.ChestHistory;
 import me.matl114.hacks.modules.task.ServerStorage;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hacks.utils.tasks.TimerExecutor;
@@ -1476,12 +1477,12 @@ public class StructureLabel extends BaseModule {
         if (checkNull() || !enable.get()) {
             return;
         }
-        me.matl114.utils.RenderUtils.startDrawVirtual(event.context().stack());
+        RenderUtils.startDrawVirtual(event.context().stack());
         try {
             boxCollector.render3D(event.context().stack(), event.context.partialTicks());
             tracerCollector.render3D(event.context().stack(), event.context.partialTicks());
         } finally {
-            me.matl114.utils.RenderUtils.stopDrawVirtual(event.context().stack());
+            RenderUtils.stopDrawVirtual(event.context().stack());
         }
     }
 

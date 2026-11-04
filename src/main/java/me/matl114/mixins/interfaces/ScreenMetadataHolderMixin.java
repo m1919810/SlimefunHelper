@@ -1,7 +1,7 @@
 package me.matl114.mixins.interfaces;
 
 import me.matl114.accessors.interfaces.MetadataHolder;
-import me.matl114.utils.containers.MetaData;
+import me.matl114.utils.collections.MetaData;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.screen.Screen;

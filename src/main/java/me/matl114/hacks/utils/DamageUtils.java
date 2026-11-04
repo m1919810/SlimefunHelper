@@ -7,8 +7,6 @@ import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import me.matl114.hacks.modules.move.PlayerStateManager;
-import me.matl114.utils.AttributeUtils;
-import me.matl114.utils.EnchantmentUtils;
 import me.matl114.utils.RegistryUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.ComponentType;

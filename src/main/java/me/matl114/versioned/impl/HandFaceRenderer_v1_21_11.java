@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import me.matl114.accessors.access.RenderLayerAccess;
 import me.matl114.events.RenderListener;
-import me.matl114.utils.render.MaskPostRenderer;
+import me.matl114.hacks.utils.render.MaskPostRenderer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.RenderLayer;

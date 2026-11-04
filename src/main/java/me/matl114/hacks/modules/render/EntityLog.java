@@ -11,6 +11,7 @@ import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.survival.XaeroHelper;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hacks.utils.render.RenderElements;

@@ -1,0 +1,234 @@
+package me.matl114.hacks.utils;
+
+import lombok.*;
+import lombok.experimental.Accessors;
+import me.matl114.hooks.ViaFabricPlusHooks;
+import me.matl114.versioned.accessors.PlayerInputAccess;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.option.GameOptions;
+import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInputC2SPacket;
+import net.minecraft.util.math.Vec2f;
+
+public class PlayerInputUtils {
+    public static Input of(ClientPlayerEntity pl) {
+        return of(pl.input);
+    }
+
+    public static Input of(net.minecraft.client.input.Input input) {
+        return new Input(
+                input.pressingForward,
+                input.pressingBack,
+                input.pressingLeft,
+                input.pressingRight,
+                input.jumping,
+                input.sneaking,
+                PlayerInputAccess.of(input).isPressingSprint());
+    }
+
+    public static Input of(GameOptions options) {
+        return new Input(
+                options.forwardKey.isPressed(),
+                options.backKey.isPressed(),
+                options.leftKey.isPressed(),
+                options.rightKey.isPressed(),
+                options.jumpKey.isPressed(),
+                options.sneakKey.isPressed(),
+                options.sprintKey.isPressed());
+    }
+
+    public static Input of(PlayerInputC2SPacket packet) {
+        return new Input(
+                packet.getForward() > 0,
+                packet.getForward() < 0,
+                packet.getSideways() > 0,
+                packet.getSideways() < 0,
+                packet.isJumping(),
+                packet.isSneaking(),
+                MinecraftClient.getInstance().options.sprintKey.isPressed());
+    }
+
+    public static Input tryCorrectMovementInput(Input input, float originalYaw, float currentYaw) {
+        float diff = EntityUtils.getSafeYawDiff(originalYaw, currentYaw);
+        int forwardSpeed;
+        int sidewaySpeed;
+        int movementForward = input.forwardSpeed();
+        int movementSideways = input.sidewaysSpeed();
+        if (diff < 22.5 && diff >= -22.5) {
+            // do nothing
+            return input;
+        } else if (diff < 67.5 && diff >= 22.5) {
+            // turn to
+            forwardSpeed = (movementForward - movementSideways);
+            sidewaySpeed = (movementForward + movementSideways);
+        } else if (diff >= 67.5 && diff < 90.0F + 22.5F) {
+            forwardSpeed = -movementSideways;
+            sidewaySpeed = movementForward;
+        } else if (diff >= 90.0F + 22.5F && diff < 90.0F + 67.5F) {
+            forwardSpeed = (-movementForward - movementSideways);
+            sidewaySpeed = (movementForward - movementSideways);
+        } else if (diff >= 90.0F + 67.5F || diff < -90.0F - 67.5F) {
+            forwardSpeed = -movementForward;
+            sidewaySpeed = -movementSideways;
+        } else if (diff >= -90.0F - 67.5F && diff < -90.0F - 22.5F) {
+            forwardSpeed = (-movementForward + movementSideways);
+            sidewaySpeed = (-movementForward - movementSideways);
+        } else if (diff >= -90.0F - 22.5F && diff < -90.0F + 22.5F) {
+            forwardSpeed = movementSideways;
+            sidewaySpeed = -movementForward;
+        } else if (diff >= -90.0F + 22.5F && diff < -22.5F) {
+            forwardSpeed = (movementForward + movementSideways);
+            sidewaySpeed = (-movementForward + movementSideways);
+        } else {
+            return input;
+        }
+        // sync values
+        return new Input(
+                forwardSpeed > 0,
+                forwardSpeed < 0,
+                sidewaySpeed > 0,
+                sidewaySpeed < 0,
+                input.jump(),
+                input.sneak(),
+                input.sprint());
+    }
+
+    public static final Input EMPTY = new Input(false, false, false, false, false, false, false);
+    private static final MinecraftClient mc = MinecraftClient.getInstance();
+
+    @AllArgsConstructor
+    @Accessors(fluent = true, chain = true)
+    @Setter
+    @Getter
+    @With
+    @EqualsAndHashCode
+    public static class Input implements Cloneable {
+        boolean forward;
+        boolean backward;
+        boolean left;
+        boolean right;
+        boolean jump;
+        boolean sneak;
+        boolean sprint;
+
+        public Input(boolean forward, boolean backward, boolean left, boolean right) {
+            this(forward, backward, left, right, false, false, false);
+        }
+
+        public Input sendPlayerInputPacket() {
+            return this;
+        }
+
+        public Input sendPlayerSneakUpdatePacket() {
+            if (sneak) {
+                mc.getNetworkHandler()
+                        .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY));
+            } else {
+                mc.getNetworkHandler()
+                        .sendPacket(
+                                new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.RELEASE_SHIFT_KEY));
+            }
+            return this;
+        }
+
+        public Input sendPlayerInputAsRiding() {
+            mc.getNetworkHandler()
+                    .sendPacket(new PlayerInputC2SPacket(
+                            this.sidewaysSpeed() * 0.98F, this.forwardSpeed() * 0.98F, this.jump(), this.sneak()));
+            return this;
+        }
+
+        public int forwardSpeed() {
+            return this.forward == this.backward ? 0 : (this.forward ? 1 : -1);
+        }
+
+        public int sidewaysSpeed() {
+            return this.left == this.right ? 0 : (this.left ? 1 : -1);
+        }
+
+        public int upwardSpeed() {
+            return this.jump == this.sneak ? 0 : (this.jump ? 1 : -1);
+        }
+
+        public Input applyInput(net.minecraft.client.input.Input input) {
+            input.pressingForward = this.forward;
+            input.pressingBack = this.backward;
+            input.pressingLeft = this.left;
+            input.pressingRight = this.right;
+            input.jumping = this.jump;
+            input.sneaking = this.sneak;
+            PlayerInputAccess.of(input).setPressingSprint(this.sprint);
+            return this;
+        }
+
+        private static Vec2f compatMovementVectorWithViaFabric(Vec2f vec2f) {
+            // shit,
+            return ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(21, 4)
+                    ? vec2f
+                    : vec2f.normalize();
+        }
+
+        public Input applyInput(ClientPlayerEntity player) {
+            var input = player.input;
+            applyInput(input);
+            return this;
+        }
+
+        public void syncMovementVector(net.minecraft.client.input.Input input, float shouldSlow) {
+            Vec2f movement = compatMovementVectorWithViaFabric(new Vec2f(this.sidewaysSpeed(), this.forwardSpeed()));
+            input.movementSideways = movement.x;
+            input.movementForward = movement.y;
+            if (shouldSlow != 1.0F) {
+                input.movementForward *= shouldSlow;
+                input.movementSideways *= shouldSlow;
+            }
+        }
+
+        public Input applyInput(GameOptions options) {
+            options.forwardKey.setPressed(forward);
+            options.backKey.setPressed(backward);
+            options.leftKey.setPressed(left);
+            options.rightKey.setPressed(right);
+            options.jumpKey.setPressed(jump);
+            options.sneakKey.setPressed(sneak);
+            options.sprintKey.setPressed(sprint);
+            return this;
+        }
+
+        public boolean hasMovement() {
+            return forward || backward || left || right || jump;
+        }
+
+        public boolean hasWASDMovement() {
+            return (forward != backward) || (left != right);
+        }
+
+        public boolean hasMovementControl() {
+            return forward || backward || left || right || jump || sneak;
+        }
+
+        @Override
+        public Input clone() {
+            try {
+                Input clone = (Input) super.clone();
+                // TODO: copy mutable state here, so the clone can't change the internals of the original
+                return clone;
+            } catch (CloneNotSupportedException e) {
+                throw new AssertionError();
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "Input{" + "forward="
+                    + forward + ", backward="
+                    + backward + ", left="
+                    + left + ", right="
+                    + right + ", jump="
+                    + jump + ", sneak="
+                    + sneak + ", sprint="
+                    + sprint + '}';
+        }
+    }
+}

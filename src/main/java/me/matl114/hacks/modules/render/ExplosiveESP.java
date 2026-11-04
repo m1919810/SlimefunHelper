@@ -9,6 +9,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.combat.CombatManager;
 import me.matl114.hacks.utils.DamageUtils;
 import me.matl114.hacks.utils.ExplosionUtils;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.config.TracingOption;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.render.RenderCollectors;

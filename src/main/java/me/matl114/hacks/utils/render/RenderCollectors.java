@@ -1,25 +1,18 @@
 package me.matl114.hacks.utils.render;
 
-import static me.matl114.utils.RenderUtils.*;
+import static me.matl114.hacks.utils.RenderUtils.*;
 
 import java.awt.*;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import lombok.val;
 import me.matl114.events.RenderListener;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.renderer.TextRenderers;
 import me.matl114.utils.ChatUtils;
-import me.matl114.utils.RenderUtils;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.render.ColorQuad;
-import me.matl114.utils.render.EntityBoundaryCollector;
-import me.matl114.utils.render.EntityBoxCollector;
-import me.matl114.utils.render.EntityFaceCollector;
-import me.matl114.utils.render.EntityFrameCollector;
-import me.matl114.utils.render.EntityOutlineCollector;
-import me.matl114.utils.render.EntityOutlineRenderer;
 import me.matl114.utils.render.RenderCollector;
 import me.matl114.versioned.api.VDrawContext;
 import me.matl114.versioned.api.VRender;
