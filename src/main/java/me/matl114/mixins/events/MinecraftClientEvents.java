@@ -10,6 +10,7 @@ import java.util.Objects;
 import me.matl114.events.Event;
 import me.matl114.events.GlobalEventVars;
 import me.matl114.events.Listener;
+import me.matl114.managers.Tasks;
 import me.matl114.utils.collections.Point;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -364,6 +365,7 @@ public abstract class MinecraftClientEvents {
                                     "Lnet/minecraft/client/tutorial/TutorialManager;tick(Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/util/hit/HitResult;)V",
                             shift = At.Shift.AFTER))
     public void onPreTick(CallbackInfo ci) {
+        Tasks.updateTickCounter();
         Listener.getPreTick().broadcast(null);
         if (player != null) {
             Listener.getPreGameTick().broadcast(player);

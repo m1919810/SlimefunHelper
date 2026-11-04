@@ -23,7 +23,6 @@ import me.matl114.hacks.modules.move.PlayerInputManager;
 import me.matl114.hacks.modules.task.DisablerManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.config.WrapColor;
-import me.matl114.hacks.utils.enums.BypassMode;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.hacks.utils.render.RenderCollectors;
@@ -345,51 +344,29 @@ public class PrinterRewrite extends BaseModule {
                     return false;
                 }
             }
-            FlagRef enableRotateFix = InteractionTasks.getBlockRotate().enable2;
-            FlagRef enableLegalLook = InteractionTasks.getBlockRotate().legal;
-            EnumRef<BypassMode> enableRot = InteractionTasks.getBlockRotate().bypassMode2;
-            boolean state = enableRotateFix.get();
-            boolean state2 = enableLegalLook.get();
-            BypassMode bypassMode = enableRot.get();
-            if (!state) {
-                enableRotateFix.set(true);
+
+            if (!InteractionTasks.canHandleInteract(mode.get(), result.val())) {
+                putCanNotPlace(pos);
+                return false;
             }
-            if (!state2) {
-                // cancel legal look fix because we here handle the look, do not duplicate
-                enableLegalLook.set(true);
+            Runnable callback = InvExtra.INSTANCE.swapItemToHand(
+                    idx, false, preferredGhostHand.get().getPreferredMode(idx));
+            if (callback == null) {
+                putCanNotPlace(pos);
+                return false;
             }
-            enableRot.set(BypassMode.NO_BYPASS);
-            try {
-                if (!InteractionTasks.canHandleInteract(mode.get(), result.val())) {
-                    putCanNotPlace(pos);
-                    return false;
-                }
-                Runnable callback = InvExtra.INSTANCE.swapItemToHand(
-                        idx, false, preferredGhostHand.get().getPreferredMode(idx));
-                if (callback == null) {
-                    putCanNotPlace(pos);
-                    return false;
-                }
-                if (!handlePlace(result.val())) {
-                    InteractionTasks.finishInteractGhostHand(mode.get(), callback);
-                    putCanNotPlace(pos);
-                    return false;
-                }
-                // sb grimac
-                if (returnBlock.get()) {
-                    InteractionTasks.finishInteractGhostHand(mode.get(), callback);
-                }
-                putSuccessPlace(pos);
-                return true;
-            } finally {
-                if (!state) {
-                    enableRotateFix.set(false);
-                }
-                if (!state2) {
-                    enableLegalLook.set(false);
-                }
-                enableRot.set(bypassMode);
+            if (!BlockRotate.INSTANCE.handleYawDeceivePlace(
+                    mode.get(), result.val(), Hand.MAIN_HAND, targetState, swingHand.get())) {
+                InteractionTasks.finishInteractGhostHand(mode.get(), callback);
+                putCanNotPlace(pos);
+                return false;
             }
+            // sb grimac
+            if (returnBlock.get()) {
+                InteractionTasks.finishInteractGhostHand(mode.get(), callback);
+            }
+            putSuccessPlace(pos);
+            return true;
         } else {
             putCanNotPlace(pos);
             return false;
@@ -616,7 +593,8 @@ public class PrinterRewrite extends BaseModule {
                     Runnable runnable = InvExtra.INSTANCE.swapItemToHand(
                             re.index(), false, preferredGhostHand.get().getPreferredMode(re.index()));
                     if (runnable != null) {
-                        if (!InteractionTasks.handlePlaceMode(mode.get(), hitResult.val(), Hand.MAIN_HAND)) {
+                        if (!BlockRotate.INSTANCE.handleYawDeceivePlace(
+                                mode.get(), hitResult.val(), Hand.MAIN_HAND, targetState, swingHand.get())) {
                             InteractionTasks.finishInteractGhostHand(mode.get(), runnable);
                             putCanNotPlace(pos);
                             return false;
@@ -642,15 +620,6 @@ public class PrinterRewrite extends BaseModule {
     }
 
     public void tickTryDrainWater() {}
-
-    public boolean handlePlace(BlockHitResult result) {
-        if (!mode.get().isLegal()) {
-            InteractionTasks.interactBlock(Hand.MAIN_HAND, result, swingHand.get());
-            return true;
-        } else {
-            return InteractionTasks.handlePlaceMode(mode.get(), result, Hand.MAIN_HAND, swingHand.get());
-        }
-    }
 
     public void onRender(Event<Render3D> event) {
         var stack = event.context();
