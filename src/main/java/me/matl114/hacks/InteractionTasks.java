@@ -26,11 +26,13 @@ import me.matl114.managers.Tasks;
 import me.matl114.utils.*;
 import me.matl114.utils.collections.FlagEntry;
 import net.minecraft.block.*;
+import net.minecraft.block.enums.Attachment;
 import net.minecraft.block.enums.BedPart;
 import net.minecraft.block.enums.BlockFace;
 import net.minecraft.block.enums.BlockHalf;
 import net.minecraft.block.enums.ChestType;
 import net.minecraft.block.enums.DoubleBlockHalf;
+import net.minecraft.block.enums.Orientation;
 import net.minecraft.block.enums.SlabType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
@@ -639,9 +641,41 @@ public class InteractionTasks {
 
         Predicate<BlockHitResult> stateFilter = hit -> true;
         boolean forceSneak = false;
-        if (block instanceof AbstractTorchBlock || block instanceof LeverBlock) {
+        if (block instanceof WallRedstoneTorchBlock) {
+            Predicate<BlockHitResult> torchFilter = createTorchOrLeverPlacementFilter(placeTargetBlock, targetState);
+            stateFilter = hit -> hit.getBlockPos().equals(placeTargetBlock)
+                    ? matchesDirectionalPlacement(placeTargetBlock, targetState, hit)
+                    : torchFilter.test(hit);
+        } else if (block instanceof WallTorchBlock) {
+            Predicate<BlockHitResult> torchFilter = createTorchOrLeverPlacementFilter(placeTargetBlock, targetState);
+            stateFilter = hit -> hit.getBlockPos().equals(placeTargetBlock)
+                    ? matchesDirectionalPlacement(placeTargetBlock, targetState, hit)
+                    : torchFilter.test(hit);
+        } else if (block instanceof AbstractTorchBlock || block instanceof LeverBlock) {
             stateFilter = createTorchOrLeverPlacementFilter(placeTargetBlock, targetState);
-        } else if (usesPlacementDirections(block)) {
+        } else if (block instanceof WallMountedBlock) {
+            stateFilter = hit -> matchesDirectionalPlacement(placeTargetBlock, targetState, hit);
+        } else if (block instanceof WallSkullBlock) {
+            stateFilter = hit -> matchesDirectionalPlacement(placeTargetBlock, targetState, hit);
+        } else if (block instanceof WallSignBlock) {
+            stateFilter = hit -> matchesDirectionalPlacement(placeTargetBlock, targetState, hit);
+        } else if (block instanceof WallHangingSignBlock) {
+            stateFilter = hit -> matchesDirectionalPlacement(placeTargetBlock, targetState, hit);
+        } else if (block instanceof WallBannerBlock) {
+            stateFilter = hit -> matchesDirectionalPlacement(placeTargetBlock, targetState, hit);
+        } else if (block instanceof VineBlock) {
+            stateFilter = hit -> matchesDirectionalPlacement(placeTargetBlock, targetState, hit);
+        } else if (block instanceof TripwireHookBlock) {
+            stateFilter = hit -> matchesDirectionalPlacement(placeTargetBlock, targetState, hit);
+        } else if (block instanceof DeadCoralWallFanBlock) {
+            stateFilter = hit -> matchesDirectionalPlacement(placeTargetBlock, targetState, hit);
+        } else if (block instanceof CocoaBlock) {
+            stateFilter = hit -> matchesDirectionalPlacement(placeTargetBlock, targetState, hit);
+        } else if (block instanceof MultifaceBlock) {
+            stateFilter = hit -> matchesDirectionalPlacement(placeTargetBlock, targetState, hit);
+        } else if (block instanceof LanternBlock) {
+            stateFilter = hit -> matchesDirectionalPlacement(placeTargetBlock, targetState, hit);
+        } else if (block instanceof LadderBlock) {
             stateFilter = hit -> matchesDirectionalPlacement(placeTargetBlock, targetState, hit);
         } else if (block instanceof EndRodBlock) {
             Direction targetFacing = targetState.get(EndRodBlock.FACING);
@@ -712,10 +746,18 @@ public class InteractionTasks {
             }
         } else if (block instanceof BellBlock) {
             Direction targetFacing = targetState.get(BellBlock.FACING);
-            if (targetFacing.getAxis().isHorizontal()) {
-                Direction allowedSide = targetFacing.getOpposite();
-                stateFilter = hit -> hit.getSide() == allowedSide;
-            }
+            Attachment attachment = targetState.get(BellBlock.ATTACHMENT);
+            stateFilter = hit -> {
+                if (attachment == Attachment.FLOOR || attachment == Attachment.CEILING) {
+                    if (hit.getSide() != (attachment == Attachment.FLOOR ? Direction.UP : Direction.DOWN)) {
+                        return false;
+                    }
+                } else if (!hit.getSide().getAxis().isHorizontal() || hit.getSide() != targetFacing.getOpposite()) {
+                    return false;
+                }
+                BlockState placed = getSpecificPlacementState(placeTargetBlock, (BlockItem) block.asItem(), hit);
+                return placed != null && placed.get(BellBlock.ATTACHMENT) == attachment;
+            };
         } else if (block instanceof LightningRodBlock) {
             Direction targetFacing = targetState.get(LightningRodBlock.FACING);
             stateFilter = hit -> hit.getSide() == targetFacing;
@@ -732,6 +774,13 @@ public class InteractionTasks {
         } else if (block instanceof RotatedInfestedBlock) {
             Direction.Axis targetAxis = targetState.get(PillarBlock.AXIS);
             stateFilter = hit -> hit.getSide().getAxis() == targetAxis;
+        } else if (block instanceof PillarBlock || block instanceof CreakingHeartBlock) {
+            Direction.Axis targetAxis = targetState.get(PillarBlock.AXIS);
+            stateFilter = hit -> hit.getSide().getAxis() == targetAxis;
+        } else if (block instanceof JigsawBlock) {
+            Orientation orientation = targetState.get(JigsawBlock.ORIENTATION);
+            stateFilter = hit -> hit.getSide() == orientation.getFacing()
+                    && (hit.getSide().getAxis() == Direction.Axis.Y || orientation.getRotation() == Direction.UP);
         } else if (block instanceof AmethystClusterBlock) {
             Direction targetFacing = targetState.get(AmethystClusterBlock.FACING);
             stateFilter = hit -> hit.getSide() == targetFacing;
@@ -755,9 +804,13 @@ public class InteractionTasks {
             boolean enablePositionPlace,
             Function<BlockHitResult, FlagEntry<BlockHitResult>> blockHitResultFactory) {
         Block block = targetState.getBlock();
-        boolean canUseAirPlace =
-                enableAirPlace && !usesPlacementDirections(block) && !(block instanceof AbstractTorchBlock);
         BlockState currentState = mc.world.getBlockState(targetPos);
+        boolean canUseAirPlace = enableAirPlace && !(block instanceof AbstractTorchBlock);
+        if (block instanceof WallRedstoneTorchBlock) {
+            canUseAirPlace = enableAirPlace;
+        } else if (block instanceof WallTorchBlock) {
+            canUseAirPlace = enableAirPlace;
+        }
         Vec3d centerPos = targetPos.toCenterPos();
         Vec3d playerFeetPos = mc.player.getPos();
         double interactRange = interactExtra.getBlockReachDistance();
@@ -889,7 +942,10 @@ public class InteractionTasks {
                     hitResult.isInsideBlock());
         }
         BlockState placementState = getSpecificPlacementState(placeTargetBlock, blockItem, hitResult);
-        return placementState != null && placementState.get(TrapdoorBlock.HALF) == targetState.get(TrapdoorBlock.HALF)
+        return placementState != null
+                        && placementState.get(TrapdoorBlock.HALF) == targetState.get(TrapdoorBlock.HALF)
+                        && (!hitResult.getSide().getAxis().isHorizontal()
+                                || placementState.get(TrapdoorBlock.FACING) == targetState.get(TrapdoorBlock.FACING))
                 ? hitResult
                 : null;
     }
@@ -1187,31 +1243,22 @@ public class InteractionTasks {
         return hit -> true;
     }
 
-    private static boolean usesPlacementDirections(Block block) {
-        return block instanceof WallMountedBlock
-                || block instanceof WallTorchBlock
-                || block instanceof WallRedstoneTorchBlock
-                || block instanceof WallSkullBlock
-                || block instanceof WallSignBlock
-                || block instanceof WallHangingSignBlock
-                || block instanceof WallBannerBlock
-                || block instanceof VineBlock
-                || block instanceof TripwireHookBlock
-                || block instanceof DeadCoralWallFanBlock
-                || block instanceof CocoaBlock
-                || block instanceof MultifaceBlock
-                || block instanceof LanternBlock
-                || block instanceof LadderBlock;
-    }
-
     private static boolean matchesDirectionalPlacement(
             BlockPos placeTargetBlock, BlockState targetState, BlockHitResult hitResult) {
-        if (hitResult.getBlockPos().equals(placeTargetBlock)) {
-            return false;
-        }
         Block block = targetState.getBlock();
         ItemPlacementContext context =
                 new ItemPlacementContext(mc.player, Hand.MAIN_HAND, new ItemStack(block.asItem()), hitResult);
+        if (hitResult.getBlockPos().equals(placeTargetBlock)) {
+            if (block instanceof WallHangingSignBlock sign
+                    && (hitResult.getSide().getAxis()
+                                    == targetState
+                                            .get(WallHangingSignBlock.FACING)
+                                            .getAxis()
+                            || !sign.canAttachAt(targetState, mc.world, placeTargetBlock))) {
+                return false;
+            }
+            return context.canReplaceExisting() && targetState.canPlaceAt(mc.world, placeTargetBlock);
+        }
         if (!context.getBlockPos().equals(placeTargetBlock) || !context.canPlace()) {
             return false;
         }

@@ -14,7 +14,6 @@ import me.matl114.events.impl.UseItem;
 import me.matl114.events.impl.UseItemOnBlock;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
@@ -140,7 +139,6 @@ public abstract class ClientPlayerInteractionManagerEvents {
             @Local(argsOnly = true) BlockHitResult hitResult,
             @Local MutableObject<ActionResult> actionResult) {
         ItemStack stackCopy = client.player.getStackInHand(hand).copy();
-        BlockState state = client.world.getBlockState(hitResult.getBlockPos());
         MutableBoolean placeBlock = new MutableBoolean(false);
         ItemPlacementContext placementContext = new ItemPlacementContext(client.player, hand, stackCopy, hitResult);
         if (stackCopy.getItem() instanceof BlockItem blockItem) {
@@ -150,7 +148,6 @@ public abstract class ClientPlayerInteractionManagerEvents {
             }
         }
         BlockPos predictingPlace = placementContext.getBlockPos();
-        BlockState oldPlaceState = world.getBlockState(predictingPlace);
         original.call(instance, world, (SequencedPacketCreator) (seq) -> {
             lastInteractCaptureBlockPlace.addLast(placeBlock);
             try {
@@ -159,10 +156,12 @@ public abstract class ClientPlayerInteractionManagerEvents {
                 if (packet instanceof PlayerInteractBlockC2SPacketAccess access) {
                     access.setUseContext(new PlayerInteractBlockC2SPacketAccess.UseContext(
                             stackCopy,
-                            state,
                             actionResult.getValue(),
-                            placeBlock.booleanValue() ? Optional.of(predictingPlace) : Optional.empty(),
-                            oldPlaceState));
+                            placeBlock.getValue()
+                                            && actionResult.getValue().isAccepted()
+                                            && stackCopy.getItem() instanceof BlockItem
+                                    ? Optional.of(predictingPlace)
+                                    : Optional.empty()));
                 }
                 return packet;
             } finally {
