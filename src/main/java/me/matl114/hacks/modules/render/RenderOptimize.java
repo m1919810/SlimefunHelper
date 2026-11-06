@@ -170,12 +170,13 @@ public class RenderOptimize extends BaseModule {
 
     public void onEntityCullingTick(Event<Entity> event) {
         Entity entity = event.context();
-        if (entity instanceof MetadataHolder holder) {
-            MetaData metaData;
-            RenderController controller;
-            Vec3d pos = RenderUtils.getCameraPos();
-            EntityType<?> types = entity.getType();
-            if (cullingEnable.get()) {
+        if (cullingEnable.get()) {
+            if (entity instanceof MetadataHolder holder) {
+                MetaData metaData;
+                RenderController controller;
+                Vec3d pos = RenderUtils.getCameraPos();
+                EntityType<?> types = entity.getType();
+
                 if (this.cullingTypes.get().test(types)) {
                     metaData = holder.getMetadata();
                     controller = metaData.getOrPut(this, KEY_RENDER_CONTROL, RenderController::new);

@@ -2,7 +2,6 @@ package me.matl114.hacks.modules.render;
 
 import java.awt.*;
 import java.util.*;
-import me.matl114.accessors.hacks.EntityInternalAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
@@ -10,6 +9,7 @@ import me.matl114.events.impl.Render2D;
 import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.render.RenderCollectors;
@@ -28,7 +28,6 @@ import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 
 public class EntityESP extends BaseModule {
-    private static final String KEY_RENDER_TRACKED_LEVEL = "render-tracked-level";
 
     public final ModulePath entityRoot = makePath(Configs.RENDER_CONFIG, "detect-entity");
     public final ModulePath entityEsp = entityRoot.add("entity-esp");
@@ -134,33 +133,12 @@ public class EntityESP extends BaseModule {
         entityTracer.clear();
 
         boolean enable = this.enable.get();
-
-        var whitelist = whiteList.get().set();
-        for (Entity entity : mc.world.getEntities()) {
-            if (entity == mc.gameRenderer.getCamera().getFocusedEntity()) continue;
-            if (entity == null || entity.isRemoved()) {
-                continue;
-            } else {
-                EntityInternalAccess<?> access = EntityInternalAccess.of(entity);
-                Byte trackedLevel =
-                        access.isMetaEmpty() ? null : access.getMetadata().get(this, KEY_RENDER_TRACKED_LEVEL);
-                int renderLevel = trackedLevel == null ? EntityInternalAccess.RENDER_LEVEL_DISABLE : trackedLevel;
-                if (renderLevel == EntityInternalAccess.RENDER_LEVEL_WHITELIST) {
-                    if (!whitelist.contains(entity.getType())) {
-                        access.getMetadata()
-                                .put(this, KEY_RENDER_TRACKED_LEVEL, EntityInternalAccess.RENDER_LEVEL_DISABLE);
-                        continue;
-                    }
-                }
-                if ((renderLevel == EntityInternalAccess.RENDER_LEVEL_WHITELIST && enable)
-                        || renderLevel == EntityInternalAccess.RENDER_LEVEL_FORCE) {
+        if (enable) {
+            var whitelist = whiteList.get().set();
+            for (Entity entity : mc.world.getEntities()) {
+                if (entity == mc.gameRenderer.getCamera().getFocusedEntity()) continue;
+                if (EntityUtils.isEntityValid(entity) && whitelist.contains(entity.getType())) {
                     updateRenderCollectors(entity);
-                }
-                if (renderLevel == EntityInternalAccess.RENDER_LEVEL_DISABLE) {
-                    if (whitelist.contains(entity.getType())) {
-                        access.getMetadata()
-                                .put(this, KEY_RENDER_TRACKED_LEVEL, EntityInternalAccess.RENDER_LEVEL_WHITELIST);
-                    }
                 }
             }
         }

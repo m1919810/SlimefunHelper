@@ -200,6 +200,12 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
     }
 
     public boolean isWithinAttackRange(Vec3d pos, Entity entity, double range) {
+        if (pos.squaredDistanceTo(entity.getPos())
+                > MathUtils.s2(range
+                        + realMaxExtraDistance.get()
+                        + Math.max(entity.dimensions.height(), entity.dimensions.width()))) {
+            return false;
+        }
         if (!entity.getTrackedPosition().getPos().equals(Vec3d.ZERO)) {
             Vec3d syncPos = PositionPredict.INSTANCE.getPredictor(entity).getCurrentSyncedPos();
             Box syncBox = entity.dimensions.getBoxAt(syncPos);
@@ -501,10 +507,13 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
         if (mc.world == null) {
             return List.of();
         }
-        return mc.world.getOtherEntities(
-                null,
-                mc.player.getBoundingBox().expand(nearbyOverride + 6),
-                (en) -> predicate.test(en) && isTargetInRange(en, nearbyOverride, ticks));
+        List<Entity> entities = new ArrayList<>();
+        for (var re : mc.world.getEntities()) {
+            if (isTargetInRange(re, nearbyOverride, ticks) && predicate.test(re)) {
+                entities.add(re);
+            }
+        }
+        return entities;
     }
 
     public boolean checkWeapon(Entity e, boolean commonBow) {

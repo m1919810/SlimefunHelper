@@ -120,7 +120,7 @@ public class ChestESP extends BaseModule {
         }
     }
 
-    public void dispatchBlockEntityRender(BlockEntity blockEntity, BlockPos blockPos) {
+    private void dispatchBlockEntityRender(BlockEntity blockEntity, BlockPos blockPos) {
         TextColor color = colorMap.get().getEntryValue(blockEntity.getType());
         if (color == null) return;
         TracingOption option = enableLines.get();

@@ -122,8 +122,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public final FlagRef autoTakeOffWhenJoinServer =
             flagBuilder(elytraTweaks.add("auto-start-fly-join-server")).build();
 
-    public final FlagRef timeoutReflight =
-            flagBuilder(elytraTweaks.add("timeout-reflight")).build();
+    public final NBTRef<OptionalPrimitive<Integer>> timeoutReflight = builder(
+                    elytraTweaks.add("timeout-reflight"), OptionalPrimitive.INT_TYPE)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.INT_TYPE, 40))
+            .build();
 
     public final NBTRef<OptionalPrimitive<Integer>> takeOffForceCooldown = builder(
                     elytraTweaks.add("take-off-force-cooldown"), OptionalPrimitive.INT_TYPE)
@@ -259,7 +261,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public final KeyBindRef switchAlKey = hotkey(
                     customFireworksPath.add("switch-auto-rescale-firework-al-key"), new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(() -> {
-                this.autoRescaleAl.next();
+                do {
+                    this.autoRescaleAl.next();
+                } while (autoRescaleAl.get().ordinal() < Al.V3.ordinal()
+                        || autoRescaleAl.get().isPullupOnly());
                 logI18NSub(
                         "Firework",
                         "message.module.elytra-extra.al-switch",
@@ -611,17 +616,12 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             boolean canRunElytraUnbreakable = false;
             boolean canRunArmorGlide = false;
             if ((data & (1 << VDataFlag.FALL_FLYING_FLAG_INDEX)) == 0) {
+
                 elytraUnbreakableDurabilityCounter.reset();
                 if (pendingElytraUnbreakableTransaction) {
                     canRunElytraUnbreakable = true;
                 }
                 canRunArmorGlide = true;
-            } else {
-                // reset delay mode
-                pendingArmorGlideTransaction = false;
-            }
-            if ((data & (1 << VDataFlag.FALL_FLYING_FLAG_INDEX)) == 0) {
-                // try start
                 if (hasResetFallFlyingQueue()) {
                     data = (byte) (data | (1 << VDataFlag.FALL_FLYING_FLAG_INDEX));
                     serializedEntryUpdateEvent.metadata(
@@ -631,7 +631,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                     canRunElytraUnbreakable = false;
                 }
             } else {
+                // reset delay mode
+                pendingArmorGlideTransaction = false;
                 delayResetFallFlyingTransaction = false;
+                pendingHandleElytraUnbreakableTransaction = false;
             }
 
             // reset important flag even if module is off or can not work
@@ -1010,7 +1013,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         }
     }
 
-    private static final int FALL_FLYING_SYNC_TIMEOUT_TICKS = 20;
+    private static final int FALL_FLYING_SYNC_TIMEOUT_TICKS = 40;
     private int fallFlyingSyncStartTick = -1;
 
     public void onFallFlyingSyncTimeout() {
@@ -1021,16 +1024,13 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             fallFlyingSyncStartTick = -1;
             return;
         }
-        if (Tasks.getTick() - fallFlyingSyncStartTick < FALL_FLYING_SYNC_TIMEOUT_TICKS) {
-            return;
+        if (timeoutReflight.get().isPresent()) {
+            if (Tasks.getTick() - fallFlyingSyncStartTick
+                    > timeoutReflight.get().getValue()) {
+                PlayerInputManager.INSTANCE.addSneakModifier(Integer.MAX_VALUE, !mc.player.isSneaking(), 2);
+                fallFlyingSyncStartTick = Tasks.getTick();
+            }
         }
-
-        fallFlyingSyncStartTick = -1;
-        if (timeoutReflight.get()) {
-            PlayerInputManager.INSTANCE.addSneakModifier(Integer.MAX_VALUE, true, 2);
-            fallFlyingSyncStartTick = Tasks.getTick();
-        }
-        // todo:
     }
 
     public boolean onSwitchItemArmorFallFlying() {
@@ -1366,10 +1366,16 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                                         mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
                         currentTickStartGlideTransaction = true;
                         flushRockets();
+                        if (this.postTickSwapWithChestSlot != -1) {
+                            final int idx = this.postTickSwapWithChestSlot;
+                            switchSlotToArmor(idx);
+                            this.postTickSwapWithChestSlot = -1;
+                        }
                         MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
                         if (armorFlyBadPacketFix.get()) {
                             mc.getNetworkHandler().sendPacket(new CommonPongC2SPacket(Integer.MIN_VALUE));
                         }
+
                     } else {
                         clearRockets();
                         EntityInternalAccess.of(mc.player).setDataFlag(VDataFlag.FALL_FLYING_FLAG_INDEX, false);
@@ -2455,15 +2461,16 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
         double maxScale = Math.max(exceedX, Math.max(exceedY, exceedZ));
 
-        // 退化情况：所有 scale 为 0
+        // ：所有 scale 为 0
+        Vec3d clampedMotion;
         if (maxScale < 1E-6) {
-            if (apply) setOverridingFireworkVelocity(null);
-            return currentMotion;
+            clampedMotion = currentMotion;
+        } else {
+            clampedMotion = currentMotion.multiply(1 / maxScale);
         }
 
         // 需要缩小至盒子边界
 
-        Vec3d clampedMotion = currentMotion.multiply(1 / maxScale);
         clampedMotion = applySpeedLimit(clampedMotion);
         if (apply) setOverridingFireworkVelocity(clampedMotion); // <-- 保存边界值
         return clampedMotion;
@@ -2579,6 +2586,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         @Override
         public String getConfigEnumType() {
             return "elytra_extra_fireworks_al_type";
+        }
+
+        public boolean isPullupOnly() {
+            return this == V3_PULLUP_ONLY || this == V5_PULLUP_ONLY;
         }
     }
 }

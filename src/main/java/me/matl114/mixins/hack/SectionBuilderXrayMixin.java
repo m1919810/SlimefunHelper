@@ -35,7 +35,7 @@ public abstract class SectionBuilderXrayMixin {
                             target =
                                     "Lnet/minecraft/client/render/BlockRenderLayers;getBlockLayer(Lnet/minecraft/block/BlockState;)Lnet/minecraft/client/render/BlockRenderLayer;"))
     private BlockRenderLayer slimefunhelper$makeBlockLayerTranslucent(
-            BlockState state, Operation<BlockRenderLayer> original, @Local(name = "blockPos3") BlockPos pos) {
+            BlockState state, Operation<BlockRenderLayer> original, @Local(ordinal = 2) BlockPos pos) {
         int alpha = Xray.getAlpha(state, pos);
         BlockRenderLayer layer = original.call(state);
         return alpha > 0 && alpha < 255 ? BlockRenderLayer.TRANSLUCENT : layer;
@@ -49,7 +49,7 @@ public abstract class SectionBuilderXrayMixin {
                             target =
                                     "Lnet/minecraft/client/render/BlockRenderLayers;getFluidLayer(Lnet/minecraft/fluid/FluidState;)Lnet/minecraft/client/render/BlockRenderLayer;"))
     private BlockRenderLayer slimefunhelper$makeFluidLayerTranslucent(
-            FluidState state, Operation<BlockRenderLayer> original, @Local(name = "blockPos3") BlockPos pos) {
+            FluidState state, Operation<BlockRenderLayer> original, @Local(ordinal = 2) BlockPos pos) {
         int alpha = Xray.getFluidAlpha(state, pos);
         BlockRenderLayer layer = original.call(state);
         return alpha > 0 && alpha < 255 ? BlockRenderLayer.TRANSLUCENT : layer;

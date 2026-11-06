@@ -490,10 +490,10 @@ public class AutoLibrarian extends BaseModule {
             }
             currentAccepted = true;
             if (autoLockTrade.get()) {
-                if (InventoryUtils.findPlayerItem(s -> s.isOf(Items.BOOK), false, false) != null) {
+                if (InventoryUtils.computePlayerInventory(Items.BOOK) >= 1) {
                     if (InventoryUtils.computePlayerInventory(Items.EMERALD) >= price) {
                         var access = MerchantScreenAccess.of(screen);
-                        access.setSelectedIndex(access.getSelectedIndex());
+                        access.setSelectedIndex(findIndex.index());
                         mc.interactionManager.clickSlot(handler.syncId, 2, 1, SlotActionType.PICKUP, mc.player);
                     } else {
                         if (log.get()) {
