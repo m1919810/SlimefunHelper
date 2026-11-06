@@ -422,11 +422,13 @@ public class CrystalAura extends BaseModule {
             Map<PlayerEntity, Double> damageMap = calculateCrystalDamage(crystal.getPos());
             Map<PlayerEntity, Double> attackDamageMap =
                     considerInvulnerability.get() ? calculateInvulnerabilityDamageMap(damageMap) : damageMap;
-            if (isSuitableExplodePos(damageMap) && (skipTick || isSuitableAttackExplodePos(attackDamageMap))) {
-                candidates.add(Map.entry(crystal, attackDamageMap));
-            } else {
-                // use raw damage
-                maxExistingDamageValue = Math.max(maxExistingDamageValue, getBestEnemyDamage(damageMap));
+            if (isSuitableExplodePos(damageMap)) {
+                if ((skipTick || isSuitableAttackExplodePos(attackDamageMap))) {
+                    candidates.add(Map.entry(crystal, attackDamageMap));
+                } else {
+                    // use raw damage
+                    maxExistingDamageValue = Math.max(maxExistingDamageValue, getBestEnemyDamage(damageMap));
+                }
             }
         }
         if (tickAttackExecutor.canRun(attackDelay.get())) {

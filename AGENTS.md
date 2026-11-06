@@ -1,5 +1,12 @@
 # Project Instructions
 
+## Default Language and Localization
+
+- `src/main/resources/assets/slimefunhelper/lang/en_us.json` is used to record Chinese localization. Despite its filename, translation values default to Chinese.
+- Module names (`widget.click-gui.module-name.*`) and module list names (`module-toggle.*`) default to English.
+- These English exceptions apply only to name values. Tooltips, descriptions, and all other text default to Chinese, including tooltip keys under these prefixes (such as `widget.click-gui.module-name.*.tooltips`).
+- Follow this convention when adding or updating translations; do not infer English as the default from the `en_us.json` filename.
+
 ## Build
 
 - Do not run Gradle compilation or build commands unless explicitly requested by the user.
