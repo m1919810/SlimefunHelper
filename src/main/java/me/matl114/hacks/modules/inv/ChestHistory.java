@@ -10,7 +10,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import lombok.Getter;
-import me.matl114.accessors.access.PlayerInteractBlockC2SPacketAccess;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.accessors.interfaces.MetadataHolder;
 import me.matl114.accessors.interfaces.TileInventory;
@@ -18,6 +17,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.events.impl.Render3D;
+import me.matl114.events.impl.UseItemOnBlock;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
@@ -57,7 +57,6 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryWrapper;
@@ -106,8 +105,7 @@ public class ChestHistory extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPostOpenHandledScreen(), this::onOpenHandledScreen);
-        registerListener(
-                Listener.getPacketPoint().getChannel(PlayerInteractBlockC2SPacket.class), this::onPlaceShulkerBox);
+        registerListener(Listener.getPostPlayerUseItemOnBlock(), this::onPlaceShulkerBox);
         registerListener(Listener.getGameJoinPoint(), this::onServerJoin);
         registerListener(Listener.getPostGameTick(), this::onTick);
         registerListener(Listener.getPostGameTick(), this::updateTitleCollector);
@@ -159,17 +157,13 @@ public class ChestHistory extends BaseModule {
     private static final String KEY_SHULKER_BOX_PLACED_BY_PLAYER =
             "slimefunhelper:chest_history/tracked_self_place_shulker";
 
-    public void onPlaceShulkerBox(Event<PlayerInteractBlockC2SPacket> eventInteract) {
-        PlayerInteractBlockC2SPacketAccess access = PlayerInteractBlockC2SPacketAccess.of(eventInteract.context);
-        PlayerInteractBlockC2SPacketAccess.UseContext useContext = access.getUseContext();
-        if (useContext != null
-                && useContext.isAccepted()
-                && useContext.blockPlace()
-                && useContext.stack().getItem() instanceof BlockItem bi
+    public void onPlaceShulkerBox(Event<UseItemOnBlock> eventInteract) {
+        UseItemOnBlock use = eventInteract.context();
+        if (use.actionResult().isAccepted()
+                && use.blockPlace()
+                && use.handItem().getItem() instanceof BlockItem bi
                 && bi.getBlock() instanceof ShulkerBoxBlock) {
-            //
-            BlockPos placePos = useContext.getPlaceBlockPos(
-                    eventInteract.context.getHand(), eventInteract.context.getBlockHitResult());
+            BlockPos placePos = use.placingBlockPos().orElseThrow();
             // if it is a real place
             BlockState state = mc.world.getBlockState(placePos);
             if (state.getBlock() == bi.getBlock()
@@ -177,7 +171,7 @@ public class ChestHistory extends BaseModule {
                 if (shulkerBoxBlock instanceof MetadataHolder holder) {
                     holder.getMetadata().put(this, KEY_SHULKER_BOX_PLACED_BY_PLAYER, true);
                 }
-                //                ItemStack stack = useContext.stack();
+                //                ItemStack stack = use.handItem();
                 //                var container = stack.get(DataComponentTypes.CONTAINER);
                 //                if(container != null){
                 //                    ContainerPosition position = ContainerPosition.ofSingle(mc.world, placePos);

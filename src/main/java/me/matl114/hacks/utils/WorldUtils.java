@@ -7,8 +7,11 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import me.matl114.accessors.access.PendingUpdateManagerAccess;
+import me.matl114.utils.collections.IndexEntry;
 import me.matl114.versioned.api.VRecord;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.world.ClientWorld;
@@ -37,6 +40,98 @@ public class WorldUtils {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
 
     public static final int UPDATE_BLOCK_NO_PHYSICS = 2 | 16 | 512;
+
+    // The action must not destroy or replace existing block entities.
+    public static Map<BlockPos, BlockState> predictSequencedAction(Runnable action) {
+        ClientWorld world = mc.world;
+        var manager = world.getPendingUpdateManager();
+        PendingUpdateManagerAccess access = PendingUpdateManagerAccess.of(manager);
+        int previousSequence = manager.getSequence();
+        boolean previousPendingSequence = manager.hasPendingSequence();
+        Map<BlockPos, IndexEntry<BlockState>> originalPending = access.getPendingBlockStates(Integer.MIN_VALUE);
+        int sequence = manager.incrementSequence().getSequence();
+        Map<BlockPos, BlockState> predictedStates = new HashMap<>();
+        try {
+            action.run();
+        } finally {
+            try {
+                Map<BlockPos, IndexEntry<BlockState>> pendingStates = access.getPendingBlockStates(sequence);
+                for (var entry : pendingStates.entrySet()) {
+                    BlockPos pos = entry.getKey();
+                    BlockState previousState = entry.getValue().val();
+                    BlockState predictedState = world.getBlockState(pos);
+                    if (predictedState != previousState) {
+                        predictedStates.put(pos, predictedState);
+                        BlockEntity blockEntity = world.getBlockEntity(pos);
+                        restorePredictedBlock(world, pos, previousState, blockEntity);
+                    }
+                }
+            } finally {
+                try {
+                    access.restorePendingUpdate(sequence, originalPending);
+                } finally {
+                    access.restorePredictionSequence(previousSequence, previousPendingSequence);
+                }
+            }
+        }
+        return predictedStates;
+    }
+
+    public static Map<BlockPos, BlockState> predictActionAtSequence(int sequence, Runnable action) {
+        ClientWorld world = mc.world;
+        var manager = world.getPendingUpdateManager();
+        PendingUpdateManagerAccess access = PendingUpdateManagerAccess.of(manager);
+        int currentSequence = manager.getSequence();
+        boolean currentPendingSequence = manager.hasPendingSequence();
+        Map<BlockPos, IndexEntry<BlockState>> beforePrediction = access.getPendingBlockStates(sequence);
+        Map<BlockPos, BlockEntity> currentBlockEntities = captureBlockEntities(world, beforePrediction.keySet());
+        Map<BlockPos, BlockState> currentStates = new HashMap<>();
+        try {
+            for (var entry : beforePrediction.entrySet()) {
+                BlockPos pos = entry.getKey();
+                currentStates.put(pos, world.getBlockState(pos));
+                world.setBlockState(pos, entry.getValue().val(), UPDATE_BLOCK_NO_PHYSICS);
+            }
+            access.restorePendingUpdate(sequence, beforePrediction);
+            return predictSequencedAction(action);
+        } finally {
+            try {
+                for (var entry : currentStates.entrySet()) {
+                    restorePredictedBlock(
+                            world, entry.getKey(), entry.getValue(), currentBlockEntities.get(entry.getKey()));
+                }
+            } finally {
+                try {
+                    access.restorePendingUpdate(sequence, beforePrediction);
+                } finally {
+                    access.restorePredictionSequence(currentSequence, currentPendingSequence);
+                }
+            }
+        }
+    }
+
+    private static Map<BlockPos, BlockEntity> captureBlockEntities(ClientWorld world, Collection<BlockPos> positions) {
+        Map<BlockPos, BlockEntity> blockEntities = new HashMap<>();
+        for (BlockPos pos : positions) {
+            BlockEntity blockEntity = world.getBlockEntity(pos);
+            if (blockEntity != null) {
+                blockEntities.put(pos.toImmutable(), blockEntity);
+            }
+        }
+        return blockEntities;
+    }
+
+    private static void restorePredictedBlock(
+            ClientWorld world, BlockPos pos, BlockState state, BlockEntity blockEntity) {
+        world.setBlockState(pos, state, UPDATE_BLOCK_NO_PHYSICS);
+        if (blockEntity != null
+                && blockEntity.supports(state)
+                && world.getBlockState(pos) == state
+                && (blockEntity.isRemoved() || world.getBlockEntity(pos) != blockEntity)) {
+            world.removeBlockEntity(pos);
+            world.addBlockEntity(blockEntity);
+        }
+    }
 
     public static boolean areWorldEquals(ClientWorld world1, ClientWorld world2) {
         return world1 == world2

@@ -123,10 +123,8 @@ public class PacketHelper {
                         mc.player
                                 .getStackInHand(offhand ? Hand.OFF_HAND : Hand.MAIN_HAND)
                                 .copy(),
-                        mc.world.getBlockState(hitResult.getBlockPos()),
                         ActionResult.SUCCESS,
-                        Optional.empty(),
-                        mc.world.getBlockState(hitResult.getBlockPos())));
+                        Optional.empty()));
             }
             return packet;
         });
