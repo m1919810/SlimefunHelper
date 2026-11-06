@@ -656,18 +656,30 @@ public class ElytraOptimizeUtils {
             Vec3d currentMotion, float pitch, float yaw, double autoRescaleAmount, boolean apply) {
         if (currentMotion.lengthSquared() < 1E-6) {
             if (apply) setOverridingFireworkVelocity(null);
+            if (apply) {
+                packetToSend = null;
+            }
             return currentMotion;
         }
         Vec3d currentRotation = EntityUtils.pitchYawToRotation(pitch, yaw);
         if (shouldAbortV3Optimize) {
+            if (apply) {
+                packetToSend = null;
+            }
             return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw, apply);
         }
         if (!ViaFabricPlusHooks.isSupportDupRot()) {
+            if (apply) {
+                packetToSend = null;
+            }
             return applyAxisLimit3_0(currentMotion, pitch, yaw, autoRescaleAmount, apply);
         }
         Vec3d extraTargeting = null;
         if (pitch > 0) {
             if (pitch > 60) {
+                if (apply) {
+                    packetToSend = null;
+                }
                 return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw, apply);
             } else {
                 double len = 1.01 - Math.abs(currentRotation.y);
@@ -683,6 +695,9 @@ public class ElytraOptimizeUtils {
             }
         } else {
             if (pitch > -7) {
+                if (apply) {
+                    packetToSend = null;
+                }
                 return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw, apply);
             } else {
                 //
@@ -814,18 +829,30 @@ public class ElytraOptimizeUtils {
             Vec3d currentMotion, float pitch, float yaw, double autoRescaleAmount, boolean apply) {
         if (currentMotion.lengthSquared() < 1E-6) {
             if (apply) setOverridingFireworkVelocity(null);
+            if (apply) {
+                packetToSend = null;
+            }
             return currentMotion;
         }
         Vec3d currentRotation = EntityUtils.pitchYawToRotation(pitch, yaw);
         if (shouldAbortV3Optimize) {
+            if (apply) {
+                packetToSend = null;
+            }
             return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw, apply);
         }
         if (!ViaFabricPlusHooks.isSupportDupRot()) {
+            if (apply) {
+                packetToSend = null;
+            }
             return applyAxisLimit3_0(currentMotion, pitch, yaw, autoRescaleAmount, apply);
         }
         Vec3d extraTargeting = null;
         if (pitch > 0) {
             if (pitch > 60) {
+                if (apply) {
+                    packetToSend = null;
+                }
                 return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw, apply);
             } else {
                 double len = 1.01 - Math.abs(currentRotation.y);
@@ -840,7 +867,10 @@ public class ElytraOptimizeUtils {
                 extraTargeting = targetTo;
             }
         } else {
-            if (pitch > -7) {
+            if (pitch > -7 || pitch < -89.9999) {
+                if (apply) {
+                    packetToSend = null;
+                }
                 return ElytraExtra.INSTANCE.applyAxisLimit2(currentMotion, pitch, yaw, apply);
             } else {
                 float extraYaw = getV5ExtraYaw(currentMotion, pitch, yaw, autoRescaleAmount);

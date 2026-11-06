@@ -45,6 +45,7 @@ import me.matl114.utils.render.RenderCollector;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
@@ -264,7 +265,10 @@ public class Attack extends BaseModule {
 
     private static IndexEntry<ItemStack> findAntiShieldWeapon(AttackSettings settings) {
         return InventoryUtils.findPlayerItem(
-                (ex) -> VItem.getInstance().isAxe(ex), settings.ghostHandMode().getSearchSize(false), false, false);
+                (ex) -> VItem.getInstance().isAxe(ex) && !willBreak(ex),
+                settings.ghostHandMode().getSearchSize(false),
+                false,
+                false);
     }
 
     public AttackSettings createAttackSettings() {
@@ -324,6 +328,12 @@ public class Attack extends BaseModule {
         return DamageUtils.getFinalAttackDamageAgainst(mc.player, stack, (float) finalDamage, context);
     }
 
+    private static boolean willBreak(ItemStack stack) {
+        return !stack.contains(DataComponentTypes.UNBREAKABLE)
+                && stack.getMaxDamage() > 0
+                && (stack.getDamage() >= stack.getMaxDamage() - 1);
+    }
+
     @Nonnull
     public static IndexEntry<ItemStack> selectBestWeapon(AttackSettings attackSettings, @Nullable Entity target) {
         IndexEntry<ItemStack> invResult;
@@ -344,6 +354,9 @@ public class Attack extends BaseModule {
                                             || VItem.getInstance().isAxe(stack)) {
                                         return null;
                                     }
+                                    if (willBreak(stack)) {
+                                        return null;
+                                    }
                                     double baseDamage = AttributeUtils.getAttributeWith(
                                                     mc.player, Map.of(EquipmentSlot.MAINHAND, stack))
                                             .getValue(EntityAttributes.ATTACK_DAMAGE);
@@ -360,6 +373,9 @@ public class Attack extends BaseModule {
                 && (invResult = InventoryUtils.findBestPlayerItem(
                                 (ex) -> {
                                     if (ex.getItem() == Items.MACE) {
+                                        if (willBreak(ex)) {
+                                            return null;
+                                        }
                                         return applyArmorReduceOn(
                                                 ex,
                                                 DamageUtils.getRealAttackDamage(
@@ -384,6 +400,9 @@ public class Attack extends BaseModule {
                                 (ex) -> {
                                     if (VItem.getInstance().isSpear(ex)) return null;
                                     if (VItem.getInstance().isWeapon(ex)) {
+                                        if (willBreak(ex)) {
+                                            return null;
+                                        }
                                         Integer damageCost = VItem.getInstance().getAttackDurabilityCost(ex);
                                         return damageCost == null
                                                 ? null
@@ -416,6 +435,9 @@ public class Attack extends BaseModule {
                                     if (ex.isOf(mc.player
                                             .getStackInHand(Hand.MAIN_HAND)
                                             .getItem())) {
+                                        if (willBreak(ex)) {
+                                            return null;
+                                        }
                                         return applyArmorReduceOn(
                                                 ex,
                                                 DamageUtils.getRealAttackDamage(

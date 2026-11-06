@@ -4,6 +4,8 @@ import java.util.*;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
+import me.matl114.events.RenderListener;
+import me.matl114.events.impl.Render3D;
 import me.matl114.events.packets.PacketStorage;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -13,16 +15,21 @@ import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.PlayerInputUtils;
 import me.matl114.hacks.utils.RaycastUtils;
+import me.matl114.hacks.utils.config.OptionalPrimitive;
+import me.matl114.hacks.utils.config.Pos3;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.move.goal.GoalNearBlockPos;
+import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hooks.BaritoneHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.CollisionUtil;
+import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.BlockState;
 import net.minecraft.network.packet.PacketType;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
@@ -31,8 +38,6 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
 public class ElytraJump extends BaseModule implements LegalMovementManager.MovementModifier {
-    static LegalMovementManager.DelegateMovementModifier instance;
-
     public ElytraJump() {
         super("ElytraJump");
         MovementManager.registerMovementPipeline(this);
@@ -43,6 +48,16 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
     public final FlagRef enable = flagBuilder(root.addEnable()).build();
     public final KeyBindRef hotkey =
             moduleEntry(root.addHotkey(), new MultiKeyBind(), root.addEnable()).build();
+
+    public final FlagRef routeLock = flagBuilder(root.add("route-lock")).build();
+    public final KeyBindRef routeLockHotkey = toggleHotkey(
+                    root.add("route-lock-hotkey"), new MultiKeyBind(), root.add("route-lock"))
+            .build();
+
+    public final NBTRef<OptionalPrimitive<Pos3>> destination = builder(
+                    root.add("destination"), OptionalPrimitive.type(Pos3.class))
+            .defaultValue(new OptionalPrimitive<>(false, Pos3.TYPE, new Pos3(0, 0, 0)))
+            .build();
     //
 
     public final DoubleRef pitch = doubleBuilder(root.add("pitch"))
@@ -61,21 +76,15 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
     public final FlagRef autoMineStoneAndNetherrackObstacles =
             flagBuilder(root.add("auto-mine-obstacles")).build();
 
-    public final FlagRef autoAvoidObstacle =
-            flagBuilder(root.add("auto-avoid-obstacles")).build();
-
     public final IntRef avoidObstacleYawRange = intBuilder(root.add("avoid-obstacles-yaw-range"))
             .defaultValue(50)
             .validator(Configs.intRange(0, 180))
-            .show(this.autoAvoidObstacle::get)
             .build();
 
     public final IntRef predictTicks = intBuilder(root.add("avoid-obstacles-predict-ticks"))
-            .defaultValue(80)
-            .validator(Configs.intRange(0, 400))
+            .defaultValue(30)
+            .validator(Configs.intRange(0, 50))
             .build();
-
-    public final FlagRef avoidHoles = flagBuilder(root.add("avoid-holes")).build();
 
     public final FlagRef usePacketQueue = flagBuilder(root.add("queue-packets"))
             .updateListener(s -> {
@@ -85,16 +94,27 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
             })
             .build();
 
-    boolean workThisTick = false;
-    BlockPos currentLandingBlock;
-    List<BlockPos> obstacles = new ArrayList<>();
+    private boolean workThisTick;
+    private List<BlockPos> obstacles = List.of();
     private static final int OBSTACLE_LIMIT = 5;
-    private int lastStableHeight = Integer.MIN_VALUE;
-    private int stableHeightCounter;
-    private BlockPos lastStableBlockTarget;
-    private boolean autoWalkAvoidObstacle;
-    private boolean needPathingToRoad;
+    private static final double ROUTE_SEARCH_DISTANCE = 128.0D;
+    private static final double ROUTE_SEARCH_STEP = 0.5D;
+    private Route route;
+    private BlockPos routeSafeTarget;
     private boolean ownsRoadPath;
+    private final RenderCollector<List<Vec3d>> lineCollector = RenderCollectors.createLinesCollector();
+
+    private record Route(Vec3d origin, Vec3d direction) {
+        private Route {
+            origin = origin.withAxis(Direction.Axis.Y, Math.floor(origin.y));
+            direction = direction.withAxis(Direction.Axis.Y, 0.0D).normalize();
+        }
+
+        private Vec3d project(Vec3d position) {
+            double alongRoute = position.subtract(origin).dotProduct(direction);
+            return origin.add(direction.multiply(Math.max(0.0D, alongRoute)));
+        }
+    }
 
     private void flushImmediately() {
         if (checkNull()) return;
@@ -121,24 +141,25 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
         registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvent);
         registerListener(PacketManager.getPacketQueueOutEvent(), this::onPacketQueue);
         registerListener(PacketManager.getQueueShutdownEvent(), this::onPacketFlush);
+        registerListener(RenderListener.getRender3DEvent(), this::onRender3D);
+    }
+
+    private void onRender3D(Event<Render3D> event) {
+        if (checkNull() || !routeLock.get()) return;
+        lineCollector.render3D(event.context.stack(), event.context.partialTicks());
     }
 
     @Override
     public void onDisableModule() {
         super.onDisableModule();
         clearRoadPath();
-        autoWalkAvoidObstacle = false;
         if (usePacketQueue.get()) {
             flushImmediately();
         }
     }
 
     public void onPreInputEvent() {
-        if (workThisTick
-                && currentLandingBlock != null
-                && autoMineStoneAndNetherrackObstacles.get()
-                && obstacles != null
-                && !obstacles.isEmpty()) {
+        if (workThisTick && autoMineStoneAndNetherrackObstacles.get() && !obstacles.isEmpty()) {
             if (obstacles.size() <= OBSTACLE_LIMIT) {
                 obstacles.forEach(re -> QueueMine.INSTANCE.sumitMine(re));
             }
@@ -192,22 +213,13 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
         return checkPoses;
     }
 
-    public int searchRayLength(float newYaw) {
-
+    private int searchRayLength(float newYaw, int groundY) {
         double currentSpeed = mc.player.getVelocity().horizontalLength();
         Vec3d direction = EntityUtils.pitchYawToRotation(0, newYaw).normalize().multiply(currentSpeed);
         for (var i = 0; i < predictTicks.get(); ++i) {
-            if (autoAvoidObstacle.get()) {
-                List<BlockPos> obs = checkForObstacles(direction, i, i + 1, currentLandingBlock.getY() + 1, 3);
-                if (!obs.isEmpty()) {
-                    return i;
-                }
-            }
-            if (avoidHoles.get()) {
-                List<BlockPos> obs = checkForObstacles(direction, i, i + 1, currentLandingBlock.getY(), 1);
-                if (obs.isEmpty()) {
-                    return i;
-                }
+            List<BlockPos> obs = checkForObstacles(direction, i, i + 1, groundY + 1, 3);
+            if (!obs.isEmpty()) {
+                return i;
             }
         }
         return predictTicks.get();
@@ -215,8 +227,15 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
 
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+        lineCollector.clear();
         workThisTick = false;
-        int lastLanding = currentLandingBlock == null ? Integer.MIN_VALUE : currentLandingBlock.getY();
+        BlockPos currentLandingBlock = null;
+        if (!routeLock.get()) {
+            if (route != null) clearRoute();
+        } else if (route == null) {
+            enable.set(true);
+        }
+
         if (enable.get()) {
             // set the pitch first to avoid conflict with other mode
             List<BlockPos> groundings = CollisionUtil.getIntersectingBlockPositions(
@@ -226,8 +245,6 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
                 currentLandingBlock = groundings.stream()
                         .max(Comparator.comparingDouble(BlockPos::getY))
                         .orElseThrow();
-            } else {
-                currentLandingBlock = null;
             }
             if (workThisTick) {
                 Vec3d velocity = mc.player.getVelocity().withAxis(Direction.Axis.Y, 0);
@@ -244,35 +261,10 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
             } else {
                 obstacles = List.of();
             }
+        } else {
+            obstacles = List.of();
         }
-        if (workThisTick) {
-            if (lastStableHeight < -114514) {
-                lastStableHeight = currentLandingBlock.getY();
-            }
-            if (lastStableHeight == currentLandingBlock.getY()) {
-                Vec3d playerPos = mc.player.getPos().withAxis(Direction.Axis.Y, lastStableHeight + 1);
-                Vec3d velocity = PlayerStateManager.INSTANCE.lastKnownRealMovementSpeed.withAxis(Direction.Axis.Y, 0);
-                if (velocity.lengthSquared() < 1.0E-4) {
-                    velocity = EntityUtils.pitchYawToRotation(0, PlayerStateManager.INSTANCE.lastYaw);
-                }
-                Vec3d dir = EntityUtils.pitchYawToRotation(0, axis(EntityUtils.rotationToYaw(velocity.normalize())));
-                lastStableBlockTarget = BlockPos.ofFloored(playerPos.add(dir.multiply(10)));
-            }
-            if (lastLanding == currentLandingBlock.getY()) {
-                stableHeightCounter += 1;
-                if (stableHeightCounter > 200) {
-                    lastStableHeight = currentLandingBlock.getY();
-                }
-            } else {
-                stableHeightCounter = 0;
-            }
-        } else if (!enable.get()) {
-            lastStableHeight = Integer.MIN_VALUE;
-            stableHeightCounter = 0;
-            lastStableBlockTarget = null;
-            autoWalkAvoidObstacle = false;
-            clearRoadPath();
-        }
+
         // 2 blocks lower
         if (workThisTick) {
             if (mc.player.isFallFlying() || lastFallFly) {
@@ -285,14 +277,47 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
             if (axisStrict.get()) {
                 PlayerStateManager.setPlayerYawSafe(mc.player, axis(mc.player.getYaw()));
             }
-            if (autoAvoidObstacle.get() || avoidHoles.get()) {
-                float yaw = mc.player.getYaw();
-                float maxYaw = yaw;
-                int maxLen = 0;
+            movementManagerEvent.context.markForResetRot();
+        }
 
-                for (var i = 0; i < avoidObstacleYawRange.get(); ++i) {
-                    float newYaw = yaw + i;
-                    int len = searchRayLength(newYaw);
+        if (routeLock.get() && route == null) {
+            initializeRoute(currentLandingBlock);
+        }
+
+        Vec3d routeProjection = null;
+        boolean routeInRange = false;
+        if (routeLock.get() && route != null) {
+            routeProjection = route.project(mc.player.getPos());
+            double horizontalProjectionDistanceSquared =
+                    mc.player.getPos().subtract(routeProjection).horizontalLengthSquared();
+            routeInRange = horizontalProjectionDistanceSquared < 100.0D;
+            if (horizontalProjectionDistanceSquared <= 256.0D * 256.0D) {
+                lineCollector.submit(
+                        List.of(
+                                routeProjection,
+                                routeProjection.add(route.direction().multiply(256.0D))),
+                        0xFF00FF00);
+            }
+        }
+
+        if (routeInRange) {
+            if (hasReachedDestination(mc.player.getPos())) {
+                if (enable.get()) enable.set(false);
+                routeLock.set(false);
+                workThisTick = false;
+                clearRoute();
+                return;
+            }
+            float routeYaw = EntityUtils.rotationToYaw(route.direction());
+            mc.player.setYaw(routeYaw);
+
+            if (currentLandingBlock != null) {
+                int groundY = currentLandingBlock.getY();
+                float maxYaw = routeYaw;
+                int maxLen = 0;
+                for (var i = 0; i < avoidObstacleYawRange.get(); i += 2) {
+                    float newYaw = routeYaw + i;
+                    int len = searchRayLength(newYaw, groundY);
                     if (len >= predictTicks.get()) {
                         maxYaw = newYaw;
                         maxLen = len;
@@ -302,8 +327,8 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
                         maxYaw = newYaw;
                     }
                     if (i == 0) continue;
-                    newYaw = yaw - i;
-                    len = searchRayLength(newYaw);
+                    newYaw = routeYaw - i;
+                    len = searchRayLength(newYaw, groundY);
                     if (len >= predictTicks.get()) {
                         maxYaw = newYaw;
                         maxLen = len;
@@ -316,61 +341,56 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
                 mc.player.setYaw(maxYaw);
             }
             movementManagerEvent.context.markForResetRot();
-        }
-        if (workThisTick
-                && lastStableHeight >= currentLandingBlock.getY()
-                && avoidHoles.get()
-                && CollisionUtil.isBoxCollided(
-                        mc.world,
-                        mc.player,
-                        mc.player
-                                .dimensions
-                                .getBoxAt(
-                                        currentLandingBlock.toBottomCenterPos().add(0, 1, 0))
-                                .offset(EntityUtils.pitchYawToRotation(0, mc.player.getYaw())))) {
-            // check horizontal collision
-            Vec3d simulationMove = MovTasks.simulateMovement(
-                    mc.player,
-                    mc.player.getPos().withAxis(Direction.Axis.Y, currentLandingBlock.getY() + 1),
-                    EntityUtils.pitchYawToRotation(0, mc.player.getYaw()),
-                    false);
-            if (simulationMove.lengthSquared() < 1E-1) {
-                autoWalkAvoidObstacle = true;
-                workThisTick = false;
-            } else {
-                autoWalkAvoidObstacle = false;
-            }
-
+            updateRouteRecovery(routeProjection, currentLandingBlock);
         } else {
-
-            autoWalkAvoidObstacle = false;
+            clearRoadPath();
         }
-        if (autoWalkAvoidObstacle) {
-            if (mc.player.getY() >= lastStableHeight + 1) {
-                autoWalkAvoidObstacle = false;
-            } else if (mc.player.getY() < lastStableHeight) {
-                needPathingToRoad = true;
-                autoWalkAvoidObstacle = false;
-            }
-        }
-        updateRoadPathing();
     }
 
-    private void updateRoadPathing() {
-        if (!enable.get() || lastStableHeight == Integer.MIN_VALUE || lastStableBlockTarget == null) {
+    private void initializeRoute(BlockPos currentLandingBlock) {
+        int groundY = currentLandingBlock != null
+                ? currentLandingBlock.getY()
+                : BlockPos.ofFloored(mc.player.getPos().add(0.0D, -0.1D, 0.0D)).getY();
+        float yaw = mc.player.getYaw();
+        if (axisStrict.get()) {
+            yaw = axis(yaw);
+            PlayerStateManager.setPlayerYawSafe(mc.player, yaw);
+        }
+        route = new Route(
+                mc.player.getPos().withAxis(Direction.Axis.Y, groundY + 1.0D),
+                EntityUtils.pitchYawToRotation(0.0F, yaw));
+        routeSafeTarget = null;
+    }
+
+    private boolean hasReachedDestination(Vec3d playerPosition) {
+        OptionalPrimitive<Pos3> target = destination.get();
+        if (!target.isPresent()) return false;
+        Pos3 position = target.getValue();
+        Vec3d targetProjection = route.project(new Vec3d(position.x(), position.y(), position.z()));
+        return playerPosition.subtract(targetProjection).dotProduct(route.direction()) >= 0.0D;
+    }
+
+    private void updateRouteRecovery(Vec3d routeProjection, BlockPos currentLandingBlock) {
+        if (!enable.get() || currentLandingBlock == null) {
             clearRoadPath();
             return;
         }
-        if (!needPathingToRoad && mc.player.getY() < lastStableHeight) {
-            needPathingToRoad = true;
+        int routeGroundY = BlockPos.ofFloored(route.origin()).getY() - 1;
+        if (currentLandingBlock.getY() == routeGroundY) {
+            routeSafeTarget = null;
+            clearRoadPath();
+            return;
         }
-        if (!needPathingToRoad) return;
 
-        workThisTick = false;
-        autoWalkAvoidObstacle = false;
-        if (currentLandingBlock != null
-                && currentLandingBlock.getY() >= lastStableHeight
-                && new GoalNearBlockPos(lastStableBlockTarget).isInGoal(mc.player.getPos())) {
+        if (mc.player.isOnGround()) {
+            routeSafeTarget = findSafeRouteTarget(routeProjection);
+        }
+        if (routeSafeTarget == null) {
+            clearRoadPath();
+            return;
+        }
+        if (new GoalNearBlockPos(routeSafeTarget).isInGoal(mc.player.getPos())) {
+            routeSafeTarget = null;
             clearRoadPath();
             return;
         }
@@ -378,10 +398,65 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
             clearRoadPath();
             return;
         }
+
+        workThisTick = false;
         if (!BaritoneHooks.getInstance().isBaritoneGoalPathingActive()) {
-            BaritoneHooks.getInstance().setBaritoneCurrentGoal(new GoalNearBlockPos(lastStableBlockTarget));
+            BaritoneHooks.getInstance().setBaritoneCurrentGoal(new GoalNearBlockPos(routeSafeTarget));
             ownsRoadPath = true;
         }
+    }
+
+    private BlockPos findSafeRouteTarget(Vec3d routeProjection) {
+        if (routeSafeTarget != null && hasSafeRouteFloor(routeSafeTarget.toBottomCenterPos())) {
+            return routeSafeTarget;
+        }
+        for (double distance = 0.0D; distance <= ROUTE_SEARCH_DISTANCE; distance += ROUTE_SEARCH_STEP) {
+            Vec3d candidate = routeProjection.add(route.direction().multiply(distance));
+            BlockPos candidateTarget = BlockPos.ofFloored(candidate);
+            if (hasSafeRouteFloor(candidateTarget.toBottomCenterPos())) {
+                return candidateTarget;
+            }
+        }
+        return null;
+    }
+
+    private boolean hasSafeRouteFloor(Vec3d feetPosition) {
+        var playerBox = mc.player.dimensions.getBoxAt(feetPosition);
+        if (CollisionUtil.isBoxCollided(mc.world, mc.player, playerBox)) return false;
+
+        int supportY = BlockPos.ofFloored(feetPosition).getY() - 1;
+        int minBlockX = BlockPos.ofFloored(playerBox.minX, feetPosition.y, feetPosition.z)
+                .getX();
+        int maxBlockX = BlockPos.ofFloored(playerBox.maxX, feetPosition.y, feetPosition.z)
+                .getX();
+        int minBlockZ = BlockPos.ofFloored(feetPosition.x, feetPosition.y, playerBox.minZ)
+                .getZ();
+        int maxBlockZ = BlockPos.ofFloored(feetPosition.x, feetPosition.y, playerBox.maxZ)
+                .getZ();
+        for (int x = minBlockX; x <= maxBlockX; ++x) {
+            for (int z = minBlockZ; z <= maxBlockZ; ++z) {
+                BlockPos supportPos = new BlockPos(x, supportY, z);
+                var shape = mc.world.getBlockState(supportPos).getCollisionShape(mc.world, supportPos);
+                for (var collisionBox : shape.getBoundingBoxes()) {
+                    var worldBox = collisionBox.offset(supportPos);
+                    if (Math.abs(worldBox.maxY - feetPosition.y) < 0.05D
+                            && worldBox.maxX > playerBox.minX
+                            && worldBox.minX < playerBox.maxX
+                            && worldBox.maxZ > playerBox.minZ
+                            && worldBox.minZ < playerBox.maxZ) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private void clearRoute() {
+        lineCollector.clear();
+        clearRoadPath();
+        route = null;
+        routeSafeTarget = null;
     }
 
     private void clearRoadPath() {
@@ -389,7 +464,6 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
             BaritoneHooks.getInstance().cancelBaritone();
         }
         ownsRoadPath = false;
-        needPathingToRoad = false;
     }
 
     private float axis(float currentYaw) {
@@ -407,16 +481,11 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
         return diff <= 10 ? nearest : yaw;
     }
 
-    boolean lastOnGround = false;
-
     boolean lastFallFly = false;
 
     @Override
     public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
         var re = PlayerInputUtils.of(mc.player);
-        if (autoWalkAvoidObstacle) {
-            re.jump(true).sprint(true).forward(true).sneak(false).applyInput(mc.player);
-        }
         if (workThisTick) {
             if (mc.player.isOnGround()) {
                 re.jump(true).sprint(true).forward(true).sneak(sneak.get()).applyInput(mc.player);
@@ -445,7 +514,6 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
             flushImmediately();
             ;
         }
-        lastOnGround = mc.player.isOnGround();
         lastFallFly = mc.player.isFallFlying();
     }
 
