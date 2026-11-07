@@ -393,7 +393,6 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
     }
 
     private static final class NoopVertexConsumer implements VertexConsumer {
-        private static final NoopVertexConsumer INSTANCE = new NoopVertexConsumer();
 
         @Override
         public VertexConsumer vertex(float x, float y, float z) {
@@ -445,7 +444,7 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
 
         @Override
         public VertexConsumer getBuffer(RenderLayer layer) {
-            return NoopVertexConsumer.INSTANCE;
+            return new NoopVertexConsumer();
         }
 
         @Override
@@ -468,7 +467,7 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
         @Override
         public VertexConsumer getBuffer(RenderLayer layer) {
             if (!layer.isOutline() && layer.getAffectedOutline().isEmpty()) {
-                return NoopVertexConsumer.INSTANCE;
+                return new NoopVertexConsumer();
             }
             return delegate.getBuffer(layer);
         }
@@ -489,7 +488,7 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
 
         @Override
         public VertexConsumer getBuffer(RenderLayer layer) {
-            return NoopVertexConsumer.INSTANCE;
+            return new NoopVertexConsumer();
         }
 
         @Override

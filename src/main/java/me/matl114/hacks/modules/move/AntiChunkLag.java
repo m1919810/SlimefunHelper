@@ -114,7 +114,7 @@ public class AntiChunkLag extends BaseModule implements LegalMovementManager.Mov
                         }
                     }
                     if (hasUnloaded) {
-                        movementManagerEvent.context.playerStatus.restorePos();
+                        movementManagerEvent.context.resetPos();
                         FloatingUtils.INSTANCE.setGrimFloatingTick(true);
                         // fix armorGlide
                         if (mc.player.isFallFlying()) {

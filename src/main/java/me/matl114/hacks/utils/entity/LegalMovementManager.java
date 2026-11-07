@@ -22,17 +22,14 @@ public class LegalMovementManager {
     boolean moveFix = false;
 
     @Getter
-    boolean resetPos = false;
-
-    @Getter
     boolean resetRot = false;
 
     public void markForMoveFix() {
         moveFix = true;
     }
 
-    public void markForResetPos() {
-        resetPos = true;
+    public void resetPos() {
+        playerStatus.restorePos();
     }
 
     public void markForResetRot() {
@@ -117,7 +114,6 @@ public class LegalMovementManager {
         this.playerStatus = new EntityMovementStatus<>(args);
         this.currentTickEnableHacks = new ArrayList<>();
         this.importantRotationStatePreserve = null;
-        this.resetPos = false;
         this.resetRot = false;
         this.moveFix = false;
         // start new tick, removing contents and replace with new
@@ -219,13 +215,13 @@ public class LegalMovementManager {
                 this.hacks.remove(hack);
             }
         }
-        if (resetPos) {
-            playerStatus.restorePos();
-        }
+        return;
+    }
+
+    public void postTickEntities() {
         if (resetRot) {
             playerStatus.restoreRotation();
         }
-        return;
     }
 
     // functions:
