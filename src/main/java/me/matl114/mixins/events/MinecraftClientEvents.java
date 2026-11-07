@@ -7,6 +7,7 @@ import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import java.io.File;
 import java.util.Objects;
+import me.matl114.accessors.events.ClientPlayerEntityAccess;
 import me.matl114.events.Event;
 import me.matl114.events.GlobalEventVars;
 import me.matl114.events.Listener;
@@ -472,5 +473,18 @@ public abstract class MinecraftClientEvents {
         Listener.getPlayerScrollHotBar().handleValue(hotBar);
         if (hotBar.isCancelled()) return;
         original.call(instance, (int) hotBar.context());
+    }
+
+    @Inject(
+            method = "tick",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/client/world/ClientWorld;tickBlockEntities()V",
+                            shift = At.Shift.BEFORE))
+    private void onPostPlayerUpdate(CallbackInfo ci) {
+        if (this.player != null) {
+            ClientPlayerEntityAccess.of(this.player).getLegalMovementManager().postTickEntities();
+        }
     }
 }

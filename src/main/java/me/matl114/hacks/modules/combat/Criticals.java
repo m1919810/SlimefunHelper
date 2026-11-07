@@ -442,7 +442,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
                     boolean realOnGround = moveDownWards.stream().anyMatch(pos -> !moveablePoses.contains(pos));
                     if (realOnGround) {
                         double yLevel = mc.player.getY() + jumpMin * 4;
-                        movementManagerEvent.context.playerStatus.restorePos();
+                        movementManagerEvent.context.resetPos();
                         mc.player.setPosition(mc.player.getPos().withAxis(Direction.Axis.Y, yLevel));
                         mc.player.setOnGround(false);
                         lastShiftUp = true;
@@ -454,7 +454,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
                             break how_to_apply;
                         } else if (lastShiftUp) {
                             lastShiftUp = false;
-                            movementManagerEvent.context.playerStatus.restorePos();
+                            movementManagerEvent.context.resetPos();
                             mc.player.setPosition(mc.player.getPos().add(0, -jumpMin, 0));
                             mc.player.setOnGround(false);
                             break how_to_apply;
@@ -521,7 +521,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
 
         if (fakeMovementThisTick) {
             movementManagerEvent.cancel();
-            movementManagerEvent.context.playerStatus.restorePos();
+            movementManagerEvent.context.resetPos();
             fakeMovementThisTick = false;
         }
     }
