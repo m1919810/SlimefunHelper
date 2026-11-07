@@ -264,7 +264,7 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
         @Override
         public VertexConsumer getBuffer(RenderLayer layer) {
             if (itemCaptureDepth > 0 || layer.getDrawMode() != VertexFormat.DrawMode.QUADS) {
-                return NoopVertexConsumer.INSTANCE;
+                return new NoopVertexConsumer();
             }
             return buffers.computeIfAbsent(
                     layer,
@@ -361,7 +361,6 @@ public abstract class EntityModelCollector implements RenderCollector<Entity> {
     }
 
     private static final class NoopVertexConsumer implements VertexConsumer {
-        private static final NoopVertexConsumer INSTANCE = new NoopVertexConsumer();
 
         @Override
         public VertexConsumer vertex(float x, float y, float z) {
