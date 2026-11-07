@@ -151,7 +151,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
 
         if (workGrimFloatingThisTick()) {
             movementManagerEvent.cancel();
-            movementManagerEvent.context.playerStatus.restorePos();
+            movementManagerEvent.context.resetPos();
             // also reset onground status to avoid false flag
             boolean useOnGroundFloat = ((onGroundFloat.get()) || (forceOnGroundVia1205));
             if (useOnGroundFloat) {

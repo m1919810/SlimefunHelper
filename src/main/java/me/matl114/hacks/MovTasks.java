@@ -1092,7 +1092,7 @@ public class MovTasks {
                             Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
                         if (resetThisTick) {
                             resetThisTick = false;
-                            movementManagerEvent.context().playerStatus.restorePos();
+                            movementManagerEvent.context().resetPos();
                             movementManagerEvent.context().playerStatus.restoreOnGround();
                         }
                         return true;

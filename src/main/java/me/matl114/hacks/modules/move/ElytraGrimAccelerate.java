@@ -201,7 +201,7 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
                 currentWorking = false;
             }
             if (currentWorking) {
-                sendMovementPacketEvent.context().playerStatus.restorePos();
+                sendMovementPacketEvent.context().resetPos();
                 sendMovementPacketEvent.cancel();
                 if (storedPacket != null) {
                     storedPacket = null;
