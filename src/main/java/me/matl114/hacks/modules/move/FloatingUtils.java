@@ -181,7 +181,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
     }
 
     @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+    public void postModify(Event<LegalMovementManager> movementManagerEvent) {
         forceFloatingThisTick = false;
         forceOnGroundVia1205 = false;
 
@@ -205,6 +205,5 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
         }
         forceSilentThisTick = false;
         forceNotSilentThisTick = false;
-        return true;
     }
 }

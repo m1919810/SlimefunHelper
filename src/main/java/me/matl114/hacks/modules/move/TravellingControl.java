@@ -195,13 +195,12 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
     }
 
     @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+    public void postModify(Event<LegalMovementManager> movementManagerEvent) {
         if (travelTask != null
                 && !travelTask.shouldNotRun()
                 && travelDelegate instanceof LegalMovementManager.MovementModifier movementModifier) {
-            movementModifier.postModify(movementManagerEvent, enabledThisTick);
+            movementModifier.postModify(movementManagerEvent);
         }
-        return true;
     }
 
     public static enum Type implements ConfigEnum {
@@ -780,11 +779,10 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
         }
 
         @Override
-        public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-            if (ti == null || ti.shouldNotRun()) return true;
-            if (!handleLowHeightExit()) return true;
+        public void postModify(Event<LegalMovementManager> movementManagerEvent) {
+            if (ti == null || ti.shouldNotRun()) return;
+            if (!handleLowHeightExit()) return;
             handleFinishCheck();
-            return true;
         }
 
         protected abstract void handleFinishCheck();

@@ -480,13 +480,11 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     Boolean modifyNoGravity = null;
 
     @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+    public void postModify(Event<LegalMovementManager> movementManagerEvent) {
         if (modifyNoGravity != null) {
             movementManagerEvent.context().playerStatus.entity.setNoGravity(modifyNoGravity);
             modifyNoGravity = null;
         }
-
-        return true;
     }
 
     public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {

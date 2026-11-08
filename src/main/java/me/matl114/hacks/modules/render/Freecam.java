@@ -219,10 +219,9 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
     }
 
     @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+    public void postModify(Event<LegalMovementManager> movementManagerEvent) {
         if (camera != null && mc.getCameraEntity() == movementManagerEvent.context.playerStatus.entity) {
             mc.setCameraEntity(camera);
         }
-        return true;
     }
 }

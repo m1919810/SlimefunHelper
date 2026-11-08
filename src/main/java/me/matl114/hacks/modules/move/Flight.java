@@ -355,14 +355,13 @@ public class Flight extends BaseModule implements LegalMovementManager.MovementM
     }
 
     @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+    public void postModify(Event<LegalMovementManager> movementManagerEvent) {
         // do not restore, because client need this to calculate mining speed
         //        if(lastTimeModifyOnGround > 0){
         //            movementManagerEvent.drawContext.playerStatus.entity.setOnGround(lastTimeModifyOnGround == 1);
         //            lastTimeModifyOnGround = 0;
         //        }
         lastTimeModifyOnGround = 0;
-        return true;
     }
 
     // server constant

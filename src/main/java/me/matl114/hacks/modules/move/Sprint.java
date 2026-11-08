@@ -181,12 +181,11 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     }
 
     @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+    public void postModify(Event<LegalMovementManager> movementManagerEvent) {
         if (fakeSprintThisTick) {
             movementManagerEvent.context.playerStatus.entity.setSprinting(true);
             fakeSprintThisTick = false;
         }
-        return true;
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
