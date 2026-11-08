@@ -397,11 +397,6 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
         }
     }
 
-    @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-        return true;
-    }
-
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
         if (event.context().getValue().isOptionPreset()) return;
         ModulePreset preset = event.context().getValue();

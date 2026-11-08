@@ -132,7 +132,7 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
     }
 
     @Override
-    public boolean postModify(Event<LegalMovementManager> event, boolean enabledThisTick) {
+    public void postModify(Event<LegalMovementManager> event) {
         RotationRequest request = currentTickRequest;
         currentTickRequest = null;
         if (request != null) {
@@ -144,7 +144,6 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
                 currentInQueue = false;
             });
         }
-        return true;
     }
 
     private void clearRequests() {

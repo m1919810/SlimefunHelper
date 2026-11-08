@@ -579,13 +579,12 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
     }
 
     @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+    public void postModify(Event<LegalMovementManager> movementManagerEvent) {
         if (storedRotation1205 != null) {
             PlayerStateManager.setPlayerRotationSafe(mc.player, storedRotation1205);
             LegacySnapRotManager.INSTANCE.snapAt(storedRotation1205, false);
             storedRotation1205 = null;
         }
-        return true;
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> eventModule) {

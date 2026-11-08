@@ -200,6 +200,17 @@ public class LegalMovementManager {
         }
         Event<LegalMovementManager> movementManagerEvent = new Event<>(this, true, false);
         // in case someone add a task during a destroying postModify
+        for (var hack : new ArrayList<>(this.hacks)) {
+            hack.postModify(movementManagerEvent);
+        }
+        return;
+    }
+
+    public void postTickEntities() {
+        if (this.playerStatus == null) {
+            return;
+        }
+        Event<LegalMovementManager> movementManagerEvent = new Event<>(this, false, false);
         Iterator<MovementModifier> iter = new ArrayList<>(this.hacks).iterator();
         int goingCurrentTickEnables = 0;
         while (iter.hasNext()) {
@@ -210,15 +221,11 @@ public class LegalMovementManager {
             if (enabled) {
                 goingCurrentTickEnables += 1;
             }
-            if (!hack.postModify(movementManagerEvent, enabled)) {
+            if (!hack.postTick(movementManagerEvent, enabled)) {
                 iter.remove();
                 this.hacks.remove(hack);
             }
         }
-        return;
-    }
-
-    public void postTickEntities() {
         if (resetRot) {
             playerStatus.restoreRotation();
         }
@@ -270,11 +277,10 @@ public class LegalMovementManager {
 
         default void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {}
 
-        // return for removal after player tick
-        // return if this hack is still valid, if return false, we will remove it from hack list
-        // tick both
-        //
-        default boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+        default void postModify(Event<LegalMovementManager> movementManagerEvent) {}
+
+        // return false to remove this modifier after the player tick
+        default boolean postTick(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
             return true;
         }
 
@@ -342,8 +348,13 @@ public class LegalMovementManager {
         }
 
         @Override
-        public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-            return delegate.get().postModify(movementManagerEvent, enabledThisTick);
+        public void postModify(Event<LegalMovementManager> movementManagerEvent) {
+            delegate.get().postModify(movementManagerEvent);
+        }
+
+        @Override
+        public boolean postTick(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+            return delegate.get().postTick(movementManagerEvent, enabledThisTick);
         }
 
         @Override
@@ -440,9 +451,16 @@ public class LegalMovementManager {
         }
 
         @Override
-        public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+        public void postModify(Event<LegalMovementManager> movementManagerEvent) {
             for (var re : pipeline) {
-                re.postModify(movementManagerEvent, enabledThisTick);
+                re.postModify(movementManagerEvent);
+            }
+        }
+
+        @Override
+        public boolean postTick(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+            for (var re : pipeline) {
+                re.postTick(movementManagerEvent, enabledThisTick);
             }
             return true;
         }
