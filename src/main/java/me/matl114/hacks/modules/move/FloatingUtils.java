@@ -65,7 +65,6 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
 
     boolean forceFloatingThisTick = false;
     boolean forceOnGroundVia1205 = false;
-    boolean useSnapPacket = false;
 
     public void setGrimFloatingTick(boolean t) {
         forceFloatingThisTick = t;
@@ -81,10 +80,6 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
 
     public void setSendPacketIgnoreRotation(boolean t) {
         forceNotSilentThisTick = t;
-    }
-
-    public void setUseSnapRotPacket(boolean t) {
-        useSnapPacket = t;
     }
 
     @Override
@@ -170,7 +165,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
                             mc.player.getPitch(),
                             mc.player.isOnGround(),
                             mc.player.horizontalCollision);
-                    if (useSnapPacket) {
+                    if (useSnap.get()) {
                         storedPacket = LegacySnapRotManager.INSTANCE.createAsSnap(storedPacket);
                     }
                 }
@@ -182,10 +177,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
 
     @Override
     public void postModify(Event<LegalMovementManager> movementManagerEvent) {
-        forceFloatingThisTick = false;
-        forceOnGroundVia1205 = false;
 
-        useSnapPacket = useSnap.get();
         if (storedPacket != null) {
             // optimize current, only if rotation different, or has No Position packet, send duplicate packet
             if (!forceSilentThisTick) {
@@ -203,7 +195,19 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
             // Listener.sendPacketNoEvents(storedPacket);
             storedPacket = null;
         }
+    }
+
+    @Override
+    public boolean postTick(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+        if (workGrimFloatingThisTick()) {
+            // revert the collision/velocity that other entities give to player
+            movementManagerEvent.context.playerStatus.restore();
+            movementManagerEvent.context.playerStatus.restoreVelocity();
+        }
+        forceFloatingThisTick = false;
+        forceOnGroundVia1205 = false;
         forceSilentThisTick = false;
         forceNotSilentThisTick = false;
+        return true;
     }
 }

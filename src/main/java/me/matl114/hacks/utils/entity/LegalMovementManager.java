@@ -5,7 +5,6 @@ import java.util.*;
 import java.util.function.Supplier;
 import lombok.Getter;
 import me.matl114.events.Event;
-import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -63,20 +62,6 @@ public class LegalMovementManager {
         }
         importantRotationStatePreserve.addLast(Pair.of(
                 hasPitch ? playerStatus.entity.getPitch() : null, hasYaw ? playerStatus.entity.getYaw() : null));
-    }
-    // this should not be called
-    protected void popImportantRotation(boolean apply) {
-        if (importantRotationStatePreserve != null) {
-            var entry = importantRotationStatePreserve.removeLast();
-            if (apply && entry != null) {
-                if (entry.getFirst() != null) {
-                    EntityUtils.setEntityPitchSafe(playerStatus.entity, entry.getFirst());
-                }
-                if (entry.getSecond() != null) {
-                    PlayerStateManager.setPlayerYawSafe(playerStatus.entity, entry.getSecond());
-                }
-            }
-        }
     }
 
     public void addMovementModifier(MovementModifier movementModifier) {
@@ -284,6 +269,8 @@ public class LegalMovementManager {
             return true;
         }
 
+        default void postTick(Event<LegalMovementManager> movementManagerEvent) {}
+
         default int compareTo(MovementModifier var1) {
             return this.priority() - var1.priority();
         }
@@ -355,6 +342,11 @@ public class LegalMovementManager {
         @Override
         public boolean postTick(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
             return delegate.get().postTick(movementManagerEvent, enabledThisTick);
+        }
+
+        @Override
+        public void postTick(Event<LegalMovementManager> movementManagerEvent) {
+            delegate.get().postTick(movementManagerEvent);
         }
 
         @Override

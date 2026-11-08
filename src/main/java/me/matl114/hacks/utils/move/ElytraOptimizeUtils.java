@@ -49,7 +49,7 @@ public class ElytraOptimizeUtils {
             }
             case V4 -> {
                 if (!ViaFabricPlusHooks.isSupportDupRot()) {
-                    calculateBestV3ClimbingSpeed(pitch, yaw);
+                    return calculateBestV3ClimbingSpeed(pitch, yaw);
                 }
                 return calculateBestV4ClimbingSpeed(pitch, yaw);
             }
@@ -68,7 +68,7 @@ public class ElytraOptimizeUtils {
             }
             case V5_PULLUP_ONLY -> {
                 if (!ViaFabricPlusHooks.isSupportDupRot()) {
-                    calculateBestV3GreedyClimbingSpeed();
+                    return calculateBestV3GreedyClimbingSpeed();
                 }
                 return calculateBestV5ClimbingSpeed(pitch, yaw);
             }
