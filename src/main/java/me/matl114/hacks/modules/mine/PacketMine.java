@@ -75,7 +75,7 @@ public class PacketMine extends BaseModule {
 
     public final DoubleRef mineThreshold = builder(packetMine.add("mine-threshold"), DoubleRef.TYPE)
             .defaultValue(0.7)
-            .validator(Configs.doubleRange(-0.0001F, 1.0001F))
+            .validator(Configs.doubleRange(0.0F, 1.0001F))
             .build();
 
     public final FlagRef autoTool = flagBuilder(packetMine.add("auto-pickaxe")).build();
@@ -249,7 +249,7 @@ public class PacketMine extends BaseModule {
                                     && currentItemSlot.index() != InventoryUtils.getSelectedSlot()
                             ? 1
                             : 0;
-                    if (canMine(blockState, currentTool, extraTick)) {
+                    if (tickMine(blockState, currentTool, extraTick)) {
                         progress = PlayerInteractionAccess.of(mc.interactionManager)
                                 .predictCurrentMiningProgressWithTool(currentTool, extraTick);
                         Event<BlockBreak> eventPre = new Event<>(
@@ -384,25 +384,19 @@ public class PacketMine extends BaseModule {
                 && (!whiteList.get() || !whiteListRegex.get().test(state.getBlock()));
     }
 
-    public boolean canMine(BlockState state, ItemStack tool) {
-        int extraTick = autoTool.get() && ServerFeature.INSTANCE.attributeSwap.get() ? 1 : 0;
-        return canMine(state, tool, extraTick);
-    }
-
-    private boolean canMine(BlockState state, ItemStack tool, int extraTick) {
+    private boolean tickMine(BlockState state, ItemStack tool, int extraTick) {
         // do not mine liquid, that's a disaster
         // do not mine air, shit
         if (isMineable(state)) {
-            if (mineThreshold.get() > 0) {
-                var access = PlayerInteractionAccess.of(mc.interactionManager);
-                float speed = access.predictCurrentMiningProgressWithTool(tool, extraTick);
-                if (groundDeceive.get() && !mc.player.isOnGround()) {
-                    speed *= 5;
-                }
-                return speed > Math.min(0.98, mineThreshold.get());
+            var access = PlayerInteractionAccess.of(mc.interactionManager);
+            float speed = access.predictCurrentMiningProgressWithTool(tool, extraTick);
+            if (groundDeceive.get() && !mc.player.isOnGround()) {
+                speed *= 5;
             }
-            return true;
+            MineExtra.INSTANCE.sumitProgress(speed);
+            return speed > Math.min(0.98, mineThreshold.get());
         } else {
+            MineExtra.INSTANCE.sumitProgress(0.0F);
             return false;
         }
     }
