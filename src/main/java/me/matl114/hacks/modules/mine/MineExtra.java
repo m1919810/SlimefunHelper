@@ -30,13 +30,14 @@ import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.enums.LegalMiningMode;
+import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.ColorUtils;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.collections.IndexEntry;
+import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
@@ -285,6 +286,8 @@ public class MineExtra extends BaseModule {
         registerListener(Listener.getPreGameTick(), this::onGrimCooldownResetPackets);
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onPlayerMove);
         registerListener(Listener.getPreGameTick(), this::onTickGhostHandFailBreak);
+        registerListener(Listener.getPreTick(), this::onPreUpdateMineRender, Integer.MIN_VALUE + 100);
+        registerListener(Listener.getPostTick(), this::onPostUpdateMineRender);
     }
 
     private void onFailBreakBlockUpdate(Event<BlockUpdate> event) {
@@ -558,7 +561,7 @@ public class MineExtra extends BaseModule {
 
     public int lastTickGhostHandFailBreak = 0;
 
-    public boolean canMineFailBreak(BlockState state, ItemStack tool, boolean groundDeceive) {
+    private boolean tickMineFailBreak(BlockState state, ItemStack tool, boolean groundDeceive) {
         // do not mine liquid, that's a disaster
         // do not mine air, shit
         if (state.getBlock().getHardness() >= 0.0F && !state.isLiquid() && !state.isAir()) {
@@ -567,8 +570,10 @@ public class MineExtra extends BaseModule {
             if (groundDeceive && !mc.player.isOnGround()) {
                 speed *= 5;
             }
+            sumitFailBreakProgress(speed);
             return speed > 0.99;
         } else {
+            sumitFailBreakProgress(0.0F);
             return false;
         }
     }
@@ -604,7 +609,7 @@ public class MineExtra extends BaseModule {
         BlockState blockState = mc.world.getBlockState(failPos);
         IndexEntry<ItemStack> currentItemSlot = getBestMiningToFor(blockState, mode);
         ItemStack currentTool = currentItemSlot.val();
-        if (canMineFailBreak(blockState, currentTool, groundDeceive)) {
+        if (tickMineFailBreak(blockState, currentTool, groundDeceive)) {
             // force delay, because it might save some packets
             if (currentTickCallback != null) {
                 InvExtra.INSTANCE.pushNextTickGhostHandCallback(currentTickCallback);
@@ -901,98 +906,112 @@ public class MineExtra extends BaseModule {
         return true;
     }
 
+    Pair<BlockPos, Float> currentMiningProgressTick = null;
+    Pair<BlockPos, Float> currentFailMiningProgressTick = null;
+    RenderCollector<Box> mineBoxCollector = RenderCollectors.createBoxCollector(false, true, false);
+    RenderCollector<Box> mineFrameCollector = RenderCollectors.createBoxCollector(true, false, false);
+
+    private void onPreUpdateMineRender() {
+
+        currentMiningProgressTick = null;
+    }
+
+    public void sumitProgress(float progress) {
+        var access = PlayerInteractionAccess.of(mc.interactionManager);
+        if (access != null && access.getCurrentMiningPos() != null) {
+            currentMiningProgressTick = Pair.of(access.getCurrentMiningPos(), progress);
+        }
+    }
+
+    public void sumitFailBreakProgress(float progress) {
+        var access = PlayerInteractionAccess.of(mc.interactionManager);
+        if (access != null && access.getCurrentFailBreakPos() != null) {
+            currentFailMiningProgressTick = Pair.of(access.getCurrentFailBreakPos(), progress);
+        }
+    }
+
+    private void onPostUpdateMineRender() {
+        mineBoxCollector.clear();
+        mineFrameCollector.clear();
+        if (checkNull()) return;
+        if (mineRender.get()) {
+            var access = PlayerInteractionAccess.of(mc.interactionManager);
+            Pair<BlockPos, Float> currentMine;
+            Pair<BlockPos, Float> currentFailMine;
+            if (currentMiningProgressTick != null
+                    && Objects.equals(currentMiningProgressTick.getFirst(), access.getCurrentMiningPos())) {
+                currentMine = currentMiningProgressTick;
+            } else if (shouldRenderMine()) {
+                BlockPos blockPos = access.getCurrentMiningPos();
+                BlockState state = mc.world.getBlockState(blockPos);
+                var tool = getGhostHandMiningTool(state);
+                float progress = PlayerInteractionAccess.of(mc.interactionManager)
+                        .predictCurrentMiningProgressWithTool(tool.val(), 1);
+                currentMine = Pair.of(blockPos, progress);
+            } else {
+                currentMine = null;
+            }
+            if (currentFailMiningProgressTick != null
+                    && Objects.equals(currentFailMiningProgressTick.getFirst(), access.getCurrentFailBreakPos())) {
+                currentFailMine = currentFailMiningProgressTick;
+            } else if (access.getCurrentFailBreakPos() != null) {
+                BlockPos blockPos = access.getCurrentFailBreakPos();
+                float progressFail =
+                        PlayerInteractionAccess.of(mc.interactionManager).getFailBreakMiningProgress();
+                currentFailMine = Pair.of(blockPos, progressFail);
+            } else {
+                currentFailMine = null;
+            }
+            if (currentMine != null
+                    && mc.player
+                                    .getPos()
+                                    .squaredDistanceTo(currentMine.getFirst().toCenterPos())
+                            < 40000) {
+                sumitMiningRender(currentMine, frameColor);
+            }
+            if (currentFailMine != null
+                    && mc.player
+                                    .getPos()
+                                    .squaredDistanceTo(
+                                            currentFailMine.getFirst().toCenterPos())
+                            < 40000
+                    && !Objects.equals(
+                            currentFailMine.getFirst(), currentMine != null ? currentMine.getFirst() : null)) {
+                sumitMiningRender(currentFailMine, doubleBreakColor);
+            }
+        }
+    }
+
+    private void sumitMiningRender(Pair<BlockPos, Float> currentFailMine, NBTRef<WrapColor> doubleBreakColor) {
+        mineFrameCollector.submit(
+                new Box(currentFailMine.getFirst()), doubleBreakColor.get().withAlpha(255));
+        float progress = currentFailMine.getSecond();
+        if (progress > 0.0F) {
+            Box box;
+            BlockPos blockPos = currentFailMine.getFirst();
+            BlockState state = mc.world.getBlockState(blockPos);
+            if (state.isAir()) {
+                box = new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
+            } else {
+                VoxelShape shape = state.getOutlineShape(mc.world, blockPos);
+                box = shape.isEmpty() ? new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0) : shape.getBoundingBox();
+            }
+            Vec3d vec3 = box.getMaxPos().subtract(box.getMinPos()).multiply(0.5);
+
+            Vec3d vec3d = Vec3d.of(blockPos).add(box.getCenter());
+            float clamped = MathHelper.clamp(progress, 0.0F, 1.0F);
+            mineBoxCollector.submit(
+                    new Box(vec3d.add(vec3.multiply(-clamped)), vec3d.add(vec3.multiply(clamped))),
+                    progressColor.get().withAlpha(64));
+        }
+    }
+
     public void onRender(Event<Render3D> renderEvent) {
         if (mineRender.get()) {
-
             RenderUtils.startDrawVirtual(renderEvent.context.stack());
             try {
-                if (mc.interactionManager != null && mc.player != null && mc.world != null) {
-                    BlockPos blockPos =
-                            PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos();
-                    Vec3d pos = Vec3d.of(blockPos);
-                    // 超过200格的不渲染
-                    if (mc.player.getPos().squaredDistanceTo(pos) < 40000 && shouldRenderMine()) {
-                        RenderUtils.drawOutlinedBox(
-                                renderEvent.context.stack(),
-                                pos,
-                                pos.add(1.0, 1.0, 1.0),
-                                ColorUtils.withAlpha(frameColor.get().color(), 1.0F));
-                        BlockState state = mc.world.getBlockState(blockPos);
-                        var tool = getGhostHandMiningTool(state);
-                        float progress = PlayerInteractionAccess.of(mc.interactionManager)
-                                .predictCurrentMiningProgressWithTool(tool.val(), 1);
-                        if (progress > 0.0F) {
-                            Box box;
-                            if (state.isAir()) {
-                                box = new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
-                            } else {
-                                VoxelShape shape = state.getOutlineShape(mc.world, blockPos);
-                                box = shape.isEmpty() ? new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0) : shape.getBoundingBox();
-                            }
-                            Vec3d vec3 =
-                                    box.getMaxPos().subtract(box.getMinPos()).multiply(0.5);
-
-                            Vec3d vec3d = pos.add(box.getCenter());
-                            float clamped = MathHelper.clamp(progress, 0.0F, 1.0F);
-                            RenderUtils.drawSolidBox(
-                                    renderEvent.context.stack(),
-                                    vec3d.add(vec3.multiply(-clamped)),
-                                    vec3d.add(vec3.multiply(clamped)),
-                                    ColorUtils.withAlpha(progressColor.get().color(), 0.25F));
-                        }
-                    }
-
-                    BlockPos doubleMinePos =
-                            PlayerInteractionAccess.of(mc.interactionManager).getCurrentFailBreakPos();
-                    if (doubleMinePos != null) {
-                        Vec3d doubleMineVec = Vec3d.of(doubleMinePos);
-                        if (mc.player.getPos().squaredDistanceTo(doubleMineVec) < 40000
-                                && (!Objects.equals(doubleMineVec, pos) || !shouldRenderMine())) {
-                            float progressFail;
-                            if (lastTickGhostHandFailBreak > Tasks.getTick() - 2) {
-                                progressFail = PlayerInteractionAccess.of(mc.interactionManager)
-                                        .predictFailMiningProgressWithTool(
-                                                getBestMiningToFor(
-                                                                mc.world.getBlockState(doubleMinePos),
-                                                                GhostHandMode.INV_SWAP)
-                                                        .val(),
-                                                0);
-                            } else {
-                                progressFail = PlayerInteractionAccess.of(mc.interactionManager)
-                                        .getFailBreakMiningProgress();
-                            }
-
-                            RenderUtils.drawOutlinedBox(
-                                    renderEvent.context.stack(),
-                                    doubleMineVec,
-                                    doubleMineVec.add(1.0, 1.0, 1.0),
-                                    ColorUtils.withAlpha(doubleBreakColor.get().color(), 1.0F));
-                            if (progressFail > 0.0F) {
-                                BlockState state = mc.world.getBlockState(doubleMinePos);
-                                Box box;
-                                if (state.isAir()) {
-                                    box = new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
-                                } else {
-                                    VoxelShape shape = state.getOutlineShape(mc.world, doubleMinePos);
-                                    box = shape.isEmpty()
-                                            ? new Box(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)
-                                            : shape.getBoundingBox();
-                                }
-                                Vec3d vec3 = box.getMaxPos()
-                                        .subtract(box.getMinPos())
-                                        .multiply(0.5);
-
-                                Vec3d vec3d = doubleMineVec.add(box.getCenter());
-                                float clamped = MathHelper.clamp(progressFail, 0.0F, 1.0F);
-                                RenderUtils.drawSolidBox(
-                                        renderEvent.context.stack(),
-                                        vec3d.add(vec3.multiply(-clamped)),
-                                        vec3d.add(vec3.multiply(clamped)),
-                                        ColorUtils.withAlpha(progressColor.get().color(), 0.25F));
-                            }
-                        }
-                    }
-                }
+                mineFrameCollector.render3D(renderEvent.context.stack(), renderEvent.context.partialTicks());
+                mineBoxCollector.render3D(renderEvent.context.stack(), (((renderEvent.context.partialTicks()))));
             } finally {
                 RenderUtils.stopDrawVirtual(renderEvent.context.stack());
             }

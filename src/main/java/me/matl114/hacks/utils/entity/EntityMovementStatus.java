@@ -52,8 +52,7 @@ public class EntityMovementStatus<T extends Entity> {
         this.entity.collidedSoftly = collidedSoftly;
         this.restorePosRot();
         this.restoreOnGround();
-
-        this.entity.setVelocity(vec);
+        this.restoreVelocity();
         this.entity.speed = speed;
         this.entity.distanceTraveled = distanceTraveled;
         this.entity.setSprinting(sprinting);
@@ -82,6 +81,10 @@ public class EntityMovementStatus<T extends Entity> {
         entity.touchingWater = touchingWater;
         entity.submergedInWater = submergedInWater;
         entity.inPowderSnow = inPowderSnow;
+    }
+
+    public void restoreVelocity() {
+        this.entity.setVelocity(vec);
     }
 
     public Vec3d calculateLastMoveVelocity(int forward, int sideward) {
