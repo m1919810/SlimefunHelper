@@ -392,11 +392,6 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         //        }
     }
 
-    @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-        return true;
-    }
-
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
         if (event.context().getValue().isOptionPreset()) return;
         switch (event.context.getValue()) {

@@ -850,10 +850,9 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     }
 
     @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+    public void postModify(Event<LegalMovementManager> movementManagerEvent) {
         onSendMovePostNoSlowUse(null);
         preAttackUseTick = false;
-        return true;
     }
 
     public static enum PacketSneakMode implements ConfigEnum {

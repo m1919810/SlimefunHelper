@@ -137,10 +137,4 @@ public class AntiChunkLag extends BaseModule implements LegalMovementManager.Mov
             currentMayFaceLagChunk = false;
         }
     }
-
-    @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-
-        return true;
-    }
 }

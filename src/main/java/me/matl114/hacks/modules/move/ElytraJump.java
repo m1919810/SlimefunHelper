@@ -538,10 +538,4 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
         }
         lastFallFly = mc.player.isFallFlying();
     }
-
-    @Override
-    public boolean postModify(Event<LegalMovementManager> event, boolean enableThisTick) {
-
-        return true;
-    }
 }

@@ -1088,14 +1088,12 @@ public class MovTasks {
                     }
 
                     @Override
-                    public boolean postModify(
-                            Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+                    public void postModify(Event<LegalMovementManager> movementManagerEvent) {
                         if (resetThisTick) {
                             resetThisTick = false;
                             movementManagerEvent.context().resetPos();
                             movementManagerEvent.context().playerStatus.restoreOnGround();
                         }
-                        return true;
                     }
                 });
     }
