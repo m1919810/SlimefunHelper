@@ -1306,6 +1306,7 @@ public class PlayerStateManager extends BaseModule {
         public final PlayerEntity player;
         public int lastUpdate;
         public AttributeContainer attributeSnapShot = null;
+        private ItemStack mainHandSnapshot = ItemStack.EMPTY;
         // public int popCount;
         public int protection;
         public int blastProtection;
@@ -1320,8 +1321,13 @@ public class PlayerStateManager extends BaseModule {
             return attributeSnapShot != null ? attributeSnapShot : AttributeUtils.getAttributeWith(player, Map.of());
         }
 
+        public ItemStack getMainHandSnapshot() {
+            return mainHandSnapshot;
+        }
+
         // todo: add more shit
         public void tickUpdate(PlayerEntity player) {
+            this.mainHandSnapshot = player.getMainHandStack().copy();
             AttributeContainer container = AttributeUtils.getAttributeWith(player, Map.of());
             this.attributeSnapShot = container;
             int protection = 0;

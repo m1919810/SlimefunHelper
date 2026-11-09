@@ -85,8 +85,11 @@ public class InvExtra extends BaseModule {
                 Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class),
                 this::onClientTickEnd,
                 Integer.MAX_VALUE);
-        registerListener(Listener.getPreTick(), this::onNewTick, Integer.MIN_VALUE + 1);
-        registerListener(Listener.getServerLeavePoint(), event -> postTickGhostHandCallbacks.clear());
+        registerListener(Listener.getPreTick(), this::onNewTick, Integer.MIN_VALUE + 11);
+        registerListener(Listener.getServerLeavePoint(), event -> {
+            postTickGhostHandCallbacks.clear();
+            nextTickGhostHandCallbacks.clear();
+        });
         TaskManagers.getToggleManager().register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + "keep-inv", enableKeepInv);
         TaskManagers.getTaskManager().register(TaskManagers.PREFIX_BUTTON_TASKS + "." + CLEAR_KEEP, this::clearKeep);
     }
@@ -199,6 +202,13 @@ public class InvExtra extends BaseModule {
             return true;
         }
         return false;
+    }
+
+    public boolean pushNextTickPostTickGhostHandCallback(Runnable callback) {
+        if (callback == null || callback == Runnables.doNothing()) {
+            return false;
+        }
+        return pushNextTickGhostHandCallback(() -> postTickGhostHandCallbacks.addLast(callback));
     }
 
     public boolean hasPostTickGhostHandCallback() {

@@ -7,6 +7,7 @@ import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.*;
 import me.matl114.events.Event;
+import me.matl114.events.channels.EventChannelDispatcher;
 import me.matl114.events.impl.BlockBreak;
 import me.matl114.events.impl.BlockUpdate;
 import me.matl114.events.impl.EventContainer;
@@ -42,6 +43,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
@@ -50,13 +52,19 @@ import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.*;
 import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.GameMode;
 
 public class MineExtra extends BaseModule {
     public static MineExtra INSTANCE;
+    public static final EventChannelDispatcher<BlockBreak> doubleMineBreakTick =
+            new EventChannelDispatcher<>(BlockBreak::stage);
 
     private record PendingFailBreak(int seqNum, BlockPos pos, int startBreakTick) {}
 
+    private record PredictedDoubleBreak(BlockState state, int startTick, ClientWorld world) {}
+
     private PendingFailBreak pendingFailBreak;
+    private final Map<BlockPos, PredictedDoubleBreak> cacheMap = new HashMap<>();
 
     public MineExtra() {
         super("MineExtra");
@@ -173,6 +181,11 @@ public class MineExtra extends BaseModule {
     public final FlagRef ghostHandFailBreakEatingAbort =
             flagBuilder(doubleBreakMine.add("eating-abort")).build();
 
+    public final NBTRef<OptionalPrimitive<Integer>> doubleBreakPredictDestroy = builder(
+                    doubleBreakMine.add("predict-destroy"), OptionalPrimitive.INT_TYPE)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.INT_TYPE, 5))
+            .build();
+
     public final ModulePath badPackets = fastbreak.add("packet-fix");
 
     public final FlagRef silent = flagBuilder(badPackets.add("silent-break")).build();
@@ -204,11 +217,16 @@ public class MineExtra extends BaseModule {
             flagBuilder(render.add("render-only-when-mine")).build();
 
     private IndexEntry<ItemStack> getBestMiningToFor(BlockState currentState, GhostHandMode mode) {
+        return getBestMiningToFor(currentState, mode, false);
+    }
+
+    private IndexEntry<ItemStack> getBestMiningToFor(
+            BlockState currentState, GhostHandMode mode, boolean attributeSwap) {
         IndexEntry<ItemStack> defaultEntry = InventoryUtils.getSelectedItem();
         BlockState calculatingState =
                 (currentState.isAir() || currentState.isLiquid()) ? Blocks.OBSIDIAN.getDefaultState() : currentState;
         float defaultSpeed = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
-                mc.player, calculatingState, defaultEntry.val());
+                mc.player, calculatingState, defaultEntry.val(), attributeSwap);
         float hardNess = currentState.getBlock().getHardness();
         float predictProgress = hardNess < 0 ? 0 : (defaultSpeed / hardNess);
         // consider insta break situation
@@ -223,7 +241,7 @@ public class MineExtra extends BaseModule {
                             || item.contains(DataComponentTypes.UNBREAKABLE)
                             || item.getDamage() < item.getMaxDamage() - 10) {
                         double speed = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
-                                mc.player, calculatingState, item);
+                                mc.player, calculatingState, item, attributeSwap);
                         if (speed >= defaultSpeed) {
                             return speed;
                         } else {
@@ -239,16 +257,21 @@ public class MineExtra extends BaseModule {
     }
 
     public IndexEntry<ItemStack> getGhostHandMiningTool(BlockState currentState) {
+        return getGhostHandMiningTool(currentState, false);
+    }
+
+    public IndexEntry<ItemStack> getGhostHandMiningTool(BlockState currentState, boolean attributeSwap) {
         IndexEntry<ItemStack> defaultEntry = InventoryUtils.getSelectedItem();
         if (!ghostHandMine.get()) {
             return defaultEntry;
         }
-        return getBestMiningToFor(currentState, GhostHandMode.INV_SWAP);
+        return getBestMiningToFor(currentState, GhostHandMode.INV_SWAP, attributeSwap);
     }
 
     @Override
     public void registerAll() {
         super.registerAll();
+        registerListener(Listener.getPreTick(), this::onTickDoubleBreak, Integer.MIN_VALUE + 10);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetLoad);
         registerListener(Listener.getGameJoinPoint(), this::resetStatistics);
@@ -277,10 +300,11 @@ public class MineExtra extends BaseModule {
     }
 
     private void onFailBreakBlockUpdate(Event<BlockUpdate> event) {
+        BlockUpdate update = event.context();
+        cacheMap.remove(update.pos());
         if (mc.interactionManager == null) {
             return;
         }
-        BlockUpdate update = event.context();
         PlayerInteractionAccess access = PlayerInteractionAccess.of(mc.interactionManager);
         if (update.newState().isAir() && Objects.equals(access.getCurrentFailBreakPos(), update.pos())) {
             access.clearActiveFailBreak();
@@ -328,7 +352,7 @@ public class MineExtra extends BaseModule {
 
     public void finishMineGhostHand(Runnable runnable) {
         if (ServerFeature.INSTANCE.attributeSwap.get()) {
-            InvExtra.INSTANCE.pushNextTickGhostHandCallback(runnable);
+            InvExtra.INSTANCE.pushNextTickPostTickGhostHandCallback(runnable);
         } else {
             runnable.run();
         }
@@ -545,6 +569,83 @@ public class MineExtra extends BaseModule {
         }
     }
 
+    private void onTickNaturalDoubleBreak() {
+        if (checkNull()
+                || mc.interactionManager == null
+                || mc.interactionManager.getCurrentGameMode() != GameMode.SURVIVAL) {
+            return;
+        }
+        PlayerInteractionAccess access = PlayerInteractionAccess.of(mc.interactionManager);
+        BlockPos failBreakPos = access.getCurrentFailBreakPos();
+        if (failBreakPos == null) {
+            return;
+        }
+        BlockState state = mc.world.getBlockState(failBreakPos);
+        if (state.isAir() || state.isLiquid()) {
+            return;
+        }
+        PlayerStateManager.PlayerStatus status = PlayerStateManager.INSTANCE.getOrCreatePlayerStatus(mc.player);
+        ItemStack tool = status.getMainHandSnapshot();
+        float speed = WorldUtils.calcBlockBreakingDelta(
+                state,
+                mc.world,
+                failBreakPos,
+                WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(mc.player, state, tool, true));
+        if (speed <= 0.0F) {
+            return;
+        }
+        float progress = access.getFailBreakMiningTicks() * speed;
+        if (progress > 1.0F) {
+            dispatchDoubleMineBreakTick(new BlockBreak(failBreakPos, BlockBreak.Stage.PRE, tool, progress));
+        }
+    }
+
+    private void dispatchDoubleMineBreakTick(BlockBreak blockBreak) {
+        BlockPos pos = blockBreak.blockPos().toImmutable();
+        ClientWorld world = mc.world;
+        BlockState capturedState = null;
+        if (!(blockBreak.progress() > 1.0F)) {
+            return;
+        }
+        if (doubleBreakPredictDestroy.get().isPresent() && world != null && !cacheMap.containsKey(pos)) {
+            BlockState state = world.getBlockState(pos);
+            if (!state.isAir() && !state.isLiquid()) {
+                capturedState = state;
+            }
+        }
+        doubleMineBreakTick.broadcast(blockBreak);
+        if (capturedState != null
+                && mc.world == world
+                && capturedState.equals(world.getBlockState(pos))
+                && world.setBlockState(pos, Blocks.AIR.getDefaultState())) {
+            cacheMap.put(pos, new PredictedDoubleBreak(capturedState, Tasks.getTick() + 1, world));
+        }
+    }
+
+    private void onTickDoubleBreak() {
+        onTickNaturalDoubleBreak();
+        if (cacheMap.isEmpty()) {
+            return;
+        }
+        int tick = Tasks.getTick();
+        int restoreDelay = doubleBreakPredictDestroy.get().getValue();
+        Iterator<Map.Entry<BlockPos, PredictedDoubleBreak>> iterator =
+                cacheMap.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<BlockPos, PredictedDoubleBreak> entry = iterator.next();
+            PredictedDoubleBreak cached = entry.getValue();
+            if (mc.world != cached.world()) {
+                iterator.remove();
+                continue;
+            }
+            if ((long) tick < (long) cached.startTick() + restoreDelay) {
+                continue;
+            }
+            iterator.remove();
+            cached.world().setBlockState(entry.getKey(), cached.state());
+        }
+    }
+
     public int lastTickGhostHandFailBreak = 0;
 
     private boolean tickMineFailBreak(BlockState state, ItemStack tool, boolean groundDeceive) {
@@ -598,7 +699,7 @@ public class MineExtra extends BaseModule {
         if (tickMineFailBreak(blockState, currentTool, groundDeceive)) {
             // force delay, because it might save some packets
             if (currentTickCallback != null) {
-                InvExtra.INSTANCE.pushNextTickGhostHandCallback(currentTickCallback);
+                finishMineGhostHand(currentTickCallback);
             }
             Runnable callback = InvExtra.INSTANCE.swapItemToHand(currentItemSlot.index(), false, mode);
             InvExtra.INSTANCE.pushNextTickGhostHandCallback(callback);
