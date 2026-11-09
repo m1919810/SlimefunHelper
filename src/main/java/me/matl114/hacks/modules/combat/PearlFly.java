@@ -194,7 +194,7 @@ public class PearlFly extends BaseModule {
                 Vec3d eyePos = mc.player.getEyePos();
                 Comparator<BlockPos> horizontalDistance = Comparator.comparingDouble(pos ->
                         MathUtils.squareSum(pos.getX() + 0.5 - mc.player.getX(), pos.getZ() + 0.5 - mc.player.getZ()));
-                if (autoCrawl.get() && pose != EntityPose.SWIMMING && pose != EntityPose.GLIDING) {
+                if (autoCrawl.get() && pose != EntityPose.SWIMMING && pose != EntityPose.FALL_FLYING) {
                     BlockPos crawlPos = collisionGroups.stream()
                             .flatMap(List::stream)
                             .filter(pos -> pos.getY() == blockY + 1)
