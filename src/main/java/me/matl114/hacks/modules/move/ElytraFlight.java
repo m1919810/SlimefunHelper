@@ -1,7 +1,9 @@
 package me.matl114.hacks.modules.move;
 
+import lombok.Getter;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.channels.EventChannel;
 import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -27,12 +29,15 @@ import me.matl114.utils.Debug;
 import me.matl114.utils.MathUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
 public class ElytraFlight extends BaseModule implements LegalMovementManager.MovementModifier {
     public static ElytraFlight INSTANCE;
+
+    @Getter
+    private static final EventChannel<ElytraMotion> flightMotion = new EventChannel<>();
+
     public final ModulePath elytra = makePath(Configs.MOV_CONFIG, "elytra");
     public final ModulePath simpleFlightControl = elytra.add("simple-flight-control");
     public final ModulePath customFireworks = elytra.add("custom-fireworks");
@@ -221,11 +226,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     && takeOffOptimize.get().isPresent()
                     && holdJump.canRun(takeOffOptimize.get().getValue())) {
                 if (!mc.player.isOnGround() && mc.player.checkGliding()) {
-                    MovExtra.INSTANCE.sendPacketsForPreStartFallFlying();
-                    mc.getNetworkHandler()
-                            .sendPacket(new ClientCommandC2SPacket(
-                                    mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                    MovExtra.INSTANCE.sendPacketsForPostStartFallFlying();
+                    ElytraExtra.INSTANCE.tryStartFallFlying();
                 }
             }
             if (player.isFallFlying()) {
@@ -377,7 +378,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                         motionRotation,
                         realVector0.length(),
                         motionAmount);
-                Listener.getCustomListener().broadcast(new EventContainer<>(ElytraMotion.class, motion));
+                flightMotion.broadcast(motion);
 
                 // add FloatingUtils
                 if (FloatingUtils.INSTANCE.workGrimFloatingThisTick()) {
@@ -428,7 +429,6 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                 if (shouldControl) {
                     if (Math.abs(motion.pitch()) <= 1e-1 && horizontalFlyNoGravity.get() && !mc.player.isOnGround()) {
                         modifyNoGravity = player.hasNoGravity();
-                        player.setNoGravity(true);
                     }
                     mc.player.setVelocity(
                             (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS && useAutoRescale.get())
@@ -480,9 +480,16 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     Boolean modifyNoGravity = null;
 
     @Override
-    public void postModify(Event<LegalMovementManager> movementManagerEvent) {
+    public void applyBeforeTravelTick(Event<LegalMovementManager> movementManagerEvent, Event<Vec3d> moveEvent) {
+        if (modifyNoGravity != null && mc.player.isFallFlying() && ElytraExtra.INSTANCE.canFireworkControlMotion()) {
+            mc.player.setNoGravity(true);
+        }
+    }
+
+    @Override
+    public void applyAfterTravelTick(Event<LegalMovementManager> movementManagerEvent, Event<Vec3d> moveEvent) {
         if (modifyNoGravity != null) {
-            movementManagerEvent.context().playerStatus.entity.setNoGravity(modifyNoGravity);
+            mc.player.setNoGravity(modifyNoGravity);
             modifyNoGravity = null;
         }
     }

@@ -393,10 +393,10 @@ public class PacketMine extends BaseModule {
             if (groundDeceive.get() && !mc.player.isOnGround()) {
                 speed *= 5;
             }
-            MineExtra.INSTANCE.sumitProgress(speed);
+            MineExtra.INSTANCE.submitProgress(speed);
             return speed > Math.min(0.98, mineThreshold.get());
         } else {
-            MineExtra.INSTANCE.sumitProgress(0.0F);
+            MineExtra.INSTANCE.submitProgress(0.0F);
             return false;
         }
     }

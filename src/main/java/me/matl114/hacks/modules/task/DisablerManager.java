@@ -83,6 +83,15 @@ public class DisablerManager extends BaseModule implements LegalMovementManager.
     public final FlagRef duplicatedSprintFix =
             flagBuilder(movement.add("fix-duplicated-sprint-one-tick"), true).build();
 
+    public final ModulePath elytraDisablers = disablers.add("elytra-disablers");
+
+    public final FlagRef elytraInputFix =
+            flagBuilder(elytraDisablers.add("elytra-input-fix"), true).build();
+
+    public final FlagRef grimBadPacketsFix = flagBuilder(elytraDisablers.add("grim-bad-packets-fix"), true)
+            .show(() -> currentAC.get().isIn(SupportAC.GRIM))
+            .build();
+
     public DisablerManager() {
         super("Disabler");
         INSTANCE = this;
@@ -333,6 +342,14 @@ public class DisablerManager extends BaseModule implements LegalMovementManager.
 
     public boolean isInventorySprintFix() {
         return currentAC.get().isNotIn(SupportAC.NONE) && inventorySprintFix.get();
+    }
+
+    public boolean isElytraInputFix() {
+        return currentAC.get().isIn(SupportAC.GRIM) && elytraInputFix.get();
+    }
+
+    public boolean isGrimBadPacketsFix() {
+        return currentAC.get().isIn(SupportAC.GRIM) && grimBadPacketsFix.get();
     }
 
     public void onPresetReload(Event<EventContainer<ModulePreset>> event) {

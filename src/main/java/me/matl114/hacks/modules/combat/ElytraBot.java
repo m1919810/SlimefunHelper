@@ -30,6 +30,7 @@ import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.ElytraExtra;
+import me.matl114.hacks.modules.move.ElytraFlight;
 import me.matl114.hacks.modules.move.MovExtra;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.DamageUtils;
@@ -107,6 +108,13 @@ public class ElytraBot extends BaseModule {
 
     public final FlagRef onlyWhenNoWASD =
             flagBuilder(elytraBot.add("only-when-no-wasd")).build();
+
+    public final NBTRef<OptionalPrimitive<WrapEnum<ElytraExtra.Al>>> overrideAxisLimit = builder(
+                    elytraBot.add("override-axis-limit"),
+                    (Class<OptionalPrimitive<WrapEnum<ElytraExtra.Al>>>) (Class) OptionalPrimitive.class)
+            .defaultValue(
+                    new OptionalPrimitive<>(false, NBTTypes.CONFIG_ENUM_TYPE.cast(), new WrapEnum<>(ElytraExtra.Al.V5)))
+            .build();
 
     public final DoubleRef combatMaceRange = builder(elytraBot.add("combat-range"), DoubleRef.TYPE)
             .defaultValue(10.0D)
@@ -465,39 +473,39 @@ public class ElytraBot extends BaseModule {
 
     public final FlagRef angleOptimizePullUp = builder(angleOptimize.add("combat-angle-optimize-pullup"), Boolean.class)
             .defaultValue(false)
-            .show(() -> mode.get().isIn(Mode.MACE_ARUA) && ElytraExtra.INSTANCE.autoRescale.get())
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
     public final FlagRef angleOptimizeAxisXZPullupOut = builder(
                     angleOptimize.add("combat-angle-optimize-xz-pullup-out"), Boolean.class)
             .defaultValue(true)
-            .show(() -> mode.get().isIn(Mode.MACE_ARUA) && ElytraExtra.INSTANCE.autoRescale.get())
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
     public final DoubleRef angleOptimizeAxisXZOutRange = doubleBuilder(
                     angleOptimize.add("combat-angle-optimize-xz-pullup-out-range"))
             .defaultValue(30.0D)
             .validator(Configs.doubleRange(0.0D, Double.MAX_VALUE))
-            .show(() -> mode.get().isIn(Mode.MACE_ARUA) && ElytraExtra.INSTANCE.autoRescale.get())
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
     public final FlagRef angleOptimizeAxisXZPulluIn = builder(
                     angleOptimize.add("combat-angle-optimize-xz-pullup-in"), Boolean.class)
             .defaultValue(false)
-            .show(() -> mode.get().isIn(Mode.MACE_ARUA) && ElytraExtra.INSTANCE.autoRescale.get())
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
     public final DoubleRef angleOptimizeAxisXZInRange = doubleBuilder(
                     angleOptimize.add("combat-angle-optimize-xz-pullup-in-range"))
             .defaultValue(12.0D)
             .validator(Configs.doubleRange(-100.0D, 100.0D))
-            .show(() -> mode.get().isIn(Mode.MACE_ARUA) && ElytraExtra.INSTANCE.autoRescale.get())
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
     // 这个傻逼玩意， 代表的是 激进的拉升优化
 
     public final FlagRef angleOptimizeRadicalPullup = flagBuilder(
                     angleOptimize.add("combat-angle-optimize-radical-pullup"))
-            .show(() -> mode.get().isIn(Mode.MACE_ARUA) && ElytraExtra.INSTANCE.autoRescale.get())
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
     // 直接往外拉
 
@@ -505,12 +513,12 @@ public class ElytraBot extends BaseModule {
                     angleOptimize.add("combat-angle-optimize-radical-pull-up-optimize-range"),
                     OptionalPrimitive.DOUBLE_TYPE)
             .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 20.0D))
-            .show(() -> mode.get().isIn(Mode.MACE_ARUA) && ElytraExtra.INSTANCE.autoRescale.get())
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
     public final FlagRef angleOptimizeFollow = builder(angleOptimize.add("combat-angle-optimize-follow"), Boolean.class)
             .defaultValue(false)
-            .show(() -> mode.get().isIn(Mode.MACE_ARUA) && ElytraExtra.INSTANCE.autoRescale.get())
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
     public final NBTRef<LabelVec3> angleOptimizeFollowRange = builder(
                     angleOptimize.add("combat-angle-optimize-range"), LabelVec3.class)
@@ -519,7 +527,7 @@ public class ElytraBot extends BaseModule {
                     "widget.elytra-bot.angle.spear-flight",
                     "widget.elytra-bot.angle.anti-spear-flight",
                     new Vec3(4.0, 4.0, 4.0)))
-            .show(() -> mode.get().isIn(Mode.MACE_ARUA) && ElytraExtra.INSTANCE.autoRescale.get())
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
     // 这个傻逼玩意 代表的是激进的追击角度优化是否有角度限制（在垂直向下的时候禁用角度优化）
@@ -527,7 +535,7 @@ public class ElytraBot extends BaseModule {
                     angleOptimize.add("combat-angle-optimize-follow-pitch-limit"), OptionalPrimitive.DOUBLE_TYPE)
             .defaultValue(new OptionalPrimitive<>(true, NBTTypes.DOUBLE_TYPE, 75.0D))
             .validator(s -> s.getValue() >= 0.0D && s.getValue() <= 90.0D)
-            .show(() -> mode.get().isIn(Mode.MACE_ARUA) && ElytraExtra.INSTANCE.autoRescale.get())
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
     // 这个傻逼玩意。在拉高的时候会来回摆。非常的炫酷(何意味
@@ -536,11 +544,11 @@ public class ElytraBot extends BaseModule {
                     angleOptimize.add("combat-angle-optimize-pullup-persistent-direction"),
                     OptionalPrimitive.DOUBLE_TYPE)
             .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 6.0D))
-            .show(() -> mode.get().isIn(Mode.MACE_ARUA) && ElytraExtra.INSTANCE.autoRescale.get())
+            .show(() -> mode.get().isIn(Mode.MACE_ARUA))
             .build();
 
     public final FlagRef spearHideAngleOptimize = flagBuilder(angleOptimize.add("combat-angle-optimize-when-spear"))
-            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA) && ElytraExtra.INSTANCE.autoRescale.get())
+            .show(() -> mode.get().isIn(Mode.SPEAR_ARUA))
             .build();
 
     public final DoubleRef spearChaseOptimizeAngle = doubleBuilder(
@@ -630,7 +638,7 @@ public class ElytraBot extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreTick(), this::onPreTick);
-        registerListener(Listener.getCustomListener().getChannel(ElytraMotion.class), this::onElytraChase);
+        registerListener(ElytraFlight.getFlightMotion(), this::onElytraChase);
         registerListener(
                 Listener.getCustomListener().getChannel(FlightVelocity.class),
                 this::onFlightVelocity,
@@ -740,7 +748,13 @@ public class ElytraBot extends BaseModule {
             refreshTarget();
             updateTargetAction();
             currentBehaviour.movementDirection = new ElytraMotion(
-                    ElytraExtra.INSTANCE.autoRescale.get() ? ElytraExtra.INSTANCE.autoRescaleAl.get() : null,
+                    overrideAxisLimit
+                            .get()
+                            .asOptional()
+                            .map(WrapEnum::get)
+                            .orElseGet(() -> ElytraExtra.INSTANCE.autoRescale.get()
+                                    ? ElytraExtra.INSTANCE.autoRescaleAl.get()
+                                    : null),
                     new Vec2f(mc.player.getPitch(), mc.player.getYaw()),
                     0,
                     10.0D);
@@ -914,7 +928,7 @@ public class ElytraBot extends BaseModule {
     //                hitPoint, entity.getBoundingBox(), CombatExtra.INSTANCE.getAttackAtTargetRange(entity));
     //    }
 
-    public void onElytraChase(Event<EventContainer<ElytraMotion>> event) {
+    public void onElytraChase(Event<ElytraMotion> event) {
         if (enable.get()) {
             AbstractBotBehaviour behaviour = currentBehaviour;
             if (behaviour != null) {
@@ -1026,9 +1040,9 @@ public class ElytraBot extends BaseModule {
         // use pitch search
 
         // todo: calculate reachable, if entity can reach reach distance
-        public void onElytra(Event<EventContainer<ElytraMotion>> event) {
+        public void onElytra(Event<ElytraMotion> event) {
             if (movementDirection != null && movementDirection.speed() != 0) {
-                ElytraMotion motion = event.context.getValue();
+                ElytraMotion motion = event.context();
                 motion.algorithm(movementDirection.algorithm())
                         .rotation(movementDirection.rotationAngles())
                         .speed(movementDirection.speed());
