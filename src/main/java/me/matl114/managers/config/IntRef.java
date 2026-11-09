@@ -5,7 +5,7 @@ import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.BaseAttrKeyValue;
 
 @AllArgsConstructor
-public class IntRef extends Ref<Integer> {
+public class IntRef extends NumberRef<Integer> {
     public static final Class<Integer> TYPE = Integer.class;
 
     int value;
@@ -38,22 +38,8 @@ public class IntRef extends Ref<Integer> {
     }
 
     @Override
-    public Object getAsPrimitive() {
-        return this.value;
-    }
-
-    @Override
-    public <W> boolean isSameTypeWith(Ref<W> ref) {
-        return ref instanceof IntRef;
-    }
-
-    @Override
-    public <W> boolean copyValueFrom(Ref<W> otherRef) {
-        if (otherRef instanceof IntRef intRef) {
-            set(intRef.get());
-            return true;
-        }
-        return false;
+    public void setFromNumber(Number number) {
+        set(number.intValue());
     }
 
     @Override

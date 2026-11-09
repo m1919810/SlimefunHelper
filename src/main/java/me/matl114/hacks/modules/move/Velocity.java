@@ -11,23 +11,18 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.mine.FakeBlockManager;
-import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.PlayerInputUtils;
-import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import net.minecraft.entity.EntityType;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
 import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
-public class Velocity extends BaseModule implements LegalMovementManager.MovementModifier {
+public class Velocity extends BaseModule {
     // 还没想好 先新建文件夹
     public static Velocity INSTANCE;
     public final ModulePath velocityManagement = makePath(Configs.MOV_CONFIG, "velocity-management");
@@ -110,7 +105,6 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         super("Velocity");
         INSTANCE = this;
         bindFlag(enable);
-        MovementManager.registerMovementPipeline(this);
     }
 
     @Override
@@ -120,10 +114,8 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         registerListener(Listener.getEntityClientVelocityUpdate().getChannel(EntityType.PLAYER), this::onVelocity);
         registerListener(Listener.getPlayerExplosionVelocity(), this::onExplosion);
         registerListener(Listener.getPacketPoint().getChannel(EntityDamageS2CPacket.class), this::onEntityDamage);
-        registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onSendMove);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
         registerListener(Listener.getPacketPoint().getChannel(PlayerPositionLookS2CPacket.class), this::onSetPosition);
-        registerListener(Listener.getPacketPoint().getChannel(CommonPingS2CPacket.class), this::onPing);
         registerListener(Listener.getPreGameTick(), this::onPreTick);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(BlockUpdateS2CPacket.class), this::onBlockUpdate);
@@ -343,8 +335,6 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
         //        }
     }
 
-    public void onPing() {}
-
     public void onSetPosition() {
         lastSetBackNS = System.nanoTime();
     }
@@ -353,42 +343,6 @@ public class Velocity extends BaseModule implements LegalMovementManager.Movemen
     //            skipCount = 3;
     //        }
     //    }
-
-    public void onSendMove() {}
-
-    @Override
-    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {}
-
-    boolean skipTick = false;
-
-    @Override
-    public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {}
-
-    @Override
-    public void applyBeforeTravelTick(Event<LegalMovementManager> movementManagerEvent, Event<Vec3d> moveEvent) {}
-
-    @Override
-    public void applyAfterTravelTick(Event<LegalMovementManager> movementManagerEvent, Event<Vec3d> moveEvent) {
-        if (skipTick) {
-            sendFallFlying();
-        }
-    }
-
-    private void sendFallFlying() {
-        var packet = new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING);
-
-        mc.getNetworkHandler().sendPacket(packet);
-    }
-
-    @Override
-    public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
-        //        if(skipTick){
-        //            lastFakeGroundTick = Tasks.getTick();
-        //            mc.player.setPosition(movementManagerEvent.drawContext.playerStatus.pos.withAxis(Direction.Axis.Y,
-        // movementManagerEvent.drawContext.playerStatus.pos.y + 8E-8));
-        //            skipTick = false;
-        //        }
-    }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
         if (event.context().getValue().isOptionPreset()) return;
