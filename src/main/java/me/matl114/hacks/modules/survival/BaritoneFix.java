@@ -11,7 +11,6 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.ElytraExtra;
 import me.matl114.hacks.modules.move.FloatingUtils;
 import me.matl114.hacks.modules.move.PlayerStateManager;
-import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.move.ElytraMotion;
 import me.matl114.hacks.utils.tasks.TimerExecutor;
@@ -30,7 +29,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.math.Box;
 
-public class BaritoneFix extends BaseModule implements LegalMovementManager.MovementModifier {
+public class BaritoneFix extends BaseModule {
     public static BaritoneFix INSTANCE;
 
     static LegalMovementManager.DelegateMovementModifier instance;
@@ -38,7 +37,6 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
     public BaritoneFix() {
         super("BaritoneFix");
         INSTANCE = this;
-        MovementManager.registerMovementPipeline(this);
     }
 
     public final ModulePath fix = makePath(Configs.SURVIVAL_CONFIG, "baritone.fix");
@@ -129,9 +127,10 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
         super.registerAll();
         registerListener(Listener.getChatSend(), this::onChat);
         registerListener(Listener.getChatSend(), this::onChatCommand);
-        registerListener(BaritoneHooks.getMoveRotEvent(), this::onBaritoneMoveRot);
         registerListener(BaritoneHooks.getLandingEvent(), this::onBaritoneComplete);
         registerListener(ElytraExtra.getFireworkMotion(), this::onFireworkMotion);
+        registerListener(Listener.getClientPlayerPreTickPoint(), this::onPlayerPreTick);
+        registerListener(Listener.getClientPlayerPostSendMovementPoint(), this::onPlayerPostMovement);
     }
 
     public void onFireworkMotion(Event<ElytraMotion> event) {
@@ -275,8 +274,7 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
         return false;
     }
 
-    @Override
-    public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
+    public void onPlayerPreTick() {
         if (!lastAutoJumpExecutor.canRun(20) && mc.player.isFallFlying()) {
             Box blockCheckBox = mc.player.getBoundingBox().stretch(0, -1, 0).expand(2, 0, 2);
             Box checkHeadBox = mc.player.getBoundingBox().stretch(0, 1, 0);
@@ -287,10 +285,7 @@ public class BaritoneFix extends BaseModule implements LegalMovementManager.Move
         }
     }
 
-    public void onBaritoneMoveRot() {}
-
-    @Override
-    public void postModify(Event<LegalMovementManager> movementManagerEvent) {
+    public void onPlayerPostMovement() {
         if (this.baritoneExperimental2.get()
                 && mc.player.isFallFlying()
                 && BaritoneHooks.getInstance().isBaritoneElytraProcessing()

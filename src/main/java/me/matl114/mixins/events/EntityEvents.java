@@ -82,12 +82,6 @@ public abstract class EntityEvents<T extends Entity> implements EntityAccess<T> 
         return getFlag(index);
     }
 
-    @Inject(method = "tick", at = @At("HEAD"))
-    public void onEntityTickUpdate(CallbackInfo ci) {
-        Entity entity = (Entity) (Object) (this);
-        Listener.getEntityMidTickListener().broadcast(entity);
-    }
-
     @Inject(method = "setRemoved", at = @At("RETURN"))
     public void onEntityRemoved(Entity.RemovalReason reason, CallbackInfo ci) {
         Listener.getEntityRemoveListener().broadcast((Entity) (Object) this, reason);

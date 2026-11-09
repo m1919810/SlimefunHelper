@@ -8,8 +8,6 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.versioned.api.VPacket;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.util.math.Vec2f;
@@ -26,7 +24,7 @@ public class LegacySnapRotManager extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getEntityPreTickListener().getChannel(EntityType.PLAYER), this::onPrePlayerTick);
+        registerListener(Listener.getClientPlayerPreTickPoint(), this::onPrePlayerTick);
         registerListener(Listener.getPacketPoint().getChannel(PlayerInteractItemC2SPacket.class), this::onInteractItem);
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class),
@@ -36,10 +34,8 @@ public class LegacySnapRotManager extends BaseModule {
 
     Vec2f lastSnapPitchYaw;
 
-    public void onPrePlayerTick(Event<PlayerEntity> eventPre) {
-        if (mc.player != null && eventPre.context == mc.player) {
-            resyncSnap();
-        }
+    public void onPrePlayerTick() {
+        resyncSnap();
     }
 
     public boolean betweenViaPacket;
