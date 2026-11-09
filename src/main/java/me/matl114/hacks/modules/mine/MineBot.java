@@ -100,6 +100,11 @@ public class MineBot extends BaseModule {
     public final IntRef maxInstaMine =
             intBuilder(mineBot.add("max-instant-mine")).defaultValue(30).build();
 
+    public final IntRef instantMineInterval = intBuilder(mineBot.add("instant-mine-interval"))
+            .defaultValue(2)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
+
     public final FlagRef doubleBreak =
             flagBuilder(mineBot.add("use-double-break")).build();
 
@@ -144,11 +149,18 @@ public class MineBot extends BaseModule {
     public void onDisableModule() {
         super.onDisableModule();
         lastMinePos = null;
+        instantMineIntervalActive = false;
     }
 
     public void onMineBotTick() {
         if (mc.player == null || mc.world == null || mc.interactionManager == null) {
             return;
+        }
+        if (instantMineIntervalActive) {
+            if (!instantMineTimer.canRun(instantMineInterval.get())) {
+                return;
+            }
+            instantMineIntervalActive = false;
         }
         switch (mineBotMode.get()) {
             case SPHERICAL -> onMineSpherical();
@@ -189,6 +201,8 @@ public class MineBot extends BaseModule {
     }
 
     private final TimerExecutor noBlocksAround = new TimerExecutor();
+    private final TimerExecutor instantMineTimer = new TimerExecutor();
+    private boolean instantMineIntervalActive;
     private static final int NO_BLOCK_MENTION_LIMIT = 400;
 
     public int onMineCommon(Supplier<BlockPos> posFinder) {
@@ -227,6 +241,10 @@ public class MineBot extends BaseModule {
             noBlocksAround.run(NO_BLOCK_MENTION_LIMIT, () -> logI18N("message.module.mine-bot.no-blocks"));
         } else {
             noBlocksAround.mark();
+        }
+        if (tryMine > 1 && tryMine >= maxInstaMine.get() && instantMineInterval.get() > 0) {
+            instantMineTimer.mark();
+            instantMineIntervalActive = true;
         }
         return tryMine;
     }
@@ -295,7 +313,7 @@ public class MineBot extends BaseModule {
                 ? InventoryUtils.findBestPlayerItem(
                         item -> isDurabilityOk(item)
                                 ? (double) WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
-                                        mc.player, mineState, item)
+                                        mc.player, mineState, item, false)
                                 : null,
                         settings.ghostHand().getSearchSize(false),
                         true,

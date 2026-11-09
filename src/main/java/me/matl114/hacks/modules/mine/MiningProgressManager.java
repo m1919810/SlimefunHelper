@@ -170,7 +170,7 @@ public class MiningProgressManager extends BaseModule {
                     : status.trackedInventoryItems.stream()
                             .max(Comparator.comparingDouble(s -> {
                                 return WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
-                                        player, blockState, s.sample());
+                                        player, blockState, s.sample(), false);
                             }))
                             .map(ItemStackSample::sample)
                             .orElse(player.getStackInHand(Hand.MAIN_HAND));
@@ -183,7 +183,8 @@ public class MiningProgressManager extends BaseModule {
                 }
             }
 
-            float speed = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(player, blockState, stackCopy);
+            float speed =
+                    WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(player, blockState, stackCopy, false);
             return WorldUtils.calcBlockBreakingDelta(blockState, mc.world, pos, speed);
         }
     }

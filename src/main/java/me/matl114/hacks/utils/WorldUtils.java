@@ -9,6 +9,8 @@ import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import me.matl114.accessors.access.PendingUpdateManagerAccess;
+import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.modules.task.ServerFeature;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.versioned.api.VRecord;
 import net.minecraft.block.BlockState;
@@ -247,12 +249,14 @@ public class WorldUtils {
                 .orElse(null);
     }
 
+    /** Uses the attribute snapshot when attributeSwap is true, otherwise the supplied tool's attributes. */
     public static float getPlayerBlockBreakingSpeedWithCanMineMultiply(
-            PlayerEntity player, BlockState state, ItemStack stack) {
+            PlayerEntity player, BlockState state, ItemStack stack, boolean attributeSwap) {
         float f = stack.getMiningSpeedMultiplier(state);
+        AttributeContainer attributeContainer = attributeSwap
+                ? PlayerStateManager.INSTANCE.getOrCreatePlayerStatus(player).getAttribute()
+                : AttributeUtils.getAttributeWith(player, Map.of(EquipmentSlot.MAINHAND, stack));
         if (f > 1.0F) {
-            AttributeContainer attributeContainer =
-                    AttributeUtils.getAttributeWith(player, Map.of(EquipmentSlot.MAINHAND, stack));
             f += attributeContainer.getValue(EntityAttributes.MINING_EFFICIENCY);
         }
 
@@ -273,10 +277,9 @@ public class WorldUtils {
             f *= g;
         }
 
-        f *= (float) player.getAttributeValue(EntityAttributes.BLOCK_BREAK_SPEED);
+        f *= (float) attributeContainer.getValue(EntityAttributes.BLOCK_BREAK_SPEED);
         if (player.isSubmergedIn(FluidTags.WATER)) {
-            f *= (float) player.getAttributeInstance(EntityAttributes.SUBMERGED_MINING_SPEED)
-                    .getValue();
+            f *= (float) attributeContainer.getValue(EntityAttributes.SUBMERGED_MINING_SPEED);
         }
 
         if (!player.isOnGround()) {
@@ -293,7 +296,8 @@ public class WorldUtils {
     public static float calcBlockBreakingDelta(
             BlockState state, BlockView world, BlockPos pos, PlayerEntity player, ItemStack tool) {
 
-        var playerBreakSpeed = getPlayerBlockBreakingSpeedWithCanMineMultiply(player, state, tool);
+        var playerBreakSpeed = getPlayerBlockBreakingSpeedWithCanMineMultiply(
+                player, state, tool, ServerFeature.INSTANCE.attributeSwap.get());
         return calcBlockBreakingDelta(state, world, pos, playerBreakSpeed);
     }
 
