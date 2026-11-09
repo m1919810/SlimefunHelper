@@ -482,6 +482,7 @@ public abstract class MinecraftClientEvents {
                             shift = At.Shift.BEFORE))
     private void onPostPlayerUpdate(CallbackInfo ci) {
         if (this.player != null) {
+            Listener.getClientPlayerPostUpdatePoint().broadcast(this.player);
             ClientPlayerEntityAccess.of(this.player).getLegalMovementManager().postTickEntities();
         }
     }
