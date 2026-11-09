@@ -53,6 +53,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
+import net.minecraft.world.World;
 
 public class PathManager extends BaseModule {
     public static PathManager INSTANCE;
@@ -72,6 +73,7 @@ public class PathManager extends BaseModule {
     private static final int PATH_SEG_NETHER_PATH_LIMIT = 40;
     private static final double PATH_SEG_STUCK_DISTANCE_SQUARED = 36.0D;
     private static final int PATH_SEG_STUCK_TICKS = 200;
+    private static final double PATH_RECORD_MAX_HORIZONTAL_DISTANCE_SQUARED = 256.0D * 256.0D;
 
     public final ModulePath pathManager = makePath(Configs.SURVIVAL_CONFIG, "travelling-control.path-manager");
 
@@ -100,6 +102,7 @@ public class PathManager extends BaseModule {
     private RecordSnapshot recordingSnapshot;
 
     private PathRerunContext currentPath;
+    private String currentPathWorld;
     private boolean rerunningBaritone = false;
     public File SAVE_FILE = FileManager.getInstance().getAndCreateFile(PATH_PATH);
 
@@ -113,7 +116,7 @@ public class PathManager extends BaseModule {
         registerCommandBootstrap(this::bootStrapPathCommand);
         registerListener(Listener.getPreGameTick(), this::onPreTick);
         registerListener(Listener.getPreGameTick(), this::onTickRunningBaritone);
-        registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch);
+        registerListener(Listener.getWorldSwitchPoint(), event -> onWorldSwitch(event.context()));
         registerListener(Listener.getServerLeavePoint(), this::onDisconnect);
         registerListener(Listener.getPacketPoint().getChannel(PlayerRespawnS2CPacket.class), this::onRespawn);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
@@ -238,6 +241,10 @@ public class PathManager extends BaseModule {
             context.sendMessage("&c请先使用 load 加载路径");
             return true;
         }
+        if (!Objects.equals(recordingPath.world(), currentWorldKey())) {
+            context.sendMessage("&c路径维度与当前世界不一致，无法继续录制");
+            return true;
+        }
         if (recordingStarted) {
             context.sendMessage("&c当前已经开始录制路径: " + recordingPathFile);
             return true;
@@ -288,9 +295,7 @@ public class PathManager extends BaseModule {
             context.sendMessage("&c当前路径录制未开始");
             return true;
         }
-        recordingStarted = false;
-        recordingFlightStarted = false;
-        recordingSnapshot = null;
+        pauseRecording();
         context.sendMessage("&a路径录制已暂停，使用 record save 保存路径");
         return true;
     }
@@ -353,6 +358,7 @@ public class PathManager extends BaseModule {
             return true;
         }
         currentPath = null;
+        currentPathWorld = null;
         stopCurrentRunningBaritone();
         context.sendMessage("&c已卸载当前路径");
         return true;
@@ -367,12 +373,31 @@ public class PathManager extends BaseModule {
             context.sendMessage("&c当前有正在执行的路径, 请使用指令!!pathm rerun stop暂停");
             return true;
         }
-        rerunningBaritone = true;
-        if (rerunMode.get().isIn(Mode.ELYTRA_FLIGHT)) {
-            context.sendMessage("&c当前执行类型为 ELYTRA_FLIGHT, 暂时不支持,请切换为 BARITONE 模式以使用");
-            rerunningBaritone = false;
+        if (checkNull()) {
+            context.sendMessage("&c当前不在游戏中，无法重新执行路径");
             return true;
         }
+        if (!Objects.equals(currentPathWorld, currentWorldKey())) {
+            context.sendMessage("&c路径维度与当前世界不一致，无法重新执行");
+            return true;
+        }
+        if (rerunMode.get().isIn(Mode.ELYTRA_FLIGHT)) {
+            context.sendMessage("&c当前执行类型为 ELYTRA_FLIGHT, 暂时不支持,请切换为 BARITONE 模式以使用");
+            return true;
+        }
+        List<BlockPos> remaining = currentPath.remainingPoints();
+        if (remaining.isEmpty()) {
+            context.sendMessage("&c当前路径已执行完毕");
+            return true;
+        }
+        List<BlockPos> aligned = alignPathToNearest(remaining);
+        if (aligned.isEmpty()) {
+            context.sendMessage("&c当前路径没有可执行的点");
+            return true;
+        }
+        currentPath = createRerunContext(
+                currentPath.pathFile(), aligned, rerunMode.get().isIn(Mode.BARITONE));
+        rerunningBaritone = true;
         context.sendMessage("&a开始重新执行当前路径");
         return true;
     }
@@ -431,6 +456,7 @@ public class PathManager extends BaseModule {
         boolean cutMode = rerunMode.get().isIn(Mode.BARITONE);
         stopCurrentRunningBaritone();
         currentPath = createRerunContext(pathFile, alignLoaded, cutMode);
+        currentPathWorld = currentWorld;
         context.sendMessage(
                 "&a已加载路径: " + pathFile + ", 当前位置 %d / %d".formatted(loaded.size() - alignLoaded.size(), loaded.size())
                         + "，剩余段数: " + currentPath.remainingSegments());
@@ -561,7 +587,7 @@ public class PathManager extends BaseModule {
     private void onPreTick() {
         if (recordingStorage != null && recordingStarted) {
             if (checkNull()) {
-                finishPath("录制任务意外退出", null);
+                pauseRecording();
             } else {
                 ClientPlayerEntity player = mc.player;
                 if (!recordingFlightStarted) {
@@ -581,22 +607,55 @@ public class PathManager extends BaseModule {
         }
     }
 
-    private void onWorldSwitch() {
-        finishPath("切换世界", null);
-        currentPath = null;
-        stopCurrentRunningBaritone();
+    private void onWorldSwitch(World world) {
+        String newWorld = world == null ? "" : world.getRegistryKey().getValue().toString();
+        if (recordingStarted && recordingPath != null && !Objects.equals(recordingPath.world(), newWorld)) {
+            pauseRecording();
+        }
+        if (currentPath != null && !Objects.equals(currentPathWorld, newWorld)) {
+            pauseCurrentRunningBaritone();
+        }
     }
 
     private void onDisconnect() {
-        finishPath("断开连接", null);
-        currentPath = null;
-        stopCurrentRunningBaritone();
+        pauseRecording();
+        pauseCurrentRunningBaritone();
     }
 
     private void onRespawn() {
-        finishPath("玩家重生", null);
-        currentPath = null;
-        stopCurrentRunningBaritone();
+        pauseRecording();
+        pauseCurrentRunningBaritone();
+    }
+
+    private void pauseRecording() {
+        try {
+            checkpointRecordingSnapshot();
+            if (recordingStorage != null && recordingPath != null) {
+                writePath(recordingStorage, recordingPath);
+            }
+        } catch (Throwable e) {
+            Debug.info("PathManager failed to checkpoint paused recording: " + recordingPathFile);
+            Debug.info(e);
+        } finally {
+            recordingStarted = false;
+            recordingFlightStarted = false;
+            recordingSnapshot = null;
+        }
+    }
+
+    private void checkpointRecordingSnapshot() {
+        if (!recordingStarted
+                || recordingPath == null
+                || recordingSnapshot == null
+                || recordingPath.bp().isEmpty()) {
+            return;
+        }
+        List<BlockPos> path = recordingPath.bp();
+        BlockPos last = recordingSnapshot.lastPosition();
+        if (!path.getLast().equals(last)
+                && horizontalDistanceSquared(path.getLast(), last) <= PATH_RECORD_MAX_HORIZONTAL_DISTANCE_SQUARED) {
+            path.add(last.toImmutable());
+        }
     }
 
     private static final int POSITION_FLAG = VRender.createTextPositionFlag(0, 1);
@@ -707,6 +766,7 @@ public class PathManager extends BaseModule {
         String pathFile = recordingPathFile;
         int savedSize = recordingPath == null ? 0 : recordingPath.bp().size();
         try {
+            checkpointRecordingSnapshot();
             savedSize = recordingPath == null ? 0 : recordingPath.bp().size();
             writePath(storage, recordingPath == null ? new RecordPath(List.of()) : recordingPath);
             storage.write();
@@ -769,6 +829,10 @@ public class PathManager extends BaseModule {
         }
         if (shouldWriteBeforeCurrent(snapshot, current)) {
             BlockPos lastPosition = snapshot.lastPosition();
+            if (horizontalDistanceSquared(snapshot.snapshotPos(), lastPosition)
+                    > PATH_RECORD_MAX_HORIZONTAL_DISTANCE_SQUARED) {
+                lastPosition = current;
+            }
             startSnapshot(lastPosition);
             recordingSnapshot.updateLastPosition(current);
             return;
@@ -793,11 +857,20 @@ public class PathManager extends BaseModule {
 
     private boolean shouldWriteBeforeCurrent(RecordSnapshot snapshot, BlockPos current) {
         double writeDistance = autoWriteDistance.get();
-        double disSqr = snapshot.snapshotPos().getSquaredDistance(current);
-        if (disSqr < MathUtils.s2(writeDistance)) {
-            return !canSee(snapshot.snapshotPos(), current);
+        double horizontalDisSqr = horizontalDistanceSquared(snapshot.snapshotPos(), current);
+        if (horizontalDisSqr > PATH_RECORD_MAX_HORIZONTAL_DISTANCE_SQUARED) {
+            return false;
         }
-        return true;
+        if (horizontalDisSqr >= MathUtils.s2(writeDistance)) {
+            return true;
+        }
+        return !canSee(snapshot.snapshotPos(), current);
+    }
+
+    private static double horizontalDistanceSquared(BlockPos first, BlockPos second) {
+        double dx = (double) first.getX() - second.getX();
+        double dz = (double) first.getZ() - second.getZ();
+        return dx * dx + dz * dz;
     }
 
     private boolean canSee(BlockPos from, BlockPos to) {
@@ -1262,6 +1335,10 @@ public class PathManager extends BaseModule {
                 return null;
             }
             return segments.get(currentIndex);
+        }
+
+        private String pathFile() {
+            return pathFile;
         }
 
         private void replaceCurrentSegment(PathSeg segment) {

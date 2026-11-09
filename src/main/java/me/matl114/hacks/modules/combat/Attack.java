@@ -767,13 +767,19 @@ public class Attack extends BaseModule {
 
     private void applyPostAttack(Entity target, AttackSettings settings) {
         if (postFix.get() || settings.elytraDelaySwitch()) {
+            // next tick pre attack
             Tasks.scheduleDelayedPre(
                     () -> {
                         attackWithSettings(mc.player, target, settings);
                     },
                     0);
         } else {
-            attackWithSettings(mc.player, target, settings);
+            // this tick post attack
+            Tasks.scheduleDelayed(
+                    () -> {
+                        attackWithSettings(mc.player, target, settings);
+                    },
+                    0);
         }
     }
 

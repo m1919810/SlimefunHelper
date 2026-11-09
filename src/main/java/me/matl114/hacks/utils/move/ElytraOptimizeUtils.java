@@ -4,7 +4,6 @@ import java.util.function.Function;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.hacks.modules.move.ElytraExtra;
-import me.matl114.hacks.modules.move.ElytraFlight;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.EntityUtils;
@@ -227,7 +226,7 @@ public class ElytraOptimizeUtils {
         if (!ViaFabricPlusHooks.isSupportDupRot()) {
             return calculateBestV3ClimbingSpeed(pitch, yaw);
         }
-        double requestSpeed = getV5RequestSpeed();
+        double requestSpeed = 1.7D;
         double autoRescaleAmount = ElytraExtra.INSTANCE.autoRescaleAmount.get();
         Vec3d lastVelocity = PlayerStateManager.INSTANCE.lastKnownClientVelocity;
         float previousYaw = yaw;
@@ -260,13 +259,6 @@ public class ElytraOptimizeUtils {
     }
 
     private record V5Bounds(double uMinX, double uMaxX, double uMinY, double uMaxY, double uMinZ, double uMaxZ) {}
-
-    private static double getV5RequestSpeed() {
-        if (ElytraFlight.INSTANCE != null) {
-            return Math.max(V5_EPSILON, ElytraFlight.INSTANCE.packetMotion.get());
-        }
-        return V5_FALLBACK_REQUEST_SPEED;
-    }
 
     private static float wrapV5Yaw(double yaw) {
         double wrapped = yaw % 360.0D;

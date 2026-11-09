@@ -56,7 +56,6 @@ import me.matl114.versioned.api.VItem;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityPose;
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
@@ -651,7 +650,7 @@ public class ElytraBot extends BaseModule {
             registerListener(RenderListener.getRender2DEvent(), this::onDebugRender);
         }
         registerListener(Listener.getPacketPoint().getChannel(EntityDamageS2CPacket.class), this::onEntityDamage);
-        registerListener(Listener.getEntityPostTickListener().getChannel(EntityType.PLAYER), this::onPostPlayerMove);
+        registerListener(Listener.getClientPlayerPostUpdatePoint(), this::onPostPlayerMove);
     }
 
     @Override
@@ -762,8 +761,8 @@ public class ElytraBot extends BaseModule {
         }
     }
 
-    public void onPostPlayerMove(Event<PlayerEntity> event) {
-        if (event.context == mc.player && currentBehaviour != null) {
+    public void onPostPlayerMove() {
+        if (currentBehaviour != null) {
             currentBehaviour.onPostPlayerTick();
         }
     }

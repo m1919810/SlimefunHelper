@@ -184,6 +184,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
                             shift = At.Shift.BEFORE))
     public void prePlayerTick(CallbackInfo ci) {
         if (!checkClientPlayer()) return;
+        Listener.getClientPlayerPreTickPoint().broadcast((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
         this.movementManager.preProgress((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
     }
 
