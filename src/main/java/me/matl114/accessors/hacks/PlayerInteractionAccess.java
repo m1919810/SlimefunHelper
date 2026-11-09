@@ -1,6 +1,7 @@
 package me.matl114.accessors.hacks;
 
 import javax.annotation.Nullable;
+import me.matl114.hacks.modules.task.ServerFeature;
 import me.matl114.hacks.utils.WorldUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
@@ -139,7 +140,7 @@ public interface PlayerInteractionAccess {
             return -1.0F;
         }
         float miningSpeed = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
-                MinecraftClient.getInstance().player, block, tool);
+                MinecraftClient.getInstance().player, block, tool, ServerFeature.INSTANCE.attributeSwap.get());
         float speed = WorldUtils.calcBlockBreakingDelta(
                 block, MinecraftClient.getInstance().world, currentBreakingPos, miningSpeed);
         int ticksSinceLastStart = getFailBreakMiningTicks() + extraTick;
