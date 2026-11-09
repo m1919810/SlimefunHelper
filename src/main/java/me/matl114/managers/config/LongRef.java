@@ -5,7 +5,7 @@ import me.matl114.utils.config.BaseAttrKeyValue;
 import me.matl114.utils.config.kv.AttrKeyValues;
 
 @AllArgsConstructor
-public class LongRef extends Ref<Long> {
+public class LongRef extends NumberRef<Long> {
     public static final Class<Long> TYPE = Long.class;
 
     long value;
@@ -40,22 +40,8 @@ public class LongRef extends Ref<Long> {
     }
 
     @Override
-    public Object getAsPrimitive() {
-        return value;
-    }
-
-    @Override
-    public <W> boolean isSameTypeWith(Ref<W> ref) {
-        return ref instanceof LongRef;
-    }
-
-    @Override
-    public <W> boolean copyValueFrom(Ref<W> otherRef) {
-        if (otherRef instanceof LongRef lg) {
-            set(lg.get());
-            return true;
-        }
-        return false;
+    public void setFromNumber(Number number) {
+        set(number.longValue());
     }
 
     @Override

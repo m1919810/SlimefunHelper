@@ -5,7 +5,6 @@ import java.util.function.Consumer;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.events.impl.EventContainer;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.MovTasks;
@@ -35,7 +34,6 @@ import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.commands.params.types.ExecutePos;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.s2c.play.EnterReconfigurationS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.util.math.BlockPos;
@@ -224,7 +222,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
     public void registerAll() {
         super.registerAll();
         registerCommandBootstrap(this::bootStrapTravelCommand);
-        registerListener(Listener.getCustomListener().getChannel(ElytraMotion.class), this::onElytraVelocity);
+        registerListener(ElytraFlight.getFlightMotion(), this::onElytraVelocity);
         registerListener(
                 Listener.getPacketPreHandlePoint().getChannel(EnterReconfigurationS2CPacket.class),
                 this::onReconfiguration);
@@ -656,12 +654,11 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             return false;
         }
 
-        public void onElytra(Event<EventContainer<ElytraMotion>> event) {
+        public void onElytra(Event<ElytraMotion> event) {
             if (elytraRotation == null) {
                 return;
             }
-            EventContainer<ElytraMotion> eventContainer = event.context();
-            ElytraMotion motion = eventContainer.getValue();
+            ElytraMotion motion = event.context();
             if (motion.algorithm() == null) return;
             Vec2f rotation = EntityUtils.rotationToPitchYaw(elytraRotation);
             if (MovTasks.getElytraFlight().useAutoRescale.get() && ElytraExtra.INSTANCE.autoRescale.get()) {
@@ -705,12 +702,8 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             }
             if (dangerousNoFallFlyingTick == 0) {
                 MovExtra.INSTANCE.sendPacketsForInventoryAction();
-                if (mc.player.checkFallFlying()) {
-                    MovExtra.INSTANCE.sendPacketsForPreStartFallFlying();
-                    mc.getNetworkHandler()
-                            .sendPacket(new ClientCommandC2SPacket(
-                                    mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                    MovExtra.INSTANCE.sendPacketsForPostStartFallFlying();
+                if (mc.player.checkGliding()) {
+                    ElytraExtra.INSTANCE.tryStartFallFlying();
                 }
                 dangerousNoFallFlyingTick = 1;
             }
@@ -1519,7 +1512,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
         }
     }
 
-    private void onElytraVelocity(Event<EventContainer<ElytraMotion>> event) {
+    private void onElytraVelocity(Event<ElytraMotion> event) {
         if (travelDelegate instanceof TravelMoveVelocity velocity) {
             velocity.onElytra(event);
         }

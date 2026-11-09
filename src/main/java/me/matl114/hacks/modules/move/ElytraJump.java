@@ -28,7 +28,6 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.CollisionUtil;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.network.packet.PacketType;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
@@ -514,12 +513,8 @@ public class ElytraJump extends BaseModule implements LegalMovementManager.Movem
                 mc.player.setSprinting(true);
             } else {
                 if (!mc.player.isFallFlying()) {
-                    if (mc.player.checkFallFlying()) {
-                        MovTasks.getMovExtra().sendPacketsForPreStartFallFlying();
-                        mc.getNetworkHandler()
-                                .sendPacket(new ClientCommandC2SPacket(
-                                        mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                        MovTasks.getMovExtra().sendPacketsForPostStartFallFlying();
+                    if (mc.player.checkGliding()) {
+                        ElytraExtra.INSTANCE.tryStartFallFlying();
                     }
                 }
                 re.sprint(true).jump(false).forward(true).sneak(sneak.get()).applyInput(mc.player);

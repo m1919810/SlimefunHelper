@@ -143,11 +143,6 @@ public class MineExtra extends BaseModule {
 
     public final ModulePath vanillaBreak = fastbreak.add("vanilla-break");
 
-    {
-        portConfigs(fastbreak.add("vanilla-fast-break-fix"), vanillaBreak.add("vanilla-fast-break-fix"));
-        portConfigs(fastbreak.add("no-swing-for-vanilla-break"), vanillaBreak.add("no-swing-for-vanilla-break"));
-    }
-
     public final FlagRef fasterVanillaBreak = builder(vanillaBreak.add("faster-vanilla-break"), Boolean.class)
             .defaultValue(true)
             .build();
@@ -160,11 +155,6 @@ public class MineExtra extends BaseModule {
             flagBuilder(vanillaBreak.add("no-swing-for-vanilla-break")).build();
 
     public final ModulePath doubleBreakMine = fastbreak.add("double-break-mine");
-
-    {
-        portConfigs(fastbreak.add("double-break"), doubleBreakMine.addEnable());
-        portConfigs(fastbreak.add("ghost-hand-fail-break"), doubleBreakMine.add("ghost-hand"));
-    }
 
     public final FlagRef doubleBreak = flagBuilder(doubleBreakMine.addEnable()).build();
 
@@ -194,10 +184,6 @@ public class MineExtra extends BaseModule {
             flagBuilder(badPackets.add("fix-swing-packet")).build();
 
     public final ModulePath render = fastbreak.add("render");
-
-    {
-        portConfigs(fastbreak.add("render-current-break-pos"), render.add("render-current-break-pos"));
-    }
 
     public final FlagRef mineRender =
             flagBuilder(render.add("render-current-break-pos")).build();
@@ -570,10 +556,10 @@ public class MineExtra extends BaseModule {
             if (groundDeceive && !mc.player.isOnGround()) {
                 speed *= 5;
             }
-            sumitFailBreakProgress(speed);
+            submitFailBreakProgress(speed);
             return speed > 0.99;
         } else {
-            sumitFailBreakProgress(0.0F);
+            submitFailBreakProgress(0.0F);
             return false;
         }
     }
@@ -916,14 +902,14 @@ public class MineExtra extends BaseModule {
         currentMiningProgressTick = null;
     }
 
-    public void sumitProgress(float progress) {
+    public void submitProgress(float progress) {
         var access = PlayerInteractionAccess.of(mc.interactionManager);
         if (access != null && access.getCurrentMiningPos() != null) {
             currentMiningProgressTick = Pair.of(access.getCurrentMiningPos(), progress);
         }
     }
 
-    public void sumitFailBreakProgress(float progress) {
+    public void submitFailBreakProgress(float progress) {
         var access = PlayerInteractionAccess.of(mc.interactionManager);
         if (access != null && access.getCurrentFailBreakPos() != null) {
             currentFailMiningProgressTick = Pair.of(access.getCurrentFailBreakPos(), progress);
@@ -967,7 +953,7 @@ public class MineExtra extends BaseModule {
                                     .getPos()
                                     .squaredDistanceTo(currentMine.getFirst().toCenterPos())
                             < 40000) {
-                sumitMiningRender(currentMine, frameColor);
+                submitMiningRender(currentMine, frameColor);
             }
             if (currentFailMine != null
                     && mc.player
@@ -977,12 +963,12 @@ public class MineExtra extends BaseModule {
                             < 40000
                     && !Objects.equals(
                             currentFailMine.getFirst(), currentMine != null ? currentMine.getFirst() : null)) {
-                sumitMiningRender(currentFailMine, doubleBreakColor);
+                submitMiningRender(currentFailMine, doubleBreakColor);
             }
         }
     }
 
-    private void sumitMiningRender(Pair<BlockPos, Float> currentFailMine, NBTRef<WrapColor> doubleBreakColor) {
+    private void submitMiningRender(Pair<BlockPos, Float> currentFailMine, NBTRef<WrapColor> doubleBreakColor) {
         mineFrameCollector.submit(
                 new Box(currentFailMine.getFirst()), doubleBreakColor.get().withAlpha(255));
         float progress = currentFailMine.getSecond();
