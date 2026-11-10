@@ -206,7 +206,7 @@
 	"fast-break.double-break-mine.enable": "启用双挖",
 	"fast-break.double-break-mine.enable-vanilla-behavior": "原版双挖",
 	"fast-break.double-break-mine.ghost-hand": "鬼手双挖",
-	"fast-break.double-break-mine.ghost-hand-mode": "双挖鬼手模式",
+	"fast-break.double-break-mine.ghost-hand-mode": "双挖鬼手优先模式",
 	"fast-break.double-break-mine.eating-abort": "使用物品中止",
 	"fast-break.ghost-hand-swap-when-start": "开始挖掘时切换",
 	"fast-break.silent-break": "静默破坏",
