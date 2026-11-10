@@ -242,9 +242,17 @@ public class WorldUtils {
 
     public static float calcBlockBreakingDelta(
             BlockState state, BlockView world, BlockPos pos, PlayerEntity player, ItemStack tool) {
+        return calcBlockBreakingDelta(state, world, pos, player, tool, ServerFeature.INSTANCE.attributeSwap.get());
+    }
 
-        var playerBreakSpeed = getPlayerBlockBreakingSpeedWithCanMineMultiply(
-                player, state, tool, ServerFeature.INSTANCE.attributeSwap.get());
+    public static float calcBlockBreakingDelta(
+            BlockState state,
+            BlockView world,
+            BlockPos pos,
+            PlayerEntity player,
+            ItemStack tool,
+            boolean attributeSwap) {
+        var playerBreakSpeed = getPlayerBlockBreakingSpeedWithCanMineMultiply(player, state, tool, attributeSwap);
         return calcBlockBreakingDelta(state, world, pos, playerBreakSpeed);
     }
 
