@@ -36,7 +36,7 @@ public class ChainMine extends BaseModule {
     public final ModulePath chainMining = makePath(Configs.MINE_CONFIG, "mine-tools.chain-mining");
 
     public final FlagRef enable = flagBuilder(chainMining.addEnable()).build();
-    public final KeyBindRef hotkey = moduleEntry(chainMining.addHotkey(), new MultiKeyBind(), chainMining.addEnable())
+    public final KeyBindRef hotkey = toggleHotkey(chainMining.addHotkey(), new MultiKeyBind(), chainMining.addEnable())
             .build();
     public final IntRef chainDepth = intBuilder(chainMining.add("chain-depth"))
             .defaultValue(8)
