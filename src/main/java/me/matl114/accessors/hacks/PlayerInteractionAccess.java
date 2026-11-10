@@ -110,7 +110,23 @@ public interface PlayerInteractionAccess {
         return predictCurrentMiningProgressWithTool(tool, 0);
     }
 
-    float predictCurrentMiningProgressWithTool(ItemStack tool, int extraTicks);
+    default float predictCurrentMiningProgressWithTool(ItemStack tool, int startTick) {
+        return predictCurrentMiningProgressWithTool(tool, startTick, ServerFeature.INSTANCE.attributeSwap.get());
+    }
+
+    default float predictCurrentMiningProgressWithTool(ItemStack tool, int extraTicks, boolean attributeSwap) {
+        BlockPos currentBreakingPos = getCurrentMiningPos();
+        var client = MinecraftClient.getInstance();
+        ;
+        BlockState block = client.world.getBlockState(currentBreakingPos);
+        if (block.isAir()) {
+            return -1.0F;
+        }
+        float speed = WorldUtils.calcBlockBreakingDelta(
+                block, client.world, currentBreakingPos, client.player, tool, attributeSwap);
+        int ticksSinceLastStart = getCurrentMiningTicks() + extraTicks;
+        return speed * ticksSinceLastStart;
+    }
 
     public int getFailBreakMiningTicks();
     /**
@@ -120,12 +136,16 @@ public interface PlayerInteractionAccess {
      * 继续复用的一段服务端上下文”，其可信来源是 start tick 与当前方块速度。
      */
     default float getFailBreakMiningProgress() {
+        return getFailBreakMiningProgress(false);
+    }
+
+    default float getFailBreakMiningProgress(boolean nextTick) {
         BlockPos currentFailBreakPos = getCurrentFailBreakPos();
         if (currentFailBreakPos == null) {
             return -1.0F;
         }
         return predictFailMiningProgressWithTool(
-                MinecraftClient.getInstance().player.getMainHandStack(), 0);
+                MinecraftClient.getInstance().player.getMainHandStack(), nextTick);
     }
 
     /**
@@ -133,17 +153,17 @@ public interface PlayerInteractionAccess {
      *
      * <p>主要用于切工具后的收益评估与策略决策，不会直接修改本地挖掘状态。
      */
-    default float predictFailMiningProgressWithTool(ItemStack tool, int extraTick) {
+    default float predictFailMiningProgressWithTool(ItemStack tool, boolean nextTick) {
         BlockPos currentBreakingPos = getCurrentFailBreakPos();
         BlockState block = MinecraftClient.getInstance().world.getBlockState(currentBreakingPos);
         if (block.isAir()) {
             return -1.0F;
         }
         float miningSpeed = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
-                MinecraftClient.getInstance().player, block, tool, ServerFeature.INSTANCE.attributeSwap.get());
+                MinecraftClient.getInstance().player, block, tool, !nextTick);
         float speed = WorldUtils.calcBlockBreakingDelta(
                 block, MinecraftClient.getInstance().world, currentBreakingPos, miningSpeed);
-        int ticksSinceLastStart = getFailBreakMiningTicks() + extraTick;
+        int ticksSinceLastStart = getFailBreakMiningTicks() + (nextTick ? 1 : 0);
         return speed * ticksSinceLastStart;
     }
 

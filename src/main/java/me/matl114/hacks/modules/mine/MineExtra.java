@@ -149,19 +149,6 @@ public class MineExtra extends BaseModule {
                     && this.fastBreakBypassMode.get().isIn(Mode.BYPASS_GRIM_BAD_PACKETS, Mode.BYPASS_GRIM_LEGIT))
             .build();
 
-    public final ModulePath vanillaBreak = fastbreak.add("vanilla-break");
-
-    public final FlagRef fasterVanillaBreak = builder(vanillaBreak.add("faster-vanilla-break"), Boolean.class)
-            .defaultValue(true)
-            .build();
-
-    public final FlagRef vanillaFastBreakFix = builder(vanillaBreak.add("vanilla-fast-break-fix"), Boolean.class)
-            .defaultValue(false)
-            .build();
-
-    public final FlagRef noSwing =
-            flagBuilder(vanillaBreak.add("no-swing-for-vanilla-break")).build();
-
     public final ModulePath doubleBreakMine = fastbreak.add("double-break-mine");
 
     public final FlagRef doubleBreak = flagBuilder(doubleBreakMine.addEnable()).build();
@@ -185,6 +172,19 @@ public class MineExtra extends BaseModule {
                     doubleBreakMine.add("predict-destroy"), OptionalPrimitive.INT_TYPE)
             .defaultValue(new OptionalPrimitive<>(false, NBTTypes.INT_TYPE, 5))
             .build();
+
+    public final ModulePath vanillaBreak = fastbreak.add("vanilla-break");
+
+    public final FlagRef fasterVanillaBreak = builder(vanillaBreak.add("faster-vanilla-break"), Boolean.class)
+            .defaultValue(true)
+            .build();
+
+    public final FlagRef vanillaFastBreakFix = builder(vanillaBreak.add("vanilla-fast-break-fix"), Boolean.class)
+            .defaultValue(false)
+            .build();
+
+    public final FlagRef noSwing =
+            flagBuilder(vanillaBreak.add("no-swing-for-vanilla-break")).build();
 
     public final ModulePath badPackets = fastbreak.add("packet-fix");
 
@@ -215,10 +215,6 @@ public class MineExtra extends BaseModule {
 
     public final FlagRef renderOnlyWhenMine =
             flagBuilder(render.add("render-only-when-mine")).build();
-
-    private IndexEntry<ItemStack> getBestMiningToFor(BlockState currentState, GhostHandMode mode) {
-        return getBestMiningToFor(currentState, mode, false);
-    }
 
     private IndexEntry<ItemStack> getBestMiningToFor(
             BlockState currentState, GhostHandMode mode, boolean attributeSwap) {
@@ -254,10 +250,6 @@ public class MineExtra extends BaseModule {
                 true,
                 true);
         return result != null ? result : defaultEntry;
-    }
-
-    public IndexEntry<ItemStack> getGhostHandMiningTool(BlockState currentState) {
-        return getGhostHandMiningTool(currentState, false);
     }
 
     public IndexEntry<ItemStack> getGhostHandMiningTool(BlockState currentState, boolean attributeSwap) {
@@ -369,7 +361,7 @@ public class MineExtra extends BaseModule {
                             PlayerInteractionAccess.of(mc.interactionManager).getCurrentMiningPos(), packet.getPos())) {
                 lastStartingMineIsInstantBreak = mc.player != null
                         && mc.world != null
-                        && predictBlockBreakingSpeedAt(packet.getPos()) > Math.min(1.0F, breakThreshold.get());
+                        && instantSpeedPredict1(packet.getPos()) > Math.min(1.0F, breakThreshold.get());
                 shouldUseQuickMine();
             }
             updateGainedAdvantageCooldown(packetEvent);
@@ -385,7 +377,8 @@ public class MineExtra extends BaseModule {
                 && Objects.equals(packet.getPos(), instaBreakGhostHand.getSecond())) {
             if (instaBreakGhostHand.getFirst() != null) {
                 Runnable first = instaBreakGhostHand.getFirst();
-                PacketManager.schedulePostScheduleCallback(packet, () -> finishMineGhostHand(first));
+                // no need to delay because instant mine do not delay
+                PacketManager.schedulePostScheduleCallback(packet, first);
             }
             instaBreakGhostHand = null;
         }
@@ -466,6 +459,14 @@ public class MineExtra extends BaseModule {
             lastServerPos = packet.getPos();
             thisTickHasBroken = true;
         }
+    }
+
+    private float instantSpeedPredict1(BlockPos pos) {
+        if (mc.player.isCreative()) return 10000.0F;
+        BlockState state = mc.world.getBlockState(pos);
+        IndexEntry<ItemStack> stackEntry = getGhostHandMiningTool(state, ServerFeature.INSTANCE.attributeSwap.get());
+        return WorldUtils.calcBlockBreakingDelta(
+                state, MinecraftClient.getInstance().world, pos, mc.player, stackEntry.val());
     }
 
     public void onPlayerMove(Event<PlayerMoveC2SPacket> packetEvent) {
@@ -584,19 +585,10 @@ public class MineExtra extends BaseModule {
         if (state.isAir() || state.isLiquid()) {
             return;
         }
-        PlayerStateManager.PlayerStatus status = PlayerStateManager.INSTANCE.getOrCreatePlayerStatus(mc.player);
-        ItemStack tool = status.getMainHandSnapshot();
-        float speed = WorldUtils.calcBlockBreakingDelta(
-                state,
-                mc.world,
-                failBreakPos,
-                WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(mc.player, state, tool, true));
-        if (speed <= 0.0F) {
-            return;
-        }
-        float progress = access.getFailBreakMiningTicks() * speed;
+        float progress = access.getFailBreakMiningProgress();
         if (progress > 1.0F) {
-            dispatchDoubleMineBreakTick(new BlockBreak(failBreakPos, BlockBreak.Stage.PRE, tool, progress));
+            dispatchDoubleMineBreakTick(new BlockBreak(
+                    failBreakPos, BlockBreak.Stage.POST, mc.player.getStackInHand(Hand.MAIN_HAND), progress));
         }
     }
 
@@ -653,7 +645,7 @@ public class MineExtra extends BaseModule {
         // do not mine air, shit
         if (state.getBlock().getHardness() >= 0.0F && !state.isLiquid() && !state.isAir()) {
             var access = PlayerInteractionAccess.of(mc.interactionManager);
-            var speed = access.predictFailMiningProgressWithTool(tool, 0);
+            var speed = access.predictFailMiningProgressWithTool(tool, true);
             if (groundDeceive && !mc.player.isOnGround()) {
                 speed *= 5;
             }
@@ -694,14 +686,15 @@ public class MineExtra extends BaseModule {
             return;
         }
         BlockState blockState = mc.world.getBlockState(failPos);
-        IndexEntry<ItemStack> currentItemSlot = getBestMiningToFor(blockState, mode);
+        IndexEntry<ItemStack> currentItemSlot = getBestMiningToFor(blockState, GhostHandMode.INV_SWAP, false);
         ItemStack currentTool = currentItemSlot.val();
         if (tickMineFailBreak(blockState, currentTool, groundDeceive)) {
             // force delay, because it might save some packets
             if (currentTickCallback != null) {
                 finishMineGhostHand(currentTickCallback);
             }
-            Runnable callback = InvExtra.INSTANCE.swapItemToHand(currentItemSlot.index(), false, mode);
+            GhostHandMode preferredMode = mode.isAcceptable(currentItemSlot.index()) ? mode : GhostHandMode.INV_SWAP;
+            Runnable callback = InvExtra.INSTANCE.swapItemToHand(currentItemSlot.index(), false, preferredMode);
             InvExtra.INSTANCE.pushNextTickGhostHandCallback(callback);
         } else {
             if (currentTickCallback != null) {
@@ -1031,7 +1024,7 @@ public class MineExtra extends BaseModule {
             } else if (shouldRenderMine()) {
                 BlockPos blockPos = access.getCurrentMiningPos();
                 BlockState state = mc.world.getBlockState(blockPos);
-                var tool = getGhostHandMiningTool(state);
+                var tool = getGhostHandMiningTool(state, false);
                 float progress = PlayerInteractionAccess.of(mc.interactionManager)
                         .predictCurrentMiningProgressWithTool(tool.val(), 1);
                 currentMine = Pair.of(blockPos, progress);
@@ -1044,7 +1037,7 @@ public class MineExtra extends BaseModule {
             } else if (access.getCurrentFailBreakPos() != null) {
                 BlockPos blockPos = access.getCurrentFailBreakPos();
                 float progressFail =
-                        PlayerInteractionAccess.of(mc.interactionManager).getFailBreakMiningProgress();
+                        PlayerInteractionAccess.of(mc.interactionManager).getFailBreakMiningProgress(true);
                 currentFailMine = Pair.of(blockPos, progressFail);
             } else {
                 currentFailMine = null;
@@ -1103,14 +1096,6 @@ public class MineExtra extends BaseModule {
                 RenderUtils.stopDrawVirtual(renderEvent.context.stack());
             }
         }
-    }
-
-    public float predictBlockBreakingSpeedAt(BlockPos pos) {
-        if (mc.player.isCreative()) return 10000.0F;
-        BlockState state = mc.world.getBlockState(pos);
-        IndexEntry<ItemStack> stackEntry = getGhostHandMiningTool(state);
-        return WorldUtils.calcBlockBreakingDelta(
-                state, MinecraftClient.getInstance().world, pos, mc.player, stackEntry.val());
     }
 
     public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {
