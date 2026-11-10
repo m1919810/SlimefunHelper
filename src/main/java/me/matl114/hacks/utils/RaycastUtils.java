@@ -374,6 +374,212 @@ public class RaycastUtils {
         };
     }
 
+    public static Iterator<BlockPos> createRaycastBlockPosIterator(Box box, Vec3d movement, boolean enableThreshold) {
+        return new BoxRaycastBlockPosIterator(box, movement, enableThreshold);
+    }
+
+    private static final class BoxRaycastBlockPosIterator implements Iterator<BlockPos> {
+        private static final double THRESHOLD = 1.0E-7D;
+        private static final int MIN_X = 0;
+        private static final int MAX_X = 1;
+        private static final int MIN_Y = 2;
+        private static final int MAX_Y = 3;
+        private static final int MIN_Z = 4;
+        private static final int MAX_Z = 5;
+
+        private final double[] faceOrigins = new double[6];
+        private final double[] faceMovement = new double[6];
+        private final double[] nextPlanes = new double[6];
+        private final double[] nextTimes = new double[6];
+        private final int[] minBlocks = new int[3];
+        private final int[] maxBlocks = new int[3];
+        private int cursorX;
+        private int cursorY;
+        private int cursorZ;
+        private boolean initialBlocksRemaining;
+        private Iterator<BlockPos> enteringLayer = Collections.emptyIterator();
+        private BlockPos next;
+
+        private BoxRaycastBlockPosIterator(Box box, Vec3d movement, boolean enableThreshold) {
+            Vec3d initialOffset = enableThreshold ? movement.multiply(THRESHOLD) : Vec3d.ZERO;
+            Vec3d traversalMovement = enableThreshold ? movement.multiply(1.0D - 2.0D * THRESHOLD) : movement;
+            Box startBox = new Box(
+                    box.minX + initialOffset.x,
+                    box.minY + initialOffset.y,
+                    box.minZ + initialOffset.z,
+                    box.maxX + initialOffset.x,
+                    box.maxY + initialOffset.y,
+                    box.maxZ + initialOffset.z);
+
+            faceOrigins[MIN_X] = startBox.minX;
+            faceOrigins[MAX_X] = startBox.maxX;
+            faceOrigins[MIN_Y] = startBox.minY;
+            faceOrigins[MAX_Y] = startBox.maxY;
+            faceOrigins[MIN_Z] = startBox.minZ;
+            faceOrigins[MAX_Z] = startBox.maxZ;
+            faceMovement[MIN_X] = faceMovement[MAX_X] = traversalMovement.x;
+            faceMovement[MIN_Y] = faceMovement[MAX_Y] = traversalMovement.y;
+            faceMovement[MIN_Z] = faceMovement[MAX_Z] = traversalMovement.z;
+
+            minBlocks[0] = (int) Math.floor(startBox.minX);
+            minBlocks[1] = (int) Math.floor(startBox.minY);
+            minBlocks[2] = (int) Math.floor(startBox.minZ);
+            maxBlocks[0] = (int) Math.ceil(startBox.maxX) - 1;
+            maxBlocks[1] = (int) Math.ceil(startBox.maxY) - 1;
+            maxBlocks[2] = (int) Math.ceil(startBox.maxZ) - 1;
+
+            initializeFace(MIN_X, true);
+            initializeFace(MAX_X, false);
+            initializeFace(MIN_Y, true);
+            initializeFace(MAX_Y, false);
+            initializeFace(MIN_Z, true);
+            initializeFace(MAX_Z, false);
+
+            cursorX = minBlocks[0];
+            cursorY = minBlocks[1];
+            cursorZ = minBlocks[2];
+            initialBlocksRemaining =
+                    minBlocks[0] <= maxBlocks[0] && minBlocks[1] <= maxBlocks[1] && minBlocks[2] <= maxBlocks[2];
+        }
+
+        private void initializeFace(int face, boolean minimumFace) {
+            double velocity = faceMovement[face];
+            nextPlanes[face] = nextBoundaryPlane(faceOrigins[face], velocity, minimumFace);
+            nextTimes[face] =
+                    velocity == 0.0D ? Double.POSITIVE_INFINITY : (nextPlanes[face] - faceOrigins[face]) / velocity;
+        }
+
+        private static double nextBoundaryPlane(double coordinate, double velocity, boolean minimumFace) {
+            if (velocity > 0.0D) {
+                return minimumFace ? Math.floor(coordinate) + 1.0D : Math.ceil(coordinate);
+            }
+            if (velocity < 0.0D) {
+                return minimumFace ? Math.floor(coordinate) : Math.ceil(coordinate) - 1.0D;
+            }
+            return Double.POSITIVE_INFINITY;
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (next != null) {
+                return true;
+            }
+            while (true) {
+                if (initialBlocksRemaining) {
+                    next = nextInitialBlock();
+                    return true;
+                }
+                if (enteringLayer.hasNext()) {
+                    next = enteringLayer.next();
+                    return true;
+                }
+                if (!advanceToNextEvent()) {
+                    return false;
+                }
+            }
+        }
+
+        private BlockPos nextInitialBlock() {
+            BlockPos blockPos = new BlockPos(cursorX, cursorY, cursorZ);
+            if (cursorZ < maxBlocks[2]) {
+                cursorZ++;
+            } else {
+                cursorZ = minBlocks[2];
+                if (cursorY < maxBlocks[1]) {
+                    cursorY++;
+                } else {
+                    cursorY = minBlocks[1];
+                    if (cursorX < maxBlocks[0]) {
+                        cursorX++;
+                    } else {
+                        initialBlocksRemaining = false;
+                    }
+                }
+            }
+            return blockPos;
+        }
+
+        private boolean advanceToNextEvent() {
+            double eventTime = Double.POSITIVE_INFINITY;
+            for (double nextTime : nextTimes) {
+                eventTime = Math.min(eventTime, nextTime);
+            }
+            if (!Double.isFinite(eventTime) || eventTime > 1.0D) {
+                return false;
+            }
+
+            boolean[] crossedFaces = new boolean[6];
+            for (int face = 0; face < nextTimes.length; face++) {
+                if (nextTimes[face] != eventTime) {
+                    continue;
+                }
+                crossedFaces[face] = true;
+                int axis = face / 2;
+                int step = faceMovement[face] > 0.0D ? 1 : -1;
+                if ((face & 1) == 0) {
+                    minBlocks[axis] += step;
+                } else {
+                    maxBlocks[axis] += step;
+                }
+                nextPlanes[face] += step;
+                nextTimes[face] = (nextPlanes[face] - faceOrigins[face]) / faceMovement[face];
+            }
+
+            Set<BlockPos> newBlocks = new LinkedHashSet<>();
+            if (faceMovement[MAX_X] > 0.0D && crossedFaces[MAX_X]) {
+                addXLayer(newBlocks, maxBlocks[0]);
+            } else if (faceMovement[MIN_X] < 0.0D && crossedFaces[MIN_X]) {
+                addXLayer(newBlocks, minBlocks[0]);
+            }
+            if (faceMovement[MAX_Y] > 0.0D && crossedFaces[MAX_Y]) {
+                addYLayer(newBlocks, maxBlocks[1]);
+            } else if (faceMovement[MIN_Y] < 0.0D && crossedFaces[MIN_Y]) {
+                addYLayer(newBlocks, minBlocks[1]);
+            }
+            if (faceMovement[MAX_Z] > 0.0D && crossedFaces[MAX_Z]) {
+                addZLayer(newBlocks, maxBlocks[2]);
+            } else if (faceMovement[MIN_Z] < 0.0D && crossedFaces[MIN_Z]) {
+                addZLayer(newBlocks, minBlocks[2]);
+            }
+            enteringLayer = newBlocks.iterator();
+            return true;
+        }
+
+        private void addXLayer(Set<BlockPos> blocks, int x) {
+            for (int y = minBlocks[1]; y <= maxBlocks[1]; y++) {
+                for (int z = minBlocks[2]; z <= maxBlocks[2]; z++) {
+                    blocks.add(new BlockPos(x, y, z));
+                }
+            }
+        }
+
+        private void addYLayer(Set<BlockPos> blocks, int y) {
+            for (int x = minBlocks[0]; x <= maxBlocks[0]; x++) {
+                for (int z = minBlocks[2]; z <= maxBlocks[2]; z++) {
+                    blocks.add(new BlockPos(x, y, z));
+                }
+            }
+        }
+
+        private void addZLayer(Set<BlockPos> blocks, int z) {
+            for (int x = minBlocks[0]; x <= maxBlocks[0]; x++) {
+                for (int y = minBlocks[1]; y <= maxBlocks[1]; y++) {
+                    blocks.add(new BlockPos(x, y, z));
+                }
+            }
+        }
+
+        @Override
+        public BlockPos next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            BlockPos blockPos = next;
+            next = null;
+            return blockPos;
+        }
+    }
+
     @Nullable
     public static HitResult raycastOnlyBlockCollisions(Vec3d start, Vec3d end) {
         for (var block : createRaycastBlockPoses(start, end, true)) {

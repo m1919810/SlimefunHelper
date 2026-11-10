@@ -3,10 +3,15 @@
 	"module-toggle.mine-tools.chain-mining.enable": "连锁挖掘",
 	"module-toggle.mine-tools.mine-arua.enable": "挖掘光环",
 	"module-toggle.mine-tools.auto-tunnel.enable": "自动打洞",
+	"module-toggle.mine-tools.tunnel.enable": "自动隧道",
 	"config.index.mine-tools": "挖掘工具",
 	"config.index.mine-tools.chain-mining": "连锁挖掘",
 	"config.index.mine-tools.mine-arua": "MineArua",
 	"config.index.mine-tools.auto-tunnel": "自动打洞",
+	
+	"widget.click-gui.module-name.Mine.AutoTunnel": "自动隧道",
+	
+	
 	"widget.click-gui.module-name.Tasks.Config": "配置",
 	"widget.click-gui.module-name.Tasks.ConfigMenu": "配置菜单",
 	"widget.click-gui.module-name.Tasks.ConfigManager": "配置管理",

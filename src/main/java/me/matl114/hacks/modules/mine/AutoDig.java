@@ -47,7 +47,7 @@ public class AutoDig extends BaseModule {
                 }
             })
             .build();
-    public final KeyBindRef hotkey = moduleEntry(autoTunnel.addHotkey(), new MultiKeyBind(), autoTunnel.addEnable())
+    public final KeyBindRef hotkey = toggleHotkey(autoTunnel.addHotkey(), new MultiKeyBind(), autoTunnel.addEnable())
             .build();
     public final FlagRef snap = flagBuilder(autoTunnel.add("snap"))
             .updateListener(enabled -> {

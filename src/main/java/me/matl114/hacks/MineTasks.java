@@ -54,6 +54,9 @@ public class MineTasks {
     @Getter
     private static AutoDig autoDig;
 
+    @Getter
+    private static AutoTunnel autoTunnel;
+
     private static void initModules(ModuleManager m) {
         mineExtra = new MineExtra().register(m);
         miningProgressManager = new MiningProgressManager().register(m);
@@ -64,6 +67,7 @@ public class MineTasks {
         chainMine = new ChainMine().register(m);
         mineArua = new MineArua().register(m);
         autoDig = new AutoDig().register(m);
+        autoTunnel = new AutoTunnel().register(m);
     }
 
     static {
