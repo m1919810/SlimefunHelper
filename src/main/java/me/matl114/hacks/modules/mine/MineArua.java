@@ -39,7 +39,7 @@ public class MineArua extends BaseModule {
     public final ModulePath mineArua = makePath(Configs.MINE_CONFIG, "mine-tools.mine-arua");
 
     public final FlagRef enable = flagBuilder(mineArua.addEnable()).build();
-    public KeyBindRef keyBind = moduleEntry(mineArua.addHotkey(), new MultiKeyBind(), mineArua.addEnable())
+    public KeyBindRef keyBind = toggleHotkey(mineArua.addHotkey(), new MultiKeyBind(), mineArua.addEnable())
             .build();
 
     public NBTRef<EntrySet<Block>> whiteListRegex = builder(
