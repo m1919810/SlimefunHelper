@@ -214,8 +214,12 @@ public class InteractionTasks {
     }
 
     public static boolean checkInHead(BlockPos targetPos, Vec3d playerPos) {
-        Box box = Box.from(Vec3d.of(targetPos));
-        return interactExtra.getPotentialEyeHeights(playerPos).anyMatch(box::contains);
+        BlockState state = mc.world.getBlockState(targetPos);
+        if (weirdBoxes.contains(state.getBlock()) || buggyBoxes.contains(state.getBlock())) {
+            return false;
+        }
+        Box boundary = getPositionPlaceBoundary(targetPos, state);
+        return interactExtra.getPotentialEyeHeights(playerPos).anyMatch(boundary::contains);
     }
 
     public static boolean isSpecialPositionPlaceState(BlockState state) {
@@ -237,24 +241,36 @@ public class InteractionTasks {
         }
 
         List<Box> shapeBoxes = shape.getBoundingBoxes();
-        Box boundary = new Box(pos);
+        double minX = pos.getX();
+        double minY = pos.getY();
+        double minZ = pos.getZ();
+        double maxX = pos.getX() + 1;
+        double maxY = pos.getY() + 1;
+        double maxZ = pos.getZ() + 1;
         for (Box localBox : shapeBoxes) {
             Box box = localBox.offset(pos);
-            boundary = new Box(
-                    Math.max(boundary.minX, box.minX),
-                    Math.max(boundary.minY, box.minY),
-                    Math.max(boundary.minZ, box.minZ),
-                    Math.min(boundary.maxX, box.maxX),
-                    Math.min(boundary.maxY, box.maxY),
-                    Math.min(boundary.maxZ, box.maxZ));
+            minX = Math.max(minX, box.minX);
+            minY = Math.max(minY, box.minY);
+            minZ = Math.max(minZ, box.minZ);
+            maxX = Math.min(maxX, box.maxX);
+            maxY = Math.min(maxY, box.maxY);
+            maxZ = Math.min(maxZ, box.maxZ);
         }
-        return boundary;
+        return new Box(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     public static boolean checkPositionPlace(BlockPos pos, Direction face, Vec3d playerPos) {
         Vec3d plateCenter = pos.toCenterPos().offset(face, 0.5d);
         BlockState state = mc.world.getBlockState(pos);
-        if (!state.isFullCube(mc.world, pos) || isSpecialPositionPlaceState(state)) {
+        if (weirdBoxes.contains(state.getBlock()) || buggyBoxes.contains(state.getBlock())) {
+            plateCenter = switch (face) {
+                case DOWN -> new Vec3d(pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5);
+                case UP -> new Vec3d(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
+                case NORTH -> new Vec3d(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 1);
+                case SOUTH -> new Vec3d(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ());
+                case WEST -> new Vec3d(pos.getX() + 1, pos.getY() + 0.5, pos.getZ() + 0.5);
+                case EAST -> new Vec3d(pos.getX(), pos.getY() + 0.5, pos.getZ() + 0.5);};
+        } else if (!state.isFullCube(mc.world, pos) || isSpecialPositionPlaceState(state)) {
             Box boundary = getPositionPlaceBoundary(pos, state);
             plateCenter = switch (face) {
                 case DOWN -> new Vec3d(pos.getX() + 0.5, boundary.minY, pos.getZ() + 0.5);
@@ -301,8 +317,9 @@ public class InteractionTasks {
             }
         }
         for (var direction : list) {
-            if (checkInHead(pos, playerPos) || checkPositionPlace(pos, dir, playerPos)) {
-                return new BlockHitResult(pos.toCenterPos().offset(direction, 0.5), direction, pos, true);
+            boolean checkInHead = checkInHead(pos, playerPos);
+            if (checkInHead || checkPositionPlace(pos, dir, playerPos)) {
+                return new BlockHitResult(pos.toCenterPos().offset(direction, 0.5), direction, pos, checkInHead);
             }
         }
         return RaycastUtils.createHitResult(pos, dir);
