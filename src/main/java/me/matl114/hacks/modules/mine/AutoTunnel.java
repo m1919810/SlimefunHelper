@@ -1,21 +1,20 @@
 package me.matl114.hacks.modules.mine;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.RaycastUtils;
+import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
+import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -54,6 +53,7 @@ public class AutoTunnel extends BaseModule {
             .validator(Configs.intRange(1, 64))
             .show(lockGround::get)
             .build();
+    public final RenderCollector<List<Vec3d>> lineCollector = RenderCollectors.createLinesCollector();
 
     @Override
     public void registerAll() {
@@ -99,13 +99,9 @@ public class AutoTunnel extends BaseModule {
                 playerBox.maxY + expandHeight.get(),
                 playerBox.maxZ + width);
         if (lockGround.get()) {
-            expandedBox = new Box(
-                    expandedBox.minX,
-                    findGroundY(playerBox),
-                    expandedBox.minZ,
-                    expandedBox.maxX,
-                    expandedBox.maxY,
-                    expandedBox.maxZ);
+            var groundY = findGroundY(playerBox);
+            var down = Math.max(0, expandedBox.minY - groundY);
+            expandedBox = expandedBox.offset(0, -down, 0);
         }
 
         float yaw = axisLock.get() ? alignToAxis(mc.player.getYaw()) : mc.player.getYaw();
@@ -158,13 +154,7 @@ public class AutoTunnel extends BaseModule {
 
     private float alignToAxis(float currentYaw) {
         float yaw = EntityUtils.normalizeYaw(currentYaw);
-        float nearest = Math.round(yaw / 45.0F) * 45.0F;
-        if (nearest > 180.0F) nearest -= 360.0F;
-        if (nearest < -180.0F) nearest += 360.0F;
-
-        float difference = Math.abs(yaw - nearest);
-        if (difference > 180.0F) difference = 360.0F - difference;
-        return difference <= 10.0F ? nearest : yaw;
+        return EntityUtils.normalizeYaw(Math.round(yaw / 45.0F) * 45.0F);
     }
 
     private boolean isMineable(BlockState state) {

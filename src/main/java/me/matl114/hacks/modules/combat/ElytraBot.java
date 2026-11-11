@@ -40,7 +40,6 @@ import me.matl114.hacks.utils.PlayerInputUtils;
 import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.entity.PredictorImpl;
-import me.matl114.hacks.utils.enums.BypassMode;
 import me.matl114.hacks.utils.enums.PredictionMode;
 import me.matl114.hacks.utils.move.ElytraMotion;
 import me.matl114.hacks.utils.move.ElytraOptimizeUtils;
@@ -906,7 +905,8 @@ public class ElytraBot extends BaseModule {
 
     private boolean shouldUseMaceFix() {
         if (maceFix.get() && mc.player.isFallFlying() && !ElytraExtra.INSTANCE.isCurrentArmorGliding()) {
-            if (Attack.INSTANCE.maceFixMode.get().test(s -> s.get().isIn(BypassMode.NO_BYPASS))) {
+            if (Attack.INSTANCE.maceFixMode.get().isPresent()
+                    && Attack.INSTANCE.getMaceMode().isIn(Attack.MaceMode.PACKET, Attack.MaceMode.PACKET_LEGIT)) {
                 return false;
             }
             return true;

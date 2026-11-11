@@ -374,7 +374,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                 Vec3d realVector0 = wayVector.multiply(motionAmount);
                 // add custom elytra event for bot to control elytra
                 ElytraMotion motion = new ElytraMotion(
-                        ElytraExtra.INSTANCE.autoRescale.get() ? algorithm : null,
+                        ElytraExtra.INSTANCE.autoRescale.get() && useAutoRescale.get() ? algorithm : null,
                         motionRotation,
                         realVector0.length(),
                         motionAmount);
@@ -427,17 +427,18 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     // pitch reset to trigger grim lastPitch lastYaw update
                 }
                 if (shouldControl) {
-                    if (Math.abs(motion.pitch()) <= 1e-1 && horizontalFlyNoGravity.get() && !mc.player.isOnGround()) {
-                        modifyNoGravity = player.hasNoGravity();
-                    }
+                    boolean noGravity = (Math.abs(motion.pitch()) <= 1e-1
+                                    && horizontalFlyNoGravity.get()
+                                    && !mc.player.isOnGround())
+                            || motion.speed() <= 1e-3;
                     mc.player.setVelocity(
-                            (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS && useAutoRescale.get())
+                            (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS)
                                     ? ElytraExtra.INSTANCE.applyAxisLimit(
                                             motion.algorithm(),
                                             motion.movement(),
                                             motion.pitch(),
                                             motion.yaw(),
-                                            !mc.player.hasNoGravity())
+                                            !noGravity)
                                     : motion.movement());
                 } else if (freezeWhenSetup.get()
                         && PlayerStateManager.INSTANCE.lastKnownMovementSpeed.length() < 1E-8
@@ -474,23 +475,6 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                         .run();
             }
             currentTakeOff = false;
-        }
-    }
-
-    Boolean modifyNoGravity = null;
-
-    @Override
-    public void applyBeforeTravelTick(Event<LegalMovementManager> movementManagerEvent, Event<Vec3d> moveEvent) {
-        if (modifyNoGravity != null && mc.player.isFallFlying() && ElytraExtra.INSTANCE.canFireworkControlMotion()) {
-            mc.player.setNoGravity(true);
-        }
-    }
-
-    @Override
-    public void applyAfterTravelTick(Event<LegalMovementManager> movementManagerEvent, Event<Vec3d> moveEvent) {
-        if (modifyNoGravity != null) {
-            mc.player.setNoGravity(modifyNoGravity);
-            modifyNoGravity = null;
         }
     }
 
