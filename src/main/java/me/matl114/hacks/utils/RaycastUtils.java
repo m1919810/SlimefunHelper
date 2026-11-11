@@ -75,13 +75,22 @@ public class RaycastUtils {
                     case EAST -> startVec.subtract(ray.multiply((startVec.x - (endVec.x + 0.5)) / ray.x));
                 }
                 : endVec.offset(dir, 0.5);
-        return new BlockHitResult(crossTargetPose, dir, pos, false);
+        return new BlockHitResult(crossTargetPose, dir, pos, isVanillaInsideBlock(pos, startVec, endVec));
     }
 
     public static BlockHitResult createHitResult(BlockPos pos, Direction blockFace) {
         if (mc.player == null) return null;
         Vec3d endVec = pos.toCenterPos().offset(blockFace, 0.5);
-        return new BlockHitResult(endVec, blockFace, pos, false);
+        return new BlockHitResult(
+                endVec, blockFace, pos, isVanillaInsideBlock(pos, mc.player.getCameraPosVec(1.0f), endVec));
+    }
+
+    private static boolean isVanillaInsideBlock(BlockPos pos, Vec3d start, Vec3d end) {
+        BlockHitResult raycastResult = mc.world
+                .getBlockState(pos)
+                .getOutlineShape(mc.world, pos, ShapeContext.of(mc.player))
+                .raycast(start, end, pos);
+        return raycastResult != null && raycastResult.isInsideBlock();
     }
 
     public static EntityHitResult createRealHitResult(Entity entity, Vec3d playerEyePos) {

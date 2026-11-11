@@ -74,6 +74,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.*;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 
 public class ElytraExtra extends BaseModule implements LegalMovementManager.MovementModifier {
     public static ElytraExtra INSTANCE;
@@ -1677,38 +1678,51 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         }
 
         rocket_boost:
-        if (player.isFallFlying() && rocketBoost.get() && canFireworkControlMotion()) {
+        if (player.isFallFlying() && canFireworkControlMotion()) {
             boolean hasOverride = hasFireworkMotionOverride();
             Vec3d currentTarget = EntityUtils.pitchYawToRotation(player.getPitch(), player.getYaw());
-            float newYaw = mc.player.getYaw();
-            if (rocketBoostUseRescale.get() && !hasOverride) {
-                newYaw += (Tasks.getTick() % 2 == 0) ? 0.01F : -0.01F;
+            Event<ElytraMotion> motionEvent;
+            if (hasOverride) {
+                motionEvent = new Event<>(overrideElytraMotion, true, false);
+            } else {
+                var motionVal = rocketBoostUseRescale.get()
+                        ? new ElytraMotion(
+                                autoRescale.get() ? autoRescaleAl.get() : null,
+                                mc.player.getPitch(),
+                                mc.player.getYaw(),
+                                rocketBoostSpeed.get(),
+                                rocketBoostSpeed.get())
+                        : new ElytraMotion(null, currentTarget, rocketBoostSpeed.get(), rocketBoostSpeed.get());
+                motionEvent = new Event<>(motionVal, true, false);
+                if (!rocketBoost.get()) {
+                    motionEvent.cancel();
+                }
             }
-            ElytraMotion motion = hasOverride
-                    ? overrideElytraMotion
-                    : rocketBoostUseRescale.get()
-                            ? new ElytraMotion(
-                                    autoRescaleAl.get(),
-                                    mc.player.getPitch(),
-                                    newYaw,
-                                    rocketBoostSpeed.get(),
-                                    rocketBoostSpeed.get())
-                            : new ElytraMotion(null, currentTarget, rocketBoostSpeed.get(), rocketBoostSpeed.get());
-            if (!fireworkMotion.fireEvent(motion)) {
+            fireworkMotion.handleValue(motionEvent);
+            if (motionEvent.isCancelled()) {
                 break rocket_boost;
             }
-            if (rocketBoostUseRescale.get()) {
-                if (!hasOverride && motion.pitch() == mc.player.getPitch() && motion.yaw() == newYaw) {
-                    mc.player.setYaw(newYaw);
-                }
-                mc.player.setVelocity(applyAxisLimit(
-                        motion.algorithm(), motion.movement(), motion.pitch(), motion.yaw(), mc.player.hasNoGravity()));
-            } else {
-                player.setVelocity(motion.movement());
+            ElytraMotion motion = motionEvent.context;
+            if (motion.algorithm() != null) {
+                float eventYaw = motion.yaw();
+                float newYaw = eventYaw + ((Tasks.getTick() % 2 == 0) ? 0.01F : -0.01F);
+                motion.yaw(newYaw);
             }
+            if (motion.pitch() != mc.player.getPitch()) {
+                // do not restore rotate if only 0.01 diff
+                if (Math.abs(motion.pitch() - mc.player.getPitch()) > 1E-1) {
+                    movementManagerEvent.context.markForResetRot();
+                }
+                EntityUtils.setEntityPitchSafe(mc.player, motion.pitch());
+            }
+            if (motion.yaw() != mc.player.getYaw()) {
+                PlayerStateManager.setPlayerYawSafe(mc.player, motion.yaw());
+                movementManagerEvent.context.markForResetRot();
+            }
+            mc.player.setVelocity(applyAxisLimit(
+                    motion.algorithm(), motion.movement(), motion.pitch(), motion.yaw(), !mc.player.hasNoGravity()));
         }
         overrideElytraMotion = null;
-        overrideElytraMotionTick = -1;
         // slow falling with no crash
         if (false && player.isFallFlying()) {
             if (!movementManagerEvent.context().hasImportantRotation()) {
@@ -1929,7 +1943,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         timerVanilla.lastTimeFire = 0;
         timerVanilla.lastTimeWasAuto = false;
         overrideElytraMotion = null;
-        overrideElytraMotionTick = -1;
         nextRequestVelocity = null;
 
         currentDelayingArmorGlide = false;
@@ -2564,15 +2577,13 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     private ElytraMotion overrideElytraMotion;
-    private int overrideElytraMotionTick = -1;
 
     public void submitFireworkMotion(ElytraMotion motion) {
         overrideElytraMotion = motion;
-        overrideElytraMotionTick = Tasks.getTick();
     }
 
     private boolean hasFireworkMotionOverride() {
-        return overrideElytraMotion != null && overrideElytraMotionTick == Tasks.getTick();
+        return overrideElytraMotion != null;
     }
 
     Vec3d nextRequestVelocity = null;
@@ -2594,9 +2605,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         return null;
     }
 
-    public Vec3d applyAxisLimit(Al al, Vec3d currentMotion, float pitch, float yaw, boolean applyGravity) {
-        if (!autoRescale.get()) return currentMotion;
-        if (al == null) return applyFireworkLimit(currentMotion, pitch, yaw);
+    public Vec3d applyAxisLimit(@Nullable Al al, Vec3d currentMotion, float pitch, float yaw, boolean applyGravity) {
         return ElytraOptimizeUtils.applyAxisLimit(al, currentMotion, pitch, yaw, applyGravity);
     }
 

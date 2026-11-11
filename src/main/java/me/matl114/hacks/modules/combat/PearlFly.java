@@ -57,14 +57,20 @@ public class PearlFly extends BaseModule {
             flagBuilder(pearlPhase.add("enable-stand")).build();
 
     public final FlagRef autoCrawl = flagBuilder(pearlPhase.add("auto-crawl")).build();
+    public final FlagRef useWASDControl =
+            flagBuilder(pearlPhase.add("use-wasd-control")).build();
 
     public final DoubleRef autoPearlActivateRange = doubleBuilder(pearlPhase.add("auto-activate-range"))
             .defaultValue(0.35)
-            .validator(Configs.doubleRange(0.0D, 2.0D))
+            .validator(Configs.doubleRange(0.0D, 5.0D))
+            .show(() -> !this.useWASDControl.get())
             .build();
 
-    public final FlagRef useWASDControl =
-            flagBuilder(pearlPhase.add("use-wasd-control")).build();
+    public final DoubleRef wasdPearlActiveRange = doubleBuilder(pearlPhase.add("wasd-activate-range"))
+            .defaultValue(1.0)
+            .validator(Configs.doubleRange(0.0D, 5.0D))
+            .show(this.useWASDControl::get)
+            .build();
 
     public final FlagRef enableJump = builder(pearlPhase.add("enable-jump-up"), Boolean.class)
             .defaultValue(true)
@@ -127,17 +133,48 @@ public class PearlFly extends BaseModule {
                 return;
             }
             if (useWASDControl.get()) {
-                Vec3d facingDirection = EntityUtils.pitchYawToRotation(0, mc.player.getYaw());
                 var input = PlayerInputUtils.of(mc.options);
+                if (!input.hasMovementControl()) {
+                    return;
+                }
+                Vec3d facingDirection = EntityUtils.pitchYawToRotation(0, mc.player.getYaw());
                 Vec3d adAxis = new Vec3d(facingDirection.z, 0, -facingDirection.x);
                 Vec3d inputVec = facingDirection
                         .multiply(input.forwardSpeed())
                         .add(adAxis.multiply(input.sidewaysSpeed()))
-                        .normalize();
-                BlockPos searchPos = BlockPos.ofFloored(mc.player.getPos().add(inputVec));
+                        .normalize()
+                        .multiply(wasdPearlActiveRange.get());
                 if (enableJump.get() && input.upwardSpeed() > 0) {
-                    searchPos = searchPos.offset(Direction.UP, input.upwardSpeed());
+                    inputVec = inputVec.add(0, input.upwardSpeed(), 0);
                 }
+                boolean anySolid = false;
+                Vec3d targetPos = mc.player.getPos().add(inputVec);
+                Vec3d targetEyePos = mc.player.getEyePos().add(inputVec);
+                for (var re : RaycastUtils.createRaycastBlockPoses(mc.player.getPos(), targetPos)) {
+                    if (!mc.world
+                            .getBlockState(re)
+                            .getCollisionShape(mc.world, re)
+                            .isEmpty()) {
+                        anySolid = true;
+                        break;
+                    }
+                }
+                if (!anySolid) {
+                    for (var re : RaycastUtils.createRaycastBlockPoses(mc.player.getEyePos(), targetEyePos)) {
+                        if (!mc.world
+                                .getBlockState(re)
+                                .getCollisionShape(mc.world, re)
+                                .isEmpty()) {
+                            anySolid = true;
+                            break;
+                        }
+                    }
+                }
+                if (!anySolid) {
+                    return;
+                }
+                BlockPos searchPos = BlockPos.ofFloored(mc.player.getPos().add(inputVec));
+
                 if (!Objects.equals(mc.player.getBlockPos(), searchPos) && doPearlUse(searchPos)) {
                     enablePearlPhase.set(false);
                     return;
