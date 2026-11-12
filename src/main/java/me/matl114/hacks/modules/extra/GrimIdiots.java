@@ -307,12 +307,12 @@ public class GrimIdiots extends BaseModule {
     }
 
     private int findSlot(Predicate<ItemStack> predicate) {
-        var item = InventoryUtils.findPlayerItem(predicate, true, false);
+        var item = InventoryUtils.findPlayerItem(predicate, false, false);
         return item == null ? -1 : item.index();
     }
 
     private int findBestSlot() {
-        var item = InventoryUtils.findBestPlayerItem(this::scoreItem, true, false);
+        var item = InventoryUtils.findBestPlayerItem(this::scoreItem, false, false);
         return item == null ? -1 : item.index();
     }
 
@@ -373,7 +373,7 @@ public class GrimIdiots extends BaseModule {
                 stack -> 1.0,
                 (queue, matched) -> {
                     if (!hasTStructureItems(tStruct, aboveStruct)) return queue.abort();
-                    var bug = InventoryUtils.findPlayerItem(this::isBugBlock, true, false);
+                    var bug = InventoryUtils.findPlayerItem(this::isBugBlock, false, false);
                     hasBugBlock[0] = bug != null;
                     bugPath[0] = bug != null && bug.val().getCount() >= 2;
                     startTick[0] = Tasks.getTick();
@@ -485,9 +485,9 @@ public class GrimIdiots extends BaseModule {
     }
 
     private boolean hasTStructureItems(Predicate<ItemStack> base, Predicate<ItemStack> above) {
-        return InventoryUtils.findPlayerItem(base, true, false) != null
-                && InventoryUtils.findPlayerItem(above, true, false) != null
-                && InventoryUtils.findPlayerItem(ItemStack::isEmpty, true, true) != null;
+        return InventoryUtils.findPlayerItem(base, false, false) != null
+                && InventoryUtils.findPlayerItem(above, false, false) != null
+                && InventoryUtils.findPlayerItem(ItemStack::isEmpty, false, true) != null;
     }
 
     TimerExecutor executor = new TimerExecutor();
@@ -502,7 +502,7 @@ public class GrimIdiots extends BaseModule {
                     if (!re.hasCustomName()) {
                         var entry = InventoryUtils.findPlayerItem(
                                 stack -> stack.isOf(Items.NAME_TAG) && stack.contains(DataComponentTypes.CUSTOM_NAME),
-                                true,
+                                false,
                                 false);
                         if (entry != null) {
                             var val = InvExtra.INSTANCE.swapItemToHand(entry.index(), false, GhostHandMode.INV_SWAP);
@@ -575,7 +575,7 @@ public class GrimIdiots extends BaseModule {
                         high[0] = mc.player.getEyeY() > centerPos.getY() + 2;
                         if (!InteractUtils.canInteractAndPlace(mc.player, supporting)
                                 || (!high[0]
-                                        && InventoryUtils.findPlayerItem(this::isHalfBlock, true, false) == null)) {
+                                        && InventoryUtils.findPlayerItem(this::isHalfBlock, false, false) == null)) {
                             PlayerInputManager.INSTANCE.addJumpModifier(0, true, 0);
                             return queue.pause();
                         }

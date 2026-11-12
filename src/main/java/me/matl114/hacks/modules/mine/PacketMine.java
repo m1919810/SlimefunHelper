@@ -378,7 +378,7 @@ public class PacketMine extends BaseModule {
                                 WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(mc.player, calS, item, false);
                     },
                     ghostHand.get().getSearchSize(false),
-                    true,
+                    false,
                     true);
             if (re != null) {
                 return re;

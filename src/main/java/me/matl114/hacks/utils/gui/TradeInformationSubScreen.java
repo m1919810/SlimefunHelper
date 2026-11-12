@@ -12,6 +12,7 @@ import me.matl114.gui.elements.IconElement;
 import me.matl114.gui.elements.LabelElement;
 import me.matl114.gui.elements.SlotElement;
 import me.matl114.hacks.InvTasks;
+import me.matl114.hacks.modules.inv.FastCraft;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.ScreenUtils;
@@ -171,17 +172,6 @@ public class TradeInformationSubScreen extends SubScreenWidget {
     }
 
     private void craft() {
-        if (mc.player != null) {
-            place();
-            TradeOffer offer = getCurrentTrade();
-            if (offer != null) {
-                ItemStack output = offer.getSellItem();
-                if (!output.isEmpty()) {
-                    int maxCraft = (int) Math.ceil((float) output.getMaxCount() / (float) output.getCount());
-                    maxCraft = Math.min(maxCraft, offer.getMaxUses() - offer.getUses());
-                    InvTasks.getFastCraft().craftAtSlotIndex(this.screen, output, maxCraft, 2);
-                }
-            }
-        }
+        FastCraft.INSTANCE.craftSelectedTrade(this.screen);
     }
 }

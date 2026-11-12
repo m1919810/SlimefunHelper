@@ -316,7 +316,7 @@ public class MineBot extends BaseModule {
                                         mc.player, mineState, item, false)
                                 : null,
                         settings.ghostHand().getSearchSize(false),
-                        true,
+                        false,
                         true)
                 : InventoryUtils.getSelectedItem();
         if (bestStack == null || !isDurabilityOk(bestStack.val())) {

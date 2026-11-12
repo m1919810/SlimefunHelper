@@ -144,7 +144,7 @@ public class AutoWeb extends BaseModule {
 
     private IndexEntry<ItemStack> supplyWeb() {
         return InventoryUtils.findPlayerItem(
-                stack -> stack.isOf(Items.COBWEB), ghostHand.get().getSearchSize(offhand.get()), true, false);
+                stack -> stack.isOf(Items.COBWEB), ghostHand.get().getSearchSize(offhand.get()), false, false);
     }
 
     private boolean placeWeb(IndexEntry<ItemStack> web, BlockHitResult hitResult) {

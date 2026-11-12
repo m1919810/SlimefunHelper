@@ -139,7 +139,7 @@ public class Scaffold extends BaseModule {
         IndexEntry<ItemStack> stackEntry = InventoryUtils.findPlayerItem(
                 item -> availableItemBlocks.contains(item.getItem()),
                 ghostHand.get().getSearchSize(offhand.get()),
-                true,
+                false,
                 false,
                 true,
                 true);

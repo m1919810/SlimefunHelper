@@ -363,7 +363,7 @@ public class ElytraOptimizeUtils {
             return downwardLimitor(pitch, yaw, 30.5F, natural, downward);
         }
         if (al.isIn(ElytraExtra.Al.V4, ElytraExtra.Al.V5, ElytraExtra.Al.V5_PULLUP_ONLY)) {
-            if (ViaFabricPlusHooks.isSupportDupRot()) {
+            if (!ViaFabricPlusHooks.isSupportDupRot()) {
                 return downwardLimitor(pitch, yaw, 30.5F, natural, downward);
             }
             return downwardLimitor(pitch, yaw, 5.0F, natural, downward);

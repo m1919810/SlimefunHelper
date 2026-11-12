@@ -247,7 +247,7 @@ public class MineExtra extends BaseModule {
                     return null;
                 },
                 mode.getSearchSize(false),
-                true,
+                false,
                 true);
         return result != null ? result : defaultEntry;
     }

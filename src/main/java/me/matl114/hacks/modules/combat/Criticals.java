@@ -378,7 +378,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
                         && !stack.isEmpty()
                         && !ItemStack.areItemsAndComponentsEqual(weapon, stack)) {
                     var res = InventoryUtils.findPlayerItem(
-                            it -> ItemStack.areItemsAndComponentsEqual(it, stack), true, false);
+                            it -> ItemStack.areItemsAndComponentsEqual(it, stack), false, false);
                     if (res != null) {
                         callback = InvExtra.INSTANCE.swapItemToHand(res.index(), false, GhostHandMode.INV_SWAP);
                     }

@@ -144,6 +144,11 @@ public class WrapEnum<T extends ConfigEnum> implements NBTParsable<WrapEnum<T>> 
     }
 
     @Override
+    public boolean isSameType(NBTParsable<?> type) {
+        return type instanceof WrapEnum<?> enum2 && Objects.equals(enum2.type, this.type);
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(type, valueString);
     }

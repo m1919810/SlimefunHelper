@@ -115,13 +115,23 @@ public class OptionalPrimitive<T> implements NBTParsable<OptionalPrimitive<T>> {
 
     @Override
     public boolean isSameType(NBTParsable<?> type) {
-        return type instanceof OptionalPrimitive<?> optional && this.type == optional.type;
+        return type instanceof OptionalPrimitive<?> optional
+                && this.type == optional.type
+                && isSameValueType(optional.value);
+    }
+
+    public boolean isSameValueType(Object value) {
+        return this.value instanceof NBTParsable<?> parsable
+                ? (value instanceof NBTParsable<?> parsable2 && parsable.isSameType(parsable2))
+                : this.value.getClass() == value.getClass();
     }
 
     @Override
     public <W> Optional<OptionalPrimitive<T>> tryTypeConvert(Ref<W> ref) {
         var optional = Primitive.convertPrimitives(ref);
-        if (optional.isPresent() && optional.get().valueType() == this.type) {
+        if (optional.isPresent()
+                && optional.get().valueType() == this.type
+                && isSameValueType(optional.get().value())) {
             return Optional.ofNullable(this.withValue((T) optional.get().value()));
         }
         return Optional.empty();

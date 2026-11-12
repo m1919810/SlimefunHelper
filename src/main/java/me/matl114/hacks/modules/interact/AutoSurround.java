@@ -515,7 +515,7 @@ public class AutoSurround extends BaseModule {
                     return null;
                 },
                 ghostHand.get().getSearchSize(offhand.get()),
-                true,
+                false,
                 false);
     }
 
