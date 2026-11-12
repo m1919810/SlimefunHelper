@@ -291,14 +291,14 @@ public class PrinterRewrite extends BaseModule {
     public int supplyBlocks(Block needBlock) {
         Item needItem = needBlock.asItem();
         if (needItem == Items.AIR) return -1;
-        var entry = InventoryUtils.findPlayerItem((item) -> item.getItem() == needItem, true, false);
+        var entry = InventoryUtils.findPlayerItem((item) -> item.getItem() == needItem, false, false);
         return entry == null ? -1 : entry.index();
     }
 
     public int supplyLiquid(Fluid fluid) {
         Item item = fluid == Fluids.WATER ? Items.WATER_BUCKET : (fluid == Fluids.LAVA ? Items.LAVA_BUCKET : null);
         if (item == null) return -1;
-        var entry = InventoryUtils.findPlayerItem((itemStack) -> itemStack.getItem() == item, true, false);
+        var entry = InventoryUtils.findPlayerItem((itemStack) -> itemStack.getItem() == item, false, false);
         return entry == null ? -1 : entry.index();
     }
 
@@ -537,7 +537,7 @@ public class PrinterRewrite extends BaseModule {
         if (currentBlock instanceof RespawnAnchorBlock
                 && targetBlock instanceof RespawnAnchorBlock
                 && currentState.get(RespawnAnchorBlock.CHARGES) < targetState.get(RespawnAnchorBlock.CHARGES)) {
-            var entry = InventoryUtils.findPlayerItem(stack -> stack.isOf(Items.GLOWSTONE), true, false);
+            var entry = InventoryUtils.findPlayerItem(stack -> stack.isOf(Items.GLOWSTONE), false, false);
             return entry == null ? -1 : entry.index();
         }
         if (currentBlock instanceof CandleBlock
@@ -545,18 +545,18 @@ public class PrinterRewrite extends BaseModule {
                 && !currentState.get(CandleBlock.LIT)
                 && targetState.get(CandleBlock.LIT)) {
             var entry = InventoryUtils.findPlayerItem(
-                    stack -> stack.isOf(Items.FLINT_AND_STEEL) || stack.isOf(Items.FIRE_CHARGE), true, false);
+                    stack -> stack.isOf(Items.FLINT_AND_STEEL) || stack.isOf(Items.FIRE_CHARGE), false, false);
             return entry == null ? -1 : entry.index();
         }
         if (currentBlock instanceof PumpkinBlock && targetBlock == Blocks.CARVED_PUMPKIN) {
-            var entry = InventoryUtils.findPlayerItem(stack -> stack.isOf(Items.SHEARS), true, false);
+            var entry = InventoryUtils.findPlayerItem(stack -> stack.isOf(Items.SHEARS), false, false);
             return entry == null ? -1 : entry.index();
         }
         if (currentBlock instanceof FlowerPotBlock fromPot && targetBlock instanceof FlowerPotBlock targetPot) {
             if (fromPot.getContent() == Blocks.AIR && targetPot.getContent() != Blocks.AIR) {
                 Item item = targetPot.getContent().asItem();
                 if (item == Items.AIR) return -1;
-                var entry = InventoryUtils.findPlayerItem(stack -> stack.isOf(item), true, false);
+                var entry = InventoryUtils.findPlayerItem(stack -> stack.isOf(item), false, false);
                 return entry == null ? -1 : entry.index();
             }
             return -2;
@@ -564,7 +564,7 @@ public class PrinterRewrite extends BaseModule {
         if (currentBlock instanceof CakeBlock && targetBlock instanceof CandleCakeBlock) {
             Item item = targetBlock.asItem();
             if (item == Items.AIR) return -1;
-            var entry = InventoryUtils.findPlayerItem(stack -> stack.isOf(item), true, false);
+            var entry = InventoryUtils.findPlayerItem(stack -> stack.isOf(item), false, false);
             return entry == null ? -1 : entry.index();
         }
         return -2;
@@ -579,7 +579,7 @@ public class PrinterRewrite extends BaseModule {
             BlockState nextBlockState = nextStepState.getFirst();
             Predicate<ItemStack> needStack = nextStepState.getSecond();
             // self replacement
-            var re = InventoryUtils.findPlayerItem(needStack, true, true);
+            var re = InventoryUtils.findPlayerItem(needStack, false, true);
             if (re != null) {
                 FlagEntry<BlockHitResult> hitResult;
                 if (nextBlockState.getBlock() == currentState.getBlock() && !needStack.test(ItemStack.EMPTY)) {

@@ -443,7 +443,7 @@ public class KitReplenish extends BaseModule {
                         Interact.INSTANCE.interactBlock(InteractionTasks.createHitResult(pos, mc.player.getPos()));
                 } else {
                     IndexEntry<ItemStack> stackEnderChest =
-                            InventoryUtils.findPlayerItem(s -> s.isOf(Items.ENDER_CHEST), true, false);
+                            InventoryUtils.findPlayerItem(s -> s.isOf(Items.ENDER_CHEST), false, false);
                     if (stackEnderChest != null) {
                         var re = searchAvailableChestLikePosition(true)
                                 .findFirst()

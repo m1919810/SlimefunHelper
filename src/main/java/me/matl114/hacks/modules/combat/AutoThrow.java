@@ -324,7 +324,7 @@ public class AutoThrow extends BaseModule {
             needSpeed = PlayerStateManager.INSTANCE.lastKnownRealMovementSpeed.y > 0.1;
             pitch = -90.0F;
         }
-        var entry = InventoryUtils.findBestPlayerItem(stackPredicate, mode.getSearchSize(off), true, false);
+        var entry = InventoryUtils.findBestPlayerItem(stackPredicate, mode.getSearchSize(off), false, false);
         if (entry == null) return;
         int mul = Math.min(multiply, entry.val().getCount());
         var cb = InvExtra.INSTANCE.swapItemToHand(entry.index(), off, mode);

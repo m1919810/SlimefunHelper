@@ -48,7 +48,6 @@ import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
-import me.matl114.versioned.api.VPacket;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.FireworksComponent;
@@ -1957,11 +1956,9 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         duringElytraGlideBlinkTransaction = false;
         nextLandingSneak = 0;
         lastOnGroundOrInWaterAutoTakeOff = false;
-        nextTickIsOnGroundTick = false;
+        nextTickIsOnGroundTick = 0;
         noGroundPeriod = new TimerExecutor();
-        storedNoFallPacket = null;
         lastLagBackTick = 0;
-        simulationFlight = Vec3d.ZERO;
     }
 
     private void onRemoveFirework(FireworkRocketEntity rocket) {
@@ -2359,10 +2356,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     @Override
     public void postModify(Event<LegalMovementManager> movementManagerEvent) {
-        if (storedNoFallPacket != null) {
-            mc.getNetworkHandler().sendPacket(storedNoFallPacket);
-            storedNoFallPacket = null;
-        }
         // avoid packet Order conflict
         rocketFlush.state(false, () -> {
             if (ViaFabricPlusHooks.isSupportEndTick() && PacketOrderManager.INSTANCE.sprinting) {
@@ -2465,15 +2458,14 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     @Override
     public void applyBeforeInputPacketModify(Event<LegalMovementManager> movementManagerEvent) {}
 
-    boolean nextTickIsOnGroundTick = false;
+    int nextTickIsOnGroundTick = 0;
+    boolean nextTickIsOnGroundWaitResyncTick = false;
     TimerExecutor noGroundPeriod = new TimerExecutor();
-    // Vec3d storedPos = null;
-    Packet<?> storedNoFallPacket;
     int lastLagBackTick = 0;
 
     public void onAcceptTeleportation() {
         lastLagBackTick = Tasks.getTick();
-        nextTickIsOnGroundTick = false;
+        nextTickIsOnGroundTick = 0;
     }
 
     @Override
@@ -2501,80 +2493,113 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
         NoFall noFallModule = MovTasks.getNoFall();
         // handle nofall
-        boolean handleNoFall = false;
         noFall:
         if (player.isFallFlying()
                 && noFallLanding.get()
-                && !nextTickIsOnGroundTick
+                && nextTickIsOnGroundTick == 0
+                && !nextTickIsOnGroundWaitResyncTick
                 && noFallModule.entityStage == 1
-                && (player.getY() <= noFallModule.lastOnGroundHeight - noFallModule.safeDistance
-                        || Tasks.getTick() < lastLagBackTick + 3)) {
+                && (player.getY() <= noFallModule.lastOnGroundHeight - noFallModule.safeDistance)) {
             if (MovTasks.getElytraJump().enable.get()) {
                 break noFall;
             }
-            if (noGroundPeriod.run(5)) {
+            if (noGroundPeriod.canRun(5)) {
                 boolean shouldHandle = player.isOnGround() && !movementManagerEvent.context.playerStatus.onGround;
                 if (shouldHandle) {
                     // use direct judgement, do not use rocketBuffer
                     if (anyAliveRocket()) {
-                        // controlling tick
-                        //  must send a PosOnly
-                        // otherwise it will be recognized as a duplicateFull
-                        storedNoFallPacket = VPacket.newPositionAndOnGround(
-                                player.getX(),
-                                movementManagerEvent.context.playerStatus.pos.y + 9E-8,
-                                player.getZ(),
-                                false,
-                                mc.player.horizontalCollision);
-                        movementManagerEvent.cancel();
-                        ClientPlayerAccess.of(player).resyncPos();
+                        mc.player.setPosition(mc.player
+                                .getPos()
+                                .withAxis(Direction.Axis.Y, movementManagerEvent.context.playerStatus.pos.y + 0.01));
+                        noFallModule.lastOnGroundHeight = mc.player.getY();
                         player.setOnGround(false);
-                        MovTasks.getNoFall()
-                                .setLastOnGroundHeight(movementManagerEvent.context.playerStatus.pos.y + 9E-8);
-                        handleNoFall = true;
-                        break noFall;
+                        noGroundPeriod.mark();
+                    } else {
+                        if (isWaitingServerResyncFallFlying()) {
+                            nextTickIsOnGroundWaitResyncTick = true;
+                        } else {
+                            nextTickIsOnGroundTick = 3;
+                        }
                     }
-                    if (armorFly.get() && armorGlideTransactionSlot != -1) {
-                        player.setOnGround(false);
-                        movementManagerEvent.context.resetPos();
-                        FloatingUtils.INSTANCE.setGrimFloatingTick(true);
-                        handleNoFall = true;
-                        break noFall;
-                    }
-                    // what can I say.
-                    storedNoFallPacket = VPacket.newPositionAndOnGround(
-                            player.getX(),
-                            movementManagerEvent.context.playerStatus.pos.y + 9E-8,
-                            player.getZ(),
-                            false,
-                            mc.player.horizontalCollision);
-                    // must restore rotation, must send a PosOnly
-                    // otherwise it will be recognized as a duplicateFull
-                    movementManagerEvent.cancel();
-                    ClientPlayerAccess.of(player).resyncPos();
-                    player.setOnGround(false);
-                    // storedPos = player.getPos();
-                    handleNoFall = true;
                 }
             }
         }
+        if (anyAliveRocket() && (nextTickIsOnGroundTick != 0 || nextTickIsOnGroundWaitResyncTick)) {
+            nextTickIsOnGroundTick = 0;
+            nextTickIsOnGroundWaitResyncTick = false;
+            mc.player.setPosition(mc.player
+                    .getPos()
+                    .withAxis(Direction.Axis.Y, movementManagerEvent.context.playerStatus.pos.y + 0.01));
+            noFallModule.lastOnGroundHeight = mc.player.getY();
+            player.setOnGround(false);
+            noGroundPeriod.mark();
+        }
+        nextTickIsOnGroundTick = Math.max(0, nextTickIsOnGroundTick - 1);
 
-        if (!handleNoFall) {
-            nextTickIsOnGroundTick = false;
-        } else {
-            nextTickIsOnGroundTick = true;
+        if (nextTickIsOnGroundTick > 0) {
+            noGroundPeriod.mark();
+            mc.player.setPitch(-89.9F);
+            player.setOnGround(false);
+            movementManagerEvent.context.resetPos();
+            FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+        }
+        if (nextTickIsOnGroundWaitResyncTick) {
+            noGroundPeriod.mark();
+            if (player.isOnGround()) {
+                player.setOnGround(false);
+                movementManagerEvent.context.resetPos();
+            }
+            if (!tryRescheduleElytraMove(movementManagerEvent)) {
+                FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+            }
+            if (player.getY() > movementManagerEvent.context.playerStatus.pos.y + 1E-7) {
+                nextTickIsOnGroundWaitResyncTick = false;
+            } else if (!isWaitingServerResyncFallFlying()) {
+                nextTickIsOnGroundWaitResyncTick = false;
+            } else if (isThisTickGlideMovementServerSideGlide()) {
+                nextTickIsOnGroundWaitResyncTick = false;
+            }
         }
     }
 
-    Vec3d simulationFlight = Vec3d.ZERO;
+    private boolean tryRescheduleElytraMove(Event<LegalMovementManager> movementManagerEvent) {
+        ClientPlayerEntity player = mc.player;
+        var playerStatus = movementManagerEvent.context.playerStatus;
+        Vec3d previousPos = player.getPos();
+        boolean previousOnGround = player.isOnGround();
+        float yaw = player.getYaw();
+        float pitch = Math.max(-90.0F, player.getPitch());
 
-    public void tickElytraSimulation() {
-        if (mc.player.isFallFlying()) {
+        // Recreate the starting collision state before checking each candidate movement.
+        player.setPosition(playerStatus.pos);
+        player.setOnGround(playerStatus.onGround);
 
-        } else {
-            simulationFlight = Vec3d.ZERO;
+        while (true) {
+            Vec3d velocity = EntityUtils.calculateGlidingVelocity(
+                    player, playerStatus.vec, EntityUtils.pitchYawToRotation(pitch, yaw), !player.hasNoGravity());
+            Vec3d adjustedMovement = MovTasks.simulateMovement(player, playerStatus.pos, velocity, false);
+            boolean wouldBeOnGround = velocity.y < 0.0 && adjustedMovement.y != velocity.y;
+
+            if (!wouldBeOnGround) {
+                EntityUtils.setEntityPitchSafe(player, pitch);
+                player.setVelocity(velocity);
+                player.setPosition(playerStatus.pos.add(adjustedMovement));
+                player.setOnGround(false);
+                return true;
+            }
+
+            if (pitch <= -90.0F) {
+                break;
+            }
+            pitch = Math.max(-90.0F, pitch - 1.0F);
         }
+
+        player.setPosition(previousPos);
+        player.setOnGround(previousOnGround);
+        return false;
     }
+
+    public void tickElytraSimulation() {}
 
     private ElytraMotion overrideElytraMotion;
 

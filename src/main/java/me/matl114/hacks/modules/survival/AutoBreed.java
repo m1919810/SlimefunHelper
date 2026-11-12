@@ -257,7 +257,7 @@ public class AutoBreed extends BaseModule {
     }
 
     private IndexEntry<ItemStack> findBreedItem(AnimalEntity animal) {
-        return InventoryUtils.findPlayerItem(breedItemPredicate(animal), true, false);
+        return InventoryUtils.findPlayerItem(breedItemPredicate(animal), false, false);
     }
 
     private boolean shouldReplenish(AnimalEntity animal) {

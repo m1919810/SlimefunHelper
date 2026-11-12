@@ -1105,7 +1105,7 @@ public class InteractManager extends BaseModule {
             return itemStack == null
                     ? null
                     : InventoryUtils.findBestPlayerItem(
-                            itemStack::matches, InventoryUtils.getPlayerInvSize(), true, false);
+                            itemStack::matches, InventoryUtils.getPlayerInvSize(), false, false);
         }
 
         public String toString() {

@@ -308,7 +308,7 @@ public class AutoFarm extends BaseModule {
             return false;
         }
         IndexEntry<ItemStack> boneMeal =
-                InventoryUtils.findPlayerItem(stack -> stack.isOf(Items.BONE_MEAL), true, false);
+                InventoryUtils.findPlayerItem(stack -> stack.isOf(Items.BONE_MEAL), false, false);
         if (boneMeal == null) {
             return false;
         }
@@ -340,11 +340,11 @@ public class AutoFarm extends BaseModule {
     }
 
     private IndexEntry<ItemStack> findSeed(FarmingUtils.PlantType type) {
-        return InventoryUtils.findPlayerItem(stack -> stack.isOf(type.getSeedItem()), true, false);
+        return InventoryUtils.findPlayerItem(stack -> stack.isOf(type.getSeedItem()), false, false);
     }
 
     private boolean hasBoneMeal() {
-        return InventoryUtils.findPlayerItem(stack -> stack.isOf(Items.BONE_MEAL), true, false) != null;
+        return InventoryUtils.findPlayerItem(stack -> stack.isOf(Items.BONE_MEAL), false, false) != null;
     }
 
     private boolean isReplanted(BlockPos pos, FarmingUtils.PlantType type) {

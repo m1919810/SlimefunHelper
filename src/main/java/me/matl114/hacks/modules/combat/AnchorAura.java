@@ -409,12 +409,12 @@ public class AnchorAura extends BaseModule {
     }
 
     public IndexEntry<ItemStack> supplyItem(Item item) {
-        return InventoryUtils.findPlayerItem(s -> s.isOf(item), ghostHand.get().getSearchSize(false), true, false);
+        return InventoryUtils.findPlayerItem(s -> s.isOf(item), ghostHand.get().getSearchSize(false), false, false);
     }
 
     public IndexEntry<ItemStack> supplyNoItem(Item item) {
         var re = InventoryUtils.findPlayerItem(
-                s -> !s.isOf(item), ghostHand.get().getSearchSize(false), true, true);
+                s -> !s.isOf(item), ghostHand.get().getSearchSize(false), false, true);
         return re == null ? InventoryUtils.getSelectedItem() : re;
     }
 
@@ -648,7 +648,7 @@ public class AnchorAura extends BaseModule {
                         && !stack.isOf(Items.GLOWSTONE)
                         && allowedBlocks.test(stack.getItem()),
                 ghostHand.get().getSearchSize(false),
-                true,
+                false,
                 false);
     }
 

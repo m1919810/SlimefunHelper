@@ -2,8 +2,10 @@ package me.matl114.gui;
 
 import java.util.Iterator;
 import me.matl114.accessors.gui.ScreenAccess;
+import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.basic.Draggable;
 import me.matl114.gui.basic.DrawableWidget;
+import me.matl114.hooks.IMBlockerHooks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
@@ -100,6 +102,8 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
+    boolean lastFocusedOnChatIMBlocker = false;
+
     @Override
     public final boolean mouseClicked(double mouseX, double mouseY, int button) {
         boolean val = super.mouseClicked(mouseX, mouseY, button);
@@ -108,7 +112,34 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
                 this.draggingButton = button;
             }
         }
+        IMBlockerHooks imBlockerHooks = IMBlockerHooks.getInstance();
+        if (imBlockerHooks.isEnabled()) {
+            if (shouldNotExecuteInInput()) {
+                if (!lastFocusedOnChatIMBlocker) {
+                    imBlockerHooks.setPreferredState(shouldNotExecuteInInput());
+                    lastFocusedOnChatIMBlocker = true;
+                    imBlockerHooks.setEnglishState(true);
+                }
+            } else {
+                lastFocusedOnChatIMBlocker = false;
+                imBlockerHooks.setPreferredState(false);
+            }
+        }
         return val;
+    }
+
+    public boolean shouldNotExecuteInInput() {
+        var focused = this.getFocused();
+        if (focused instanceof TextFieldAccess) {
+            return true;
+        }
+        if (focused instanceof DrawableWidget widget) {
+            var focus = WidgetUtils.getFocusedWidget(widget);
+            if (WidgetUtils.isInputWidget(focus)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

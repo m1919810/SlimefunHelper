@@ -351,7 +351,7 @@ public class PearlFly extends BaseModule {
 
     public boolean usePearl(Vec3d look) {
         look = look.normalize();
-        var re = InventoryUtils.findPlayerItem((ss) -> ss.getItem() == Items.ENDER_PEARL, true, false);
+        var re = InventoryUtils.findPlayerItem((ss) -> ss.getItem() == Items.ENDER_PEARL, false, false);
         if (re == null) {
             logI18NSub("Pearl", "message.module.pearl-fly.no-pearl");
             return true;

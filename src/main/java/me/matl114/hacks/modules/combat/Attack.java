@@ -31,7 +31,6 @@ import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.config.WrapEnum;
-import me.matl114.hacks.utils.enums.BypassMode;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.enums.LegalTargetingMode;
 import me.matl114.hacks.utils.render.RenderCollectors;
@@ -121,10 +120,10 @@ public class Attack extends BaseModule {
             .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 6.0D))
             .build();
 
-    public final NBTRef<OptionalPrimitive<WrapEnum<BypassMode>>> maceFixMode = builder(
-                    attack.add("mace-hit-fix-mode"), OptionalPrimitive.configEnum(BypassMode.class))
-            .defaultValue(new OptionalPrimitive<>(
-                    false, NBTTypes.CONFIG_ENUM_TYPE.cast(), new WrapEnum<>(BypassMode.NO_BYPASS)))
+    public final NBTRef<OptionalPrimitive<WrapEnum<MaceMode>>> maceFixMode = builder(
+                    attack.add("mace-hit-fix-mode"), OptionalPrimitive.configEnum(MaceMode.class))
+            .defaultValue(
+                    new OptionalPrimitive<>(false, NBTTypes.CONFIG_ENUM_TYPE.cast(), new WrapEnum<>(MaceMode.LEGIT)))
             .build();
 
     public final FlagRef tryCriticSprint =
@@ -1267,8 +1266,12 @@ public class Attack extends BaseModule {
         }
     }
 
+    public MaceMode getMaceMode() {
+        return maceFixMode.get().getValue().get();
+    }
+
     public boolean shouldUseDelayMovementAttackMaceFix() {
-        return maceFixMode.get().isPresent() && maceFixMode.get().getValue().get() == BypassMode.BYPASS_GRIM;
+        return maceFixMode.get().isPresent() && getMaceMode() == MaceMode.LEGIT;
     }
 
     public void handleMaceAttack(Event<PlayerInteractEntityC2SPacket> interactPacket) {
@@ -1282,10 +1285,17 @@ public class Attack extends BaseModule {
                 && !ElytraExtra.INSTANCE.isThisTickGlideMovementServerSideGlide()
                 && shouldUseMaceFix()
                 && !shouldUseDelayMovementAttackMaceFix()) {
+            MaceMode mode = maceFixMode.get().getValue().get();
             mc.getNetworkHandler()
                     .sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
             PacketManager.schedulePostScheduleCallback(interactPacket.context, () -> {
-                ElytraExtra.INSTANCE.requestManualResetFallFlying(20);
+                if (mode.isIn(MaceMode.PACKET)) {
+                    mc.getNetworkHandler()
+                            .sendPacket(new ClientCommandC2SPacket(
+                                    mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
+                } else {
+                    ElytraExtra.INSTANCE.requestManualResetFallFlying(20);
+                }
             });
         }
     }
@@ -1314,9 +1324,20 @@ public class Attack extends BaseModule {
         }
         switch (preset) {
             case AC_GRIM, AC_GRIM_LEGACY -> {
-                maceFixMode.set(maceFixMode.get().withValue(new WrapEnum<>(BypassMode.BYPASS_GRIM)));
+                maceFixMode.set(maceFixMode.get().withValue(new WrapEnum<>(MaceMode.LEGIT)));
             }
-            default -> maceFixMode.set(maceFixMode.get().withValue(new WrapEnum<>(BypassMode.NO_BYPASS)));
+            default -> maceFixMode.set(maceFixMode.get().withValue(new WrapEnum<>(MaceMode.PACKET)));
+        }
+    }
+
+    public enum MaceMode implements ConfigEnum {
+        LEGIT,
+        PACKET,
+        PACKET_LEGIT;
+
+        @Override
+        public String getConfigEnumType() {
+            return "attack_mace_fix_mode";
         }
     }
 
