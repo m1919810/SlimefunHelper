@@ -46,6 +46,9 @@ public class SurvivalTasks {
     private static AutoBreed autoBreed;
 
     @Getter
+    private static PearlBot pearlBot;
+
+    @Getter
     private static WalkControl walkControl;
 
     @Getter
@@ -81,6 +84,7 @@ public class SurvivalTasks {
         autoLibrarian = new AutoLibrarian().register(m);
         autoEnchant = new AutoEnchant().register(m);
         autoBreed = new AutoBreed().register(m);
+        pearlBot = new PearlBot().register(m);
         walkControl = new WalkControl().register(m);
         searchControl = new SearchControl().register(m);
         searchLabel = new SearchLabel().register(m);
