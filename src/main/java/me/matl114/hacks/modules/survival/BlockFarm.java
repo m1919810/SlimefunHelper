@@ -153,7 +153,7 @@ public class BlockFarm extends BaseModule {
                         return null;
                     }
                 },
-                true,
+                false,
                 false);
     }
 

@@ -357,7 +357,7 @@ public class AutoLibrarian extends BaseModule {
             hasOpened = false;
             if (Objects.equals(professionRegistryKey, VillagerProfession.NONE)) {
                 IndexEntry<ItemStack> findStack =
-                        InventoryUtils.findPlayerItem(s -> s.isOf(Items.LECTERN), true, false);
+                        InventoryUtils.findPlayerItem(s -> s.isOf(Items.LECTERN), false, false);
                 if (findStack != null) {
                     noLecternNotify = false;
                     Runnable callback = InvExtra.INSTANCE.swapItemToHand(findStack.index(), false);

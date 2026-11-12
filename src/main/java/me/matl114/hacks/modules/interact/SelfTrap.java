@@ -349,7 +349,7 @@ public class SelfTrap extends BaseModule {
                             + (blockItem.getBlock() instanceof BlockWithEntity ? -1E8 : 0);
                 },
                 ghostHand.get().getSearchSize(offhand.get()),
-                true,
+                false,
                 false);
     }
 

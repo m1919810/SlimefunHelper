@@ -412,7 +412,7 @@ public class AutoTrap extends BaseModule {
                 stack ->
                         stack.getItem() instanceof BlockItem blockItem && blockItem.getBlock() instanceof TrapdoorBlock,
                 searchSize,
-                true,
+                false,
                 false);
         return trapdoor != null
                 ? trapdoor
@@ -420,7 +420,7 @@ public class AutoTrap extends BaseModule {
                         stack -> stack.getItem() instanceof BlockItem blockItem
                                 && blockItem.getBlock() instanceof FenceGateBlock,
                         searchSize,
-                        true,
+                        false,
                         false);
     }
 
@@ -456,7 +456,7 @@ public class AutoTrap extends BaseModule {
                             + (blockItem.getBlock() instanceof BlockWithEntity ? -1E8 : 0);
                 },
                 ghostHand.get().getSearchSize(offhand.get()),
-                true,
+                false,
                 false);
     }
 

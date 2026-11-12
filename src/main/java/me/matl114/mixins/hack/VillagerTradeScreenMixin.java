@@ -27,8 +27,21 @@ public abstract class VillagerTradeScreenMixin extends HandledScreen<MerchantScr
     @Shadow
     protected abstract void syncRecipeIndex();
 
+    @Shadow
+    int indexStartOffset;
+
     @Accessor("selectedIndex")
     public abstract int getSelectedIndex();
+
+    @Unique
+    @Override
+    public void selectIndexLocally(int index) {
+        this.selectedIndex = index;
+        if (index < this.indexStartOffset || index >= this.indexStartOffset + 7) {
+            this.indexStartOffset = Math.max(0, index - 6);
+        }
+        (this.handler).setRecipeIndex(this.selectedIndex);
+    }
 
     @Unique
     @Override

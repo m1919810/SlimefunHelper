@@ -1004,7 +1004,7 @@ public class CrystalAura extends BaseModule {
 
     private IndexEntry<ItemStack> supplyItem(Item item) {
         return InventoryUtils.findPlayerItem(
-                stack -> stack.isOf(item), ghostHand.get().getSearchSize(offhand.get()), true, false);
+                stack -> stack.isOf(item), ghostHand.get().getSearchSize(offhand.get()), false, false);
     }
 
     private boolean isFillBlock(ItemStack stack) {
@@ -1017,17 +1017,17 @@ public class CrystalAura extends BaseModule {
 
     private IndexEntry<ItemStack> supplyFillBlock() {
         return InventoryUtils.findPlayerItem(
-                this::isFillBlock, ghostHand.get().getSearchSize(offhand.get()), true, false);
+                this::isFillBlock, ghostHand.get().getSearchSize(offhand.get()), false, false);
     }
 
     private IndexEntry<ItemStack> supplyCrystalItem() {
         return InventoryUtils.findPlayerItem(
-                stack -> stack.isOf(Items.END_CRYSTAL), ghostHand.get().getSearchSize(offhand.get()), true, false);
+                stack -> stack.isOf(Items.END_CRYSTAL), ghostHand.get().getSearchSize(offhand.get()), false, false);
     }
 
     private IndexEntry<ItemStack> supplyBlockingBlock() {
         return InventoryUtils.findPlayerItem(
-                this::isBlockingBlock, ghostHand.get().getSearchSize(false), true, false);
+                this::isBlockingBlock, ghostHand.get().getSearchSize(false), false, false);
     }
 
     private boolean isBlockingBlock(ItemStack stack) {

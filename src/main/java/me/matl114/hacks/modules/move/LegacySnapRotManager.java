@@ -127,8 +127,8 @@ public class LegacySnapRotManager extends BaseModule {
                 full.getX(PlayerStateManager.INSTANCE.lastX),
                 full.getY(PlayerStateManager.INSTANCE.lastY),
                 full.getZ(PlayerStateManager.INSTANCE.lastZ),
-                PlayerStateManager.INSTANCE.lastYaw,
-                PlayerStateManager.INSTANCE.lastPitch,
+                full.getYaw(PlayerStateManager.INSTANCE.lastYaw),
+                full.getPitch(PlayerStateManager.INSTANCE.lastPitch),
                 full.isOnGround(),
                 VPacket.getCollisionFlag(full));
         PlayerMoveC2SPacketAccess.of(pkt).setCause(PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP);

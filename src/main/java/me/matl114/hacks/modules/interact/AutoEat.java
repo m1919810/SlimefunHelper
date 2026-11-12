@@ -269,7 +269,7 @@ public class AutoEat extends BaseModule {
                 ? InventoryUtils.findBestPlayerItem(
                         stack -> scoreFood(stack, healthPriority),
                         ghostHand.get().getSearchSize(false),
-                        true,
+                        false,
                         false)
                 : findHandStack(healthPriority);
     }

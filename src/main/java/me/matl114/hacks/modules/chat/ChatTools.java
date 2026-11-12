@@ -27,6 +27,7 @@ import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.client.gui.screen.ChatScreen;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
@@ -93,7 +94,7 @@ public class ChatTools extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPostGameTick(), this::onTick);
         registerListener(Listener.getPostInitializeScreen().getChannel(ChatScreen.class), this::onChatScreenInitialize);
-        registerListener(Listener.getPreSetScreen().getChannel(ChatScreen.class), this::onCloseChatScreen);
+        registerListener(Listener.getPreSetScreen(), this::onCloseChatScreen);
         registerListener(Listener.getPostInitializeScreen().getChannel(ChatScreen.class), this::fixIMBlockerStateError);
         TaskManagers.getToggleManager().register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + "auto-chat", autoSend);
         TaskManagers.getToggleManager()
@@ -420,11 +421,12 @@ public class ChatTools extends BaseModule {
         }
     }
 
-    public void onCloseChatScreen(Event<ChatScreen> event) {
+    public void onCloseChatScreen(Event<Screen> event) {
         // do not consider subClasses
         if (keepChatInv.get()
                 && mc.player != null
                 && mc.world != null
+                && event.context == null
                 && mc.currentScreen != null
                 && mc.currentScreen.getClass() == ChatScreen.class
                 && ScreenUtils.hasEnterDown()) {

@@ -128,7 +128,7 @@ public class BaritoneFix extends BaseModule {
         registerListener(Listener.getChatSend(), this::onChat);
         registerListener(Listener.getChatSend(), this::onChatCommand);
         registerListener(BaritoneHooks.getLandingEvent(), this::onBaritoneComplete);
-        registerListener(ElytraExtra.getFireworkMotion(), this::onFireworkMotion);
+        registerListener(ElytraExtra.getFireworkMotion(), this::onFireworkMotion, 10);
         registerListener(Listener.getClientPlayerPreTickPoint(), this::onPlayerPreTick);
         registerListener(Listener.getClientPlayerPostSendMovementPoint(), this::onPlayerPostMovement);
     }
@@ -147,13 +147,15 @@ public class BaritoneFix extends BaseModule {
         }
         ElytraMotion motion = event.context();
         var pitchYaw = hooks.getBaritoneCurrentMoveRot(mc.player);
-        if (ElytraExtra.INSTANCE.rocketBoostUseRescale.get()
-                && pitchYaw.x == PlayerStateManager.INSTANCE.lastPitch
-                && pitchYaw.y == PlayerStateManager.INSTANCE.lastYaw) {
-            hooks.updateBaritoneLookTarget(pitchYaw.x, pitchYaw.y + 0.01F);
-            pitchYaw = hooks.getBaritoneCurrentMoveRot(mc.player);
+        if (pitchYaw.y != mc.player.getYaw() || pitchYaw.x != mc.player.getPitch()) {
+            if (motion.algorithm() != null
+                    && pitchYaw.x == PlayerStateManager.INSTANCE.lastPitch
+                    && pitchYaw.y == PlayerStateManager.INSTANCE.lastYaw) {
+                hooks.updateBaritoneLookTarget(pitchYaw.x, pitchYaw.y + 0.01F);
+                pitchYaw = hooks.getBaritoneCurrentMoveRot(mc.player);
+            }
+            motion.rotation(pitchYaw);
         }
-        motion.rotation(pitchYaw);
     }
 
     public ValueAccessor<Integer> durabilitySetting;

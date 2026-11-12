@@ -180,12 +180,12 @@ public class AutoPlate extends BaseModule {
     public int supplyBlocks(Block needBlock) {
         Item needItem = needBlock.asItem();
         if (needItem == Items.AIR) return -1;
-        var entry = InventoryUtils.findPlayerItem((item) -> item.getItem() == needItem, true, false);
+        var entry = InventoryUtils.findPlayerItem((item) -> item.getItem() == needItem, false, false);
         return entry == null ? -1 : entry.index();
     }
 
     public IndexEntry<ItemStack> supplyAnyBlocks() {
-        return InventoryUtils.findPlayerItem((item) -> item.getItem() instanceof BlockItem, true, false);
+        return InventoryUtils.findPlayerItem((item) -> item.getItem() instanceof BlockItem, false, false);
     }
 
     public void tickPlace() {

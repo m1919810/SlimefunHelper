@@ -2,8 +2,10 @@ package me.matl114.gui;
 
 import java.util.Iterator;
 import me.matl114.accessors.gui.ScreenAccess;
+import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.basic.Draggable;
 import me.matl114.gui.basic.DrawableWidget;
+import me.matl114.hooks.IMBlockerHooks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
@@ -103,6 +105,8 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
         return super.mouseReleased(click);
     }
 
+    boolean lastFocusedOnChatIMBlocker = false;
+
     @Override
     public final boolean mouseClicked(Click click, boolean input) {
         // remove the fucking super method
@@ -123,7 +127,34 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
                 this.draggingButton = click.button();
             }
         }
+        IMBlockerHooks imBlockerHooks = IMBlockerHooks.getInstance();
+        if (imBlockerHooks.isEnabled()) {
+            if (shouldNotExecuteInInput()) {
+                if (!lastFocusedOnChatIMBlocker) {
+                    imBlockerHooks.setPreferredState(shouldNotExecuteInInput());
+                    lastFocusedOnChatIMBlocker = true;
+                    imBlockerHooks.setEnglishState(true);
+                }
+            } else {
+                lastFocusedOnChatIMBlocker = false;
+                imBlockerHooks.setPreferredState(false);
+            }
+        }
         return val;
+    }
+
+    public boolean shouldNotExecuteInInput() {
+        var focused = this.getFocused();
+        if (focused instanceof TextFieldAccess) {
+            return true;
+        }
+        if (focused instanceof DrawableWidget widget) {
+            var focus = WidgetUtils.getFocusedWidget(widget);
+            if (WidgetUtils.isInputWidget(focus)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

@@ -96,7 +96,7 @@ public class ModuleSettings extends BaseModule {
         }
         if (focused instanceof DrawableWidget widget) {
             var focus = WidgetUtils.getFocusedWidget(widget);
-            if (WidgetUtils.isInputWidget(WidgetUtils.getFocusedWidget(focus))) {
+            if (WidgetUtils.isInputWidget(focus)) {
                 return true;
             }
             var list = WidgetUtils.getWidgetHierarchy(widget);

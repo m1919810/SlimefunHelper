@@ -189,12 +189,12 @@ public class AntiCrystal extends BaseModule {
 
     private IndexEntry<ItemStack> findFireworks() {
         return InventoryUtils.findPlayerItem(
-                s -> s.isOf(Items.FIREWORK_ROCKET), ghostHand.get().getSearchSize(false), true, false);
+                s -> s.isOf(Items.FIREWORK_ROCKET), ghostHand.get().getSearchSize(false), false, false);
     }
 
     private IndexEntry<ItemStack> findItemFrame() {
         return InventoryUtils.findPlayerItem(
-                s -> s.getItem() instanceof ItemFrameItem, ghostHand.get().getSearchSize(false), true, false);
+                s -> s.getItem() instanceof ItemFrameItem, ghostHand.get().getSearchSize(false), false, false);
     }
 
     private IndexEntry<ItemStack> findInfBow() {
@@ -203,7 +203,7 @@ public class AntiCrystal extends BaseModule {
                         && s.get(DataComponentTypes.ENCHANTMENTS) instanceof ItemEnchantmentsComponent ench
                         && ItemStackUtils.getEnchantmentLevel(ench, Enchantments.INFINITY) > 0,
                 ghostHand.get().getSearchSize(false),
-                true,
+                false,
                 false);
     }
 
@@ -215,12 +215,12 @@ public class AntiCrystal extends BaseModule {
                         && s.get(DataComponentTypes.CHARGED_PROJECTILES) instanceof ChargedProjectilesComponent charged
                         && !charged.getProjectiles().isEmpty(),
                 ghostHand.get().getSearchSize(false),
-                true,
+                false,
                 false);
     }
 
     private boolean hasAnyArrow() {
-        return InventoryUtils.findPlayerItem(s -> s.getItem() instanceof ArrowItem, true, false) != null;
+        return InventoryUtils.findPlayerItem(s -> s.getItem() instanceof ArrowItem, false, false) != null;
     }
 
     Runnable bowCallback = null;

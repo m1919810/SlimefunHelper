@@ -294,7 +294,7 @@ public class AutoSlab extends BaseModule {
     }
 
     public IndexEntry<ItemStack> supplyItem() {
-        return InventoryUtils.findPlayerItem(s -> isAvailable(s.getItem()), true, false);
+        return InventoryUtils.findPlayerItem(s -> isAvailable(s.getItem()), false, false);
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
