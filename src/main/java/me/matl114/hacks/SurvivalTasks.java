@@ -52,6 +52,9 @@ public class SurvivalTasks {
     private static AutoTrade autoTrade;
 
     @Getter
+    private static PearlBot pearlBot;
+
+    @Getter
     private static WalkControl walkControl;
 
     @Getter
@@ -89,6 +92,7 @@ public class SurvivalTasks {
         autoBreed = new AutoBreed().register(m);
         autoFarm = new AutoFarm().register(m);
         autoTrade = new AutoTrade().register(m);
+        pearlBot = new PearlBot().register(m);
         walkControl = new WalkControl().register(m);
         searchControl = new SearchControl().register(m);
         searchLabel = new SearchLabel().register(m);
