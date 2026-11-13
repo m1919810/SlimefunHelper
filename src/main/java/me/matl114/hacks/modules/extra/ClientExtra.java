@@ -1,6 +1,8 @@
 package me.matl114.hacks.modules.extra;
 
 import com.google.common.util.concurrent.Runnables;
+import io.netty.handler.timeout.TimeoutException;
+import java.net.SocketException;
 import java.util.Comparator;
 import java.util.List;
 import me.matl114.accessors.gui.ScreenAccess;
@@ -307,7 +309,11 @@ public class ClientExtra extends BaseModule {
                 }
                 Debug.info("Exception StackTrace:");
                 Debug.info(exception);
-                event.cancel();
+                if (!(exception instanceof SocketException
+                        || exception instanceof TimeoutException
+                        || !playListener.isConnectionOpen())) {
+                    event.cancel();
+                }
             }
         }
     }

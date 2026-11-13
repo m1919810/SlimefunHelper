@@ -1605,6 +1605,7 @@ public class ElytraBot extends BaseModule {
                 Attack.INSTANCE.attackEntity(base.target, settings.withNoSwap().withMaceSwap(true));
             }
             if (base.target != null
+                    && mc.player.isFallFlying()
                     && (!ElytraExtra.INSTANCE.isWaitingServerResyncFallFlying()
                             || ElytraExtra.INSTANCE.isThisTickGlideMovementServerSideGlide())) {
                 // server firework will tick this tick
