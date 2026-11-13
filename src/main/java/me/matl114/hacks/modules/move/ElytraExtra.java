@@ -1748,19 +1748,27 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     private boolean willHitWallOnNextGlidingTick(ClientPlayerEntity player) {
         Vec3d rotation = player.getRotationVector();
         Vec3d velocity = player.getVelocity();
-        if (anyAliveRocket()) {
-            velocity = velocity.add(
-                    rotation.x * 0.1 + (rotation.x * 1.5 - velocity.x) * 0.5,
-                    rotation.y * 0.1 + (rotation.y * 1.5 - velocity.y) * 0.5,
-                    rotation.z * 0.1 + (rotation.z * 1.5 - velocity.z) * 0.5);
+        Vec3d position = player.getPos();
+        for (var i = 0; i < 8; ++i) {
+            if (anyAliveRocket()) {
+                velocity = velocity.add(
+                        rotation.x * 0.1 + (rotation.x * 1.5 - velocity.x) * 0.5,
+                        rotation.y * 0.1 + (rotation.y * 1.5 - velocity.y) * 0.5,
+                        rotation.z * 0.1 + (rotation.z * 1.5 - velocity.z) * 0.5);
+            }
+            Vec3d nextVelocity =
+                    EntityUtils.calculateGlidingVelocity(player, velocity, rotation, !player.hasNoGravity());
+            Vec3d simulatedMovement = MovTasks.simulateMovement(player, position, nextVelocity, false);
+            if (!MathHelper.approximatelyEquals(simulatedMovement.x, nextVelocity.x)) {
+                return Math.abs(nextVelocity.x) > 0.1;
+            }
+            if (!MathHelper.approximatelyEquals(simulatedMovement.z, nextVelocity.z)) {
+                return Math.abs(nextVelocity.z) > 0.1;
+            }
+            position = position.add(simulatedMovement);
+            velocity = nextVelocity;
         }
-        Vec3d nextVelocity = EntityUtils.calculateGlidingVelocity(player, velocity, rotation, !player.hasNoGravity());
-        if (nextVelocity.horizontalLength() <= 0.15) {
-            return false;
-        }
-        Vec3d simulatedMovement = MovTasks.simulateMovement(player, player.getPos(), nextVelocity, false);
-        return !MathHelper.approximatelyEquals(simulatedMovement.x, nextVelocity.x)
-                || !MathHelper.approximatelyEquals(simulatedMovement.z, nextVelocity.z);
+        return false;
     }
 
     @Override
@@ -2382,8 +2390,13 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         postRotateWillHitWall = false;
         if (willHitWall && getActiveNoKineticMode() == NoKineticMode.POST_ROTATE) {
             if (!player.isUsingItem() && !SpearEnhance.isHoldingSpear(player)) {
-                InteractionTasks.interactItem(
-                        Hand.OFF_HAND, 0.0F, PlayerStateManager.INSTANCE.lastYaw + 180, false, false);
+                if (anyAliveRocket()) {
+                    InteractionTasks.interactItem(
+                            Hand.OFF_HAND, 0.0F, PlayerStateManager.INSTANCE.lastYaw + 180, false, false);
+                } else {
+                    InteractionTasks.interactItem(
+                            Hand.OFF_HAND, 0.0F, PlayerStateManager.INSTANCE.lastYaw + 180, false, false);
+                }
             }
         }
         currentTickStartGlideTransaction = false;
@@ -2508,9 +2521,24 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
         if (nextTickIsOnGroundTick > 0) {
             noGroundPeriod.mark();
-            mc.player.setPitch(-89.9F);
+            var playerStatus = movementManagerEvent.context.playerStatus;
+            float bestPitch = -90.0F;
+            double maxVerticalVelocity = Double.NEGATIVE_INFINITY;
+            for (int pitch = -90; pitch <= 0; pitch++) {
+                Vec3d velocity = EntityUtils.calculateGlidingVelocity(
+                        player,
+                        playerStatus.vec,
+                        EntityUtils.pitchYawToRotation(pitch, player.getYaw()),
+                        !player.hasNoGravity());
+                if (velocity.y > maxVerticalVelocity) {
+                    maxVerticalVelocity = velocity.y;
+                    bestPitch = pitch;
+                }
+            }
+            player.setPitch(bestPitch);
             player.setOnGround(false);
             movementManagerEvent.context.resetPos();
+            movementManagerEvent.context.markForResetRot();
             FloatingUtils.INSTANCE.setGrimFloatingTick(true);
         }
         if (nextTickIsOnGroundWaitResyncTick) {
@@ -2555,6 +2583,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 player.setVelocity(velocity);
                 player.setPosition(playerStatus.pos.add(adjustedMovement));
                 player.setOnGround(false);
+                movementManagerEvent.context.markForResetRot();
                 return true;
             }
 
