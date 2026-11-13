@@ -39,6 +39,7 @@ import me.matl114.managers.config.StringRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.RenderUtils;
+import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.commands.commandGroup.BridgeSubCommand;
 import me.matl114.utils.commands.commandGroup.SubCommand;
 import me.matl114.utils.commands.commandGroup.TreeSubCommand;
@@ -47,7 +48,6 @@ import me.matl114.utils.commands.params.SimpleCommandArgs;
 import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.commands.params.api.TabResult;
 import me.matl114.utils.render.RenderCollector;
-import me.matl114.utils.collections.IndexEntry;
 import me.matl114.versioned.api.VRecord;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
@@ -62,8 +62,8 @@ import net.minecraft.entity.projectile.thrown.EnderPearlEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
+import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
@@ -89,9 +89,11 @@ public class PearlBot extends BaseModule {
             builder(root.add("preferred-bot"), StringRef.TYPE).defaultValue("").build();
 
     public final ModulePath emergencyPull = root.add("emergency-pull");
-    public final FlagRef emergencyPullEnable = flagBuilder(emergencyPull.add("enable")).build();
-    public final StringRef emergencyPullPlayer =
-            builder(emergencyPull.add("player"), StringRef.TYPE).defaultValue("").build();
+    public final FlagRef emergencyPullEnable =
+            flagBuilder(emergencyPull.add("enable")).build();
+    public final StringRef emergencyPullPlayer = builder(emergencyPull.add("player"), StringRef.TYPE)
+            .defaultValue("")
+            .build();
 
     public final ModulePath autoSend = root.add("auto-send");
     public final FlagRef autoSendTotemTriggerEnable =
@@ -140,7 +142,7 @@ public class PearlBot extends BaseModule {
         registerListener(Listener.getOtherPlayerExitPoint(), this::onEmergencyPlayerEntryRemove);
         registerCommandBootstrap(this::registerPearlBotCommand);
         RemoteCommand.INSTANCE.REMOTE.registerSub(new BridgeSubCommand(
-            "pearlbot", createPearlBotCommand(RemoteCommandExecution.CONTROLLER_PERMISSION + ".pearlbot")));
+                "pearlbot", createPearlBotCommand(RemoteCommandExecution.CONTROLLER_PERMISSION + ".pearlbot")));
     }
 
     @Override
@@ -336,7 +338,8 @@ public class PearlBot extends BaseModule {
         }
         RenderUtils.startDrawVirtual(event.context().stack());
         try {
-            pearlRenderCollector.render3D(event.context().stack(), event.context().partialTicks());
+            pearlRenderCollector.render3D(
+                    event.context().stack(), event.context().partialTicks());
             pearlLineCollector.render3D(event.context().stack(), event.context().partialTicks());
         } finally {
             RenderUtils.stopDrawVirtual(event.context().stack());
@@ -389,9 +392,7 @@ public class PearlBot extends BaseModule {
         }
         String playerName = emergencyPullPlayer.get().trim();
         String changedName = VRecord.getName(event.context.getProfile());
-        if (pullTask != null
-                && pullTask.isEmergencyFor(playerName)
-                && playerName.equalsIgnoreCase(changedName)) {
+        if (pullTask != null && pullTask.isEmergencyFor(playerName) && playerName.equalsIgnoreCase(changedName)) {
             clearPullTask();
         }
     }
@@ -633,7 +634,9 @@ public class PearlBot extends BaseModule {
 
         var targetState = mc.world.getBlockState(task.targetPos);
         boolean hasEmptyCollision = !targetState.isLiquid()
-                && targetState.getCollisionShape(mc.world, task.targetPos, ShapeContext.of(mc.player)).isEmpty();
+                && targetState
+                        .getCollisionShape(mc.world, task.targetPos, ShapeContext.of(mc.player))
+                        .isEmpty();
         if (task.placeBlock) {
             if (!targetState.isAir() || findPlaceableItem() == null) {
                 clearPullTask();
@@ -654,7 +657,8 @@ public class PearlBot extends BaseModule {
                     && SequencedActionManager.INSTANCE.isWaitingBlockResponse(task.interactionPos)) {
                 return;
             }
-            boolean actionStarted = task.placeBlock ? placeBlockAtTarget(task) : Interact.INSTANCE.interactBlock(task.targetPos);
+            boolean actionStarted =
+                    task.placeBlock ? placeBlockAtTarget(task) : Interact.INSTANCE.interactBlock(task.targetPos);
             if (actionStarted) {
                 task.interactionTick = Tasks.getTick();
             } else {

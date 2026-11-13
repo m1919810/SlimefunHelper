@@ -18,11 +18,13 @@ import me.matl114.events.impl.MetadataUpdate;
 import me.matl114.events.packets.PacketStorage;
 import me.matl114.events.packets.PacketStorageRecvImpl;
 import me.matl114.hacks.CombatTasks;
+import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.modules.combat.SpearEnhance;
 import me.matl114.hacks.modules.interact.SequencedActionManager;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.task.DisablerManager;
@@ -33,7 +35,6 @@ import me.matl114.hacks.utils.*;
 import me.matl114.hacks.utils.PlayerInputUtils;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
-import me.matl114.hacks.utils.enums.BypassMode;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.move.ElytraMotion;
 import me.matl114.hacks.utils.move.ElytraOptimizeUtils;
@@ -96,10 +97,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         INSTANCE = this;
     }
 
-    public final NBTRef<OptionalPrimitive<WrapEnum<BypassMode>>> noKineticMode = builder(
-                    elytraTweaks.add("no-kinetic-mode"), OptionalPrimitive.configEnum(BypassMode.class))
+    public final NBTRef<OptionalPrimitive<WrapEnum<NoKineticMode>>> noKineticMode = builder(
+                    elytraTweaks.add("no-kinetic-mode"), OptionalPrimitive.configEnum(NoKineticMode.class))
             .defaultValue(new OptionalPrimitive<>(
-                    false, NBTTypes.CONFIG_ENUM_TYPE.cast(), new WrapEnum<>(BypassMode.NO_BYPASS)))
+                    false, NBTTypes.CONFIG_ENUM_TYPE.cast(), new WrapEnum<>(NoKineticMode.SILENT)))
             .show(() -> !this.armorFly.get())
             .build();
 
@@ -1736,9 +1737,31 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     EntityDimensions pose = null;
-    int triggerKinetic = 0;
-    boolean executeNoKineticAfterTravel = false;
     boolean tempStopFlying = false;
+    boolean postRotateWillHitWall = false;
+
+    @Nullable
+    private NoKineticMode getActiveNoKineticMode() {
+        return noKineticMode.get().isPresent() ? noKineticMode.get().getValue().get() : null;
+    }
+
+    private boolean willHitWallOnNextGlidingTick(ClientPlayerEntity player) {
+        Vec3d rotation = player.getRotationVector();
+        Vec3d velocity = player.getVelocity();
+        if (anyAliveRocket()) {
+            velocity = velocity.add(
+                    rotation.x * 0.1 + (rotation.x * 1.5 - velocity.x) * 0.5,
+                    rotation.y * 0.1 + (rotation.y * 1.5 - velocity.y) * 0.5,
+                    rotation.z * 0.1 + (rotation.z * 1.5 - velocity.z) * 0.5);
+        }
+        Vec3d nextVelocity = EntityUtils.calculateGlidingVelocity(player, velocity, rotation, !player.hasNoGravity());
+        if (nextVelocity.horizontalLength() <= 0.15) {
+            return false;
+        }
+        Vec3d simulatedMovement = MovTasks.simulateMovement(player, player.getPos(), nextVelocity, false);
+        return !MathHelper.approximatelyEquals(simulatedMovement.x, nextVelocity.x)
+                || !MathHelper.approximatelyEquals(simulatedMovement.z, nextVelocity.z);
+    }
 
     @Override
     public void applyBeforeTravelTick(Event<LegalMovementManager> movementManagerEvent, Event<Vec3d> moveEvent) {
@@ -1763,39 +1786,20 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             player.setBoundingBox(player.dimensions.getBoxAt(player.getPos()));
         }
 
-        executeNoKineticAfterTravel = false;
-        if (noKineticMode.get().isPresent() && armorGlideTransactionSlot == -1 && player.isFallFlying()) {
+        NoKineticMode mode = getActiveNoKineticMode();
+        if (mode == NoKineticMode.ROTATE_FIX && !isWaitingServerResyncFallFlying()) {
             boolean canControl = anyAliveRocket();
-            if (noKineticMode.get().getValue().get().hasAc()) {
-                // control by rotation and velocity
-                // simulation
-                Vec3d vec3d = mc.player.getVelocity().multiply(4);
-                Vec3d simu2 = MovTasks.simulateMovement(player, mc.player.getPos(), vec3d, false);
-                if (vec3d.horizontalLength() > 0.3 && !MathHelper.approximatelyEquals(simu2.x, vec3d.x)
-                        || !MathHelper.approximatelyEquals(simu2.z, vec3d.z)) {
-
-                    // player.setVelocity(vec3d.multiply(0.3 / speed));
-                    movementManagerEvent.context.markForResetRot();
-                    triggerKinetic = 2;
-                    // it can work, don't move it
-                    if (canControl) {
-                        EntityUtils.setEntityPitchSafe(player, (-90f + 1e-3f));
-                        PlayerStateManager.setPlayerYawSafe(player, player.getYaw() + 180);
-                    } else {
-                        PlayerStateManager.setPlayerYawSafe(player, player.getYaw() + 180);
-                    }
-                } else if (triggerKinetic > 0) {
-                    triggerKinetic--;
-                    movementManagerEvent.context.markForResetRot();
-                    if (canControl) {
-                        EntityUtils.setEntityPitchSafe(player, (-90f + 1e-3f));
-                        PlayerStateManager.setPlayerYawSafe(player, player.getYaw() + 180);
-                    } else {
-                        PlayerStateManager.setPlayerYawSafe(player, player.getYaw() + 180);
-                    }
+            Vec3d movement = player.getVelocity().multiply(4);
+            Vec3d simulatedMovement = MovTasks.simulateMovement(player, player.getPos(), movement, false);
+            boolean triggerKinetic = movement.horizontalLength() > 0.15
+                    && (!MathHelper.approximatelyEquals(simulatedMovement.x, movement.x)
+                            || !MathHelper.approximatelyEquals(simulatedMovement.z, movement.z));
+            if (triggerKinetic) {
+                movementManagerEvent.context.markForResetRot();
+                if (canControl) {
+                    EntityUtils.setEntityPitchSafe(player, 0.0F);
                 }
-            } else {
-                executeNoKineticAfterTravel = true;
+                PlayerStateManager.setPlayerYawSafe(player, player.getYaw() + 180);
             }
         }
         if (isCurrentArmorGliding()
@@ -1819,62 +1823,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             player.dimensions = pose;
         }
         pose = null;
-        if (executeNoKineticAfterTravel) {
-
-            //                Vec3d simu = MovTasks.simulateMovement(player, mc.player.getPos(), vec3d, false);
-            //                Vec3d predictedPos = mc.player.getPos().add(simu);
-            boolean controlled = false;
-            boolean canControl = anyAliveRocket();
-            if (true) {
-                // use firework to control server motion
-                Vec3d vec3d = mc.player.getRotationVector().multiply(0.85 * 6);
-                Vec3d simu2 = MovTasks.simulateMovement(player, mc.player.getPos(), vec3d, false);
-                if (!MathHelper.approximatelyEquals(simu2.x, vec3d.x)
-                        || !MathHelper.approximatelyEquals(simu2.z, vec3d.z)) {
-
-                    // player.setVelocity(vec3d.multiply(0.3 / speed));
-                    triggerKinetic = 1;
-                    movementManagerEvent.context.markForResetRot();
-                    if (canControl) {
-                        EntityUtils.setEntityPitchSafe(
-                                player, (triggerKinetic % 2 == 0) ? (-90f + 1e-3f) : (90f - 1e-3f));
-                    } else {
-                        PlayerStateManager.setPlayerYawSafe(player, player.getYaw() + 180);
-                    }
-                    controlled = true;
-                }
-            }
-            if (!controlled && !canControl) {
-                Vec3d vec3d = mc.player.getVelocity().multiply(6);
-                Vec3d simu2 = MovTasks.simulateMovement(player, mc.player.getPos(), vec3d, false);
-                if (!MathHelper.approximatelyEquals(simu2.x, vec3d.x)
-                        || !MathHelper.approximatelyEquals(simu2.z, vec3d.z)) {
-
-                    // player.setVelocity(vec3d.multiply(0.3 / speed));
-                    triggerKinetic = 2;
-                    movementManagerEvent.context.markForResetRot();
-                    if (canControl) {
-                        EntityUtils.setEntityPitchSafe(
-                                player, (triggerKinetic % 2 == 0) ? (-90f + 1e-3f) : (90f - 1e-3f));
-                    } else {
-                        PlayerStateManager.setPlayerYawSafe(player, player.getYaw() + 180);
-                    }
-                    controlled = true;
-                }
-            }
-
-            if (!controlled && triggerKinetic > 0) {
-                triggerKinetic -= 1;
-                movementManagerEvent.context.markForResetRot();
-                // EntityUtils.setEntityPitchSafe(player,-player.getPitch());
-                if (canControl) {
-                    EntityUtils.setEntityPitchSafe(player, (triggerKinetic % 2 == 0) ? (-90f + 1e-3f) : (90f - 1e-3f));
-                } else {
-                    PlayerStateManager.setPlayerYawSafe(player, player.getYaw() + 180);
-                }
-                controlled = true;
-            }
-        }
     }
 
     //    FireworkRocketEntity lastRecordedWorldFireworkRocket;
@@ -1929,8 +1877,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         setback = false;
         nextFlyFireworksTicks = 0;
         pose = null;
-        triggerKinetic = 0;
-        executeNoKineticAfterTravel = false;
         tempStopFlying = false;
 
         recordedWorldFireworkRockets.clear();
@@ -2356,6 +2302,11 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     @Override
     public void postModify(Event<LegalMovementManager> movementManagerEvent) {
+        ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
+        postRotateWillHitWall = getActiveNoKineticMode() == NoKineticMode.POST_ROTATE
+                && !isWaitingServerResyncFallFlying()
+                && willHitWallOnNextGlidingTick(player);
+
         // avoid packet Order conflict
         rocketFlush.state(false, () -> {
             if (ViaFabricPlusHooks.isSupportEndTick() && PacketOrderManager.INSTANCE.sprinting) {
@@ -2426,6 +2377,15 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             tempStopFlying = false;
             EntityInternalAccess.of(mc.player).setDataFlag(VDataFlag.FALL_FLYING_FLAG_INDEX, true);
         }
+        ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
+        boolean willHitWall = postRotateWillHitWall;
+        postRotateWillHitWall = false;
+        if (willHitWall && getActiveNoKineticMode() == NoKineticMode.POST_ROTATE) {
+            if (!player.isUsingItem() && !SpearEnhance.isHoldingSpear(player)) {
+                InteractionTasks.interactItem(
+                        Hand.OFF_HAND, 0.0F, PlayerStateManager.INSTANCE.lastYaw + 180, false, false);
+            }
+        }
         currentTickStartGlideTransaction = false;
         return true;
     }
@@ -2471,6 +2431,16 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
+        if (getActiveNoKineticMode() == NoKineticMode.SILENT && !isWaitingServerResyncFallFlying()) {
+            boolean triggerKinetic = willHitWallOnNextGlidingTick(player);
+            if (triggerKinetic) {
+                movementManagerEvent.context.markForResetRot();
+                if (anyAliveRocket()) {
+                    EntityUtils.setEntityPitchSafe(player, 0.0F);
+                }
+                PlayerStateManager.setPlayerYawSafe(player, player.getYaw() + 180);
+            }
+        }
         if (player.isFallFlying()) {
             player.horizontalCollision = false;
             if (DisablerManager.INSTANCE.isInventoryWalkFix() && currentTickStartGlideTransaction) {
@@ -2679,8 +2649,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         if (presetEvent.context().getValue().isOptionPreset()) return;
         switch (presetEvent.context.getValue()) {
             case AC_GRIM, AC_GRIM_LEGACY -> noKineticMode.set(
-                    noKineticMode.get().withValue(new WrapEnum<>(BypassMode.BYPASS_GRIM)));
-            default -> noKineticMode.set(noKineticMode.get().withValue(new WrapEnum<>(BypassMode.NO_BYPASS)));
+                    noKineticMode.get().withValue(new WrapEnum<>(NoKineticMode.ROTATE_FIX)));
+            default -> noKineticMode.set(noKineticMode.get().withValue(new WrapEnum<>(NoKineticMode.SILENT)));
         }
 
         switch (presetEvent.context.getValue()) {
@@ -2701,6 +2671,17 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         @Override
         public String getConfigEnumType() {
             return "armorflymode";
+        }
+    }
+
+    public static enum NoKineticMode implements ConfigEnum {
+        SILENT,
+        POST_ROTATE,
+        ROTATE_FIX;
+
+        @Override
+        public String getConfigEnumType() {
+            return "no_kinetic_mode";
         }
     }
 
