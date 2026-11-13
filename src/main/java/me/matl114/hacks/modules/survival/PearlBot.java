@@ -25,6 +25,7 @@ import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.RemoteCommandExecution;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.move.PathingSchedular;
 import me.matl114.hacks.utils.move.goal.GoalBlockPos;
@@ -38,7 +39,6 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.StringRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.InventoryUtils;
-import me.matl114.utils.RenderUtils;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.commands.commandGroup.BridgeSubCommand;
 import me.matl114.utils.commands.commandGroup.SubCommand;
@@ -49,7 +49,6 @@ import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.commands.params.api.TabResult;
 import me.matl114.utils.render.RenderCollector;
 import me.matl114.versioned.api.VRecord;
-import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -72,7 +71,6 @@ import net.minecraft.world.GameMode;
 
 public class PearlBot extends BaseModule {
     private static final String USERNAME_PATTERN = "[A-Za-z0-9_]{3,16}";
-    private static final int PATH_TIMEOUT_TICKS = 1200;
     private static final int INTERACTION_TIMEOUT_TICKS = 40;
 
     public final ModulePath root = makePath(Configs.SURVIVAL_CONFIG, "survival-interact-utils.pearl-bot");
@@ -115,16 +113,16 @@ public class PearlBot extends BaseModule {
             .build();
 
     private final PathingSchedular pathingSchedular = new PathingSchedular();
-    private final RenderCollector<Entity> pearlRenderCollector = RenderCollectors.createEntityOutlineCollector();
+    private final RenderCollector<Entity> pearlRenderCollector =
+            RenderCollectors.createEntityBoxCollector(true, false, false);
     private final RenderCollector<List<Vec3d>> pearlLineCollector = RenderCollectors.createLinesCollector();
-    private List<EnderPearlEntity> renderPearls = List.of();
     private PullTask pullTask;
 
     public PearlBot() {
         super("PearlBot");
         bindFlag(enable);
         pathingSchedular
-                .active(() -> pullTask != null && enable.get())
+                .active(() -> pullTask != null && pullTask.pearl != null && enable.get())
                 .processGoal(() ->
                         pullTask == null || pullTask.standPos == null ? null : new GoalBlockPos(pullTask.standPos));
     }
@@ -139,7 +137,6 @@ public class PearlBot extends BaseModule {
         registerListener(Listener.getPacketPoint().getChannel(EntityStatusS2CPacket.class), this::onTotemTrigger);
         registerListener(Listener.getOtherPlayerJoinPoint(), this::onEmergencyPlayerEntryAdd);
         registerListener(Listener.getOtherPlayerEntryUpdate(), this::onEmergencyPlayerEntryUpdate);
-        registerListener(Listener.getOtherPlayerExitPoint(), this::onEmergencyPlayerEntryRemove);
         registerCommandBootstrap(this::registerPearlBotCommand);
         RemoteCommand.INSTANCE.REMOTE.registerSub(new BridgeSubCommand(
                 "pearlbot", createPearlBotCommand(RemoteCommandExecution.CONTROLLER_PERMISSION + ".pearlbot")));
@@ -193,33 +190,32 @@ public class PearlBot extends BaseModule {
     }
 
     private boolean executeLocate(CommandExecution sender, String requestedName, String action, ArgumentReader reader) {
-        List<EnderPearlEntity> pearls = findPearlsForCommand(sender, requestedName, action, reader);
-        if (pearls != null) {
+        PearlSearchResult result = findPearlsForCommand(sender, requestedName, action, reader, true);
+        if (result != null) {
             sendStatus(
                     sender,
-                    pearls.isEmpty() ? "widget.pearl-bot.feedback.no-pearl" : "widget.pearl-bot.feedback.interactable");
+                    result.pearls.isEmpty()
+                            ? "widget.pearl-bot.feedback.no-pearl"
+                            : "widget.pearl-bot.feedback.interactable");
         }
         return true;
     }
 
     private boolean executePull(CommandExecution sender, String requestedName, ArgumentReader reader) {
-        if (reader.hasNext() || enable.get() && emergencyPullEnable.get()) {
+        if (reader.hasNext()) {
             return true;
         }
         clearPullTask();
-        List<EnderPearlEntity> pearls = findPearlsForCommand(sender, requestedName, "pull", reader);
-        if (pearls != null && !pearls.isEmpty()) {
-            startPull(pearls);
+        PearlSearchResult result = findPearlsForCommand(sender, requestedName, "pull", reader, false);
+        if (result != null) {
+            pullTask = new PullTask(mc.world, result.ownerName, result.ownerUuid, false);
         }
         return true;
     }
 
-    private List<EnderPearlEntity> findPearlsForCommand(
-            CommandExecution sender, String requestedName, String action, ArgumentReader reader) {
+    private PearlSearchResult findPearlsForCommand(
+            CommandExecution sender, String requestedName, String action, ArgumentReader reader, boolean searchPearls) {
         if (reader.hasNext()) {
-            return null;
-        }
-        if (enable.get() && emergencyPullEnable.get() && sender instanceof RemoteCommandExecution) {
             return null;
         }
         RemoteCommand remoteCommand = ChatTasks.getRemoteCommand();
@@ -274,7 +270,8 @@ public class PearlBot extends BaseModule {
             return null;
         }
 
-        return findPearlsByOwner(requestedName, ownerUuid);
+        List<EnderPearlEntity> pearls = searchPearls ? findPearlsByOwner(requestedName, ownerUuid) : List.of();
+        return new PearlSearchResult(requestedName, ownerUuid, pearls);
     }
 
     private void sendPearlTpRequest() {
@@ -314,22 +311,19 @@ public class PearlBot extends BaseModule {
     private void updateRender() {
         pearlRenderCollector.clear();
         pearlLineCollector.clear();
+        PullTask task = pullTask;
         if (checkNull() || !enable.get()) {
+            return;
+        }
+        if (task == null || task.pearl == null || isPearlDead(task.pearl)) {
             return;
         }
 
         int color = 0xFF55FFFF;
-        List<EnderPearlEntity> activePearls = new ArrayList<>();
-        for (EnderPearlEntity pearl : renderPearls) {
-            if (!EntityUtils.isEntityValid(pearl)) {
-                continue;
-            }
-            activePearls.add(pearl);
-            pearlRenderCollector.submit(pearl, color);
-            Vec3d start = pearl.getPos();
-            pearlLineCollector.submit(List.of(start, start.add(0.0D, 256.0D, 0.0D)), color);
+        if (EntityUtils.isEntityValid(task.pearl)) {
+            pearlRenderCollector.submit(task.pearl, color);
         }
-        renderPearls = activePearls;
+        pearlLineCollector.submit(List.of(task.pearlPos, task.pearlPos.add(0.0D, 256.0D, 0.0D)), color);
     }
 
     private void onRender3D(Event<Render3D> event) {
@@ -347,7 +341,6 @@ public class PearlBot extends BaseModule {
     }
 
     private void clearRender() {
-        renderPearls = List.of();
         pearlRenderCollector.clear();
         pearlLineCollector.clear();
     }
@@ -386,17 +379,6 @@ public class PearlBot extends BaseModule {
         }
     }
 
-    private void onEmergencyPlayerEntryRemove(Event<PlayerListEntry> event) {
-        if (!enable.get() || !emergencyPullEnable.get()) {
-            return;
-        }
-        String playerName = emergencyPullPlayer.get().trim();
-        String changedName = VRecord.getName(event.context.getProfile());
-        if (pullTask != null && pullTask.isEmergencyFor(playerName) && playerName.equalsIgnoreCase(changedName)) {
-            clearPullTask();
-        }
-    }
-
     private void triggerEmergencyPull(PlayerListEntry changedEntry) {
         if (!enable.get() || !emergencyPullEnable.get() || checkNull() || mc.getNetworkHandler() == null) {
             return;
@@ -414,10 +396,8 @@ public class PearlBot extends BaseModule {
             return;
         }
 
-        List<EnderPearlEntity> pearls = findPearlsByOwner(playerName, VRecord.getId(currentEntry.getProfile()));
-        if (!pearls.isEmpty()) {
-            startPull(pearls, playerName);
-        }
+        clearPullTask();
+        pullTask = new PullTask(mc.world, playerName, VRecord.getId(currentEntry.getProfile()), true);
     }
 
     private List<EnderPearlEntity> findPearlsByOwner(String ownerName, UUID ownerUuid) {
@@ -427,7 +407,6 @@ public class PearlBot extends BaseModule {
                 pearls.add(pearl);
             }
         }
-        renderPearls = List.copyOf(pearls);
         return pearls;
     }
 
@@ -487,12 +466,10 @@ public class PearlBot extends BaseModule {
         return name;
     }
 
-    private void startPull(List<EnderPearlEntity> pearls) {
-        startPull(pearls, null);
-    }
-
-    private void startPull(List<EnderPearlEntity> pearls, String emergencyPlayerName) {
-        clearPullTask();
+    private boolean bindPullTask(PullTask task, List<EnderPearlEntity> pearls) {
+        if (task.pearl != null) {
+            return true;
+        }
         PullTarget target = null;
         for (EnderPearlEntity pearl : pearls.stream()
                 .sorted(Comparator.comparingDouble(candidate -> candidate.squaredDistanceTo(mc.player)))
@@ -503,43 +480,42 @@ public class PearlBot extends BaseModule {
             }
         }
         if (target == null) {
-            return;
+            return false;
         }
 
         if (InteractExtra.INSTANCE == null) {
-            return;
+            return false;
         }
-        BlockPos interactionPos = target.targetPos;
+        BlockPos upperBlockPos = target.upperBlockPos;
         BlockPos standPos = null;
-        if (!InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), interactionPos)) {
-            standPos = PathingSchedular.findNearbyStandableStop(interactionPos, candidate -> {
-                BlockPos support = candidate.down();
-                var feet = mc.world.getBlockState(candidate);
-                var head = mc.world.getBlockState(candidate.up());
-                return !candidate.equals(mc.player.getBlockPos())
-                        && mc.world.getBlockState(support).isFullCube(mc.world, support)
-                        && !feet.isLiquid()
-                        && !head.isLiquid()
-                        && InteractExtra.INSTANCE.isWithinInteractRange(candidate.toBottomCenterPos(), interactionPos);
-            });
+        if (!InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), upperBlockPos)) {
+            standPos = findPullStandPos(upperBlockPos);
             if (standPos == null) {
-                return;
+                return false;
             }
         }
 
         if (standPos != null && pathingSchedular.engine() instanceof PathingSchedular.NonePathingEngine) {
-            return;
+            return false;
         }
-        pullTask = new PullTask(
-                mc.world,
-                target.pearl.getUuid(),
-                target.targetPos,
-                interactionPos,
-                standPos,
-                target.placeBlock,
-                Tasks.getTick(),
-                emergencyPlayerName);
-        onPreInputEvent();
+        task.bindPearl(target.pearl, upperBlockPos, standPos, target.placeBlock);
+        return true;
+    }
+
+    private BlockPos findPullStandPos(BlockPos upperBlockPos) {
+        if (InteractExtra.INSTANCE == null) {
+            return null;
+        }
+        return PathingSchedular.findNearbyStandableStop(upperBlockPos, candidate -> {
+            BlockPos support = candidate.down();
+            var feet = mc.world.getBlockState(candidate);
+            var head = mc.world.getBlockState(candidate.up());
+            return !candidate.equals(mc.player.getBlockPos())
+                    && mc.world.getBlockState(support).isFullCube(mc.world, support)
+                    && !feet.isLiquid()
+                    && !head.isLiquid()
+                    && InteractExtra.INSTANCE.isWithinInteractRange(candidate.toBottomCenterPos(), upperBlockPos);
+        });
     }
 
     private PullTarget findPullTarget(EnderPearlEntity pearl) {
@@ -550,19 +526,16 @@ public class PearlBot extends BaseModule {
                 continue;
             }
 
-            BlockPos targetPos = waterPos.up();
-            var targetState = mc.world.getBlockState(targetPos);
+            BlockPos upperBlockPos = waterPos.up().toImmutable();
+            var targetState = mc.world.getBlockState(upperBlockPos);
             if (targetState.isAir()) {
                 if (findPlaceableItem() != null) {
-                    return new PullTarget(pearl, waterPos, targetPos, true);
+                    return new PullTarget(pearl, upperBlockPos, true);
                 }
                 continue;
             }
-            if (!targetState.isLiquid()
-                    && targetState
-                            .getCollisionShape(mc.world, targetPos, ShapeContext.of(mc.player))
-                            .isEmpty()) {
-                return new PullTarget(pearl, waterPos, targetPos, false);
+            if (!targetState.isLiquid()) {
+                return new PullTarget(pearl, upperBlockPos, false);
             }
         }
         return null;
@@ -578,99 +551,152 @@ public class PearlBot extends BaseModule {
 
     private void onPreInputEvent() {
         if (!enable.get()) {
-            if (pullTask != null) {
-                clearPullTask();
-            }
-            return;
-        }
-
-        if (emergencyPullEnable.get()) {
-            String playerName = emergencyPullPlayer.get().trim();
-            PlayerListEntry entry = mc.getNetworkHandler() == null || !playerName.matches(USERNAME_PATTERN)
-                    ? null
-                    : mc.getNetworkHandler().getPlayerListEntry(playerName);
-            if (checkNull() || entry == null || entry.getGameMode() != GameMode.SURVIVAL) {
-                if (pullTask != null) {
-                    clearPullTask();
-                }
-                return;
-            }
-            if (pullTask == null || !pullTask.isEmergencyFor(playerName)) {
-                clearPullTask();
-                List<EnderPearlEntity> pearls = findPearlsByOwner(playerName, VRecord.getId(entry.getProfile()));
-                if (!pearls.isEmpty()) {
-                    startPull(pearls, playerName);
-                }
-                return;
-            }
-        } else if (pullTask != null && pullTask.emergencyPlayerName != null) {
             clearPullTask();
             return;
         }
 
+        if (checkNull()) {
+            clearPullTask();
+            return;
+        }
+
+        updateEmergencyPullTask();
         PullTask task = pullTask;
         if (task == null) {
             return;
         }
-        if (checkNull() || mc.world != task.world || !enable.get()) {
+        if (mc.world != task.world) {
             clearPullTask();
             return;
         }
 
-        if (task.world.getEntityLookup().get(task.pearlUuid) == null) {
-            finishPull(task);
+        PlayerListEntry ownerEntry =
+                mc.getNetworkHandler() == null ? null : mc.getNetworkHandler().getPlayerListEntry(task.ownerName);
+        if (ownerEntry != null) {
+            task.ownerUuid = VRecord.getId(ownerEntry.getProfile());
+        }
+        boolean ownerCanBePulled =
+                ownerEntry != null && (!task.emergency || ownerEntry.getGameMode() == GameMode.SURVIVAL);
+
+        if (task.pearl == null) {
+            List<EnderPearlEntity> pearls = findPearlsByOwner(task.ownerName, task.ownerUuid);
+            if (pearls.isEmpty() || !bindPullTask(task, pearls)) {
+                return;
+            }
+        }
+        if (!ensurePullStandPos(task)) {
+            return;
+        }
+
+        Entity loadedPearl = task.world.getEntityLookup().get(task.pearlUuid);
+        if (loadedPearl instanceof EnderPearlEntity currentPearl) {
+            task.setPearl(currentPearl);
+        }
+        if (isPearlDead(task.pearl)) {
+            if (task.interactionTick >= 0) {
+                finishPull(task);
+            } else {
+                task.clearPearl();
+                stopPathing();
+            }
             return;
         }
         if (task.interactionTick >= 0) {
             if (Tasks.getTick() - task.interactionTick > INTERACTION_TIMEOUT_TICKS) {
-                clearPullTask();
-            }
-            return;
-        }
-        if (Tasks.getTick() - task.startedTick > PATH_TIMEOUT_TICKS) {
-            clearPullTask();
-            return;
-        }
-
-        var targetState = mc.world.getBlockState(task.targetPos);
-        boolean hasEmptyCollision = !targetState.isLiquid()
-                && targetState
-                        .getCollisionShape(mc.world, task.targetPos, ShapeContext.of(mc.player))
-                        .isEmpty();
-        if (task.placeBlock) {
-            if (!targetState.isAir() || findPlaceableItem() == null) {
-                clearPullTask();
+                task.interactionTick = -1;
+            } else {
                 return;
             }
-        } else if (targetState.isAir() || !hasEmptyCollision) {
-            clearPullTask();
+        }
+        if (!(loadedPearl instanceof EnderPearlEntity)) {
+            if (isAtPullPosition(task)) {
+                stopPathing();
+            } else if (!(pathingSchedular.engine() instanceof PathingSchedular.NonePathingEngine)) {
+                pathingSchedular.tickPathing(mc.player);
+            }
+            return;
+        }
+        var targetState = mc.world.getBlockState(task.upperBlockPos);
+        if (task.placeBlock) {
+            if (!targetState.isAir() || findPlaceableItem() == null) {
+                return;
+            }
+        } else if (targetState.isAir() || targetState.isLiquid()) {
             return;
         }
         if (Interact.INSTANCE == null || InteractExtra.INSTANCE == null) {
-            clearPullTask();
             return;
         }
-        if ((task.standPos == null || task.standPos.equals(mc.player.getBlockPos()))
-                && InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), task.interactionPos)) {
+        boolean atPullPosition = (task.standPos == null || task.standPos.equals(mc.player.getBlockPos()))
+                && InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), task.upperBlockPos);
+        if (atPullPosition) {
             stopPathing();
-            if (SequencedActionManager.INSTANCE != null
-                    && SequencedActionManager.INSTANCE.isWaitingBlockResponse(task.interactionPos)) {
+            if (!ownerCanBePulled) {
+                return;
+            }
+            if (!task.placeBlock
+                    && SequencedActionManager.INSTANCE != null
+                    && SequencedActionManager.INSTANCE.isWaitingBlockResponse(task.upperBlockPos)) {
                 return;
             }
             boolean actionStarted =
-                    task.placeBlock ? placeBlockAtTarget(task) : Interact.INSTANCE.interactBlock(task.targetPos);
+                    task.placeBlock ? placeBlockAtTarget(task) : Interact.INSTANCE.interactBlock(task.upperBlockPos);
             if (actionStarted) {
                 task.interactionTick = Tasks.getTick();
-            } else {
-                clearPullTask();
             }
             return;
         }
         if (pathingSchedular.engine() instanceof PathingSchedular.NonePathingEngine) {
-            clearPullTask();
             return;
         }
         pathingSchedular.tickPathing(mc.player);
+    }
+
+    private boolean ensurePullStandPos(PullTask task) {
+        if (task.standPos != null
+                || InteractExtra.INSTANCE == null
+                || InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), task.upperBlockPos)) {
+            return true;
+        }
+        BlockPos standPos = findPullStandPos(task.upperBlockPos);
+        if (standPos == null) {
+            return false;
+        }
+        task.standPos = standPos;
+        return true;
+    }
+
+    private boolean isAtPullPosition(PullTask task) {
+        return (task.standPos == null || task.standPos.equals(mc.player.getBlockPos()))
+                && (InteractExtra.INSTANCE == null
+                        || InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), task.upperBlockPos));
+    }
+
+    private void updateEmergencyPullTask() {
+        if (!emergencyPullEnable.get()) {
+            if (pullTask != null && pullTask.emergency) {
+                clearPullTask();
+            }
+            return;
+        }
+
+        String playerName = emergencyPullPlayer.get().trim();
+        if (!playerName.matches(USERNAME_PATTERN)) {
+            if (pullTask != null && pullTask.emergency) {
+                clearPullTask();
+            }
+            return;
+        }
+        if (pullTask != null) {
+            if (!pullTask.emergency || pullTask.isEmergencyFor(playerName)) {
+                return;
+            }
+            clearPullTask();
+        }
+
+        PlayerListEntry entry =
+                mc.getNetworkHandler() == null ? null : mc.getNetworkHandler().getPlayerListEntry(playerName);
+        pullTask = new PullTask(mc.world, playerName, entry == null ? null : VRecord.getId(entry.getProfile()), true);
     }
 
     private boolean placeBlockAtTarget(PullTask task) {
@@ -684,7 +710,7 @@ public class PearlBot extends BaseModule {
         }
 
         try {
-            return Interact.INSTANCE.placeBlock(task.targetPos);
+            return Interact.INSTANCE.placeBlock(task.upperBlockPos);
         } finally {
             InteractionTasks.finishInteractGhostHand(Interact.INSTANCE.blockMode.get(), restore);
         }
@@ -695,11 +721,15 @@ public class PearlBot extends BaseModule {
         stopPathing();
     }
 
+    private boolean isPearlDead(EnderPearlEntity pearl) {
+        Entity.RemovalReason removalReason = pearl.getRemovalReason();
+        return removalReason != null && removalReason.shouldDestroy();
+    }
+
     private void finishPull(PullTask task) {
-        if (task.emergencyPlayerName != null) {
-            enable.set(false);
-        } else {
-            clearPullTask();
+        clearPullTask();
+        if (task.emergency) {
+            emergencyPullEnable.set(false);
         }
     }
 
@@ -714,38 +744,52 @@ public class PearlBot extends BaseModule {
 
     private static final class PullTask {
         private final ClientWorld world;
-        private final UUID pearlUuid;
-        private final BlockPos targetPos;
-        private final BlockPos interactionPos;
-        private final BlockPos standPos;
-        private final boolean placeBlock;
-        private final int startedTick;
-        private final String emergencyPlayerName;
+        private final String ownerName;
+        private final boolean emergency;
+        private UUID ownerUuid;
+        private UUID pearlUuid;
+        private EnderPearlEntity pearl;
+        private Vec3d pearlPos;
+        private BlockPos upperBlockPos;
+        private BlockPos standPos;
+        private boolean placeBlock;
         private int interactionTick = -1;
 
-        private PullTask(
-                ClientWorld world,
-                UUID pearlUuid,
-                BlockPos targetPos,
-                BlockPos interactionPos,
-                BlockPos standPos,
-                boolean placeBlock,
-                int startedTick,
-                String emergencyPlayerName) {
+        private PullTask(ClientWorld world, String ownerName, UUID ownerUuid, boolean emergency) {
             this.world = world;
-            this.pearlUuid = pearlUuid;
-            this.targetPos = targetPos;
-            this.interactionPos = interactionPos;
+            this.ownerName = ownerName;
+            this.ownerUuid = ownerUuid;
+            this.emergency = emergency;
+        }
+
+        private void bindPearl(EnderPearlEntity pearl, BlockPos upperBlockPos, BlockPos standPos, boolean placeBlock) {
+            setPearl(pearl);
+            this.upperBlockPos = upperBlockPos;
             this.standPos = standPos;
             this.placeBlock = placeBlock;
-            this.startedTick = startedTick;
-            this.emergencyPlayerName = emergencyPlayerName;
+        }
+
+        private void setPearl(EnderPearlEntity pearl) {
+            this.pearl = pearl;
+            this.pearlUuid = pearl.getUuid();
+            this.pearlPos = pearl.getPos();
+        }
+
+        private void clearPearl() {
+            pearl = null;
+            pearlUuid = null;
+            pearlPos = null;
+            upperBlockPos = null;
+            standPos = null;
+            interactionTick = -1;
         }
 
         private boolean isEmergencyFor(String playerName) {
-            return emergencyPlayerName != null && emergencyPlayerName.equalsIgnoreCase(playerName);
+            return emergency && ownerName.equalsIgnoreCase(playerName);
         }
     }
 
-    private record PullTarget(EnderPearlEntity pearl, BlockPos waterPos, BlockPos targetPos, boolean placeBlock) {}
+    private record PearlSearchResult(String ownerName, UUID ownerUuid, List<EnderPearlEntity> pearls) {}
+
+    private record PullTarget(EnderPearlEntity pearl, BlockPos upperBlockPos, boolean placeBlock) {}
 }

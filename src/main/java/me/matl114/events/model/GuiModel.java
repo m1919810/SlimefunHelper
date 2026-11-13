@@ -12,11 +12,26 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.item.ItemModelManager;
+import net.minecraft.client.render.RenderLayers;
+import net.minecraft.client.render.item.ItemRenderState;
+import net.minecraft.client.render.item.model.ItemModel;
+import net.minecraft.client.render.model.BakedQuad;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector2f;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.util.Atlases;
+import net.minecraft.util.HeldItemContext;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Direction;
+import org.joml.Vector3f;
+import org.joml.Vector3fc;
 
 public interface GuiModel {
     public static final GuiModel EMPTY = new BlankGuiModel();
@@ -127,6 +142,60 @@ public interface GuiModel {
         @Override
         public Entry updateAndSubmit(ItemRenderer itemRenderer) {
             return new Entry(null, itemStack, itemModel);
+        }
+    }
+
+    @AllArgsConstructor
+    public static class SpriteGuiModel implements GuiModel {
+        Identifier spriteId;
+
+        @Override
+        public Entry updateAndSubmit(
+                ItemRenderState renderState,
+                ItemStack stack,
+                ItemModelManager resolver,
+                ItemDisplayContext displayContext,
+                @Nullable ClientWorld world,
+                @Nullable HeldItemContext heldItemContext,
+                int seed) {
+            Sprite sprite = MinecraftClient.getInstance()
+                    .getAtlasManager()
+                    .getAtlasTexture(Atlases.GUI)
+                    .getSprite(spriteId);
+            ItemRenderState state = new ItemRenderState();
+            ItemRenderStateAccess.of(state).setDisplayContext(displayContext);
+            ItemRenderState.LayerRenderState layer = state.newLayer();
+            layer.setRenderLayer(RenderLayers.entityTranslucent(sprite.getAtlasId()));
+            layer.setUseLight(false);
+
+            float minU = sprite.getMinU();
+            float maxU = sprite.getMaxU();
+            float minV = sprite.getMinV();
+            float maxV = sprite.getMaxV();
+            float z = 8.5F / 16.0F;
+            Vector3fc[] vertices = {
+                new Vector3f(0.0F, 1.0F, z),
+                new Vector3f(0.0F, 0.0F, z),
+                new Vector3f(1.0F, 0.0F, z),
+                new Vector3f(1.0F, 1.0F, z)
+            };
+            layer.setVertices(() -> vertices);
+            layer.getQuads()
+                    .add(new BakedQuad(
+                            vertices[0],
+                            vertices[1],
+                            vertices[2],
+                            vertices[3],
+                            Vector2f.toLong(minU, minV),
+                            Vector2f.toLong(minU, maxV),
+                            Vector2f.toLong(maxU, maxV),
+                            Vector2f.toLong(maxU, minV),
+                            -1,
+                            Direction.SOUTH,
+                            sprite,
+                            false,
+                            0));
+            return new Entry(null, state);
         }
     }
 
