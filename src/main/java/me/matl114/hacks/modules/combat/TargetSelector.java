@@ -683,6 +683,15 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
         }
     }
 
+    public boolean isInFront(Entity entity) {
+        Entity camera = mc.getCameraEntity();
+        if (camera == null) return false;
+        Vec3d cameraEyePos = camera.getCameraPosVec(1.0F);
+        Vec3d viewDirection = camera.getRotationVec(1.0F);
+        Vec3d cameraToTarget = entity.getBoundingBox().getCenter().subtract(cameraEyePos);
+        return viewDirection.dotProduct(cameraToTarget) >= 0.0D;
+    }
+
     //    private double withMultiply(Entity e, double v) {
     //        return Math.abs(v)
     //                - ((v < 0.0) ? multiplyBackward.get() : 0.0D)

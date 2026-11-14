@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Streams;
 import java.util.*;
 import java.util.List;
+import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import lombok.With;
 import me.matl114.accessors.access.ClientPlayerAccess;
@@ -58,6 +59,7 @@ import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
 import org.jetbrains.annotations.Nullable;
@@ -144,6 +146,10 @@ public class Attack extends BaseModule {
     public final KeyBindRef hotkey =
             moduleEntry(base.addHotkey(), new MultiKeyBind(), base.addEnable()).build();
 
+    public final FlagRef onlyFocus = flagBuilder(base.add("only-focus")).build();
+
+    public final FlagRef onlyFront = flagBuilder(base.add("only-front")).build();
+
     public final FlagRef renderAttackTarget = flagBuilder(base.add("render")).build();
 
     public final NBTRef<WrapColor> renderAttackColor = builder(base.add("render-color"), WrapColor.class)
@@ -201,29 +207,37 @@ public class Attack extends BaseModule {
     }
 
     private void updateRenderCollector() {
+        Entity submittedTarget = currentTickAttackTarget;
+        currentTickAttackTarget = null;
         targetCollector.clear();
-        if (!enable.get() || mc.player == null || !renderAttackTarget.get()) return;
-        if (mc.player.isUsingItem()) {
-            if (mc.player.getActiveHand() == Hand.MAIN_HAND) return;
-            if (mc.player.getActiveItem().getItem() instanceof RangedWeaponItem) return;
+        if (mc.player == null || !renderAttackTarget.get()) return;
+
+        Entity target = EntityUtils.isEntityValid(submittedTarget) ? submittedTarget : null;
+        if (target == null) {
+            if (!enable.get()) return;
+            if (mc.player.isUsingItem()) {
+                if (mc.player.getActiveHand() == Hand.MAIN_HAND) return;
+                if (mc.player.getActiveItem().getItem() instanceof RangedWeaponItem) return;
+            }
+            if (mc.crosshairTarget != null
+                    && mc.crosshairTarget.getType() != HitResult.Type.MISS
+                    && CombatTasks.notSuitableForAttack(mc.player.getMainHandStack())) return;
+
+            target = CombatTasks.getTargetSelector().searchAttackEntity(getTpSelectRange(), true);
         }
-        if (mc.crosshairTarget.getType() != HitResult.Type.MISS
-                && CombatTasks.notSuitableForAttack(mc.player.getMainHandStack())) return;
 
-        Entity lastTickTarget = CombatTasks.getTargetSelector().searchAttackEntity(getTpSelectRange(), true);
-
-        if (!EntityUtils.isEntityValid(lastTickTarget)) {
+        if (!EntityUtils.isEntityValid(target)) {
             return;
         }
-        float dist = lastTickTarget.distanceTo(mc.player);
+        float dist = target.distanceTo(mc.player);
         float opacity = Math.min(0.6F, 0.10F + dist * 0.02F);
         targetCollector.submit(
-                lastTickTarget,
+                target,
                 ColorUtils.withAlpha(renderAttackColor.get().color(), opacity).getRGB());
     }
 
     public void onRenderTarget(Event<Render3D> stackE) {
-        if (!enable.get() || !renderAttackTarget.get() || mc.player == null) return;
+        if (!renderAttackTarget.get() || mc.player == null) return;
         RenderUtils.startDrawVirtual(stackE.context.stack());
         try {
             targetCollector.render3D(stackE.context.stack(), stackE.context.partialTicks());
@@ -235,6 +249,13 @@ public class Attack extends BaseModule {
     private final RenderCollector<Entity> targetCollector =
             RenderCollectors.createEntityBoxCollector(false, true, false);
 
+    @Nullable
+    public Entity currentTickAttackTarget;
+
+    public void submitCurrentTickAttackTarget(@Nullable Entity target) {
+        if (target != null) currentTickAttackTarget = target;
+    }
+
     public List<Entity> getCurrentRangeEntities() {
         return CombatTasks.getTargetSelector().getAttackableEntities(getTpSelectRange());
     }
@@ -243,14 +264,25 @@ public class Attack extends BaseModule {
         return CombatTasks.getTargetSelector().searchAttackEntity(getTpSelectRange(), auto, getModePredictTicks());
     }
 
+    public Entity getCurrentSelectTarget(boolean auto, Predicate<Entity> predicate) {
+        return CombatTasks.getTargetSelector()
+                .searchAttackEntity(getTpSelectRange(), auto, getModePredictTicks(), predicate);
+    }
+
     // the attack return value of whether it needs cooldown, for delayMovement attacking
     public boolean tryAttack(boolean auto) {
         if (mc.player == null) return false;
-        Entity entity = getCurrentSelectTarget(auto);
-        if (entity != null) {
-            return attackEntity(entity, createAttackSettings());
+        Entity entity;
+        if (onlyFocus.get()) {
+            if (!(mc.crosshairTarget instanceof EntityHitResult hit)) return false;
+            entity = hit.getEntity();
+            if (!CombatTasks.getTargetSelector().canAttack(entity)) return false;
+        } else {
+            entity = getCurrentSelectTarget(auto);
         }
-        return false;
+        if (entity == null) return false;
+        if (onlyFront.get() && !CombatTasks.getTargetSelector().isInFront(entity)) return false;
+        return attackEntity(entity, createAttackSettings());
     }
 
     public double getTpSelectRange() {

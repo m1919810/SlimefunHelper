@@ -139,10 +139,6 @@ public class PlayerStateManager extends BaseModule {
         INSTANCE = this;
     }
 
-    public boolean hasResistance() {
-        return mc.player != null && mc.player.hasStatusEffect(StatusEffects.RESISTANCE);
-    }
-
     @Override
     public void registerAll() {
         super.registerAll();
@@ -743,6 +739,7 @@ public class PlayerStateManager extends BaseModule {
     }
 
     public void detectEquipmentChanges() {
+        if (checkNull()) return;
         if (!ServerFeature.INSTANCE.attributeSwap.get() && ServerFeature.INSTANCE.trackClientAttrUpdate.get()) {
             AttributeUtils.updateAttribute(mc.player);
         }
@@ -1354,7 +1351,7 @@ public class PlayerStateManager extends BaseModule {
                 lastUsingHand = null;
             }
             lastInBlock = MovTasks.isCollidingWithEnvironment(player);
-            Box box = mc.player.getBoundingBox();
+            Box box = player.getBoundingBox();
             lastUnderBlock = MovTasks.isCollidingWithEnvironment(
                     player, box.withMinY(box.maxY).withMaxY(box.maxY + 0.42));
             this.lastUpdate = Tasks.getTick();

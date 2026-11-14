@@ -6,6 +6,7 @@ import java.util.*;
 import me.matl114.accessors.access.LivingEntityAccess;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.utils.ItemStackUtils;
+import me.matl114.utils.RegistryUtils;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
@@ -20,7 +21,7 @@ import net.minecraft.registry.entry.RegistryEntry;
 
 public class AttributeUtils {
     public static double getPlayerBlockInteractionRange(PlayerEntity player) {
-        return player.getAttributeValue(EntityAttributes.PLAYER_BLOCK_INTERACTION_RANGE);
+        return player.getAttributeValue(EntityAttributes.BLOCK_INTERACTION_RANGE);
     }
 
     public static AttributeContainer copyAttributes(LivingEntity living) {
@@ -45,8 +46,7 @@ public class AttributeUtils {
                     }
                 });
             }
-            if (!itemStack2.isEmpty()
-                    && !(itemStack2.isDamageable() && itemStack2.getDamage() >= itemStack2.getMaxDamage())) {
+            if (!itemStack2.isEmpty() && !itemStack2.shouldBreak()) {
                 itemStack2.applyAttributeModifiers(slot, (attribute, modifier) -> {
                     EntityAttributeInstance entityAttributeInstance = attributeContainer.getCustomInstance(attribute);
                     if (entityAttributeInstance != null) {
@@ -74,12 +74,12 @@ public class AttributeUtils {
     }
 
     public static List<RegistryEntry<EntityAttribute>> ATTRIBUTES_1_21_1 = List.of(
-            GENERIC_MOVEMENT_EFFICIENCY,
-            GENERIC_WATER_MOVEMENT_EFFICIENCY,
-            PLAYER_MINING_EFFICIENCY,
-            PLAYER_SNEAKING_SPEED,
-            PLAYER_SUBMERGED_MINING_SPEED,
-            GENERIC_ATTACK_KNOCKBACK);
+            MOVEMENT_EFFICIENCY,
+            WATER_MOVEMENT_EFFICIENCY,
+            MINING_EFFICIENCY,
+            SNEAKING_SPEED,
+            SUBMERGED_MINING_SPEED,
+            ATTACK_KNOCKBACK);
 
     private static void setAttributeVia(
             AttributeContainer attributeContainer, RegistryEntry<EntityAttribute> attribute, double level) {
@@ -95,10 +95,10 @@ public class AttributeUtils {
 
     private static int getEquipmentLevel(
             RegistryKey<Enchantment> enchantment, Map<EquipmentSlot, ItemStack> equipmentOverrides) {
-        var entry = ItemStackUtils.registry()
-                .getOptional(enchantment.getRegistryRef())
-                .flatMap(s -> s.getEntry(enchantment))
-                .orElseThrow();
+        var entry = RegistryUtils.getRegistryEntry(ItemStackUtils.registry(), enchantment);
+        if (entry == null) {
+            return 0;
+        }
         int i = 0;
         var var4 = equipmentOverrides.entrySet().iterator();
 
@@ -120,24 +120,22 @@ public class AttributeUtils {
         // Update generic attributes for all entities
         setAttributeVia(
                 container,
-                EntityAttributes.GENERIC_WATER_MOVEMENT_EFFICIENCY,
+                EntityAttributes.WATER_MOVEMENT_EFFICIENCY,
                 getEquipmentLevel(Enchantments.DEPTH_STRIDER, equipmentMap) / 3D);
         final int efficiencyLevel = getEquipmentLevel(Enchantments.EFFICIENCY, equipmentMap);
         setAttributeVia(
                 container,
-                EntityAttributes.PLAYER_MINING_EFFICIENCY,
+                EntityAttributes.MINING_EFFICIENCY,
                 efficiencyLevel > 0 ? efficiencyLevel * efficiencyLevel + 1D : 0D);
         setAttributeVia(
                 container,
-                EntityAttributes.PLAYER_SNEAKING_SPEED,
+                EntityAttributes.SNEAKING_SPEED,
                 0.3D + getEquipmentLevel(Enchantments.SWIFT_SNEAK, equipmentMap) * 0.15D);
         setAttributeVia(
                 container,
-                EntityAttributes.PLAYER_SUBMERGED_MINING_SPEED,
+                EntityAttributes.SUBMERGED_MINING_SPEED,
                 getEquipmentLevel(Enchantments.AQUA_AFFINITY, equipmentMap) <= 0 ? 0.2D : 1D);
         setAttributeVia(
-                container,
-                EntityAttributes.GENERIC_ATTACK_KNOCKBACK,
-                getEquipmentLevel(Enchantments.KNOCKBACK, equipmentMap));
+                container, EntityAttributes.ATTACK_KNOCKBACK, getEquipmentLevel(Enchantments.KNOCKBACK, equipmentMap));
     }
 }
