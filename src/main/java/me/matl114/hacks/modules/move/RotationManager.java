@@ -84,6 +84,15 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
         });
     }
 
+    public void flushQueuePackets() {
+        if (queueTick != 0 || currentInQueue) {
+            PacketManager.flushOutBound(() -> {
+                queueTick = 0;
+                currentInQueue = false;
+            });
+        }
+    }
+
     @Override
     public void applyPreTickModify(Event<LegalMovementManager> event) {
 
@@ -138,12 +147,7 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
         if (request != null) {
             request.tickPost();
         }
-        if (queueTick != 0 || currentInQueue) {
-            PacketManager.flushOutBound(() -> {
-                queueTick = 0;
-                currentInQueue = false;
-            });
-        }
+        flushQueuePackets();
     }
 
     private void clearRequests() {

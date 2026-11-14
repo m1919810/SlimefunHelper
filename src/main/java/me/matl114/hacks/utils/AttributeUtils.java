@@ -6,6 +6,7 @@ import java.util.*;
 import me.matl114.accessors.access.LivingEntityAccess;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.utils.ItemStackUtils;
+import me.matl114.utils.RegistryUtils;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
@@ -94,10 +95,10 @@ public class AttributeUtils {
 
     private static int getEquipmentLevel(
             RegistryKey<Enchantment> enchantment, Map<EquipmentSlot, ItemStack> equipmentOverrides) {
-        var entry = ItemStackUtils.registry()
-                .getOptional(enchantment.getRegistryRef())
-                .flatMap(s -> s.getOptional(enchantment))
-                .orElseThrow();
+        var entry = RegistryUtils.getRegistryEntry(ItemStackUtils.registry(), enchantment);
+        if (entry == null) {
+            return 0;
+        }
         int i = 0;
         var var4 = equipmentOverrides.entrySet().iterator();
 
