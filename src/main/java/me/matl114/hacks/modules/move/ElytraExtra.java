@@ -1795,7 +1795,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         }
 
         NoKineticMode mode = getActiveNoKineticMode();
-        if (mode == NoKineticMode.ROTATE_FIX && !isWaitingServerResyncFallFlying()) {
+        if (mode == NoKineticMode.ROTATE_FIX && mc.player.isFallFlying() && !isWaitingServerResyncFallFlying()) {
             boolean canControl = anyAliveRocket();
             Vec3d movement = player.getVelocity().multiply(4);
             Vec3d simulatedMovement = MovTasks.simulateMovement(player, player.getPos(), movement, false);
@@ -2678,7 +2678,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         if (presetEvent.context().getValue().isOptionPreset()) return;
         switch (presetEvent.context.getValue()) {
             case AC_GRIM, AC_GRIM_LEGACY -> noKineticMode.set(
-                    noKineticMode.get().withValue(new WrapEnum<>(NoKineticMode.ROTATE_FIX)));
+                    noKineticMode.get().withValue(new WrapEnum<>(NoKineticMode.POST_ROTATE)));
             default -> noKineticMode.set(noKineticMode.get().withValue(new WrapEnum<>(NoKineticMode.SILENT)));
         }
 

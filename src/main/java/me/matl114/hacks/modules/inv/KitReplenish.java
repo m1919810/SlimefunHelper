@@ -1411,7 +1411,11 @@ public class KitReplenish extends BaseModule {
             for (var i = from; i < rule.to(); ++i) {
                 int idx = i - from;
                 if (idx >= shulkerInventory.size()) break;
-                shulkerInventory.setStack(idx, inventory.getStack(i));
+                if (idx >= inventory.size()) {
+                    shulkerInventory.setStack(idx, ItemStack.EMPTY);
+                } else {
+                    shulkerInventory.setStack(idx, inventory.getStack(i));
+                }
             }
             ContainerComponent shulkerComponent = ContainerComponent.fromStacks(stacks);
             ItemStack newShulker = new ItemStack(Items.SHULKER_BOX);
