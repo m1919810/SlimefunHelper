@@ -71,7 +71,7 @@ public final class ClassicClickGuiScreen extends GenericScreen {
                     TextProvider.of(
                             Text.translatableWithFallback("widget.click-gui.selection." + selection, selection)),
                     TooltipHandler.of(ChatUtils.parseTooltipsTranslation(
-                            "widget.click-gui.selection." + selection + ".tooltips", "鏆傛棤浠嬬粛")),
+                            "widget.click-gui.selection." + selection + ".tooltips", "暂无介绍")),
                     ButtonAction.run(() -> this.setGlobal(selection)),
                     () -> true,
                     () -> Objects.equals(this.selecting, selection));

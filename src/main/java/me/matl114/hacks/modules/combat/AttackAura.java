@@ -14,12 +14,15 @@ import me.matl114.hacks.utils.AttributeUtils;
 import me.matl114.hacks.utils.DamageUtils;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.RaycastUtils;
+import me.matl114.hacks.utils.config.NBTTypes;
+import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
+import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.versioned.api.VItem;
@@ -35,6 +38,7 @@ import net.minecraft.item.ShieldItem;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 
 public class AttackAura extends BaseModule {
     public final ModulePath attBot = makePath(Configs.COMBAT_CONFIG, "att-bot");
@@ -62,13 +66,19 @@ public class AttackAura extends BaseModule {
             .validator(Configs.INT_NONNEGATIVE)
             .build();
 
+    public final NBTRef<OptionalPrimitive<Double>> onlyFront = builder(
+                    attBot.add("only-front"), OptionalPrimitive.DOUBLE_TYPE)
+            .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 90.0D))
+            .validator(value -> value.getValue() >= 0.0D && value.getValue() <= 180.0D)
+            .build();
+
     public final FlagRef enable2 = flagBuilder(triggerBot.addEnable()).build();
 
     public final KeyBindRef triggerBotHotkey = moduleEntry(
                     triggerBot.addHotkey(), new MultiKeyBind(), triggerBot.addEnable())
             .build();
 
-    public final DoubleRef raycastLength = doubleBuilder(triggerBot.add("raycast-length"))
+    public final DoubleRef minRayCastLength = doubleBuilder(triggerBot.add("min-raycast-length"))
             .defaultValue(3.0D)
             .validator(Configs.doubleRange(0.0D, 200.0D))
             .build();
@@ -242,6 +252,18 @@ public class AttackAura extends BaseModule {
         return status != null && status.visibleStatusEffects.isEmpty();
     }
 
+    private boolean isWithinAttackAngle(Entity target) {
+        OptionalPrimitive<Double> angleRange = onlyFront.get();
+        if (!angleRange.isPresent()) return true;
+        Entity camera = mc.getCameraEntity();
+        if (camera == null) return false;
+        Vec3d cameraToTarget = target.getBoundingBox().getCenter().subtract(camera.getCameraPosVec(1.0F));
+        if (cameraToTarget.lengthSquared() == 0.0D) return true;
+        double dot = camera.getRotationVec(1.0F).dotProduct(cameraToTarget.normalize());
+        double angle = Math.toDegrees(Math.acos(Math.clamp(dot, -1.0D, 1.0D)));
+        return angle <= angleRange.getValue();
+    }
+
     public void onTick() {
         if (mc.player == null) return;
         if (enable.get()) {
@@ -253,7 +275,9 @@ public class AttackAura extends BaseModule {
             if (custom <= interval) {
                 if (attack.legalTargetingMode.get().isLegal()
                         || ((holdingWeapon && cooldownWeapon.get()) || (!holdingWeapon && cooldownHand.get()))) {
-                    Entity entity = attack.getCurrentSelectTarget(true);
+                    Entity entity = onlyFront.get().isPresent()
+                            ? attack.getCurrentSelectTarget(true, this::isWithinAttackAngle)
+                            : attack.getCurrentSelectTarget(true);
                     if (entity == null) return;
                     attack.submitCurrentTickAttackTarget(entity);
                     tickAttack(entity);
@@ -262,6 +286,11 @@ public class AttackAura extends BaseModule {
                     // attack! attack! attack!
                     if (checkUsing()) return;
                     List<Entity> targets = attack.getCurrentRangeEntities();
+                    if (onlyFront.get().isPresent()) {
+                        targets = targets.stream()
+                                .filter(this::isWithinAttackAngle)
+                                .toList();
+                    }
                     int max = maxTargetPerTick.get();
                     if (!targets.isEmpty()) {
                         attack.submitCurrentTickAttackTarget(targets.get(0));
@@ -282,10 +311,10 @@ public class AttackAura extends BaseModule {
         if (enable2.get()) {
             Entity camera = mc.getCameraEntity();
             if (mc.world == null || camera == null) return;
-
+            double length = Math.min(minRayCastLength.get(), CombatExtra.INSTANCE.getAttackRange());
             HitResult hitResult = raycastIgnoreBlock.get()
-                    ? RaycastUtils.createEntityOnlyCrossHairResult(camera, raycastLength.get(), 1.0F, null)
-                    : RaycastUtils.createCrossHairHitResult(camera, raycastLength.get(), raycastLength.get(), 1.0F);
+                    ? RaycastUtils.createEntityOnlyCrossHairResult(camera, length, 1.0F, null)
+                    : RaycastUtils.createCrossHairHitResult(camera, length, length, 1.0F);
             if (hitResult instanceof EntityHitResult entityHit) {
                 Entity target = entityHit.getEntity();
                 if (EntityUtils.isEntityValid(target)

@@ -399,7 +399,9 @@ public class SpearEnhance extends BaseModule {
     }
 
     public boolean onPiercing(IntSupplier seq) {
-        if (VItem.getInstance().isSpear(mc.player.getStackInHand(Hand.MAIN_HAND))
+        ItemStack stack = mc.player.getStackInHand(Hand.MAIN_HAND);
+        if ((stack.contains(DataComponentTypes.PIERCING_WEAPON)
+                        || VItem.getInstance().isSpear(stack))
                 && ViaFabricPlusHooks.getInstance().isViaEnabled()) {
             if (SupportVersion.CURRENT.isHigherOrEqualTo(21, 6)) {
                 var wrapper = ViaFabricPlusHooks.getInstance().createViaPacket();

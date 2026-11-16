@@ -21,9 +21,13 @@ import me.matl114.utils.Debug;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.network.OtherClientPlayerEntity;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.AttackRangeComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.play.CooldownUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityTrackerUpdateS2CPacket;
@@ -53,6 +57,9 @@ public class CombatExtra extends BaseModule {
             .validator(Configs.doubleRange(0.0D, 64.0D))
             .build();
 
+    public final FlagRef spearReach =
+            flagBuilder(combat.add("grim-spear-reach")).build();
+
     public final FlagRef shieldPredict =
             flagBuilder(combat.add("shielding-setback-log")).build();
 
@@ -68,7 +75,7 @@ public class CombatExtra extends BaseModule {
 
     public double getAttackAtTargetRange(Entity entity) {
         double d = ridingBypass(mc.player) || ridingBypass(entity) ? boatAttackRange.get() : range.get();
-        return mc.player.getAttributeValue(EntityAttributes.PLAYER_ENTITY_INTERACTION_RANGE) + d;
+        return getAttackRangeAttribute() + d;
     }
 
     public double getAttackRange() {
@@ -77,7 +84,25 @@ public class CombatExtra extends BaseModule {
     }
 
     public double getAttackRangeAttribute() {
-        return mc.player.getAttributeValue(EntityAttributes.PLAYER_ENTITY_INTERACTION_RANGE);
+        double reachValue = mc.player.getAttributeValue(EntityAttributes.ENTITY_INTERACTION_RANGE);
+        if (spearReach.get()
+                && ViaFabricPlusHooks.getInstance().getCurrentVersion().isHigherOrEqualTo(21, 11)) {
+            ItemStack lastStack = PlayerStateManager.INSTANCE
+                    .getOrCreatePlayerStatus(mc.player)
+                    .getMainHandSnapshot();
+            if (lastStack.contains(DataComponentTypes.ATTACK_RANGE)) {
+                AttackRangeComponent range1 = lastStack.get(DataComponentTypes.ATTACK_RANGE);
+                double reach1 = range1.getEffectiveMaxRange(mc.player);
+                reachValue = Math.max(reach1, reachValue);
+            }
+            ItemStack handStack = mc.player.getStackInHand(Hand.MAIN_HAND);
+            if (handStack.contains(DataComponentTypes.ATTACK_RANGE)) {
+                AttackRangeComponent range1 = handStack.get(DataComponentTypes.ATTACK_RANGE);
+                double reach1 = range1.getEffectiveMaxRange(mc.player);
+                reachValue = Math.max(reach1, reachValue);
+            }
+        }
+        return reachValue;
     }
 
     @Override
@@ -90,7 +115,8 @@ public class CombatExtra extends BaseModule {
         registerListener(Listener.getAttackAction(), this::onUseAttackNoSlow);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onMovementPacket);
-        registerListener(Listener.getPostGameTick(), this::onClientTickEndPacket);
+        registerListener(
+                Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class), this::onClientTickEndPacket);
         registerListener(
                 Listener.getEntityTrackedPositionUpdate().getChannel(EntityType.PLAYER), this::onTrackedPosition);
     }
@@ -117,9 +143,7 @@ public class CombatExtra extends BaseModule {
                 && trackerUpdateS2CPacket.id() == mc.player.getId()
                 && mc.player.isUsingItem()
                 && VItem.getInstance().isShield(mc.player.getActiveItem())
-                && !mc.player
-                        .getItemCooldownManager()
-                        .isCoolingDown(mc.player.getActiveItem().getItem())) {
+                && !mc.player.getItemCooldownManager().isCoolingDown(mc.player.getActiveItem())) {
             // shield not in cooldown
             // block shield from
             for (var trackerUpdate : trackerUpdateS2CPacket.trackedValues()) {
@@ -155,7 +179,7 @@ public class CombatExtra extends BaseModule {
             try {
                 synchronized (CombatExtra.class) {
                     // async update, synchronize to protect concurrent cooldown update,
-                    mc.player.getItemCooldownManager().set(packet.item(), packet.cooldown());
+                    mc.player.getItemCooldownManager().set(packet.cooldownGroup(), packet.cooldown());
                     //                if(mc.player.isUsingItem() && mc.player.getActiveItem().getItem() == shield){
                     //
                     //                }
