@@ -942,7 +942,7 @@ public class ElytraBot extends BaseModule {
 
     public void refreshTarget() {
         if (!EntityUtils.isEntityValid(target)
-                || target.getPos().squaredDistanceTo(mc.player.getPos()) > targetRange.get()) {
+                || target.getPos().squaredDistanceTo(mc.player.getPos()) > MathUtils.s2(targetRange.get())) {
             target = null;
         }
         if (target == null || dynamicTarget.get()) {

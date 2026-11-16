@@ -233,54 +233,18 @@
 	"module-toggle.interact-arua.interact.enable": "交互增强",
 	"widget.click-gui.module-name.Interaction.Interact": "交互增强",
 	"widget.click-gui.module-name.Survival.VillagerEsp": "村民ESP",
-	
 	"widget.click-gui.module-name.Survival.WorldManager": "世界管理",
-	
 	"widget.click-gui.module-name.Survival.BlockFarm": "方块农场",
-	
 	"widget.click-gui.module-name.Survival.AntiAXray": "反反矿透",
 	"widget.click-gui.module-name.Survival.SeedOre": "种子矿石",
-	
 	"module-toggle.survival-mine-utils.auto-librarian.enable": "自动图书管理员",
 	"widget.click-gui.module-name.Survival.AutoLibrarian": "自动图书管理员",
-
 	"module-toggle.survival-interact-utils.auto-breed.enable": "自动繁殖",
 	"widget.click-gui.module-name.Survival.AutoBreed": "自动繁殖",
 	"widget.click-gui.module-name.Survival.SearchControl": "搜索控制",
-	
 	"widget.click-gui.module-name.Survival.PathManager": "路径管理",
 	"widget.click-gui.module-name.Survival.BaritoneFix": "Baritone 修复",
-	
 	"widget.click-gui.module-name.Survival.XaeroHelper": "Xaero助手",
+	"widget.click-gui.module-name.Extra.AutoLogout": "自动退出"
 	
-	"widget.click-gui.module-name.Extra.AutoLogout": "自动退出",
-	"configenum.text-align-type.left": "左对齐",
-	"configenum.text-align-type.middle": "居中对齐",
-	"configenum.text-align-type.right": "右对齐",
-	"configenum.gui-style.vanilla": "原版",
-	"configenum.gui-style.custom": "自定义",
-	"widget.gui-settings.text-config.text_align": "文本对齐",
-	"widget.text-font.system-fonts.title": "可用系统字体（点击选择）",
-	"widget.text-font.system-fonts.empty": "未找到本地 TrueType 字体",
-	"widget.text-font.resource-fonts.title": "资源包字体（点击选择）",
-	"widget.text-font.resource-fonts.empty": "未找到资源包字体",
-	"widget.text-font.font-entry.selected": "[已选择] %s",
-	"widget.text-font.font-entry.name": "%s",
-	"widget.text-font.font-entry.system-path": "%s",
-	"widget.text-font.font-entry.resource-path": "assets/%s/font/%s.json",
-	"text-fonts.style": "字体样式",
-	"text-fonts.font-name": "系统字体",
-	"text-fonts.resource-font": "资源包字体",
-	"text-fonts.font-size": "字体大小",
-	"message.viafabric.dup-rot-required": "此功能需要 ViaFabricPlus 连接到 1.20.7 或更低版本。",
-	"message.module.structure-label.input-seed": "请输入世界种子以使用结构标签。",
-	"message.module.misc.parkour-jump-failed": "跑酷跳跃失败，位置已回档。",
-	"configenum.text-style.vanilla": "原版字体",
-	"configenum.text-style.system": "系统字体",
-	"configenum.text-style.font": "资源包字体",
-	"structure-label.loot-version": "古城战利品版本",
-	"configenum.loot-version.v1_21_1": "Minecraft 1.21.1",
-	"configenum.loot-version.v1_21_4": "Minecraft 1.21.4",
-	"configenum.loot-version.v1_21_11": "Minecraft 1.21.11",
-	"configenum.loot-version.v26_1": "Minecraft 26.1"
 }

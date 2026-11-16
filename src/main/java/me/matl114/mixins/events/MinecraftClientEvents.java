@@ -411,7 +411,8 @@ public abstract class MinecraftClientEvents {
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/util/hit/HitResult;getType()Lnet/minecraft/util/hit/HitResult$Type;",
+                                    "Lnet/minecraft/item/ItemStack;get(Lnet/minecraft/component/ComponentType;)Ljava/lang/Object;",
+                            ordinal = 0,
                             shift = At.Shift.BEFORE),
             locals = LocalCapture.CAPTURE_FAILHARD,
             cancellable = true)

@@ -1,10 +1,7 @@
 package me.matl114.hacks.modules.extra;
 
 import java.awt.Color;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.LivingEntityAccess;
 import me.matl114.events.Event;
@@ -34,8 +31,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.LadderBlock;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.PlayPackets;
-import net.minecraft.network.packet.c2s.play.ClientStatusC2SPacket;
-import net.minecraft.network.packet.c2s.play.TeleportConfirmC2SPacket;
+import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
 import net.minecraft.screen.slot.SlotActionType;
