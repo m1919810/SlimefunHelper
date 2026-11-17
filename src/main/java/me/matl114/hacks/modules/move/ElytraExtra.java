@@ -18,7 +18,6 @@ import me.matl114.events.impl.MetadataUpdate;
 import me.matl114.events.packets.PacketStorage;
 import me.matl114.events.packets.PacketStorageRecvImpl;
 import me.matl114.hacks.CombatTasks;
-import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -2311,9 +2310,18 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     @Override
     public void postModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-        postRotateWillHitWall = getActiveNoKineticMode() == NoKineticMode.POST_ROTATE
-                && !isWaitingServerResyncFallFlying()
+        boolean willHitWall = getActiveNoKineticMode() == NoKineticMode.POST_ROTATE
+                && (!isWaitingServerResyncFallFlying() || isThisTickGlideMovementServerSideGlide())
                 && willHitWallOnNextGlidingTick(player);
+        if (willHitWall && getActiveNoKineticMode() == NoKineticMode.POST_ROTATE) {
+            if (!player.isUsingItem() && !SpearEnhance.isHoldingSpear(player)) {
+                if (anyAliveRocket()) {
+                    LegacySnapRotManager.INSTANCE.requestPostRotateYaw(PlayerStateManager.INSTANCE.lastYaw + 180);
+                } else {
+                    LegacySnapRotManager.INSTANCE.requestPostRotate(0.0F, PlayerStateManager.INSTANCE.lastYaw + 180);
+                }
+            }
+        }
 
         // avoid packet Order conflict
         rocketFlush.state(false, () -> {
@@ -2385,20 +2393,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             tempStopFlying = false;
             EntityInternalAccess.of(mc.player).setDataFlag(VDataFlag.FALL_FLYING_FLAG_INDEX, true);
         }
-        ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-        boolean willHitWall = postRotateWillHitWall;
-        postRotateWillHitWall = false;
-        if (willHitWall && getActiveNoKineticMode() == NoKineticMode.POST_ROTATE) {
-            if (!player.isUsingItem() && !SpearEnhance.isHoldingSpear(player)) {
-                if (anyAliveRocket()) {
-                    InteractionTasks.interactItem(
-                            Hand.OFF_HAND, 0.0F, PlayerStateManager.INSTANCE.lastYaw + 180, false, false);
-                } else {
-                    InteractionTasks.interactItem(
-                            Hand.OFF_HAND, 0.0F, PlayerStateManager.INSTANCE.lastYaw + 180, false, false);
-                }
-            }
-        }
+
         currentTickStartGlideTransaction = false;
         return true;
     }

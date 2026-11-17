@@ -16,6 +16,7 @@ import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.RayCastCalculator;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
+import me.matl114.hacks.utils.move.Rotation;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.ApiMethod;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -111,11 +112,11 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
         }
         // Resolve the initial rotation against the position used by this tick's movement.
 
-        Vec2f rotation = currentTickRequest.tickRotationPre(player.getPos(), player);
-        if (rotation == null) return;
-        manager.pushImportantRotation(true, true);
-        EntityUtils.setEntityPitchSafe(player, rotation.x);
-        PlayerStateManager.setPlayerYawSafe(player, rotation.y);
+        Rotation rotation = currentTickRequest.tickRotationPre(player.getPos(), player);
+        if (rotation == null || !rotation.hasRotate()) return;
+        manager.pushImportantRotation(rotation.hasPitch(), rotation.hasYaw());
+        if (rotation.hasPitch()) EntityUtils.setEntityPitchSafe(player, rotation.getPitch());
+        if (rotation.hasYaw()) PlayerStateManager.setPlayerYawSafe(player, rotation.getYaw());
         if (currentTickRequest.applyMoveFix()) manager.tryMarkForMoveFix();
         manager.markForResetRot();
     }
@@ -125,19 +126,19 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
         if (currentTickRequest == null) return;
         ClientPlayerEntity player = event.context().playerStatus.entity;
         if (ElytraExtra.INSTANCE != null && ElytraExtra.INSTANCE.hasFireworkVelocityOverrides()) return;
-        Vec2f rotation = currentTickRequest.tickRotationPreMovementPacket(player.getPos(), player);
-        if (rotation == null) return;
+        Rotation rotation = currentTickRequest.tickRotationPreMovementPacket(player.getPos(), player);
+        if (rotation == null || !rotation.hasPitch()) return;
         if (player.isFallFlying() || player.isSwimming()) return;
-        EntityUtils.setEntityPitchSafe(player, rotation.x);
+        EntityUtils.setEntityPitchSafe(player, rotation.getPitch());
     }
 
     @Override
     public void applyBeforeInputPacketModify(Event<LegalMovementManager> event) {
         if (currentTickRequest == null) return;
         ClientPlayerEntity player = event.context().playerStatus.entity;
-        Vec2f rotation = currentTickRequest.tickRotationPreMovementPacket(player.getPos(), player);
-        if (rotation == null) return;
-        EntityUtils.setEntityPitchSafe(player, rotation.x);
+        Rotation rotation = currentTickRequest.tickRotationPreMovementPacket(player.getPos(), player);
+        if (rotation == null || !rotation.hasPitch()) return;
+        EntityUtils.setEntityPitchSafe(player, rotation.getPitch());
     }
 
     @Override
@@ -161,10 +162,10 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
         }
 
         @Nullable
-        public Vec2f tickRotationPre(Vec3d pos, ClientPlayerEntity player);
+        public Rotation tickRotationPre(Vec3d pos, ClientPlayerEntity player);
 
         @Nullable
-        default Vec2f tickRotationPreMovementPacket(Vec3d pos, ClientPlayerEntity player) {
+        default Rotation tickRotationPreMovementPacket(Vec3d pos, ClientPlayerEntity player) {
             return null;
         }
 
@@ -208,12 +209,12 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
 
         @MustBeInvokedByOverriders
         @Override
-        public @Nullable Vec2f tickRotationPre(Vec3d pos, ClientPlayerEntity player) {
+        public @Nullable Rotation tickRotationPre(Vec3d pos, ClientPlayerEntity player) {
             if (preTick != null) preTick.run();
             return calculateRotationPre(pos, player);
         }
 
-        protected abstract @Nullable Vec2f calculateRotationPre(Vec3d pos, ClientPlayerEntity player);
+        protected abstract @Nullable Rotation calculateRotationPre(Vec3d pos, ClientPlayerEntity player);
     }
 
     @Setter
@@ -235,15 +236,15 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
 
         @MustBeInvokedByOverriders
         @Override
-        protected @Nullable Vec2f calculateRotationPre(Vec3d pos, ClientPlayerEntity player) {
+        protected @Nullable Rotation calculateRotationPre(Vec3d pos, ClientPlayerEntity player) {
             T target = targetSupplier.get();
             if (target == null) return null;
             Vec3d direction = calculator.getRaycast(player.getPos(), target);
-            return direction == null ? null : EntityUtils.rotationToPitchYaw(direction.normalize());
+            return direction == null ? null : Rotation.from(direction.normalize());
         }
 
         @Override
-        public @Nullable Vec2f tickRotationPreMovementPacket(Vec3d pos, ClientPlayerEntity player) {
+        public @Nullable Rotation tickRotationPreMovementPacket(Vec3d pos, ClientPlayerEntity player) {
             if (!preMovementAdjust() || player.isSwimming() || player.isTouchingWater() || player.isFallFlying())
                 return null;
             T target = targetSupplier.get();
@@ -254,14 +255,14 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
             float fixedYaw = player.getYaw();
             float currentPitch = player.getPitch();
             if (calculator.canRayCast(pos, target, currentPitch, fixedYaw)) {
-                return new Vec2f(currentPitch, fixedYaw);
+                return Rotation.from(currentPitch, fixedYaw);
             }
 
             Vec3d eyePos = pos.add(0, player.dimensions.eyeHeight(), 0);
             float centerPitch = EntityUtils.rotationToPitch(
                     effectiveBox.getCenter().subtract(eyePos).normalize());
             if (calculator.canRayCast(pos, target, centerPitch, fixedYaw)) {
-                return new Vec2f(centerPitch, fixedYaw);
+                return Rotation.from(centerPitch, fixedYaw);
             }
             Box projectileBox = effectiveBox.withMinY(-1.0D).withMaxY(1.0D);
             Vec3d projectileYaw = EntityUtils.pitchYawToRotation(0, fixedYaw);
@@ -283,7 +284,7 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
                 if (hitRay != null) {
                     float pitch = EntityUtils.rotationToPitch(hitRay.normalize());
                     if (calculator.canRayCast(pos, target, pitch, fixedYaw)) {
-                        return new Vec2f(pitch, fixedYaw);
+                        return Rotation.from(pitch, fixedYaw);
                     }
                 }
             }
@@ -307,7 +308,7 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
         return new BoxRaycastRequest<>(BOX_CALCULATOR, boxSupplier);
     }
 
-    public static LookDirectionRequest ofDirection(Supplier<Vec2f> rotationSupplier) {
+    public static LookDirectionRequest ofDirection(Supplier<Rotation> rotationSupplier) {
         return new LookDirectionRequest(rotationSupplier);
     }
 
@@ -327,26 +328,26 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
         return new LookDirectionRequest(Optional.of(pitch), Optional.of(yaw));
     }
 
-    public static final class LookDirectionRequest extends RotationRequestImpl<Vec2f> {
-        private final Function<ClientPlayerEntity, Vec2f> rotationSupplier;
+    public static final class LookDirectionRequest extends RotationRequestImpl<Rotation> {
+        private final Function<ClientPlayerEntity, Rotation> rotationSupplier;
 
         public LookDirectionRequest() {
             this(Optional.empty(), Optional.empty());
         }
 
-        public LookDirectionRequest(Supplier<Vec2f> rotationSupplier) {
+        public LookDirectionRequest(Supplier<Rotation> rotationSupplier) {
             this.rotationSupplier = (pl) -> rotationSupplier.get();
         }
 
         public LookDirectionRequest(Optional<Float> pitch, Optional<Float> yaw) {
             this.rotationSupplier = (pl) -> {
                 if (pitch.isEmpty() && yaw.isEmpty()) return null;
-                return new Vec2f(pitch.orElseGet(pl::getPitch), yaw.orElseGet(pl::getYaw));
+                return new Rotation(pitch.orElse(null), yaw.orElse(null));
             };
         }
 
         @Override
-        protected @Nullable Vec2f calculateRotationPre(Vec3d pos, ClientPlayerEntity player) {
+        protected @Nullable Rotation calculateRotationPre(Vec3d pos, ClientPlayerEntity player) {
             return rotationSupplier == null ? null : rotationSupplier.apply(player);
         }
     }
@@ -354,10 +355,10 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
     public static BoxRaycastRequest<BlockPos> ofBlock(Supplier<BlockPos> posSupplier) {
         return new BoxRaycastRequest<>(InteractExtra.INSTANCE, posSupplier) {
             @Override
-            protected @Nullable Vec2f calculateRotationPre(Vec3d pos, ClientPlayerEntity player) {
-                Vec2f vec2f = super.calculateRotationPre(pos, player);
-                if (vec2f == null) return null;
-                return fluctuateBlockRaycast(posSupplier.get(), pos, vec2f, InteractExtra.INSTANCE);
+            protected @Nullable Rotation calculateRotationPre(Vec3d pos, ClientPlayerEntity player) {
+                Rotation rotation = super.calculateRotationPre(pos, player);
+                if (rotation == null) return null;
+                return fluctuateBlockRaycast(posSupplier.get(), pos, rotation, InteractExtra.INSTANCE);
             }
         };
     }
@@ -370,21 +371,21 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
 
     private static boolean lastAdd;
 
-    private static Vec2f fluctuateBlockRaycast(
-            BlockPos pos, Vec3d feet, Vec2f direct, RayCastCalculator<BlockPos> posRaycast) {
-        if (pos == null) return direct;
-        float pitch = quantize(direct.x);
-        float yaw = quantize(direct.y);
-        Vec2f candidate = new Vec2f(pitch, yaw);
-        if (!posRaycast.canRayCast(feet, pos, candidate.x, candidate.y)) candidate = direct;
-        yaw = candidate.y;
+    private static Rotation fluctuateBlockRaycast(
+            BlockPos pos, Vec3d feet, Rotation direct, RayCastCalculator<BlockPos> posRaycast) {
+        if (pos == null || !direct.hasPitch() || !direct.hasYaw()) return direct;
+        float pitch = quantize(direct.getPitch());
+        float yaw = quantize(direct.getYaw());
+        Rotation candidate = Rotation.from(pitch, yaw);
+        if (!posRaycast.canRayCast(feet, pos, candidate.getPitch(), candidate.getYaw())) candidate = direct;
+        yaw = candidate.getYaw();
         int sign = lastAdd ? 1 : -1;
         lastAdd = !lastAdd;
         for (int i = 0; i < 8; i++) {
-            Vec2f adjusted = new Vec2f(pitch, quantize(yaw + sign * 0.1F));
-            if (posRaycast.canRayCast(feet, pos, adjusted.x, adjusted.y)) {
+            Rotation adjusted = Rotation.from(pitch, quantize(yaw + sign * 0.1F));
+            if (posRaycast.canRayCast(feet, pos, adjusted.getPitch(), adjusted.getYaw())) {
                 candidate = adjusted;
-                yaw = adjusted.y;
+                yaw = adjusted.getYaw();
             }
         }
         return candidate;

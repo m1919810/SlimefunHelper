@@ -146,15 +146,19 @@ public class BaritoneFix extends BaseModule {
             return;
         }
         ElytraMotion motion = event.context();
-        var pitchYaw = hooks.getBaritoneCurrentMoveRot(mc.player);
-        if (pitchYaw.y != mc.player.getYaw() || pitchYaw.x != mc.player.getPitch()) {
+        var rotation = hooks.getBaritoneCurrentMoveRot(mc.player);
+        if (rotation.hasRotate()) {
+            float pitch = rotation.getPitch(mc.player.getPitch());
+            float yaw = rotation.getYaw(mc.player.getYaw());
             if (motion.algorithm() != null
-                    && pitchYaw.x == PlayerStateManager.INSTANCE.lastPitch
-                    && pitchYaw.y == PlayerStateManager.INSTANCE.lastYaw) {
-                hooks.updateBaritoneLookTarget(pitchYaw.x, pitchYaw.y + 0.01F);
-                pitchYaw = hooks.getBaritoneCurrentMoveRot(mc.player);
+                    && pitch == PlayerStateManager.INSTANCE.lastPitch
+                    && yaw == PlayerStateManager.INSTANCE.lastYaw) {
+                hooks.updateBaritoneLookTarget(pitch, yaw + 0.01F);
+                rotation = hooks.getBaritoneCurrentMoveRot(mc.player);
+                pitch = rotation.getPitch(mc.player.getPitch());
+                yaw = rotation.getYaw(mc.player.getYaw());
             }
-            motion.rotation(pitchYaw);
+            motion.rotation(pitch, yaw);
         }
     }
 
