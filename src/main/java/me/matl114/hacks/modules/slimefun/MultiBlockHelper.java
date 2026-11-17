@@ -23,6 +23,7 @@ import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.RaycastUtils;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.hacks.utils.gui.slimefun.SlimefunDispensorSuggestBookWidget;
+import me.matl114.hacks.utils.move.Rotation;
 import me.matl114.hacks.utils.multiblock.BlockMatcher;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -240,8 +241,9 @@ public class MultiBlockHelper extends BaseModule {
     }
 
     public void clickDelayMovement(BlockHitResult result, Vec2f pitchYaw, int clickRate) {
-        RotationManager.INSTANCE.request(
-                RotationManager.ofDirection(() -> pitchYaw).applyMoveFix(false).postTick(() -> {
+        RotationManager.INSTANCE.request(RotationManager.ofDirection(() -> Rotation.from(pitchYaw))
+                .applyMoveFix(false)
+                .postTick(() -> {
                     for (int i = 0; i < clickRate; ++i) {
                         mc.interactionManager.sendSequencedPacket(
                                 mc.world,

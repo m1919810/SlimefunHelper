@@ -272,9 +272,10 @@ public class EntityUtils {
     }
 
     public static Direction pitchYawToDirection(Vec2f pitchYaw) {
-        float pitch = pitchYaw.x;
-        float yaw = pitchYaw.y;
+        return pitchYawToDirection(pitchYaw.x, pitchYaw.y);
+    }
 
+    public static Direction pitchYawToDirection(float pitch, float yaw) {
         double radPitch = Math.toRadians(pitch);
         double radYaw = Math.toRadians(yaw);
 

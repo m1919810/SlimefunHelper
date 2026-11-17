@@ -16,6 +16,7 @@ import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.*;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
+import me.matl114.hacks.utils.move.Rotation;
 import me.matl114.hooks.LitematicaHooks;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
@@ -381,11 +382,9 @@ public class BlockRotate extends BaseModule {
                 ? targetState.get(WallHangingSignBlock.FACING).getOpposite()
                 : (replacing ? getReplacingSupportDirection(hitResult, targetState) : null);
         if (placementDirection != null) {
-            Vec2f pitchYaw = EntityUtils.directionToPitchYaw(placementDirection);
-            deceive.pitch = pitchYaw.x;
-            deceive.yaw = pitchYaw.y;
-            deceive.pitchForce = EntityUtils.pitchYawToDirection(new Vec2f(currentServerPitch, currentServerYaw))
-                    != placementDirection;
+            deceive.rotation = Rotation.from(EntityUtils.directionToPitchYaw(placementDirection));
+            deceive.pitchForce =
+                    EntityUtils.pitchYawToDirection(currentServerPitch, currentServerYaw) != placementDirection;
             deceive.yawForce = deceive.pitchForce;
             return deceive;
         }
@@ -394,14 +393,16 @@ public class BlockRotate extends BaseModule {
             if (targetState.get(WallMountedBlock.FACE) == BlockFace.FLOOR
                     || targetState.get(WallMountedBlock.FACE) == BlockFace.CEILING) {
                 Direction direction = targetState.get(WallMountedBlock.FACING);
-                deceive.yaw = EntityUtils.directionToPitchYaw(direction).y;
-                deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+                deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(direction));
+                deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
                 if (replacing) {
                     Direction support =
                             targetState.get(WallMountedBlock.FACE) == BlockFace.FLOOR ? Direction.DOWN : Direction.UP;
-                    deceive.pitch = EntityUtils.directionToPitchYaw(support).x;
+                    deceive.rotation =
+                            deceive.rotation.withPitch(Rotation.from(EntityUtils.directionToPitchYaw(support))
+                                    .pitch());
                     deceive.pitchForce =
-                            EntityUtils.pitchYawToDirection(new Vec2f(currentServerPitch, currentServerYaw)) != support;
+                            EntityUtils.pitchYawToDirection(currentServerPitch, currentServerYaw) != support;
                 }
                 return deceive;
             }
@@ -450,22 +451,17 @@ public class BlockRotate extends BaseModule {
 
         if (block instanceof CommandBlock) {
             Direction look = targetState.get(CommandBlock.FACING).getOpposite();
-            Vec2f pitchYaw = EntityUtils.directionToPitchYaw(look);
-            deceive.pitch = pitchYaw.x;
-            deceive.yaw = pitchYaw.y;
-            deceive.pitchForce =
-                    EntityUtils.pitchYawToDirection(new Vec2f(currentServerPitch, currentServerYaw)) != look;
+            deceive.rotation = Rotation.from(EntityUtils.directionToPitchYaw(look));
+            deceive.pitchForce = EntityUtils.pitchYawToDirection(currentServerPitch, currentServerYaw) != look;
             deceive.yawForce = deceive.pitchForce;
             return deceive;
         }
 
         if (block instanceof ObserverBlock) {
             Direction facing = targetState.get(ObserverBlock.FACING);
-            Vec2f pitchYaw = EntityUtils.directionToPitchYaw(facing);
-            deceive.pitch = pitchYaw.x;
-            deceive.yaw = pitchYaw.y;
+            deceive.rotation = Rotation.from(EntityUtils.directionToPitchYaw(facing));
 
-            if (EntityUtils.pitchYawToDirection(new Vec2f(currentServerPitch, currentServerYaw)) == facing) {
+            if (EntityUtils.pitchYawToDirection(currentServerPitch, currentServerYaw) == facing) {
                 deceive.pitchForce = false;
                 deceive.yawForce = false;
             }
@@ -474,11 +470,9 @@ public class BlockRotate extends BaseModule {
 
         if (block instanceof PistonBlock) {
             Direction facing = targetState.get(PistonBlock.FACING).getOpposite();
-            Vec2f pitchYaw = EntityUtils.directionToPitchYaw(facing);
-            deceive.pitch = pitchYaw.x;
-            deceive.yaw = pitchYaw.y;
+            deceive.rotation = Rotation.from(EntityUtils.directionToPitchYaw(facing));
 
-            if (EntityUtils.pitchYawToDirection(new Vec2f(currentServerPitch, currentServerYaw)) == facing) {
+            if (EntityUtils.pitchYawToDirection(currentServerPitch, currentServerYaw) == facing) {
                 deceive.pitchForce = false;
                 deceive.yawForce = false;
             }
@@ -487,11 +481,9 @@ public class BlockRotate extends BaseModule {
 
         if (block instanceof DispenserBlock) {
             Direction facing = targetState.get(DispenserBlock.FACING).getOpposite();
-            Vec2f pitchYaw = EntityUtils.directionToPitchYaw(facing);
-            deceive.pitch = pitchYaw.x;
-            deceive.yaw = pitchYaw.y;
+            deceive.rotation = Rotation.from(EntityUtils.directionToPitchYaw(facing));
 
-            if (EntityUtils.pitchYawToDirection(new Vec2f(currentServerPitch, currentServerYaw)) == facing) {
+            if (EntityUtils.pitchYawToDirection(currentServerPitch, currentServerYaw) == facing) {
                 deceive.pitchForce = false;
                 deceive.yawForce = false;
             }
@@ -500,11 +492,9 @@ public class BlockRotate extends BaseModule {
 
         if (block instanceof BarrelBlock) {
             Direction facing = targetState.get(BarrelBlock.FACING).getOpposite();
-            Vec2f pitchYaw = EntityUtils.directionToPitchYaw(facing);
-            deceive.pitch = pitchYaw.x;
-            deceive.yaw = pitchYaw.y;
+            deceive.rotation = Rotation.from(EntityUtils.directionToPitchYaw(facing));
 
-            if (EntityUtils.pitchYawToDirection(new Vec2f(currentServerPitch, currentServerYaw)) == facing) {
+            if (EntityUtils.pitchYawToDirection(currentServerPitch, currentServerYaw) == facing) {
                 deceive.pitchForce = false;
                 deceive.yawForce = false;
             }
@@ -515,23 +505,22 @@ public class BlockRotate extends BaseModule {
             Orientation orientation = targetState.get(Properties.ORIENTATION);
             Direction facing = orientation.getFacing();
             Direction rotation = orientation.getRotation();
-            Vec2f pitchYaw;
+            Rotation pitchYaw;
 
             switch (facing) {
-                case DOWN -> pitchYaw = EntityUtils.rotationToPitchYaw(
+                case DOWN -> pitchYaw = Rotation.from(EntityUtils.rotationToPitchYaw(
                         Vec3d.of(rotation.getOpposite().getVector())
                                 .add(0, 4, 0)
-                                .normalize());
-                case UP -> pitchYaw = EntityUtils.rotationToPitchYaw(
-                        Vec3d.of(rotation.getVector()).add(0, -4, 0).normalize());
-                default -> pitchYaw = EntityUtils.rotationToPitchYaw(
-                        Vec3d.of(facing.getOpposite().getVector()).normalize());
+                                .normalize()));
+                case UP -> pitchYaw = Rotation.from(EntityUtils.rotationToPitchYaw(
+                        Vec3d.of(rotation.getVector()).add(0, -4, 0).normalize()));
+                default -> pitchYaw = Rotation.from(EntityUtils.rotationToPitchYaw(
+                        Vec3d.of(facing.getOpposite().getVector()).normalize()));
             }
 
-            deceive.pitch = pitchYaw.x;
-            deceive.yaw = pitchYaw.y;
+            deceive.rotation = pitchYaw;
 
-            Direction currentFacing = EntityUtils.pitchYawToDirection(new Vec2f(currentServerPitch, currentServerYaw))
+            Direction currentFacing = EntityUtils.pitchYawToDirection(currentServerPitch, currentServerYaw)
                     .getOpposite();
 
             Direction horizontalFacing = EntityUtils.yawToHorizontalDirection(currentServerYaw);
@@ -551,135 +540,139 @@ public class BlockRotate extends BaseModule {
         }
 
         if (block instanceof AbstractFurnaceBlock) {
-            deceive.yaw = EntityUtils.rotationToYaw(
-                    targetState.get(AbstractFurnaceBlock.FACING).getOpposite());
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
+                    targetState.get(AbstractFurnaceBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof ChiseledBookshelfBlock) {
-            deceive.yaw = EntityUtils.rotationToYaw(
-                    targetState.get(HorizontalFacingBlock.FACING).getOpposite());
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
+                    targetState.get(HorizontalFacingBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof VaultBlock) {
-            deceive.yaw =
-                    EntityUtils.rotationToYaw(targetState.get(VaultBlock.FACING).getOpposite());
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(
+                    EntityUtils.rotationToYaw(targetState.get(VaultBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof LoomBlock) {
-            deceive.yaw =
-                    EntityUtils.rotationToYaw(targetState.get(LoomBlock.FACING).getOpposite());
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(
+                    EntityUtils.rotationToYaw(targetState.get(LoomBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof GlazedTerracottaBlock) {
-            deceive.yaw = EntityUtils.rotationToYaw(
-                    targetState.get(GlazedTerracottaBlock.FACING).getOpposite());
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
+                    targetState.get(GlazedTerracottaBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof BeehiveBlock) {
-            deceive.yaw = EntityUtils.rotationToYaw(
-                    targetState.get(BeehiveBlock.FACING).getOpposite());
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
+                    targetState.get(BeehiveBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof AbstractRedstoneGateBlock) {
-            deceive.yaw = EntityUtils.rotationToYaw(
-                    targetState.get(AbstractRedstoneGateBlock.FACING).getOpposite());
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
+                    targetState.get(AbstractRedstoneGateBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof StonecutterBlock) {
-            deceive.yaw = EntityUtils.rotationToYaw(
-                    targetState.get(StonecutterBlock.FACING).getOpposite());
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
+                    targetState.get(StonecutterBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof FenceGateBlock) {
-            deceive.yaw = EntityUtils.rotationToYaw(targetState.get(FenceGateBlock.FACING));
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation =
+                    deceive.rotation.withYaw(EntityUtils.rotationToYaw(targetState.get(FenceGateBlock.FACING)));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof DoorBlock) {
-            deceive.yaw = EntityUtils.rotationToYaw(targetState.get(DoorBlock.FACING));
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(targetState.get(DoorBlock.FACING)));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof BedBlock) {
-            deceive.yaw = EntityUtils.rotationToYaw(targetState.get(BedBlock.FACING));
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(targetState.get(BedBlock.FACING)));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof CampfireBlock) {
-            deceive.yaw = EntityUtils.rotationToYaw(targetState.get(CampfireBlock.FACING));
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation =
+                    deceive.rotation.withYaw(EntityUtils.rotationToYaw(targetState.get(CampfireBlock.FACING)));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof DecoratedPotBlock) {
-            deceive.yaw = EntityUtils.rotationToYaw(targetState.get(Properties.HORIZONTAL_FACING));
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation =
+                    deceive.rotation.withYaw(EntityUtils.rotationToYaw(targetState.get(Properties.HORIZONTAL_FACING)));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof StairsBlock) {
-            deceive.yaw = EntityUtils.rotationToYaw(targetState.get(StairsBlock.FACING));
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(targetState.get(StairsBlock.FACING)));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof CalibratedSculkSensorBlock) {
-            deceive.yaw = EntityUtils.rotationToYaw(targetState.get(CalibratedSculkSensorBlock.FACING));
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(
+                    EntityUtils.rotationToYaw(targetState.get(CalibratedSculkSensorBlock.FACING)));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof EnderChestBlock) {
-            deceive.yaw = EntityUtils.rotationToYaw(
-                    targetState.get(EnderChestBlock.FACING).getOpposite());
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
+                    targetState.get(EnderChestBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof DriedGhastBlock) {
-            deceive.yaw = EntityUtils.rotationToYaw(
-                    targetState.get(DriedGhastBlock.FACING).getOpposite());
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
+                    targetState.get(DriedGhastBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof ShelfBlock) {
-            deceive.yaw =
-                    EntityUtils.rotationToYaw(targetState.get(ShelfBlock.FACING).getOpposite());
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(
+                    EntityUtils.rotationToYaw(targetState.get(ShelfBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof LecternBlock) {
-            deceive.yaw = EntityUtils.rotationToYaw(
-                    targetState.get(LecternBlock.FACING).getOpposite());
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
+                    targetState.get(LecternBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof CopperGolemStatueBlock) {
-            deceive.yaw = EntityUtils.rotationToYaw(
-                    targetState.get(CopperGolemStatueBlock.FACING).getOpposite());
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
+                    targetState.get(CopperGolemStatueBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
@@ -687,23 +680,23 @@ public class BlockRotate extends BaseModule {
             if (hitResult.getSide().getAxis().isHorizontal() && !replacing) {
                 return null;
             }
-            deceive.yaw = EntityUtils.rotationToYaw(
-                    targetState.get(TrapdoorBlock.FACING).getOpposite());
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
+                    targetState.get(TrapdoorBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof ChestBlock) {
-            deceive.yaw =
-                    EntityUtils.rotationToYaw(targetState.get(ChestBlock.FACING).getOpposite());
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(
+                    EntityUtils.rotationToYaw(targetState.get(ChestBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
         if (block instanceof AnvilBlock) {
             Direction facing = targetState.get(AnvilBlock.FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing.rotateYCounterclockwise());
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(facing.rotateYCounterclockwise()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
@@ -712,8 +705,8 @@ public class BlockRotate extends BaseModule {
 
     private static PitchYawDeceive horizontalDeceive(Direction direction, float currentServerYaw) {
         PitchYawDeceive deceive = new PitchYawDeceive();
-        deceive.yaw = EntityUtils.rotationToYaw(direction);
-        deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+        deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(direction));
+        deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
         return deceive;
     }
 
@@ -790,8 +783,8 @@ public class BlockRotate extends BaseModule {
         if (block instanceof FenceGateBlock) {
             PitchYawDeceive deceive = new PitchYawDeceive();
             Direction facing = targetState.get(FenceGateBlock.FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing);
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.yaw)) >= 45.0F;
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(facing));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }
 
@@ -799,25 +792,24 @@ public class BlockRotate extends BaseModule {
     }
 
     private static class PitchYawDeceive {
-        Float pitch = null;
-        Float yaw = null;
+        Rotation rotation = Rotation.EMPTY;
         boolean pitchForce = true;
         boolean yawForce = true;
 
         public boolean hasDeceive() {
-            return pitch != null || yaw != null;
+            return rotation.hasRotate();
         }
 
         public boolean isForce() {
-            return (pitch != null && pitchForce) || (yaw != null && yawForce);
+            return (rotation.hasPitch() && pitchForce) || (rotation.hasYaw() && yawForce);
         }
 
         public float getPitch(float currentPitch) {
-            return pitch != null && pitchForce ? pitch : currentPitch;
+            return rotation.hasPitch() && pitchForce ? rotation.getPitch() : currentPitch;
         }
 
         public float getYaw(float currentYaw) {
-            return yaw != null && yawForce ? yaw : currentYaw;
+            return rotation.hasYaw() && yawForce ? rotation.getYaw() : currentYaw;
         }
     }
 }
