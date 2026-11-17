@@ -25,15 +25,11 @@ import me.matl114.events.impl.Render3D;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.DynamicContentWidget;
 import me.matl114.hacks.CombatTasks;
-import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
-import me.matl114.hacks.modules.move.ElytraExtra;
-import me.matl114.hacks.modules.move.ElytraFlight;
-import me.matl114.hacks.modules.move.MovExtra;
-import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.modules.move.*;
 import me.matl114.hacks.utils.DamageUtils;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
@@ -60,7 +56,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
-import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
@@ -1615,8 +1610,7 @@ public class ElytraBot extends BaseModule {
                                         + base.appendPostRotate.get().getValue()
                         && !SpearEnhance.isUsingSpear(mc.player)
                         && !mc.player.isUsingItem()) {
-                    InteractionTasks.interactItem(
-                            Hand.OFF_HAND, 89.9F, PlayerStateManager.INSTANCE.lastYaw, false, false);
+                    LegacySnapRotManager.INSTANCE.requestPostRotatePitch(89.9F);
                 }
             }
         }

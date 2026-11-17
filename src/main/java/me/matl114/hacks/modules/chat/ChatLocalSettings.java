@@ -2,6 +2,7 @@ package me.matl114.hacks.modules.chat;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import lombok.With;
 import me.matl114.managers.Configs;
 import me.matl114.managers.FileManager;
 import me.matl114.managers.config.FlagRef;
@@ -11,11 +12,15 @@ import me.matl114.managers.file.FileStorage;
 
 public final class ChatLocalSettings {
     public static final String TITLE_TRANSLATION_KEY = "widget.chat.local-settings";
+    private static final int DEFAULT_PASSWORD_ENCRYPT_LENGTH = 20;
 
     private static final Codec<Data> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                     Codec.STRING.optionalFieldOf("chat-cache", "").forGetter(Data::chatCache),
                     Codec.BOOL.optionalFieldOf("password-encrypt", false).forGetter(Data::encryptPassword),
-                    Codec.STRING.optionalFieldOf("password-encrypt-salt", "").forGetter(Data::passwordSalt))
+                    Codec.STRING.optionalFieldOf("password-encrypt-salt", "").forGetter(Data::passwordSalt),
+                    Codec.INT
+                            .optionalFieldOf("password-encrypt-length", DEFAULT_PASSWORD_ENCRYPT_LENGTH)
+                            .forGetter(Data::passwordEncryptLength))
             .apply(instance, Data::new));
 
     private static final FileStorage STORAGE = FileManager.getInstance().getInternalStorage("chat-local-settings.nbt");
@@ -28,7 +33,7 @@ public final class ChatLocalSettings {
     }
 
     public static void setChatCache(String chatCache) {
-        save(new Data(chatCache == null ? "" : chatCache, data.encryptPassword(), data.passwordSalt()));
+        save(data.withChatCache(chatCache == null ? "" : chatCache));
     }
 
     public static boolean isPasswordEncryptionEnabled() {
@@ -36,7 +41,7 @@ public final class ChatLocalSettings {
     }
 
     public static void setPasswordEncryptionEnabled(boolean enabled) {
-        save(new Data(data.chatCache(), enabled, data.passwordSalt()));
+        save(data.withEncryptPassword(enabled));
     }
 
     public static String getPasswordSalt() {
@@ -44,7 +49,17 @@ public final class ChatLocalSettings {
     }
 
     public static void setPasswordSalt(String passwordSalt) {
-        save(new Data(data.chatCache(), data.encryptPassword(), passwordSalt == null ? "" : passwordSalt));
+        save(data.withPasswordSalt(passwordSalt == null ? "" : passwordSalt));
+    }
+
+    public static int getPasswordEncryptLength() {
+        return data.passwordEncryptLength();
+    }
+
+    public static void setPasswordEncryptLength(int passwordEncryptLength) {
+        if (passwordEncryptLength > 0) {
+            save(data.withPasswordEncryptLength(passwordEncryptLength));
+        }
     }
 
     private static void save(Data newData) {
@@ -53,7 +68,7 @@ public final class ChatLocalSettings {
     }
 
     private static Data load() {
-        Data defaultData = new Data("", false, "");
+        Data defaultData = new Data("", false, "", DEFAULT_PASSWORD_ENCRYPT_LENGTH);
         if (STORAGE.getFile().exists()) {
             return STORAGE.read(CODEC, () -> defaultData);
         }
@@ -68,7 +83,8 @@ public final class ChatLocalSettings {
         Data migrated = new Data(
                 cachedRef instanceof StringRef ref ? ref.get() : "",
                 encryptRef instanceof FlagRef ref && ref.get(),
-                saltRef instanceof StringRef ref ? ref.get() : "");
+                saltRef instanceof StringRef ref ? ref.get() : "",
+                DEFAULT_PASSWORD_ENCRYPT_LENGTH);
         if (STORAGE.write(CODEC, migrated).isSuccess()) {
             if (cachedRef instanceof StringRef ref) ref.setValue("");
             if (encryptRef instanceof FlagRef ref) ref.setValue(false);
@@ -77,5 +93,6 @@ public final class ChatLocalSettings {
         return migrated;
     }
 
-    private record Data(String chatCache, boolean encryptPassword, String passwordSalt) {}
+    @With
+    private record Data(String chatCache, boolean encryptPassword, String passwordSalt, int passwordEncryptLength) {}
 }
