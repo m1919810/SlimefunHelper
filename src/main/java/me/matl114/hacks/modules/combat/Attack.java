@@ -47,7 +47,6 @@ import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -373,31 +372,41 @@ public class Attack extends BaseModule {
                 && (invResult = findAntiShieldWeapon(attackSettings)) != null) {
             return invResult;
         }
+        boolean attributeSwap = ServerFeature.INSTANCE.attributeSwap.get();
         if (attackSettings.fastBreakShieldSwap().isPresent()
-                && !ServerFeature.INSTANCE.attributeSwap.get()
                 && target instanceof LivingEntity livingTarget
                 && livingTarget.isUsingItem()
                 && livingTarget.getActiveItem().getItem() instanceof ShieldItem
-                && isWithinShieldBlockingAngle(livingTarget, mc.player)
-                && (invResult = InventoryUtils.findBestPlayerItem(
-                                (stack) -> {
-                                    if (!VItem.getInstance().isWeapon(stack)
-                                            || VItem.getInstance().isAxe(stack)) {
-                                        return null;
-                                    }
-                                    if (willBreak(stack)) {
-                                        return null;
-                                    }
-                                    double baseDamage = AttributeUtils.getAttributeWith(
-                                                    mc.player, Map.of(EquipmentSlot.MAINHAND, stack))
-                                            .getValue(EntityAttributes.ATTACK_DAMAGE);
-                                    return baseDamage >= 15.0D ? baseDamage : null;
-                                },
-                                attackSettings.ghostHandMode().getSearchSize(false),
-                                false,
-                                false))
-                        != null) {
-            return invResult;
+                && isWithinShieldBlockingAngle(livingTarget, mc.player)) {
+            invResult = InventoryUtils.findBestPlayerItem(
+                    (stack) -> {
+                        if (!VItem.getInstance().isWeapon(stack)
+                                || VItem.getInstance().isAxe(stack)
+                                || willBreak(stack)) {
+                            return null;
+                        }
+                        if (attributeSwap) {
+                            double damage = applyArmorReduceOn(
+                                    stack,
+                                    DamageUtils.getRealAttackDamage(
+                                            mc.player,
+                                            livingTarget,
+                                            stack,
+                                            PlayerStateManager.INSTANCE.fallDistance,
+                                            PlayerStateManager.INSTANCE.getTicksSinceLastAttack(),
+                                            true),
+                                    livingTarget);
+                            return damage;
+                        }
+                        double baseDamage = DamageUtils.getAttackDamageAttribute(mc.player, stack, false);
+                        return baseDamage >= 15.0D ? baseDamage : null;
+                    },
+                    attackSettings.ghostHandMode().getSearchSize(false),
+                    false,
+                    false);
+            if (invResult != null) {
+                return invResult;
+            }
         }
         if (attackSettings.maceSwap()
                 && target instanceof LivingEntity lv
@@ -508,7 +517,9 @@ public class Attack extends BaseModule {
         attackWithCritic(player, target, attackSettings.swingHand());
         Optional<Integer> fastDestroyShield = attackSettings.fastBreakShieldSwap();
         if (fastDestroyShield.isPresent()
-                && player.getAttributeValue(EntityAttributes.ATTACK_DAMAGE) >= 15.0D
+                && DamageUtils.getAttackDamageAttribute(
+                                player, invResult.val(), ServerFeature.INSTANCE.attributeSwap.get())
+                        >= 15.0D
                 && !VItem.getInstance().isAxe(invResult.val())
                 && target instanceof LivingEntity livingTarget
                 && livingTarget.isUsingItem()
