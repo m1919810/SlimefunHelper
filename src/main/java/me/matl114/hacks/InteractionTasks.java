@@ -129,7 +129,8 @@ public class InteractionTasks {
     }
 
     public static void addPostRotationCorrectTask(BlockPos pos, Runnable callback) {
-        RotationManager.INSTANCE.request(RotationManager.ofBlock(() -> pos).postTick(callback));
+        RotationManager.INSTANCE.request(
+                RotationManager.ofBlock(() -> pos).applyMoveFix(true).postTickTask(callback));
     }
 
     public static Vec3d createBlockRayCastDirection(BlockPos pos) {
@@ -169,7 +170,8 @@ public class InteractionTasks {
         switch (mode) {
             case DELAY_MOVEMENT -> {
                 if (!directlyHit) {
-                    if (!RotationManager.INSTANCE.request(RotationManager.ofBlock(result::getBlockPos))) {
+                    if (!RotationManager.INSTANCE.request(
+                            RotationManager.ofBlock(result::getBlockPos).applyMoveFix(true))) {
                         return false;
                     }
                     RotationManager.INSTANCE.startQueuePacket();
