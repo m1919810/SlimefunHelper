@@ -243,7 +243,7 @@ public class MultiBlockHelper extends BaseModule {
     public void clickDelayMovement(BlockHitResult result, Vec2f pitchYaw, int clickRate) {
         RotationManager.INSTANCE.request(RotationManager.ofDirection(() -> Rotation.from(pitchYaw))
                 .applyMoveFix(false)
-                .postTick(() -> {
+                .postTickTask(() -> {
                     for (int i = 0; i < clickRate; ++i) {
                         mc.interactionManager.sendSequencedPacket(
                                 mc.world,

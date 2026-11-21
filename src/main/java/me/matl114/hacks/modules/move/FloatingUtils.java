@@ -109,7 +109,7 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
         if (!workGrimFloatingThisTick() && enableElytraSlowFall.get()) {
             if (mc.player.isFallFlying() && !mc.player.isOnGround()) {
                 boolean rotateYaw = Tasks.getTick() % 2 == 0;
-                RotationManager.INSTANCE.request(RotationManager.ofDirection(
+                RotationManager.INSTANCE.push(RotationManager.ofDirection(
                                 Optional.of(0.0F),
                                 rotateYaw ? Optional.of(mc.player.getYaw() + 180.0F) : Optional.empty())
                         .applyMoveFix(false)

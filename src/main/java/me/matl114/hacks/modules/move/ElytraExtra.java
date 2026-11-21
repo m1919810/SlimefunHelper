@@ -1698,24 +1698,17 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 break rocket_boost;
             }
             ElytraMotion motion = motionEvent.context;
-            if (motion.algorithm() != null) {
-                float eventYaw = motion.yaw();
-                float newYaw = eventYaw + ((Tasks.getTick() % 2 == 0) ? 0.01F : -0.01F);
-                motion.yaw(newYaw);
-            }
-            if (motion.pitch() != mc.player.getPitch()) {
-                // do not restore rotate if only 0.01 diff
-                if (Math.abs(motion.pitch() - mc.player.getPitch()) > 1E-1) {
-                    movementManagerEvent.context.markForResetRot();
-                }
-                EntityUtils.setEntityPitchSafe(mc.player, motion.pitch());
-            }
-            if (motion.yaw() != mc.player.getYaw()) {
-                PlayerStateManager.setPlayerYawSafe(mc.player, motion.yaw());
-                movementManagerEvent.context.markForResetRot();
-            }
-            mc.player.setVelocity(applyAxisLimit(
-                    motion.algorithm(), motion.movement(), motion.pitch(), motion.yaw(), !mc.player.hasNoGravity()));
+            var requestedMotion = motion.movement();
+            var requestedAlgorithm = motion.algorithm();
+            pushAxisLimitRequest(
+                    new me.matl114.hacks.utils.move.Rotation(
+                            motion.pitch() == mc.player.getPitch() ? null : motion.pitch(),
+                            motion.yaw() == mc.player.getYaw() ? null : motion.yaw()),
+                    requestedAlgorithm,
+                    requestedMotion,
+                    !mc.player.hasNoGravity(),
+                    motion.algorithm() != null,
+                    0);
         }
         overrideElytraMotion = null;
         // slow falling with no crash
@@ -2655,6 +2648,37 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public Vec3d applyAxisLimit(@Nullable Al al, Vec3d currentMotion, float pitch, float yaw, boolean applyGravity) {
         return ElytraOptimizeUtils.applyAxisLimit(al, currentMotion, pitch, yaw, applyGravity);
+    }
+
+    public void pushAxisLimitRequest(
+            me.matl114.hacks.utils.move.Rotation requestedRotation,
+            @Nullable Al algorithm,
+            @Nullable Vec3d motion,
+            boolean applyGravity,
+            boolean offsetPitch,
+            int priority) {
+        if (requestedRotation.hasRotate()) {
+            RotationManager.INSTANCE.push(
+                    RotationManager.ofDirection(requestedRotation).priority(priority));
+        }
+        pushAxisLimitTask(algorithm, motion, applyGravity, offsetPitch);
+    }
+
+    public void pushAxisLimitTask(
+            @Nullable Al algorithm, @Nullable Vec3d motion, boolean applyGravity, boolean offsetPitch) {
+        RotationManager.INSTANCE.push(RotationManager.ofDirection(me.matl114.hacks.utils.move.Rotation.EMPTY)
+                .priority(Integer.MAX_VALUE)
+                .preTick((rotation, player, matchRaycast) -> {
+                    if (offsetPitch
+                            && player.getPitch() == PlayerStateManager.INSTANCE.lastPitch
+                            && player.getYaw() == PlayerStateManager.INSTANCE.lastYaw) {
+                        player.setPitch(player.getPitch() + (Tasks.getTick() % 2 == 0 ? 0.01F : -0.01F));
+                    }
+                    if (motion != null) {
+                        player.setVelocity(
+                                applyAxisLimit(algorithm, motion, player.getPitch(), player.getYaw(), applyGravity));
+                    }
+                }));
     }
 
     public Vec3d applyFireworkLimit(Vec3d currentMotion, float pitch, float yaw) {

@@ -29,7 +29,9 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
     public static RotationManager INSTANCE;
 
     private final List<RotationRequest> currentTickRequests = new ArrayList<>();
-    RotationRequest currentTickRequest;
+    private final List<RotationRequest> currentTickActiveRequests = new ArrayList<>();
+    private final Set<RotationRequest> currentTickRunningRequests = new HashSet<>();
+    private Rotation currentTickRotation = Rotation.EMPTY;
     private int queueTick = 0;
     private boolean currentInQueue = false;
     static LegalMovementManager.DelegateMovementModifier instance;
@@ -54,14 +56,74 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
         return PRIORITY_HIGHEST;
     }
 
+    /**
+     * INT_MIN 优先级的请求建议通过此方法提交：后续请求会检查与已接纳请求的角度冲突，
+     * 因而提交时通过的请求不会彼此冲突。
+     */
     @ApiMethod
     public boolean request(RotationRequest request) {
         Objects.requireNonNull(request, "request");
-        if (isOccupied()) {
+        if (!canRequest(request)) {
             return false;
         }
         currentTickRequests.add(request);
+        currentTickRequests.sort(Comparator.comparingInt(RotationRequest::priority));
         return true;
+    }
+
+    /**
+     * 高于 INT_MIN 的优先级建议通过此方法提交：跳过提交时的冲突检查，
+     * 不要求最终命中射线，并在调度时遵循 INT_MIN 请求确定的角度。
+     */
+    public void push(RotationRequest request) {
+        currentTickRequests.add(Objects.requireNonNull(request, "request"));
+        currentTickRequests.sort(Comparator.comparingInt(RotationRequest::priority));
+    }
+
+    public boolean canRequest(RotationRequest request) {
+        Objects.requireNonNull(request, "request");
+        List<RotationRequest> relevant = new ArrayList<>();
+        for (RotationRequest existing : currentTickRequests) {
+            if (existing.priority() <= request.priority()) relevant.add(existing);
+        }
+        if (relevant.isEmpty()) return true;
+        if (request == EMPTY || relevant.contains(EMPTY)) return false;
+        ClientPlayerEntity player = mc.player;
+        if (player == null) return false;
+        Vec3d pos = player.getPos();
+        relevant.add(request);
+        List<RotationRequest> accepted = new ArrayList<>();
+        combineRotations(relevant, pos, player, accepted);
+        return !accepted.isEmpty() && accepted.get(accepted.size() - 1) == request;
+    }
+
+    private static Rotation mergeRotation(Rotation current, Rotation next) {
+        return new Rotation(
+                current.hasPitch() ? current.pitch() : next.pitch(), current.hasYaw() ? current.yaw() : next.yaw());
+    }
+
+    private static boolean acceptsRotation(
+            List<RotationRequest> requests, Vec3d pos, ClientPlayerEntity player, Rotation rotation) {
+        for (RotationRequest request : requests) {
+            if (request != EMPTY && !request.canUseRotation(pos, player, rotation)) return false;
+        }
+        return true;
+    }
+
+    private static Rotation combineRotations(
+            List<RotationRequest> requests, Vec3d pos, ClientPlayerEntity player, List<RotationRequest> accepted) {
+        Rotation rotation = Rotation.EMPTY;
+        List<RotationRequest> prioritized = new ArrayList<>(requests);
+        prioritized.sort(Comparator.comparingInt(RotationRequest::priority));
+        for (RotationRequest request : prioritized) {
+            Rotation candidate = mergeRotation(rotation, request.peekRotation(rotation, player));
+            if (request != EMPTY
+                    && (!request.canUseRotation(pos, player, candidate)
+                            || !acceptsRotation(accepted, pos, player, candidate))) continue;
+            accepted.add(request);
+            rotation = candidate;
+        }
+        return rotation;
     }
 
     public boolean isOccupied() {
@@ -100,60 +162,51 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
         LegalMovementManager manager = event.context();
         ClientPlayerEntity player = manager.playerStatus.entity;
 
-        currentTickRequest = currentTickRequests.stream()
-                .min(Comparator.comparingInt(RotationRequest::priority))
-                .orElse(null);
+        Vec3d pos = player.getPos();
+        List<RotationRequest> accepted = new ArrayList<>();
+        Rotation expected = combineRotations(currentTickRequests, pos, player, accepted);
+        currentTickRotation = expected;
+        currentTickActiveRequests.clear();
+        currentTickActiveRequests.addAll(currentTickRequests);
         currentTickRequests.clear();
-        if (ElytraExtra.INSTANCE.hasFireworkVelocityOverrides()) {
-            return;
+        currentTickRunningRequests.clear();
+        for (RotationRequest request : accepted) {
+            if (request == EMPTY || request.canUseRotation(pos, player, expected))
+                currentTickRunningRequests.add(request);
         }
-        if (currentTickRequest == null) {
-            return;
+        float previousPitch = player.getPitch();
+        float previousYaw = player.getYaw();
+        if (expected.hasPitch()) EntityUtils.setEntityPitchSafe(player, expected.getPitch());
+        if (expected.hasYaw()) PlayerStateManager.setPlayerYawSafe(player, expected.getYaw());
+        boolean pitchChanged = player.getPitch() != previousPitch;
+        boolean yawChanged = player.getYaw() != previousYaw;
+        manager.pushImportantRotation(expected.hasPitch() || pitchChanged, expected.hasYaw() || yawChanged);
+        if (pitchChanged || yawChanged) {
+
+            manager.markForResetRot();
         }
-        // Resolve the initial rotation against the position used by this tick's movement.
-
-        Rotation rotation = currentTickRequest.tickRotationPre(player.getPos(), player);
-        if (rotation == null || !rotation.hasRotate()) return;
-        manager.pushImportantRotation(rotation.hasPitch(), rotation.hasYaw());
-        if (rotation.hasPitch()) EntityUtils.setEntityPitchSafe(player, rotation.getPitch());
-        if (rotation.hasYaw()) PlayerStateManager.setPlayerYawSafe(player, rotation.getYaw());
-        if (currentTickRequest.applyMoveFix()) manager.tryMarkForMoveFix();
-        manager.markForResetRot();
-    }
-
-    @Override
-    public void applyBeforeMovementPacketModify(Event<LegalMovementManager> event) {
-        if (currentTickRequest == null) return;
-        ClientPlayerEntity player = event.context().playerStatus.entity;
-        if (ElytraExtra.INSTANCE != null && ElytraExtra.INSTANCE.hasFireworkVelocityOverrides()) return;
-        Rotation rotation = currentTickRequest.tickRotationPreMovementPacket(player.getPos(), player);
-        if (rotation == null || !rotation.hasPitch()) return;
-        if (player.isFallFlying() || player.isSwimming()) return;
-        EntityUtils.setEntityPitchSafe(player, rotation.getPitch());
-    }
-
-    @Override
-    public void applyBeforeInputPacketModify(Event<LegalMovementManager> event) {
-        if (currentTickRequest == null) return;
-        ClientPlayerEntity player = event.context().playerStatus.entity;
-        Rotation rotation = currentTickRequest.tickRotationPreMovementPacket(player.getPos(), player);
-        if (rotation == null || !rotation.hasPitch()) return;
-        EntityUtils.setEntityPitchSafe(player, rotation.getPitch());
+        if (currentTickRunningRequests.stream().anyMatch(RotationRequest::applyMoveFix)) manager.tryMarkForMoveFix();
+        for (RotationRequest request : currentTickActiveRequests) {
+            request.preTick(currentTickRotation, player, currentTickRunningRequests.contains(request));
+        }
     }
 
     @Override
     public void postModify(Event<LegalMovementManager> event) {
-        RotationRequest request = currentTickRequest;
-        currentTickRequest = null;
-        if (request != null) {
-            request.tickPost();
-        }
+        ClientPlayerEntity player = event.context().playerStatus.entity;
+        for (RotationRequest request : currentTickActiveRequests)
+            request.postTick(currentTickRotation, player, currentTickRunningRequests.contains(request));
+        currentTickActiveRequests.clear();
+        currentTickRotation = Rotation.EMPTY;
+        currentTickRunningRequests.clear();
         flushQueuePackets();
     }
 
     private void clearRequests() {
         currentTickRequests.clear();
-        currentTickRequest = null;
+        currentTickActiveRequests.clear();
+        currentTickRunningRequests.clear();
+        currentTickRotation = Rotation.EMPTY;
     }
 
     public interface RotationRequest {
@@ -161,39 +214,41 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
             return Integer.MIN_VALUE;
         }
 
-        @Nullable
-        public Rotation tickRotationPre(Vec3d pos, ClientPlayerEntity player);
-
-        @Nullable
-        default Rotation tickRotationPreMovementPacket(Vec3d pos, ClientPlayerEntity player) {
-            return null;
+        default Rotation peekRotation(Rotation currentModification, ClientPlayerEntity player) {
+            return Rotation.EMPTY;
         }
 
-        default void tickPost() {}
+        default void preTick(Rotation rotation, ClientPlayerEntity player, boolean matchRaycast) {}
+
+        default boolean canUseRotation(Vec3d pos, ClientPlayerEntity player, Rotation rotation) {
+            return false;
+        }
+
+        default void postTick(Rotation rotation, ClientPlayerEntity player, boolean matchRaycast) {}
 
         default boolean applyMoveFix() {
-            return true;
+            return false;
         }
     }
 
-    public static final RotationRequest EMPTY = (pos, player) -> null;
+    public static final RotationRequest EMPTY = new RotationRequest() {};
+
+    @FunctionalInterface
+    public interface TickTask {
+        void run(Rotation rotation, ClientPlayerEntity player, boolean matchRaycast);
+    }
 
     @Setter
     @Accessors(fluent = true, chain = true)
     public abstract static class RotationRequestImpl<T> implements RotationRequest {
-        private Runnable preTick = () -> {};
-        private Runnable postTick = () -> {};
-        private boolean preMovementAdjust;
-        private boolean applyMoveFix = true;
+        private TickTask preTick;
+        private TickTask postTick;
+        private boolean applyMoveFix;
         private int priority = Integer.MIN_VALUE;
 
         @Override
         public int priority() {
             return priority;
-        }
-
-        public boolean preMovementAdjust() {
-            return preMovementAdjust;
         }
 
         @Override
@@ -203,18 +258,34 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
 
         @MustBeInvokedByOverriders
         @Override
-        public void tickPost() {
-            if (postTick != null) postTick.run();
+        public void postTick(Rotation rotation, ClientPlayerEntity player, boolean matchRaycast) {
+            if (postTick != null) postTick.run(rotation, player, matchRaycast);
         }
 
         @MustBeInvokedByOverriders
         @Override
-        public @Nullable Rotation tickRotationPre(Vec3d pos, ClientPlayerEntity player) {
-            if (preTick != null) preTick.run();
-            return calculateRotationPre(pos, player);
+        public void preTick(Rotation rotation, ClientPlayerEntity player, boolean matchRaycast) {
+            if (preTick != null) preTick.run(rotation, player, matchRaycast);
         }
 
-        protected abstract @Nullable Rotation calculateRotationPre(Vec3d pos, ClientPlayerEntity player);
+        public RotationRequestImpl<T> preTickTask(Runnable task) {
+            this.preTick = (rotation, player, matchRaycast) -> task.run();
+            return this;
+        }
+
+        public RotationRequestImpl<T> postTickTask(Runnable task) {
+            this.postTick = (rotation, player, matchRaycast) -> task.run();
+            return this;
+        }
+
+        @Override
+        public Rotation peekRotation(Rotation currentModification, ClientPlayerEntity player) {
+            Rotation rotation = calculateRotationPre(player, currentModification);
+            return rotation == null ? Rotation.EMPTY : rotation;
+        }
+
+        protected abstract @Nullable Rotation calculateRotationPre(
+                ClientPlayerEntity player, Rotation currentModification);
     }
 
     @Setter
@@ -228,67 +299,41 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
             this.targetSupplier = Objects.requireNonNull(targetSupplier, "targetSupplier");
         }
 
-        public BoxRaycastRequest(
-                RayCastCalculator<T> calculator, Supplier<T> targetSupplier, boolean preMovementAdjust) {
-            this(calculator, targetSupplier);
-            preMovementAdjust(preMovementAdjust);
-        }
-
         @MustBeInvokedByOverriders
         @Override
-        protected @Nullable Rotation calculateRotationPre(Vec3d pos, ClientPlayerEntity player) {
+        protected @Nullable Rotation calculateRotationPre(ClientPlayerEntity player, Rotation currentModification) {
             T target = targetSupplier.get();
             if (target == null) return null;
-            Vec3d direction = calculator.getRaycast(player.getPos(), target);
-            return direction == null ? null : Rotation.from(direction.normalize());
-        }
-
-        @Override
-        public @Nullable Rotation tickRotationPreMovementPacket(Vec3d pos, ClientPlayerEntity player) {
-            if (!preMovementAdjust() || player.isSwimming() || player.isTouchingWater() || player.isFallFlying())
-                return null;
-            T target = targetSupplier.get();
-            if (target == null) return null;
-            Box effectiveBox = calculator.getEffectiveBox(target);
-            if (effectiveBox == null) return null;
-
-            float fixedYaw = player.getYaw();
-            float currentPitch = player.getPitch();
-            if (calculator.canRayCast(pos, target, currentPitch, fixedYaw)) {
-                return Rotation.from(currentPitch, fixedYaw);
+            Vec3d pos = player.getPos();
+            if (!currentModification.hasRotate()) {
+                Vec3d direction = calculator.getRaycast(pos, target);
+                return direction == null ? null : Rotation.from(direction.normalize());
             }
-
-            Vec3d eyePos = pos.add(0, player.dimensions.eyeHeight(), 0);
-            float centerPitch = EntityUtils.rotationToPitch(
-                    effectiveBox.getCenter().subtract(eyePos).normalize());
-            if (calculator.canRayCast(pos, target, centerPitch, fixedYaw)) {
-                return Rotation.from(centerPitch, fixedYaw);
-            }
-            Box projectileBox = effectiveBox.withMinY(-1.0D).withMaxY(1.0D);
-            Vec3d projectileYaw = EntityUtils.pitchYawToRotation(0, fixedYaw);
-            var hitResult = projectileBox.raycast(
-                    pos.withAxis(Direction.Axis.Y, 0), projectileYaw.multiply(calculator.getReachDistance(target)));
-            if (hitResult.isPresent()) {
-                Vec3d hitPoint = hitResult.get();
-                var hitRay = calculator
-                        .getPotentialEyeHeights(pos)
-                        .map(s -> {
-                            Vec3d magPoint = hitPoint.withAxis(
-                                    Direction.Axis.Y, Math.clamp(s.getY(), effectiveBox.minY, effectiveBox.maxY));
-                            double distance = magPoint.distanceTo(s);
-                            return distance <= calculator.getReachDistance(target) ? magPoint.subtract(s) : null;
-                        })
-                        .filter(Objects::nonNull)
-                        .findFirst()
-                        .orElse(null);
-                if (hitRay != null) {
-                    float pitch = EntityUtils.rotationToPitch(hitRay.normalize());
-                    if (calculator.canRayCast(pos, target, pitch, fixedYaw)) {
-                        return Rotation.from(pitch, fixedYaw);
-                    }
+            float pitch = currentModification.getPitch(player.getPitch());
+            float yaw = currentModification.getYaw(player.getYaw());
+            if (calculator.canRayCast(pos, target, pitch, yaw)) return Rotation.from(pitch, yaw);
+            if (currentModification.hasPitch() && currentModification.hasYaw()) return null;
+            float base = currentModification.hasPitch() ? yaw : pitch;
+            int steps = currentModification.hasPitch() ? 720 : 360;
+            for (int i = 1; i <= steps; i++) {
+                float offset = i * 0.25F;
+                for (int sign : new int[] {-1, 1}) {
+                    float adjusted = base + sign * offset;
+                    float candidatePitch = currentModification.hasPitch() ? pitch : adjusted;
+                    float candidateYaw = currentModification.hasPitch() ? adjusted : yaw;
+                    if (calculator.canRayCast(pos, target, candidatePitch, candidateYaw))
+                        return Rotation.from(candidatePitch, candidateYaw);
                 }
             }
             return null;
+        }
+
+        @Override
+        public boolean canUseRotation(Vec3d pos, ClientPlayerEntity player, Rotation rotation) {
+            T target = targetSupplier.get();
+            return target != null
+                    && calculator.canRayCast(
+                            pos, target, rotation.getPitch(player.getPitch()), rotation.getYaw(player.getYaw()));
         }
     }
 
@@ -310,6 +355,14 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
 
     public static LookDirectionRequest ofDirection(Supplier<Rotation> rotationSupplier) {
         return new LookDirectionRequest(rotationSupplier);
+    }
+
+    public static LookDirectionRequest ofRotation(Supplier<Rotation> rotationSupplier) {
+        return new LookDirectionRequest(player -> rotationSupplier.get());
+    }
+
+    public static LookDirectionRequest ofDirection(Rotation rotation) {
+        return new LookDirectionRequest(player -> rotation);
     }
 
     public static LookDirectionRequest ofDirection(Optional<Float> pitch, Optional<Float> yaw) {
@@ -339,6 +392,10 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
             this.rotationSupplier = (pl) -> rotationSupplier.get();
         }
 
+        private LookDirectionRequest(Function<ClientPlayerEntity, Rotation> rotationSupplier) {
+            this.rotationSupplier = rotationSupplier;
+        }
+
         public LookDirectionRequest(Optional<Float> pitch, Optional<Float> yaw) {
             this.rotationSupplier = (pl) -> {
                 if (pitch.isEmpty() && yaw.isEmpty()) return null;
@@ -347,26 +404,45 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
         }
 
         @Override
-        protected @Nullable Rotation calculateRotationPre(Vec3d pos, ClientPlayerEntity player) {
+        protected @Nullable Rotation calculateRotationPre(ClientPlayerEntity player, Rotation currentModification) {
             return rotationSupplier == null ? null : rotationSupplier.apply(player);
+        }
+
+        @Override
+        public boolean canUseRotation(Vec3d pos, ClientPlayerEntity player, Rotation rotation) {
+            Rotation desired = calculateRotationPre(player, Rotation.EMPTY);
+            if (desired == null) return false;
+            return (!desired.hasPitch()
+                            || Math.abs(MathHelper.wrapDegrees(
+                                            desired.getPitch() - rotation.getPitch(player.getPitch())))
+                                    < 0.001F)
+                    && (!desired.hasYaw()
+                            || Math.abs(MathHelper.wrapDegrees(desired.getYaw() - rotation.getYaw(player.getYaw())))
+                                    < 0.001F);
         }
     }
 
     public static BoxRaycastRequest<BlockPos> ofBlock(Supplier<BlockPos> posSupplier) {
         return new BoxRaycastRequest<>(InteractExtra.INSTANCE, posSupplier) {
             @Override
-            protected @Nullable Rotation calculateRotationPre(Vec3d pos, ClientPlayerEntity player) {
-                Rotation rotation = super.calculateRotationPre(pos, player);
+            protected @Nullable Rotation calculateRotationPre(ClientPlayerEntity player, Rotation currentModification) {
+                Vec3d pos = player.getPos();
+                Rotation rotation = super.calculateRotationPre(player, currentModification);
                 if (rotation == null) return null;
+                if (currentModification.hasRotate()) return rotation;
                 return fluctuateBlockRaycast(posSupplier.get(), pos, rotation, InteractExtra.INSTANCE);
+            }
+
+            @Override
+            public void preTick(Rotation rotation, ClientPlayerEntity player, boolean matchRaycast) {
+                super.preTick(rotation, player, matchRaycast);
+                if (matchRaycast) lastAdd = !lastAdd;
             }
         };
     }
 
     public static BoxRaycastRequest<Entity> ofEntity(Supplier<Entity> entitySupplier) {
-        BoxRaycastRequest<Entity> request = new BoxRaycastRequest<>(TargetSelector.INSTANCE, entitySupplier);
-        request.preMovementAdjust(true);
-        return request;
+        return new BoxRaycastRequest<>(TargetSelector.INSTANCE, entitySupplier);
     }
 
     private static boolean lastAdd;
@@ -380,7 +456,6 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
         if (!posRaycast.canRayCast(feet, pos, candidate.getPitch(), candidate.getYaw())) candidate = direct;
         yaw = candidate.getYaw();
         int sign = lastAdd ? 1 : -1;
-        lastAdd = !lastAdd;
         for (int i = 0; i < 8; i++) {
             Rotation adjusted = Rotation.from(pitch, quantize(yaw + sign * 0.1F));
             if (posRaycast.canRayCast(feet, pos, adjusted.getPitch(), adjusted.getYaw())) {

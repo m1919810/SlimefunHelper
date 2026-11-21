@@ -160,11 +160,14 @@ public class Misc extends BaseModule {
         if (checkNull()) return;
         int tick = Tasks.getTick() % 10;
         if (friendsWineEnable.get() && !mc.player.isFallFlying()) {
-            if (sneak.get()) {
-                PlayerInputManager.INSTANCE.addSneakModifier(0, tick <= 4, 1);
-            }
-            RotationManager.INSTANCE.request(
+            RotationManager.INSTANCE.push(
                     RotationManager.ofDirection(Optional.empty(), Optional.of(mc.player.getYaw() + 36 * tick))
+                            .applyMoveFix(true)
+                            .preTick((rotation, player, matchRaycast) -> {
+                                if (matchRaycast && sneak.get()) {
+                                    PlayerInputManager.INSTANCE.addSneakModifier(0, tick <= 4, 1);
+                                }
+                            })
                             .priority(-114514));
         }
     }

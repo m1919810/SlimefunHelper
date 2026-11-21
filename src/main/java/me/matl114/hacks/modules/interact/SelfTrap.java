@@ -182,7 +182,7 @@ public class SelfTrap extends BaseModule {
                 }
             }
         }
-        if (triggerCenterFix && mc.player.isOnGround()) {
+        if (triggerCenterFix && mc.player.isOnGround() && !mc.player.isFallFlying()) {
             if (lastCenter == null || !MathUtils.isInBox(lastCenter.toCenterPos(), mc.player.getPos(), 0.75)) {
                 lastCenter = lastSurround == null ? PlayerStateManager.INSTANCE.lastVelocityAffectingPos : lastSurround;
             }
@@ -196,10 +196,17 @@ public class SelfTrap extends BaseModule {
                 if (!inputUtils.hasMovement()) {
                     Vec3d lookHorizontal = blockPos.toCenterPos().subtract(mc.player.getPos());
                     float yaw = EntityUtils.rotationToYaw(lookHorizontal);
-                    RotationManager.INSTANCE.request(RotationManager.ofDirection(Optional.empty(), Optional.of(yaw))
-                            .preTick(() -> {
-                                PlayerInputManager.INSTANCE.addForwardModifier(0, true, 0);
-                                PlayerInputManager.INSTANCE.addBackwardModifier(0, false, 0);
+                    RotationManager.INSTANCE.push(RotationManager.ofDirection(Optional.empty(), Optional.of(yaw))
+                            .preTick((rotation, player, matchRaycast) -> {
+                                PlayerInputUtils.Input movement = PlayerInputUtils.tryCorrectMovementInput(
+                                        new PlayerInputUtils.Input(true, false, false, false), yaw, player.getYaw());
+                                PlayerInputManager.INSTANCE.addInputModifier(
+                                        PlayerInputManager.Modifier.empty(0)
+                                                .forward(movement.forward())
+                                                .backward(movement.backward())
+                                                .left(movement.left())
+                                                .right(movement.right()),
+                                        0);
                             })
                             .applyMoveFix(false)
                             .priority(0));
