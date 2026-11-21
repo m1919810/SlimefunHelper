@@ -148,7 +148,7 @@ public class AutoDig extends BaseModule {
     }
 
     private void onAutoDigInput() {
-        if (!isActive() || !snap.get() || mc.player == null || !mc.player.isOnGround()) {
+        if (!isActive() || !snap.get() || mc.player == null || !mc.player.isOnGround() || mc.player.isFallFlying()) {
             return;
         }
         ClientPlayerEntity player = mc.player;
@@ -175,10 +175,17 @@ public class AutoDig extends BaseModule {
         if (!PlayerInputUtils.of(mc.options).hasMovement()) {
             Vec3d lookHorizontal = center.toCenterPos().subtract(player.getPos());
             float yaw = EntityUtils.rotationToYaw(lookHorizontal);
-            RotationManager.INSTANCE.request(RotationManager.ofDirection(Optional.empty(), Optional.of(yaw))
-                    .preTick(() -> {
-                        PlayerInputManager.INSTANCE.addForwardModifier(0, true, 0);
-                        PlayerInputManager.INSTANCE.addBackwardModifier(0, false, 0);
+            RotationManager.INSTANCE.push(RotationManager.ofDirection(Optional.empty(), Optional.of(yaw))
+                    .preTick((rotation, currentPlayer, matchRaycast) -> {
+                        PlayerInputUtils.Input movement = PlayerInputUtils.tryCorrectMovementInput(
+                                new PlayerInputUtils.Input(true, false, false, false), yaw, currentPlayer.getYaw());
+                        PlayerInputManager.INSTANCE.addInputModifier(
+                                PlayerInputManager.Modifier.empty(0)
+                                        .forward(movement.forward())
+                                        .backward(movement.backward())
+                                        .left(movement.left())
+                                        .right(movement.right()),
+                                0);
                     })
                     .applyMoveFix(false)
                     .priority(0));

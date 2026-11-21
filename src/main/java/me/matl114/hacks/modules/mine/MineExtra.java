@@ -768,7 +768,7 @@ public class MineExtra extends BaseModule {
                 }
                 RotationManager manager = RotationManager.INSTANCE;
                 if (manager != null) {
-                    manager.request(RotationManager.ofBlock(() -> pos));
+                    manager.request(RotationManager.ofBlock(() -> pos).applyMoveFix(true));
                 }
                 yield false;
             }

@@ -367,7 +367,8 @@ public class BowEnhance extends BaseModule {
                     }
                     return Rotation.from(pitchYaw);
                 })
-                .postTick(() -> Tasks.scheduleDelayedPre(() -> Listener.sendPacketNoEvents(delayedPacket), 0)));
+                .applyMoveFix(true)
+                .postTickTask(() -> Tasks.scheduleDelayedPre(() -> Listener.sendPacketNoEvents(delayedPacket), 0)));
     }
 
     public void bowActionInteractItem(

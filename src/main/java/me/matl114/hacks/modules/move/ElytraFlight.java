@@ -21,7 +21,6 @@ import me.matl114.hacks.utils.move.ElytraMotion;
 import me.matl114.hacks.utils.move.ElytraOptimizeUtils;
 import me.matl114.hacks.utils.tasks.PressExecutor;
 import me.matl114.managers.Configs;
-import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
@@ -378,7 +377,11 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                         motionRotation,
                         realVector0.length(),
                         motionAmount);
+                float pitchBeforeFlightMotion = motion.pitch();
+                float yawBeforeFlightMotion = motion.yaw();
                 flightMotion.broadcast(motion);
+                boolean flightMotionChangedRotation =
+                        motion.pitch() != pitchBeforeFlightMotion || motion.yaw() != yawBeforeFlightMotion;
 
                 // add FloatingUtils
                 if (FloatingUtils.INSTANCE.workGrimFloatingThisTick()) {
@@ -411,36 +414,30 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                         && motion.pitch() > 0) {
                     motion.pitch(0);
                 }
-                if (useAutoRescale.get()) {
-                    float yaw = motion.yaw();
-                    yaw = (Tasks.getTick() % 2 == 0) ? yaw + 0.01F : yaw - 0.01F;
-                    motion.yaw(yaw);
-                }
-                if (shouldControlRotation && motion.speed() > 1e-3) {
-                    // fliter zero control
-                    boolean hasYaw = useAutoRescale.get()
-                            || Math.abs(EntityUtils.getSafeYawDiff(motion.yaw(), mc.player.getYaw())) > 1E-4;
-                    movementManagerEvent.context.pushImportantRotation(true, hasYaw);
-                    movementManagerEvent.context.markForResetRot();
-                    EntityUtils.setEntityPitchSafe(mc.player, motion.pitch());
-                    PlayerStateManager.setPlayerYawSafe(mc.player, motion.yaw());
-                    // pitch reset to trigger grim lastPitch lastYaw update
-                }
+                boolean shouldRotate = shouldControlRotation
+                        && motion.speed() > 1e-3
+                        && (motionMode.get() != ElytraExtra.MotionMode.VOID || flightMotionChangedRotation);
+                var requestedRotation = shouldRotate
+                        ? new me.matl114.hacks.utils.move.Rotation(
+                                motion.pitch(), Math.abs(motion.pitch()) == 90.0F ? null : motion.yaw())
+                        : me.matl114.hacks.utils.move.Rotation.EMPTY;
                 if (shouldControl) {
                     boolean noGravity = (Math.abs(motion.pitch()) <= 1e-1
                                     && horizontalFlyNoGravity.get()
                                     && !mc.player.isOnGround())
                             || motion.speed() <= 1e-3;
-                    mc.player.setVelocity(
-                            (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS)
-                                    ? ElytraExtra.INSTANCE.applyAxisLimit(
-                                            motion.algorithm(),
-                                            motion.movement(),
-                                            motion.pitch(),
-                                            motion.yaw(),
-                                            !noGravity)
-                                    : motion.movement());
-                } else if (freezeWhenSetup.get()
+                    if (motionMode.get() == ElytraExtra.MotionMode.VOID) {
+                        var requestedMotion = motion.movement();
+                        RotationManager.INSTANCE.push(RotationManager.ofDirection(
+                                        me.matl114.hacks.utils.move.Rotation.EMPTY)
+                                .priority(Integer.MAX_VALUE)
+                                .preTick((rotation, player2, matchRaycast) -> player2.setVelocity(requestedMotion)));
+                    } else {
+                        ElytraExtra.INSTANCE.pushAxisLimitTask(
+                                motion.algorithm(), motion.movement(), !noGravity, useAutoRescale.get());
+                    }
+                } else if (!shouldRotate
+                        && freezeWhenSetup.get()
                         && PlayerStateManager.INSTANCE.lastKnownMovementSpeed.length() < 1E-8
                         && shouldCheckRocket
                         && MathUtils.getOccupiedBlockPositions(
@@ -452,11 +449,23 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                                 })) {
                     FloatingUtils.INSTANCE.setGrimFloatingTick(true);
                 }
+                if (shouldRotate) {
+                    // VOID rotation is optional: only use priority -1 when flightMotion changes its angles.
+                    RotationManager.INSTANCE.push(RotationManager.ofDirection(requestedRotation)
+                            .priority(motionMode.get() == ElytraExtra.MotionMode.VOID ? -1 : Integer.MIN_VALUE + 1));
+                    if (motionMode.get() == ElytraExtra.MotionMode.VOID || !shouldControl) {
+                        ElytraExtra.INSTANCE.pushAxisLimitTask(null, null, false, useAutoRescale.get());
+                    }
+                }
                 if (shouldControl || shouldControlRotation) {
                     PlayerInputManager.INSTANCE.addSneakModifier(0, false, 0);
                 }
                 if (shouldCheckRocket) {
-                    MovTasks.getElytraExtra().launchFirework(mc.player.getPitch(), mc.player.getYaw());
+                    RotationManager.INSTANCE.push(
+                            RotationManager.ofDirection(me.matl114.hacks.utils.move.Rotation.EMPTY)
+                                    .priority(Integer.MAX_VALUE)
+                                    .preTick((rotation, player2, matchRaycast) -> MovTasks.getElytraExtra()
+                                            .launchFirework(player2.getPitch(), player2.getYaw())));
                 }
             } else {
                 if (autoFly.get() && autoFlyAutoJumpOff.get()) {
