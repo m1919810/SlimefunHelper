@@ -51,7 +51,6 @@ import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
@@ -1601,7 +1600,7 @@ public class ElytraBot extends BaseModule {
             }
             if (base.target != null
                     && mc.player.isFallFlying()
-                    && (!ElytraExtra.INSTANCE.isWaitingServerResyncFallFlying()
+                    && (!ElytraExtra.INSTANCE.hasPendingFallFlyingReset()
                             || ElytraExtra.INSTANCE.isThisTickGlideMovementServerSideGlide())) {
                 // server firework will tick this tick
                 if (base.appendPostRotate.get().isPresent()
@@ -1687,7 +1686,10 @@ public class ElytraBot extends BaseModule {
                                         .add(0, base.target.dimensions.height() * 2 / 3, 0)
                                         .subtract(mc.player
                                                 .getPos()
-                                                .add(0, mc.player.getEyeHeight(EntityPose.STANDING), 0)))
+                                                .add(
+                                                        0,
+                                                        mc.player.getEyeHeight(ElytraExtra.INSTANCE.serverSidePose),
+                                                        0)))
                                 .normalize();
                     } else {
                         return predictorPos.subtract(mc.player.getPos()).normalize();
@@ -1697,8 +1699,9 @@ public class ElytraBot extends BaseModule {
                     Vec3d forward;
                     if (SpearEnhance.isHoldingSpear(mc.player)) {
                         Vec3d targetPos = predictorPos.add(0, base.target.dimensions.height() * 2 / 3, 0);
-                        legacy = targetPos.subtract(
-                                mc.player.getPos().add(0, mc.player.getEyeHeight(EntityPose.STANDING), 0));
+                        legacy = targetPos.subtract(mc.player
+                                .getPos()
+                                .add(0, mc.player.getEyeHeight(ElytraExtra.INSTANCE.serverSidePose), 0));
                         forward = ElytraOptimizeUtils.calculateLookTowardsTargetV3Direction(
                                 movementDirection.algorithm(), legacy, 1.7);
                     } else {

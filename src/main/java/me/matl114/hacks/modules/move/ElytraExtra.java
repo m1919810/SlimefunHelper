@@ -582,13 +582,6 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         return armorFly.get() && armorGlideTransactionSlot != -1;
     }
 
-    public boolean isWaitingServerResyncFallFlying() {
-        return hasResetFallFlyingQueue()
-                || hasPendingUnbreakableStartFallFlying()
-                || hasPendingArmorStartFallFlying()
-                || hasPendingBlinkStartFallFlying();
-    }
-
     public int findElytraUnbreakableSwitchSlot() {
         if (this.armorGlideTransactionSlot != -1
                 && this.armorGlideTransactionSlot < mc.player.playerScreenHandler.slots.size()) {
@@ -704,7 +697,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             }
             if ((data & (1 << VDataFlag.FALL_FLYING_FLAG_INDEX)) == 0) {
                 elytraUnbreakableDurabilityCounter.reset();
-                pendingStartFallFlyingTransaction = isWaitingServerResyncFallFlying();
+                pendingStartFallFlyingTransaction = hasPendingFallFlyingReset();
                 if (pendingStartFallFlyingTransaction) {
                     data = (byte) (data | (1 << VDataFlag.FALL_FLYING_FLAG_INDEX));
                     serializedEntryUpdateEvent.metadata(
@@ -741,7 +734,10 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     public boolean hasPendingFallFlyingReset() {
-        return isCurrentArmorGliding() || pendingWaitResyncElytraUnbreakableTransaction || hasResetFallFlyingQueue();
+        return isCurrentArmorGliding()
+                || hasResetFallFlyingQueue()
+                || hasPendingUnbreakableStartFallFlying()
+                || hasPendingBlinkStartFallFlying();
     }
 
     public boolean hasResetFallFlyingQueue() {
@@ -1736,6 +1732,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     EntityDimensions pose = null;
+    public EntityPose serverSidePose = EntityPose.STANDING;
     boolean tempStopFlying = false;
     boolean postRotateWillHitWall = false;
 
@@ -1770,31 +1767,62 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         return false;
     }
 
+    private boolean canChangeIntoPose(ClientPlayerEntity player, EntityPose pose) {
+        return mc.world.isSpaceEmpty(
+                player, player.getDimensions(pose).getBoxAt(player.getPos()).contract(1.0E-7));
+    }
+
     @Override
     public void applyBeforeTravelTick(Event<LegalMovementManager> movementManagerEvent, Event<Vec3d> moveEvent) {
-        if (movementManagerEvent.isCancelled()) {
-            return;
-        }
-
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
 
+        if (hasPendingFallFlyingReset()) {
+            if (canChangeIntoPose(player, EntityPose.SWIMMING)) {
+                EntityPose expectedPose;
+                if (player.isSleeping()) {
+                    expectedPose = EntityPose.SLEEPING;
+                } else if (player.isSwimming()) {
+                    expectedPose = EntityPose.SWIMMING;
+                } else if (player.isUsingRiptide()) {
+                    expectedPose = EntityPose.SPIN_ATTACK;
+                } else {
+                    expectedPose = player.isSneaking() && !player.getAbilities().flying
+                            ? EntityPose.CROUCHING
+                            : EntityPose.STANDING;
+                }
+
+                if (!player.isSpectator() && !player.hasVehicle() && !canChangeIntoPose(player, expectedPose)) {
+                    serverSidePose = canChangeIntoPose(player, EntityPose.CROUCHING)
+                            ? EntityPose.CROUCHING
+                            : EntityPose.SWIMMING;
+                } else {
+                    serverSidePose = expectedPose;
+                }
+            }
+        } else {
+            serverSidePose = player.getPose();
+        }
         if (isCurrentArmorGliding()) {
             // fix boundingbox error
             if (poseFix.get()) {
-                player.setPose(EntityPose.STANDING);
+                player.setPose(serverSidePose);
             } else {
                 pose = player.dimensions;
-                player.dimensions = player.getDimensions(EntityPose.STANDING);
+                player.dimensions = player.getDimensions(serverSidePose);
                 player.setBoundingBox(player.dimensions.getBoxAt(player.getPos()));
             }
         } else if (hasPendingFallFlyingReset()) {
             pose = player.dimensions;
-            player.dimensions = player.getDimensions(EntityPose.STANDING);
+            player.dimensions = player.getDimensions(serverSidePose);
             player.setBoundingBox(player.dimensions.getBoxAt(player.getPos()));
         }
 
+        if (movementManagerEvent.isCancelled()) {
+            return;
+        }
+
         NoKineticMode mode = getActiveNoKineticMode();
-        if (mode == NoKineticMode.ROTATE_FIX && mc.player.isFallFlying() && !isWaitingServerResyncFallFlying()) {
+        if (mode == NoKineticMode.ROTATE_FIX && mc.player.isFallFlying() && !hasPendingFallFlyingReset()) {
             boolean canControl = anyAliveRocket();
             Vec3d movement = player.getVelocity().multiply(4);
             Vec3d simulatedMovement = MovTasks.simulateMovement(player, player.getPos(), movement, false);
@@ -1884,6 +1912,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
         setback = false;
         nextFlyFireworksTicks = 0;
         pose = null;
+        serverSidePose = EntityPose.STANDING;
         tempStopFlying = false;
 
         recordedWorldFireworkRockets.clear();
@@ -2311,7 +2340,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     public void postModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
         boolean willHitWall = getActiveNoKineticMode() == NoKineticMode.POST_ROTATE
-                && (!isWaitingServerResyncFallFlying() || isThisTickGlideMovementServerSideGlide())
+                && (!hasPendingFallFlyingReset() || isThisTickGlideMovementServerSideGlide())
                 && willHitWallOnNextGlidingTick(player);
         if (willHitWall && getActiveNoKineticMode() == NoKineticMode.POST_ROTATE) {
             if (!player.isUsingItem() && !SpearEnhance.isHoldingSpear(player)) {
@@ -2439,7 +2468,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     @Override
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
-        if (getActiveNoKineticMode() == NoKineticMode.SILENT && !isWaitingServerResyncFallFlying()) {
+        if (getActiveNoKineticMode() == NoKineticMode.SILENT && !hasPendingFallFlyingReset()) {
             boolean triggerKinetic = willHitWallOnNextGlidingTick(player);
             if (triggerKinetic) {
                 movementManagerEvent.context.markForResetRot();
@@ -2493,7 +2522,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                         player.setOnGround(false);
                         noGroundPeriod.mark();
                     } else {
-                        if (isWaitingServerResyncFallFlying()) {
+                        if (hasPendingFallFlyingReset()) {
                             nextTickIsOnGroundWaitResyncTick = true;
                         } else {
                             nextTickIsOnGroundTick = 3;
@@ -2547,7 +2576,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             }
             if (player.getY() > movementManagerEvent.context.playerStatus.pos.y + 1E-7) {
                 nextTickIsOnGroundWaitResyncTick = false;
-            } else if (!isWaitingServerResyncFallFlying()) {
+            } else if (!hasPendingFallFlyingReset()) {
                 nextTickIsOnGroundWaitResyncTick = false;
             } else if (isThisTickGlideMovementServerSideGlide()) {
                 nextTickIsOnGroundWaitResyncTick = false;
