@@ -14,6 +14,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.modules.move.RotationManager;
 import me.matl114.hacks.utils.*;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.hacks.utils.move.Rotation;
@@ -126,12 +127,16 @@ public class BlockRotate extends BaseModule {
         }
         // use the rotation after the yawDeceive, grim doesn't consider high version useItem rotation into rayCast
         boolean directlyHit = InteractionTasks.canDirectHit(result);
+        if (!directlyHit && !mode.isIn(LegalInteractMode.NONE)) {
+            RotationManager.INSTANCE.startQueuePacket();
+        }
         InteractionTasks.interactBlock(hand, result, swingHand);
         switch (mode) {
             case LEGACY_SLIENT_ROT -> {
                 if (!directlyHit) {
                     LegacySnapRotManager.INSTANCE.snapAt(
                             InteractionTasks.createBlockRayCastDirection(result.getBlockPos()), true);
+                    RotationManager.INSTANCE.flushQueuePackets();
                 }
                 return true;
             }

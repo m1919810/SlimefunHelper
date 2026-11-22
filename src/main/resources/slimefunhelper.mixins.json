@@ -119,7 +119,6 @@
 		"hack.LightMapTextureMixin",
 		"hack.LivingEntityMixin",
 		"hack.MinecraftClientMixin",
-		"hack.PlayerAbilityMixin",
 		"hack.PlayerEntityMixin",
 		"hack.PlayerEntityRendererMixin",
 		"hack.PowderSnowBlockMixin",

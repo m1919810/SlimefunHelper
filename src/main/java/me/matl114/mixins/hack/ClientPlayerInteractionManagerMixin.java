@@ -487,6 +487,7 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
         boolean attackStarted = original.call(instance, pos, direction);
         if (attackStarted
                 && isCurrentlyBreaking(pos)
+                && MineExtra.INSTANCE.quickMine.get()
                 && breakIfComplete(pos, client.world.getBlockState(pos), direction)) {
             return true;
         }

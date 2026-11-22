@@ -428,7 +428,8 @@ public class CrystalAura extends BaseModule {
         return CombatManager.INSTANCE.trackedEndCrystals.stream()
                 .filter(EntityUtils::isEntityValid)
                 .filter(crystal -> !CombatManager.INSTANCE.isPendingCrystalRemoval(crystal))
-                .filter(crystal -> TargetSelector.INSTANCE.isWithinAttackRange(mc.player.getPos(), crystal, attackRange))
+                .filter(crystal ->
+                        TargetSelector.INSTANCE.isWithinAttackRange(mc.player.getPos(), crystal, attackRange))
                 .toList();
     }
 

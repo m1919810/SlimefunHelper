@@ -2,7 +2,6 @@ package me.matl114.gui;
 
 import java.util.Iterator;
 import me.matl114.accessors.gui.ScreenAccess;
-import me.matl114.accessors.gui.TextFieldAccess;
 import me.matl114.gui.basic.Draggable;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hooks.IMBlockerHooks;
@@ -130,16 +129,7 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
 
     public boolean shouldNotExecuteInInput() {
         var focused = this.getFocused();
-        if (focused instanceof TextFieldAccess) {
-            return true;
-        }
-        if (focused instanceof DrawableWidget widget) {
-            var focus = WidgetUtils.getFocusedWidget(widget);
-            if (WidgetUtils.isInputWidget(focus)) {
-                return true;
-            }
-        }
-        return false;
+        return WidgetUtils.isInputing(focused);
     }
 
     @Override

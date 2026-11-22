@@ -308,6 +308,7 @@ public class Velocity extends BaseModule {
                     FloatingUtils.INSTANCE.setGrimFloatingTick(true);
                     FloatingUtils.INSTANCE.setSendPacketIgnoreRotation(true);
                     mc.player.setOnGround(true);
+                    PlayerInputManager.INSTANCE.addSprintModifier(0, false, 0);
                 } else {
                     ClientPlayerAccess.of(mc.player).resyncPos();
                     mc.player.setOnGround(true);
