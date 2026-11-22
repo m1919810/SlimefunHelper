@@ -170,6 +170,9 @@ public class WorldTasks {
     static int tickCounter = 0;
 
     public static void onTick(Event<ClientPlayerEntity> eventUpdate) {
+        if (mc.player == null || mc.world == null) {
+            return;
+        }
         if (++tickCounter > 5) {
             tickCounter = 0;
             Set<ChunkPos> chunkPoses = pendingUpdateTasks.keySet();
@@ -312,6 +315,6 @@ public class WorldTasks {
         registerListener(Listener.getChunkUpdateListener(), WorldTasks::onChunkUpdate);
         registerListener(Listener.getWorldSwitchPoint(), WorldTasks::onWorldChange);
         registerListener(Listener.getServerLeavePoint(), WorldTasks::onGameExit);
-        registerListener(Listener.getPostGameTick(), WorldTasks::onTick);
+        registerListener(Listener.getPostTick(), WorldTasks::onTick);
     }
 }

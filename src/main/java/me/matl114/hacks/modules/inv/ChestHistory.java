@@ -51,7 +51,6 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
@@ -107,8 +106,8 @@ public class ChestHistory extends BaseModule {
         registerListener(Listener.getPostOpenHandledScreen(), this::onOpenHandledScreen);
         registerListener(Listener.getPostPlayerUseItemOnBlock(), this::onPlaceShulkerBox);
         registerListener(Listener.getGameJoinPoint(), this::onServerJoin);
-        registerListener(Listener.getPostGameTick(), this::onTick);
-        registerListener(Listener.getPostGameTick(), this::updateTitleCollector);
+        registerListener(Listener.getPostTick(), this::onTick);
+        registerListener(Listener.getPostTick(), this::updateTitleCollector);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(ServerStorage.getServerStorageLoad(), this::onLoad);
         registerListener(ServerStorage.getServerStorageSave(), this::onSave);
@@ -298,7 +297,8 @@ public class ChestHistory extends BaseModule {
     private int interval = 0;
     private static final int REFRESH_RATE = 40;
 
-    public void onTick(Event<ClientPlayerEntity> event) {
+    public void onTick() {
+        if (checkNull()) return;
         if (++interval < REFRESH_RATE) {
             return;
         }
@@ -312,7 +312,7 @@ public class ChestHistory extends BaseModule {
             }
         }
         interval = 0;
-        BlockLocation location = BlockLocation.of(event.context());
+        BlockLocation location = BlockLocation.of(mc.player);
         var iterator = screens.entrySet().iterator();
         while (iterator.hasNext()) {
             var entry = iterator.next();
@@ -375,7 +375,7 @@ public class ChestHistory extends BaseModule {
 
     private void updateTitleCollector() {
         titleCollector.clear();
-        if (!enableTitle.get() || mc.player == null || mc.world == null) return;
+        if (!enableTitle.get() || checkNull()) return;
         BlockLocation location = BlockLocation.of(mc.player);
         Set<Vec3d> renderedPositions = new HashSet<>();
         for (var entry : screens.entrySet()) {

@@ -131,8 +131,8 @@ public class PearlBot extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvent);
-        registerListener(Listener.getPostGameTick(), this::onAutoSendTick);
-        registerListener(Listener.getPostGameTick(), this::updateRender);
+        registerListener(Listener.getPostTick(), this::onAutoSendTick);
+        registerListener(Listener.getPostTick(), this::updateRender);
         registerListener(RenderListener.getRender3DEvent(), this::onRender3D);
         registerListener(Listener.getPacketPoint().getChannel(EntityStatusS2CPacket.class), this::onTotemTrigger);
         registerListener(Listener.getOtherPlayerJoinPoint(), this::onEmergencyPlayerEntryAdd);
@@ -289,12 +289,12 @@ public class PearlBot extends BaseModule {
         }
     }
 
-    private void onAutoSendTick(Event<ClientPlayerEntity> event) {
-        if (!enable.get()) {
+    private void onAutoSendTick() {
+        if (checkNull() || !enable.get()) {
             return;
         }
 
-        ClientPlayerEntity player = event.context;
+        ClientPlayerEntity player = mc.player;
         if (autoSendHealthEnable.get() && player.getHealth() <= autoSendHealthThreshold.get()) {
             logI18N("message.pearl-bot.auto-send.health-triggered");
             sendPearlTpRequest();

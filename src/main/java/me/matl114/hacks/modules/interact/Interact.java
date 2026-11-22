@@ -156,7 +156,7 @@ public class Interact extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreGameTick(), this::onPreTick);
-        registerListener(Listener.getPostGameTick(), this::updateRenderCollector);
+        registerListener(Listener.getPostTick(), this::updateRenderCollector);
         registerListener(RenderListener.getRender3DEvent(), this::onRender3D);
         registerListener(Listener.getItemUseAction(), this::onInteract);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
@@ -760,7 +760,7 @@ public class Interact extends BaseModule {
     private void updateRenderCollector() {
         entityTargetCollector.clear();
         blockTargetCollector.clear();
-        if (!renderAttackTarget.get() || mc.player == null || mc.world == null || currentInteractTarget == null) return;
+        if (checkNull() || !renderAttackTarget.get() || currentInteractTarget == null) return;
 
         if (currentInteractTarget instanceof BlockHitResult hitResult && hitResult.getType() == HitResult.Type.BLOCK) {
             BlockPos hitPos = hitResult.getBlockPos();

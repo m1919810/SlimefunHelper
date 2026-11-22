@@ -140,7 +140,7 @@ public class Misc extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreGameTick(), this::onPreGameTick);
-        registerListener(Listener.getPostGameTick(), this::updateParkour);
+        registerListener(Listener.getPostTick(), this::updateParkour);
         registerListener(PacketManager.getPacketQueueOutEvent(), this::onParkourPacketQueue);
         registerListener(PacketManager.getQueueShutdownEvent(), this::onParkourQueueShutdown);
         registerListener(RenderListener.getRender3DEvent(), this::renderParkour);

@@ -136,7 +136,7 @@ public class Warps extends BaseModule {
         super.registerAll();
         registerListener(XaeroHelper.getWorldSwitchPoint(), this::onGameJoin);
         registerListener(Listener.getGameJoinPoint(), this::onGameJoin);
-        registerListener(Listener.getPostGameTick(), this::onPostGameTick);
+        registerListener(Listener.getPostTick(), this::onPostGameTick);
         registerListener(Listener.getCustomListener().getChannel(MovTasks.TpaCommandEvent.class), this::onTpaToWarp);
         registerCommandBootstrap(this::warpCommandBootStrap);
         if (!checkNull()) {
@@ -291,10 +291,9 @@ public class Warps extends BaseModule {
     }
 
     private void onPostGameTick() {
-        if (!checkNull()) {
-            if (!Objects.equals(loadedWaypointWorld, mc.world.getRegistryKey())) {
-                loadCurrentWaypoints();
-            }
+        if (checkNull()) return;
+        if (!Objects.equals(loadedWaypointWorld, mc.world.getRegistryKey())) {
+            loadCurrentWaypoints();
         }
     }
 

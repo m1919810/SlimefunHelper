@@ -86,7 +86,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostGameTick(), this::updateRenderCollector);
+        registerListener(Listener.getPostTick(), this::updateRenderCollector);
         registerListener(RenderListener.getRender3DEvent(), this::renderPlayerSpearTarget);
         registerListener(Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class), this::onClientTickEnd);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
@@ -231,7 +231,7 @@ public class SpearAttack extends BaseModule implements LegalMovementManager.Move
 
     private void updateRenderCollector() {
         targetCollector.clear();
-        if (!enable.get() || !spearRender.get() || !canSpearAttack()) return;
+        if (!enable.get() || !spearRender.get() || checkNull() || !canSpearAttack()) return;
         Entity spearEntity = CombatTasks.getTargetSelector()
                 .searchAttackEntity(spearDistance.get(), false, SpearAttack::isSpearable);
         if (spearEntity != null) {

@@ -6,7 +6,6 @@ import me.matl114.accessors.access.HandledScreenAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.events.PacketManager;
 import me.matl114.events.impl.SlotClickAction;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.MovTasks;
@@ -36,7 +35,6 @@ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
@@ -83,10 +81,8 @@ public class InvExtra extends BaseModule {
         super.registerAll();
         registerListener(Listener.getPreClickSlot(), this::onClickSlot);
         registerListener(Listener.getPacketPoint().getChannel(CloseHandledScreenC2SPacket.class), this::onCloseScreen);
-        registerListener(
-                Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class),
-                this::onClientTickEnd,
-                Integer.MAX_VALUE);
+        registerListener(Listener.getPostGameTick(), this::onClientTickEnd, Integer.MAX_VALUE);
+        registerListener(Listener.getPostTick(), this::onClientPostTickEnd, Integer.MIN_VALUE);
         registerListener(Listener.getPreTick(), this::onNewTick, Integer.MIN_VALUE + 11);
         registerListener(Listener.getServerLeavePoint(), event -> {
             postTickGhostHandCallbacks.clear();
@@ -136,9 +132,9 @@ public class InvExtra extends BaseModule {
 
     List<Runnable> inventoryCallbacks = new ArrayList<>();
     List<Integer> hotBarCallbacks = new ArrayList<>();
+    List<Runnable> invPostTickCallbacks = List.of();
 
-    private void onClientTickEnd(Event<ClientTickEndC2SPacket> event) {
-        if (event.isCancelled()) return;
+    private void onClientTickEnd() {
         // Movement-post actions may add inventory callbacks during this packet's post-schedule phase.
         duringCallback = true;
         try {
@@ -150,12 +146,7 @@ public class InvExtra extends BaseModule {
             try {
                 MovTasks.getMovExtra().sendSprintPacketsForInventoryAction();
                 List<Runnable> inventoryTasks = new ArrayList<>(inventoryCallbacks);
-                PacketManager.schedulePostScheduleCallback(event.context, () -> {
-                    for (Runnable r : inventoryTasks) {
-                        r.run();
-                    }
-                });
-
+                invPostTickCallbacks = inventoryTasks;
             } finally {
                 inventoryCallbacks.clear();
             }
@@ -170,6 +161,16 @@ public class InvExtra extends BaseModule {
             } finally {
                 hotBarCallbacks.clear();
             }
+        }
+    }
+
+    private void onClientPostTickEnd() {
+        try {
+            for (var runnable : invPostTickCallbacks) {
+                runnable.run();
+            }
+        } finally {
+            invPostTickCallbacks = List.of();
         }
     }
 

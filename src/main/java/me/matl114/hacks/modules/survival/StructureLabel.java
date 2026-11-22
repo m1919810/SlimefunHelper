@@ -253,7 +253,7 @@ public class StructureLabel extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostGameTick(), this::onTick);
+        registerListener(Listener.getPostTick(), this::onTick);
         registerListener(RenderListener.getRender3DEvent(), this::onRender3D);
         registerListener(XaeroHelper.getWorldSwitchPoint(), this::onLeave);
         registerListener(Listener.getServerLeavePoint(), this::onLeave);

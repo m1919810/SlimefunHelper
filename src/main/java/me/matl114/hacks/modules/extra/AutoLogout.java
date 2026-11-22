@@ -12,7 +12,6 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.InventoryUtils;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.EntityType;
@@ -77,15 +76,16 @@ public class AutoLogout extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostGameTick(), this::onTick);
+        registerListener(Listener.getPostTick(), this::onTick);
         registerListener(Listener.getPacketPoint().getChannel(EntityStatusS2CPacket.class), this::onPacketTotem);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(EntitySpawnS2CPacket.class), this::onPlayerSpawn);
     }
 
-    public void onTick(Event<ClientPlayerEntity> event) {
+    public void onTick() {
+        if (checkNull()) return;
         if (enable.get()) {
-            ClientPlayerEntity player = event.context;
+            var player = mc.player;
             if (healthEnable.get() && player.getHealth() <= healthThreshold.get()) {
                 MainTasks.scheduleDisconnect();
                 return;

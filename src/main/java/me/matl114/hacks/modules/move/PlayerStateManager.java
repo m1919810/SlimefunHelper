@@ -180,11 +180,7 @@ public class PlayerStateManager extends BaseModule {
                 this::onPlayerCommand,
                 Integer.MAX_VALUE);
         registerListener(Listener.getPlayerInitConfiguration(), this::onPlayerReset);
-        registerListener(
-                Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class),
-                this::onTickEnd,
-                Integer.MAX_VALUE,
-                true);
+        registerListener(Listener.getPostGameTick(), this::onTickEnd, Integer.MAX_VALUE, true);
         registerListener(Listener.getPreTick(), this::updateOtherPlayers, Integer.MIN_VALUE);
         registerListener(Listener.getPacketPoint().getChannel(EntityStatusS2CPacket.class), this::onTotemPop);
         registerListener(Listener.getServerLeavePoint(), this::onLeave);

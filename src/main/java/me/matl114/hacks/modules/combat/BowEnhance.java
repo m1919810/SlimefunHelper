@@ -92,7 +92,7 @@ public class BowEnhance extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onBowAction, 999);
-        registerListener(Listener.getPostGameTick(), this::updateRenderCollector);
+        registerListener(Listener.getPostTick(), this::updateRenderCollector);
         registerListener(RenderListener.getRender3DEvent(), this::onRenderAimTarget);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
     }
@@ -158,7 +158,7 @@ public class BowEnhance extends BaseModule {
 
     private void updateRenderCollector() {
         targetCollector.clear();
-        if (!enable.get() || !enableAim.get() || !renderTarget.get() || mc.player == null || !mc.player.isUsingItem()) {
+        if (!enable.get() || !enableAim.get() || !renderTarget.get() || checkNull() || !mc.player.isUsingItem()) {
             return;
         }
         ItemStack itemInUse = mc.player.getActiveItem();

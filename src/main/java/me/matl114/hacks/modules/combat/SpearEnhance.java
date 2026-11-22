@@ -117,7 +117,7 @@ public class SpearEnhance extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreGameTick(), this::onPreTick);
-        registerListener(Listener.getPostGameTick(), this::updateKineticPlayerCollector);
+        registerListener(Listener.getPostTick(), this::updateKineticPlayerCollector);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(RenderListener.getCustomModelOverride(), this::onReplaceSpearModel);
         registerListener(Listener.getClientPlayerPostSendMovementPoint(), this::onPostTick);

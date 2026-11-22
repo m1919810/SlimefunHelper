@@ -86,7 +86,7 @@ public class WorldManager extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(ServerStorage.getServerStorageLoad(), this::onLoad);
-        registerListener(Listener.getPostGameTick(), this::onGameTick);
+        registerListener(Listener.getPostTick(), this::onGameTick);
         registerListener(Listener.getEntityRemoveListener(), this::onEntityDeath);
         registerListener(
                 Listener.getEntityTrackDataUpdate().getChannel(EntityType.VILLAGER), this::onVillagerProfessionUpdate);

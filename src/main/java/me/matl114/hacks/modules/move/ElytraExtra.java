@@ -394,8 +394,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
                 Integer.MAX_VALUE);
         registerListener(
                 Listener.getPacketPoint().getChannel(TeleportConfirmC2SPacket.class), this::onAcceptTeleportation);
-        registerListener(Listener.getPostGameTick(), this::onArmorStateTick);
-        registerListener(Listener.getPostGameTick(), this::onFallFlyingSyncTimeout);
+        registerListener(Listener.getPostTick(), this::onArmorStateTick);
+        registerListener(Listener.getPostTick(), this::onFallFlyingSyncTimeout);
         registerListener(PacketManager.getPacketQueueInEvent(), this::onFireworkRemoval);
         registerListener(PacketManager.getPacketQueueInEvent(), this::onArmorGlideDelay);
         registerListener(PacketManager.getQueueShutdownEvent(), this::onPacketQueueFlush);
@@ -605,6 +605,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     private final CounterExecutor armorGlideAbortCounter = new CounterExecutor();
 
     public void onArmorStateTick() {
+        if (checkNull()) return;
         if (armorFly.get() && mc.player.isFallFlying() && armorGlideTransactionSlot != -1) {
             if (armorMode.get() == ArmorFlyMode.TICK_LEGACY) {
                 armorGlideAbortCounter.reset();
@@ -1117,6 +1118,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     private int fallFlyingSyncStartTick = -1;
 
     public void onFallFlyingSyncTimeout() {
+        if (checkNull()) return;
         if (fallFlyingSyncStartTick == -1) {
             return;
         }
