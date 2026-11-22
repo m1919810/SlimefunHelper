@@ -99,9 +99,9 @@ public class XaeroHelper extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch, Integer.MIN_VALUE);
-        registerListener(Listener.getPostGameTick(), this::onTickMapRender);
+        registerListener(Listener.getPostTick(), this::onTickMapRender);
         registerListener(XaeroHooks.getWorldMapRightClickOption(), this::onXaeroWorldMapClick);
-        registerListener(Listener.getPostGameTick(), this::onXaeroTempWaypointSync);
+        registerListener(Listener.getPostTick(), this::onXaeroTempWaypointSync);
         registerListener(Listener.getPostInitializeScreen(), this::onGuiSetup);
     }
 
@@ -194,6 +194,7 @@ public class XaeroHelper extends BaseModule {
     }
 
     public void onTickMapRender() {
+        if (checkNull()) return;
         if (loadedChunkRender.get() && loadedChunkFeature != null) {
             Set<ChunkPos> chunkPoses = new HashSet<>(100);
             for (var chunk : CommonUtils.chunks(false)) {

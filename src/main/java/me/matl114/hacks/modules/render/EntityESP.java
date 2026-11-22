@@ -118,7 +118,7 @@ public class EntityESP extends BaseModule {
 
         registerListener(RenderListener.getRender3DEvent(), this::onRender3D);
         registerListener(RenderListener.getRender2DEvent(), this::onRender2D);
-        registerListener(Listener.getPostGameTick(), this::onTick);
+        registerListener(Listener.getPostTick(), this::onTick);
     }
 
     private final RenderCollector<Entity> renderOutline = RenderCollectors.createEntityBoxCollector(true, false, false);
@@ -131,6 +131,7 @@ public class EntityESP extends BaseModule {
         renderFace.clear();
         renderBoundary.clear();
         entityTracer.clear();
+        if (checkNull()) return;
 
         boolean enable = this.enable.get();
         if (enable) {

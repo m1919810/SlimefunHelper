@@ -197,7 +197,7 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
 
     private void updateRenderCollector() {
         fakePlayerLineCollector.clear();
-        if (mc.world == null) {
+        if (checkNull()) {
             clearFakePlayerTracking();
             return;
         }
@@ -337,7 +337,7 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
         registerListener(Listener.getOtherPlayerExitPoint(), this::onPlayerListExit);
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(EntitySpawnS2CPacket.class), this::onPlayerSpawn);
-        registerListener(Listener.getPostGameTick(), this::updateRenderCollector);
+        registerListener(Listener.getPostTick(), this::updateRenderCollector);
         registerListener(RenderListener.getRender3DEvent(), this::onRenderFakePlayers);
     }
 

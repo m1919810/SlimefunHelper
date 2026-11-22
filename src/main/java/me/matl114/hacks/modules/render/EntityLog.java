@@ -163,7 +163,7 @@ public class EntityLog extends BaseModule {
                 Listener.getPacketPreHandlePoint().getChannel(EntitiesDestroyS2CPacket.class), this::onEntityRemove);
         registerListener(Listener.getServerDisconnectPoint(), this::onServerExit);
         registerListener(Listener.getPostTick(), this::onUpdate);
-        registerListener(Listener.getPostGameTick(), this::onPostGameTick);
+        registerListener(Listener.getPostTick(), this::onPostGameTick);
         registerListener(XaeroHelper.getWorldSwitchPoint(), this::onXaeroWorldSwitch);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(Listener.getOtherPlayerJoinPoint(), this::onPlayerListEntryAdd);
@@ -453,6 +453,7 @@ public class EntityLog extends BaseModule {
     }
 
     public void onPostGameTick() {
+        if (checkNull()) return;
         if (worldDirty && !checkNull()) {
             XaeroHelper xaeroHelper = XaeroHelper.INSTANCE;
             if (xaeroHelper != null) {

@@ -2,7 +2,6 @@ package me.matl114.hacks.modules.survival;
 
 import java.util.*;
 import java.util.function.Consumer;
-import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.gui.basic.ButtonAction;
 import me.matl114.gui.basic.DrawableWidget;
@@ -186,12 +185,15 @@ public class AutoEnchant extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostGameTick(), this::onTick);
+        registerListener(Listener.getPostTick(), this::onTick);
     }
 
-    private void onTick(Event<net.minecraft.client.network.ClientPlayerEntity> event) {
+    private void onTick() {
+        if (checkNull()) {
+            resetPending();
+            return;
+        }
         if (!enable.get()
-                || checkNull()
                 || !(mc.currentScreen instanceof AnvilScreen)
                 || !(mc.player.currentScreenHandler instanceof AnvilScreenHandler handler)) {
             resetPending();

@@ -64,7 +64,7 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
         super.registerAll();
         registerListener(Listener.getPlayerRespawnPoint(), this::onWorldSwitch);
         registerListener(Listener.getTeleportationConfirm(), this::onPosResync);
-        registerListener(Listener.getPostGameTick(), this::onTick);
+        registerListener(Listener.getPostTick(), this::onTick);
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class),
                 this::onStopInteractWithSelf);
@@ -127,7 +127,7 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
     }
 
     public void onTick() {
-        if (camera == null || mc.world == null) return;
+        if (checkNull() || camera == null) return;
         // nop
         // mc.world.tickEntity(camera);
     }

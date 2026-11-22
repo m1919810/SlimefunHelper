@@ -26,7 +26,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.play.CooldownUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityTrackerUpdateS2CPacket;
@@ -114,8 +113,7 @@ public class CombatExtra extends BaseModule {
         registerListener(Listener.getAttackAction(), this::onUseAttackNoSlow);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onMovementPacket);
-        registerListener(
-                Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class), this::onClientTickEndPacket);
+        registerListener(Listener.getPostGameTick(), this::onClientTickEndPacket);
         registerListener(Listener.getEntityTrackedPositionUpdate(), this::onTrackedPosition);
     }
 

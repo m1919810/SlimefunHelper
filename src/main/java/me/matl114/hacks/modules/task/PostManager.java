@@ -30,7 +30,6 @@ public class PostManager extends BaseModule {
         registerListener(
                 Listener.getPacketPostHandlePoint().getChannel(CommonPingS2CPacket.class), this::postPongPacketOut);
         registerListener(Listener.getServerLeavePoint(), this::onDisconnectReset);
-        registerListener(Listener.getPostGameTick(), this::onWatchPingLongTimeNoSent);
         registerListener(Listener.getPreTick(), this::onPreTick);
     }
 
@@ -116,14 +115,6 @@ public class PostManager extends BaseModule {
     private void onDisconnectReset(Event<Void> v) {
         peekPingRequest = 0;
         //        hasHandledPongPacket = false;
-    }
-
-    private void onWatchPingLongTimeNoSent() {
-        if (peekPingRequest > 0 && lastPingTick + 20 < Tasks.getTick()) {
-            peekPingRequest = 0;
-            lastPingTick = Tasks.getTick();
-            runAllQueuePackets(mc.getNetworkHandler());
-        }
     }
 
     public void onDisconnect(Event<Void> v) {}

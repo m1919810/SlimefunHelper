@@ -168,7 +168,7 @@ public class Attack extends BaseModule {
         super.registerAll();
         // should be in high priority
         registerListener(Listener.getAttackAction(), this::onAttack, -999);
-        registerListener(Listener.getPostGameTick(), this::updateRenderCollector);
+        registerListener(Listener.getPostTick(), this::updateRenderCollector);
         registerListener(RenderListener.getRender3DEvent(), this::onRenderTarget);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
         registerListener(
@@ -211,7 +211,7 @@ public class Attack extends BaseModule {
         Entity submittedTarget = currentTickAttackTarget;
         currentTickAttackTarget = null;
         targetCollector.clear();
-        if (mc.player == null || !renderAttackTarget.get()) return;
+        if (checkNull() || !renderAttackTarget.get()) return;
 
         Entity target = EntityUtils.isEntityValid(submittedTarget) ? submittedTarget : null;
         if (target == null) {
