@@ -47,6 +47,7 @@ scripts/
 .cursor/
 
 .codex/skills/
+.claude/skills/
 
 lang_scripts/
 log_analysis/
