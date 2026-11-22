@@ -15,6 +15,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.combat.TargetSelector;
 import me.matl114.hacks.modules.interact.Interact;
+import me.matl114.hacks.modules.interact.SequencedActionManager;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.RenderUtils;
@@ -24,7 +25,6 @@ import me.matl114.hacks.utils.move.PathingSchedular;
 import me.matl114.hacks.utils.move.goal.*;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
-import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
@@ -324,7 +324,6 @@ public class AutoLibrarian extends BaseModule {
         }
     }
 
-    private int lastInteractTick = 0;
     private boolean noLecternNotify = false;
     private int lastMerchantScreenSyncId = -1;
     private boolean currentAccepted = false;
@@ -409,9 +408,11 @@ public class AutoLibrarian extends BaseModule {
                     }
                 }
             } else if (mc.currentScreen == null || mc.currentScreen instanceof HandledScreen<?>) {
-                if (!hasOpened && lastInteractTick + 5 < Tasks.getTick()) {
+                if (!hasOpened
+                        && !SequencedActionManager.INSTANCE.getEntityInteractTracker()
+                                .isWaitingResponse(entity -> entity instanceof VillagerEntity)) {
                     Interact.INSTANCE.interactEntity(targetVillager);
-                    lastInteractTick = Tasks.getTick();
+                    SequencedActionManager.INSTANCE.getEntityInteractTracker().postInteract(targetVillager);
                 }
             }
         }
