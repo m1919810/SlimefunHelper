@@ -13,6 +13,7 @@ import me.matl114.events.impl.Render2D;
 import me.matl114.events.impl.Render3D;
 import me.matl114.events.impl.RenderScreen;
 import me.matl114.events.impl.RenderSlot;
+import me.matl114.events.impl.TooltipsRender;
 import me.matl114.events.model.GuiModel;
 import me.matl114.utils.Debug;
 import net.minecraft.block.entity.BlockEntity;
@@ -118,6 +119,10 @@ public class RenderListener {
     @Getter
     @Cancelable
     private static final EventChannel<RenderSlot> renderSlot = new EventChannel<>();
+
+    @Getter
+    @Broadcast
+    private static final EventChannel<TooltipsRender> renderTooltipEvent = new EventChannel<>();
 
     @Getter
     @Cancelable
