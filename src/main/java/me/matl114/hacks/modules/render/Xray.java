@@ -26,7 +26,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.BlockRenderView;
+import net.minecraft.world.BlockView;
 
 public class Xray extends BaseModule {
     public static Xray INSTANCE;
@@ -143,7 +143,7 @@ public class Xray extends BaseModule {
     }
 
     public boolean isBlocked(Block block, BlockPos pos) {
-        return !(whitelist.get().list().contains(block) && (!exposedOnly.get() || pos == null || isExposed(pos)));
+        return !(whitelist.get().test(block) && (!exposedOnly.get() || pos == null || isExposed(pos)));
     }
 
     private boolean isExposed(BlockPos pos) {
@@ -158,8 +158,7 @@ public class Xray extends BaseModule {
         return false;
     }
 
-    public boolean modifyDrawSide(
-            BlockState state, BlockRenderView world, BlockPos pos, Direction facing, boolean original) {
+    public boolean modifyDrawSide(BlockState state, BlockView world, BlockPos pos, Direction facing, boolean original) {
         if (!original && !isBlocked(state.getBlock(), pos)) {
             BlockPos adjacentPos = pos.offset(facing);
             BlockState adjacentState = world.getBlockState(adjacentPos);

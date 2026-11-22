@@ -40,7 +40,6 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
-import net.minecraft.registry.RegistryKey;
 import net.minecraft.screen.MerchantScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.math.BlockPos;
@@ -392,9 +391,8 @@ public class AutoTrade extends BaseModule {
         if (!EntityUtils.isEntityValid(villager)) {
             return false;
         }
-        RegistryKey<VillagerProfession> profession =
-                villager.getVillagerData().profession().getKey().orElse(null);
-        return profession != null && villagerTypes.get().test(Registries.VILLAGER_PROFESSION.get(profession));
+        VillagerProfession profession = villager.getVillagerData().getProfession();
+        return profession != null && villagerTypes.get().test(profession);
     }
 
     private boolean isWithinInteractionRange(VillagerEntity villager) {

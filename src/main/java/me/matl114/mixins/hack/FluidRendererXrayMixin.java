@@ -1,6 +1,8 @@
 package me.matl114.mixins.hack;
 
-import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.hacks.modules.render.Xray;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.VertexConsumer;
@@ -21,9 +23,6 @@ public abstract class FluidRendererXrayMixin {
     @Unique
     private static final ThreadLocal<Integer> slimefunhelper$xrayAlpha = ThreadLocal.withInitial(() -> -1);
 
-    @Unique
-    private static final ThreadLocal<Boolean> slimefunhelper$forceXrayFluidSides = ThreadLocal.withInitial(() -> false);
-
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void slimefunhelper$applyXray(
             BlockRenderView world,
@@ -34,10 +33,8 @@ public abstract class FluidRendererXrayMixin {
             CallbackInfo ci) {
         int alpha = Xray.getFluidAlpha(fluidState, pos);
         slimefunhelper$xrayAlpha.set(alpha);
-        slimefunhelper$forceXrayFluidSides.set(Xray.isXrayActive());
         if (alpha == 0) {
             slimefunhelper$xrayAlpha.remove();
-            slimefunhelper$forceXrayFluidSides.remove();
             ci.cancel();
         }
     }
@@ -45,7 +42,6 @@ public abstract class FluidRendererXrayMixin {
     @Inject(method = "render", at = @At("RETURN"))
     private void slimefunhelper$clearXray(CallbackInfo ci) {
         slimefunhelper$xrayAlpha.remove();
-        slimefunhelper$forceXrayFluidSides.remove();
     }
 
     @ModifyArg(
@@ -61,16 +57,26 @@ public abstract class FluidRendererXrayMixin {
         return alpha == -1 ? original : alpha / 255.0F;
     }
 
-    @ModifyReturnValue(method = "shouldSkipRendering", at = @At("RETURN"))
-    private static boolean slimefunhelper$showFluidSides(
-            boolean original, Direction side, float height, BlockState neighborState) {
-        if (!original
-                || !slimefunhelper$forceXrayFluidSides.get()
-                || side.getAxis().isVertical()) {
-            return original;
-        }
-
+    @WrapOperation(
+            method = "render",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/client/render/block/FluidRenderer;shouldRenderSide(Lnet/minecraft/fluid/FluidState;Lnet/minecraft/block/BlockState;Lnet/minecraft/util/math/Direction;Lnet/minecraft/fluid/FluidState;)Z"))
+    private boolean slimefunhelper$showFluidSides(
+            FluidState state,
+            BlockState blockState,
+            Direction side,
+            FluidState neighborState,
+            Operation<Boolean> original,
+            @Local(argsOnly = true) BlockRenderView world,
+            @Local(argsOnly = true) BlockPos pos) {
+        boolean draw = original.call(state, blockState, side, neighborState);
+        if (draw || !Xray.isXrayActive() || side.getAxis().isVertical()) return draw;
         Xray xray = Xray.INSTANCE;
-        return xray == null || !xray.isBlocked(neighborState.getBlock(), null);
+        BlockPos neighborPos = pos.offset(side);
+        return xray.isBlocked(world.getBlockState(neighborPos).getBlock(), neighborPos)
+                && !neighborState.getFluid().matchesType(state.getFluid());
     }
 }

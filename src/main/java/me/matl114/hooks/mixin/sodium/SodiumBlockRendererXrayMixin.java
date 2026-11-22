@@ -3,7 +3,7 @@ package me.matl114.hooks.mixin.sodium;
 import me.matl114.hacks.modules.render.Xray;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
-import net.caffeinemc.mods.sodium.client.render.model.MutableQuadViewImpl;
+import net.fabricmc.fabric.api.renderer.v1.mesh.MutableQuadView;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import org.spongepowered.asm.mixin.Mixin;
@@ -30,11 +30,12 @@ public abstract class SodiumBlockRendererXrayMixin {
 
     @Inject(method = "bufferQuad", at = @At("HEAD"), require = 0, expect = 0)
     private void slimefunhelper$setQuadAlpha(
-            MutableQuadViewImpl quad, float[] brightnesses, Material material, CallbackInfo ci) {
-        if (slimefunhelper$xrayAlpha != -1) {
+            @Coerce Object quadObject, float[] brightnesses, @Coerce Object material, CallbackInfo ci) {
+        // Sodium 0.6.x: frapi.mesh.MutableQuadViewImpl implements Fabric's MutableQuadView.
+        if (slimefunhelper$xrayAlpha != -1 && quadObject instanceof MutableQuadView quad) {
             for (int vertex = 0; vertex < 4; vertex++) {
-                int color = quad.baseColor(vertex);
-                quad.setColor(vertex, (slimefunhelper$xrayAlpha << 24) | (color & 0x00FFFFFF));
+                int color = quad.color(vertex);
+                quad.color(vertex, (slimefunhelper$xrayAlpha << 24) | (color & 0x00FFFFFF));
             }
         }
     }
@@ -45,7 +46,7 @@ public abstract class SodiumBlockRendererXrayMixin {
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/caffeinemc/mods/sodium/client/render/chunk/compile/pipeline/BlockRenderer;bufferQuad(Lnet/caffeinemc/mods/sodium/client/render/model/MutableQuadViewImpl;[FLnet/caffeinemc/mods/sodium/client/render/chunk/terrain/material/Material;)V",
+                                    "Lnet/caffeinemc/mods/sodium/client/render/chunk/compile/pipeline/BlockRenderer;bufferQuad(Lnet/caffeinemc/mods/sodium/client/render/frapi/mesh/MutableQuadViewImpl;[FLnet/caffeinemc/mods/sodium/client/render/chunk/terrain/material/Material;)V",
                             remap = false),
             index = 2,
             require = 0,

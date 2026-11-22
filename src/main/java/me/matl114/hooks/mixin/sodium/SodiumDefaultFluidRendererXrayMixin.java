@@ -1,14 +1,8 @@
 package me.matl114.hooks.mixin.sodium;
 
-import com.llamalad7.mixinextras.injector.ModifyReturnValue;
-import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.hacks.modules.render.Xray;
-import net.caffeinemc.mods.sodium.client.model.color.ColorProvider;
-import net.caffeinemc.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.material.Material;
-import net.caffeinemc.mods.sodium.client.render.chunk.translucent_sorting.TranslucentGeometryCollector;
-import net.caffeinemc.mods.sodium.client.world.LevelSlice;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.fluid.FluidState;
@@ -24,7 +18,6 @@ import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Pseudo
 @Mixin(targets = "net.caffeinemc.mods.sodium.client.render.chunk.compile.pipeline.DefaultFluidRenderer", remap = false)
@@ -37,9 +30,6 @@ public abstract class SodiumDefaultFluidRendererXrayMixin {
     private int slimefunhelper$xrayAlpha;
 
     @Unique
-    private boolean slimefunhelper$forceXrayFluidSides;
-
-    @Unique
     private Xray slimefunhelper$xray;
 
     @Inject(method = "<init>", at = @At("TAIL"), require = 0, expect = 0)
@@ -49,60 +39,19 @@ public abstract class SodiumDefaultFluidRendererXrayMixin {
 
     @Inject(method = "render", at = @At("HEAD"), cancellable = true, require = 0, expect = 0)
     private void slimefunhelper$applyXray(
-            LevelSlice level,
+            @Coerce Object level,
             BlockState blockState,
             FluidState fluidState,
             BlockPos blockPos,
             BlockPos offset,
-            TranslucentGeometryCollector collector,
-            ChunkModelBuilder meshBuilder,
-            Material material,
-            ColorProvider<FluidState> colorProvider,
+            @Coerce Object collector,
+            @Coerce Object meshBuilder,
+            @Coerce Object material,
+            @Coerce Object colorProvider,
             Sprite[] sprites,
             CallbackInfo ci) {
         slimefunhelper$xrayAlpha = Xray.getFluidAlpha(fluidState, blockPos);
-        slimefunhelper$forceXrayFluidSides = slimefunhelper$xray != null && slimefunhelper$xray.isActive();
-        if (slimefunhelper$xrayAlpha == 0) {
-            slimefunhelper$forceXrayFluidSides = false;
-            ci.cancel();
-        }
-    }
-
-    @ModifyReturnValue(method = "isFullBlockFluidSideVisible", at = @At("RETURN"), require = 0, expect = 0)
-    private boolean slimefunhelper$showFullBlockFluidSide(
-            boolean original,
-            @Coerce Object view,
-            BlockPos selfPos,
-            Direction facing,
-            FluidState fluid,
-            @Local(name = "otherState") BlockState otherState) {
-        if (original || !slimefunhelper$forceXrayFluidSides || facing.getAxis().isVertical()) return original;
-        if (slimefunhelper$xray == null || !slimefunhelper$xray.isBlocked(otherState.getBlock(), null)) return false;
-        return !otherState.getFluidState().getFluid().matchesType(fluid.getFluid());
-    }
-
-    @ModifyReturnValue(
-            method =
-                    "isFluidSideExposed(Lnet/minecraft/block/BlockState;Lnet/minecraft/block/BlockState;Lnet/minecraft/util/math/Direction;F)Z",
-            at = @At("RETURN"),
-            require = 0,
-            expect = 0,
-            remap = true)
-    private boolean slimefunhelper$showFluidSide(
-            boolean original, BlockState ownBlockState, BlockState neighborBlockState, Direction facing, float height) {
-        if (original || !slimefunhelper$forceXrayFluidSides || facing.getAxis().isVertical()) return original;
-        if (slimefunhelper$xray == null || !slimefunhelper$xray.isBlocked(neighborBlockState.getBlock(), null))
-            return false;
-        return !neighborBlockState
-                .getFluidState()
-                .getFluid()
-                .matchesType(ownBlockState.getFluidState().getFluid());
-    }
-
-    @Inject(method = "getUpFaceExposureByNeighbors", at = @At("HEAD"), cancellable = true, require = 0, expect = 0)
-    private void slimefunhelper$showUpFluidFace(
-            @Coerce Object level, BlockPos origin, FluidState fluidState, CallbackInfoReturnable<Integer> cir) {
-        if (slimefunhelper$forceXrayFluidSides) cir.setReturnValue(3);
+        if (slimefunhelper$xrayAlpha == 0) ci.cancel();
     }
 
     @Inject(method = "updateQuad", at = @At("TAIL"), require = 0, expect = 0)

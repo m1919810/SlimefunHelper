@@ -49,14 +49,11 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.PositionInterpolator;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.mob.Angerable;
 import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.ShulkerEntity;
-import net.minecraft.entity.mob.ZombifiedPiglinEntity;
-import net.minecraft.entity.passive.BeeEntity;
-import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.entity.mob.ZombifiedPiglinEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.PolarBearEntity;
@@ -414,23 +411,20 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
     }
 
     private Box getVanillaInterpolatedBox(Entity entity, int ticksLater) {
-        PositionInterpolator interpolator = entity.getInterpolator();
-        if (interpolator == null || !interpolator.isInterpolating()) return entity.getBoundingBox();
+        // 1.21.4 has no PositionInterpolator: LivingEntity.tickMovement lerps 1 / bodyTrackingIncrements
+        // of the way to the server position each tick (Entity.lerpPosAndRotation). Shulkers reset the
+        // increments to 0, so they stay at their current box. Other entities keep their current box.
+        if (!(entity instanceof LivingEntity living)) return entity.getBoundingBox();
+        int remaining = living.bodyTrackingIncrements;
+        if (remaining <= 0) return entity.getBoundingBox();
 
-        int remaining = interpolator.data.step;
-        Vec3d pos = entity.getPos();
-        Vec3d target = interpolator.getLerpedPos();
-        Vec3d lastPos = interpolator.lastPos;
-        if (lastPos != null) {
-            Vec3d delta = pos.subtract(lastPos);
-            if (entity.getEntityWorld().isSpaceEmpty(entity, entity.dimensions.getBoxAt(target.add(delta)))) {
-                target = target.add(delta);
-            }
-        }
+        Vec3d current = entity.getPos();
+        Vec3d target = new Vec3d(living.getLerpTargetX(), living.getLerpTargetY(), living.getLerpTargetZ());
+        Vec3d pos = current;
         for (int i = 0; i < ticksLater && remaining > 0; i++, remaining--) {
             pos = pos.add(target.subtract(pos).multiply(1.0 / remaining));
         }
-        return entity.getBoundingBox().offset(pos.subtract(entity.getPos()));
+        return entity.getBoundingBox().offset(pos.subtract(current));
     }
 
     public Stream<Vec3d> getPotentialEyeHeights(Vec3d pos) {
@@ -750,9 +744,7 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
                 if (e instanceof IronGolemEntity || e instanceof ZombifiedPiglinEntity) {
                     return ((MobEntity) e).isAttacking();
                 }
-                long time = anger.getAngerEndTime();
-                long currentTime = e.getEntityWorld().getTime();
-                return currentTime < time;
+                return anger.getAngerTime() > 0;
             }
             return false;
         } else {

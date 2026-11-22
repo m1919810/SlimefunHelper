@@ -1,15 +1,17 @@
 package me.matl114.mixins.hack;
 
-import com.llamalad7.mixinextras.injector.ModifyReturnValue;
-import java.util.List;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.hacks.modules.render.Xray;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.block.BlockModelRenderer;
-import net.minecraft.client.render.model.BlockModelPart;
+import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.BlockRenderView;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -23,15 +25,21 @@ public abstract class BlockModelRendererXrayMixin {
     @Unique
     private static final ThreadLocal<Integer> slimefunhelper$xrayAlpha = ThreadLocal.withInitial(() -> -1);
 
-    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
+    @Inject(
+            method =
+                    "render(Lnet/minecraft/world/BlockRenderView;Lnet/minecraft/client/render/model/BakedModel;Lnet/minecraft/block/BlockState;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;ZLnet/minecraft/util/math/random/Random;JI)V",
+            at = @At("HEAD"),
+            cancellable = true)
     private void slimefunhelper$applyXray(
             BlockRenderView world,
-            List<BlockModelPart> parts,
+            BakedModel model,
             BlockState state,
             BlockPos pos,
             MatrixStack matrices,
             VertexConsumer vertexConsumer,
             boolean cull,
+            Random random,
+            long seed,
             int overlay,
             CallbackInfo ci) {
         int alpha = Xray.getAlpha(state, pos);
@@ -42,7 +50,10 @@ public abstract class BlockModelRendererXrayMixin {
         }
     }
 
-    @Inject(method = "render", at = @At("RETURN"))
+    @Inject(
+            method =
+                    "render(Lnet/minecraft/world/BlockRenderView;Lnet/minecraft/client/render/model/BakedModel;Lnet/minecraft/block/BlockState;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;ZLnet/minecraft/util/math/random/Random;JI)V",
+            at = @At("RETURN"))
     private void slimefunhelper$clearXrayAlpha(CallbackInfo ci) {
         slimefunhelper$xrayAlpha.remove();
     }
@@ -53,24 +64,31 @@ public abstract class BlockModelRendererXrayMixin {
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/client/render/VertexConsumer;quad(Lnet/minecraft/client/util/math/MatrixStack$Entry;Lnet/minecraft/client/render/model/BakedQuad;[FFFFF[II)V"),
+                                    "Lnet/minecraft/client/render/VertexConsumer;quad(Lnet/minecraft/client/util/math/MatrixStack$Entry;Lnet/minecraft/client/render/model/BakedQuad;[FFFFF[IIZ)V"),
             index = 6)
     private float slimefunhelper$modifyAlpha(float original) {
         int alpha = slimefunhelper$xrayAlpha.get();
         return alpha == -1 ? original : alpha / 255.0F;
     }
 
-    @ModifyReturnValue(method = "shouldDrawFace", at = @At("RETURN"))
-    private static boolean slimefunhelper$modifyDrawSide(
-            boolean original,
-            BlockRenderView world,
+    @WrapOperation(
+            method = {"renderSmooth", "renderFlat"},
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/minecraft/block/Block;shouldDrawSide(Lnet/minecraft/block/BlockState;Lnet/minecraft/block/BlockState;Lnet/minecraft/util/math/Direction;)Z"))
+    private boolean slimefunhelper$modifyDrawSide(
             BlockState state,
-            boolean cull,
+            BlockState neighborState,
             Direction facing,
-            BlockPos neighborPos) {
+            Operation<Boolean> original,
+            @Local(argsOnly = true) BlockRenderView world,
+            @Local(argsOnly = true) BlockPos pos) {
+        boolean draw = original.call(state, neighborState, facing);
         Xray xray = Xray.INSTANCE;
-        if (xray == null || !xray.isActive()) return original;
+        if (xray == null || !xray.isActive()) return draw;
 
-        return xray.modifyDrawSide(state, world, neighborPos.offset(facing.getOpposite()), facing, original);
+        return xray.modifyDrawSide(state, world, pos, facing, draw);
     }
 }

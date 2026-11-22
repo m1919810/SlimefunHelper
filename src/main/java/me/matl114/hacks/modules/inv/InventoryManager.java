@@ -33,7 +33,7 @@ public class InventoryManager extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPacketPoint().getChannel(OpenScreenS2CPacket.class), this::onOpenScreen);
-        registerListener(Listener.getPacketPoint().getChannel(OpenMountScreenS2CPacket.class), this::onOpenMountScreen);
+        registerListener(Listener.getPacketPoint().getChannel(OpenHorseScreenS2CPacket.class), this::onOpenMountScreen);
         registerListener(Listener.getPostOpenHandledScreen(), this::onOpenHandledScreen, Integer.MIN_VALUE);
         registerListener(
                 Listener.getPacketPoint().getChannel(CloseScreenS2CPacket.class),
@@ -86,7 +86,7 @@ public class InventoryManager extends BaseModule {
         lastSyncId = packet.context.getSyncId();
     }
 
-    private void onOpenMountScreen(Event<OpenMountScreenS2CPacket> packet) {
+    private void onOpenMountScreen(Event<OpenHorseScreenS2CPacket> packet) {
         lastSyncId = packet.context.getSyncId();
     }
 
@@ -136,8 +136,9 @@ public class InventoryManager extends BaseModule {
         if (player != null
                 && handler != null
                 && handler != player.currentScreenHandler
-                && event.context.syncId() == handler.syncId) {
-            handler.updateSlotStacks(event.context.revision(), event.context.contents(), event.context.cursorStack());
+                && event.context.getSyncId() == handler.syncId) {
+            handler.updateSlotStacks(
+                    event.context.getRevision(), event.context.getContents(), event.context.getCursorStack());
         }
     }
 

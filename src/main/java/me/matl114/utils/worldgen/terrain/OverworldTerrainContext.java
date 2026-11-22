@@ -10,14 +10,17 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.registry.DynamicRegistryManager;
+import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.random.CheckedRandom;
 import net.minecraft.util.math.random.ChunkRandom;
 import net.minecraft.world.HeightLimitView;
+import net.minecraft.world.biome.BiomeKeys;
 import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.biome.source.BiomeCoords;
 import net.minecraft.world.biome.source.BiomeSource;
@@ -25,7 +28,7 @@ import net.minecraft.world.biome.source.MultiNoiseBiomeSource;
 import net.minecraft.world.biome.source.MultiNoiseBiomeSourceParameterList;
 import net.minecraft.world.biome.source.MultiNoiseBiomeSourceParameterLists;
 import net.minecraft.world.chunk.ChunkSection;
-import net.minecraft.world.chunk.PalettesFactory;
+import net.minecraft.world.chunk.PalettedContainer;
 import net.minecraft.world.chunk.ProtoChunk;
 import net.minecraft.world.chunk.UpgradeData;
 import net.minecraft.world.gen.StructureWeightSampler;
@@ -39,7 +42,9 @@ import net.minecraft.world.gen.chunk.ChunkNoiseSampler;
 import net.minecraft.world.gen.chunk.GenerationShapeConfig;
 import net.minecraft.world.gen.chunk.NoiseChunkGenerator;
 import net.minecraft.world.gen.densityfunction.DensityFunction;
+import net.minecraft.world.gen.densityfunction.DensityFunctions;
 import net.minecraft.world.gen.noise.NoiseConfig;
+import net.minecraft.world.tick.SimpleTickScheduler;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -67,16 +72,22 @@ public final class OverworldTerrainContext {
     private final RegistryEntry<ChunkGeneratorSettings> settings;
     private final BiomeSource biomeSource;
     private final NoiseConfig noiseConfig;
+    /** Noise-bound {@code overworld/offset} and {@code overworld/factor}, inputs of the surface upper bound. */
+    private final DensityFunction surfaceOffset;
+
+    private final DensityFunction surfaceFactor;
     private final NoiseChunkGenerator generator;
     private final HeightLimitView heightLimitView;
     private final AquiferSampler.FluidLevelSampler fluidLevelSampler;
     private final List<ConfiguredCarver<?>> carvers;
     private final BiomeAccess biomeAccess;
-    private final PalettesFactory palettes;
-    /** Sections default to stone, so carvers can record every point they would carve. */
-    private final PalettesFactory stonePalettes;
+    private final Registry<net.minecraft.world.biome.Biome> biomeRegistry;
 
-    private final StructureWeightSampler noStructures = new StructureWeightSampler(List.of(), List.of(), null);
+    private final StructureWeightSampler noStructures = new StructureWeightSampler(
+            it.unimi.dsi.fastutil.objects.ObjectLists.<StructureWeightSampler.Piece>emptyList()
+                    .iterator(),
+            it.unimi.dsi.fastutil.objects.ObjectLists.<net.minecraft.structure.JigsawJunction>emptyList()
+                    .iterator());
     private final Map<Block, Boolean> cannotReplace = new ConcurrentHashMap<>();
     private final Map<Block, Boolean> carverReplaceable = new ConcurrentHashMap<>();
 
@@ -94,6 +105,30 @@ public final class OverworldTerrainContext {
         this.biomeSource = MultiNoiseBiomeSource.create(biomeParameters);
         this.noiseConfig = NoiseConfig.create(
                 generatorSettings.value(), registries.getWrapperOrThrow(RegistryKeys.NOISE_PARAMETERS), seed);
+        NoiseConfig boundConfig = this.noiseConfig;
+        DensityFunction.DensityFunctionVisitor bindNoises = new DensityFunction.DensityFunctionVisitor() {
+            @Override
+            public DensityFunction apply(DensityFunction densityFunction) {
+                return densityFunction;
+            }
+
+            @Override
+            public DensityFunction.Noise apply(DensityFunction.Noise noise) {
+                return new DensityFunction.Noise(
+                        noise.noiseData(),
+                        boundConfig.getOrCreateSampler(
+                                noise.noiseData().getKey().orElseThrow()));
+            }
+        };
+        var densityFunctions = registries.getWrapperOrThrow(RegistryKeys.DENSITY_FUNCTION);
+        this.surfaceOffset = densityFunctions
+                .getOrThrow(DensityFunctions.OFFSET_OVERWORLD)
+                .value()
+                .apply(bindNoises);
+        this.surfaceFactor = densityFunctions
+                .getOrThrow(DensityFunctions.FACTOR_OVERWORLD)
+                .value()
+                .apply(bindNoises);
         this.generator = new NoiseChunkGenerator(biomeSource, generatorSettings);
         this.heightLimitView = HeightLimitView.create(BOTTOM_Y, HEIGHT);
         this.fluidLevelSampler = createFluidLevelSampler(generatorSettings.value());
@@ -106,14 +141,7 @@ public final class OverworldTerrainContext {
                 (biomeX, biomeY, biomeZ) ->
                         biomeSource.getBiome(biomeX, biomeY, biomeZ, noiseConfig.getMultiNoiseSampler()),
                 BiomeAccess.hashSeed(seed));
-        this.palettes = PalettesFactory.fromRegistryManager(registries);
-        this.stonePalettes = new PalettesFactory(
-                palettes.blockStatesStrategy(),
-                Blocks.STONE.getDefaultState(),
-                palettes.blockStatesContainerCodec(),
-                palettes.biomeStrategy(),
-                palettes.defaultBiome(),
-                palettes.biomeContainerCodec());
+        this.biomeRegistry = registries.getWrapperOrThrow(RegistryKeys.BIOME);
     }
 
     public static OverworldTerrainContext create(long seed) {
@@ -134,7 +162,7 @@ public final class OverworldTerrainContext {
      * in {@code NoiseChunkGenerator.carve}.
      */
     public ProtoChunk generateChunk(ChunkPos pos) {
-        ProtoChunk chunk = new ProtoChunk(pos, UpgradeData.NO_UPGRADE_DATA, heightLimitView, palettes, null);
+        ProtoChunk chunk = new ProtoChunk(pos, UpgradeData.NO_UPGRADE_DATA, heightLimitView, biomeRegistry, null);
         ChunkNoiseSampler sampler = chunk.getOrCreateChunkNoiseSampler(created -> ChunkNoiseSampler.create(
                 created,
                 noiseConfig,
@@ -277,11 +305,29 @@ public final class OverworldTerrainContext {
      * median, up to about 100 on jagged peaks), so callers add a safety margin.
      */
     public double preliminarySurface(int x, int z) {
-        return noiseConfig
-                .getNoiseRouter()
-                .preliminarySurfaceLevel()
-                .sample(new DensityFunction.UnblendedNoisePos(x, 0, z));
+        // Version-independent port of 1.21.11 DensityFunctions.findTopSurface, i.e.
+        // find_top_surface(density, upper_bound, lower_bound = -64, cell_height = 8). The 1.21.4
+        // router has no preliminary_surface_level, but its initialDensityWithoutJaggedness is the
+        // same density before the -0.390625 shift, so only the upper bound has to be rebuilt.
+        DensityFunction.NoisePos column = new DensityFunction.UnblendedNoisePos(x, 0, z);
+        double factor = surfaceFactor.sample(column);
+        double offset = surfaceOffset.sample(column);
+        // estimateUpperBound(0.2734375 * invert(factor) - offset, 1.5, -1.5, -64, 320).clamp(-40, 320)
+        double upperBound = MathHelper.clamp((0.2734375 / factor - offset) * -128.0 + 128.0, -40.0, 320.0);
+        int top = MathHelper.floor(upperBound / SURFACE_CELL_HEIGHT) * SURFACE_CELL_HEIGHT;
+        if (top <= SURFACE_LOWER_BOUND) return SURFACE_LOWER_BOUND;
+        DensityFunction density = noiseConfig.getNoiseRouter().initialDensityWithoutJaggedness();
+        for (int y = top; y >= SURFACE_LOWER_BOUND; y -= SURFACE_CELL_HEIGHT) {
+            if (density.sample(new DensityFunction.UnblendedNoisePos(x, y, z)) - 0.390625 > 0.0) {
+                return y;
+            }
+        }
+        return SURFACE_LOWER_BOUND;
     }
+
+    private static final int SURFACE_LOWER_BOUND = -64;
+    /** {@code GenerationShapeConfig.SURFACE.verticalCellBlockCount()}. */
+    private static final int SURFACE_CELL_HEIGHT = 8;
 
     /**
      * Marks the points carvers would carve in this chunk, using an all-stone chunk.
@@ -295,10 +341,18 @@ public final class OverworldTerrainContext {
      * {@code layer == stone || !carvable(noise) ? noise : layer == CARVED ? aquifer(pos) ?? noise : layer}.
      */
     public ProtoChunk carveLayer(ChunkPos pos) {
-        // Every section starts as stone (the stonePalettes default). Sections created from a palette
-        // count as empty until recounted, and ProtoChunk.getBlockState reports empty sections as air,
-        // which carvers would refuse to carve; recounting makes them read as stone.
-        ProtoChunk chunk = new ProtoChunk(pos, UpgradeData.NO_UPGRADE_DATA, heightLimitView, stonePalettes, null);
+        // Every section starts as stone, so carvers can record every point they would carve. Empty
+        // sections read as air in ProtoChunk.getBlockState, which carvers would refuse to carve;
+        // recounting makes them read as stone.
+        ProtoChunk chunk = new ProtoChunk(
+                pos,
+                UpgradeData.NO_UPGRADE_DATA,
+                createStoneSections(),
+                new SimpleTickScheduler<>(),
+                new SimpleTickScheduler<>(),
+                heightLimitView,
+                biomeRegistry,
+                null);
         for (ChunkSection section : chunk.getSectionArray()) {
             section.calculateCounts();
         }
@@ -306,6 +360,21 @@ public final class OverworldTerrainContext {
         // the real noise there is; the caller applies the carvable test against the real block.
         carve(chunk, null, MARKING_AQUIFER);
         return chunk;
+    }
+
+    private ChunkSection[] createStoneSections() {
+        ChunkSection[] sections = new ChunkSection[heightLimitView.countVerticalSections()];
+        RegistryEntry<net.minecraft.world.biome.Biome> plains = biomeRegistry.getOrThrow(BiomeKeys.PLAINS);
+        for (int i = 0; i < sections.length; i++) {
+            sections[i] = new ChunkSection(
+                    new PalettedContainer<>(
+                            Block.STATE_IDS,
+                            Blocks.STONE.getDefaultState(),
+                            PalettedContainer.PaletteProvider.BLOCK_STATE),
+                    new PalettedContainer<>(
+                            biomeRegistry.getIndexedEntries(), plains, PalettedContainer.PaletteProvider.BIOME));
+        }
+        return sections;
     }
 
     /**
