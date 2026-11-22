@@ -17,6 +17,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.combat.TargetSelector;
 import me.matl114.hacks.modules.interact.Interact;
+import me.matl114.hacks.modules.interact.SequencedActionManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
@@ -171,11 +172,16 @@ public class AutoTrade extends BaseModule {
                 && !pathingSchedular.isPathing()
                 && isWithinInteractionRange(currentTarget.villager())
                 && Interact.INSTANCE != null
-                && Interact.INSTANCE.interactEntity(currentTarget.villager())) {
-            markCooldown(currentTarget.villager(), tick);
-            pendingVillager = currentTarget.villager();
-            pendingTarget = currentTarget;
-            pendingInteractionTick = tick;
+                && !SequencedActionManager.INSTANCE.getEntityInteractTracker()
+                        .isWaitingResponse(currentTarget.villager())) {
+            boolean completed = Interact.INSTANCE.interactEntity(currentTarget.villager());
+            SequencedActionManager.INSTANCE.getEntityInteractTracker().postInteract(currentTarget.villager());
+            if (completed) {
+                markCooldown(currentTarget.villager(), tick);
+                pendingVillager = currentTarget.villager();
+                pendingTarget = currentTarget;
+                pendingInteractionTick = tick;
+            }
         }
         tickSchedulers();
     }
