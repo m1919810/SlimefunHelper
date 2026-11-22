@@ -914,7 +914,7 @@ public class InvTasks {
     private static SaveItem saveItem;
 
     @Getter
-    private static NbtTooltips nbtTooltips;
+    private static InvTooltips invTooltips;
 
     @Getter
     //
@@ -948,7 +948,7 @@ public class InvTasks {
         itemEditor = new ItemEditor().register(m);
         quickButton = new QuickButton().register(m);
         saveItem = new SaveItem().register(m);
-        nbtTooltips = new NbtTooltips().register(m);
+        invTooltips = new InvTooltips().register(m);
     }
 
     static {
