@@ -30,8 +30,13 @@ accessible method net/minecraft/component/ComponentChanges <init> (Lit/unimi/dsi
 accessible field net/minecraft/client/render/GameRenderer buffers Lnet/minecraft/client/render/BufferBuilderStorage;
 accessible field net/minecraft/client/MinecraftClient disconnecting Z
 accessible field net/minecraft/entity/LivingEntity LIVING_FLAGS Lnet/minecraft/entity/data/TrackedData;
+accessible class net/minecraft/entity/PositionInterpolator$Data
+accessible field net/minecraft/entity/PositionInterpolator data Lnet/minecraft/entity/PositionInterpolator$Data;
+accessible field net/minecraft/entity/PositionInterpolator lastPos Lnet/minecraft/util/math/Vec3d;
+accessible field net/minecraft/entity/PositionInterpolator$Data step I
 accessible method net/minecraft/entity/Entity adjustMovementForCollisions (Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/util/math/Vec3d;
 accessible method net/minecraft/entity/Entity adjustMovementForSneaking (Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/entity/MovementType;)Lnet/minecraft/util/math/Vec3d;
+accessible method net/minecraft/entity/player/PlayerEntity adjustMovementForSneaking (Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/entity/MovementType;)Lnet/minecraft/util/math/Vec3d;
 accessible method net/minecraft/entity/Entity findCollisionsForMovement (Lnet/minecraft/entity/Entity;Lnet/minecraft/world/World;Ljava/util/List;Lnet/minecraft/util/math/Box;)Ljava/util/List;
 accessible method net/minecraft/entity/Entity adjustMovementForCollisions (Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/util/math/Box;Ljava/util/List;)Lnet/minecraft/util/math/Vec3d;
 accessible method net/minecraft/block/AbstractBlock getCollisionShape (Lnet/minecraft/block/BlockState;Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/ShapeContext;)Lnet/minecraft/util/shape/VoxelShape;

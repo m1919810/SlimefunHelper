@@ -20,11 +20,10 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
-import net.minecraft.client.network.OtherClientPlayerEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.AttackRangeComponent;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
@@ -117,8 +116,7 @@ public class CombatExtra extends BaseModule {
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onMovementPacket);
         registerListener(
                 Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class), this::onClientTickEndPacket);
-        registerListener(
-                Listener.getEntityTrackedPositionUpdate().getChannel(EntityType.PLAYER), this::onTrackedPosition);
+        registerListener(Listener.getEntityTrackedPositionUpdate(), this::onTrackedPosition);
     }
 
     public int shieldExceptionspam = 0;
@@ -219,52 +217,64 @@ public class CombatExtra extends BaseModule {
         var access = PlayerMoveC2SPacketAccess.of(packetEvent.context);
         if (access.getCause() != PlayerMoveC2SPacketAccess.Cause.SET_BACK
                 && access.getCause() != PlayerMoveC2SPacketAccess.Cause.LEGACY_SNAP) {
-            mc.world.getPlayers().forEach(s -> {
-                if (s instanceof OtherClientPlayerEntity) {
-                    tickEntity(s);
+            mc.world.getEntities().forEach(entity -> {
+                if (entity instanceof LivingEntity) {
+                    tickEntity(entity);
                 }
             });
         }
     }
 
     private void tickEntity(Entity entity) {
+        getTracker(entity).onMovement(maySkipInterpolationTick());
+    }
+
+    public boolean maySkipInterpolationTick() {
         boolean tickReliable = !DisablerManager.INSTANCE.isGrimSelfCheckDisabled()
                 && (ViaFabricPlusHooks.isSupportEndTick() || mc.player.hasVehicle());
-        getTracker(entity).onMovement(!tickReliable);
+        return !tickReliable;
     }
 
     public void onClientTickEndPacket() {
         if (ViaFabricPlusHooks.isSupportEndTick() && !PlayerStateManager.INSTANCE.lastTickHasMovement) {
-            mc.world.getPlayers().forEach(s -> {
-                if (s instanceof OtherClientPlayerEntity) {
-                    tickEntity(s);
+            mc.world.getEntities().forEach(entity -> {
+                if (entity instanceof LivingEntity) {
+                    tickEntity(entity);
                 }
             });
         }
     }
 
     public void onTrackedPosition(Event<PosUpdate> event) {
-        if (event.context.entity() instanceof OtherClientPlayerEntity entities) {
-            getTracker(entities)
+        if (event.context.entity() instanceof LivingEntity living) {
+            getTracker(living)
                     .onEntityPos(
-                            event.context.newPos(), !entities.hasVehicle() && !ViaFabricPlusHooks.isSupportEndTick());
+                            living,
+                            event.context.newPos(),
+                            !living.hasVehicle() && !ViaFabricPlusHooks.isSupportEndTick());
         }
     }
 
     private static final String KEY_TRACKER = "slimefunhelper:combat_extra/position_tracker";
 
-    public PlayerPositionTracker getTracker(Entity player) {
-        return ((MetadataHolder) player).getMetadata().getOrPut(this, KEY_TRACKER, PlayerPositionTracker::new);
+    public LivingPositionTracker getTracker(Entity entity) {
+        return ((MetadataHolder) entity).getMetadata().getOrPut(this, KEY_TRACKER, LivingPositionTracker::new);
     }
 
-    public static class PlayerPositionTracker {
-        private static final int interpolationSteps = 3;
-
+    public static class LivingPositionTracker {
         private InterpolationData oldPacketLocation;
         private InterpolationData newPacketLocation;
         private Vec3d trackedPosition;
 
-        public void onEntityPos(Vec3d pos, boolean maySkipTick) {
+        public void onEntityPos(LivingEntity entity, Vec3d pos, boolean maySkipTick) {
+            boolean instant = entity.getInterpolator() == null;
+            int interpolationSteps = instant ? 1 : 3;
+            if (instant) {
+                trackedPosition = pos;
+                oldPacketLocation = null;
+                newPacketLocation = new InterpolationData(pos, interpolationSteps, false);
+                return;
+            }
             if (trackedPosition == null || newPacketLocation == null) {
                 trackedPosition = pos;
                 oldPacketLocation = null;
@@ -297,6 +307,45 @@ public class CombatExtra extends BaseModule {
                         .union(expand(newPacketLocation.possiblePositions(), entity))
                         .union(entity.getBoundingBox());
             }
+        }
+
+        public Box getNextInteractBox(Entity entity, int ticksLater, boolean maySkipTick) {
+            return getNextInterpolatedBox(entity, ticksLater, maySkipTick);
+        }
+
+        public Box getNextInterpolatedBox(Entity entity, int ticksLater, boolean maySkipTick) {
+            if (ticksLater <= 0) return getInteractBox(entity);
+            if (newPacketLocation == null) return entity.getBoundingBox();
+            return predictInterpolation(entity, ticksLater, maySkipTick);
+        }
+
+        public Vec3d getNextInterpolatedPosition(Entity entity, int ticksLater, boolean maySkipTick) {
+            if (ticksLater <= 0) return entity.getPos();
+            if (newPacketLocation == null) {
+                Vec3d tracked = entity.getTrackedPosition().getPos();
+                return tracked.equals(Vec3d.ZERO) ? entity.getPos() : tracked;
+            }
+            return getNextInterpolatedBox(entity, ticksLater, maySkipTick)
+                    .getCenter()
+                    .subtract(0.0, entity.dimensions.height() / 2.0, 0.0);
+        }
+
+        private Box predictInterpolation(Entity entity, int ticksLater, boolean maySkipTick) {
+            InterpolationData predictedOld = oldPacketLocation == null ? null : oldPacketLocation.copy();
+            InterpolationData predictedNew = newPacketLocation.copy();
+            for (int i = 0; i < ticksLater; i++) {
+                predictedNew.step(predictedOld == null, maySkipTick);
+                if (predictedOld != null) {
+                    predictedOld.step(true, maySkipTick);
+                    predictedNew.includePossibleStartingRange(predictedOld.possiblePositions());
+                }
+            }
+
+            Box predictedBox = expand(predictedNew.possiblePositions(), entity).union(entity.getBoundingBox());
+            if (predictedOld != null) {
+                predictedBox = predictedBox.union(expand(predictedOld.possiblePositions(), entity));
+            }
+            return predictedBox;
         }
 
         private Box expand(Box box, Entity entity) {
@@ -353,6 +402,13 @@ public class CombatExtra extends BaseModule {
 
         public void includePossibleStartingRange(Box previousRange) {
             startRange = startRange.union(previousRange);
+        }
+
+        private InterpolationData copy() {
+            InterpolationData copy = new InterpolationData(startRange, target, steps, false);
+            copy.lowStep = lowStep;
+            copy.highStep = highStep;
+            return copy;
         }
 
         private static double lerp(double from, double to, double t) {
