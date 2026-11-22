@@ -13,6 +13,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.combat.TargetSelector;
 import me.matl114.hacks.modules.interact.Interact;
+import me.matl114.hacks.modules.interact.SequencedActionManager;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.FarmingUtils;
@@ -24,7 +25,6 @@ import me.matl114.hacks.utils.move.PathingSchedular;
 import me.matl114.hacks.utils.move.goal.IPathGoal;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
-import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
@@ -101,7 +101,6 @@ public class AutoBreed extends BaseModule {
     private final PathingSchedular pathingSchedular = new PathingSchedular();
     private AnimalEntity targetAnimal;
     private AnimalPen targetPen;
-    private int lastInteractTick;
     private final RenderCollector<Entity> entityRenderCollector =
             RenderCollectors.createEntityBoxCollector(true, false, false);
     private final RenderCollector<Box> renderCollector = RenderCollectors.createBoxCollector(true, false, false);
@@ -205,7 +204,9 @@ public class AutoBreed extends BaseModule {
             return;
         }
         IndexEntry<ItemStack> breedItem = findBreedItem(targetAnimal);
-        if (breedItem == null || lastInteractTick + 5 >= Tasks.getTick() || Interact.INSTANCE == null) {
+        if (breedItem == null
+                || SequencedActionManager.INSTANCE.getEntityInteractTracker().isWaitingResponse(targetAnimal)
+                || Interact.INSTANCE == null) {
             return;
         }
         Runnable restore = InvExtra.INSTANCE.swapItemToHand(breedItem.index(), false);
@@ -213,11 +214,11 @@ public class AutoBreed extends BaseModule {
             return;
         }
         boolean completed = Interact.INSTANCE.interactEntity(targetAnimal);
+        SequencedActionManager.INSTANCE.getEntityInteractTracker().postInteract(targetAnimal);
         Interact.INSTANCE.finishEntityGhostHand(completed, restore);
         if (targetAnimal.isBaby()) {
             incrementBabyBreedCount(targetAnimal);
         }
-        lastInteractTick = Tasks.getTick();
     }
 
     private int getBabyBreedCount(AnimalEntity animal) {

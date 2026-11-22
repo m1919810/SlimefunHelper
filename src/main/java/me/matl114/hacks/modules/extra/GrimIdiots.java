@@ -13,6 +13,7 @@ import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.interact.Interact;
+import me.matl114.hacks.modules.interact.SequencedActionManager;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.PlayerInputManager;
 import me.matl114.hacks.modules.task.DisablerManager;
@@ -23,7 +24,6 @@ import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.hacks.utils.interact.InteractRequest;
 import me.matl114.hacks.utils.interact.InteractionQueue;
 import me.matl114.hacks.utils.interact.TaskAction;
-import me.matl114.hacks.utils.tasks.TimerExecutor;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -498,28 +498,27 @@ public class GrimIdiots extends BaseModule {
                 && InventoryUtils.findPlayerItem(ItemStack::isEmpty, false, true) != null;
     }
 
-    TimerExecutor executor = new TimerExecutor();
-
     private void tickAutoNameWither() {
         if (autoName.get()) {
-            if (executor.canRun(2)) {
-                for (var re : mc.world.getEntitiesByType(
-                        EntityType.WITHER,
-                        mc.player.getBoundingBox().expand(8, 8, 8),
-                        entity -> !entity.hasCustomName())) {
-                    if (!re.hasCustomName()) {
-                        var entry = InventoryUtils.findPlayerItem(
-                                stack -> stack.isOf(Items.NAME_TAG) && stack.contains(DataComponentTypes.CUSTOM_NAME),
-                                false,
-                                false);
-                        if (entry != null) {
-                            var val = InvExtra.INSTANCE.swapItemToHand(entry.index(), false, GhostHandMode.INV_SWAP);
-                            if (val != null) {
-                                Interact.INSTANCE.interactEntity(re);
-                                val.run();
-                                executor.mark();
-                                return;
-                            }
+            for (var re : mc.world.getEntitiesByType(
+                    EntityType.WITHER,
+                    mc.player.getBoundingBox().expand(8, 8, 8),
+                    entity -> !entity.hasCustomName())) {
+                if (SequencedActionManager.INSTANCE.getEntityInteractTracker().isWaitingResponse(re)) {
+                    continue;
+                }
+                if (!re.hasCustomName()) {
+                    var entry = InventoryUtils.findPlayerItem(
+                            stack -> stack.isOf(Items.NAME_TAG) && stack.contains(DataComponentTypes.CUSTOM_NAME),
+                            false,
+                            false);
+                    if (entry != null) {
+                        var val = InvExtra.INSTANCE.swapItemToHand(entry.index(), false, GhostHandMode.INV_SWAP);
+                        if (val != null) {
+                            Interact.INSTANCE.interactEntity(re);
+                            SequencedActionManager.INSTANCE.getEntityInteractTracker().postInteract(re);
+                            val.run();
+                            return;
                         }
                     }
                 }

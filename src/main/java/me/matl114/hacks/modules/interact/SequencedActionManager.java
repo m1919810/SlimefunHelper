@@ -16,6 +16,7 @@ import me.matl114.events.impl.SequencedAction;
 import me.matl114.events.impl.UseItem;
 import me.matl114.events.impl.UseItemOnBlock;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.utils.interact.EntityInteractionTracker;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.collections.IndexEntry;
 import net.minecraft.block.BlockState;
@@ -30,6 +31,9 @@ import net.minecraft.util.math.BlockPos;
 
 public class SequencedActionManager extends BaseModule {
     public static SequencedActionManager INSTANCE;
+
+    @Getter
+    private final EntityInteractionTracker entityInteractTracker = new EntityInteractionTracker();
 
     public SequencedActionManager() {
         super("SequencedActionManager");
