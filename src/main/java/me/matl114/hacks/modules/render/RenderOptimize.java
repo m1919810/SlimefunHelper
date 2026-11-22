@@ -122,7 +122,7 @@ public class RenderOptimize extends BaseModule {
         registerListener(Listener.getEntityPreTickListener(), this::onEntityCullingTick);
         registerListener(Listener.getEntityPreTickListener(), this::onEntityLabelShowTick);
         registerListener(Listener.getBlockEntityTickListener(), this::onBlockEntityTick);
-        registerListener(Listener.getPostGameTick(), this::onCacheClean);
+        registerListener(Listener.getPostTick(), this::onCacheClean);
         registerListener(Listener.getPreGameTick(), this::onBlockEntityCullingTick);
 
         registerListener(RenderListener.getEntityRenderListener(), this::onEntityRender);
@@ -449,6 +449,10 @@ public class RenderOptimize extends BaseModule {
     private int tickCounter = 0;
 
     public void onCacheClean() {
+        if (checkNull()) {
+            cache.clear();
+            return;
+        }
         if (cullingUseRaycast.get()) {
             tickCounter += 1;
             if (tickCounter > 1) {

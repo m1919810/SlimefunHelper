@@ -92,7 +92,7 @@ public class ChatTools extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostGameTick(), this::onTick);
+        registerListener(Listener.getPostTick(), this::onTick);
         registerListener(Listener.getPostInitializeScreen().getChannel(ChatScreen.class), this::onChatScreenInitialize);
         registerListener(Listener.getPreSetScreen(), this::onCloseChatScreen);
         registerListener(Listener.getPostInitializeScreen().getChannel(ChatScreen.class), this::fixIMBlockerStateError);
@@ -113,6 +113,7 @@ public class ChatTools extends BaseModule {
     public int counter = 0;
 
     public void onTick() {
+        if (checkNull()) return;
         if (mc.getNetworkHandler() != null && autoSend.get()) {
             counter += 1;
             if (counter >= period.getValue()) {

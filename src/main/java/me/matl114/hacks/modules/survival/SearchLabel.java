@@ -284,7 +284,7 @@ public class SearchLabel extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(XaeroHelper.getWorldSwitchPoint(), this::onWorldSwitch);
-        registerListener(Listener.getPostGameTick(), this::onPostTick);
+        registerListener(Listener.getPostTick(), this::onPostTick);
         registerListener(Listener.getServerEntitySpawnListener(), this::onEntitySpawn);
         registerListener(Listener.getChunkUpdateListener(), this::onChunkPostLoad);
         registerListener(
@@ -320,6 +320,7 @@ public class SearchLabel extends BaseModule {
     }
 
     public void onPostTick() {
+        if (checkNull()) return;
         if (enable.get() && labelInWorldMap.get() && !Objects.equals(loadedWorld, mc.world.getRegistryKey())) {
             loadCurrentData();
         }

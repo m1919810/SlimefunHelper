@@ -128,7 +128,7 @@ public class TrialInfoESP extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostGameTick(), this::onTick);
+        registerListener(Listener.getPostTick(), this::onTick);
         registerListener(RenderListener.getRender3DEvent(), this::onRender3D);
         registerListener(Listener.getWorldSwitchPoint(), this::onSwitchWorld);
         registerListener(

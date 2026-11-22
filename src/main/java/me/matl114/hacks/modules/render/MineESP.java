@@ -110,7 +110,7 @@ public class MineESP extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostGameTick(), this::onUpdate);
+        registerListener(Listener.getPostTick(), this::onUpdate);
         registerListener(RenderListener.getRender3DEvent(), this::onRender3D);
         registerListener(RenderListener.getRender2DEvent(), this::onRender2D);
     }
