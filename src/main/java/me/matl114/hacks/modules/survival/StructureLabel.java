@@ -31,18 +31,18 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.utils.Debug;
 import me.matl114.utils.render.RenderCollector;
-import me.matl114.utils.structures.ChunkRange;
-import me.matl114.utils.structures.CubiomesNetherBiomeSampler;
-import me.matl114.utils.structures.CubiomesOverworldBiomeSampler;
-import me.matl114.utils.structures.EndCityResult;
-import me.matl114.utils.structures.LootVersion;
-import me.matl114.utils.structures.Populator;
-import me.matl114.utils.structures.PredictedChest;
-import me.matl114.utils.structures.PredictedChestAlternatives;
-import me.matl114.utils.structures.StructureConfig;
-import me.matl114.utils.structures.StructureDecorationIndex;
-import me.matl114.utils.structures.StructurePosition;
 import me.matl114.utils.world.ContainerPosition;
+import me.matl114.utils.worldgen.loot.LootVersion;
+import me.matl114.utils.worldgen.structures.ChunkRange;
+import me.matl114.utils.worldgen.structures.CubiomesNetherBiomeSampler;
+import me.matl114.utils.worldgen.structures.CubiomesOverworldBiomeSampler;
+import me.matl114.utils.worldgen.structures.EndCityResult;
+import me.matl114.utils.worldgen.structures.Populator;
+import me.matl114.utils.worldgen.structures.PredictedChest;
+import me.matl114.utils.worldgen.structures.PredictedChestAlternatives;
+import me.matl114.utils.worldgen.structures.StructureConfig;
+import me.matl114.utils.worldgen.structures.StructureDecorationIndex;
+import me.matl114.utils.worldgen.structures.StructurePosition;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.inventory.Inventory;
@@ -67,9 +67,9 @@ public class StructureLabel extends BaseModule {
             Math.max(1, Runtime.getRuntime().availableProcessors() / 4);
     private static final int LOOT_EXECUTOR_THREAD_COUNT =
             Math.max(1, Runtime.getRuntime().availableProcessors() / 2);
-    private static final ExecutorService structureExecutor =
+    static final ExecutorService structureExecutor =
             Executors.newFixedThreadPool(STRUCTURE_EXECUTOR_THREAD_COUNT, StructureLabel::daemonThread);
-    private static final ThreadPoolExecutor lootExecutor = new ThreadPoolExecutor(
+    static final ThreadPoolExecutor lootExecutor = new ThreadPoolExecutor(
             LOOT_EXECUTOR_THREAD_COUNT,
             LOOT_EXECUTOR_THREAD_COUNT,
             0L,
