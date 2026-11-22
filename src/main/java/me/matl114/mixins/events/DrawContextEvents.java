@@ -32,8 +32,8 @@ public abstract class DrawContextEvents {
             TooltipPositioner positioner,
             @org.jspecify.annotations.Nullable Identifier texture,
             Operation<Void> original) {
-        TooltipsRender tooltipRender = new TooltipsRender(
-                VDrawContext.of((DrawContext) (Object) this), components, x, y, positioner, texture);
+        TooltipsRender tooltipRender =
+                new TooltipsRender(VDrawContext.of((DrawContext) (Object) this), components, x, y, positioner, texture);
         RenderListener.getRenderTooltipEvent().broadcast(tooltipRender);
         original.call(textRenderer, components, tooltipRender.x, tooltipRender.y, positioner, texture);
     @Shadow
