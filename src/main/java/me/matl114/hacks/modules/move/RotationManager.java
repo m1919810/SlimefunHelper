@@ -293,10 +293,28 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
     public static class BoxRaycastRequest<T> extends RotationRequestImpl<T> {
         private final RayCastCalculator<T> calculator;
         private final Supplier<T> targetSupplier;
+        private Function<ClientPlayerEntity, Vec3d> raycastPosition;
+        private int lastPositionUpdate = Integer.MIN_VALUE;
+        private Vec3d cachedRaycastPosition;
 
         public BoxRaycastRequest(RayCastCalculator<T> calculator, Supplier<T> targetSupplier) {
             this.calculator = Objects.requireNonNull(calculator, "calculator");
             this.targetSupplier = Objects.requireNonNull(targetSupplier, "targetSupplier");
+        }
+
+        public BoxRaycastRequest<T> raycastPosition(Function<ClientPlayerEntity, Vec3d> position) {
+            this.raycastPosition = Objects.requireNonNull(position, "position");
+            return this;
+        }
+
+        private Vec3d getRaycastPosition(ClientPlayerEntity player, Vec3d fallback) {
+            if (raycastPosition == null) return fallback;
+            int tick = Tasks.getTick();
+            if (cachedRaycastPosition == null || lastPositionUpdate != tick) {
+                lastPositionUpdate = tick;
+                cachedRaycastPosition = raycastPosition.apply(player);
+            }
+            return cachedRaycastPosition;
         }
 
         @MustBeInvokedByOverriders
@@ -304,7 +322,7 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
         protected @Nullable Rotation calculateRotationPre(ClientPlayerEntity player, Rotation currentModification) {
             T target = targetSupplier.get();
             if (target == null) return null;
-            Vec3d pos = player.getPos();
+            Vec3d pos = getRaycastPosition(player, player.getPos());
             if (!currentModification.hasRotate()) {
                 Vec3d direction = calculator.getRaycast(pos, target);
                 return direction == null ? null : Rotation.from(direction.normalize());
@@ -333,7 +351,10 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
             T target = targetSupplier.get();
             return target != null
                     && calculator.canRayCast(
-                            pos, target, rotation.getPitch(player.getPitch()), rotation.getYaw(player.getYaw()));
+                            getRaycastPosition(player, pos),
+                            target,
+                            rotation.getPitch(player.getPitch()),
+                            rotation.getYaw(player.getYaw()));
         }
     }
 
@@ -443,6 +464,40 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
 
     public static BoxRaycastRequest<Entity> ofEntity(Supplier<Entity> entitySupplier) {
         return new BoxRaycastRequest<>(TargetSelector.INSTANCE, entitySupplier);
+    }
+
+    public static BoxRaycastRequest<Entity> ofEntity(Supplier<Entity> entitySupplier, int ticksLater) {
+        int initialTick = Tasks.getTick();
+        Entity initialTarget = entitySupplier.get();
+        Box initialBox =
+                initialTarget == null ? null : TargetSelector.INSTANCE.getEffectiveBox(initialTarget, ticksLater);
+        RayCastCalculator<Entity> calculator = new RayCastCalculator<>() {
+            private int lastUpdate = initialTick;
+            private Entity cachedTarget = initialTarget;
+            private Box cachedBox = initialBox;
+
+            @Override
+            public Box getEffectiveBox(Entity target) {
+                int tick = Tasks.getTick();
+                if (cachedBox == null || lastUpdate != tick || cachedTarget != target) {
+                    lastUpdate = tick;
+                    cachedTarget = target;
+                    cachedBox = TargetSelector.INSTANCE.getEffectiveBox(target, ticksLater);
+                }
+                return cachedBox;
+            }
+
+            @Override
+            public double getReachDistance(Entity target) {
+                return TargetSelector.INSTANCE.getReachDistance(target);
+            }
+
+            @Override
+            public java.util.stream.Stream<Vec3d> getPotentialEyeHeights(Vec3d pos) {
+                return TargetSelector.INSTANCE.getPotentialEyeHeights(pos);
+            }
+        };
+        return new BoxRaycastRequest<>(calculator, entitySupplier);
     }
 
     private static boolean lastAdd;

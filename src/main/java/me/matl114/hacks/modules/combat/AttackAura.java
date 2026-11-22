@@ -275,9 +275,12 @@ public class AttackAura extends BaseModule {
             if (custom <= interval) {
                 if (attack.legalTargetingMode.get().isLegal()
                         || ((holdingWeapon && cooldownWeapon.get()) || (!holdingWeapon && cooldownHand.get()))) {
+                    int predictionTicks = Math.max(1, attack.getModePredictTicks());
                     Entity entity = onlyFront.get().isPresent()
-                            ? attack.getCurrentSelectTarget(true, this::isWithinAttackAngle)
-                            : attack.getCurrentSelectTarget(true);
+                            ? CombatTasks.getTargetSelector()
+                                    .searchAttackEntity(
+                                            attack.getTpSelectRange(), true, predictionTicks, this::isWithinAttackAngle)
+                            : attack.getCurrentSelectTarget(true, predictionTicks);
                     if (entity == null) return;
                     attack.submitCurrentTickAttackTarget(entity);
                     tickAttack(entity);

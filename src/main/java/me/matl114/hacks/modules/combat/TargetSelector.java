@@ -48,6 +48,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.PositionInterpolator;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.entity.mob.MobEntity;
@@ -387,10 +388,45 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
 
     @Override
     public Box getEffectiveBox(Entity entity) {
-        if (grimInterpolateBox.get() && entity instanceof OtherClientPlayerEntity) {
+        if (entity instanceof PlayerEntity && !(entity instanceof OtherClientPlayerEntity)) {
+            return entity.getBoundingBox();
+        }
+        if (grimInterpolateBox.get() && entity instanceof LivingEntity) {
             return CombatExtra.INSTANCE.getTracker(entity).getInteractBox(entity);
         }
         return entity.getBoundingBox();
+    }
+
+    public Box getEffectiveBox(Entity entity, int ticksLater) {
+        if (ticksLater <= 0 || entity instanceof PlayerEntity && !(entity instanceof OtherClientPlayerEntity)) {
+            return getEffectiveBox(entity);
+        }
+        if (grimInterpolateBox.get() && entity instanceof LivingEntity) {
+            return CombatExtra.INSTANCE
+                    .getTracker(entity)
+                    .getNextInterpolatedBox(entity, ticksLater, CombatExtra.INSTANCE.maySkipInterpolationTick());
+        }
+        return grimInterpolateBox.get() ? entity.getBoundingBox() : getVanillaInterpolatedBox(entity, ticksLater);
+    }
+
+    private Box getVanillaInterpolatedBox(Entity entity, int ticksLater) {
+        PositionInterpolator interpolator = entity.getInterpolator();
+        if (interpolator == null || !interpolator.isInterpolating()) return entity.getBoundingBox();
+
+        int remaining = interpolator.data.step;
+        Vec3d pos = entity.getPos();
+        Vec3d target = interpolator.getLerpedPos();
+        Vec3d lastPos = interpolator.lastPos;
+        if (lastPos != null) {
+            Vec3d delta = pos.subtract(lastPos);
+            if (entity.getEntityWorld().isSpaceEmpty(entity, entity.dimensions.getBoxAt(target.add(delta)))) {
+                target = target.add(delta);
+            }
+        }
+        for (int i = 0; i < ticksLater && remaining > 0; i++, remaining--) {
+            pos = pos.add(target.subtract(pos).multiply(1.0 / remaining));
+        }
+        return entity.getBoundingBox().offset(pos.subtract(entity.getPos()));
     }
 
     public Stream<Vec3d> getPotentialEyeHeights(Vec3d pos) {
@@ -718,13 +754,14 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
         return getAttackableEntities(nearbyOverride, 0, this::canAttack);
     }
 
-    public List<Entity> getAttackableEntities(double nearbyOverride, int ticks, Predicate<Entity> predicate) {
-        if (mc.world == null) {
+    public List<Entity> getAttackableEntities(double nearbyOverride, int ticksLater, Predicate<Entity> predicate) {
+        if (mc.world == null || mc.player == null) {
             return List.of();
         }
         List<Entity> entities = new ArrayList<>();
         for (var re : mc.world.getEntities()) {
-            if (isTargetInRange(re, nearbyOverride, ticks) && predicate.test(re)) {
+            double range = Math.max(nearbyOverride, CombatExtra.INSTANCE.getAttackAtTargetRange(re));
+            if (isWithinAttackRange(mc.player.getPos(), getEffectiveBox(re, ticksLater), range) && predicate.test(re)) {
                 entities.add(re);
             }
         }
@@ -751,12 +788,10 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
         return entities;
     }
 
-    public boolean isTargetInRange(Entity e, double nearby, int ticks) {
+    public boolean isTargetInRange(Entity e, double nearby) {
         if (mc.player == null) return false;
         nearby = Math.max(nearby, CombatExtra.INSTANCE.getAttackAtTargetRange(e));
-        Vec3d predictedPlayerPos =
-                mc.player.getPos().add(mc.player.getVelocity().multiply(mc.player.isFallFlying() ? ticks : 0));
-        return isWithinAttackRange(predictedPlayerPos, e, nearby);
+        return isWithinAttackRange(mc.player.getPos(), e, nearby);
     }
 
     public Entity searchAttackEntity(double nearby, boolean autoSelect) {
