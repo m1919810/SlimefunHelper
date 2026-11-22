@@ -2,10 +2,14 @@ package me.matl114.hacks.modules.inv;
 
 import java.util.List;
 import me.matl114.events.Event;
+import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
+import me.matl114.events.impl.MouseScrollAction;
+import me.matl114.events.impl.TooltipsRender;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.managers.Configs;
+import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
@@ -21,14 +25,13 @@ import net.minecraft.nbt.NbtString;
 import net.minecraft.nbt.visitor.NbtTextFormatter;
 import net.minecraft.text.Text;
 
-public class NbtTooltips extends BaseModule {
-    // todo: nbt tooltips
-    public final ModulePath itemEditor = makePath(Configs.INV_CONFIG, "item-editor");
-    public final ModulePath nbtTooltips = itemEditor.add("nbt-tooltips");
+public class InvTooltips extends BaseModule {
+    public final ModulePath invTooltips = makePath(Configs.INV_CONFIG, "item-editor.inv-tooltips");
+    public final ModulePath nbtTooltips = invTooltips.add("nbt-tooltips");
+    public final ModulePath tooltipsScroller = invTooltips.add("tooltips-scroller");
 
-    public NbtTooltips() {
-        super("NbtTooltips");
-        bindFlag(enable);
+    public InvTooltips() {
+        super("InvTooltips");
     }
 
     public final FlagRef enable = flagBuilder(nbtTooltips.add("enable")).build();
@@ -36,6 +39,9 @@ public class NbtTooltips extends BaseModule {
     public final KeyBindRef keyBind = hotkey(nbtTooltips.add("show-hotkey"))
             .defaultValue(new MultiKeyBind(KeyCode.KEY_LEFT_ALT))
             .build();
+
+    public final FlagRef scrollingTooltips =
+            flagBuilder(tooltipsScroller.add("enable")).build();
 
     public final IntRef width = intBuilder(nbtTooltips.add("width"))
             .defaultValue(360)
@@ -47,10 +53,17 @@ public class NbtTooltips extends BaseModule {
             .validator(Configs.INT_NONNEGATIVE)
             .build();
 
+    private int lastTooltipRenderTick = -1;
+    private double tooltipScrollAmount;
+
+    private static final int SCROLL_PIXELS_PER_NOTCH = 10;
+
     @Override
     public void registerAll() {
         super.registerAll();
         registerListener(RenderListener.getTooltipShow(), this::onTooltipsAppend);
+        registerListener(RenderListener.getRenderTooltipEvent(), this::onTooltipRender);
+        registerListener(Listener.getMouseScroll(), this::onTooltipScroll);
     }
 
     public void onTooltipsAppend(Event<List<Text>> renderEvent) {
@@ -58,6 +71,33 @@ public class NbtTooltips extends BaseModule {
             ItemStack stack = renderEvent.getArgs(0);
             renderEvent.context.addAll(getTooltipLines(stack));
         }
+    }
+
+    private void onTooltipScroll(Event<MouseScrollAction> event) {
+        if (!isScrollingActive()) {
+            tooltipScrollAmount = 0;
+            return;
+        }
+
+        double vertical = event.context.vertical();
+        if (vertical != 0) {
+            tooltipScrollAmount -= vertical * SCROLL_PIXELS_PER_NOTCH;
+            event.cancel();
+        }
+    }
+
+    private void onTooltipRender(Event<TooltipsRender> event) {
+        if (isScrollingActive()) {
+            event.context.y += (int) tooltipScrollAmount;
+        } else {
+            tooltipScrollAmount = 0;
+        }
+        lastTooltipRenderTick = Tasks.getTick();
+    }
+
+    private boolean isScrollingActive() {
+        long ticksSinceRender = (long) Tasks.getTick() - lastTooltipRenderTick;
+        return scrollingTooltips.get() && lastTooltipRenderTick >= 0 && ticksSinceRender >= 0 && ticksSinceRender <= 1;
     }
 
     public List<Text> getTooltipLines(ItemStack stack) {
