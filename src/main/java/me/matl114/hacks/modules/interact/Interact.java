@@ -167,7 +167,7 @@ public class Interact extends BaseModule {
     }
 
     public boolean canInteract(Entity entity, double range) {
-        if (!TargetSelector.INSTANCE.isTargetInRange(entity, range, 0)) {
+        if (!TargetSelector.INSTANCE.isTargetInRange(entity, range)) {
             return false;
         }
         if (entity.isAlive() && !entity.isSpectator() && interactWhiteList.get().test(entity.getType())) {

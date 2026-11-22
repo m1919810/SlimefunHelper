@@ -618,10 +618,13 @@ public class RaycastUtils {
     }
 
     public static boolean canRaycastHit(PlayerEntity player, float pitch, float yaw, Entity target, double distance) {
+        return canRaycastHit(player, pitch, yaw, target.getBoundingBox(), distance);
+    }
+
+    public static boolean canRaycastHit(PlayerEntity player, float pitch, float yaw, Box targetBox, double distance) {
         Vec3d vec3d = player.getEyePos();
         Vec3d look = EntityUtils.pitchYawToRotation(pitch, yaw);
         Vec3d raycast = look.normalize().multiply(distance);
-        Box targetBox = target.getBoundingBox();
         return targetBox.raycast(vec3d, vec3d.add(raycast)).isPresent();
     }
 
