@@ -11,8 +11,10 @@ public class TooltipsRender {
     public final VDrawContext context;
     public final List<TooltipComponent> components;
     public final TooltipPositioner positioner;
+
     @Nullable
     public final Identifier texture;
+
     public int x;
     public int y;
 

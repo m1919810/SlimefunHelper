@@ -172,7 +172,8 @@ public class AutoTrade extends BaseModule {
                 && !pathingSchedular.isPathing()
                 && isWithinInteractionRange(currentTarget.villager())
                 && Interact.INSTANCE != null
-                && !SequencedActionManager.INSTANCE.getEntityInteractTracker()
+                && !SequencedActionManager.INSTANCE
+                        .getEntityInteractTracker()
                         .isWaitingResponse(currentTarget.villager())) {
             boolean completed = Interact.INSTANCE.interactEntity(currentTarget.villager());
             SequencedActionManager.INSTANCE.getEntityInteractTracker().postInteract(currentTarget.villager());

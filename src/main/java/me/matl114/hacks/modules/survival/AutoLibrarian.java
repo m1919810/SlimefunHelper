@@ -408,7 +408,8 @@ public class AutoLibrarian extends BaseModule {
                 }
             } else if (mc.currentScreen == null || mc.currentScreen instanceof HandledScreen<?>) {
                 if (!hasOpened
-                        && !SequencedActionManager.INSTANCE.getEntityInteractTracker()
+                        && !SequencedActionManager.INSTANCE
+                                .getEntityInteractTracker()
                                 .isWaitingResponse(entity -> entity instanceof VillagerEntity)) {
                     Interact.INSTANCE.interactEntity(targetVillager);
                     SequencedActionManager.INSTANCE.getEntityInteractTracker().postInteract(targetVillager);
