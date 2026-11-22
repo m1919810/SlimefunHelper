@@ -40,7 +40,6 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
@@ -328,16 +327,16 @@ public class InvExtra extends BaseModule {
         }
 
         int hotbarSlot = findHotbarCacheSlot();
-        if(hotbarSlot < 0 || hotbarSlot >= 9){
+        if (hotbarSlot < 0 || hotbarSlot >= 9) {
             return null;
         }
         int current = InventoryUtils.getSelectedSlot();
-        try{
+        try {
             InventoryUtils.setSelectedSlot(hotbarSlot);
             if (swapItemToHand(inventoryIndex, false) == null) {
                 return null;
             }
-        }finally {
+        } finally {
             InventoryUtils.setSelectedSlot(current);
         }
 
