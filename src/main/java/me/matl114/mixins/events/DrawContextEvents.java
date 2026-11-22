@@ -1,11 +1,15 @@
 package me.matl114.mixins.events;
 
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.events.GlobalEventVars;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.tooltip.TooltipComponent;
+import net.minecraft.client.gui.tooltip.TooltipPositioner;
+import net.minecraft.util.Identifier;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
@@ -19,6 +23,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(DrawContext.class)
 public abstract class DrawContextEvents {
+    @WrapMethod(method = "drawTooltipImmediately")
+    private void onRenderTooltip(
+            TextRenderer textRenderer,
+            List<TooltipComponent> components,
+            int x,
+            int y,
+            TooltipPositioner positioner,
+            @org.jspecify.annotations.Nullable Identifier texture,
+            Operation<Void> original) {
+        TooltipsRender tooltipRender = new TooltipsRender(
+                VDrawContext.of((DrawContext) (Object) this), components, x, y, positioner, texture);
+        RenderListener.getRenderTooltipEvent().broadcast(tooltipRender);
+        original.call(textRenderer, components, tooltipRender.x, tooltipRender.y, positioner, texture);
     @Shadow
     @Final
     private MinecraftClient client;
