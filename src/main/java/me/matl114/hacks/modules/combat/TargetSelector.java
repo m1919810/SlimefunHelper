@@ -25,6 +25,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.*;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.render.RenderCollectors;
+import me.matl114.hooks.MeteorHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.FileManager;
 import me.matl114.managers.command.MainCommand;
@@ -283,6 +284,9 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
             .defaultValue(new OptionalPrimitive<>(
                     false, NBTTypes.STRING_TYPE, "/msg %s I have just added you to my friends list!"))
             .build();
+
+    public final FlagRef loadMeteorFriends =
+            flagBuilder(attack.add("load-meteor-client-friends")).build();
 
     public final FlagRef attackFriend =
             builder(attack.add("att-friend"), FlagRef.TYPE).defaultValue(true).build();
@@ -612,7 +616,7 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
             // if it is not friendly to us, and attackHostile is enabled, then we can still attack them
         }
 
-        if (!isNotFriend(target)) {
+        if (!isNotFriendly(target)) {
             return false;
         }
 
@@ -634,14 +638,20 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
             return false;
         }
         FriendListStorage list = playerList;
-        return (list != null && list.contains(playerName));
+        if (list != null && list.contains(playerName)) {
+            return true;
+        }
+        if (loadMeteorFriends.get() && MeteorHooks.getInstance().isFriend(playerName)) {
+            return true;
+        }
+        return false;
     }
 
     public boolean isInFriendList(PlayerEntity e) {
         return isFriend(e.getNameForScoreboard());
     }
 
-    public boolean isNotFriend(Entity e) {
+    public boolean isNotFriendly(Entity e) {
         if (e instanceof PlayerEntity pl) {
             String name = pl.getNameForScoreboard();
             Regex regex = friendNameRegex.get();

@@ -604,7 +604,7 @@ public class InventoryUtils {
         return mc.player.getInventory().getSelectedSlot();
     }
 
-    public static void setSelectedSlot(int val){
+    public static void setSelectedSlot(int val) {
         mc.player.getInventory().setSelectedSlot(val);
     }
 

@@ -1259,7 +1259,7 @@ public class ElytraBot extends BaseModule {
             if (entity instanceof PlayerEntity player
                     && player != mc.player
                     && base.followFriend.get()
-                    && !TargetSelector.INSTANCE.isNotFriend(player)) {
+                    && !TargetSelector.INSTANCE.isNotFriendly(player)) {
                 return true;
             } else {
                 return TargetSelector.INSTANCE.canAttack(entity)
