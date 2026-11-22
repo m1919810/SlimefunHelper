@@ -1,6 +1,8 @@
 package me.matl114.mixins.events;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import me.matl114.events.Event;
 import me.matl114.events.RenderListener;
 import net.fabricmc.api.EnvType;
@@ -20,15 +22,23 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 // to avoid clash with other
 @Mixin(value = ItemStack.class, priority = 10000)
 public abstract class ItemStackEvents {
-    @Inject(method = "getTooltip", at = @At(value = "RETURN"))
+    @Inject(method = "getTooltip", at = @At(value = "RETURN"), cancellable = true)
     public void onTooltip(
             Item.TooltipContext context,
             @Nullable PlayerEntity player,
             TooltipType type,
             CallbackInfoReturnable<List<Text>> cir) {
         List<Text> tooltip = cir.getReturnValue();
+        boolean rebuild = false;
+        if (!(tooltip instanceof ArrayList)) {
+            tooltip = new ArrayList<>(tooltip);
+            rebuild = true;
+        }
         Event<List<Text>> event =
                 new Event<>(tooltip, false, false, (ItemStack) (Object) this, type.isAdvanced(), type.isCreative());
         RenderListener.getTooltipShow().handleValue(event);
+        if (rebuild && !Objects.equals(cir.getReturnValue(), tooltip)) {
+            cir.setReturnValue(tooltip);
+        }
     }
 }

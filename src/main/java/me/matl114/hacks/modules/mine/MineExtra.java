@@ -938,7 +938,7 @@ public class MineExtra extends BaseModule {
     public boolean shouldExecuteFastBreak(float currentProgress) {
         return (quickMine.get() && ignoreNextFastBreakStatus <= 0)
                 ? (currentProgress >= breakThreshold.get())
-                : (currentProgress > 1.0D);
+                : (currentProgress >= 1.0D);
     }
 
     /**

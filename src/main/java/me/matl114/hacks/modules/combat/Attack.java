@@ -754,10 +754,7 @@ public class Attack extends BaseModule {
         private final boolean noSprint;
 
         private DelayMovementAttackTask(
-                Entity target,
-                AttackSettings settings,
-                boolean attackBeforeMovement,
-                boolean noSprint) {
+                Entity target, AttackSettings settings, boolean attackBeforeMovement, boolean noSprint) {
             this.target = target;
             this.settings = settings;
             this.attackBeforeMovement = attackBeforeMovement;
@@ -765,8 +762,7 @@ public class Attack extends BaseModule {
         }
 
         private boolean submit() {
-            return RotationManager.INSTANCE.request(RotationManager.ofEntity(
-                            () -> target, attackBeforeMovement ? 0 : 1)
+            return RotationManager.INSTANCE.request(RotationManager.ofEntity(() -> target, attackBeforeMovement ? 0 : 1)
                     .raycastPosition(player -> attackBeforeMovement
                             ? player.getPos()
                             : new EntityMovementStatus<>(player).clone().move0(PlayerInputUtils.of(mc.options)).pos)
@@ -819,7 +815,8 @@ public class Attack extends BaseModule {
                 Tasks.scheduleDelayedPre(() -> attackAfterMovement(target, settings.withPostFix(true)), 0);
                 return;
             }
-            if (!RotationManager.INSTANCE.request(RotationManager.ofEntity(() -> target).applyMoveFix(true))) {
+            if (!RotationManager.INSTANCE.request(
+                    RotationManager.ofEntity(() -> target).applyMoveFix(true))) {
                 return;
             }
         }
