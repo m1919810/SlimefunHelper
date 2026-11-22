@@ -3,6 +3,7 @@ package me.matl114.gui.presets.index;
 import java.util.List;
 import me.matl114.gui.GenericScreen;
 import me.matl114.gui.basic.*;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
@@ -75,9 +76,9 @@ public abstract class IndexedScreen<T, W extends Element & Drawable & Selectable
         addDrawableChild(this.subScreenDelegate);
     }
 
-    public void resize(int width, int height) {
+    public void resize(MinecraftClient client, int width, int height) {
         saveSelected();
-        super.resize(width, height);
+        super.resize(client, width, height);
     }
 
     public void close() {

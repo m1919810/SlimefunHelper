@@ -29,8 +29,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.NetworkUtils;
-import me.matl114.utils.RenderUtils;
 import me.matl114.utils.ResourceUtils;
 import me.matl114.utils.render.RenderCollector;
 import me.matl114.versioned.SupportVersion;
@@ -395,8 +393,7 @@ public class SpearEnhance extends BaseModule {
 
     public boolean onPiercing(IntSupplier seq) {
         ItemStack stack = mc.player.getStackInHand(Hand.MAIN_HAND);
-        if ((stack.contains(DataComponentTypes.PIERCING_WEAPON)
-                        || VItem.getInstance().isSpear(stack))
+        if (VItem.getInstance().isSpear(stack)
                 && ViaFabricPlusHooks.getInstance().isViaEnabled()) {
             if (SupportVersion.CURRENT.isHigherOrEqualTo(21, 6)) {
                 var wrapper = ViaFabricPlusHooks.getInstance().createViaPacket();

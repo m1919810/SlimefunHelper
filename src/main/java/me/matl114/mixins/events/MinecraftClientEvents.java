@@ -467,8 +467,7 @@ public abstract class MinecraftClientEvents {
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/item/ItemStack;get(Lnet/minecraft/component/ComponentType;)Ljava/lang/Object;",
-                            ordinal = 0,
+                                    "Lnet/minecraft/item/ItemStack;isItemEnabled(Lnet/minecraft/resource/featuretoggle/FeatureSet;)Z",
                             shift = At.Shift.BEFORE),
             locals = LocalCapture.CAPTURE_FAILHARD,
             cancellable = true)
@@ -531,14 +530,15 @@ public abstract class MinecraftClientEvents {
         if (hotBar.isCancelled()) return;
         original.call(instance, (int) hotBar.context());
     }
-
+    // inject after baritone
     @Inject(
             method = "tick",
             at =
                     @At(
                             value = "INVOKE",
-                            target = "Lnet/minecraft/client/world/ClientWorld;tickBlockEntities()V",
-                            shift = At.Shift.BEFORE))
+                            target = "Lnet/minecraft/client/world/ClientWorld;tickEntities()V",
+                            shift = At.Shift.AFTER),
+            order = 114514)
     private void onPostPlayerUpdate(CallbackInfo ci) {
         if (this.player != null) {
             Listener.getClientPlayerPostUpdatePoint().broadcast(this.player);

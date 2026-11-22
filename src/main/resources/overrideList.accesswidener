@@ -28,12 +28,8 @@ accessible method net/minecraft/component/ComponentChanges <init> (Lit/unimi/dsi
 accessible field net/minecraft/client/render/GameRenderer buffers Lnet/minecraft/client/render/BufferBuilderStorage;
 accessible field net/minecraft/client/MinecraftClient disconnecting Z
 accessible field net/minecraft/entity/LivingEntity LIVING_FLAGS Lnet/minecraft/entity/data/TrackedData;
-accessible class net/minecraft/entity/PositionInterpolator$Data
-accessible field net/minecraft/entity/PositionInterpolator data Lnet/minecraft/entity/PositionInterpolator$Data;
-accessible field net/minecraft/entity/PositionInterpolator lastPos Lnet/minecraft/util/math/Vec3d;
-accessible field net/minecraft/entity/PositionInterpolator$Data step I
+accessible field net/minecraft/entity/LivingEntity bodyTrackingIncrements I
 accessible method net/minecraft/entity/Entity adjustMovementForCollisions (Lnet/minecraft/util/math/Vec3d;)Lnet/minecraft/util/math/Vec3d;
-accessible method net/minecraft/entity/Entity adjustMovementForSneaking (Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/entity/MovementType;)Lnet/minecraft/util/math/Vec3d;
 accessible method net/minecraft/entity/player/PlayerEntity adjustMovementForSneaking (Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/entity/MovementType;)Lnet/minecraft/util/math/Vec3d;
 accessible method net/minecraft/entity/Entity findCollisionsForMovement (Lnet/minecraft/entity/Entity;Lnet/minecraft/world/World;Ljava/util/List;Lnet/minecraft/util/math/Box;)Ljava/util/List;
 accessible method net/minecraft/entity/Entity adjustMovementForCollisions (Lnet/minecraft/util/math/Vec3d;Lnet/minecraft/util/math/Box;Ljava/util/List;)Lnet/minecraft/util/math/Vec3d;
@@ -116,10 +112,6 @@ accessible method net/minecraft/enchantment/EnchantmentHelper forEachEnchantment
 accessible class net/minecraft/client/network/PendingUpdateManager$PendingUpdate
 accessible field net/minecraft/client/network/PendingUpdateManager$PendingUpdate blockState Lnet/minecraft/block/BlockState;
 accessible field net/minecraft/client/network/PendingUpdateManager$PendingUpdate sequence I
-accessible field net/minecraft/client/render/RenderSetup textures Ljava/util/Map;
-accessible method net/minecraft/client/render/RenderSetup$TextureSpec location ()Lnet/minecraft/util/Identifier;
-accessible method net/minecraft/network/ClientConnection sendInternal (Lnet/minecraft/network/packet/Packet;Lio/netty/channel/ChannelFutureListener;Z)V
-
 accessible field net/minecraft/client/render/RenderLayer$MultiPhase phases Lnet/minecraft/client/render/RenderLayer$MultiPhaseParameters;
 accessible field net/minecraft/client/render/RenderLayer$MultiPhaseParameters texture Lnet/minecraft/client/render/RenderPhase$TextureBase;
 accessible method net/minecraft/client/render/RenderPhase$TextureBase getId ()Ljava/util/Optional;

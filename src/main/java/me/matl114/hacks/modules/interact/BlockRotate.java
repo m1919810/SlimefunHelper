@@ -653,30 +653,9 @@ public class BlockRotate extends BaseModule {
             return deceive;
         }
 
-        if (block instanceof DriedGhastBlock) {
-            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
-                    targetState.get(DriedGhastBlock.FACING).getOpposite()));
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
-            return deceive;
-        }
-
-        if (block instanceof ShelfBlock) {
-            deceive.rotation = deceive.rotation.withYaw(
-                    EntityUtils.rotationToYaw(targetState.get(ShelfBlock.FACING).getOpposite()));
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
-            return deceive;
-        }
-
         if (block instanceof LecternBlock) {
             deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
                     targetState.get(LecternBlock.FACING).getOpposite()));
-            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
-            return deceive;
-        }
-
-        if (block instanceof CopperGolemStatueBlock) {
-            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
-                    targetState.get(CopperGolemStatueBlock.FACING).getOpposite()));
             deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
             return deceive;
         }

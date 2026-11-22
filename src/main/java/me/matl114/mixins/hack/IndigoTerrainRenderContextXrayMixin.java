@@ -3,17 +3,18 @@ package me.matl114.mixins.hack;
 import me.matl114.hacks.modules.render.Xray;
 import net.fabricmc.fabric.impl.client.indigo.renderer.mesh.MutableQuadViewImpl;
 import net.fabricmc.fabric.impl.client.indigo.renderer.render.BlockRenderInfo;
-import net.minecraft.client.render.BlockRenderLayer;
+import net.minecraft.client.render.RenderLayer;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Pseudo
-@Mixin(targets = "net.fabricmc.fabric.impl.client.indigo.renderer.render.AbstractTerrainRenderContext", remap = false)
+@Mixin(targets = "net.fabricmc.fabric.impl.client.indigo.renderer.render.AbstractBlockRenderContext", remap = false)
 public abstract class IndigoTerrainRenderContextXrayMixin {
     @Shadow
     @Final
@@ -26,10 +27,19 @@ public abstract class IndigoTerrainRenderContextXrayMixin {
             ci.cancel();
             return;
         }
+    }
 
-        if (alpha > 0 && alpha < 255) {
-            quad.renderLayer(BlockRenderLayer.TRANSLUCENT);
-        }
+    @ModifyArg(
+            method = "bufferQuad(Lnet/fabricmc/fabric/impl/client/indigo/renderer/mesh/MutableQuadViewImpl;)V",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target =
+                                    "Lnet/fabricmc/fabric/impl/client/indigo/renderer/render/AbstractBlockRenderContext;getVertexConsumer(Lnet/minecraft/client/render/RenderLayer;)Lnet/minecraft/client/render/VertexConsumer;"),
+            index = 0)
+    private RenderLayer slimefunhelper$useTranslucentLayer(RenderLayer original) {
+        int alpha = Xray.getAlpha(blockInfo.blockState, blockInfo.blockPos);
+        return alpha > 0 && alpha < 255 ? RenderLayer.getTranslucent() : original;
     }
 
     @Inject(
@@ -38,7 +48,7 @@ public abstract class IndigoTerrainRenderContextXrayMixin {
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/fabricmc/fabric/impl/client/indigo/renderer/render/AbstractTerrainRenderContext;bufferQuad(Lnet/fabricmc/fabric/impl/client/indigo/renderer/mesh/MutableQuadViewImpl;Lnet/minecraft/client/render/VertexConsumer;)V"))
+                                    "Lnet/fabricmc/fabric/impl/client/indigo/renderer/render/AbstractBlockRenderContext;bufferQuad(Lnet/fabricmc/fabric/impl/client/indigo/renderer/mesh/MutableQuadViewImpl;Lnet/minecraft/client/render/VertexConsumer;)V"))
     private void slimefunhelper$applyXrayAlpha(MutableQuadViewImpl quad, CallbackInfo ci) {
         int alpha = Xray.getAlpha(blockInfo.blockState, blockInfo.blockPos);
         if (alpha == -1) return;

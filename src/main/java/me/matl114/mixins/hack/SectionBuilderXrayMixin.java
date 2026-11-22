@@ -5,7 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.hacks.modules.render.Xray;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.render.BlockRenderLayer;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.render.chunk.SectionBuilder;
 import net.minecraft.fluid.FluidState;
@@ -33,12 +33,12 @@ public abstract class SectionBuilderXrayMixin {
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/client/render/BlockRenderLayers;getBlockLayer(Lnet/minecraft/block/BlockState;)Lnet/minecraft/client/render/BlockRenderLayer;"))
-    private BlockRenderLayer slimefunhelper$makeBlockLayerTranslucent(
-            BlockState state, Operation<BlockRenderLayer> original, @Local(ordinal = 2) BlockPos pos) {
+                                    "Lnet/minecraft/client/render/RenderLayers;getBlockLayer(Lnet/minecraft/block/BlockState;)Lnet/minecraft/client/render/RenderLayer;"))
+    private RenderLayer slimefunhelper$makeBlockLayerTranslucent(
+            BlockState state, Operation<RenderLayer> original, @Local(ordinal = 2) BlockPos pos) {
         int alpha = Xray.getAlpha(state, pos);
-        BlockRenderLayer layer = original.call(state);
-        return alpha > 0 && alpha < 255 ? BlockRenderLayer.TRANSLUCENT : layer;
+        RenderLayer layer = original.call(state);
+        return alpha > 0 && alpha < 255 ? RenderLayer.getTranslucent() : layer;
     }
 
     @WrapOperation(
@@ -47,11 +47,11 @@ public abstract class SectionBuilderXrayMixin {
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/client/render/BlockRenderLayers;getFluidLayer(Lnet/minecraft/fluid/FluidState;)Lnet/minecraft/client/render/BlockRenderLayer;"))
-    private BlockRenderLayer slimefunhelper$makeFluidLayerTranslucent(
-            FluidState state, Operation<BlockRenderLayer> original, @Local(ordinal = 2) BlockPos pos) {
+                                    "Lnet/minecraft/client/render/RenderLayers;getFluidLayer(Lnet/minecraft/fluid/FluidState;)Lnet/minecraft/client/render/RenderLayer;"))
+    private RenderLayer slimefunhelper$makeFluidLayerTranslucent(
+            FluidState state, Operation<RenderLayer> original, @Local(ordinal = 2) BlockPos pos) {
         int alpha = Xray.getFluidAlpha(state, pos);
-        BlockRenderLayer layer = original.call(state);
-        return alpha > 0 && alpha < 255 ? BlockRenderLayer.TRANSLUCENT : layer;
+        RenderLayer layer = original.call(state);
+        return alpha > 0 && alpha < 255 ? RenderLayer.getTranslucent() : layer;
     }
 }

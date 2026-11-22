@@ -180,7 +180,7 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
     }
 
     public final void resizeScreen(int width, int height) {
-        this.init(width, height);
+        this.init(MinecraftClient.getInstance(), width, height);
     }
 
     @Override

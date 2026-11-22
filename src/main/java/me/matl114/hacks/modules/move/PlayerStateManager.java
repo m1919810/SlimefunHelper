@@ -124,7 +124,6 @@ public class PlayerStateManager extends BaseModule {
     public int glidingTicks;
     public int lastActiveTicks;
     public ItemStack lastItemInMainHand = ItemStack.EMPTY;
-    public AttackRangeComponent lastUsingRayCastAttackComponent;
     private static final int MAX_SIZE = 20;
 
     {

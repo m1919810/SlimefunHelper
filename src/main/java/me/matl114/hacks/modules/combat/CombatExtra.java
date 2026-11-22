@@ -20,12 +20,10 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.AttackRangeComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.item.ItemStack;
+import net.minecraft.entity.mob.ShulkerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.play.CooldownUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityTrackerUpdateS2CPacket;
@@ -82,25 +80,7 @@ public class CombatExtra extends BaseModule {
     }
 
     public double getAttackRangeAttribute() {
-        double reachValue = mc.player.getAttributeValue(EntityAttributes.ENTITY_INTERACTION_RANGE);
-        if (spearReach.get()
-                && ViaFabricPlusHooks.getInstance().getCurrentVersion().isHigherOrEqualTo(21, 11)) {
-            ItemStack lastStack = PlayerStateManager.INSTANCE
-                    .getOrCreatePlayerStatus(mc.player)
-                    .getMainHandSnapshot();
-            if (lastStack.contains(DataComponentTypes.ATTACK_RANGE)) {
-                AttackRangeComponent range1 = lastStack.get(DataComponentTypes.ATTACK_RANGE);
-                double reach1 = range1.getEffectiveMaxRange(mc.player);
-                reachValue = Math.max(reach1, reachValue);
-            }
-            ItemStack handStack = mc.player.getStackInHand(Hand.MAIN_HAND);
-            if (handStack.contains(DataComponentTypes.ATTACK_RANGE)) {
-                AttackRangeComponent range1 = handStack.get(DataComponentTypes.ATTACK_RANGE);
-                double reach1 = range1.getEffectiveMaxRange(mc.player);
-                reachValue = Math.max(reach1, reachValue);
-            }
-        }
-        return reachValue;
+        return mc.player.getAttributeValue(EntityAttributes.ENTITY_INTERACTION_RANGE);
     }
 
     @Override
@@ -265,7 +245,9 @@ public class CombatExtra extends BaseModule {
         private Vec3d trackedPosition;
 
         public void onEntityPos(LivingEntity entity, Vec3d pos, boolean maySkipTick) {
-            boolean instant = entity.getInterpolator() == null;
+            // 1.21.11: getInterpolator() == null. 1.21.4 has no PositionInterpolator; every
+            // LivingEntity lerps tracked positions except shulkers, which reset bodyTrackingIncrements to 0.
+            boolean instant = entity instanceof ShulkerEntity;
             int interpolationSteps = instant ? 1 : 3;
             if (instant) {
                 trackedPosition = pos;
