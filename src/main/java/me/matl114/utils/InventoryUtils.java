@@ -627,6 +627,10 @@ public class InventoryUtils {
         return mc.player.getInventory().selectedSlot;
     }
 
+    public static void setSelectedSlot(int val){
+        mc.player.getInventory().setSelectedSlot(val);
+    }
+
     @Nonnull
     public static IndexEntry<ItemStack> getSelectedItem() {
         int idx = InventoryUtils.getSelectedSlot();
