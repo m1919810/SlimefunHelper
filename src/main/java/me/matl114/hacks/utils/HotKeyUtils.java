@@ -1,6 +1,7 @@
 package me.matl114.hacks.utils;
 
 import java.util.function.BooleanSupplier;
+import me.matl114.gui.WidgetUtils;
 import me.matl114.hacks.modules.task.ModuleSettings;
 import me.matl114.managers.config.Config;
 import me.matl114.managers.config.FlagRef;
@@ -27,8 +28,8 @@ public class HotKeyUtils {
         if (mc.currentScreen == null) {
             return true;
         }
-        if (mc.currentScreen instanceof HandledScreen<?>) {
-            return true;
+        if (mc.currentScreen instanceof HandledScreen<?> handled) {
+            return !WidgetUtils.isInputing(handled.getFocused());
         }
         return false;
     }

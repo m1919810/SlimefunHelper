@@ -131,12 +131,16 @@ public class FloatingUtils extends BaseModule implements LegalMovementManager.Mo
     public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
         boolean conditionalFreeze = false;
         if (!conditionalFreeze && freezeVoid.get().isPresent()) {
-            if (mc.player.getY() <= mc.world.getBottomY() + freezeVoid.get().getValue()) {
+            // falling
+            if (mc.player.getY() <= mc.world.getBottomY() + freezeVoid.get().getValue()
+                    && mc.player.getY() <= movementManagerEvent.context.playerStatus.pos.y + 1E-7) {
                 conditionalFreeze = true;
             }
         }
         if (!conditionalFreeze && freezeAbsoluteY.get().isPresent()) {
-            if (mc.player.getY() <= freezeAbsoluteY.get().getValue()) {
+            // falling
+            if (mc.player.getY() <= freezeAbsoluteY.get().getValue()
+                    && mc.player.getY() <= movementManagerEvent.context.playerStatus.pos.y + 1E-7) {
                 conditionalFreeze = true;
             }
         }
