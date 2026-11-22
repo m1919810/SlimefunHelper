@@ -18,6 +18,7 @@ import me.matl114.managers.Tasks;
 import me.matl114.managers.config.DoubleRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.Debug;
+import me.matl114.versioned.SupportVersion;
 import me.matl114.versioned.api.VDataFlag;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.entity.Entity;
@@ -26,6 +27,7 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.mob.ShulkerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.play.CooldownUpdateS2CPacket;
+import net.minecraft.network.packet.s2c.play.EntityS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityTrackerUpdateS2CPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -95,6 +97,7 @@ public class CombatExtra extends BaseModule {
         registerListener(Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onMovementPacket);
         registerListener(Listener.getPostGameTick(), this::onClientTickEndPacket);
         registerListener(Listener.getEntityTrackedPositionUpdate(), this::onTrackedPosition);
+        registerListener(Listener.getPacketPostHandlePoint().getChannel(EntityS2CPacket.class), this::onEntityPacket);
     }
 
     public int shieldExceptionspam = 0;
@@ -233,6 +236,18 @@ public class CombatExtra extends BaseModule {
         }
     }
 
+    /**
+     * After vanilla applied an {@link EntityS2CPacket}. Every position update already went through
+     * {@code TrackedPosition.setPos} ({@link #onTrackedPosition}); only rotation-only packets skip it.
+     */
+    public void onEntityPacket(Event<EntityS2CPacket> event) {
+        EntityS2CPacket packet = event.context;
+        if (packet.isPositionChanged() || !packet.hasRotation() || mc.world == null) return;
+        if (!(packet.getEntity(mc.world) instanceof LivingEntity living) || living.isLogicalSideForUpdatingMovement())
+            return;
+        getTracker(living).onRotationOnly(living, !living.hasVehicle() && !ViaFabricPlusHooks.isSupportEndTick());
+    }
+
     private static final String KEY_TRACKER = "slimefunhelper:combat_extra/position_tracker";
 
     public LivingPositionTracker getTracker(Entity entity) {
@@ -267,6 +282,26 @@ public class CombatExtra extends BaseModule {
                 PostManager.INSTANCE.addNextTransactionAction((ch) -> oldPacketLocation = null);
             }
         }
+        /**
+         * {@code !packet.isPositionChanged() && packet.hasRotation()}: never reaches setPos, so
+         * {@link #onEntityPos} does not see it. How the client treats it depends on the protocol
+         * version the server sees (Grim {@code LegacyEntityInterpolation.begin}).
+         */
+        public void onRotationOnly(LivingEntity entity, boolean maySkipTick) {
+            if (entity.getInterpolator() == null || trackedPosition == null || newPacketLocation == null) return;
+            SupportVersion protocol = ViaFabricPlusHooks.getInstance().getCurrentVersion();
+            oldPacketLocation = newPacketLocation;
+            Box possible = oldPacketLocation.possiblePositions();
+            // MC-255263: the entity freezes (target = current) on 1.15-1.20.1 and 1.21.5-1.21.8;
+            // 1.20.2-1.21.4 and 1.21.9+ restart the lerp towards the server position.
+            boolean freeze = (protocol.isHigherOrEqualTo(21, 5) && protocol.isLowerOrEqualTo(21, 8))
+                    || (protocol.isHigherOrEqualTo(15, 1) && protocol.isLowerOrEqualTo(20, 1));
+            newPacketLocation = freeze
+                    ? InterpolationData.frozen(possible)
+                    : new InterpolationData(possible, trackedPosition, 3, maySkipTick);
+            PostManager.INSTANCE.addNextTransactionAction((ch) -> oldPacketLocation = null);
+        }
+
         // 傻逼grim又发力了。依旧跳刻大法
         public void onMovement(boolean maySkipTick) {
             if (newPacketLocation == null) return;
@@ -338,6 +373,9 @@ public class CombatExtra extends BaseModule {
         private final int steps;
         private final Vec3d target;
         private Box startRange;
+        /** MC-255263 freeze: the entity stays at {@link #startRange}, the lerp never advances. */
+        private boolean frozen;
+
         private int lowStep;
         private int highStep;
 
@@ -357,6 +395,13 @@ public class CombatExtra extends BaseModule {
             this.highStep = maySkipTicks ? steps : 0;
         }
 
+        /** Grim's finished-location constructor: the entity stays at {@code location}. */
+        public static InterpolationData frozen(Box location) {
+            InterpolationData data = new InterpolationData(location, location.getCenter(), 1, false);
+            data.frozen = true;
+            return data;
+        }
+
         public Box possiblePositions() {
             return interpolate(lowStep).union(interpolate(highStep));
         }
@@ -373,6 +418,7 @@ public class CombatExtra extends BaseModule {
         }
 
         public void step(boolean increase, boolean maySkipTick) {
+            if (frozen) return;
             if (maySkipTick) this.highStep = steps;
             if (increase) {
                 lowStep = Math.min(lowStep + 1, steps);
@@ -386,6 +432,7 @@ public class CombatExtra extends BaseModule {
 
         private InterpolationData copy() {
             InterpolationData copy = new InterpolationData(startRange, target, steps, false);
+            copy.frozen = frozen;
             copy.lowStep = lowStep;
             copy.highStep = highStep;
             return copy;
