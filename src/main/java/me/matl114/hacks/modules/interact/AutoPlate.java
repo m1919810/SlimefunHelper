@@ -19,7 +19,6 @@ import me.matl114.hacks.utils.InteractUtils;
 import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.WorldUtils;
 import me.matl114.hacks.utils.config.WrapColor;
-import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
@@ -97,11 +96,6 @@ public class AutoPlate extends BaseModule {
 
     public final FlagRef returnBlock =
             flagBuilder(autoPlate.add("ghost-hand-swap-back")).build();
-
-    public final EnumRef<GhostHandMode> preferredGhostHand = builder(
-                    autoPlate.add("preferred-ghost-hand-mode"), GhostHandMode.class)
-            .defaultValue(GhostHandMode.INV_SWAP)
-            .build();
 
     public final FlagRef swingHand = builder(autoPlate.add("swing-hand"), Boolean.class)
             .defaultValue(true)
@@ -189,12 +183,12 @@ public class AutoPlate extends BaseModule {
     }
 
     public void tickPlace() {
+        int initialHotbarSlot = InventoryUtils.getSelectedSlot();
         int cnt = 0;
         int multiply = ((DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled(
                         mode.get().canMultiRotPlace())))
                 ? mul.get()
                 : 1;
-        List<Runnable> stack = new ArrayList<>(multiply);
 
         for (var bp : placeList) {
             BlockState clientState = mc.world.getBlockState(bp);
@@ -230,10 +224,7 @@ public class AutoPlate extends BaseModule {
                     && InteractUtils.getBlockPlacement(state.getBlock(), mc.player, mc.world, blockHitResult.val())
                             != null) {
                 if (!InteractionTasks.canHandleInteract(mode.get(), blockHitResult.val())) break;
-                Runnable runnable = InvExtra.INSTANCE.swapItemToHand(
-                        supplyBlock, false, preferredGhostHand.get().getPreferredMode(supplyBlock));
-                if (runnable == null) break;
-                stack.add(runnable);
+                if (InvExtra.INSTANCE.swapItemToHotbarCache(supplyBlock) == null) break;
                 boolean completed = useBlockRotate.get()
                         ? BlockRotate.INSTANCE.handleYawDeceivePlace(
                                 mode.get(), blockHitResult.val(), Hand.MAIN_HAND, state, swingHand.get())
@@ -248,11 +239,8 @@ public class AutoPlate extends BaseModule {
                 }
             }
         }
-        if (returnBlock.get()) {
-            int size = stack.size();
-            for (var i = size - 1; i >= 0; i--) {
-                InteractionTasks.finishInteractGhostHand(mode.get(), stack.get(i));
-            }
+        if (returnBlock.get() && InventoryUtils.getSelectedSlot() != initialHotbarSlot) {
+            InvExtra.INSTANCE.pushHotbarRestoreAfterTick(initialHotbarSlot);
         }
     }
 
@@ -269,7 +257,6 @@ public class AutoPlate extends BaseModule {
 
     public void onPresetReload(Event<EventContainer<ModulePreset>> event) {
         ModulePreset preset = event.context.getValue();
-        preferredGhostHand.set(preset.getGhostHandMode(preferredGhostHand.get()));
         if (preset.isAirplacePreset()) airplace.set(preset.getAirplace(airplace.get()));
         if (preset.isSwingPlacePreset()) swingHand.set(preset.getSwingPlace(swingHand.get()));
         if (!preset.isOptionPreset()) {

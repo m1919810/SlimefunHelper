@@ -25,7 +25,6 @@ import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.InteractUtils;
 import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.config.WrapColor;
-import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hooks.LitematicaHooks;
@@ -86,11 +85,6 @@ public class PrinterRewrite extends BaseModule {
 
     public final FlagRef returnBlock =
             flagBuilder(litematicaPrinterRewrite.add("ghost-hand-swap-back")).build();
-
-    public final EnumRef<GhostHandMode> preferredGhostHand = builder(
-                    litematicaPrinterRewrite.add("preferred-ghost-hand-mode"), GhostHandMode.class)
-            .defaultValue(GhostHandMode.INV_SWAP)
-            .build();
 
     public final FlagRef autoSneak = builder(litematicaPrinterRewrite.add("auto-sneak"), Boolean.class)
             .defaultValue(true)
@@ -203,6 +197,7 @@ public class PrinterRewrite extends BaseModule {
         } else {
             return;
         }
+        int initialHotbarSlot = InventoryUtils.getSelectedSlot();
         tickDesyncWaitBlocks();
         drawOutlines.clear();
         if (enable.get() && LitematicaHooks.getInstance().isEnabled()) {
@@ -286,6 +281,9 @@ public class PrinterRewrite extends BaseModule {
         if (drainWater) {
             tickTryDrainWater();
         }
+        if (returnBlock.get() && InventoryUtils.getSelectedSlot() != initialHotbarSlot) {
+            InvExtra.INSTANCE.pushHotbarRestoreAfterTick(initialHotbarSlot);
+        }
     }
 
     public int supplyBlocks(Block needBlock) {
@@ -351,21 +349,14 @@ public class PrinterRewrite extends BaseModule {
                 putCanNotPlace(pos);
                 return false;
             }
-            Runnable callback = InvExtra.INSTANCE.swapItemToHand(
-                    idx, false, preferredGhostHand.get().getPreferredMode(idx));
-            if (callback == null) {
+            if (InvExtra.INSTANCE.swapItemToHotbarCache(idx) == null) {
                 putCanNotPlace(pos);
                 return false;
             }
             if (!BlockRotate.INSTANCE.handleYawDeceivePlace(
                     mode.get(), result.val(), Hand.MAIN_HAND, targetState, swingHand.get())) {
-                InteractionTasks.finishInteractGhostHand(mode.get(), callback);
                 putCanNotPlace(pos);
                 return false;
-            }
-            // sb grimac
-            if (returnBlock.get()) {
-                InteractionTasks.finishInteractGhostHand(mode.get(), callback);
             }
             putSuccessPlace(pos);
             return true;
@@ -422,15 +413,10 @@ public class PrinterRewrite extends BaseModule {
             if (rotation.flag() == mc.player.isSneaking()) {
                 var rot = rotation.val();
 
-                Runnable callback = InvExtra.INSTANCE.swapItemToHand(
-                        item, false, preferredGhostHand.get().getPreferredMode(item));
-                if (callback != null) {
+                if (InvExtra.INSTANCE.swapItemToHotbarCache(item) != null) {
                     InteractionTasks.interactItem(Hand.MAIN_HAND, rot.x, rot.y, true, swingHand.get());
                     suc = true;
                     waterBlocks.put(mc.world.getPendingUpdateManager().getSequence(), pos);
-                    if (returnBlock.get()) {
-                        callback.run();
-                    }
                 }
             }
             if (suc) {
@@ -592,21 +578,15 @@ public class PrinterRewrite extends BaseModule {
                         putCanNotPlace(pos);
                         return false;
                     }
-                    Runnable runnable = InvExtra.INSTANCE.swapItemToHand(
-                            re.index(), false, preferredGhostHand.get().getPreferredMode(re.index()));
-                    if (runnable != null) {
+                    if (InvExtra.INSTANCE.swapItemToHotbarCache(re.index()) != null) {
                         if (!BlockRotate.INSTANCE.handleYawDeceivePlace(
                                 mode.get(), hitResult.val(), Hand.MAIN_HAND, targetState, swingHand.get())) {
-                            InteractionTasks.finishInteractGhostHand(mode.get(), runnable);
                             putCanNotPlace(pos);
                             return false;
                         }
                         putSuccessPlace(pos);
                         if (isDesyncStateInteractTransition(currentState, targetState)) {
                             desyncWaitBlocks.add(pos);
-                        }
-                        if (returnBlock.get()) {
-                            InteractionTasks.finishInteractGhostHand(mode.get(), runnable);
                         }
                         return true;
                     }
@@ -637,7 +617,6 @@ public class PrinterRewrite extends BaseModule {
 
     public void onPresetReload(Event<EventContainer<ModulePreset>> event) {
         ModulePreset preset = event.context.getValue();
-        preferredGhostHand.set(preset.getGhostHandMode(preferredGhostHand.get()));
         if (preset.isAirplacePreset()) airplace.set(preset.getAirplace(airplace.get()));
         if (preset.isSwingPlacePreset()) swingHand.set(preset.getSwingPlace(swingHand.get()));
         if (!preset.isOptionPreset()) {

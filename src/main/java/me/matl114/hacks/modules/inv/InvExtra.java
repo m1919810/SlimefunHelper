@@ -7,6 +7,8 @@ import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.impl.SlotClickAction;
+import me.matl114.events.impl.UseItem;
+import me.matl114.events.impl.UseItemOnBlock;
 import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -33,18 +35,26 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.network.packet.c2s.play.ClientTickEndC2SPacket;
 import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.Text;
+import net.minecraft.util.Hand;
 
 public class InvExtra extends BaseModule {
+    private static final int HOTBAR_ITEM_USAGE_WINDOW_SIZE = 27;
     public static InvExtra INSTANCE;
     private final Deque<Runnable> postTickGhostHandCallbacks = new ArrayDeque<>();
     private final Deque<Runnable> nextTickGhostHandCallbacks = new ArrayDeque<>();
+    private final Deque<Item> hotbarItemUsageWindow = new ArrayDeque<>(HOTBAR_ITEM_USAGE_WINDOW_SIZE);
+    private final Map<Item, Integer> hotbarItemUsageCounts = new HashMap<>();
     public final ModulePath inventory = makePath(Configs.INV_CONFIG, "inventory");
 
     public InvExtra() {
@@ -84,9 +94,12 @@ public class InvExtra extends BaseModule {
         registerListener(Listener.getPostGameTick(), this::onClientTickEnd, Integer.MAX_VALUE);
         registerListener(Listener.getPostTick(), this::onClientPostTickEnd, Integer.MIN_VALUE);
         registerListener(Listener.getPreTick(), this::onNewTick, Integer.MIN_VALUE + 11);
+        registerListener(Listener.getPostPlayerUseItem(), this::onPostUseItem);
+        registerListener(Listener.getPostPlayerUseItemOnBlock(), this::onPostUseItemOnBlock);
         registerListener(Listener.getServerLeavePoint(), event -> {
             postTickGhostHandCallbacks.clear();
             nextTickGhostHandCallbacks.clear();
+            resetHotbarItemUsageWindow();
         });
         TaskManagers.getToggleManager().register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + "keep-inv", enableKeepInv);
         TaskManagers.getTaskManager().register(TaskManagers.PREFIX_BUTTON_TASKS + "." + CLEAR_KEEP, this::clearKeep);
@@ -199,6 +212,15 @@ public class InvExtra extends BaseModule {
         return false;
     }
 
+    public void pushHotbarRestoreAfterTick(int hotbarSlot) {
+        if (hotbarSlot < 0 || hotbarSlot >= 9) return;
+        pushPostTickGhostHandCallback(() -> {
+            if (mc.player != null) {
+                PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(hotbarSlot);
+            }
+        });
+    }
+
     public boolean pushNextTickGhostHandCallback(Runnable runnable) {
         // must ensure that this tick 's nextTick Task already processed
         tickNextTickCallbacks();
@@ -296,6 +318,77 @@ public class InvExtra extends BaseModule {
             case INV_SWAP, INV_CLICK -> swapInventoryIndexToHand(hand);
             case HOT_BAR_ONLY -> swapInventoryHotBar(hand);
         };
+    }
+
+    public Runnable swapItemToHotbarCache(int inventoryIndex) {
+        if (mc.player == null || inventoryIndex < 0 || inventoryIndex >= 36) return null;
+
+        if (inventoryIndex < 9) {
+            return swapInventoryHotBar(inventoryIndex);
+        }
+
+        int hotbarSlot = findHotbarCacheSlot();
+        if(hotbarSlot < 0 || hotbarSlot >= 9){
+            return null;
+        }
+        int current = InventoryUtils.getSelectedSlot();
+        try{
+            InventoryUtils.setSelectedSlot(hotbarSlot);
+            if (swapItemToHand(inventoryIndex, false) == null) {
+                return null;
+            }
+        }finally {
+            InventoryUtils.setSelectedSlot(current);
+        }
+
+        return swapInventoryHotBar(hotbarSlot);
+    }
+
+    private int findHotbarCacheSlot() {
+        PlayerInventory playerInventory = mc.player.getInventory();
+        for (int slot = 0; slot < 9; slot++) {
+            if (playerInventory.getStack(slot).isEmpty()) {
+                return slot;
+            }
+        }
+        int leastUsedSlot = -1;
+        int leastUsage = Integer.MAX_VALUE;
+        for (int slot = 0; slot < 9; slot++) {
+            ItemStack stack = playerInventory.getStack(slot);
+            if (stack.get(DataComponentTypes.MAX_DAMAGE) != null || stack.isOf(Items.TOTEM_OF_UNDYING)) {
+                continue;
+            }
+            int usage = hotbarItemUsageCounts.getOrDefault(stack.getItem(), 0);
+            if (usage < leastUsage) {
+                leastUsedSlot = slot;
+                leastUsage = usage;
+            }
+        }
+        return leastUsedSlot >= 0 ? leastUsedSlot : InventoryUtils.getSelectedSlot();
+    }
+
+    private void onPostUseItemOnBlock(Event<UseItemOnBlock> event) {
+        recordMainHandUse(event.context.hand(), event.context.handItem());
+    }
+
+    private void onPostUseItem(Event<UseItem> event) {
+        recordMainHandUse(event.context.hand(), event.context.handItem());
+    }
+
+    private void recordMainHandUse(Hand hand, ItemStack stack) {
+        if (mc.player == null || hand != Hand.MAIN_HAND || stack.isEmpty()) return;
+        Item item = stack.getItem();
+        if (hotbarItemUsageWindow.size() == HOTBAR_ITEM_USAGE_WINDOW_SIZE) {
+            Item evicted = hotbarItemUsageWindow.removeFirst();
+            hotbarItemUsageCounts.computeIfPresent(evicted, (ignored, count) -> count == 1 ? null : count - 1);
+        }
+        hotbarItemUsageWindow.addLast(item);
+        hotbarItemUsageCounts.merge(item, 1, Integer::sum);
+    }
+
+    private void resetHotbarItemUsageWindow() {
+        hotbarItemUsageWindow.clear();
+        hotbarItemUsageCounts.clear();
     }
 
     private Runnable swapInventoryIndexToHand(int hand) {
