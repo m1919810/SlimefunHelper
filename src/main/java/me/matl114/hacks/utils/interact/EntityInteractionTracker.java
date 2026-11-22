@@ -52,7 +52,8 @@ public final class EntityInteractionTracker {
     private void discardCompletedInteractions() {
         SequencedActionManager actionManager = SequencedActionManager.INSTANCE;
         int currentTick = Tasks.getTick();
-        Iterator<Map.Entry<Entity, InteractionEntry>> iterator = interactions.entrySet().iterator();
+        Iterator<Map.Entry<Entity, InteractionEntry>> iterator =
+                interactions.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<Entity, InteractionEntry> entry = iterator.next();
             Entity entity = entry.getKey();

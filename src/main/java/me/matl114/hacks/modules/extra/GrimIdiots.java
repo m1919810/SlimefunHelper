@@ -501,9 +501,7 @@ public class GrimIdiots extends BaseModule {
     private void tickAutoNameWither() {
         if (autoName.get()) {
             for (var re : mc.world.getEntitiesByType(
-                    EntityType.WITHER,
-                    mc.player.getBoundingBox().expand(8, 8, 8),
-                    entity -> !entity.hasCustomName())) {
+                    EntityType.WITHER, mc.player.getBoundingBox().expand(8, 8, 8), entity -> !entity.hasCustomName())) {
                 if (SequencedActionManager.INSTANCE.getEntityInteractTracker().isWaitingResponse(re)) {
                     continue;
                 }
@@ -516,7 +514,9 @@ public class GrimIdiots extends BaseModule {
                         var val = InvExtra.INSTANCE.swapItemToHand(entry.index(), false, GhostHandMode.INV_SWAP);
                         if (val != null) {
                             Interact.INSTANCE.interactEntity(re);
-                            SequencedActionManager.INSTANCE.getEntityInteractTracker().postInteract(re);
+                            SequencedActionManager.INSTANCE
+                                    .getEntityInteractTracker()
+                                    .postInteract(re);
                             val.run();
                             return;
                         }
