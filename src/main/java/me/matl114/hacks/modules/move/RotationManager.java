@@ -23,6 +23,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.*;
 import org.jetbrains.annotations.MustBeInvokedByOverriders;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class RotationManager extends BaseModule implements LegalMovementManager.MovementModifier {
@@ -116,7 +117,9 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
         List<RotationRequest> prioritized = new ArrayList<>(requests);
         prioritized.sort(Comparator.comparingInt(RotationRequest::priority));
         for (RotationRequest request : prioritized) {
-            Rotation candidate = mergeRotation(rotation, request.peekRotation(rotation, player));
+            // 防御外部实现违反非 null 约定
+            Rotation peeked = Objects.requireNonNullElse(request.peekRotation(rotation, player), Rotation.EMPTY);
+            Rotation candidate = mergeRotation(rotation, peeked);
             if (request != EMPTY
                     && (!request.canUseRotation(pos, player, candidate)
                             || !acceptsRotation(accepted, pos, player, candidate))) continue;
@@ -214,7 +217,11 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
             return Integer.MIN_VALUE;
         }
 
-        default Rotation peekRotation(Rotation currentModification, ClientPlayerEntity player) {
+        /**
+         * 在已确定的 currentModification 基础上给出本请求建议的旋转。
+         * 必须返回非 null 值；无解或不关心角度时返回 {@link Rotation#EMPTY}。
+         */
+        default @NotNull Rotation peekRotation(Rotation currentModification, ClientPlayerEntity player) {
             return Rotation.EMPTY;
         }
 
@@ -278,10 +285,10 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
             return this;
         }
 
+        /** 子类通过 {@link #calculateRotationPre} 返回 null 表示无解，此处统一转换为 {@link Rotation#EMPTY}。 */
         @Override
-        public Rotation peekRotation(Rotation currentModification, ClientPlayerEntity player) {
-            Rotation rotation = calculateRotationPre(player, currentModification);
-            return rotation == null ? Rotation.EMPTY : rotation;
+        public final @NotNull Rotation peekRotation(Rotation currentModification, ClientPlayerEntity player) {
+            return Objects.requireNonNullElse(calculateRotationPre(player, currentModification), Rotation.EMPTY);
         }
 
         protected abstract @Nullable Rotation calculateRotationPre(
@@ -323,27 +330,7 @@ public class RotationManager extends BaseModule implements LegalMovementManager.
             T target = targetSupplier.get();
             if (target == null) return null;
             Vec3d pos = getRaycastPosition(player, player.getPos());
-            if (!currentModification.hasRotate()) {
-                Vec3d direction = calculator.getRaycast(pos, target);
-                return direction == null ? null : Rotation.from(direction.normalize());
-            }
-            float pitch = currentModification.getPitch(player.getPitch());
-            float yaw = currentModification.getYaw(player.getYaw());
-            if (calculator.canRayCast(pos, target, pitch, yaw)) return Rotation.from(pitch, yaw);
-            if (currentModification.hasPitch() && currentModification.hasYaw()) return null;
-            float base = currentModification.hasPitch() ? yaw : pitch;
-            int steps = currentModification.hasPitch() ? 720 : 360;
-            for (int i = 1; i <= steps; i++) {
-                float offset = i * 0.25F;
-                for (int sign : new int[] {-1, 1}) {
-                    float adjusted = base + sign * offset;
-                    float candidatePitch = currentModification.hasPitch() ? pitch : adjusted;
-                    float candidateYaw = currentModification.hasPitch() ? adjusted : yaw;
-                    if (calculator.canRayCast(pos, target, candidatePitch, candidateYaw))
-                        return Rotation.from(candidatePitch, candidateYaw);
-                }
-            }
-            return null;
+            return calculator.findRotation(pos, target, currentModification, player.getPitch(), player.getYaw());
         }
 
         @Override
