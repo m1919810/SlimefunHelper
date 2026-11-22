@@ -133,7 +133,7 @@ public class AutoLogout extends BaseModule {
             EntitySpawnS2CPacket spawn = event.context();
             if (spawn.getEntityType() == EntityType.PLAYER && spawn.getEntityId() != mc.player.getId()) {
                 Entity entity = mc.world.getEntityById(spawn.getEntityId());
-                if (entity != null && CombatTasks.getTargetSelector().isNotFriend(entity)) {
+                if (entity != null && CombatTasks.getTargetSelector().isNotFriendly(entity)) {
                     MainTasks.scheduleDisconnect();
                     strangerPlayerEnable.set(false);
                 }
