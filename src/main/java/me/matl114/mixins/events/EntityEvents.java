@@ -72,6 +72,9 @@ public abstract class EntityEvents<T extends Entity> implements EntityAccess<T> 
     @Final
     private TrackedPosition trackedPosition;
 
+    @Shadow
+    public abstract World getEntityWorld();
+
     @Unique
     public void setDataFlag(int index, boolean val) {
         this.setFlag(index, val);
@@ -84,7 +87,9 @@ public abstract class EntityEvents<T extends Entity> implements EntityAccess<T> 
 
     @Inject(method = "setRemoved", at = @At("RETURN"))
     public void onEntityRemoved(Entity.RemovalReason reason, CallbackInfo ci) {
-        Listener.getEntityRemoveListener().broadcast((Entity) (Object) this, reason);
+        if (this.getEntityWorld().isClient()) {
+            Listener.getEntityRemoveListener().broadcast((Entity) (Object) this, reason);
+        }
     }
 
     @WrapOperation(

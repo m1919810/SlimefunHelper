@@ -95,12 +95,14 @@ public class PostManager extends BaseModule {
     private void runQueue(
             ClientPlayNetworkHandler handler, Deque<Consumer<ClientPlayNetworkHandler>> postTickHandlers) {
         if (!postTickHandlers.isEmpty()) {
-
             if (handler != null) {
                 var iter = postTickHandlers.iterator();
                 while (iter.hasNext()) {
-                    iter.next().accept(handler);
-                    iter.remove();
+                    try {
+                        iter.next().accept(handler);
+                    } finally {
+                        iter.remove();
+                    }
                 }
             } else {
                 postTickHandlers.clear();
