@@ -11,7 +11,6 @@ import me.matl114.utils.world.RegionPos;
 import me.matl114.versioned.api.VRender;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
-import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.decoration.DisplayEntity;
@@ -242,82 +241,6 @@ public class RenderUtils {
     @ApiMethod
     private static float getNegatedPitch(float pitch) {
         return -pitch;
-    }
-
-    @ApiMethod
-    public static VertexConsumer getSpriteVertexConsumer(VertexConsumer vertexConsumer, Sprite sprite) {
-        return new SpriteTexturedVertexConsumer(vertexConsumer, sprite);
-    }
-
-    public static class SpriteTexturedVertexConsumer implements VertexConsumer {
-        private final VertexConsumer delegate;
-        private final Sprite sprite;
-
-        public SpriteTexturedVertexConsumer(VertexConsumer delegate, Sprite sprite) {
-            this.delegate = delegate;
-            this.sprite = sprite;
-        }
-
-        public VertexConsumer vertex(float x, float y, float z) {
-            this.delegate.vertex(x, y, z);
-            return this;
-        }
-
-        public VertexConsumer color(int red, int green, int blue, int alpha) {
-            this.delegate.color(red, green, blue, alpha);
-            return this;
-        }
-
-        public VertexConsumer color(int argb) {
-            this.delegate.color(argb);
-            return this;
-        }
-
-        public VertexConsumer texture(float u, float v) {
-            this.delegate.texture(this.sprite.getFrameU(u), this.sprite.getFrameV(v));
-            return this;
-        }
-
-        public VertexConsumer overlay(int u, int v) {
-            this.delegate.overlay(u, v);
-            return this;
-        }
-
-        public VertexConsumer light(int u, int v) {
-            this.delegate.light(u, v);
-            return this;
-        }
-
-        public VertexConsumer normal(float x, float y, float z) {
-            this.delegate.normal(x, y, z);
-            return this;
-        }
-
-        public void vertex(
-                float x,
-                float y,
-                float z,
-                int color,
-                float u,
-                float v,
-                int overlay,
-                int light,
-                float normalX,
-                float normalY,
-                float normalZ) {
-            this.delegate.vertex(
-                    x,
-                    y,
-                    z,
-                    color,
-                    this.sprite.getFrameU(u),
-                    this.sprite.getFrameV(v),
-                    overlay,
-                    light,
-                    normalX,
-                    normalY,
-                    normalZ);
-        }
     }
 
     public static Vector2d translate3DTo2D(
