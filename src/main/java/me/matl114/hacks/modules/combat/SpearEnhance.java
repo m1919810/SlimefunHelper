@@ -15,6 +15,8 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.NetworkUtils;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hooks.ViaFabricPlusHooks;
@@ -25,8 +27,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.NetworkUtils;
-import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.RenderCollector;
 import me.matl114.versioned.SupportVersion;
 import me.matl114.versioned.api.VDataFlag;
@@ -117,7 +117,7 @@ public class SpearEnhance extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreGameTick(), this::onPreTick);
-        registerListener(Listener.getPostGameTick(), this::updateKineticPlayerCollector);
+        registerListener(Listener.getPostTick(), this::updateKineticPlayerCollector);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(RenderListener.getCustomModelOverride(), this::onReplaceSpearModel);
         registerListener(Listener.getClientPlayerPostSendMovementPoint(), this::onPostTick);
@@ -361,7 +361,9 @@ public class SpearEnhance extends BaseModule {
     }
 
     public boolean onPiercing(IntSupplier seq) {
-        if (VItem.getInstance().isSpear(mc.player.getStackInHand(Hand.MAIN_HAND))
+        ItemStack stack = mc.player.getStackInHand(Hand.MAIN_HAND);
+        if ((stack.contains(DataComponentTypes.PIERCING_WEAPON)
+                        || VItem.getInstance().isSpear(stack))
                 && ViaFabricPlusHooks.getInstance().isViaEnabled()) {
             if (SupportVersion.CURRENT.isHigherOrEqualTo(21, 6)) {
                 var wrapper = ViaFabricPlusHooks.getInstance().createViaPacket();

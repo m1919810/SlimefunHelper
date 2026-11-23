@@ -7,10 +7,10 @@ import me.matl114.accessors.access.PlayerInteractBlockC2SPacketAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.events.Listener;
 import me.matl114.hacks.InvTasks;
+import me.matl114.hacks.utils.NetworkUtils;
+import me.matl114.hacks.utils.RaycastUtils;
 import me.matl114.utils.ApiMethod;
 import me.matl114.utils.InventoryUtils;
-import me.matl114.utils.NetworkUtils;
-import me.matl114.utils.RaycastUtils;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
@@ -56,7 +56,7 @@ public class PacketHelper {
     }
 
     public static int getLastServerScreenSyncId() {
-        return InvTasks.LAST_SYNC_ID;
+        return InvTasks.getInventoryManager().lastSyncId;
     }
 
     public static void sendCloseInventory(int syncId) {
@@ -123,10 +123,8 @@ public class PacketHelper {
                         mc.player
                                 .getStackInHand(offhand ? Hand.OFF_HAND : Hand.MAIN_HAND)
                                 .copy(),
-                        mc.world.getBlockState(hitResult.getBlockPos()),
                         ActionResult.SUCCESS,
-                        Optional.empty(),
-                        mc.world.getBlockState(hitResult.getBlockPos())));
+                        Optional.empty()));
             }
             return packet;
         });

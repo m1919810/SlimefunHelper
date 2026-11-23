@@ -549,7 +549,7 @@ public class ConfigManager extends BaseModule {
             }
             Identifier identifier = config.getRegistryKey().getValue();
             MapRef hotkeySnapshot = new MapRef();
-            for (LeafEntry leaf : flattenMapRef(config.asRef())) {
+            for (LeafEntry leaf : flattenConfig(config)) {
                 if (leaf.value() instanceof KeyBindRef) {
                     hotkeySnapshot.setValue(leaf.value(), leaf.path());
                 }
@@ -846,14 +846,18 @@ public class ConfigManager extends BaseModule {
 
     private MapRef filterSnapshotByPathPrefix(Config config, String pathPrefix) {
         if (pathPrefix.isEmpty()) {
-            return config.asRef();
+            MapRef filteredSnapshot = new MapRef();
+            for (LeafEntry leaf : flattenConfig(config)) {
+                filteredSnapshot.setValue(leaf.value(), leaf.path());
+            }
+            return filteredSnapshot;
         }
         String normalizedPathPrefix =
                 pathPrefix.endsWith(".") ? pathPrefix.substring(0, pathPrefix.length() - 1) : pathPrefix;
         MapRef filteredSnapshot = new MapRef();
-        for (LeafEntry leaf : flattenMapRef(config.asRef())) {
+        for (LeafEntry leaf : flattenConfig(config)) {
             String leafPath = String.join(".", leaf.path());
-            if (leafPath.equals(normalizedPathPrefix) || leafPath.startsWith(normalizedPathPrefix + ".")) {
+            if ((leafPath.equals(normalizedPathPrefix) || leafPath.startsWith(normalizedPathPrefix + "."))) {
                 filteredSnapshot.setValue(leaf.value(), leaf.path());
             }
         }
@@ -870,6 +874,14 @@ public class ConfigManager extends BaseModule {
         List<LeafEntry> result = new ArrayList<>();
         flattenMapRef(result, new ArrayList<>(), mapRef);
         return result;
+    }
+
+    private static List<LeafEntry> flattenConfig(Config config) {
+        List<LeafEntry> result = flattenMapRef(config.asRef());
+        var set = config.getVisiblePaths();
+        return result.stream()
+                .filter(s -> set.contains(String.join(".", s.path())))
+                .toList();
     }
 
     private static void flattenMapRef(List<LeafEntry> result, List<String> path, MapRef mapRef) {

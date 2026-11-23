@@ -13,6 +13,7 @@ import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.WorldTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
@@ -21,7 +22,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.utils.ColorUtils;
-import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -81,7 +81,7 @@ public class WorldScanner extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostGameTick(), this::onTick);
+        registerListener(Listener.getPostTick(), this::onTick);
 
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(Listener.getPreWorldScannListener(), this::onRequestScann);

@@ -7,6 +7,8 @@ public interface MerchantScreenAccess {
 
     public void setSelectedIndex(int k);
 
+    public void selectIndexLocally(int index);
+
     public static MerchantScreenAccess of(MerchantScreen screen) {
         return (MerchantScreenAccess) screen;
     }

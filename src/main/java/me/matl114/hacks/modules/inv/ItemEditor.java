@@ -2,10 +2,10 @@ package me.matl114.hacks.modules.inv;
 
 import java.util.function.Consumer;
 import me.matl114.accessors.gui.ScreenAccess;
-import me.matl114.gui.complex.itemEdit.ItemEditScreen;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.gui.ItemEditScreen;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.KeyCode;

@@ -11,6 +11,7 @@ import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.InteractUtils;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.entity.Predictor;
 import me.matl114.hacks.utils.enums.GhostHandMode;
@@ -23,7 +24,6 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.InteractUtils;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.MathUtils;
 import me.matl114.utils.collections.FlagEntry;
@@ -412,7 +412,7 @@ public class AutoTrap extends BaseModule {
                 stack ->
                         stack.getItem() instanceof BlockItem blockItem && blockItem.getBlock() instanceof TrapdoorBlock,
                 searchSize,
-                true,
+                false,
                 false);
         return trapdoor != null
                 ? trapdoor
@@ -420,7 +420,7 @@ public class AutoTrap extends BaseModule {
                         stack -> stack.getItem() instanceof BlockItem blockItem
                                 && blockItem.getBlock() instanceof FenceGateBlock,
                         searchSize,
-                        true,
+                        false,
                         false);
     }
 
@@ -456,7 +456,7 @@ public class AutoTrap extends BaseModule {
                             + (blockItem.getBlock() instanceof BlockWithEntity ? -1E8 : 0);
                 },
                 ghostHand.get().getSearchSize(offhand.get()),
-                true,
+                false,
                 false);
     }
 

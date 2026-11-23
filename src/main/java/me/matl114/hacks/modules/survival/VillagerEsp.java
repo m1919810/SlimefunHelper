@@ -9,6 +9,7 @@ import me.matl114.events.RenderListener;
 import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hacks.utils.render.RenderElements;
@@ -18,7 +19,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.enchantment.Enchantment;
@@ -64,7 +64,7 @@ public class VillagerEsp extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostGameTick(), this::onTick);
+        registerListener(Listener.getPostTick(), this::onTick);
         registerListener(RenderListener.getRender3DEvent(), this::onRender3D);
     }
 
@@ -148,11 +148,13 @@ public class VillagerEsp extends BaseModule {
         RegistryEntry<Enchantment> enchantment = firstEnchantment.getKey();
         int level = firstEnchantment.getIntValue();
         int price = Math.max(trade.buy1().getCount(), trade.buy2().getCount());
-        return enchantment
+        MutableText display = enchantment
                 .value()
                 .description()
                 .copy()
                 .append(Text.literal(String.valueOf(level)))
                 .append(Text.literal(" " + price));
+        trade.realPrice().ifPresent(price2 -> display.append(Text.literal(" (" + price2 + ")")));
+        return display;
     }
 }

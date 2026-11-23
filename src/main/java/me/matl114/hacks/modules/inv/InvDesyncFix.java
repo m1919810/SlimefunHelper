@@ -1,18 +1,18 @@
 package me.matl114.hacks.modules.inv;
 
-import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.LivingEntityAccess;
 import me.matl114.accessors.access.PlayerInteractItemC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
+import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.InteractUtils;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.InteractUtils;
 import net.minecraft.entity.EntityStatuses;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
@@ -61,12 +61,12 @@ public class InvDesyncFix extends BaseModule {
     }
 
     private void nextRevision() {
-        var serverHandler = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
+        var serverHandler = InvTasks.getCurrentServerScreenHandler(mc.player);
         serverHandler.nextRevision();
     }
 
     private void makeDesync() {
-        var serverHandler = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
+        var serverHandler = InvTasks.getCurrentServerScreenHandler(mc.player);
         serverHandler.revision = (serverHandler.revision - 2) & 32767;
     }
 
@@ -111,7 +111,7 @@ public class InvDesyncFix extends BaseModule {
             if (syncId == 0) {
                 syncPlayerInventoryRevision(eventUpdate.context.getRevision());
             } else {
-                ScreenHandler handler = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
+                ScreenHandler handler = InvTasks.getCurrentServerScreenHandler(mc.player);
                 if (handler.syncId == syncId) {
                     handler.revision = eventUpdate.context.getRevision();
                 }
@@ -128,7 +128,7 @@ public class InvDesyncFix extends BaseModule {
             if (syncId == 0) {
                 syncPlayerInventoryRevision(eventUpdate.context.revision());
             } else {
-                ScreenHandler handler = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
+                ScreenHandler handler = InvTasks.getCurrentServerScreenHandler(mc.player);
                 if (handler.syncId == syncId) {
                     handler.revision = eventUpdate.context.revision();
                 }

@@ -7,7 +7,6 @@ public enum LegalInteractMode implements ConfigEnum {
     NONE,
     MOVEMENT_POST,
     DELAY_MOVEMENT,
-    USEITEM_PACKET,
     LEGACY_SLIENT_ROT;
     ;
 

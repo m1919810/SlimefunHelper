@@ -1,7 +1,7 @@
 package me.matl114.hacks.modules.move;
 
 import me.matl114.accessors.access.ClientPlayerAccess;
-import me.matl114.accessors.hacks.KeyBindAccess;
+import me.matl114.accessors.access.KeyBindAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.impl.EventContainer;
@@ -12,6 +12,7 @@ import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.PlayerInputUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.move.FlightVelocity;
 import me.matl114.managers.*;
@@ -19,7 +20,6 @@ import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
-import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.MovementType;
@@ -32,6 +32,9 @@ import net.minecraft.util.math.Vec3d;
 
 public class Flight extends BaseModule implements LegalMovementManager.MovementModifier {
     private Vec3d pendingFlightVelocity;
+    private float serverFlySpeed = 0.05F;
+    private PlayerAbilities modifiedAbilities;
+    private float originalFlySpeed;
     public final ModulePath moveSafety = makePath(Configs.MOV_CONFIG, "move-safety");
     public final ModulePath flight = moveSafety.add("flight");
     public final ModulePath moveSpeed = makePath(Configs.MOV_CONFIG, "move-speed");
@@ -83,7 +86,7 @@ public class Flight extends BaseModule implements LegalMovementManager.MovementM
             .defaultValue(false)
             .build();
 
-    public final KeyBindRef overridingSpeedKeybind = moduleEntry(
+    public final KeyBindRef overridingSpeedKeybind = toggleHotkey(
                     moveSpeed.add("toggle-flight-speed"), new MultiKeyBind(), moveSpeed.add("fly-speed"))
             .build();
 
@@ -98,7 +101,7 @@ public class Flight extends BaseModule implements LegalMovementManager.MovementM
     public final FlagRef overrideWalkSpeed =
             flagBuilder(moveSpeed.add("walk-speed")).build();
 
-    public final KeyBindRef overridingWalkSpeedKeybind = moduleEntry(
+    public final KeyBindRef overridingWalkSpeedKeybind = toggleHotkey(
                     moveSpeed.add("toggle-walk-speed"), new MultiKeyBind(), moveSpeed.add("walk-speed"))
             .build();
     public final DoubleRef overridingWalkSpeedAll = builder(moveSpeed.add("walk-speed-override"), Double.class)
@@ -150,6 +153,7 @@ public class Flight extends BaseModule implements LegalMovementManager.MovementM
     public void onAbility(Event<PlayerAbilitiesS2CPacket> event) {
         var packet1 = event.context();
         serverSideCanFly = packet1.allowFlying();
+        serverFlySpeed = packet1.getFlySpeed();
         if (mc.player != null) {
             PlayerAbilities abilities = mc.player.getAbilities();
             // abilities.allowFlying = abilities.allowFlying;
@@ -158,8 +162,10 @@ public class Flight extends BaseModule implements LegalMovementManager.MovementM
             if (!isActive()) {
                 abilities.allowFlying = packet1.allowFlying();
             }
-            if (!overrideFlySpeed.get()) {
-                abilities.setFlySpeed(packet1.getFlySpeed());
+            if (abilities == modifiedAbilities) {
+                originalFlySpeed = serverFlySpeed;
+            } else if (!overrideFlySpeed.get() || isActive()) {
+                abilities.setFlySpeed(serverFlySpeed);
             }
             abilities.setWalkSpeed(packet1.getWalkSpeed());
             // mc.player.getAbilities().flying = isFly;
@@ -204,6 +210,15 @@ public class Flight extends BaseModule implements LegalMovementManager.MovementM
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
         pendingFlightVelocity = null;
+        PlayerAbilities abilities = player.getAbilities();
+        if (isActive() || overrideFlySpeed.get()) {
+            if (modifiedAbilities != null) {
+                modifiedAbilities.setFlySpeed(originalFlySpeed);
+            }
+            modifiedAbilities = abilities;
+            originalFlySpeed = abilities.getFlySpeed();
+            abilities.setFlySpeed(isActive() ? serverFlySpeed : (float) getOverridingFlySpeed());
+        }
         if (isActive()) {
             if (!player.getAbilities().allowFlying) {
                 player.getAbilities().allowFlying = true;
@@ -355,14 +370,17 @@ public class Flight extends BaseModule implements LegalMovementManager.MovementM
     }
 
     @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+    public void postModify(Event<LegalMovementManager> movementManagerEvent) {
+        if (modifiedAbilities != null) {
+            modifiedAbilities.setFlySpeed(originalFlySpeed);
+            modifiedAbilities = null;
+        }
         // do not restore, because client need this to calculate mining speed
         //        if(lastTimeModifyOnGround > 0){
         //            movementManagerEvent.drawContext.playerStatus.entity.setOnGround(lastTimeModifyOnGround == 1);
         //            lastTimeModifyOnGround = 0;
         //        }
         lastTimeModifyOnGround = 0;
-        return true;
     }
 
     // server constant

@@ -76,7 +76,7 @@ public class XaeroMapScanner extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostGameTick(), this::onTickPost);
+        registerListener(Listener.getPostTick(), this::onTickPost);
         registerListener(Listener.getWorldSwitchPoint(), this::reset);
         currentGoals = new HashMap<>();
         currentGoals.put(Mode.LIQUID, newInstance(() -> new GoalLiquidImpl(this)));
@@ -145,6 +145,7 @@ public class XaeroMapScanner extends BaseModule {
     Map<Mode, Goal> currentGoals;
 
     public void onTickPost() {
+        if (checkNull()) return;
         if (enable.get()) {
             if (!XaeroHooks.getInstance().isXaeroWorldMapEnable()
                     || !XaeroHooks.getInstance().isXaeroPlusEnable()

@@ -26,12 +26,16 @@ public abstract class EntityTypeEvents {
     private <T extends Entity> T onCreate(
             EntityType.EntityFactory<T> instance, EntityType<T> tEntityType, World world, Operation<T> original) {
         T val = original.call(instance, tEntityType, world);
-        Event<Entity> event = new Event<Entity>(val, true, true, tEntityType);
-        Listener.getEntityCreateListener().handleValue(event);
-        if (event.isCancelled()) {
-            return null;
+        if (world.isClient()) {
+            Event<Entity> event = new Event<Entity>(val, true, true, tEntityType);
+            Listener.getEntityCreateListener().handleValue(event);
+            if (event.isCancelled()) {
+                return null;
+            } else {
+                return (T) event.context();
+            }
         } else {
-            return (T) event.context();
+            return val;
         }
     }
 }

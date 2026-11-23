@@ -10,11 +10,11 @@ import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.modules.survival.XaeroHelper;
+import me.matl114.hacks.utils.CommonUtils;
 import me.matl114.managers.FileManager;
 import me.matl114.managers.command.MainCommand;
 import me.matl114.managers.file.FileStorage;
 import me.matl114.utils.ChatUtils;
-import me.matl114.utils.CommonUtils;
 import me.matl114.utils.Debug;
 import me.matl114.utils.commands.commandGroup.CommandContext;
 import me.matl114.utils.commands.commandGroup.SubCommand;
@@ -136,7 +136,7 @@ public class Warps extends BaseModule {
         super.registerAll();
         registerListener(XaeroHelper.getWorldSwitchPoint(), this::onGameJoin);
         registerListener(Listener.getGameJoinPoint(), this::onGameJoin);
-        registerListener(Listener.getPostGameTick(), this::onPostGameTick);
+        registerListener(Listener.getPostTick(), this::onPostGameTick);
         registerListener(Listener.getCustomListener().getChannel(MovTasks.TpaCommandEvent.class), this::onTpaToWarp);
         registerCommandBootstrap(this::warpCommandBootStrap);
         if (!checkNull()) {
@@ -291,10 +291,9 @@ public class Warps extends BaseModule {
     }
 
     private void onPostGameTick() {
-        if (!checkNull()) {
-            if (!Objects.equals(loadedWaypointWorld, mc.world.getRegistryKey())) {
-                loadCurrentWaypoints();
-            }
+        if (checkNull()) return;
+        if (!Objects.equals(loadedWaypointWorld, mc.world.getRegistryKey())) {
+            loadCurrentWaypoints();
         }
     }
 

@@ -84,14 +84,18 @@ public class Tasks {
         gameTasks.forEach(i -> i.accept(player));
     }
 
-    public static void onPreTick(Event<Void> v) {
-        // update tick Counter at pre tick
+    public static void updateTickCounter() {
         ++tickCounter;
         if (tickCounter < 0) {
             tickCounter = 0;
         } else if (tickCounter % 20 == 0) {
             ++secondCounter;
         }
+    }
+
+    public static void onPreTick(Event<Void> v) {
+        // update tick Counter at pre tick
+
         doPreTick();
     }
 

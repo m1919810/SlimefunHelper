@@ -12,6 +12,8 @@ import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.CommonUtils;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.managers.Configs;
@@ -19,7 +21,7 @@ import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
-import me.matl114.utils.containers.MetaData;
+import me.matl114.utils.collections.MetaData;
 import net.minecraft.block.AbstractSignBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -120,7 +122,7 @@ public class RenderOptimize extends BaseModule {
         registerListener(Listener.getEntityPreTickListener(), this::onEntityCullingTick);
         registerListener(Listener.getEntityPreTickListener(), this::onEntityLabelShowTick);
         registerListener(Listener.getBlockEntityTickListener(), this::onBlockEntityTick);
-        registerListener(Listener.getPostGameTick(), this::onCacheClean);
+        registerListener(Listener.getPostTick(), this::onCacheClean);
         registerListener(Listener.getPreGameTick(), this::onBlockEntityCullingTick);
 
         registerListener(RenderListener.getEntityRenderListener(), this::onEntityRender);
@@ -168,12 +170,13 @@ public class RenderOptimize extends BaseModule {
 
     public void onEntityCullingTick(Event<Entity> event) {
         Entity entity = event.context();
-        if (entity instanceof MetadataHolder holder) {
-            MetaData metaData;
-            RenderController controller;
-            Vec3d pos = RenderUtils.getCameraPos();
-            EntityType<?> types = entity.getType();
-            if (cullingEnable.get()) {
+        if (cullingEnable.get()) {
+            if (entity instanceof MetadataHolder holder) {
+                MetaData metaData;
+                RenderController controller;
+                Vec3d pos = RenderUtils.getCameraPos();
+                EntityType<?> types = entity.getType();
+
                 if (this.cullingTypes.get().test(types)) {
                     metaData = holder.getMetadata();
                     controller = metaData.getOrPut(this, KEY_RENDER_CONTROL, RenderController::new);
@@ -446,6 +449,10 @@ public class RenderOptimize extends BaseModule {
     private int tickCounter = 0;
 
     public void onCacheClean() {
+        if (checkNull()) {
+            cache.clear();
+            return;
+        }
         if (cullingUseRaycast.get()) {
             tickCounter += 1;
             if (tickCounter > 1) {

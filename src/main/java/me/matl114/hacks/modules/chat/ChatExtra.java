@@ -126,6 +126,12 @@ public class ChatExtra extends BaseModule {
         passwordSalt.addListener(ChatLocalSettings::setPasswordSalt);
         acceptor.accept(passwordSalt.generateKeyValueInput(
                 factory, 0, dblank, indexWidth, blankWidth, dx - indexWidth - blankWidth, dy));
+        AttrKeyValue<Integer> passwordEncryptLength = AttrKeyValue.integer(
+                "chat-screen-tools.password-encrypt-length", ChatLocalSettings.getPasswordEncryptLength());
+        passwordEncryptLength.addValidator(length -> length > 0);
+        passwordEncryptLength.addListener(ChatLocalSettings::setPasswordEncryptLength);
+        acceptor.accept(passwordEncryptLength.generateKeyValueInput(
+                factory, 0, dblank, indexWidth, blankWidth, dx - indexWidth - blankWidth, dy));
     }
 
     @Override
@@ -173,11 +179,6 @@ public class ChatExtra extends BaseModule {
 
     private final NBTRef<Regex> regexLogin = builder(chatTools.add("login-command-pattern"), Regex.class)
             .defaultValue(new Regex("^(/login|/l|/reg|/register|/changepass|/changepassword) (.+)$"))
-            .build();
-
-    public final IntRef encryptLength = intBuilder(chatTools.add("password-encrypt-length"))
-            .defaultValue(20)
-            .validator(Configs.INT_POSITIVE)
             .build();
 
     // add chat screen extra things
@@ -287,7 +288,7 @@ public class ChatExtra extends BaseModule {
         BigInteger integer = new BigInteger(1, bytes);
         String hashResult = integer.toString(36);
         StringBuilder builder = new StringBuilder();
-        int length = encryptLength.get();
+        int length = ChatLocalSettings.getPasswordEncryptLength();
         if (hashResult.length() > length) {
             builder.append(hashResult, 0, length);
         } else {

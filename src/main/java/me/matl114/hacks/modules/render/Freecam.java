@@ -8,6 +8,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.PlayerInputUtils;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.entity.CameraEntity;
@@ -22,7 +23,6 @@ import me.matl114.managers.input.KeyCode;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.MathUtils;
 import me.matl114.utils.collections.FPoint;
-import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
@@ -64,7 +64,7 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
         super.registerAll();
         registerListener(Listener.getPlayerRespawnPoint(), this::onWorldSwitch);
         registerListener(Listener.getTeleportationConfirm(), this::onPosResync);
-        registerListener(Listener.getPostGameTick(), this::onTick);
+        registerListener(Listener.getPostTick(), this::onTick);
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerInteractEntityC2SPacket.class),
                 this::onStopInteractWithSelf);
@@ -127,7 +127,7 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
     }
 
     public void onTick() {
-        if (camera == null || mc.world == null) return;
+        if (checkNull() || camera == null) return;
         // nop
         // mc.world.tickEntity(camera);
     }
@@ -219,10 +219,9 @@ public class Freecam extends BaseModule implements LegalMovementManager.Movement
     }
 
     @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+    public void postModify(Event<LegalMovementManager> movementManagerEvent) {
         if (camera != null && mc.getCameraEntity() == movementManagerEvent.context.playerStatus.entity) {
             mc.setCameraEntity(camera);
         }
-        return true;
     }
 }

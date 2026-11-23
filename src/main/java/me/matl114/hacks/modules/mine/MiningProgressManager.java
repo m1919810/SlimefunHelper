@@ -10,9 +10,9 @@ import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.WorldUtils;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.ItemStackUtils;
-import me.matl114.utils.WorldUtils;
 import me.matl114.utils.inventory.ItemStackSample;
 import net.minecraft.block.BlockState;
 import net.minecraft.enchantment.Enchantments;
@@ -170,7 +170,7 @@ public class MiningProgressManager extends BaseModule {
                     : status.trackedInventoryItems.stream()
                             .max(Comparator.comparingDouble(s -> {
                                 return WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
-                                        player, blockState, s.sample());
+                                        player, blockState, s.sample(), false);
                             }))
                             .map(ItemStackSample::sample)
                             .orElse(player.getStackInHand(Hand.MAIN_HAND));
@@ -183,7 +183,8 @@ public class MiningProgressManager extends BaseModule {
                 }
             }
 
-            float speed = WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(player, blockState, stackCopy);
+            float speed =
+                    WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(player, blockState, stackCopy, false);
             return WorldUtils.calcBlockBreakingDelta(blockState, mc.world, pos, speed);
         }
     }

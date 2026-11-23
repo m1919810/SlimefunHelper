@@ -4,6 +4,7 @@ import java.util.Iterator;
 import me.matl114.accessors.gui.ScreenAccess;
 import me.matl114.gui.basic.Draggable;
 import me.matl114.gui.basic.DrawableWidget;
+import me.matl114.hooks.IMBlockerHooks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
@@ -103,6 +104,8 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
         return super.mouseReleased(click);
     }
 
+    boolean lastFocusedOnChatIMBlocker = false;
+
     @Override
     public final boolean mouseClicked(Click click, boolean input) {
         // remove the fucking super method
@@ -123,7 +126,25 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
                 this.draggingButton = click.button();
             }
         }
+        IMBlockerHooks imBlockerHooks = IMBlockerHooks.getInstance();
+        if (imBlockerHooks.isEnabled()) {
+            if (shouldNotExecuteInInput()) {
+                if (!lastFocusedOnChatIMBlocker) {
+                    imBlockerHooks.setPreferredState(shouldNotExecuteInInput());
+                    lastFocusedOnChatIMBlocker = true;
+                    imBlockerHooks.setEnglishState(true);
+                }
+            } else {
+                lastFocusedOnChatIMBlocker = false;
+                imBlockerHooks.setPreferredState(false);
+            }
+        }
         return val;
+    }
+
+    public boolean shouldNotExecuteInInput() {
+        var focused = this.getFocused();
+        return WidgetUtils.isInputing(focused);
     }
 
     @Override
@@ -151,10 +172,18 @@ public class GenericScreen extends Screen implements Selectable, Draggable {
         }
     }
 
-    public void resetScreen() {
+    protected final void clearAndInit() {
+        super.clearAndInit();
+    }
+
+    public final void resetScreen() {
         // schedule refresh
         this.clearAndInit();
         // mc.executeSync(()->this.init(mc,mc.getWindow().getScaledWidth(), mc.getWindow().getScaledHeight()));
+    }
+
+    public final void resizeScreen(int width, int height) {
+        this.init(width, height);
     }
 
     @Override

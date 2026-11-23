@@ -86,7 +86,7 @@ public class WorldManager extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(ServerStorage.getServerStorageLoad(), this::onLoad);
-        registerListener(Listener.getPostGameTick(), this::onGameTick);
+        registerListener(Listener.getPostTick(), this::onGameTick);
         registerListener(Listener.getEntityRemoveListener(), this::onEntityDeath);
         registerListener(
                 Listener.getEntityTrackDataUpdate().getChannel(EntityType.VILLAGER), this::onVillagerProfessionUpdate);
@@ -161,7 +161,12 @@ public class WorldManager extends BaseModule {
                 : null;
     }
 
-    public record TradeRecord(ItemStack result, ItemStack buy1, ItemStack buy2, int buyLimit) {
+    public record TradeRecord(
+            ItemStack result, ItemStack buy1, ItemStack buy2, int buyLimit, Optional<Integer> realPrice) {
+        public TradeRecord(ItemStack result, ItemStack buy1, ItemStack buy2, int buyLimit) {
+            this(result, buy1, buy2, buyLimit, Optional.empty());
+        }
+
         public static final Codec<TradeRecord> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                         VItem.ITEM_STACK_CODEC.fieldOf("result").forGetter(TradeRecord::result),
                         VItem.ITEM_STACK_CODEC
@@ -170,7 +175,8 @@ public class WorldManager extends BaseModule {
                         VItem.ITEM_STACK_CODEC
                                 .optionalFieldOf("buy2", ItemStack.EMPTY)
                                 .forGetter(TradeRecord::buy2),
-                        Codec.INT.fieldOf("buy-limit").forGetter(TradeRecord::buyLimit))
+                        Codec.INT.fieldOf("buy-limit").forGetter(TradeRecord::buyLimit),
+                        Codec.INT.optionalFieldOf("real-price").forGetter(TradeRecord::realPrice))
                 .apply(instance, TradeRecord::new));
     }
 
@@ -185,13 +191,19 @@ public class WorldManager extends BaseModule {
                     setVillagerTradeLock(villager, !canRefresh);
                     List<TradeRecord> trades = offers.stream()
                             .map(offer -> {
+                                ItemStack buy1 = offer.getFirstBuyItem().itemStack();
+                                int discountedPrice =
+                                        offer.getDisplayedFirstBuyItem().getCount();
                                 return new TradeRecord(
                                         offer.getSellItem(),
-                                        offer.getFirstBuyItem().itemStack(),
+                                        buy1,
                                         offer.getSecondBuyItem()
                                                 .map(TradedItem::itemStack)
                                                 .orElse(ItemStack.EMPTY),
-                                        offer.getMaxUses());
+                                        offer.getMaxUses(),
+                                        discountedPrice != buy1.getCount()
+                                                ? Optional.of(discountedPrice)
+                                                : Optional.empty());
                             })
                             .toList();
                     setVillagerTradeList(villager, trades);
@@ -449,7 +461,7 @@ public class WorldManager extends BaseModule {
     }
 
     private boolean isAlive(Entity entity) {
-        return (!(entity instanceof LivingEntity lv) || lv.getHealth() > 0.0);
+        return entity != null && (!(entity instanceof LivingEntity lv) || lv.getHealth() > 0.0);
     }
 
     public void onEntityDeath(Event<Entity> event) {

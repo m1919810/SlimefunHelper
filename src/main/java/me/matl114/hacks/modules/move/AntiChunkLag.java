@@ -4,6 +4,7 @@ import me.matl114.events.Event;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.task.MovementManager;
+import me.matl114.hacks.utils.WorldUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
@@ -11,7 +12,6 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.MathUtils;
-import me.matl114.utils.WorldUtils;
 import net.minecraft.util.math.*;
 
 public class AntiChunkLag extends BaseModule implements LegalMovementManager.MovementModifier {
@@ -114,7 +114,7 @@ public class AntiChunkLag extends BaseModule implements LegalMovementManager.Mov
                         }
                     }
                     if (hasUnloaded) {
-                        movementManagerEvent.context.playerStatus.restorePos();
+                        movementManagerEvent.context.resetPos();
                         FloatingUtils.INSTANCE.setGrimFloatingTick(true);
                         // fix armorGlide
                         if (mc.player.isFallFlying()) {
@@ -136,11 +136,5 @@ public class AntiChunkLag extends BaseModule implements LegalMovementManager.Mov
         } else {
             currentMayFaceLagChunk = false;
         }
-    }
-
-    @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-
-        return true;
     }
 }

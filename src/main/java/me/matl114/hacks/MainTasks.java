@@ -107,12 +107,13 @@ public class MainTasks {
                 } else {
                     len = 250;
                 }
-                String generatedContent = "§b§k" + ("1a锕β".repeat(len));
+                String generatedContent = "2222" + ("锟斤拷".repeat(len));
                 mc.getNetworkHandler()
                         .sendPacket(new BookUpdateC2SPacket(
                                 InventoryUtils.getSelectedSlot(),
                                 Collections.nCopies(nCopies, generatedContent),
-                                args.length > 0 ? Optional.of(String.join("\n", args)) : Optional.empty()));
+                                Optional.empty()));
+
             } else {
                 Debug.chat("手持物品不是书");
             }
@@ -299,6 +300,9 @@ public class MainTasks {
     private static ClickGui clickGui;
 
     @Getter
+    private static HotkeyList hotkey;
+
+    @Getter
     private static TextFont textFont;
 
     @Getter
@@ -337,6 +341,7 @@ public class MainTasks {
     private static void initModule(ModuleManager m) {
         moduleSettings = new ModuleSettings().register(m);
         clickGui = new ClickGui().register(m);
+        hotkey = new HotkeyList().register(m);
         textFont = new TextFont().register(m);
         configManager = new ConfigManager().register(m);
         bindCommand = new BindCommand().register(m);

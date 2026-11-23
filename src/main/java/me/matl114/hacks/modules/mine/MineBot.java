@@ -7,13 +7,17 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
+import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.MineTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.WorldUtils;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.enums.GhostHandMode;
@@ -96,6 +100,11 @@ public class MineBot extends BaseModule {
     public final IntRef maxInstaMine =
             intBuilder(mineBot.add("max-instant-mine")).defaultValue(30).build();
 
+    public final IntRef instantMineInterval = intBuilder(mineBot.add("instant-mine-interval"))
+            .defaultValue(2)
+            .validator(Configs.INT_NONNEGATIVE)
+            .build();
+
     public final FlagRef doubleBreak =
             flagBuilder(mineBot.add("use-double-break")).build();
 
@@ -106,6 +115,8 @@ public class MineBot extends BaseModule {
     public final FlagRef autoSwap = flagBuilder(mineBot.add("auto-swap")).build();
 
     public final FlagRef swing = flagBuilder(mineBot.add("swing-hand")).build();
+
+    public final FlagRef eatingAbort = flagBuilder(mineBot.add("eating-abort")).build();
 
     public final EnumRef<GhostHandMode> ghostHand = builder(mineBot.add("ghost-hand-mode"), GhostHandMode.class)
             .defaultValue(GhostHandMode.INV_SWAP)
@@ -138,11 +149,18 @@ public class MineBot extends BaseModule {
     public void onDisableModule() {
         super.onDisableModule();
         lastMinePos = null;
+        instantMineIntervalActive = false;
     }
 
     public void onMineBotTick() {
         if (mc.player == null || mc.world == null || mc.interactionManager == null) {
             return;
+        }
+        if (instantMineIntervalActive) {
+            if (!instantMineTimer.canRun(instantMineInterval.get())) {
+                return;
+            }
+            instantMineIntervalActive = false;
         }
         switch (mineBotMode.get()) {
             case SPHERICAL -> onMineSpherical();
@@ -183,6 +201,8 @@ public class MineBot extends BaseModule {
     }
 
     private final TimerExecutor noBlocksAround = new TimerExecutor();
+    private final TimerExecutor instantMineTimer = new TimerExecutor();
+    private boolean instantMineIntervalActive;
     private static final int NO_BLOCK_MENTION_LIMIT = 400;
 
     public int onMineCommon(Supplier<BlockPos> posFinder) {
@@ -221,6 +241,10 @@ public class MineBot extends BaseModule {
             noBlocksAround.run(NO_BLOCK_MENTION_LIMIT, () -> logI18N("message.module.mine-bot.no-blocks"));
         } else {
             noBlocksAround.mark();
+        }
+        if (tryMine > 1 && tryMine >= maxInstaMine.get() && instantMineInterval.get() > 0) {
+            instantMineTimer.mark();
+            instantMineIntervalActive = true;
         }
         return tryMine;
     }
@@ -261,7 +285,7 @@ public class MineBot extends BaseModule {
         if (bp == null || mc.player == null || mc.world == null || mc.interactionManager == null) {
             return TickMineResult.STOP;
         }
-        if (settings.considerCooldown() && MineExtra.INSTANCE.getMiningPacketCooldown(1) > 0) {
+        if (settings.considerCooldown() && MineExtra.INSTANCE.getOptimMiningPacketCooldown(1) > 0) {
             return TickMineResult.STOP;
         }
         if (settings.rotate()) {
@@ -285,14 +309,14 @@ public class MineBot extends BaseModule {
         PlayerInteractionAccess access = PlayerInteractionAccess.of(mc.interactionManager);
         access.setMiningCooldown(0);
         BlockState mineState = mc.world.getBlockState(bp);
-        IndexEntry<ItemStack> bestStack = settings.autoSwap()
+        IndexEntry<ItemStack> bestStack = settings.autoSwap() && mineState.getHardness(mc.world, bp) > 0
                 ? InventoryUtils.findBestPlayerItem(
                         item -> isDurabilityOk(item)
                                 ? (double) WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
-                                        mc.player, mineState, item)
+                                        mc.player, mineState, item, false)
                                 : null,
                         settings.ghostHand().getSearchSize(false),
-                        true,
+                        false,
                         true)
                 : InventoryUtils.getSelectedItem();
         if (bestStack == null || !isDurabilityOk(bestStack.val())) {
@@ -360,6 +384,7 @@ public class MineBot extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreGameTick(), this::onTick);
+        registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
     }
 
     public static enum MineBotMode implements ConfigEnum {
@@ -502,5 +527,12 @@ public class MineBot extends BaseModule {
         }
         // holy shit, who needs it
         return availablePos.isEmpty() ? null : availablePos.get(rand.nextInt(0, availablePos.size()));
+    }
+
+    public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
+        ModulePreset preset = event.context.getValue();
+        if (preset.isSwingMinePreset()) swing.set(preset.getSwingMine(swing.get()));
+        if (preset.isMultitaskPreset()) eatingAbort.set(preset.getEatingAbort(eatingAbort.get()));
+        if (preset.isGhostHandPreset()) ghostHand.set(preset.getGhostHandMode(ghostHand.get()));
     }
 }

@@ -3,6 +3,7 @@ package me.matl114.hacks.modules.interact;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Streams;
 import java.util.*;
+import javax.annotation.Nullable;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
@@ -20,6 +21,9 @@ import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.modules.move.RotationManager;
+import me.matl114.hacks.utils.InteractUtils;
+import me.matl114.hacks.utils.RaycastUtils;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.hacks.utils.enums.LegalTargetingMode;
@@ -152,7 +156,7 @@ public class Interact extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreGameTick(), this::onPreTick);
-        registerListener(Listener.getPostGameTick(), this::updateRenderCollector);
+        registerListener(Listener.getPostTick(), this::updateRenderCollector);
         registerListener(RenderListener.getRender3DEvent(), this::onRender3D);
         registerListener(Listener.getItemUseAction(), this::onInteract);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
@@ -163,7 +167,7 @@ public class Interact extends BaseModule {
     }
 
     public boolean canInteract(Entity entity, double range) {
-        if (!TargetSelector.INSTANCE.isTargetInRange(entity, range, 0)) {
+        if (!TargetSelector.INSTANCE.isTargetInRange(entity, range)) {
             return false;
         }
         if (entity.isAlive() && !entity.isSpectator() && interactWhiteList.get().test(entity.getType())) {
@@ -194,10 +198,13 @@ public class Interact extends BaseModule {
         });
     }
 
-    public boolean canInteract(BlockPos bp, double range) {
+    private boolean canInteract(BlockPos bp, double extra) {
         BlockState state = mc.world.getBlockState(bp);
         if (!state.isAir() && !state.isLiquid() && blockWhiteList.get().test(state.getBlock())) {
-            if (!InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), bp, range)) {
+            if (!(extra > 0
+                    ? InteractExtra.INSTANCE.isWithinInteractRange(
+                            mc.player.getPos(), bp, InteractExtra.INSTANCE.getBlockReachDistance() + extra)
+                    : InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), bp))) {
                 return false;
             }
             if (blockOnlyInteractable.get()
@@ -215,22 +222,20 @@ public class Interact extends BaseModule {
     }
 
     public BlockPos searchInteractableBlock() {
-        double search = InteractExtra.INSTANCE.getBlockReachDistance();
-        if (canUseTp()) {
-            search += tpInteract.get().getValue();
-        }
+        double searchExtra = canUseTp() ? tpInteract.get().getValue() : 0.0D;
         Vec3d playerEye = mc.player.getEyePos();
         Vec3d rot = mc.player.getRotationVector();
-        Vec3d endPos = playerEye.add(rot.normalize().multiply(search));
+        Vec3d endPos =
+                playerEye.add(rot.normalize().multiply(InteractExtra.INSTANCE.getBlockReachDistance() + searchExtra));
         for (var bp : RaycastUtils.createRaycastBlockPoses(playerEye, endPos)) {
-            if (canInteract(bp, search)) {
+            if (canInteract(bp, searchExtra)) {
                 return bp;
             }
         }
         BlockPos playerPos = mc.player.getSteppingPos().add(0, 1, 0);
         for (var bd : InteractExtra.INSTANCE.getBlocksAround()) {
             BlockPos testPos = playerPos.add(bd);
-            if (canInteract(testPos, search)) {
+            if (canInteract(testPos, searchExtra)) {
                 return testPos;
             }
         }
@@ -386,7 +391,8 @@ public class Interact extends BaseModule {
         Vec3d[] teleportedPosition = {null};
         boolean[] distancePassInteract = {true};
         return !RotationManager.INSTANCE.request(RotationManager.ofEntity(() -> distancePassInteract[0] ? target : null)
-                .preTick(() -> {
+                .applyMoveFix(true)
+                .preTickTask(() -> {
                     ClientPlayerEntity player = mc.player;
                     Vec3d originalPosition = player.getPos();
                     if (!TargetSelector.INSTANCE.isWithinAttackRange(originalPosition, target, interactRange)
@@ -402,7 +408,7 @@ public class Interact extends BaseModule {
                         teleportedPosition[0] = null;
                     }
                 })
-                .postTick(() -> {
+                .postTickTask(() -> {
                     ClientPlayerEntity player = mc.player;
                     if (distancePassInteract[0] && !interactBeforeMovement) {
                         InteractionTasks.interactEntity(player, target, Hand.MAIN_HAND, swingHandEntity.get());
@@ -655,8 +661,7 @@ public class Interact extends BaseModule {
         FlagEntry<BlockHitResult> hitResult = InteractionTasks.getPlaceSupportingResult(
                 pos, blockAirPlace.get(), !blockMode.get().isLegal());
         if (InteractUtils.canInteractAndPlace(mc.player, hitResult)) {
-            BlockRotate.INSTANCE.addTempStateSchematic(pos, state);
-            return interactBlock(hitResult.val());
+            return interactBlock(hitResult.val(), state);
         } else return false;
     }
 
@@ -689,15 +694,32 @@ public class Interact extends BaseModule {
 
     @ApiMethod
     public boolean interactBlock(BlockHitResult hitResult) {
-        double reach = InteractExtra.INSTANCE.getBlockReachDistance();
+        return interactBlock(hitResult, null);
+    }
+
+    private boolean interactBlock(BlockHitResult hitResult, @Nullable BlockState targetState) {
         boolean isWithinDistance =
-                InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), hitResult.getBlockPos(), reach);
+                InteractExtra.INSTANCE.isWithinInteractRange(mc.player.getPos(), hitResult.getBlockPos());
         boolean canDirectlyHit = RaycastUtils.canRaycastHit(
                 mc.player,
                 PlayerStateManager.INSTANCE.lastPitch,
                 PlayerStateManager.INSTANCE.lastYaw,
                 hitResult.getBlockPos(),
-                reach);
+                InteractExtra.INSTANCE.getBlockReachDistance());
+        boolean deceive = targetState != null && BlockRotate.INSTANCE.hasPlaceYawDeceive(hitResult, targetState);
+        if (deceive) {
+            if (!canDirectlyHit && blockMode.get() == LegalInteractMode.NONE && canUseTp() && !isWithinDistance) {
+                return TpInteract.INSTANCE.tpAndInteractBlock(
+                        hitResult,
+                        Hand.MAIN_HAND,
+                        swingHandBlock.get(),
+                        () -> BlockRotate.INSTANCE.handleYawDeceivePlace(
+                                blockMode.get(), hitResult, Hand.MAIN_HAND, targetState, swingHandBlock.get()));
+            }
+            if (!canDirectlyHit && !isWithinDistance && blockMode.get() != LegalInteractMode.NONE) return false;
+            return BlockRotate.INSTANCE.handleYawDeceivePlace(
+                    blockMode.get(), hitResult, Hand.MAIN_HAND, targetState, swingHandBlock.get());
+        }
         if (canDirectlyHit) {
             InteractionTasks.interactBlock(Hand.MAIN_HAND, hitResult, swingHandBlock.get());
             return true;
@@ -738,7 +760,7 @@ public class Interact extends BaseModule {
     private void updateRenderCollector() {
         entityTargetCollector.clear();
         blockTargetCollector.clear();
-        if (!renderAttackTarget.get() || mc.player == null || mc.world == null || currentInteractTarget == null) return;
+        if (checkNull() || !renderAttackTarget.get() || currentInteractTarget == null) return;
 
         if (currentInteractTarget instanceof BlockHitResult hitResult && hitResult.getType() == HitResult.Type.BLOCK) {
             BlockPos hitPos = hitResult.getBlockPos();

@@ -13,7 +13,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.config.Regex;
-import me.matl114.hacks.utils.enums.LegalInteractMode;
+import me.matl114.hacks.utils.enums.LegalServerRotMode;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
@@ -56,8 +56,8 @@ public class ProjectileEnhance extends BaseModule {
 
     public FlagRef enableTp = flagBuilder(projectile.add("tp-enable")).build();
 
-    public EnumRef<LegalInteractMode> mode = builder(projectile.add("targeting-mode"), LegalInteractMode.class)
-            .defaultValue(LegalInteractMode.USEITEM_PACKET)
+    public EnumRef<LegalServerRotMode> mode = builder(projectile.add("targeting-mode"), LegalServerRotMode.class)
+            .defaultValue(LegalServerRotMode.USE_ITEM)
             .build();
 
     public DoubleRef tpDistance = builder(projectile.add("tp-accelerate"), DoubleRef.TYPE)
@@ -88,7 +88,7 @@ public class ProjectileEnhance extends BaseModule {
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {
         if (event.context().getValue().isOptionPreset()) return;
-        mode.set(LegalInteractMode.getFromPreset(event.context.getValue()));
+        mode.set(LegalServerRotMode.getFromPreset(event.context.getValue()));
     }
 
     public static float getShootingPowerCrossbow(ItemStack a) {

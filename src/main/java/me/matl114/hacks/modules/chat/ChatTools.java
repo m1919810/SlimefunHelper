@@ -27,6 +27,7 @@ import me.matl114.utils.ScreenUtils;
 import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.client.gui.screen.ChatScreen;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
@@ -91,9 +92,9 @@ public class ChatTools extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostGameTick(), this::onTick);
+        registerListener(Listener.getPostTick(), this::onTick);
         registerListener(Listener.getPostInitializeScreen().getChannel(ChatScreen.class), this::onChatScreenInitialize);
-        registerListener(Listener.getPreSetScreen().getChannel(ChatScreen.class), this::onCloseChatScreen);
+        registerListener(Listener.getPreSetScreen(), this::onCloseChatScreen);
         registerListener(Listener.getPostInitializeScreen().getChannel(ChatScreen.class), this::fixIMBlockerStateError);
         TaskManagers.getToggleManager().register(TaskManagers.PREFIX_BUTTON_TOGGLE + "." + "auto-chat", autoSend);
         TaskManagers.getToggleManager()
@@ -112,6 +113,7 @@ public class ChatTools extends BaseModule {
     public int counter = 0;
 
     public void onTick() {
+        if (checkNull()) return;
         if (mc.getNetworkHandler() != null && autoSend.get()) {
             counter += 1;
             if (counter >= period.getValue()) {
@@ -180,7 +182,8 @@ public class ChatTools extends BaseModule {
         cacheWidget = helperWidgetWrapper.getDelegate();
 
         // todo： add translatable to buttons and everything
-        createExecuteButton(
+        ELEMENT_FACTORY
+                .createExecuteButton(
                         "widget.chat-tools.send-cache",
                         ButtonAction.run(() -> ChatTasks.sayMessage(ChatLocalSettings.getChatCache(), true)),
                         120 + 1,
@@ -197,7 +200,8 @@ public class ChatTools extends BaseModule {
                 toggle.run();
             }
         });
-        createToggleButton(
+        ELEMENT_FACTORY
+                .createToggleButton(
                         "widget.chat-tools.auto-send",
                         ValueAccessor.of(autoSendToggle),
                         180 + 1,
@@ -214,7 +218,8 @@ public class ChatTools extends BaseModule {
                 toggle2.run();
             }
         });
-        createToggleButton(
+        ELEMENT_FACTORY
+                .createToggleButton(
                         "widget.chat-tools.keep-chat-inv",
                         ValueAccessor.of(keepChatInvToggle),
                         180 + 1,
@@ -222,7 +227,8 @@ public class ChatTools extends BaseModule {
                         70 - 2,
                         20 - 2)
                 .addToSub(basicSubScreenWidget);
-        createExecuteButton(
+        ELEMENT_FACTORY
+                .createExecuteButton(
                         "widget.chat-tools.to-unicode",
                         ButtonAction.run(() -> {
                             TextFieldWidget widget = findCurrentFocusing();
@@ -235,13 +241,15 @@ public class ChatTools extends BaseModule {
                         60 - 2,
                         20 - 2)
                 .addToSub(basicSubScreenWidget);
-        createElement(
+        ELEMENT_FACTORY
+                .createElement(
                         IconElement.statedGuiPredicate(
                                 Constants.LOCK_ENABLE_SPRITE,
                                 Constants.LOCK_DISABLE_SPRITE,
                                 ButtonAction.empty(),
                                 (el) -> ChatTasks.getEncryptChat().shouldEncryptSendMessage()),
-                        () -> ChatUtils.parseTooltipsTranslation("widget.chat-tools.toggle-encrypt.tooltips", ""),
+                        TooltipHandler.of(() ->
+                                ChatUtils.parseTooltipsTranslation("widget.chat-tools.toggle-encrypt.tooltips", "")),
                         ButtonAction.isLeft((i) -> {
                             if (i) {
                                 ChatTasks.getEncryptChat().encrypt.toggle();
@@ -255,7 +263,8 @@ public class ChatTools extends BaseModule {
                         20 - 2)
                 .addToSub(basicSubScreenWidget);
 
-        createExecuteButton(
+        ELEMENT_FACTORY
+                .createExecuteButton(
                         () -> Text.literal("F").formatted(Formatting.BOLD),
                         () -> ChatUtils.parseTooltipsTranslation("widget.chat-tools.toggle-chat-format.tooltips", ""),
                         ButtonAction.isLeft((i) -> {
@@ -275,7 +284,8 @@ public class ChatTools extends BaseModule {
         ContentDelegateWidget<TextFieldWidget> helperWidget = McWidgetHelpers.createTextFieldEditBox(
                 40 + 1, 24 + 1, 40 - 2, 20 - 2, s -> int2CharFieldContent = s, int2CharFieldContent);
         int2CharInputField = helperWidget.getDelegate();
-        createExecuteButton(
+        ELEMENT_FACTORY
+                .createExecuteButton(
                         "widget.chat-tools.translate-int-to-char",
                         ButtonAction.run(() -> tranlateInt2char(int2CharInputField)),
                         80 + 1,
@@ -286,7 +296,8 @@ public class ChatTools extends BaseModule {
         ContentDelegateWidget<SubScreenWidget> widgetQuickChars =
                 new ContentDelegateWidget<>(250, 0, 0, 0).addToSub(basicSubScreenWidget);
 
-        createExecuteButton(
+        ELEMENT_FACTORY
+                .createExecuteButton(
                         () -> enableSpecialChars.get() ? ENABLE_STATE : DISABLE_STATE,
                         () -> ChatUtils.parseTooltipsTranslation(
                                 "widget.chat-tools.toggle-special-char-input.tooltips", ""),
@@ -325,7 +336,8 @@ public class ChatTools extends BaseModule {
                         }
                     }
                     final String valueOfChar = value;
-                    createExecuteButton(
+                    ELEMENT_FACTORY
+                            .createExecuteButton(
                                     () -> Text.literal(valueOfChar),
                                     List::of,
                                     ButtonAction.run(() -> {
@@ -385,7 +397,8 @@ public class ChatTools extends BaseModule {
     public void onChatScreenInitialize(Event<ChatScreen> event) {
         var chat0 = event.context;
         initToolWidget();
-        createExecuteButton(
+        ELEMENT_FACTORY
+                .createExecuteButton(
                         () -> enableChatScreenTools.get() ? ENABLE_STATE : DISABLE_STATE,
                         () -> ChatUtils.parseTooltipsTranslation("widget.chat-tools.toggle-hud.tooltips", ""),
                         ButtonAction.run(enableChatScreenTools::toggle),
@@ -409,11 +422,12 @@ public class ChatTools extends BaseModule {
         }
     }
 
-    public void onCloseChatScreen(Event<ChatScreen> event) {
+    public void onCloseChatScreen(Event<Screen> event) {
         // do not consider subClasses
         if (keepChatInv.get()
                 && mc.player != null
                 && mc.world != null
+                && event.context == null
                 && mc.currentScreen != null
                 && mc.currentScreen.getClass() == ChatScreen.class
                 && ScreenUtils.hasEnterDown()) {

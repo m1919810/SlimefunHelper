@@ -16,6 +16,7 @@ import me.matl114.events.impl.SequencedAction;
 import me.matl114.events.impl.UseItem;
 import me.matl114.events.impl.UseItemOnBlock;
 import me.matl114.hacks.api.BaseModule;
+import me.matl114.hacks.utils.interact.EntityInteractionTracker;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.collections.IndexEntry;
 import net.minecraft.block.BlockState;
@@ -30,6 +31,9 @@ import net.minecraft.util.math.BlockPos;
 
 public class SequencedActionManager extends BaseModule {
     public static SequencedActionManager INSTANCE;
+
+    @Getter
+    private final EntityInteractionTracker entityInteractTracker = new EntityInteractionTracker();
 
     public SequencedActionManager() {
         super("SequencedActionManager");
@@ -160,6 +164,12 @@ public class SequencedActionManager extends BaseModule {
     public boolean isWaitingBlockResponse(BlockPos bp) {
         return blockPlaceSequences.stream()
                 .anyMatch(s -> Objects.equals(s.val().hitResult().getBlockPos(), bp));
+    }
+
+    public boolean isWaitingBlockPlaceResponse(BlockPos pos) {
+        return blockPlaceSequences.stream()
+                .anyMatch(s -> s.val().placingBlockPos().isPresent()
+                        && Objects.equals(s.val().placingBlockPos().get(), pos));
     }
 
     public boolean isWaitingBlockResponse(BlockPos bp, Predicate<ItemStack> placeBlock) {

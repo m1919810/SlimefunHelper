@@ -3,8 +3,8 @@ package me.matl114.gui.interfaces;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import me.matl114.hacks.utils.gui.CustomGuiConfig;
-import me.matl114.hacks.utils.gui.GuiStyle;
+import me.matl114.hacks.utils.widgets.CustomGuiConfig;
+import me.matl114.hacks.utils.widgets.GuiStyle;
 import net.minecraft.util.Identifier;
 
 /** Registry of GUI element styles. */

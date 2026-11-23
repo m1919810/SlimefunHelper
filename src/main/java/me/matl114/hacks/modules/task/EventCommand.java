@@ -197,7 +197,7 @@ public class EventCommand extends BaseModule {
         registerListener(CombatListener.getPlayerDeathInfo(), this::onDeath);
         registerListener(CombatListener.getPlayerEnterVisualRange(), this::onEnterVisualRange);
         registerListener(CombatListener.getPlayerLeaveVisualRange(), this::onLeftVisualRange);
-        registerListener(Listener.getPostGameTick(), this::onPostTick);
+        registerListener(Listener.getPostTick(), this::onPostTick);
     }
 
     private final List<Pair<DispatchData<EventType>, StringFormat>> conditionCommand = new ArrayList<>();
@@ -331,6 +331,7 @@ public class EventCommand extends BaseModule {
     }
 
     public void onPostTick() {
+        if (checkNull()) return;
         if (enable.get()) {
             onEvent(EventType.TICK, null);
             conditionCommand.removeIf(pair -> {
