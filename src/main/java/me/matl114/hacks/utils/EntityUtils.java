@@ -535,7 +535,7 @@ public class EntityUtils {
                 vec2f = vec2f.multiply(0.2F);
             }
             if (p.shouldSlowDown()) {
-                float f = (float) p.getAttributeValue(EntityAttributes.PLAYER_SNEAKING_SPEED);
+                float f = (float) p.getAttributeValue(EntityAttributes.SNEAKING_SPEED);
                 vec2f = vec2f.multiply(f);
             }
             float f = vec2f.length();
@@ -620,7 +620,7 @@ public class EntityUtils {
         double gravity = EntityUtils.getEffectiveGravity(mc.player);
         float drag = mc.player.isSprinting() ? 0.9F : 0.8F;
         float acceleration = 0.02F;
-        float efficiency = (float) mc.player.getAttributeValue(EntityAttributes.GENERIC_WATER_MOVEMENT_EFFICIENCY);
+        float efficiency = (float) mc.player.getAttributeValue(EntityAttributes.WATER_MOVEMENT_EFFICIENCY);
         if (!mc.player.isOnGround()) {
             efficiency *= 0.5F;
         }

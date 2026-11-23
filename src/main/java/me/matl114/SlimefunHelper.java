@@ -2,11 +2,11 @@ package me.matl114;
 
 import java.util.Set;
 import lombok.Getter;
+import me.matl114.hacks.utils.render.MaskPostRenderer;
 import me.matl114.plugins.MainPlugin;
 import me.matl114.plugins.PluginManager;
 import me.matl114.plugins.PluginManager.BootstrapPhase;
 import me.matl114.utils.Debug;
-import me.matl114.utils.render.MaskPostRenderer;
 import me.matl114.versioned.impl.Render_v1_21_1;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.CoreShaderRegistrationCallback;

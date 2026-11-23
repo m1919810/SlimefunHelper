@@ -229,7 +229,7 @@ public class FakePlayer extends BaseModule {
         fakePlayer.setFreeze(!hasPhysics.get());
         fakePlayer
                 .getAttributes()
-                .getCustomInstance(EntityAttributes.GENERIC_MAX_HEALTH)
+                .getCustomInstance(EntityAttributes.MAX_HEALTH)
                 .setBaseValue(maxHealth.get());
         fakePlayer.setTickTask(this::onFakePlayerTick);
         if (copyEquipment.get()) {
@@ -239,7 +239,7 @@ public class FakePlayer extends BaseModule {
         // enable absorption
         fakePlayer
                 .getAttributes()
-                .getCustomInstance(EntityAttributes.GENERIC_MAX_ABSORPTION)
+                .getCustomInstance(EntityAttributes.MAX_ABSORPTION)
                 .setBaseValue(1024);
         mc.world.addEntity(fakePlayer);
         return fakePlayer;
@@ -452,7 +452,7 @@ public class FakePlayer extends BaseModule {
         if (!canDamage) {
             return;
         }
-        double e = mc.player.getAttributeBaseValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);
+        double e = mc.player.getAttributeBaseValue(EntityAttributes.ATTACK_DAMAGE);
         // use netherite spear data
         float damage = (float) (e + MathHelper.floor(h * 1.2F));
         onDamage(

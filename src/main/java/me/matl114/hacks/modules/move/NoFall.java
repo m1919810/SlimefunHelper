@@ -232,7 +232,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         entityStage = ENTITY_STAGE_ALIVE;
         holdingMace = args.getMainHandStack().getItem() instanceof MaceItem;
         lastHeight = args.getY();
-        safeDistance = args.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE) + noFallSafeDistance.get();
+        safeDistance = args.getAttributeValue(EntityAttributes.SAFE_FALL_DISTANCE) + noFallSafeDistance.get();
         // reset
         if (args.isOnGround()
                 || args.isTouchingWater()

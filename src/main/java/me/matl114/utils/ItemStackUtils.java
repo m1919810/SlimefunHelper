@@ -16,7 +16,7 @@ import javax.annotation.Nonnull;
 import me.matl114.bukkit.BukkitItemStackUtils;
 import me.matl114.versioned.api.VHideFlag;
 import me.matl114.versioned.api.VItem;
-import me.matl114.versioned.impl.TooltipHideFlag_v1_21_4;
+import me.matl114.versioned.impl.TooltipHideFlag_v1_21_1;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientDynamicRegistryType;
 import net.minecraft.component.ComponentType;
@@ -46,7 +46,7 @@ public class ItemStackUtils {
     }
 
     public static VHideFlag[] getHideFlags() {
-        return TooltipHideFlag_v1_21_4.values();
+        return TooltipHideFlag_v1_21_1.values();
     }
 
     public static Predicate<ItemStack> componentPredicate(ComponentType<?> type) {
@@ -200,9 +200,9 @@ public class ItemStackUtils {
         }
 
         @Override
-        public <T> Optional<? extends RegistryWrapper.Impl<T>> getOptional(
+        public <T> Optional<RegistryWrapper.Impl<T>> getOptionalWrapper(
                 RegistryKey<? extends Registry<? extends T>> registryRef) {
-            return registry().getOptional(registryRef);
+            return registry().getOptionalWrapper(registryRef);
         }
 
         public <T> RegistryWrapper.Impl<T> getWrapperOrThrow(RegistryKey<? extends Registry<? extends T>> registryRef) {
@@ -211,6 +211,10 @@ public class ItemStackUtils {
 
         public <V> RegistryOps<V> getOps(DynamicOps<V> delegate) {
             return registry().getOps(delegate);
+        }
+
+        public RegistryEntryLookup.RegistryLookup createRegistryLookup() {
+            return registry().createRegistryLookup();
         }
     }
 

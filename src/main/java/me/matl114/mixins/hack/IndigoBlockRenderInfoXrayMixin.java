@@ -23,11 +23,11 @@ public abstract class IndigoBlockRenderInfoXrayMixin {
     @Shadow
     public BlockState blockState;
 
-    @ModifyReturnValue(method = "shouldCullSide", at = @At("RETURN"))
+    @ModifyReturnValue(method = "shouldDrawFace", at = @At("RETURN"))
     private boolean slimefunhelper$modifyDrawSide(boolean original, Direction side) {
         Xray xray = Xray.INSTANCE;
         if (side == null || xray == null || !xray.isActive()) return original;
 
-        return !xray.modifyDrawSide(blockState, blockView, blockPos, side, !original);
+        return xray.modifyDrawSide(blockState, blockView, blockPos, side, original);
     }
 }

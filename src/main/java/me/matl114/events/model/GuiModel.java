@@ -10,29 +10,19 @@ import lombok.AllArgsConstructor;
 import lombok.With;
 import me.matl114.events.RenderListener;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.item.ItemModelManager;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.item.ItemRenderState;
-import net.minecraft.client.render.item.model.ItemModel;
-import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
-import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.random.Random;
-import org.jetbrains.annotations.Nullable;
 
 public interface GuiModel {
     public static final GuiModel EMPTY = new BlankGuiModel();
@@ -72,6 +62,10 @@ public interface GuiModel {
         return of(RenderListener.getCustomModelOf(id));
     }
 
+    public static GuiModel ofSprite(Sprite sprite) {
+        return sprite == null ? EMPTY : new SpriteGuiModel(() -> sprite);
+    }
+
     default void render(
             ItemRenderer itemRenderer,
             ItemDisplayContext renderMode,
@@ -81,52 +75,59 @@ public interface GuiModel {
             int light,
             int overlay) {
         Entry entry = updateAndSubmit(itemRenderer);
-    public static GuiModel ofSprite(Identifier spriteId) {
-        return spriteId == null
-                ? EMPTY
-                : new SpriteGuiModel(
-                        () -> MinecraftClient.getInstance().getGuiAtlasManager().getSprite(spriteId));
-    }
-
-    public static GuiModel ofSprite(Sprite sprite) {
-        return sprite == null ? EMPTY : new SpriteGuiModel(() -> sprite);
-    }
-
-    default void update(
-            ItemRenderState renderState,
-            ItemStack stack,
-            ItemModelManager resolver,
-            ItemDisplayContext displayContext,
-            ClientWorld world,
-            LivingEntity liv,
-            int seed) {
-        Entry entry = updateAndSubmit(renderState, stack, resolver, displayContext, world, liv, seed);
         if (entry != null) {
-            if (entry.stackTransformer() != null) {
-                matrices.push();
-                entry.stackTransformer().apply(matrices);
-                itemRenderer.renderItem(
-                        entry.stack(),
-                        renderMode,
-                        leftHanded,
-                        matrices,
-                        vertexConsumers,
-                        light,
-                        overlay,
-                        entry.state());
-                matrices.pop();
-            } else {
-                itemRenderer.renderItem(
-                        entry.stack(),
-                        renderMode,
-                        leftHanded,
-                        matrices,
-                        vertexConsumers,
-                        light,
-                        overlay,
-                        entry.state());
-            }
+            renderEntry(entry, itemRenderer, renderMode, leftHanded, matrices, vertexConsumers, light, overlay);
         }
+    }
+
+    public static void renderEntry(
+            Entry entry,
+            ItemRenderer itemRenderer,
+            ItemDisplayContext renderMode,
+            boolean leftHanded,
+            MatrixStack matrices,
+            VertexConsumerProvider vertexConsumers,
+            int light,
+            int overlay) {
+        boolean transformed = entry.stackTransformer() != null;
+        if (transformed) {
+            matrices.push();
+            entry.stackTransformer().apply(matrices);
+        }
+        if (entry.sprite() != null) {
+            renderSprite(entry.sprite(), matrices, vertexConsumers, light, overlay);
+        } else {
+            itemRenderer.renderItem(
+                    entry.stack(), renderMode, leftHanded, matrices, vertexConsumers, light, overlay, entry.state());
+        }
+        if (transformed) {
+            matrices.pop();
+        }
+    }
+
+    // 1.21.1 has no ItemRenderState layers: draw a unit quad in item-model space, centered like ItemRenderer
+    private static void renderSprite(
+            Sprite sprite, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
+        int[] vertices = new int[32];
+        float[] xs = {0.0F, 0.0F, 1.0F, 1.0F};
+        float[] ys = {1.0F, 0.0F, 0.0F, 1.0F};
+        float[] us = {sprite.getMinU(), sprite.getMinU(), sprite.getMaxU(), sprite.getMaxU()};
+        float[] vs = {sprite.getMinV(), sprite.getMaxV(), sprite.getMaxV(), sprite.getMinV()};
+        for (int i = 0; i < 4; i++) {
+            int offset = i * 8;
+            vertices[offset] = Float.floatToRawIntBits(xs[i]);
+            vertices[offset + 1] = Float.floatToRawIntBits(ys[i]);
+            vertices[offset + 2] = Float.floatToRawIntBits(8.5F / 16.0F);
+            vertices[offset + 3] = -1;
+            vertices[offset + 4] = Float.floatToRawIntBits(us[i]);
+            vertices[offset + 5] = Float.floatToRawIntBits(vs[i]);
+        }
+        BakedQuad quad = new BakedQuad(vertices, -1, Direction.SOUTH, sprite, false);
+        matrices.push();
+        matrices.translate(-0.5F, -0.5F, -0.5F);
+        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getEntityTranslucent(sprite.getAtlasId()));
+        buffer.quad(matrices.peek(), quad, 1.0F, 1.0F, 1.0F, 1.0F, light, overlay);
+        matrices.pop();
     }
 
     // do not call
@@ -151,7 +152,8 @@ public interface GuiModel {
                     null,
                     itemStack,
                     itemRenderer.getModel(
-                            itemStack, MinecraftClient.getInstance().world, MinecraftClient.getInstance().player, 0));
+                            itemStack, MinecraftClient.getInstance().world, MinecraftClient.getInstance().player, 0),
+                    null);
         }
     }
 
@@ -162,7 +164,7 @@ public interface GuiModel {
 
         @Override
         public Entry updateAndSubmit(ItemRenderer itemRenderer) {
-            return new Entry(null, itemStack, itemModel);
+            return new Entry(null, itemStack, itemModel, null);
         }
     }
 
@@ -171,67 +173,9 @@ public interface GuiModel {
         Supplier<Sprite> spriteSupplier;
 
         @Override
-        public Entry updateAndSubmit(
-                ItemRenderState renderState,
-                ItemStack stack,
-                ItemModelManager resolver,
-                ItemDisplayContext displayContext,
-                @Nullable ClientWorld world,
-                @Nullable LivingEntity livingEntity,
-                int seed) {
+        public Entry updateAndSubmit(ItemRenderer itemRenderer) {
             Sprite sprite = spriteSupplier.get();
-            ItemRenderState state = new ItemRenderState();
-            ItemRenderStateAccess.of(state).setDisplayContext(displayContext);
-            ItemRenderState.LayerRenderState layer = state.newLayer();
-            int[] vertices = new int[32];
-            float[] xs = {0.0F, 0.0F, 1.0F, 1.0F};
-            float[] ys = {1.0F, 0.0F, 0.0F, 1.0F};
-            float[] us = {sprite.getMinU(), sprite.getMinU(), sprite.getMaxU(), sprite.getMaxU()};
-            float[] vs = {sprite.getMinV(), sprite.getMaxV(), sprite.getMaxV(), sprite.getMinV()};
-            for (int i = 0; i < 4; i++) {
-                int offset = i * 8;
-                vertices[offset] = Float.floatToRawIntBits(xs[i]);
-                vertices[offset + 1] = Float.floatToRawIntBits(ys[i]);
-                vertices[offset + 2] = Float.floatToRawIntBits(8.5F / 16.0F);
-                vertices[offset + 3] = -1;
-                vertices[offset + 4] = Float.floatToRawIntBits(us[i]);
-                vertices[offset + 5] = Float.floatToRawIntBits(vs[i]);
-            }
-            BakedQuad quad = new BakedQuad(vertices, -1, Direction.SOUTH, sprite, false, 0);
-            BakedModel model = new BakedModel() {
-                @Override
-                public List<BakedQuad> getQuads(
-                        @Nullable BlockState blockState, @Nullable Direction face, Random random) {
-                    return face == null ? List.of(quad) : List.of();
-                }
-
-                @Override
-                public boolean useAmbientOcclusion() {
-                    return false;
-                }
-
-                @Override
-                public boolean hasDepth() {
-                    return false;
-                }
-
-                @Override
-                public boolean isSideLit() {
-                    return false;
-                }
-
-                @Override
-                public Sprite getParticleSprite() {
-                    return sprite;
-                }
-
-                @Override
-                public ModelTransformation getTransformation() {
-                    return ModelTransformation.NONE;
-                }
-            };
-            layer.setModel(model, RenderLayer.getEntityTranslucent(sprite.getAtlasId()));
-            return new Entry(null, state);
+            return sprite == null ? null : new Entry(null, ItemStack.EMPTY, null, sprite);
         }
     }
 
@@ -253,30 +197,7 @@ public interface GuiModel {
                 // arrange positions
                 List<Entry> arranged = arrangeEntries(entries);
                 for (Entry entry : arranged) {
-                    if (entry.stackTransformer() != null) {
-                        matrices.push();
-                        entry.stackTransformer().apply(matrices);
-                        itemRenderer.renderItem(
-                                entry.stack(),
-                                renderMode,
-                                leftHanded,
-                                matrices,
-                                vertexConsumers,
-                                light,
-                                overlay,
-                                entry.state());
-                        matrices.pop();
-                    } else {
-                        itemRenderer.renderItem(
-                                entry.stack(),
-                                renderMode,
-                                leftHanded,
-                                matrices,
-                                vertexConsumers,
-                                light,
-                                overlay,
-                                entry.state());
-                    }
+                    renderEntry(entry, itemRenderer, renderMode, leftHanded, matrices, vertexConsumers, light, overlay);
                 }
             }
         }
@@ -328,5 +249,6 @@ public interface GuiModel {
     }
 
     @With
-    public static record Entry(UnaryOperator<MatrixStack> stackTransformer, ItemStack stack, BakedModel state) {}
+    public static record Entry(
+            UnaryOperator<MatrixStack> stackTransformer, ItemStack stack, BakedModel state, Sprite sprite) {}
 }

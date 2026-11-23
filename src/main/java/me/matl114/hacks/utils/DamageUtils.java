@@ -483,8 +483,8 @@ public class DamageUtils {
     public static DamageContext.Builder fromLivingEntity(LivingEntity entity) {
         DamageContext.Builder builder = new DamageContext.Builder();
         AttributeContainer container = AttributeUtils.getAttributeWith(entity, Map.of());
-        builder.withArmor((float) container.getValue(EntityAttributes.GENERIC_ARMOR));
-        builder.withArmorToughness((float) container.getValue(EntityAttributes.GENERIC_ARMOR_TOUGHNESS));
+        builder.withArmor((float) container.getValue(EntityAttributes.ARMOR));
+        builder.withArmorToughness((float) container.getValue(EntityAttributes.ARMOR_TOUGHNESS));
         for (EquipmentSlot slot : EquipmentSlot.values()) {
             ItemStack stack = entity.getEquippedStack(slot);
             builder.withArmorSlot(slot, stack);

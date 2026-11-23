@@ -2,7 +2,6 @@ package me.matl114.mixins.hack;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.llamalad7.mixinextras.sugar.Local;
 import me.matl114.hacks.modules.render.Xray;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.VertexConsumer;
@@ -63,16 +62,16 @@ public abstract class FluidRendererXrayMixin {
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/client/render/block/FluidRenderer;shouldRenderSide(Lnet/minecraft/fluid/FluidState;Lnet/minecraft/block/BlockState;Lnet/minecraft/util/math/Direction;Lnet/minecraft/fluid/FluidState;)Z"))
+                                    "Lnet/minecraft/client/render/block/FluidRenderer;shouldRenderSide(Lnet/minecraft/world/BlockRenderView;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/fluid/FluidState;Lnet/minecraft/block/BlockState;Lnet/minecraft/util/math/Direction;Lnet/minecraft/fluid/FluidState;)Z"))
     private boolean slimefunhelper$showFluidSides(
+            BlockRenderView world,
+            BlockPos pos,
             FluidState state,
             BlockState blockState,
             Direction side,
             FluidState neighborState,
-            Operation<Boolean> original,
-            @Local(argsOnly = true) BlockRenderView world,
-            @Local(argsOnly = true) BlockPos pos) {
-        boolean draw = original.call(state, blockState, side, neighborState);
+            Operation<Boolean> original) {
+        boolean draw = original.call(world, pos, state, blockState, side, neighborState);
         if (draw || !Xray.isXrayActive() || side.getAxis().isVertical()) return draw;
         Xray xray = Xray.INSTANCE;
         BlockPos neighborPos = pos.offset(side);

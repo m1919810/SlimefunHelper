@@ -31,6 +31,7 @@ import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.PalettedContainer;
 import net.minecraft.world.chunk.ProtoChunk;
 import net.minecraft.world.chunk.UpgradeData;
+import net.minecraft.world.gen.GenerationStep;
 import net.minecraft.world.gen.StructureWeightSampler;
 import net.minecraft.world.gen.carver.CarverContext;
 import net.minecraft.world.gen.carver.ConfiguredCarver;
@@ -141,7 +142,7 @@ public final class OverworldTerrainContext {
                 (biomeX, biomeY, biomeZ) ->
                         biomeSource.getBiome(biomeX, biomeY, biomeZ, noiseConfig.getMultiNoiseSampler()),
                 BiomeAccess.hashSeed(seed));
-        this.biomeRegistry = registries.getWrapperOrThrow(RegistryKeys.BIOME);
+        this.biomeRegistry = registries.get(RegistryKeys.BIOME);
     }
 
     public static OverworldTerrainContext create(long seed) {
@@ -364,7 +365,7 @@ public final class OverworldTerrainContext {
 
     private ChunkSection[] createStoneSections() {
         ChunkSection[] sections = new ChunkSection[heightLimitView.countVerticalSections()];
-        RegistryEntry<net.minecraft.world.biome.Biome> plains = biomeRegistry.getOrThrow(BiomeKeys.PLAINS);
+        RegistryEntry<net.minecraft.world.biome.Biome> plains = biomeRegistry.entryOf(BiomeKeys.PLAINS);
         for (int i = 0; i < sections.length; i++) {
             sections[i] = new ChunkSection(
                     new PalettedContainer<>(
@@ -403,7 +404,7 @@ public final class OverworldTerrainContext {
     /** Whether the overworld carvers' {@code #minecraft:overworld_carver_replaceables} contains the block. */
     public boolean carverReplaceable(BlockState state) {
         return carverReplaceable.computeIfAbsent(state.getBlock(), block -> registries
-                .getWrapperOrThrow(RegistryKeys.BLOCK)
+                .get(RegistryKeys.BLOCK)
                 .getEntry(block)
                 .isIn(BlockTags.OVERWORLD_CARVER_REPLACEABLES));
     }
@@ -421,7 +422,7 @@ public final class OverworldTerrainContext {
                 sampler,
                 noiseConfig,
                 settings.value().surfaceRule());
-        var mask = chunk.getOrCreateCarvingMask();
+        var mask = chunk.getOrCreateCarvingMask(GenerationStep.Carver.AIR);
         ChunkPos center = chunk.getPos();
         for (int dx = -8; dx <= 8; dx++) {
             for (int dz = -8; dz <= 8; dz++) {
@@ -448,10 +449,9 @@ public final class OverworldTerrainContext {
 
     /** Whether {@code Feature.setBlockStateIf} with {@code FEATURES_CANNOT_REPLACE} must skip this block. */
     public boolean featuresCannotReplace(BlockState state) {
-        return cannotReplace.computeIfAbsent(Objects.requireNonNull(state).getBlock(), block -> registries
-                .getWrapperOrThrow(RegistryKeys.BLOCK)
-                .getEntry(block)
-                .isIn(BlockTags.FEATURES_CANNOT_REPLACE));
+        return cannotReplace.computeIfAbsent(
+                Objects.requireNonNull(state).getBlock(),
+                block -> registries.get(RegistryKeys.BLOCK).getEntry(block).isIn(BlockTags.FEATURES_CANNOT_REPLACE));
     }
 
     public long seed() {

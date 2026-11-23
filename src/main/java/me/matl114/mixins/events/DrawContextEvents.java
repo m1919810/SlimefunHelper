@@ -17,7 +17,6 @@ import net.minecraft.client.gui.tooltip.TooltipPositioner;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -30,19 +29,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class DrawContextEvents {
     @WrapMethod(
             method =
-                    "drawTooltip(Lnet/minecraft/client/font/TextRenderer;Ljava/util/List;IILnet/minecraft/client/gui/tooltip/TooltipPositioner;Lnet/minecraft/util/Identifier;)V")
+                    "drawTooltip(Lnet/minecraft/client/font/TextRenderer;Ljava/util/List;IILnet/minecraft/client/gui/tooltip/TooltipPositioner;)V")
     private void onRenderTooltip(
             TextRenderer textRenderer,
             List<TooltipComponent> components,
             int x,
             int y,
             TooltipPositioner positioner,
-            @org.jetbrains.annotations.Nullable Identifier texture,
             Operation<Void> original) {
         TooltipsRender tooltipRender =
-                new TooltipsRender(VDrawContext.of((DrawContext) (Object) this), components, x, y, positioner, texture);
+                new TooltipsRender(VDrawContext.of((DrawContext) (Object) this), components, x, y, positioner, null);
         RenderListener.getRenderTooltipEvent().broadcast(tooltipRender);
-        original.call(textRenderer, components, tooltipRender.x, tooltipRender.y, positioner, texture);
+        original.call(textRenderer, components, tooltipRender.x, tooltipRender.y, positioner);
     }
 
     @Shadow

@@ -62,7 +62,7 @@ public final class TerrainChunkCache {
 
     /** The block after the {@code NOISE} and {@code CARVERS} statuses. */
     public BlockState getBlockState(BlockPos pos) {
-        if (!context.heightLimitView().isInHeightLimit(pos.getY())) {
+        if (context.heightLimitView().isOutOfHeightLimit(pos.getY())) {
             return VOID_AIR;
         }
         LazyChunk chunk = chunk(pos.getX() >> 4, pos.getZ() >> 4);
@@ -94,7 +94,7 @@ public final class TerrainChunkCache {
      * with air or fluid, so a block that is not solid in the noise is not solid afterwards either.
      */
     public boolean mayBeSolid(BlockPos pos) {
-        if (!context.heightLimitView().isInHeightLimit(pos.getY())) {
+        if (context.heightLimitView().isOutOfHeightLimit(pos.getY())) {
             return false;
         }
         LazyChunk chunk = chunk(pos.getX() >> 4, pos.getZ() >> 4);

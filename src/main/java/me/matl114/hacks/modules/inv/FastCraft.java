@@ -35,6 +35,7 @@ import net.minecraft.item.Items;
 import net.minecraft.network.packet.s2c.play.SetTradeOffersS2CPacket;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.RecipeEntry;
+import net.minecraft.registry.Registries;
 import net.minecraft.screen.AbstractRecipeScreenHandler;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.village.TradeOffer;

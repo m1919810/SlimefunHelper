@@ -1,5 +1,6 @@
 package me.matl114.hacks.modules.render;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import me.matl114.events.Event;
 import me.matl114.events.RenderListener;
@@ -14,6 +15,7 @@ import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -23,13 +25,34 @@ import net.minecraft.fluid.FluidState;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 
 public class Xray extends BaseModule {
     public static Xray INSTANCE;
+
+    // meteor 1.21.1: Sodium and Iris shader packs cannot draw translucent terrain, so opacity is forced to 0
+    private static final boolean SODIUM_LOADED = FabricLoader.getInstance().isModLoaded("sodium");
+    private static final Object IRIS_API;
+    private static final Method IRIS_SHADER_PACK_IN_USE;
+
+    static {
+        Object api = null;
+        Method shaderPackInUse = null;
+        if (FabricLoader.getInstance().isModLoaded("iris")) {
+            try {
+                Class<?> apiClass = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
+                api = apiClass.getMethod("getInstance").invoke(null);
+                shaderPackInUse = apiClass.getMethod("isShaderPackInUse");
+            } catch (ReflectiveOperationException | LinkageError ignored) {
+                api = null;
+                shaderPackInUse = null;
+            }
+        }
+        IRIS_API = api;
+        IRIS_SHADER_PACK_IN_USE = shaderPackInUse;
+    }
 
     public static final List<Block> ORES = List.of(
             Blocks.COAL_ORE,
@@ -124,22 +147,9 @@ public class Xray extends BaseModule {
 
     private void refreshWorldRenderer() {
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client.world == null || client.player == null) return;
+        if (client.world == null || client.worldRenderer == null) return;
 
-        int sectionX = ChunkSectionPos.getSectionCoord(client.player.getBlockX());
-        int sectionZ = ChunkSectionPos.getSectionCoord(client.player.getBlockZ());
-        int viewDistance = client.options.getClampedViewDistance();
-        int minSectionY = client.world.getBottomSectionCoord();
-        int maxSectionY = minSectionY + client.world.countVerticalSections() - 1;
-
-        client.worldRenderer.scheduleChunkRenders(
-                sectionX - viewDistance,
-                minSectionY,
-                sectionZ - viewDistance,
-                sectionX + viewDistance,
-                maxSectionY,
-                sectionZ + viewDistance);
-        client.worldRenderer.scheduleTerrainUpdate();
+        client.worldRenderer.reload();
     }
 
     public boolean isBlocked(Block block, BlockPos pos) {
@@ -152,7 +162,7 @@ public class Xray extends BaseModule {
         for (Direction direction : Direction.values()) {
             BlockPos adjacentPos = pos.offset(direction);
             BlockState adjacentState = mc.world.getBlockState(adjacentPos);
-            if (!adjacentState.isSolidBlock(mc.world, adjacentPos)) return true;
+            if (!adjacentState.isOpaque()) return true;
         }
 
         return false;
@@ -162,7 +172,7 @@ public class Xray extends BaseModule {
         if (!original && !isBlocked(state.getBlock(), pos)) {
             BlockPos adjacentPos = pos.offset(facing);
             BlockState adjacentState = world.getBlockState(adjacentPos);
-            return adjacentState.getCullingFace(facing.getOpposite()) != VoxelShapes.fullCube()
+            return adjacentState.getCullingFace(world, adjacentPos, facing.getOpposite()) != VoxelShapes.fullCube()
                     || adjacentState.getBlock() != state.getBlock()
                     || !adjacentState.isSolidBlock(world, adjacentPos)
                     || isBlocked(adjacentState.getBlock(), adjacentPos);
@@ -178,7 +188,7 @@ public class Xray extends BaseModule {
     public static int getAlpha(BlockState state, BlockPos pos) {
         Xray xray = INSTANCE;
         if (xray != null && xray.isActive() && xray.isBlocked(state.getBlock(), pos)) {
-            return xray.opacity.get();
+            return isTranslucencyUnsupported() ? 0 : xray.opacity.get();
         }
 
         return -1;
@@ -190,10 +200,20 @@ public class Xray extends BaseModule {
                 && xray.isActive()
                 && xray.shouldApplyFluidOpacity(state)
                 && xray.isBlocked(state.getBlockState().getBlock(), pos)) {
-            return xray.opacity.get();
+            return isTranslucencyUnsupported() ? 0 : xray.opacity.get();
         }
 
         return -1;
+    }
+
+    private static boolean isTranslucencyUnsupported() {
+        if (SODIUM_LOADED) return true;
+        if (IRIS_API == null) return false;
+        try {
+            return (boolean) IRIS_SHADER_PACK_IN_USE.invoke(IRIS_API);
+        } catch (ReflectiveOperationException | ClassCastException e) {
+            return false;
+        }
     }
 
     private boolean shouldApplyFluidOpacity(FluidState state) {

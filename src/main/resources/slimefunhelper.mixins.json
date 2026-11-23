@@ -60,7 +60,6 @@
 		"events.ScreenEvents",
 		"events.TagPacketSerializerEvents",
 		"events.SoundSystemEvents",
-		"events.TagPacketSerializerEvents",
 		"events.TrackedPositionEvents",
 		"events.WorldChunkEvents",
 		"events.WorldEvents",

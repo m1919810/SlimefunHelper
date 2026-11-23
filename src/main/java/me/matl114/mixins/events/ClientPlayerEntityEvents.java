@@ -169,9 +169,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
             PlayerInputUtils.Input i0 = newInput;
             i0.syncMovementVector(
                     this.input,
-                    this.shouldSlowDown()
-                            ? (float) this.getAttributeValue(EntityAttributes.PLAYER_SNEAKING_SPEED)
-                            : 1.0F);
+                    this.shouldSlowDown() ? (float) this.getAttributeValue(EntityAttributes.SNEAKING_SPEED) : 1.0F);
         }
     }
 
@@ -266,15 +264,15 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     private boolean checkElytra() {
         ItemStack itemStack = this.getEquippedStack(EquipmentSlot.CHEST);
         if (itemStack.isOf(Items.ELYTRA) && ElytraItem.isUsable(itemStack)) {
-            this.startFallFlying();
+            this.startGliding();
             return true;
         }
         return false;
     }
 
     @Override
-    public boolean checkFallFlying() {
-        if (!checkClientPlayer()) return super.checkFallFlying();
+    public boolean checkGliding() {
+        if (!checkClientPlayer()) return super.checkGliding();
         boolean fallflying = this.isFallFlying();
         boolean shouldSwitch = false;
         if (!fallflying) {
@@ -294,14 +292,14 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         }
         if (!fallflying) {
             if (switchFlag) {
-                startFallFlying();
+                startGliding();
                 return true;
             } else {
                 return false;
             }
         } else {
             if (switchFlag) {
-                stopFallFlying();
+                stopGliding();
                 return true;
             } else {
                 return false;

@@ -720,7 +720,7 @@ public class TargetSelector extends BaseModule implements RayCastCalculator<Enti
         if (!invulnerable.get()) {
             if (e instanceof PlayerEntity pl) {
                 // login players are invulnerable
-                if (pl.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED) < 1e-6) {
+                if (pl.getAttributeValue(EntityAttributes.MOVEMENT_SPEED) < 1e-6) {
                     return false;
                 }
                 // creative players are invulnerable

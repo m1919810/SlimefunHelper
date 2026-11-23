@@ -14,13 +14,14 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Pseudo
+// Indigo 1.7.0 (fabric-api for 1.21.1) has renderQuad(MutableQuadViewImpl) where newer Indigo has bufferQuad
 @Mixin(targets = "net.fabricmc.fabric.impl.client.indigo.renderer.render.AbstractBlockRenderContext", remap = false)
 public abstract class IndigoTerrainRenderContextXrayMixin {
     @Shadow
     @Final
     protected BlockRenderInfo blockInfo;
 
-    @Inject(method = "bufferQuad", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "renderQuad", at = @At("HEAD"), cancellable = true)
     private void slimefunhelper$prepareXrayQuad(MutableQuadViewImpl quad, CallbackInfo ci) {
         int alpha = Xray.getAlpha(blockInfo.blockState, blockInfo.blockPos);
         if (alpha == 0) {
@@ -30,7 +31,7 @@ public abstract class IndigoTerrainRenderContextXrayMixin {
     }
 
     @ModifyArg(
-            method = "bufferQuad(Lnet/fabricmc/fabric/impl/client/indigo/renderer/mesh/MutableQuadViewImpl;)V",
+            method = "renderQuad(Lnet/fabricmc/fabric/impl/client/indigo/renderer/mesh/MutableQuadViewImpl;)V",
             at =
                     @At(
                             value = "INVOKE",
@@ -43,7 +44,7 @@ public abstract class IndigoTerrainRenderContextXrayMixin {
     }
 
     @Inject(
-            method = "bufferQuad",
+            method = "renderQuad",
             at =
                     @At(
                             value = "INVOKE",

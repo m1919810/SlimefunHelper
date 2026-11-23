@@ -58,6 +58,7 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.projectile.FireworkRocketEntity;
+import net.minecraft.item.ElytraItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.Packet;
@@ -494,9 +495,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
             Tasks.scheduleRepeated(
                     () -> {
                         if (mc.player == joinServer.context) {
-                            if (mc.player.isLoaded()
-                                    && WorldUtils.isChunkLoaded(mc.player.getBlockPos())
-                                    && loadTicks.incrementAndGet() > 2) {
+                            if (WorldUtils.isChunkLoaded(mc.player.getBlockPos()) && loadTicks.incrementAndGet() > 2) {
                                 if (!mc.player.isOnGround() && !mc.player.isFallFlying()) {
                                     autoTakeoff();
                                 }
@@ -789,8 +788,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
 
     public static boolean isValidElytra(ItemStack item) {
         return VItem.getInstance().canGlide(item)
-                && mc.player.canEquip(item, EquipmentSlot.CHEST)
-                && !item.willBreakNextUse();
+                && mc.player.getPreferredEquipmentSlot(item) == EquipmentSlot.CHEST
+                && ElytraItem.isUsable(item);
     }
 
     public static int findElytra() {
@@ -842,7 +841,8 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     private boolean canStopFallFlying(ItemStack item) {
-        return item.isEmpty() || (!isValidElytra(item) && mc.player.canEquip(item, EquipmentSlot.CHEST));
+        return item.isEmpty()
+                || (!isValidElytra(item) && mc.player.getPreferredEquipmentSlot(item) == EquipmentSlot.CHEST);
     }
 
     public int findEmptySlotForElytra() {
@@ -1021,8 +1021,7 @@ public class ElytraExtra extends BaseModule implements LegalMovementManager.Move
     }
 
     public static boolean hasGlidingEquipments() {
-        EquipmentSlot equipmentSlot = EquipmentSlot.CHEST;
-        return mc.player.canGlideWith(mc.player.getEquippedStack(equipmentSlot), equipmentSlot);
+        return VItem.getInstance().canGlide(mc.player.getEquippedStack(EquipmentSlot.CHEST));
     }
 
     public static boolean hasGlidingItem() {

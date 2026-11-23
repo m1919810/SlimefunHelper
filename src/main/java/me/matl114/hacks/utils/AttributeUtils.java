@@ -46,7 +46,8 @@ public class AttributeUtils {
                     }
                 });
             }
-            if (!itemStack2.isEmpty() && !itemStack2.shouldBreak()) {
+            if (!itemStack2.isEmpty()
+                    && !(itemStack2.isDamageable() && itemStack2.getDamage() >= itemStack2.getMaxDamage())) {
                 itemStack2.applyAttributeModifiers(slot, (attribute, modifier) -> {
                     EntityAttributeInstance entityAttributeInstance = attributeContainer.getCustomInstance(attribute);
                     if (entityAttributeInstance != null) {

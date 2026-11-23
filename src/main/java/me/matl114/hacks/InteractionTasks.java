@@ -793,7 +793,7 @@ public class InteractionTasks {
         } else if (block instanceof RotatedInfestedBlock) {
             Direction.Axis targetAxis = targetState.get(PillarBlock.AXIS);
             stateFilter = hit -> hit.getSide().getAxis() == targetAxis;
-        } else if (block instanceof PillarBlock || block instanceof CreakingHeartBlock) {
+        } else if (block instanceof PillarBlock) {
             Direction.Axis targetAxis = targetState.get(PillarBlock.AXIS);
             stateFilter = hit -> hit.getSide().getAxis() == targetAxis;
         } else if (block instanceof JigsawBlock) {
@@ -1325,7 +1325,7 @@ public class InteractionTasks {
             BlockState aboveState = mc.world.getBlockState(placeTargetBlock.up());
             return aboveState.isOf(block) && aboveState.get(property);
         }
-        if (block instanceof MultifaceGrowthBlock multiface) {
+        if (block instanceof MultifaceBlock multiface) {
             var property = ConnectingBlock.FACING_PROPERTIES.get(direction);
             BlockState currentState = mc.world.getBlockState(placeTargetBlock);
             return targetState.contains(property)

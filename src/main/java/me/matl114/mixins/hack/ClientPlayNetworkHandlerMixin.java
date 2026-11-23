@@ -1,11 +1,7 @@
 package me.matl114.mixins.hack;
 
-import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import me.matl114.accessors.access.ClientPlayerAccess;
-import me.matl114.hacks.MovTasks;
-import java.util.Set;
 import me.matl114.hacks.modules.extra.BadPacketsFix;
 import me.matl114.hacks.modules.move.AutoResync;
 import net.fabricmc.api.EnvType;

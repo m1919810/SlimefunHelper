@@ -1201,8 +1201,8 @@ public class Misc extends BaseModule {
 
     public void onTeleportPos(Event<PlayerPositionLookS2CPacket> event) {
         if (pendingCache || cachedGodTp != null) {
-            if (event.context.teleportId() >= 0) {
-                cachedGodTp = event.context.teleportId();
+            if (event.context.getTeleportId() >= 0) {
+                cachedGodTp = event.context.getTeleportId();
             }
         }
     }

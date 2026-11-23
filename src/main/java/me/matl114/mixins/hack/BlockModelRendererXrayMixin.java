@@ -13,6 +13,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.BlockRenderView;
+import net.minecraft.world.BlockView;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -77,15 +78,17 @@ public abstract class BlockModelRendererXrayMixin {
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/block/Block;shouldDrawSide(Lnet/minecraft/block/BlockState;Lnet/minecraft/block/BlockState;Lnet/minecraft/util/math/Direction;)Z"))
+                                    "Lnet/minecraft/block/Block;shouldDrawSide(Lnet/minecraft/block/BlockState;Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/Direction;Lnet/minecraft/util/math/BlockPos;)Z"))
     private boolean slimefunhelper$modifyDrawSide(
             BlockState state,
-            BlockState neighborState,
+            BlockView blockView,
+            BlockPos blockPos,
             Direction facing,
+            BlockPos otherPos,
             Operation<Boolean> original,
             @Local(argsOnly = true) BlockRenderView world,
             @Local(argsOnly = true) BlockPos pos) {
-        boolean draw = original.call(state, neighborState, facing);
+        boolean draw = original.call(state, blockView, blockPos, facing, otherPos);
         Xray xray = Xray.INSTANCE;
         if (xray == null || !xray.isActive()) return draw;
 

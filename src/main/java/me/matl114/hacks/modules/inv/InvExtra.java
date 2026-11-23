@@ -166,7 +166,7 @@ public class InvExtra extends BaseModule {
         if (!hotBarCallbacks.isEmpty()) {
             try {
                 int lastSelected = hotBarCallbacks.getLast();
-                mc.player.getInventory().setSelectedSlot(lastSelected);
+                mc.player.getInventory().selectedSlot = lastSelected;
                 PostManager.INSTANCE.addNextTransactionAction((ch2) -> {
                     PlayerInteractionAccess.of(mc.interactionManager).syncSelectedHotbar(lastSelected);
                 });

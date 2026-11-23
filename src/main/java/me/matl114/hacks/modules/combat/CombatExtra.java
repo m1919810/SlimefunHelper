@@ -122,7 +122,9 @@ public class CombatExtra extends BaseModule {
                 && trackerUpdateS2CPacket.id() == mc.player.getId()
                 && mc.player.isUsingItem()
                 && VItem.getInstance().isShield(mc.player.getActiveItem())
-                && !mc.player.getItemCooldownManager().isCoolingDown(mc.player.getActiveItem())) {
+                && !mc.player
+                        .getItemCooldownManager()
+                        .isCoolingDown(mc.player.getActiveItem().getItem())) {
             // shield not in cooldown
             // block shield from
             for (var trackerUpdate : trackerUpdateS2CPacket.trackedValues()) {
@@ -158,7 +160,7 @@ public class CombatExtra extends BaseModule {
             try {
                 synchronized (CombatExtra.class) {
                     // async update, synchronize to protect concurrent cooldown update,
-                    mc.player.getItemCooldownManager().set(packet.cooldownGroup(), packet.cooldown());
+                    mc.player.getItemCooldownManager().set(packet.item(), packet.cooldown());
                     //                if(mc.player.isUsingItem() && mc.player.getActiveItem().getItem() == shield){
                     //
                     //                }
@@ -288,7 +290,7 @@ public class CombatExtra extends BaseModule {
          * version the server sees (Grim {@code LegacyEntityInterpolation.begin}).
          */
         public void onRotationOnly(LivingEntity entity, boolean maySkipTick) {
-            if (entity.getInterpolator() == null || trackedPosition == null || newPacketLocation == null) return;
+            if (entity instanceof ShulkerEntity || trackedPosition == null || newPacketLocation == null) return;
             SupportVersion protocol = ViaFabricPlusHooks.getInstance().getCurrentVersion();
             oldPacketLocation = newPacketLocation;
             Box possible = oldPacketLocation.possiblePositions();
