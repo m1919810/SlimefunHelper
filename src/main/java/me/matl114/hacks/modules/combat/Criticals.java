@@ -20,7 +20,11 @@ import me.matl114.hacks.modules.move.FloatingUtils;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.modules.task.MovementManager;
+import me.matl114.hacks.modules.task.ServerFeature;
+import me.matl114.hacks.utils.DamageUtils;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.PlayerInputUtils;
+import me.matl114.hacks.utils.RaycastUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.enums.SetBackTriggerType;
@@ -31,7 +35,6 @@ import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
-import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
@@ -156,16 +159,26 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
         ;
     }
 
-    private boolean canNotCrit() {
-        return mc.player.isTouchingWater()
-                || mc.player.hasVehicle()
-                || PlayerStateManager.INSTANCE.lastInWeb
-                || PlayerStateManager.INSTANCE.lastSlowByBlock;
+    public static boolean canCritWithPlayerMovement() {
+        return DamageUtils.canDealCriticalEnvironmentSelf()
+                && isAttackStrengthEnoughForCritic(mc.player.getStackInHand(Hand.MAIN_HAND));
+    }
+
+    public static boolean canCritWithPlayerMovement(ItemStack stack) {
+        return DamageUtils.canDealCriticalEnvironmentSelf() && isAttackStrengthEnoughForCritic(stack);
+    }
+
+    public static boolean isAttackStrengthEnoughForCritic(ItemStack stack) {
+        return DamageUtils.canDealCriticalProgress(DamageUtils.getAttackProgress(
+                mc.player,
+                stack,
+                PlayerStateManager.INSTANCE.getTicksSinceLastAttack(),
+                ServerFeature.INSTANCE.attributeSwap.get()));
     }
 
     public void onPlayerAttack(Event<PlayerInteractEntityC2SPacket> event) {
         // can not crit in water or boat
-        if (checkNull() || event.isCancelled() || canNotCrit()) return;
+        if (checkNull() || event.isCancelled() || canCritWithPlayerMovement()) return;
         if (PlayerStateManager.INSTANCE.fallDistance > 1E-6) return;
         boolean canRun = cooldownTimer.canRun(cooldownCritical.get());
         cooldownTimer.mark();
@@ -365,7 +378,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
                         && !stack.isEmpty()
                         && !ItemStack.areItemsAndComponentsEqual(weapon, stack)) {
                     var res = InventoryUtils.findPlayerItem(
-                            it -> ItemStack.areItemsAndComponentsEqual(it, stack), true, false);
+                            it -> ItemStack.areItemsAndComponentsEqual(it, stack), false, false);
                     if (res != null) {
                         callback = InvExtra.INSTANCE.swapItemToHand(res.index(), false, GhostHandMode.INV_SWAP);
                     }
@@ -429,7 +442,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
                     boolean realOnGround = moveDownWards.stream().anyMatch(pos -> !moveablePoses.contains(pos));
                     if (realOnGround) {
                         double yLevel = mc.player.getY() + jumpMin * 4;
-                        movementManagerEvent.context.playerStatus.restorePos();
+                        movementManagerEvent.context.resetPos();
                         mc.player.setPosition(mc.player.getPos().withAxis(Direction.Axis.Y, yLevel));
                         mc.player.setOnGround(false);
                         lastShiftUp = true;
@@ -441,7 +454,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
                             break how_to_apply;
                         } else if (lastShiftUp) {
                             lastShiftUp = false;
-                            movementManagerEvent.context.playerStatus.restorePos();
+                            movementManagerEvent.context.resetPos();
                             mc.player.setPosition(mc.player.getPos().add(0, -jumpMin, 0));
                             mc.player.setOnGround(false);
                             break how_to_apply;
@@ -475,7 +488,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
         }
         if (enable.get()
                 && mode.get() == Mode.GRIM_GROUND_SIMULATION
-                && !canNotCrit()
+                && !canCritWithPlayerMovement()
                 && lastSetBackCriticalTick + 2 <= Tasks.getTick()
                 && shouldApplyGrimGroundSimulationAutoFakeGround()) {
             double yLevel = mc.player.getY();
@@ -508,7 +521,7 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
 
         if (fakeMovementThisTick) {
             movementManagerEvent.cancel();
-            movementManagerEvent.context.playerStatus.restorePos();
+            movementManagerEvent.context.resetPos();
             fakeMovementThisTick = false;
         }
     }
@@ -566,13 +579,12 @@ public class Criticals extends BaseModule implements LegalMovementManager.Moveme
     }
 
     @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+    public void postModify(Event<LegalMovementManager> movementManagerEvent) {
         if (storedRotation1205 != null) {
             PlayerStateManager.setPlayerRotationSafe(mc.player, storedRotation1205);
             LegacySnapRotManager.INSTANCE.snapAt(storedRotation1205, false);
             storedRotation1205 = null;
         }
-        return true;
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> eventModule) {

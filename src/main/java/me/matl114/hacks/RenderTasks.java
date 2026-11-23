@@ -16,6 +16,7 @@ import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.modules.render.*;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.managers.Tasks;
 import me.matl114.utils.*;
 import net.minecraft.client.MinecraftClient;
@@ -486,6 +487,9 @@ public class RenderTasks {
     private static NoRender noRender;
 
     @Getter
+    private static Xray xray;
+
+    @Getter
     private static HandView handView;
 
     @Getter
@@ -563,6 +567,7 @@ public class RenderTasks {
     private static void initModules(ModuleManager m) {
         renderExtra = new RenderExtra().register(m);
         noRender = new NoRender().register(m);
+        xray = new Xray().register(m);
         handView = new HandView().register(m);
         entityLog = new EntityLog().register(m);
         entityESP = new EntityESP().register(m);

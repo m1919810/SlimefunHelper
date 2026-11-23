@@ -74,7 +74,7 @@ public class AntiLiquid extends BaseModule implements LegalMovementManager.Movem
         if (currentArmorGlidingSaveState) {
             if (ElytraExtra.INSTANCE.hasResetFallFlyingQueue()) {
                 movementManagerEvent.cancel();
-                movementManagerEvent.context.markForResetPos();
+                movementManagerEvent.context.resetPos();
                 FloatingUtils.INSTANCE.setGrimFloatingTick(true);
                 return;
             }
@@ -122,7 +122,7 @@ public class AntiLiquid extends BaseModule implements LegalMovementManager.Movem
                     // firstly reset the pos, so that player can continue gliding
                     eventMove.cancel();
                     // restore now!
-                    eventMove.context.playerStatus.restorePos();
+                    eventMove.context.resetPos();
                     ElytraExtra.INSTANCE.endArmorFlyTransaction(true);
                     currentArmorGlidingSaveState = true;
                     taskSwitch = Tasks.getTick();
@@ -131,13 +131,13 @@ public class AntiLiquid extends BaseModule implements LegalMovementManager.Movem
                 }
                 if (enableWhenFly.get()) {
                     eventMove.cancel();
-                    eventMove.context.markForResetPos();
+                    eventMove.context.resetPos();
                     FloatingUtils.INSTANCE.setGrimFloatingTick(true);
                 }
             } else {
                 if (enableWhenNotFly.get()) {
                     eventMove.cancel();
-                    eventMove.context.markForResetPos();
+                    eventMove.context.resetPos();
                     FloatingUtils.INSTANCE.setGrimFloatingTick(true);
                 }
             }

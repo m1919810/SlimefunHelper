@@ -21,6 +21,8 @@ import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.modules.move.RotationManager;
 import me.matl114.hacks.modules.task.DisablerManager;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.InteractUtils;
+import me.matl114.hacks.utils.PlayerInputUtils;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
@@ -31,7 +33,6 @@ import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
 import me.matl114.utils.collections.IndexEntry;
-import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
 import net.minecraft.block.Blocks;
@@ -92,9 +93,18 @@ public class AutoSurround extends BaseModule {
             .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 10.0D))
             .build();
 
-    public final FlagRef scaffold = flagBuilder(autoSurround.add("lower")).build();
+    public final NBTRef<OptionalPrimitive<Integer>> scaffold = builder(
+                    autoSurround.add("lower"), OptionalPrimitive.INT_TYPE)
+            .defaultValue(new OptionalPrimitive<>(true, NBTTypes.INT_TYPE, 1))
+            .build();
 
     public final FlagRef placeUpper = flagBuilder(autoSurround.add("upper")).build();
+
+    public final FlagRef placeLower =
+            flagBuilder(autoSurround.add("place-lower")).build();
+
+    public final FlagRef onlyGround =
+            flagBuilder(autoSurround.add("only-ground")).build();
 
     public final FlagRef autoAttackCrystals =
             flagBuilder(autoSurround.add("auto-attack-crystal")).build();
@@ -104,9 +114,6 @@ public class AutoSurround extends BaseModule {
 
     public final FlagRef autoFillMinePos =
             flagBuilder(autoSurround.add("auto-fill-mine-pos")).build();
-
-    public final FlagRef onlyGround =
-            flagBuilder(autoSurround.add("only-ground")).build();
 
     public final FlagRef autoCenter =
             flagBuilder(autoSurround.add("auto-center")).build();
@@ -159,7 +166,7 @@ public class AutoSurround extends BaseModule {
     BlockPos lastCenter;
 
     public void onInput() {
-        boolean triggerCenterFix = false;
+        boolean triggerCenterFix = lastCenter != null;
         if (enable.get()) {
             boolean bl = mc.player.isSneaking();
             if (++delayTicks >= delay.get()) {
@@ -193,24 +200,35 @@ public class AutoSurround extends BaseModule {
                 }
             }
         }
-        if (triggerCenterFix && mc.player.isOnGround()) {
-            if (lastCenter == null || !MathUtils.isInBox(lastCenter.toCenterPos(), mc.player.getPos(), 1.0)) {
+        if (enable.get()
+                && autoCenter.get()
+                && triggerCenterFix
+                && mc.player.isOnGround()
+                && !mc.player.isFallFlying()) {
+            if (lastCenter == null || !MathUtils.isInBox(lastCenter.toCenterPos(), mc.player.getPos(), 0.75)) {
                 lastCenter = lastSurround == null ? PlayerStateManager.INSTANCE.lastVelocityAffectingPos : lastSurround;
             }
             var blockPos = lastCenter;
-            boolean fixed = mc.player.getX() - blockPos.getX() - 0.5 <= 0.2
-                    && mc.player.getX() - blockPos.getX() - 0.5 >= -0.2
-                    && mc.player.getZ() - blockPos.getZ() - 0.5 <= 0.2
-                    && mc.player.getZ() - 0.5 - blockPos.getZ() >= -0.2;
+            boolean fixed = mc.player.getX() - blockPos.getX() <= 0.7
+                    && mc.player.getX() - blockPos.getX() >= 0.3
+                    && mc.player.getZ() - blockPos.getZ() <= 0.7
+                    && mc.player.getZ() - blockPos.getZ() >= 0.3;
             if (!fixed) {
                 PlayerInputUtils.Input inputUtils = PlayerInputUtils.of(mc.options);
                 if (!inputUtils.hasMovement()) {
                     Vec3d lookHorizontal = blockPos.toCenterPos().subtract(mc.player.getPos());
                     float yaw = EntityUtils.rotationToYaw(lookHorizontal);
-                    RotationManager.INSTANCE.request(RotationManager.ofDirection(Optional.empty(), Optional.of(yaw))
-                            .preTick(() -> {
-                                PlayerInputManager.INSTANCE.addForwardModifier(0, true, 0);
-                                PlayerInputManager.INSTANCE.addBackwardModifier(0, false, 0);
+                    RotationManager.INSTANCE.push(RotationManager.ofDirection(Optional.empty(), Optional.of(yaw))
+                            .preTick((rotation, player, matchRaycast) -> {
+                                PlayerInputUtils.Input movement = PlayerInputUtils.tryCorrectMovementInput(
+                                        new PlayerInputUtils.Input(true, false, false, false), yaw, player.getYaw());
+                                PlayerInputManager.INSTANCE.addInputModifier(
+                                        PlayerInputManager.Modifier.empty(0)
+                                                .forward(movement.forward())
+                                                .backward(movement.backward())
+                                                .left(movement.left())
+                                                .right(movement.right()),
+                                        0);
                             })
                             .applyMoveFix(false)
                             .priority(0));
@@ -238,7 +256,6 @@ public class AutoSurround extends BaseModule {
 
     public Set<BlockPos> getTargetingPos() {
         BlockPos vcPos = PlayerStateManager.INSTANCE.lastVelocityAffectingPos;
-        lastSurround = vcPos;
         Box playerBox = mc.player.getBoundingBox();
         int minY = (int) Math.floor(playerBox.minY);
         int maxY = (int) Math.ceil(playerBox.maxY);
@@ -254,7 +271,15 @@ public class AutoSurround extends BaseModule {
         Set<BlockPos> result = new LinkedHashSet<>();
 
         var directionTestPoses = new LinkedHashSet<BlockPos>();
-
+        if (placeLower.get()) {
+            for (var re : occupiedPoses) {
+                BlockPos test = re.withY(minY - 1);
+                if (occupiedPoses.contains(test)) {
+                    continue;
+                }
+                result.add(test);
+            }
+        }
         for (int direction = 0; direction < 4; ++direction) {
             Direction dir = dd[direction];
             for (BlockPos occupiedPos : occupiedBasePoses) {
@@ -283,39 +308,41 @@ public class AutoSurround extends BaseModule {
                 result.add(test);
             }
         }
-        if (!onlyGround.get()
-                && !CollisionUtil.isBoxCollided(
-                        mc.world,
-                        mc.player,
-                        playerBox.withMinY(playerBox.minY - 1.5).withMaxY(playerBox.minY))) {
-            for (var re : occupiedPoses) {
-                BlockPos test = re.withY(minY - 1);
-                if (occupiedPoses.contains(test)) {
-                    continue;
-                }
-                result.add(test);
-            }
-        }
+
         Set<BlockPos> scaffoldPoses = new LinkedHashSet<>();
-        if (scaffold.get()) {
+        if (scaffold.get().isPresent()) {
             for (var re : directionTestPoses) {
-                BlockPos test = re.withY(minY - 1);
-                if (occupiedPoses.contains(test)) {
-                    continue;
-                }
-                BlockState stateUp = mc.world.getBlockState(test.up());
+                BlockState stateUp = mc.world.getBlockState(re.withY(minY));
                 if (stateUp.isAir() || stateUp.isLiquid()) {
-                    scaffoldPoses.add(test);
+                    for (var i = 1; i <= scaffold.get().getValue(); ++i) {
+                        BlockPos test = re.withY(minY - i);
+                        BlockState currentState = mc.world.getBlockState(test);
+                        if (currentState.isAir() || currentState.isLiquid()) {
+                            if (occupiedPoses.contains(test)) {
+                                continue;
+                            }
+                            scaffoldPoses.add(test);
+                        } else {
+                            break;
+                        }
+                    }
                 }
             }
             for (BlockPos occupiedPos : directionTestPoses) {
-                BlockPos upperPos = occupiedPos.withY(maxY);
-                if (occupiedPoses.contains(upperPos)) {
-                    continue;
-                }
-                BlockState stateUp = mc.world.getBlockState(upperPos.down());
+                BlockState stateUp = mc.world.getBlockState(occupiedPos.withY(maxY - 1));
                 if (stateUp.isAir() || stateUp.isLiquid()) {
-                    scaffoldPoses.add(upperPos);
+                    for (var i = 0; i < scaffold.get().getValue(); ++i) {
+                        BlockPos upperPos = occupiedPos.withY(maxY + i);
+                        BlockState currentState = mc.world.getBlockState(upperPos);
+                        if (currentState.isAir() || currentState.isLiquid()) {
+                            if (occupiedPoses.contains(upperPos)) {
+                                continue;
+                            }
+                            scaffoldPoses.add(upperPos);
+                        } else {
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -344,6 +371,8 @@ public class AutoSurround extends BaseModule {
                 return false;
             }
         }
+        lastSurround = PlayerStateManager.INSTANCE.lastVelocityAffectingPos;
+
         boolean legal = mode.get().isLegal();
 
         int mul = ((DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled(
@@ -497,7 +526,7 @@ public class AutoSurround extends BaseModule {
                     return null;
                 },
                 ghostHand.get().getSearchSize(offhand.get()),
-                true,
+                false,
                 false);
     }
 

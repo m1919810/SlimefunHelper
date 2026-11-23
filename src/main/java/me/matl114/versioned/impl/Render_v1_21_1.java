@@ -5,7 +5,6 @@ import java.awt.*;
 import java.util.List;
 import java.util.function.Function;
 import me.matl114.renderer.TextRenderers;
-import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.ColorQuad;
 import me.matl114.utils.render.Quad;
 import me.matl114.utils.render.UV;
@@ -166,7 +165,7 @@ public class Render_v1_21_1 implements VRender, VRender.WrapRenderOperation {
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         RenderLayer layer = GUI_TEXTURE_3D_LAYERS.apply(sprite.getAtlasId());
         VertexConsumerProvider.Immediate consumers = mc.getBufferBuilders().getEntityVertexConsumers();
-        VertexConsumer vertex = RenderUtils.getSpriteVertexConsumer(consumers.getBuffer(layer), sprite);
+        VertexConsumer vertex = getSpriteVertexConsumer(consumers.getBuffer(layer), sprite);
         callback.draw(this, vertex);
         consumers.draw(layer);
     }
@@ -380,6 +379,81 @@ public class Render_v1_21_1 implements VRender, VRender.WrapRenderOperation {
             vertex.vertex(entry, (float) vec3d.x, (float) vec3d.y, (float) vec3d.z)
                     .texture(u, v)
                     .color(color);
+        }
+    }
+
+    public VertexConsumer getSpriteVertexConsumer(VertexConsumer vertexConsumer, Sprite sprite) {
+        return new SpriteTexturedVertexConsumer(vertexConsumer, sprite);
+    }
+
+    public static class SpriteTexturedVertexConsumer implements VertexConsumer {
+        private final VertexConsumer delegate;
+        private final Sprite sprite;
+
+        public SpriteTexturedVertexConsumer(VertexConsumer delegate, Sprite sprite) {
+            this.delegate = delegate;
+            this.sprite = sprite;
+        }
+
+        public VertexConsumer vertex(float x, float y, float z) {
+            this.delegate.vertex(x, y, z);
+            return this;
+        }
+
+        public VertexConsumer color(int red, int green, int blue, int alpha) {
+            this.delegate.color(red, green, blue, alpha);
+            return this;
+        }
+
+        public VertexConsumer color(int argb) {
+            this.delegate.color(argb);
+            return this;
+        }
+
+        public VertexConsumer texture(float u, float v) {
+            this.delegate.texture(this.sprite.getFrameU(u), this.sprite.getFrameV(v));
+            return this;
+        }
+
+        public VertexConsumer overlay(int u, int v) {
+            this.delegate.overlay(u, v);
+            return this;
+        }
+
+        public VertexConsumer light(int u, int v) {
+            this.delegate.light(u, v);
+            return this;
+        }
+
+        public VertexConsumer normal(float x, float y, float z) {
+            this.delegate.normal(x, y, z);
+            return this;
+        }
+
+        public void vertex(
+                float x,
+                float y,
+                float z,
+                int color,
+                float u,
+                float v,
+                int overlay,
+                int light,
+                float normalX,
+                float normalY,
+                float normalZ) {
+            this.delegate.vertex(
+                    x,
+                    y,
+                    z,
+                    color,
+                    this.sprite.getFrameU(u),
+                    this.sprite.getFrameV(v),
+                    overlay,
+                    light,
+                    normalX,
+                    normalY,
+                    normalZ);
         }
     }
 }

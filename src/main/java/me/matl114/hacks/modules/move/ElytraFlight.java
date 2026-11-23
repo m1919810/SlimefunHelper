@@ -1,7 +1,9 @@
 package me.matl114.hacks.modules.move;
 
+import lombok.Getter;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.events.channels.EventChannel;
 import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.MovTasks;
 import me.matl114.hacks.api.BaseModule;
@@ -11,6 +13,7 @@ import me.matl114.hacks.modules.combat.ElytraBot;
 import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.PlayerInputUtils;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.OptionalPrimitive;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
@@ -18,19 +21,22 @@ import me.matl114.hacks.utils.move.ElytraMotion;
 import me.matl114.hacks.utils.move.ElytraOptimizeUtils;
 import me.matl114.hacks.utils.tasks.PressExecutor;
 import me.matl114.managers.Configs;
-import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ChatUtils;
 import me.matl114.utils.Debug;
-import me.matl114.utils.entity.PlayerInputUtils;
+import me.matl114.utils.MathUtils;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
 public class ElytraFlight extends BaseModule implements LegalMovementManager.MovementModifier {
     public static ElytraFlight INSTANCE;
+
+    @Getter
+    private static final EventChannel<ElytraMotion> flightMotion = new EventChannel<>();
+
     public final ModulePath elytra = makePath(Configs.MOV_CONFIG, "elytra");
     public final ModulePath simpleFlightControl = elytra.add("simple-flight-control");
     public final ModulePath customFireworks = elytra.add("custom-fireworks");
@@ -45,9 +51,9 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                     moduleMeta(() -> this.controlMode))
             .build();
 
-    public final DoubleRef packetMotion = builder(customFireworks.add("motion-amount"), DoubleRef.TYPE)
-            .defaultValue(0.05)
-            .validator(Configs.doubleRange(0.0, 10000.0))
+    public final DoubleRef packetMotion = builder(simpleFlightControl.add("motion-amount"), DoubleRef.TYPE)
+            .defaultValue(1.7)
+            .validator(Configs.doubleRange(0.0, 1000.0))
             .build();
 
     public final EnumRef<ElytraExtra.MotionMode> motionMode = builder(
@@ -78,6 +84,9 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
 
     public final FlagRef useFloatingUtils =
             flagBuilder(simpleFlightControl.add("use-floating-utils")).build();
+    public final FlagRef freezeWhenSetup = flagBuilder(simpleFlightControl.add("floating-when-set-up-fireworks"))
+            .build();
+
     public final FlagRef horizontalFlyNoGravity = builder(
                     simpleFlightControl.add("horizontal-no-gravity"), Boolean.class)
             .defaultValue(true)
@@ -131,18 +140,19 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             .build();
 
     boolean currentTakeOff = false;
-    public final FlagRef autoFly =
-            flagBuilder(simpleFlightControl.add("auto-fly")).build();
+
+    public final ModulePath autoFlyModule = simpleFlightControl.add("auto-fly");
+    public final FlagRef autoFly = flagBuilder(autoFlyModule.addEnable()).build();
 
     public final KeyBindRef autoFlyKey = toggleHotkey(
-                    simpleFlightControl.add("auto-fly-hotkey"), new MultiKeyBind(), simpleFlightControl.add("auto-fly"))
+                    autoFlyModule.addHotkey(), new MultiKeyBind(), autoFlyModule.addEnable())
             .build();
 
     public final FlagRef autoFlyAutoJumpOff =
-            flagBuilder(simpleFlightControl.add("auto-fly-auto-jump-off")).build();
+            flagBuilder(autoFlyModule.add("auto-fly-auto-jump-off")).build();
 
     public final FlagRef autoFlyLandAutoClose =
-            flagBuilder(simpleFlightControl.add("auto-fly-land-auto-close")).build();
+            flagBuilder(autoFlyModule.add("auto-fly-land-auto-close")).build();
 
     private static LegalMovementManager.DelegateMovementModifier instance;
 
@@ -200,7 +210,6 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
     }
 
     PressExecutor holdJump = new PressExecutor();
-    boolean controllingThisTick = false;
 
     public void applyPreTickModify(Event<LegalMovementManager> movementManagerEvent) {
         ClientPlayerEntity player = movementManagerEvent.context.playerStatus.entity;
@@ -210,17 +219,13 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
         if (mc.options.jumpKey.isPressed()) {
             holdJump.press();
         }
-        controllingThisTick = false;
+
         if (shouldControlFlight()) {
             if (!player.isFallFlying()
                     && takeOffOptimize.get().isPresent()
                     && holdJump.canRun(takeOffOptimize.get().getValue())) {
-                if (!mc.player.isOnGround() && mc.player.checkFallFlying()) {
-                    MovExtra.INSTANCE.sendPacketsForPreStartFallFlying();
-                    mc.getNetworkHandler()
-                            .sendPacket(new ClientCommandC2SPacket(
-                                    mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                    MovExtra.INSTANCE.sendPacketsForPostStartFallFlying();
+                if (!mc.player.isOnGround() && mc.player.checkGliding()) {
+                    ElytraExtra.INSTANCE.tryStartFallFlying();
                 }
             }
             if (player.isFallFlying()) {
@@ -368,11 +373,15 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                 Vec3d realVector0 = wayVector.multiply(motionAmount);
                 // add custom elytra event for bot to control elytra
                 ElytraMotion motion = new ElytraMotion(
-                        ElytraExtra.INSTANCE.autoRescale.get() ? algorithm : null,
+                        ElytraExtra.INSTANCE.autoRescale.get() && useAutoRescale.get() ? algorithm : null,
                         motionRotation,
                         realVector0.length(),
                         motionAmount);
-                Listener.getCustomListener().broadcast(new EventContainer<>(ElytraMotion.class, motion));
+                float pitchBeforeFlightMotion = motion.pitch();
+                float yawBeforeFlightMotion = motion.yaw();
+                flightMotion.broadcast(motion);
+                boolean flightMotionChangedRotation =
+                        motion.pitch() != pitchBeforeFlightMotion || motion.yaw() != yawBeforeFlightMotion;
 
                 // add FloatingUtils
                 if (FloatingUtils.INSTANCE.workGrimFloatingThisTick()) {
@@ -389,6 +398,7 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                         } else {
                             motion.speed(0);
                             FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                            // here we set
                             shouldControl = true;
                             shouldCheckRocket = false;
                             shouldControlRotation = false;
@@ -404,41 +414,58 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
                         && motion.pitch() > 0) {
                     motion.pitch(0);
                 }
-                if (useAutoRescale.get()) {
-                    float yaw = motion.yaw();
-                    yaw = (Tasks.getTick() % 2 == 0) ? yaw + 0.01F : yaw - 0.01F;
-                    motion.yaw(yaw);
-                }
-                if (shouldControlRotation && motion.speed() > 1e-3) {
-                    // fliter zero control
-                    boolean hasYaw = useAutoRescale.get()
-                            || Math.abs(EntityUtils.getSafeYawDiff(motion.yaw(), mc.player.getYaw())) > 1E-4;
-                    movementManagerEvent.context.pushImportantRotation(true, hasYaw);
-                    movementManagerEvent.context.markForResetRot();
-                    EntityUtils.setEntityPitchSafe(mc.player, motion.pitch());
-                    PlayerStateManager.setPlayerYawSafe(mc.player, motion.yaw());
-                    // pitch reset to trigger grim lastPitch lastYaw update
-                }
+                boolean shouldRotate = shouldControlRotation
+                        && motion.speed() > 1e-3
+                        && (motionMode.get() != ElytraExtra.MotionMode.VOID || flightMotionChangedRotation);
+                var requestedRotation = shouldRotate
+                        ? new me.matl114.hacks.utils.move.Rotation(
+                                motion.pitch(), Math.abs(motion.pitch()) == 90.0F ? null : motion.yaw())
+                        : me.matl114.hacks.utils.move.Rotation.EMPTY;
                 if (shouldControl) {
-                    if (Math.abs(motion.pitch()) <= 1e-1 && horizontalFlyNoGravity.get() && !mc.player.isOnGround()) {
-                        modifyNoGravity = player.hasNoGravity();
-                        player.setNoGravity(true);
+                    boolean noGravity = (Math.abs(motion.pitch()) <= 1e-1
+                                    && horizontalFlyNoGravity.get()
+                                    && !mc.player.isOnGround())
+                            || motion.speed() <= 1e-3;
+                    if (motionMode.get() == ElytraExtra.MotionMode.VOID) {
+                        var requestedMotion = motion.movement();
+                        RotationManager.INSTANCE.push(RotationManager.ofDirection(
+                                        me.matl114.hacks.utils.move.Rotation.EMPTY)
+                                .priority(Integer.MAX_VALUE)
+                                .preTick((rotation, player2, matchRaycast) -> player2.setVelocity(requestedMotion)));
+                    } else {
+                        ElytraExtra.INSTANCE.pushAxisLimitTask(
+                                motion.algorithm(), motion.movement(), !noGravity, useAutoRescale.get());
                     }
-                    mc.player.setVelocity(
-                            (motionMode.get() == ElytraExtra.MotionMode.FIRE_WORKS && useAutoRescale.get())
-                                    ? ElytraExtra.INSTANCE.applyAxisLimit(
-                                            motion.algorithm(),
-                                            motion.movement(),
-                                            motion.pitch(),
-                                            motion.yaw(),
-                                            !mc.player.hasNoGravity())
-                                    : motion.movement());
+                } else if (!shouldRotate
+                        && freezeWhenSetup.get()
+                        && PlayerStateManager.INSTANCE.lastKnownMovementSpeed.length() < 1E-8
+                        && shouldCheckRocket
+                        && MathUtils.getOccupiedBlockPositions(
+                                        mc.player.getBoundingBox().expand(5, 5, 5))
+                                .stream()
+                                .allMatch(s -> {
+                                    BlockState nearState = mc.world.getBlockState(s);
+                                    return nearState.isAir() || nearState.isLiquid();
+                                })) {
+                    FloatingUtils.INSTANCE.setGrimFloatingTick(true);
+                }
+                if (shouldRotate) {
+                    // VOID rotation is optional: only use priority -1 when flightMotion changes its angles.
+                    RotationManager.INSTANCE.push(RotationManager.ofDirection(requestedRotation)
+                            .priority(motionMode.get() == ElytraExtra.MotionMode.VOID ? -1 : Integer.MIN_VALUE + 1));
+                    if (motionMode.get() == ElytraExtra.MotionMode.VOID || !shouldControl) {
+                        ElytraExtra.INSTANCE.pushAxisLimitTask(null, null, false, useAutoRescale.get());
+                    }
                 }
                 if (shouldControl || shouldControlRotation) {
-                    controllingThisTick = true;
+                    PlayerInputManager.INSTANCE.addSneakModifier(0, false, 0);
                 }
                 if (shouldCheckRocket) {
-                    MovTasks.getElytraExtra().launchFirework(mc.player.getPitch(), mc.player.getYaw());
+                    RotationManager.INSTANCE.push(
+                            RotationManager.ofDirection(me.matl114.hacks.utils.move.Rotation.EMPTY)
+                                    .priority(Integer.MAX_VALUE)
+                                    .preTick((rotation, player2, matchRaycast) -> MovTasks.getElytraExtra()
+                                            .launchFirework(player2.getPitch(), player2.getYaw())));
                 }
             } else {
                 if (autoFly.get() && autoFlyAutoJumpOff.get()) {
@@ -458,27 +485,6 @@ public class ElytraFlight extends BaseModule implements LegalMovementManager.Mov
             }
             currentTakeOff = false;
         }
-    }
-
-    @Override
-    public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
-        LegalMovementManager.MovementModifier.super.applyAfterInputTick(movementManagerEvent);
-        if (controllingThisTick) {
-            // remove sneak because sneak is part of the WASD control
-            PlayerInputUtils.of(mc.player).sneak(false).applyInput(mc.player);
-        }
-    }
-
-    Boolean modifyNoGravity = null;
-
-    @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-        if (modifyNoGravity != null) {
-            movementManagerEvent.context().playerStatus.entity.setNoGravity(modifyNoGravity);
-            modifyNoGravity = null;
-        }
-
-        return true;
     }
 
     public void onPresetLoad(Event<EventContainer<ModulePreset>> presetEvent) {

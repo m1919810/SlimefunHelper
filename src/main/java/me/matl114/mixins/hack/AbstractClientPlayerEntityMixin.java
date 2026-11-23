@@ -3,7 +3,7 @@ package me.matl114.mixins.hack;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.mojang.authlib.GameProfile;
 import me.matl114.hacks.modules.render.NoRender;
-import me.matl114.utils.AttributeUtils;
+import me.matl114.hacks.utils.AttributeUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
@@ -44,11 +44,11 @@ public abstract class AbstractClientPlayerEntityMixin extends PlayerEntity {
         if (NoRender.INSTANCE.noSprintFov()) {
             var attributeContainer = AttributeUtils.copyAttributes(this);
             EntityAttributeInstance entityAttributeInstance =
-                    attributeContainer.getCustomInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED);
+                    attributeContainer.getCustomInstance(EntityAttributes.MOVEMENT_SPEED);
             if (entityAttributeInstance != null) {
                 entityAttributeInstance.removeModifier(Identifier.ofVanilla("sprinting"));
             }
-            original = attributeContainer.getValue(EntityAttributes.GENERIC_MOVEMENT_SPEED);
+            original = attributeContainer.getValue(EntityAttributes.MOVEMENT_SPEED);
         }
         if (NoRender.INSTANCE.noSlowDownFov()) {
             original = Math.max(original, 0.1F);

@@ -8,7 +8,6 @@ import lombok.AllArgsConstructor;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.RenderHandler;
 import me.matl114.gui.basic.TextAlign;
-import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.renderer.TextRenderers;
 import me.matl114.utils.ItemStackUtils;
 import me.matl114.utils.RegistryUtils;
@@ -131,7 +130,7 @@ public class RegistryDisplays {
                 return new ItemStack(blockList.get(select));
             }))
             .put(EntityType.class, IIcon.<EntityType<?>>renderItem((v) -> {
-                Item item = EntityUtils.entityToSpawnEgg(v);
+                Item item = RegistryUtils.entityToSpawnEgg(v);
                 return new ItemStack(item == null ? Items.PIG_SPAWN_EGG : item);
             }))
             .put(StatusEffect.class, IIcon.<StatusEffect>renderSprite(effect -> {

@@ -5,9 +5,8 @@ import java.util.*;
 import java.util.function.Supplier;
 import lombok.Getter;
 import me.matl114.events.Event;
-import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.EntityUtils;
-import me.matl114.utils.entity.PlayerInputUtils;
+import me.matl114.hacks.utils.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.math.Vec3d;
 
@@ -22,17 +21,14 @@ public class LegalMovementManager {
     boolean moveFix = false;
 
     @Getter
-    boolean resetPos = false;
-
-    @Getter
     boolean resetRot = false;
 
     public void markForMoveFix() {
         moveFix = true;
     }
 
-    public void markForResetPos() {
-        resetPos = true;
+    public void resetPos() {
+        playerStatus.restorePos();
     }
 
     public void markForResetRot() {
@@ -66,20 +62,6 @@ public class LegalMovementManager {
         }
         importantRotationStatePreserve.addLast(Pair.of(
                 hasPitch ? playerStatus.entity.getPitch() : null, hasYaw ? playerStatus.entity.getYaw() : null));
-    }
-    // this should not be called
-    protected void popImportantRotation(boolean apply) {
-        if (importantRotationStatePreserve != null) {
-            var entry = importantRotationStatePreserve.removeLast();
-            if (apply && entry != null) {
-                if (entry.getFirst() != null) {
-                    EntityUtils.setEntityPitchSafe(playerStatus.entity, entry.getFirst());
-                }
-                if (entry.getSecond() != null) {
-                    PlayerStateManager.setPlayerYawSafe(playerStatus.entity, entry.getSecond());
-                }
-            }
-        }
     }
 
     public void addMovementModifier(MovementModifier movementModifier) {
@@ -117,7 +99,6 @@ public class LegalMovementManager {
         this.playerStatus = new EntityMovementStatus<>(args);
         this.currentTickEnableHacks = new ArrayList<>();
         this.importantRotationStatePreserve = null;
-        this.resetPos = false;
         this.resetRot = false;
         this.moveFix = false;
         // start new tick, removing contents and replace with new
@@ -204,6 +185,17 @@ public class LegalMovementManager {
         }
         Event<LegalMovementManager> movementManagerEvent = new Event<>(this, true, false);
         // in case someone add a task during a destroying postModify
+        for (var hack : new ArrayList<>(this.hacks)) {
+            hack.postModify(movementManagerEvent);
+        }
+        return;
+    }
+
+    public void postTickEntities() {
+        if (this.playerStatus == null) {
+            return;
+        }
+        Event<LegalMovementManager> movementManagerEvent = new Event<>(this, false, false);
         Iterator<MovementModifier> iter = new ArrayList<>(this.hacks).iterator();
         int goingCurrentTickEnables = 0;
         while (iter.hasNext()) {
@@ -214,18 +206,14 @@ public class LegalMovementManager {
             if (enabled) {
                 goingCurrentTickEnables += 1;
             }
-            if (!hack.postModify(movementManagerEvent, enabled)) {
+            if (!hack.postTick(movementManagerEvent, enabled)) {
                 iter.remove();
                 this.hacks.remove(hack);
             }
         }
-        if (resetPos) {
-            playerStatus.restorePos();
-        }
         if (resetRot) {
             playerStatus.restoreRotation();
         }
-        return;
     }
 
     // functions:
@@ -274,13 +262,14 @@ public class LegalMovementManager {
 
         default void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {}
 
-        // return for removal after player tick
-        // return if this hack is still valid, if return false, we will remove it from hack list
-        // tick both
-        //
-        default boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+        default void postModify(Event<LegalMovementManager> movementManagerEvent) {}
+
+        // return false to remove this modifier after the player tick
+        default boolean postTick(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
             return true;
         }
+
+        default void postTick(Event<LegalMovementManager> movementManagerEvent) {}
 
         default int compareTo(MovementModifier var1) {
             return this.priority() - var1.priority();
@@ -346,8 +335,18 @@ public class LegalMovementManager {
         }
 
         @Override
-        public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-            return delegate.get().postModify(movementManagerEvent, enabledThisTick);
+        public void postModify(Event<LegalMovementManager> movementManagerEvent) {
+            delegate.get().postModify(movementManagerEvent);
+        }
+
+        @Override
+        public boolean postTick(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+            return delegate.get().postTick(movementManagerEvent, enabledThisTick);
+        }
+
+        @Override
+        public void postTick(Event<LegalMovementManager> movementManagerEvent) {
+            delegate.get().postTick(movementManagerEvent);
         }
 
         @Override
@@ -444,9 +443,16 @@ public class LegalMovementManager {
         }
 
         @Override
-        public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+        public void postModify(Event<LegalMovementManager> movementManagerEvent) {
             for (var re : pipeline) {
-                re.postModify(movementManagerEvent, enabledThisTick);
+                re.postModify(movementManagerEvent);
+            }
+        }
+
+        @Override
+        public boolean postTick(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+            for (var re : pipeline) {
+                re.postTick(movementManagerEvent, enabledThisTick);
             }
             return true;
         }

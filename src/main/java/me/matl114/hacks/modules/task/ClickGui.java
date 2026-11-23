@@ -6,8 +6,8 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
@@ -32,13 +32,13 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.combat.TargetSelector;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.clickgui.ClassicClickGuiScreen;
+import me.matl114.hacks.utils.clickgui.ClickGuiStyles;
+import me.matl114.hacks.utils.clickgui.SliderClickGuiFactory;
+import me.matl114.hacks.utils.clickgui.SubScreenClickGuiFactory;
 import me.matl114.hacks.utils.config.GuiSetting;
 import me.matl114.hacks.utils.config.StringEnum;
 import me.matl114.hacks.utils.config.Vec2;
-import me.matl114.hacks.utils.gui.ClassicClickGuiScreen;
-import me.matl114.hacks.utils.gui.ClickGuiStyles;
-import me.matl114.hacks.utils.gui.SliderClickGuiFactory;
-import me.matl114.hacks.utils.gui.SubScreenClickGuiFactory;
 import me.matl114.hooks.BaritoneHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.FileManager;
@@ -530,46 +530,42 @@ public class ClickGui extends BaseModule {
         ScreenAccess.of(screen).openFromCurrent();
     }
 
-    public Map<String, Function<Screen, DrawableWidget>> getExtraSelections(ClickGuiMetaData meta) {
-        Map<String, Function<Screen, DrawableWidget>> selections = new LinkedHashMap<>();
-        selections.put("Friends", screen -> createFriendSettings(screen, meta));
-        selections.put("CmdMacros", screen -> createCmdMacrosSettings(screen, meta));
-        selections.put("Hotkeys", screen -> createKeyBindListSettings(screen, meta));
-        selections.put("BaseSettings", screen -> createBaseSettings(screen, meta));
-        selections.put("GuiSettings", screen -> createGuiSettings(screen, meta));
-        selections.put("Font", screen -> createFontSettings(screen, meta));
-        selections.put("Config", screen -> createConfig(meta));
+    public Map<String, BiFunction<Integer, Integer, DrawableWidget>> getExtraSelections(ClickGuiMetaData meta) {
+        Map<String, BiFunction<Integer, Integer, DrawableWidget>> selections = new LinkedHashMap<>();
+        selections.put("Friends", (width, height) -> createFriendSettings(width, height, meta));
+        selections.put("CmdMacros", (width, height) -> createCmdMacrosSettings(width, height, meta));
+        selections.put("Hotkeys", (width, height) -> createKeyBindListSettings(width, height, meta));
+        selections.put("BaseSettings", (width, height) -> createBaseSettings(width, height, meta));
+        selections.put("GuiSettings", (width, height) -> createGuiSettings(width, height, meta));
+        selections.put("Font", (width, height) -> createFontSettings(width, height, meta));
+        selections.put("Config", (width, height) -> createConfig(meta, width, height));
         if (BaritoneHooks.getInstance().isBaritoneAPISupported()) {
-            selections.put("Baritone", screen -> createBaritoneScreen(screen, meta));
+            selections.put("Baritone", (width, height) -> createBaritoneScreen(width, height, meta));
         }
         return selections;
     }
 
-    public DrawableWidget createBaseSettings(Screen screen, ClickGuiMetaData meta) {
+    public DrawableWidget createBaseSettings(int width, int height, ClickGuiMetaData meta) {
         DrawableWidget widget = createBaseModuleConfigurateScreen(ModuleSettings.INSTANCE, meta);
-        return WidgetUtils.createCenterScreenWidget(
-                widget, screen.width, screen.height - 2 * ClassicClickGuiScreen.BUTTON_HEIGHT);
+        return WidgetUtils.createCenterScreenWidget(widget, width, height);
     }
 
-    public DrawableWidget createGuiSettings(Screen screen, ClickGuiMetaData metaData) {
+    public DrawableWidget createGuiSettings(int width, int height, ClickGuiMetaData metaData) {
         DrawableWidget widget = createBaseModuleConfigurateScreen(ClickGui.INSTANCE, metaData);
-        return WidgetUtils.createCenterScreenWidget(
-                widget, screen.width, screen.height - 2 * ClassicClickGuiScreen.BUTTON_HEIGHT);
+        return WidgetUtils.createCenterScreenWidget(widget, width, height);
     }
 
-    public DrawableWidget createFontSettings(Screen screen, ClickGuiMetaData metaData) {
+    public DrawableWidget createFontSettings(int width, int height, ClickGuiMetaData metaData) {
         DrawableWidget widget = createBaseModuleConfigurateScreen(MainTasks.getTextFont(), metaData);
-        return WidgetUtils.createCenterScreenWidget(
-                widget, screen.width, screen.height - 2 * ClassicClickGuiScreen.BUTTON_HEIGHT);
+        return WidgetUtils.createCenterScreenWidget(widget, width, height);
     }
 
-    public DrawableWidget createFriendSettings(Screen screen, ClickGuiMetaData meta) {
+    public DrawableWidget createFriendSettings(int width, int height, ClickGuiMetaData meta) {
         DrawableWidget widget = createBaseModuleConfigurateScreen(TargetSelector.INSTANCE, meta);
-        return WidgetUtils.createCenterScreenWidget(
-                widget, screen.width, screen.height - 2 * ClassicClickGuiScreen.BUTTON_HEIGHT);
+        return WidgetUtils.createCenterScreenWidget(widget, width, height);
     }
 
-    public DrawableWidget createCmdMacrosSettings(Screen screen, ClickGuiMetaData meta) {
+    public DrawableWidget createCmdMacrosSettings(int width, int height, ClickGuiMetaData meta) {
         List<WrapperConfigRef<?>> configRefs = Stream.of(BindCommand.INSTANCE, EventCommand.INSTANCE)
                 .flatMap(s -> s.getEditableConfig().stream())
                 .toList();
@@ -579,37 +575,25 @@ public class ClickGui extends BaseModule {
                 configRefs,
                 WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT,
                 CONFIG_FACTORY);
-        return WidgetUtils.createCenterScreenWidget(
-                widget, screen.width, screen.height - 2 * ClassicClickGuiScreen.BUTTON_HEIGHT);
+        return WidgetUtils.createCenterScreenWidget(widget, width, height);
     }
 
-    public DrawableWidget createKeyBindListSettings(Screen screen, ClickGuiMetaData meta) {
-        List<WrapperConfigRef<?>> allKeyBinds = HackModules.getModuleGroups().stream()
-                .flatMap(s -> s.getModules().stream())
-                .flatMap(s -> s.getEditableConfig().stream())
-                .filter(s -> s.ref() instanceof KeyBindRef)
-                .toList();
-        DrawableWidget widget = createConfigScreen(
-                Text.translatable("widget.click-gui.selection.Hotkeys"),
-                List::of,
-                allKeyBinds,
-                WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT,
-                CONFIG_FACTORY);
-        return WidgetUtils.createCenterScreenWidget(
-                widget, screen.width, screen.height - 2 * ClassicClickGuiScreen.BUTTON_HEIGHT);
+    public DrawableWidget createKeyBindListSettings(int width, int height, ClickGuiMetaData meta) {
+        DrawableWidget widget = createBaseModuleConfigurateScreen(HotkeyList.INSTANCE, meta);
+        return WidgetUtils.createCenterScreenWidget(widget, width, height);
     }
 
     private DrawableWidget createTest(ClickGuiMetaData meta) {
         return new SubScreenWidget(0, 0, 0, 0);
     }
 
-    public DrawableWidget createConfig(ClickGuiMetaData meta) {
+    public DrawableWidget createConfig(ClickGuiMetaData meta, int width, int height) {
         var screen = new ConfigMultiLevelListScreen(Config.REGISTRY.stream().toList(), CONFIG_FACTORY);
-        screen.init(mc, mc.getWindow().getScaledWidth(), mc.getWindow().getScaledHeight());
+        screen.init(mc, width, height);
         return new ContentDelegateWidget<>(0, 0, 0, 0).setContentDelegate(screen);
     }
 
-    public DrawableWidget createBaritoneScreen(Screen screen, ClickGuiMetaData metaData) {
+    public DrawableWidget createBaritoneScreen(int width, int height, ClickGuiMetaData metaData) {
         List<Pair<String, ValueAccessor>> baritones = BaritoneHooks.getInstance().getAllSettings().entrySet().stream()
                 .map(entry -> Pair.of("widget.click-gui.baritone." + entry.getKey(), (ValueAccessor) entry.getValue()))
                 .toList();
@@ -620,8 +604,7 @@ public class ClickGui extends BaseModule {
                 WidgetUtils.DEFAULT_CONFIG_SCREEN_LAYOUT,
                 CONFIG_FACTORY,
                 true);
-        return WidgetUtils.createCenterScreenWidget(
-                widget, screen.width, screen.height - 2 * ClassicClickGuiScreen.BUTTON_HEIGHT);
+        return WidgetUtils.createCenterScreenWidget(widget, width, height);
     }
 
     public DynamicListWidget createConfigScreen(

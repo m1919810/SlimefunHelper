@@ -13,6 +13,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.task.MovementManager;
+import me.matl114.hacks.utils.PlayerInputUtils;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hooks.ViaFabricPlusHooks;
@@ -22,7 +23,6 @@ import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
 import me.matl114.utils.ItemStackUtils;
-import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -232,7 +232,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         entityStage = ENTITY_STAGE_ALIVE;
         holdingMace = args.getMainHandStack().getItem() instanceof MaceItem;
         lastHeight = args.getY();
-        safeDistance = args.getAttributeValue(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE) + noFallSafeDistance.get();
+        safeDistance = args.getAttributeValue(EntityAttributes.SAFE_FALL_DISTANCE) + noFallSafeDistance.get();
         // reset
         if (args.isOnGround()
                 || args.isTouchingWater()
@@ -283,12 +283,11 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
     }
 
     @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+    public void postModify(Event<LegalMovementManager> movementManagerEvent) {
         if (entityStage == ENTITY_STAGE_ALIVE) {
-            runningDelegate.postModify(movementManagerEvent, enabledThisTick);
+            runningDelegate.postModify(movementManagerEvent);
             runningDelegate.runningThisTick = false;
         }
-        return true;
     }
 
     public abstract static class NoFallDelegate implements LegalMovementManager.MovementModifier {
@@ -354,12 +353,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
 
         public void applyBeforeMovementPacketModify(Event<LegalMovementManager> movementManagerEvent) {
             // do nothing
-        }
-
-        @Override
-        public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-            // do nothing
-            return true;
         }
     }
 
@@ -444,7 +437,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         }
 
         @Override
-        public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+        public void postModify(Event<LegalMovementManager> movementManagerEvent) {
             if (shouldApplyOnGroundReverseNextTick != null) {
                 if (!runningThisTick) {
                     movementManagerEvent.context.playerStatus.entity.setOnGround(shouldApplyOnGroundReverseNextTick);
@@ -455,7 +448,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 // shouldApplyOnGroundReverseNextTick =
                 // movementManagerEvent.drawContext.playerStatus.entity.isOnGround();
             }
-            return true;
         }
     }
 
@@ -528,7 +520,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 // wait for set back packets to do jump
                 movementManagerEvent.cancel();
                 // restore pos
-                movementManagerEvent.context.playerStatus.restorePos();
+                movementManagerEvent.context.resetPos();
                 return;
             }
             if (module.isActive()) {
@@ -584,8 +576,8 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         }
 
         @Override
-        public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-            if (canDoJump) return true;
+        public void postModify(Event<LegalMovementManager> movementManagerEvent) {
+            if (canDoJump) return;
             ClientPlayerEntity player = movementManagerEvent.context().playerStatus.entity;
             if (doJump) {
 
@@ -593,8 +585,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 doJump = false;
                 player.setOnGround(false);
             }
-
-            return true;
         }
     }
     // tested on mc.loyisa.cn server, 2026.1.14
@@ -778,7 +768,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         }
 
         @Override
-        public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+        public void postModify(Event<LegalMovementManager> movementManagerEvent) {
             if (shouldApplyOnGroundReverseNextTick != null) {
                 if (!runningThisTick) {
                     movementManagerEvent.context.playerStatus.entity.setOnGround(shouldApplyOnGroundReverseNextTick);
@@ -789,7 +779,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 // shouldApplyOnGroundReverseNextTick =
                 // movementManagerEvent.drawContext.playerStatus.entity.isOnGround();
             }
-            return true;
         }
     }
     // tested on 1.21.11 loyisa server 3.29
@@ -944,7 +933,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 var entity = movementManagerEvent.context.playerStatus;
                 // check Y after fall
                 if (step == Step.REAPPLY_MOVEMENT) {
-                    movementManagerEvent.context.playerStatus.restorePos();
+                    movementManagerEvent.context.resetPos();
                     ClientPlayerAccess.of(entity.entity).resyncPos();
                     step = Step.WAIT_FOR_RESYNC;
                 } else {
@@ -1070,7 +1059,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         Packet<?> storedPacketMove = null;
 
         @Override
-        public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+        public void postModify(Event<LegalMovementManager> movementManagerEvent) {
             if (storedPacketMove != null) {
                 mc.getNetworkHandler().sendPacket(storedPacketMove);
             }
@@ -1085,7 +1074,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 // shouldApplyOnGroundReverseNextTick =
                 // movementManagerEvent.drawContext.playerStatus.entity.isOnGround();
             }
-            return true;
         }
 
         public static enum Step {
@@ -1389,7 +1377,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         Packet<?> storedPacketMove = null;
 
         @Override
-        public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+        public void postModify(Event<LegalMovementManager> movementManagerEvent) {
             if (storedPacketMove != null) {
                 mc.player.setOnGround(true);
                 mc.getNetworkHandler().sendPacket(storedPacketMove);
@@ -1399,7 +1387,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 // shouldApplyOnGroundReverseNextTick =
                 // movementManagerEvent.drawContext.playerStatus.entity.isOnGround();
             }
-            return true;
         }
 
         public static enum Step {
@@ -1476,7 +1463,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                     nextTickReset = false;
                 }
                 if (needOnGround && !args.isOnGround()) {
-                    movementManagerEvent.context.playerStatus.restorePos();
+                    movementManagerEvent.context.resetPos();
                     nextTickReset = true;
                     module.lastOnGroundHeight = args.getY();
                     Vec3d look = args.getRotationVector();
@@ -1491,11 +1478,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                     mc.player.setOnGround(true);
                 }
             }
-        }
-
-        @Override
-        public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-            return true;
         }
     }
 
@@ -1799,7 +1781,7 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
         Packet<?> storedPacketMove = null;
 
         @Override
-        public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+        public void postModify(Event<LegalMovementManager> movementManagerEvent) {
             if (storedPacketMove != null) {
                 mc.player.setOnGround(true);
                 mc.getNetworkHandler().sendPacket(storedPacketMove);
@@ -1809,7 +1791,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
                 // shouldApplyOnGroundReverseNextTick =
                 // movementManagerEvent.drawContext.playerStatus.entity.isOnGround();
             }
-            return true;
         }
 
         public static enum Step {
@@ -1902,12 +1883,6 @@ public class NoFall extends BaseModule implements LegalMovementManager.MovementM
             } else {
                 testFlag1 = false;
             }
-        }
-
-        @Override
-        public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-
-            return true;
         }
     }
 

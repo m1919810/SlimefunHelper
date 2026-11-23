@@ -7,7 +7,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.IntSupplier;
 import lombok.AllArgsConstructor;
-import me.matl114.hacks.utils.EntityUtils;
 import net.minecraft.util.math.*;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix3d;
@@ -180,6 +179,11 @@ public class MathUtils {
             .sorted(Comparator.comparingInt(Direction::getHorizontal))
             .toArray(Direction[]::new);
 
+    public static float rotationToYaw(Vec3d vec) {
+        vec = vec.normalize();
+        return (float) Math.toDegrees(Math.atan2(-vec.x, vec.z));
+    }
+
     public static Direction fromHorizontalQuarterTurns(int quarterTurns) {
         return HORIZONTALS[MathHelper.abs(quarterTurns % HORIZONTALS.length)];
     }
@@ -189,7 +193,7 @@ public class MathUtils {
     }
 
     public static Direction getHorizontalFacing(Vec3d vec3d) {
-        float yaw = EntityUtils.rotationToYaw(vec3d.normalize());
+        float yaw = rotationToYaw(vec3d.normalize());
         return fromHorizontalDegrees(yaw);
     }
 

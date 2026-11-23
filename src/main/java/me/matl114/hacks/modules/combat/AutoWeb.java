@@ -15,6 +15,7 @@ import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.InteractUtils;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.hacks.utils.tasks.TimerExecutor;
@@ -24,7 +25,6 @@ import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.InteractUtils;
 import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.MathUtils;
 import me.matl114.utils.collections.FlagEntry;
@@ -144,7 +144,7 @@ public class AutoWeb extends BaseModule {
 
     private IndexEntry<ItemStack> supplyWeb() {
         return InventoryUtils.findPlayerItem(
-                stack -> stack.isOf(Items.COBWEB), ghostHand.get().getSearchSize(offhand.get()), true, false);
+                stack -> stack.isOf(Items.COBWEB), ghostHand.get().getSearchSize(offhand.get()), false, false);
     }
 
     private boolean placeWeb(IndexEntry<ItemStack> web, BlockHitResult hitResult) {

@@ -46,6 +46,15 @@ public class SurvivalTasks {
     private static AutoBreed autoBreed;
 
     @Getter
+    private static AutoFarm autoFarm;
+
+    @Getter
+    private static AutoTrade autoTrade;
+
+    @Getter
+    private static PearlBot pearlBot;
+
+    @Getter
     private static WalkControl walkControl;
 
     @Getter
@@ -56,6 +65,9 @@ public class SurvivalTasks {
 
     @Getter
     private static StructureLabel structureLabel;
+
+    @Getter
+    private static FeatureLabel featureLabel;
 
     @Getter
     private static PathManager pathManager;
@@ -81,10 +93,14 @@ public class SurvivalTasks {
         autoLibrarian = new AutoLibrarian().register(m);
         autoEnchant = new AutoEnchant().register(m);
         autoBreed = new AutoBreed().register(m);
+        autoFarm = new AutoFarm().register(m);
+        autoTrade = new AutoTrade().register(m);
+        pearlBot = new PearlBot().register(m);
         walkControl = new WalkControl().register(m);
         searchControl = new SearchControl().register(m);
         searchLabel = new SearchLabel().register(m);
         structureLabel = new StructureLabel().register(m);
+        featureLabel = new FeatureLabel().register(m);
         pathManager = new PathManager().register(m);
         baritoneFix = new BaritoneFix().register(m);
         xaeroHelper = new XaeroHelper().register(m);

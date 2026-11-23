@@ -53,11 +53,12 @@ public class FlagRef extends Ref<Boolean> {
         if (otherRef instanceof FlagRef flag) {
             set(flag.get());
             return true;
-        } else if (otherRef instanceof IntRef intRef) {
-            if (intRef.get() == 1) {
+        } else if (otherRef instanceof NumberRef intRef) {
+            int intValue = intRef.getValue().intValue();
+            if (intValue == 1) {
                 set(true);
                 return true;
-            } else if (intRef.get() == 0) {
+            } else if (intValue == 0) {
                 set(false);
                 return true;
             }

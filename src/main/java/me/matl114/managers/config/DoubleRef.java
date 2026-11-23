@@ -5,7 +5,7 @@ import me.matl114.utils.config.AttrKeyValue;
 import me.matl114.utils.config.BaseAttrKeyValue;
 
 @AllArgsConstructor
-public class DoubleRef extends Ref<Double> {
+public class DoubleRef extends NumberRef<Double> {
     public static final Class<Double> TYPE = Double.class;
 
     double value;
@@ -16,6 +16,11 @@ public class DoubleRef extends Ref<Double> {
 
     public DoubleRef(Double doubleValue) {
         this(doubleValue.doubleValue());
+    }
+
+    @Override
+    public void setFromNumber(Number number) {
+        set(number.doubleValue());
     }
 
     @Override
@@ -30,27 +35,6 @@ public class DoubleRef extends Ref<Double> {
     @Override
     public void setValue(Double value) {
         set(value);
-    }
-
-    @Override
-    public Object getAsPrimitive() {
-        return value;
-    }
-
-    @Override
-    public <W> boolean isSameTypeWith(Ref<W> ref) {
-        return ref instanceof DoubleRef;
-    }
-
-    @Override
-    public <W> boolean copyValueFrom(Ref<W> otherRef) {
-        if (otherRef instanceof DoubleRef db) {
-            this.set(db.get());
-            return true;
-        } else if (otherRef instanceof FloatRef floatRef) {
-            this.set(floatRef.get());
-            return true;
-        } else return false;
     }
 
     @Override

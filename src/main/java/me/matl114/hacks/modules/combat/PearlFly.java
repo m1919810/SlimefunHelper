@@ -1,6 +1,8 @@
 package me.matl114.hacks.modules.combat;
 
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import me.matl114.events.Event;
@@ -16,6 +18,9 @@ import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.render.ProjectileESP;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.PlayerInputUtils;
+import me.matl114.hacks.utils.RaycastUtils;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.render.RenderCollectors;
@@ -23,9 +28,7 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
-import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.utils.render.RenderCollector;
-import net.minecraft.block.BlockState;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
@@ -53,14 +56,20 @@ public class PearlFly extends BaseModule {
             flagBuilder(pearlPhase.add("enable-stand")).build();
 
     public final FlagRef autoCrawl = flagBuilder(pearlPhase.add("auto-crawl")).build();
+    public final FlagRef useWASDControl =
+            flagBuilder(pearlPhase.add("use-wasd-control")).build();
 
     public final DoubleRef autoPearlActivateRange = doubleBuilder(pearlPhase.add("auto-activate-range"))
             .defaultValue(0.35)
-            .validator(Configs.doubleRange(0.0D, 2.0D))
+            .validator(Configs.doubleRange(0.0D, 5.0D))
+            .show(() -> !this.useWASDControl.get())
             .build();
 
-    public final FlagRef useWASDControl =
-            flagBuilder(pearlPhase.add("use-wasd-control")).build();
+    public final DoubleRef wasdPearlActiveRange = doubleBuilder(pearlPhase.add("wasd-activate-range"))
+            .defaultValue(1.0)
+            .validator(Configs.doubleRange(0.0D, 5.0D))
+            .show(this.useWASDControl::get)
+            .build();
 
     public final FlagRef enableJump = builder(pearlPhase.add("enable-jump-up"), Boolean.class)
             .defaultValue(true)
@@ -122,69 +131,137 @@ public class PearlFly extends BaseModule {
             if (mc.player.getItemCooldownManager().isCoolingDown(Items.ENDER_PEARL)) {
                 return;
             }
-            Vec3d facingDirection = EntityUtils.pitchYawToRotation(0, mc.player.getYaw());
-            Direction direction = mc.player.getHorizontalFacing();
-            Vec3d pos = mc.player.getBlockPos().toCenterPos();
-            Vec3d ppos = mc.player.getPos();
-
-            BlockPos searchPos;
             if (useWASDControl.get()) {
                 var input = PlayerInputUtils.of(mc.options);
+                if (!input.hasMovementControl()) {
+                    return;
+                }
+                Vec3d facingDirection = EntityUtils.pitchYawToRotation(0, mc.player.getYaw());
                 Vec3d adAxis = new Vec3d(facingDirection.z, 0, -facingDirection.x);
                 Vec3d inputVec = facingDirection
                         .multiply(input.forwardSpeed())
                         .add(adAxis.multiply(input.sidewaysSpeed()))
-                        .normalize();
-                searchPos = BlockPos.ofFloored(ppos.add(inputVec));
+                        .normalize()
+                        .multiply(wasdPearlActiveRange.get());
                 if (enableJump.get() && input.upwardSpeed() > 0) {
-                    searchPos = searchPos.offset(Direction.UP, input.upwardSpeed());
+                    inputVec = inputVec.add(0, input.upwardSpeed(), 0);
                 }
-                if (!Objects.equals(mc.player.getBlockPos(), searchPos)
-                        && doPearlUse(mc.player.getBlockPos(), searchPos)) {
+                boolean anySolid = false;
+                Vec3d targetPos = mc.player.getPos().add(inputVec);
+                Vec3d targetEyePos = mc.player.getEyePos().add(inputVec);
+                for (var re : RaycastUtils.createRaycastBlockPoses(mc.player.getPos(), targetPos)) {
+                    if (!mc.world
+                            .getBlockState(re)
+                            .getCollisionShape(mc.world, re)
+                            .isEmpty()) {
+                        anySolid = true;
+                        break;
+                    }
+                }
+                if (!anySolid) {
+                    for (var re : RaycastUtils.createRaycastBlockPoses(mc.player.getEyePos(), targetEyePos)) {
+                        if (!mc.world
+                                .getBlockState(re)
+                                .getCollisionShape(mc.world, re)
+                                .isEmpty()) {
+                            anySolid = true;
+                            break;
+                        }
+                    }
+                }
+                if (!anySolid) {
+                    return;
+                }
+                BlockPos searchPos = BlockPos.ofFloored(mc.player.getPos().add(inputVec));
+
+                if (!Objects.equals(mc.player.getBlockPos(), searchPos) && doPearlUse(searchPos)) {
                     enablePearlPhase.set(false);
                     return;
                 }
             } else {
-                if (MathUtils.isInXZRange(pos, ppos, 0.5 - autoPearlActivateRange.get())) {
-                    return;
-                }
-                Direction search = direction;
-                Direction result = direction;
-                double min = Double.MAX_VALUE;
-                BlockPos pbpos = mc.player.getBlockPos();
-                do {
-                    BlockPos test = pbpos.offset(search);
-
-                    if (MathUtils.isInXZRange(ppos, test.toCenterPos(), 0.5 + autoPearlActivateRange.get())) {
-                        double sqd = test.getSquaredDistance(ppos);
-                        if (sqd < min) {
-                            result = search;
-                            min = sqd;
-                        }
+                Box playerBox = mc.player.getBoundingBox();
+                double extra = autoPearlActivateRange.get();
+                double minX = playerBox.minX;
+                double maxX = playerBox.maxX;
+                double minY = playerBox.minY;
+                double maxY = playerBox.maxY;
+                double minZ = playerBox.minZ;
+                double maxZ = playerBox.maxZ;
+                List<Box> verticalSearchBoxes;
+                if (autoCrawl.get()) {
+                    verticalSearchBoxes = new ArrayList<>();
+                    for (int y = MathHelper.floor(minY); y < Math.ceil(maxY); y++) {
+                        double sliceMinY = Math.max(minY, y);
+                        double sliceMaxY = Math.min(maxY, y + 1.0);
+                        verticalSearchBoxes.add(new Box(minX, sliceMinY, minZ, maxX, sliceMaxY, maxZ));
                     }
-
-                    search = search.rotateYClockwise();
-                } while (search != direction);
-                if (min == Double.MAX_VALUE) {
-                    return;
+                } else {
+                    verticalSearchBoxes = List.of(playerBox);
                 }
-                search = result;
-                searchPos = pbpos.offset(search, 1);
+                List<Box> cornerSearchBoxes = List.of(
+                        new Box(maxX, minY, maxZ, maxX + extra, maxY, maxZ + extra),
+                        new Box(minX - extra, minY, maxZ, minX, maxY, maxZ + extra),
+                        new Box(minX - extra, minY, minZ - extra, minX, maxY, minZ),
+                        new Box(maxX, minY, minZ - extra, maxX + extra, maxY, minZ));
+                List<Box> sideSearchBoxes = List.of(
+                        new Box(maxX, minY, minZ, maxX + extra, maxY, maxZ),
+                        new Box(minX - extra, minY, minZ, minX, maxY, maxZ),
+                        new Box(minX, minY, maxZ, maxX, maxY, maxZ + extra),
+                        new Box(minX, minY, minZ - extra, maxX, maxY, minZ));
 
-                BlockState state = mc.world.getBlockState(searchPos);
-                if (!state.isAir() && !state.isLiquid()) {
-                    if (doPearlUse(pbpos, searchPos)) {
+                List<List<BlockPos>> collisionGroups = new ArrayList<>();
+                for (List<Box> searchBoxes : List.of(cornerSearchBoxes, sideSearchBoxes)) {
+                    collisionGroups.add(searchBoxes.stream()
+                            .flatMap(searchBox -> verticalSearchBoxes.stream()
+                                    .map(verticalBox -> new Box(
+                                            searchBox.minX,
+                                            verticalBox.minY,
+                                            searchBox.minZ,
+                                            searchBox.maxX,
+                                            verticalBox.maxY,
+                                            searchBox.maxZ)))
+                            .flatMap(
+                                    searchBox -> CollisionUtil.getBoxCollision(mc.world, mc.player, searchBox).stream())
+                            .distinct()
+                            .toList());
+                }
+
+                int blockY = mc.player.getBlockY();
+                Vec3d eyePos = mc.player.getEyePos();
+                Comparator<BlockPos> horizontalDistance = Comparator.comparingDouble(pos ->
+                        MathUtils.squareSum(pos.getX() + 0.5 - mc.player.getX(), pos.getZ() + 0.5 - mc.player.getZ()));
+                if (autoCrawl.get() && pose != EntityPose.SWIMMING && pose != EntityPose.FALL_FLYING) {
+                    BlockPos crawlPos = collisionGroups.stream()
+                            .flatMap(List::stream)
+                            .filter(pos -> pos.getY() == blockY + 1)
+                            .filter(pos -> {
+                                BlockPos crawlSpacePos = pos.down();
+                                return mc.world
+                                        .getBlockState(crawlSpacePos)
+                                        .getCollisionShape(mc.world, crawlSpacePos)
+                                        .isEmpty();
+                            })
+                            .filter(pos -> RaycastUtils.raycastOnlyBlockCollisions(
+                                            eyePos, getPearlTargetPoint(pos, blockY + 0.01))
+                                    == null)
+                            .max(horizontalDistance)
+                            .orElse(null);
+                    if (crawlPos != null
+                            && usePearl(
+                                    getPearlTargetPoint(crawlPos, blockY + 0.01).subtract(eyePos))) {
                         enablePearlPhase.set(false);
                         return;
                     }
                 }
-                if (autoCrawl.get() && pose != EntityPose.SWIMMING) {
-                    BlockState state2 = mc.world.getBlockState(searchPos.offset(Direction.UP));
-                    if (!state2.isAir() && !state2.isLiquid()) {
-                        if (doPearlUse(pbpos, searchPos)) {
-                            enablePearlPhase.set(false);
-                            return;
-                        }
+
+                for (List<BlockPos> collisionPositions : collisionGroups) {
+                    BlockPos targetPos = collisionPositions.stream()
+                            .filter(pos -> pos.getY() == blockY)
+                            .max(horizontalDistance)
+                            .orElse(null);
+                    if (targetPos != null && doPearlUse(targetPos)) {
+                        enablePearlPhase.set(false);
+                        return;
                     }
                 }
             }
@@ -262,20 +339,19 @@ public class PearlFly extends BaseModule {
         }
     }
 
-    public boolean doPearlUse(BlockPos originPos, BlockPos pos) {
-        EntityPose pose = mc.player.getPose();
-        Vec3d look;
-        if (pose == EntityPose.SWIMMING) {
-            look = pos.toCenterPos().subtract(mc.player.getEyePos());
-        } else {
-            look = pos.toCenterPos().add(originPos.toCenterPos()).multiply(0.5).subtract(mc.player.getEyePos());
-        }
-        return usePearl(look);
+    public boolean doPearlUse(BlockPos pos) {
+        Vec3d eyePos = mc.player.getEyePos();
+        return usePearl(getPearlTargetPoint(pos, mc.player.getBlockY() + 0.5).subtract(eyePos));
+    }
+
+    private Vec3d getPearlTargetPoint(BlockPos pos, double y) {
+        Vec3d eyePos = mc.player.getEyePos();
+        return MathUtils.magnitudePoint(new Box(pos), eyePos).withAxis(Direction.Axis.Y, y);
     }
 
     public boolean usePearl(Vec3d look) {
         look = look.normalize();
-        var re = InventoryUtils.findPlayerItem((ss) -> ss.getItem() == Items.ENDER_PEARL, true, false);
+        var re = InventoryUtils.findPlayerItem((ss) -> ss.getItem() == Items.ENDER_PEARL, false, false);
         if (re == null) {
             logI18NSub("Pearl", "message.module.pearl-fly.no-pearl");
             return true;

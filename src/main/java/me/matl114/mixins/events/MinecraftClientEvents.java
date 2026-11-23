@@ -1,5 +1,6 @@
 package me.matl114.mixins.events;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -7,9 +8,11 @@ import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import java.io.File;
 import java.util.Objects;
+import me.matl114.accessors.events.ClientPlayerEntityAccess;
 import me.matl114.events.Event;
 import me.matl114.events.GlobalEventVars;
 import me.matl114.events.Listener;
+import me.matl114.managers.Tasks;
 import me.matl114.utils.collections.Point;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -318,6 +321,9 @@ public abstract class MinecraftClientEvents {
             method = "tick",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;handleInputEvents()V"))
     private void onInputEvent(MinecraftClient instance, Operation<Void> original) {
+        if (captureAttackReset > 0) {
+            captureAttackReset = 0;
+        }
         Event<Void> re = new Event<>(null, true, false);
         Listener.getPreHandleInputEvents().handleValue(re);
         if (!re.isCancelled()) {
@@ -325,6 +331,9 @@ public abstract class MinecraftClientEvents {
         }
         Listener.getPostHandleInputEvents().handleValue(new Event<>(null, false, false));
     }
+
+    int captureAttackReset = 0;
+    boolean duringOpenScreenInputEvent = false;
 
     @Inject(
             method = "tick",
@@ -338,22 +347,71 @@ public abstract class MinecraftClientEvents {
     public void onInputEventIfScreenOpen(CallbackInfo ci) {
         if (MinecraftClient.getInstance().currentScreen != null
                 || MinecraftClient.getInstance().getOverlay() != null) {
+
             profiler.swap("Keybindings");
             if (MinecraftClient.getInstance().player != null) {
                 Event<Void> re = new Event<>(null, true, false);
                 re.cancel();
                 Listener.getPreHandleInputEvents().handleValue(re);
                 if (!re.isCancelled()) {
-                    handleInputEvents();
+                    try {
+                        duringOpenScreenInputEvent = true;
+                        handleInputEvents();
+                    } finally {
+                        duringOpenScreenInputEvent = false;
+                    }
                 } else {
+                    if (captureAttackReset > 0) {
+                        attackCooldown = captureAttackReset;
+                    }
                     this.handleBlockBreaking(false);
                     if (this.attackCooldown > 0) {
                         --this.attackCooldown;
                     }
                 }
+                if (captureAttackReset > 0) {
+                    captureAttackReset = 0;
+                }
                 Listener.getPostHandleInputEvents().handleValue(new Event<>(null, false, false));
             }
         }
+    }
+    // avoid screen interact issues
+    @ModifyExpressionValue(
+            method = "handleInputEvents",
+            at =
+                    @At(
+                            value = "FIELD",
+                            target =
+                                    "Lnet/minecraft/client/MinecraftClient;currentScreen:Lnet/minecraft/client/gui/screen/Screen;"))
+    private Screen onOverrideScreenValue(Screen original) {
+        if (duringOpenScreenInputEvent) {
+            return null;
+        }
+        return original;
+    }
+    // avoid screen interact issues and lock mouse issues
+    @ModifyExpressionValue(
+            method = "handleInputEvents",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Mouse;isCursorLocked()Z"))
+    private boolean onOverrideMouseCursorLocked(boolean original) {
+        if (duringOpenScreenInputEvent) {
+            return true;
+        }
+        if (currentScreen == null) {
+            return true;
+        }
+        return original;
+    }
+
+    @WrapOperation(
+            method = "tick",
+            at = @At(value = "FIELD", target = "Lnet/minecraft/client/MinecraftClient;attackCooldown:I", ordinal = 0))
+    private void onSetAttackCooldown(MinecraftClient instance, int value, Operation<Void> original) {
+        int currentCooldown = this.attackCooldown;
+        captureAttackReset = value;
+        original.call(instance, value);
+        this.attackCooldown = currentCooldown;
     }
 
     @Inject(
@@ -365,6 +423,7 @@ public abstract class MinecraftClientEvents {
                                     "Lnet/minecraft/client/tutorial/TutorialManager;tick(Lnet/minecraft/client/world/ClientWorld;Lnet/minecraft/util/hit/HitResult;)V",
                             shift = At.Shift.AFTER))
     public void onPreTick(CallbackInfo ci) {
+        Tasks.updateTickCounter();
         Listener.getPreTick().broadcast(null);
         if (player != null) {
             Listener.getPreGameTick().broadcast(player);
@@ -407,7 +466,7 @@ public abstract class MinecraftClientEvents {
                     @At(
                             value = "INVOKE",
                             target =
-                                    "Lnet/minecraft/util/hit/HitResult;getType()Lnet/minecraft/util/hit/HitResult$Type;",
+                                    "Lnet/minecraft/item/ItemStack;isItemEnabled(Lnet/minecraft/resource/featuretoggle/FeatureSet;)Z",
                             shift = At.Shift.BEFORE),
             locals = LocalCapture.CAPTURE_FAILHARD,
             cancellable = true)
@@ -469,5 +528,20 @@ public abstract class MinecraftClientEvents {
         Listener.getPlayerScrollHotBar().handleValue(hotBar);
         if (hotBar.isCancelled()) return;
         original.call(instance, (int) hotBar.context());
+    }
+    // inject after baritone
+    @Inject(
+            method = "tick",
+            at =
+                    @At(
+                            value = "INVOKE",
+                            target = "Lnet/minecraft/client/world/ClientWorld;tickEntities()V",
+                            shift = At.Shift.AFTER),
+            order = 114514)
+    private void onPostPlayerUpdate(CallbackInfo ci) {
+        if (this.player != null) {
+            Listener.getClientPlayerPostUpdatePoint().broadcast(this.player);
+            ClientPlayerEntityAccess.of(this.player).getLegalMovementManager().postTickEntities();
+        }
     }
 }

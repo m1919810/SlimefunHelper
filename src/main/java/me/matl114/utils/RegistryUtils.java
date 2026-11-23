@@ -18,8 +18,12 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.SpawnEggItem;
 import net.minecraft.registry.*;
 import net.minecraft.registry.entry.RegistryEntry;
+import org.spongepowered.include.com.google.common.collect.BiMap;
+import org.spongepowered.include.com.google.common.collect.HashBiMap;
 
 public class RegistryUtils {
     public static <T> Set<T> parseWhiteList(Registry<T> registry, Pattern regex) {
@@ -153,5 +157,23 @@ public class RegistryUtils {
         REGISTRY_KEY_TO_ICON = ImmutableMap.copyOf(clazzMap);
         ICON_TO_REGISTRY_KEY = new HashMap<>(REGISTRY_KEY_TO_ICON.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey, (k, v) -> v)));
+    }
+
+    private static final BiMap<Item, EntityType<?>> ITEM2SPAWN_ENTITY = HashBiMap.create();
+
+    static {
+        for (Item item : Registries.ITEM) {
+            if (item instanceof SpawnEggItem egg) {
+                ITEM2SPAWN_ENTITY.put(item, egg.getEntityType(new ItemStack(item)));
+            }
+        }
+    }
+
+    public static EntityType<?> spawnEggToEntity(Item spawner) {
+        return ITEM2SPAWN_ENTITY.getOrDefault(spawner, null);
+    }
+
+    public static Item entityToSpawnEgg(EntityType<?> entityType) {
+        return ITEM2SPAWN_ENTITY.inverse().getOrDefault(entityType, null);
     }
 }

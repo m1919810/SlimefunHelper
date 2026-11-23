@@ -59,13 +59,17 @@ public class InvHud extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostGameTick(), this::onPostTick);
+        registerListener(Listener.getPostTick(), this::onPostTick);
         registerListener(RenderListener.getRender2DEvent(), this::onRender2D);
     }
 
     List<ItemStack> toShow;
 
     public void onPostTick() {
+        if (checkNull()) {
+            toShow = null;
+            return;
+        }
         if (enable.get()) {
             toShow = new ArrayList<>();
             Map<ItemStackSample, Integer> map;

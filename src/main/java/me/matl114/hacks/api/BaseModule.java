@@ -23,8 +23,7 @@ import me.matl114.gui.interfaces.CustomElementFactory;
 import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.StringFormat;
-import me.matl114.hacks.utils.gui.CustomGuiConfig;
-import me.matl114.managers.*;
+import me.matl114.hacks.utils.widgets.CustomGuiConfig;
 import me.matl114.managers.command.MainCommand;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.IHotKey;
@@ -34,7 +33,6 @@ import me.matl114.managers.input.SimpleInputManager;
 import me.matl114.utils.Debug;
 import me.matl114.utils.commands.commandGroup.AbstractMainCommand;
 import me.matl114.utils.config.AttrKeyValue;
-import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.MustBeInvokedByOverriders;
@@ -199,6 +197,9 @@ public abstract class BaseModule implements ModuleListProvider {
     // this is managed by ModuleManager
     @MustBeInvokedByOverriders
     public void onCreate() {
+        if (removed) {
+            throw new IllegalStateException("Created after removed");
+        }
         registerAll();
     }
 
@@ -477,111 +478,6 @@ public abstract class BaseModule implements ModuleListProvider {
     protected static final int blankWidth = 10;
     protected static ElementFactory ELEMENT_FACTORY = new CustomElementFactory(() -> CustomGuiConfig.DEFAULT);
     protected static ElementFactory CONFIG_FACTORY = new CustomElementFactory(() -> CustomGuiConfig.DEFAULT);
-
-    public static SubScreenWidget createSubWidget(int x, int y, int dx, int dy) {
-        return new SubScreenWidget(x, y, dx, dy);
-    }
-
-    public static DrawableWidget createLabel(String translationKey, int x, int y, int dx, int dy) {
-        return ELEMENT_FACTORY.createLabel(translationKey, x, y, dx, dy);
-    }
-
-    public static DrawableWidget createLabel(
-            Supplier<Text> text, Supplier<List<Text>> tooltips, int x, int y, int dx, int dy) {
-        return ELEMENT_FACTORY.createLabel(text, tooltips, x, y, dx, dy);
-    }
-
-    public static DrawableWidget createTitle(String translationKey, int x, int y, int dx, int dy) {
-        return ELEMENT_FACTORY.createTitle(translationKey, x, y, dx, dy);
-    }
-
-    public static DrawableWidget createExecuteButton(
-            String translationKey, ButtonAction action, int x, int y, int dx, int dy) {
-        return ELEMENT_FACTORY.createExecuteButton(translationKey, action, x, y, dx, dy);
-    }
-
-    public static DrawableWidget createExecuteButton(
-            String translationKey, ButtonAction action, BooleanSupplier active, int x, int y, int dx, int dy) {
-        return ELEMENT_FACTORY.createExecuteButton(translationKey, action, active, x, y, dx, dy);
-    }
-
-    public static DrawableWidget createExecuteButton(
-            Supplier<Text> text,
-            Supplier<List<Text>> tooltips,
-            ButtonAction action,
-            BooleanSupplier condition,
-            int x,
-            int y,
-            int dx,
-            int dy) {
-        return ELEMENT_FACTORY.createExecuteButton(text, tooltips, action, condition, x, y, dx, dy);
-    }
-
-    public static DrawableWidget createExecuteButton(
-            Supplier<Text> text, Supplier<List<Text>> tooltips, ButtonAction action, int x, int y, int dx, int dy) {
-        return ELEMENT_FACTORY.createExecuteButton(text, tooltips, action, x, y, dx, dy);
-    }
-
-    public static DrawableWidget createToggleButton(
-            String translationKey, ValueAccessor<Boolean> value, int x, int y, int dx, int dy) {
-        return ELEMENT_FACTORY.createToggleButton(translationKey, value, x, y, dx, dy);
-    }
-
-    public static DrawableWidget createToggleButton(
-            String translationKey, ValueAccessor<Boolean> value, int x, int y, int dx, int dy, boolean frame) {
-        return ELEMENT_FACTORY.createToggleButton(translationKey, value, frame, x, y, dx, dy);
-    }
-
-    public static DrawableWidget createToggleButton(
-            Supplier<Text> text,
-            Supplier<List<Text>> tooltips,
-            ValueAccessor<Boolean> value,
-            int x,
-            int y,
-            int dx,
-            int dy) {
-        return ELEMENT_FACTORY.createToggleButton(text, tooltips, value, true, x, y, dx, dy);
-    }
-
-    public static DrawableWidget createToggleButton(
-            Supplier<Text> text,
-            Supplier<List<Text>> tooltips,
-            ValueAccessor<Boolean> value,
-            int x,
-            int y,
-            int dx,
-            int dy,
-            boolean frame) {
-        return ELEMENT_FACTORY.createToggleButton(text, tooltips, value, frame, x, y, dx, dy);
-    }
-
-    public static DrawableWidget createElement(
-            ElementHandler elementHandler,
-            @Nullable Supplier<List<Text>> tooltips,
-            @Nullable ButtonAction action,
-            int x,
-            int y,
-            int dx,
-            int dy) {
-        return ELEMENT_FACTORY.createElement(
-                elementHandler, tooltips == null ? null : TooltipHandler.of(tooltips), action, x, y, dx, dy);
-    }
-
-    public static DrawableWidget createElement(
-            RenderHandler elementHandler,
-            @Nullable Supplier<List<Text>> tooltips,
-            @Nullable ButtonAction action,
-            int x,
-            int y,
-            int dx,
-            int dy) {
-        return ELEMENT_FACTORY.createElement(
-                elementHandler, tooltips == null ? null : TooltipHandler.of(tooltips), action, x, y, dx, dy);
-    }
-
-    public static DrawableWidget createRefEditor(String path, Ref<?> ref, int x, int y, int dx, int dy) {
-        return createRefEditor(path, ref, x, y, dx, dy, ELEMENT_FACTORY);
-    }
 
     public static DrawableWidget createRefEditor(
             String path, Ref<?> ref, int x, int y, int dx, int dy, ElementFactory factory) {

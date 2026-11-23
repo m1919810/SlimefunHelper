@@ -1,34 +1,33 @@
 package me.matl114.hacks.modules.interact;
 
 import com.google.common.util.concurrent.Runnables;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import me.matl114.accessors.access.HitResultAccess;
+import javax.annotation.Nonnull;
+import me.matl114.accessors.access.PendingUpdateManagerAccess;
 import me.matl114.accessors.access.PlayerInteractBlockC2SPacketAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.PacketManager;
 import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.InteractionTasks;
-import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
-import me.matl114.hacks.utils.EntityUtils;
-import me.matl114.hacks.utils.enums.BypassMode;
+import me.matl114.hacks.modules.move.RotationManager;
+import me.matl114.hacks.utils.*;
+import me.matl114.hacks.utils.enums.LegalInteractMode;
+import me.matl114.hacks.utils.move.Rotation;
 import me.matl114.hooks.LitematicaHooks;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
-import me.matl114.managers.Tasks;
 import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
-import me.matl114.utils.*;
 import net.minecraft.block.*;
 import net.minecraft.block.enums.BlockFace;
 import net.minecraft.block.enums.Orientation;
-import net.minecraft.item.Item;
+import net.minecraft.block.enums.RailShape;
+import net.minecraft.item.*;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import net.minecraft.state.property.Properties;
@@ -39,7 +38,7 @@ import net.minecraft.world.World;
 
 public class BlockRotate extends BaseModule {
     public final ModulePath blockRotate = makePath(Configs.INTERACT_CONFIG, "block-rotate");
-    public final ModulePath tempSchematic = blockRotate.add("temporary-schematic");
+    public final ModulePath yawDeceiveSettings = blockRotate.add("yaw-deceive-settings");
     public final ModulePath litematicaFix = blockRotate.add("litematica-shit-fix");
     public final ModulePath placeCorrect = blockRotate.add("simple-placement-correct");
     public static BlockRotate INSTANCE;
@@ -49,30 +48,25 @@ public class BlockRotate extends BaseModule {
         INSTANCE = this;
     }
 
-    public final EnumRef<BypassMode> bypassMode = builder(blockRotate.add("yaw-deceive-bypass-mode"), BypassMode.class)
-            .defaultValue(BypassMode.NO_BYPASS)
-            .build();
+    public final FlagRef yawPacketOrderFix =
+            flagBuilder(yawDeceiveSettings.add("yaw-packet-order-fix"), true).build();
 
-    public final EnumRef<BypassMode> bypassMode2 = builder(blockRotate.add("rotate-bypass-mode"), BypassMode.class)
-            .defaultValue(BypassMode.NO_BYPASS)
+    public final FlagRef enableLitematicaFix =
+            flagBuilder(litematicaFix.addEnable()).build();
+
+    public final EnumRef<LegalInteractMode> look1 = builder(litematicaFix.add("rotate-mode"), LegalInteractMode.class)
+            .defaultValue(LegalInteractMode.LEGACY_SLIENT_ROT)
             .build();
 
     public final FlagRef enableAirPlace =
-            flagBuilder(blockRotate.add("enable-air-place")).build();
+            flagBuilder(litematicaFix.add("enable-air-place")).build();
 
-    public final FlagRef enable3 = builder(tempSchematic.add("enable"), Boolean.class)
-            .defaultValue(true)
+    public final FlagRef enablePlaceCorrect =
+            flagBuilder(placeCorrect.addEnable()).build();
+
+    public final EnumRef<LegalInteractMode> look2 = builder(placeCorrect.add("rotate-mode"), LegalInteractMode.class)
+            .defaultValue(LegalInteractMode.LEGACY_SLIENT_ROT)
             .build();
-
-    public final FlagRef clientTempFix = builder(tempSchematic.add("client-state-temp-fix"), Boolean.class)
-            .defaultValue(true)
-            .build();
-
-    public final FlagRef enable2 = flagBuilder(litematicaFix.add("enable")).build();
-
-    public final FlagRef legal = flagBuilder(litematicaFix.add("legal-look")).build();
-
-    public final FlagRef enable4 = flagBuilder(placeCorrect.add("enable")).build();
 
     //    public final FlagRef enable3 =
     //            flagBuilder(litematicaFix.add("enable-easyplace-post-fix")).build();
@@ -84,237 +78,289 @@ public class BlockRotate extends BaseModule {
                 Listener.getPacketPoint().getChannel(PlayerInteractBlockC2SPacket.class),
                 this::onPreSendInteractBlockRotate);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onPresetLoad);
-        registerListener(Listener.getWorldSwitchPoint(), this::onWorldChange);
-        registerListener(Listener.getPostGameTick(), this::onUpdate);
     }
 
-    public boolean enableBlockRotateModify() {
-        return enable3.get() || enable2.get() || enable4.get();
-    }
-
-    final Map<BlockPos, TemporarySchematic> tempSchematics = new ConcurrentHashMap<>();
-
-    public void onWorldChange() {
-        tempSchematics.clear();
-    }
-
-    int timer = 0;
-
-    public void onUpdate() {
-        if (timer++ > 20) {
-            timer = 0;
-            var iter = tempSchematics.entrySet().iterator();
-            while (iter.hasNext()) {
-                var entry = iter.next();
-                if (entry.getValue().expire()) {
-                    iter.remove();
-                }
+    public void onPresetLoad(Event<EventContainer<ModulePreset>> event) {
+        ModulePreset preset = event.context.getValue();
+        if (preset.isAirplacePreset()) enableAirPlace.set(preset.getAirplace(enableAirPlace.get()));
+        if (preset.isOptionPreset()) return;
+        switch (preset) {
+            case AC_GRIM_LEGACY -> {
+                look1.set(LegalInteractMode.LEGACY_SLIENT_ROT);
+                look2.set(LegalInteractMode.LEGACY_SLIENT_ROT);
+            }
+            case AC_GRIM, AC_MATRIX -> {
+                look1.set(LegalInteractMode.DELAY_MOVEMENT);
+                look2.set(LegalInteractMode.DELAY_MOVEMENT);
+            }
+            default -> {
+                look1.set(LegalInteractMode.NONE);
+                look2.set(LegalInteractMode.NONE);
             }
         }
     }
 
-    public void addTempStateSchematic(BlockPos pos, BlockState state) {
-        addTempStateSchematic(pos, state, 1);
+    public boolean handleYawDeceivePlace(
+            LegalInteractMode mode,
+            BlockHitResult result,
+            Hand hand,
+            @Nonnull BlockState targetState,
+            boolean swingHand) {
+        PitchYawDeceive deceive = getPlaceYawDeceive(result, targetState);
+        if (deceive == null) {
+            return InteractionTasks.handlePlaceMode(mode, result, hand, swingHand);
+        }
+        return handleYawDeceiveMode(mode, result, hand, swingHand, deceive);
     }
 
-    public void addTempStateSchematic(BlockPos pos, BlockState state, int lastingTicks) {
-        if (state != null) {
-            tempSchematics.put(pos, new TemporarySchematic(pos, lastingTicks, state));
+    private boolean handleYawDeceiveMode(
+            LegalInteractMode mode, BlockHitResult result, Hand hand, boolean swingHand, PitchYawDeceive deceive) {
+        if (deceive == null || !deceive.hasDeceive()) {
+            return InteractionTasks.handlePlaceMode(mode, result, hand, swingHand);
+        }
+        // DO NOT USE handlePlaceMode,
+        // because it may send rotation before place
+        // but isForce() is base on current, pitch and yaw
+        if (deceive.isForce()) {
+            boolean legacy = ViaFabricPlusHooks.isSupportDupRot() || mode.canMultiRotPlace();
+            sendYawDeceiveRotation(legacy, result, hand, deceive);
+        }
+        // use the rotation after the yawDeceive, grim doesn't consider high version useItem rotation into rayCast
+        boolean directlyHit = InteractionTasks.canDirectHit(result);
+        if (!directlyHit && !mode.isIn(LegalInteractMode.NONE)) {
+            RotationManager.INSTANCE.startQueuePacket();
+        }
+        InteractionTasks.interactBlock(hand, result, swingHand);
+        switch (mode) {
+            case LEGACY_SLIENT_ROT -> {
+                if (!directlyHit) {
+                    LegacySnapRotManager.INSTANCE.snapAt(
+                            InteractionTasks.createBlockRayCastDirection(result.getBlockPos()), true);
+                    RotationManager.INSTANCE.flushQueuePackets();
+                }
+                return true;
+            }
+            case DELAY_MOVEMENT, MOVEMENT_POST -> {
+                if (!directlyHit) {
+                    InteractionTasks.addPostRotationCorrectTask(result.getBlockPos(), Runnables.doNothing());
+                    return false;
+                }
+                return true;
+            }
+            case NONE -> {
+                return true;
+            }
+        }
+        return true;
+    }
+
+    public boolean hasPlaceYawDeceive(BlockHitResult result, @Nonnull BlockState targetState) {
+        var deceive = getPlaceYawDeceive(result, targetState);
+        return deceive != null && deceive.hasDeceive();
+    }
+
+    private PitchYawDeceive getPlaceYawDeceive(BlockHitResult result, @Nonnull BlockState targetState) {
+        if (checkNull()) return null;
+
+        BlockPos interactPos = result.getBlockPos();
+        BlockState interactState = mc.world.getBlockState(interactPos);
+        if (!mc.player.shouldCancelInteraction()
+                && InteractUtils.isInteractOnBlockAcceptable(mc.world, mc.player, interactPos, interactState)) {
+            return handleYawInteractDeceive(
+                    targetState,
+                    PlayerStateManager.INSTANCE.lastServerSidePitch,
+                    PlayerStateManager.INSTANCE.lastServerSideYaw);
+        }
+
+        return handleYawDeceive(
+                result,
+                targetState,
+                PlayerStateManager.INSTANCE.lastServerSidePitch,
+                PlayerStateManager.INSTANCE.lastServerSideYaw);
+    }
+
+    private void sendYawDeceiveRotation(boolean legacy, BlockHitResult result, Hand hand, PitchYawDeceive deceive) {
+        float pitch = deceive.getPitch(PlayerStateManager.INSTANCE.lastServerSidePitch);
+        float yaw = deceive.getYaw(PlayerStateManager.INSTANCE.lastServerSideYaw);
+        if (legacy) {
+            LegacySnapRotManager.INSTANCE.snapAt(pitch, yaw, true);
+            return;
+        }
+        // may place
+        Hand oppoHand = hand == Hand.MAIN_HAND ? Hand.OFF_HAND : Hand.MAIN_HAND;
+        boolean isInteractable = mc.player.getStackInHand(oppoHand).getItem() instanceof BlockItem;
+        if (isInteractable) {
+            int sequence = NetworkUtils.generateNextSequence();
+            if (yawPacketOrderFix.get()) {
+                Listener.sendPacketNoEvents(new PlayerInteractBlockC2SPacket(oppoHand, result, sequence - 1));
+            }
+            mc.getNetworkHandler().sendPacket(new PlayerInteractItemC2SPacket(hand, sequence, yaw, pitch));
+        } else {
+            if (yawPacketOrderFix.get()) {
+                Listener.sendPacketNoEvents(
+                        new PlayerInteractBlockC2SPacket(oppoHand, result, NetworkUtils.generateNextSequence()));
+            }
+            mc.getNetworkHandler()
+                    .sendPacket(new PlayerInteractItemC2SPacket(hand, NetworkUtils.generateNextSequence(), yaw, pitch));
         }
     }
 
     // can not bypass
     public void onPreSendInteractBlockRotate(Event<PlayerInteractBlockC2SPacket> e) {
         if (e.isCancelled()) return;
-        if (enableBlockRotateModify()) {
-            if (e.context instanceof PlayerInteractBlockC2SPacketAccess paccess) {
-                //
-                Vec2f currentPy = new Vec2f(PlayerStateManager.INSTANCE.lastPitch, PlayerStateManager.INSTANCE.lastYaw);
-                PitchYawDeceive deceivePy = null;
-                BlockPos lookRot = null;
-                if (paccess.hasUseContext()) {
-                    Event<PitchYawDeceive> yawDeceive = new Event<>(new PitchYawDeceive(), false, true);
-                    Event<BlockPos> playerLookAt = new Event<>(null, false, true);
-                    if (paccess.getUseContext().blockPlace()) {
-                        PlayerInteractBlockC2SPacketAccess.UseContext context = paccess.getUseContext();
-                        Item blockItem = context.stack().getItem();
+        if (e.context instanceof PlayerInteractBlockC2SPacketAccess paccess) {
+            PitchYawDeceive deceivePy = null;
+            BlockPos lookRot = null;
+            LegalInteractMode rotateMode = null;
+            if (paccess.hasUseContext()) {
+                Event<PitchYawDeceive> yawDeceive = new Event<>(new PitchYawDeceive(), false, true);
+                Event<LegalInteractMode> playerLookAt = new Event<>(null, false, true);
+                if (paccess.getUseContext().isAccepted()
+                        && paccess.getUseContext().placePos().isPresent()) {
+                    handlePlaceCorrectLitematica(paccess.getUseContext(), e.context, yawDeceive, playerLookAt);
+                } else if (paccess.getUseContext().isAccepted()) {
+                    BlockPos interactState = e.context.getBlockHitResult().getBlockPos();
+                    BlockState newState = mc.world.getBlockState(interactState);
+                    BlockState oldState = PendingUpdateManagerAccess.of(mc.world.getPendingUpdateManager())
+                            .getPendingBlockState(e.context.getSequence(), interactState)
+                            .orElse(newState);
+                    if (oldState != newState) {
+                        // handle yaw fix
+                        handleInteractCorrectLitematica(interactState, newState, yawDeceive, playerLookAt);
+                    }
+                }
 
-                        handlePlaceCorrectLitematica(blockItem, e.context, context, yawDeceive, playerLookAt);
-                        handlePlaceCorrectTemperarySchematic(blockItem, e.context, context, yawDeceive);
-                        handleSimpleInteractCorrect(
-                                e.context.getBlockHitResult().getBlockPos(), playerLookAt);
-                    } else if (paccess.getUseContext().isAccepted()) {
-                        BlockState oldState = paccess.getUseContext().oldState();
-                        BlockPos interactState = e.context.getBlockHitResult().getBlockPos();
-                        BlockState newState = mc.world.getBlockState(interactState);
-                        if (oldState != newState) {
-                            // handle yaw fix
-                            handleInteractCorrectLitematica(interactState, newState, yawDeceive, playerLookAt);
-                        }
-                        handleSimpleInteractCorrect(interactState, playerLookAt);
-                    }
-                    if (yawDeceive.context != null && yawDeceive.context.hasDeceive()) {
-                        deceivePy = yawDeceive.context;
-                    }
-                    if (playerLookAt.context != null) {
-                        lookRot = playerLookAt.context;
-                    }
+                handleSimpleInteractCorrect(e.context.getBlockHitResult().getBlockPos(), playerLookAt);
+                if (yawDeceive.context != null && yawDeceive.context.hasDeceive()) {
+                    deceivePy = yawDeceive.context;
                 }
-                if (deceivePy != null
-                        && ViaFabricPlusHooks.getInstance().getCurrentVersion().isHigherOrEqualTo(21, 0)) {
-                    if (bypassMode.get() == BypassMode.BYPASS_GRIM) {
-                        // to ensure the rotate is successfully done
-                        // use a wrong sequence id to ensure that this packet cancelled by grimac
-                        Listener.sendPacketNoEvents(new PlayerInteractBlockC2SPacket(
-                                Hand.OFF_HAND, e.context.getBlockHitResult(), e.context.getSequence() - 1));
-                    }
-                    mc.getNetworkHandler()
-                            .sendPacket(new PlayerInteractItemC2SPacket(
-                                    Hand.MAIN_HAND,
-                                    e.context.getSequence(),
-                                    deceivePy.getYaw(currentPy.y),
-                                    deceivePy.getPitch(currentPy.x)));
-                    PlayerInteractBlockC2SPacketAccess.of(e.context).setSequence(NetworkUtils.generateNextSequence());
-                }
-                if (deceivePy != null
-                        && ViaFabricPlusHooks.getInstance().getCurrentVersion().isLowerOrEqualTo(20, 8)) {
-                    LegacySnapRotManager.INSTANCE.snapAt(
-                            deceivePy.getPitch(currentPy.x), deceivePy.getYaw(currentPy.y), true);
-                }
-                if (lookRot != null
-                        && (bypassMode2.get().hasAc()
-                                || (deceivePy != null
-                                        && ViaFabricPlusHooks.getInstance()
-                                                .getCurrentVersion()
-                                                .isLowerOrEqualTo(20, 8)))) {
-                    if (ViaFabricPlusHooks.isSupportDupRot()) {
-                        BlockPos lookRot0 = lookRot;
-                        PacketManager.schedulePostScheduleCallback(
-                                e.context,
-                                () -> LegacySnapRotManager.INSTANCE.snapAt(
-                                        InteractionTasks.createBlockRayCastDirection(lookRot0), false));
-                    } else {
-                        InteractionTasks.addPostRotationCorrectTask(lookRot, Runnables.doNothing());
-                    }
+                if (playerLookAt.context != null) {
+                    lookRot = e.context.getBlockHitResult().getBlockPos();
+                    rotateMode = playerLookAt.context;
                 }
             }
-        }
-    }
 
-    public void handlePlaceCorrectTemperarySchematic(
-            Item item,
-            PlayerInteractBlockC2SPacket packet,
-            PlayerInteractBlockC2SPacketAccess.UseContext useContext,
-            Event<PitchYawDeceive> yawDeceive) {
-        if (enable3.get()) {
-            // ?
-            BlockHitResult packetHitResult = packet.getBlockHitResult();
-            BlockState litematicaState;
-            BlockPos modifyingBlockPos = useContext.getPlaceBlockPos(packet.getHand(), packetHitResult);
-            TemporarySchematic schematic = tempSchematics.remove(modifyingBlockPos);
-            if (schematic == null || schematic.expire()) {
-                return;
+            if (deceivePy != null && deceivePy.hasDeceive() && deceivePy.isForce()) {
+                NetworkUtils.restoreSequence(e.context.getSequence());
+                boolean legacy =
+                        ViaFabricPlusHooks.isSupportDupRot() || (rotateMode == null || rotateMode.canMultiRotPlace());
+                sendYawDeceiveRotation(legacy, e.context.getBlockHitResult(), e.context.getHand(), deceivePy);
+                paccess.setSequence(NetworkUtils.generateNextSequence());
             }
-            BlockState clientState = mc.world.getBlockState(modifyingBlockPos);
-            litematicaState = schematic.targetState;
-            // no need for fix
-            if (clientState == litematicaState) {
-                return;
-            }
-            BlockHitResult newPacketHitResult =
-                    handlePlaceCorrect(item, modifyingBlockPos, litematicaState, packet, useContext, true);
-            if (newPacketHitResult != null) {
-                // wrong state, need correct
-                // do not rotate, because other module will rotate itself
-                //                packetHitResult = newPacketHitResult;
-                //                if (legal.get()) {
-                //                    look.drawContext(packetHitResult.getBlockPos().toCenterPos());
-                //                }
-                handleYawDeceive(litematicaState, yawDeceive.context);
-                if (clientTempFix.get()) {
-                    mc.world.setBlockState(modifyingBlockPos, litematicaState, WorldUtils.UPDATE_BLOCK_NO_PHYSICS);
-                }
+            if (lookRot != null) {
+                LegalInteractMode finalMode = rotateMode == null
+                        ? LegalInteractMode.NONE
+                        : (rotateMode == LegalInteractMode.MOVEMENT_POST
+                                ? LegalInteractMode.DELAY_MOVEMENT
+                                : rotateMode);
+                BlockPos lookRot0 = lookRot;
+                PacketManager.schedulePostScheduleCallback(e.context, () -> {
+                    switch (finalMode) {
+                        case LEGACY_SLIENT_ROT -> LegacySnapRotManager.INSTANCE.snapAt(
+                                InteractionTasks.createBlockRayCastDirection(lookRot0), false);
+                        case DELAY_MOVEMENT -> InteractionTasks.addPostRotationCorrectTask(
+                                lookRot0, Runnables.doNothing());
+                    }
+                });
             }
         }
     }
 
     public void handlePlaceCorrectLitematica(
-            Item item,
-            PlayerInteractBlockC2SPacket packet,
             PlayerInteractBlockC2SPacketAccess.UseContext useContext,
+            PlayerInteractBlockC2SPacket packet,
             Event<PitchYawDeceive> yawDeceive,
-            Event<BlockPos> look) {
+            Event<LegalInteractMode> look) {
+        if (!enableLitematicaFix.get() || !LitematicaHooks.getInstance().isEnabled()) {
+            return;
+        }
+        BlockPos modifyingBlockPos = useContext.placePos().orElseThrow();
+        if (!LitematicaHooks.getInstance().isPositionWithinRange(modifyingBlockPos)) return;
 
-        if (enable2.get() && LitematicaHooks.getInstance().isEnabled()) {
-            BlockHitResult packetHitResult = packet.getBlockHitResult();
-            BlockState litematicaState;
-            World litematicaWorld = LitematicaHooks.getInstance().getSchematicWorld();
+        Item item = useContext.stack().getItem();
+        BlockState placedState = mc.world.getBlockState(modifyingBlockPos);
+        BlockState litematicaState =
+                LitematicaHooks.getInstance().getSchematicWorld().getBlockState(modifyingBlockPos);
+        if (litematicaState.getBlock() != placedState.getBlock()
+                || matchesExceptToleratedProperties(litematicaState, placedState)
+                || litematicaState.getBlock().asItem() != item) return;
 
-            BlockPos modifyingBlockPos = useContext.getPlaceBlockPos(packet.getHand(), packetHitResult);
-            if (!LitematicaHooks.getInstance().isPositionWithinRange(modifyingBlockPos)) return;
-
-            litematicaState = litematicaWorld.getBlockState(modifyingBlockPos);
-            BlockHitResult newPacketHitResult = handlePlaceCorrect(
-                    item,
+        WorldUtils.predictActionAtSequence(packet.getSequence(), () -> {
+            var specificHit = InteractionTasks.createSpecificStateHitResult(
+                    packet.getBlockHitResult().getSide().getOpposite(),
                     modifyingBlockPos,
                     litematicaState,
-                    packet,
-                    useContext,
-                    useContext.oldState().isAir() && !enableAirPlace.get());
-            if (newPacketHitResult != null) {
-                // wrong state, need correct
-                packetHitResult = newPacketHitResult;
-                BlockState clientState = mc.world.getBlockState(modifyingBlockPos);
-                if (litematicaState != clientState) {
-                    BlockHitResult easyPlaceResult = LitematicaHooks.getInstance()
-                            .getEasyPlaceClickedPosition(packetHitResult, litematicaState, clientState);
-                    if (easyPlaceResult != null) {
-                        HitResultAccess access = HitResultAccess.of(packetHitResult);
-                        access.setPos(easyPlaceResult.getPos());
-                    }
-                }
-                handleYawDeceive(litematicaState, yawDeceive.context);
-                if ((legal.get()
-                                && !RaycastUtils.canRaycastHit(
-                                        mc.player,
-                                        PlayerStateManager.INSTANCE.lastPitch,
-                                        PlayerStateManager.INSTANCE.lastYaw,
-                                        packetHitResult.getBlockPos(),
-                                        InteractExtra.INSTANCE.getBlockReachDistance()))
-                        || yawDeceive.context != null) {
-                    look.context(packetHitResult.getBlockPos());
-                }
+                    enableAirPlace.get(),
+                    false);
+            if (InteractUtils.canInteractAndPlace(mc.player, specificHit)) {
+                PlayerInteractBlockC2SPacketAccess.of(packet).setBlockHitResult(specificHit.val());
             }
-            RenderTasks.debugBlockHitResult(packetHitResult);
-        }
+            yawDeceive.context = handleYawDeceive(
+                    packet.getBlockHitResult(),
+                    litematicaState,
+                    PlayerStateManager.INSTANCE.lastServerSidePitch,
+                    PlayerStateManager.INSTANCE.lastServerSideYaw);
+            if ((look1.get().isLegal()
+                            && !RaycastUtils.canRaycastHit(
+                                    mc.player,
+                                    PlayerStateManager.INSTANCE.lastPitch,
+                                    PlayerStateManager.INSTANCE.lastYaw,
+                                    packet.getBlockHitResult().getBlockPos(),
+                                    InteractExtra.INSTANCE.getBlockReachDistance()))
+                    || (yawDeceive.context != null
+                            && yawDeceive.context.hasDeceive()
+                            && yawDeceive.context.isForce())) {
+                look.context(look1.get());
+            }
+        });
     }
 
     public void handleInteractCorrectLitematica(
-            BlockPos pos, BlockState newState, Event<PitchYawDeceive> yawDeceive, Event<BlockPos> look) {
-        if (enable2.get() && LitematicaHooks.getInstance().isEnabled()) {
+            BlockPos pos, BlockState newState, Event<PitchYawDeceive> yawDeceive, Event<LegalInteractMode> look) {
+        if (enableLitematicaFix.get() && LitematicaHooks.getInstance().isEnabled()) {
             World litematicaWorld = LitematicaHooks.getInstance().getSchematicWorld();
             if (!LitematicaHooks.getInstance().isPositionWithinRange(pos)) return;
             BlockState litematicaState = litematicaWorld.getBlockState(pos);
 
-            if (litematicaState.getBlock() == newState.getBlock() && litematicaState != newState) {
-                handleYawInteractDeceive(litematicaState, yawDeceive.context);
+            if (litematicaState.getBlock() == newState.getBlock()
+                    && !matchesExceptToleratedProperties(litematicaState, newState)) {
+                yawDeceive.context = handleYawInteractDeceive(
+                        litematicaState,
+                        PlayerStateManager.INSTANCE.lastServerSidePitch,
+                        PlayerStateManager.INSTANCE.lastServerSideYaw);
             }
-            if ((legal.get()
+            if ((look1.get().isLegal()
                             && !RaycastUtils.canRaycastHit(
                                     mc.player,
                                     PlayerStateManager.INSTANCE.lastPitch,
                                     PlayerStateManager.INSTANCE.lastYaw,
                                     pos,
                                     InteractExtra.INSTANCE.getBlockReachDistance()))
-                    || yawDeceive.context != null) {
-                look.context(pos);
+                    || (yawDeceive.context != null
+                            && yawDeceive.context.hasDeceive()
+                            && yawDeceive.context.isForce())) {
+                look.context(look1.get());
             }
         }
     }
 
-    public void handleSimpleInteractCorrect(BlockPos interactPos, Event<BlockPos> look) {
-        if (enable4.get()
-                && legal.get()
+    private static boolean matchesExceptToleratedProperties(BlockState targetState, BlockState clientState) {
+        if (targetState.getBlock() != clientState.getBlock()) return false;
+        if (targetState.contains(Properties.WATERLOGGED)) {
+            clientState = clientState.with(Properties.WATERLOGGED, targetState.get(Properties.WATERLOGGED));
+        }
+        if (targetState.contains(Properties.POWERED)) {
+            clientState = clientState.with(Properties.POWERED, targetState.get(Properties.POWERED));
+        }
+        if (targetState.contains(Properties.POWER)) {
+            clientState = clientState.with(Properties.POWER, targetState.get(Properties.POWER));
+        }
+        return targetState == clientState;
+    }
+
+    public void handleSimpleInteractCorrect(BlockPos interactPos, Event<LegalInteractMode> look) {
+        if (enablePlaceCorrect.get()
+                && look2.get().isLegal()
                 && look.context == null
                 && !RaycastUtils.canRaycastHit(
                         mc.player,
@@ -322,286 +368,432 @@ public class BlockRotate extends BaseModule {
                         PlayerStateManager.INSTANCE.lastYaw,
                         interactPos,
                         InteractExtra.INSTANCE.getBlockReachDistance())) {
-            look.context(interactPos);
+            look.context(look2.get());
         }
     }
 
-    public BlockHitResult handlePlaceCorrect(
-            Item item,
-            BlockPos modifyingBlockPos,
-            BlockState targetState,
-            PlayerInteractBlockC2SPacket packet,
-            PlayerInteractBlockC2SPacketAccess.UseContext useContext,
-            boolean forceCorrect) {
-        BlockHitResult packetHitResult = packet.getBlockHitResult();
-        BlockState clientState = mc.world.getBlockState(modifyingBlockPos);
-        if (!targetState.isAir()
-                && targetState.getBlock().asItem() == item
-                && targetState.getBlock() == clientState.getBlock()) {
-            // sb easy place, use illegal hitResult or shit
-            if (forceCorrect) {
-                // handle airplace shit
-                BlockHitResult hitResult = correctEasyPlaceHitResult(
-                        packetHitResult, modifyingBlockPos, targetState, useContext.oldPlaceState());
-                // RenderTasks.debugBlockHitResult(hitResult);
-                PlayerInteractBlockC2SPacketAccess.of(packet).setBlockHitResult(hitResult);
-                packetHitResult = hitResult;
+    private static PitchYawDeceive handleYawDeceive(
+            BlockHitResult hitResult,
+            @Nonnull BlockState targetState,
+            float currentServerPitch,
+            float currentServerYaw) {
+        Block block = targetState.getBlock();
+        PitchYawDeceive deceive = new PitchYawDeceive();
+        boolean replacing = new ItemPlacementContext(
+                        mc.player, Hand.MAIN_HAND, new ItemStack(block.asItem()), hitResult)
+                .canReplaceExisting();
+
+        Direction placementDirection = block instanceof WallHangingSignBlock
+                ? targetState.get(WallHangingSignBlock.FACING).getOpposite()
+                : (replacing ? getReplacingSupportDirection(hitResult, targetState) : null);
+        if (placementDirection != null) {
+            deceive.rotation = Rotation.from(EntityUtils.directionToPitchYaw(placementDirection));
+            deceive.pitchForce =
+                    EntityUtils.pitchYawToDirection(currentServerPitch, currentServerYaw) != placementDirection;
+            deceive.yawForce = deceive.pitchForce;
+            return deceive;
+        }
+
+        if (block instanceof WallMountedBlock) {
+            if (targetState.get(WallMountedBlock.FACE) == BlockFace.FLOOR
+                    || targetState.get(WallMountedBlock.FACE) == BlockFace.CEILING) {
+                Direction direction = targetState.get(WallMountedBlock.FACING);
+                deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(direction));
+                deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+                if (replacing) {
+                    Direction support =
+                            targetState.get(WallMountedBlock.FACE) == BlockFace.FLOOR ? Direction.DOWN : Direction.UP;
+                    deceive.rotation =
+                            deceive.rotation.withPitch(Rotation.from(EntityUtils.directionToPitchYaw(support))
+                                    .pitch());
+                    deceive.pitchForce =
+                            EntityUtils.pitchYawToDirection(currentServerPitch, currentServerYaw) != support;
+                }
+                return deceive;
             }
-            return packetHitResult;
+        }
+
+        if (block instanceof AbstractRailBlock rail) {
+            RailShape shape = targetState.get(rail.getShapeProperty());
+            Direction direction =
+                    switch (shape) {
+                        case NORTH_SOUTH, ASCENDING_NORTH, ASCENDING_SOUTH -> Direction.NORTH;
+                        case EAST_WEST, ASCENDING_EAST, ASCENDING_WEST -> Direction.EAST;
+                        default -> null;
+                    };
+            return direction == null ? null : horizontalDeceive(direction, currentServerYaw);
+        }
+
+        if (block instanceof BigDripleafBlock) {
+            BlockPos placePos = new ItemPlacementContext(
+                            mc.player, Hand.MAIN_HAND, new ItemStack(block.asItem()), hitResult)
+                    .getBlockPos();
+            BlockState below = mc.world.getBlockState(placePos.down());
+            if (below.getBlock() instanceof BigDripleafBlock || below.getBlock() instanceof BigDripleafStemBlock) {
+                return null;
+            }
+            return horizontalDeceive(targetState.get(BigDripleafBlock.FACING).getOpposite(), currentServerYaw);
+        }
+
+        if (block instanceof BellBlock) {
+            if (hitResult.getSide().getAxis() == Direction.Axis.Y) {
+                return horizontalDeceive(targetState.get(BellBlock.FACING), currentServerYaw);
+            }
+            return null;
+        }
+
+        if (block instanceof CarvedPumpkinBlock
+                || block instanceof EndPortalFrameBlock
+                || block instanceof SmallDripleafBlock) {
+            return horizontalDeceive(
+                    targetState.get(Properties.HORIZONTAL_FACING).getOpposite(), currentServerYaw);
+        }
+
+        if (block instanceof JigsawBlock && hitResult.getSide().getAxis() == Direction.Axis.Y) {
+            return horizontalDeceive(
+                    targetState.get(JigsawBlock.ORIENTATION).getRotation().getOpposite(), currentServerYaw);
+        }
+
+        if (block instanceof CommandBlock) {
+            Direction look = targetState.get(CommandBlock.FACING).getOpposite();
+            deceive.rotation = Rotation.from(EntityUtils.directionToPitchYaw(look));
+            deceive.pitchForce = EntityUtils.pitchYawToDirection(currentServerPitch, currentServerYaw) != look;
+            deceive.yawForce = deceive.pitchForce;
+            return deceive;
+        }
+
+        if (block instanceof ObserverBlock) {
+            Direction facing = targetState.get(ObserverBlock.FACING);
+            deceive.rotation = Rotation.from(EntityUtils.directionToPitchYaw(facing));
+
+            if (EntityUtils.pitchYawToDirection(currentServerPitch, currentServerYaw) == facing) {
+                deceive.pitchForce = false;
+                deceive.yawForce = false;
+            }
+            return deceive;
+        }
+
+        if (block instanceof PistonBlock) {
+            Direction facing = targetState.get(PistonBlock.FACING).getOpposite();
+            deceive.rotation = Rotation.from(EntityUtils.directionToPitchYaw(facing));
+
+            if (EntityUtils.pitchYawToDirection(currentServerPitch, currentServerYaw) == facing) {
+                deceive.pitchForce = false;
+                deceive.yawForce = false;
+            }
+            return deceive;
+        }
+
+        if (block instanceof DispenserBlock) {
+            Direction facing = targetState.get(DispenserBlock.FACING).getOpposite();
+            deceive.rotation = Rotation.from(EntityUtils.directionToPitchYaw(facing));
+
+            if (EntityUtils.pitchYawToDirection(currentServerPitch, currentServerYaw) == facing) {
+                deceive.pitchForce = false;
+                deceive.yawForce = false;
+            }
+            return deceive;
+        }
+
+        if (block instanceof BarrelBlock) {
+            Direction facing = targetState.get(BarrelBlock.FACING).getOpposite();
+            deceive.rotation = Rotation.from(EntityUtils.directionToPitchYaw(facing));
+
+            if (EntityUtils.pitchYawToDirection(currentServerPitch, currentServerYaw) == facing) {
+                deceive.pitchForce = false;
+                deceive.yawForce = false;
+            }
+            return deceive;
+        }
+
+        if (block instanceof CrafterBlock) {
+            Orientation orientation = targetState.get(Properties.ORIENTATION);
+            Direction facing = orientation.getFacing();
+            Direction rotation = orientation.getRotation();
+            Rotation pitchYaw;
+
+            switch (facing) {
+                case DOWN -> pitchYaw = Rotation.from(EntityUtils.rotationToPitchYaw(
+                        Vec3d.of(rotation.getOpposite().getVector())
+                                .add(0, 4, 0)
+                                .normalize()));
+                case UP -> pitchYaw = Rotation.from(EntityUtils.rotationToPitchYaw(
+                        Vec3d.of(rotation.getVector()).add(0, -4, 0).normalize()));
+                default -> pitchYaw = Rotation.from(EntityUtils.rotationToPitchYaw(
+                        Vec3d.of(facing.getOpposite().getVector()).normalize()));
+            }
+
+            deceive.rotation = pitchYaw;
+
+            Direction currentFacing = EntityUtils.pitchYawToDirection(currentServerPitch, currentServerYaw)
+                    .getOpposite();
+
+            Direction horizontalFacing = EntityUtils.yawToHorizontalDirection(currentServerYaw);
+
+            Direction currentRotation =
+                    switch (currentFacing) {
+                        case DOWN -> horizontalFacing.getOpposite();
+                        case UP -> horizontalFacing;
+                        default -> Direction.UP;
+                    };
+
+            boolean matches = currentFacing == facing && currentRotation == rotation;
+            deceive.pitchForce = !matches;
+            deceive.yawForce = !matches;
+
+            return deceive;
+        }
+
+        if (block instanceof AbstractFurnaceBlock) {
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
+                    targetState.get(AbstractFurnaceBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
+        }
+
+        if (block instanceof ChiseledBookshelfBlock) {
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
+                    targetState.get(HorizontalFacingBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
+        }
+
+        if (block instanceof VaultBlock) {
+            deceive.rotation = deceive.rotation.withYaw(
+                    EntityUtils.rotationToYaw(targetState.get(VaultBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
+        }
+
+        if (block instanceof LoomBlock) {
+            deceive.rotation = deceive.rotation.withYaw(
+                    EntityUtils.rotationToYaw(targetState.get(LoomBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
+        }
+
+        if (block instanceof GlazedTerracottaBlock) {
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
+                    targetState.get(GlazedTerracottaBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
+        }
+
+        if (block instanceof BeehiveBlock) {
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
+                    targetState.get(BeehiveBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
+        }
+
+        if (block instanceof AbstractRedstoneGateBlock) {
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
+                    targetState.get(AbstractRedstoneGateBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
+        }
+
+        if (block instanceof StonecutterBlock) {
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
+                    targetState.get(StonecutterBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
+        }
+
+        if (block instanceof FenceGateBlock) {
+            deceive.rotation =
+                    deceive.rotation.withYaw(EntityUtils.rotationToYaw(targetState.get(FenceGateBlock.FACING)));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
+        }
+
+        if (block instanceof DoorBlock) {
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(targetState.get(DoorBlock.FACING)));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
+        }
+
+        if (block instanceof BedBlock) {
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(targetState.get(BedBlock.FACING)));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
+        }
+
+        if (block instanceof CampfireBlock) {
+            deceive.rotation =
+                    deceive.rotation.withYaw(EntityUtils.rotationToYaw(targetState.get(CampfireBlock.FACING)));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
+        }
+
+        if (block instanceof DecoratedPotBlock) {
+            deceive.rotation =
+                    deceive.rotation.withYaw(EntityUtils.rotationToYaw(targetState.get(Properties.HORIZONTAL_FACING)));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
+        }
+
+        if (block instanceof StairsBlock) {
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(targetState.get(StairsBlock.FACING)));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
+        }
+
+        if (block instanceof CalibratedSculkSensorBlock) {
+            deceive.rotation = deceive.rotation.withYaw(
+                    EntityUtils.rotationToYaw(targetState.get(CalibratedSculkSensorBlock.FACING)));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
+        }
+
+        if (block instanceof EnderChestBlock) {
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
+                    targetState.get(EnderChestBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
+        }
+
+        if (block instanceof LecternBlock) {
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
+                    targetState.get(LecternBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
+        }
+
+        if (block instanceof TrapdoorBlock) {
+            if (hitResult.getSide().getAxis().isHorizontal() && !replacing) {
+                return null;
+            }
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(
+                    targetState.get(TrapdoorBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
+        }
+
+        if (block instanceof ChestBlock) {
+            deceive.rotation = deceive.rotation.withYaw(
+                    EntityUtils.rotationToYaw(targetState.get(ChestBlock.FACING).getOpposite()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
+        }
+
+        if (block instanceof AnvilBlock) {
+            Direction facing = targetState.get(AnvilBlock.FACING);
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(facing.rotateYCounterclockwise()));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
+        }
+
+        return null;
+    }
+
+    private static PitchYawDeceive horizontalDeceive(Direction direction, float currentServerYaw) {
+        PitchYawDeceive deceive = new PitchYawDeceive();
+        deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(direction));
+        deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+        return deceive;
+    }
+
+    private static Direction getReplacingSupportDirection(BlockHitResult hitResult, BlockState state) {
+        Block block = state.getBlock();
+        BlockPos placePos = hitResult.getBlockPos();
+        BlockState currentState = mc.world.getBlockState(placePos);
+        if (block instanceof WallMountedBlock) {
+            return state.get(WallMountedBlock.FACE) == BlockFace.WALL
+                    ? state.get(WallMountedBlock.FACING).getOpposite()
+                    : null;
+        }
+        if (block instanceof LanternBlock) {
+            return state.get(LanternBlock.HANGING) ? Direction.UP : Direction.DOWN;
+        }
+        if (block instanceof VineBlock) {
+            BlockState aboveState = mc.world.getBlockState(placePos.up());
+            for (Direction direction : Direction.values()) {
+                var property = VineBlock.FACING_PROPERTIES.get(direction);
+                if (property != null
+                        && state.get(property)
+                        && !(currentState.isOf(block) && currentState.get(property))
+                        && (VineBlock.shouldConnectTo(mc.world, placePos.offset(direction), direction)
+                                || (direction.getAxis().isHorizontal()
+                                        && aboveState.isOf(block)
+                                        && aboveState.get(property)))) return direction;
+            }
+            return null;
+        }
+        if (block instanceof MultifaceBlock multiface) {
+            for (Direction direction : Direction.values()) {
+                var property = ConnectingBlock.FACING_PROPERTIES.get(direction);
+                if (state.contains(property)
+                        && state.get(property)
+                        && multiface.withDirection(currentState, mc.world, placePos, direction) != null)
+                    return direction;
+            }
+            return null;
+        }
+        if (block instanceof CocoaBlock) {
+            return state.get(CocoaBlock.FACING);
+        }
+        if (block instanceof WallRedstoneTorchBlock) {
+            return state.get(WallRedstoneTorchBlock.FACING).getOpposite();
+        }
+        if (block instanceof WallTorchBlock) {
+            return state.get(WallTorchBlock.FACING).getOpposite();
+        }
+        if (block instanceof WallSkullBlock) {
+            return state.get(WallSkullBlock.FACING).getOpposite();
+        }
+        if (block instanceof WallSignBlock) {
+            return state.get(WallSignBlock.FACING).getOpposite();
+        }
+        if (block instanceof WallBannerBlock) {
+            return state.get(WallBannerBlock.FACING).getOpposite();
+        }
+        if (block instanceof TripwireHookBlock) {
+            return state.get(TripwireHookBlock.FACING).getOpposite();
+        }
+        if (block instanceof DeadCoralWallFanBlock) {
+            return state.get(DeadCoralWallFanBlock.FACING).getOpposite();
+        }
+        if (block instanceof LadderBlock) {
+            return state.get(LadderBlock.FACING).getOpposite();
         }
         return null;
     }
 
-    public BlockHitResult correctEasyPlaceHitResult(
-            BlockHitResult hitResult, BlockPos placingPos, BlockState targetState, BlockState oldPlaceState) {
-        BlockState placedState = mc.world.getBlockState(placingPos);
-        try {
-            if (placedState != oldPlaceState) {
-                mc.world.setBlockState(placingPos, oldPlaceState, WorldUtils.UPDATE_BLOCK_NO_PHYSICS);
-            }
-            var result = InteractionTasks.createSpecificStateHitResult(
-                    hitResult.getSide().getOpposite(), placingPos, targetState, enableAirPlace.get(), false);
-            return result == null ? hitResult : result.val();
-        } finally {
-            if (placedState != oldPlaceState) {
-                mc.world.setBlockState(placingPos, placedState, WorldUtils.UPDATE_BLOCK_NO_PHYSICS);
-            }
-        }
-    }
-
-    public void onPresetLoad(Event<EventContainer<ModulePreset>> e) {
-        if (e.context().getValue().isAirplacePreset()) {
-            enableAirPlace.set(e.context.getValue().getAirplace(enableAirPlace.get()));
-        }
-        if (e.context().getValue().isOptionPreset()) return;
-        switch (e.context.getValue()) {
-            case AC_GRIM, AC_GRIM_LEGACY -> bypassMode.set(BypassMode.BYPASS_GRIM);
-            default -> bypassMode.set(BypassMode.NO_BYPASS);
-        }
-        switch (e.context.getValue()) {
-            case AC_GRIM, AC_GRIM_LEGACY -> bypassMode2.set(BypassMode.BYPASS_GRIM);
-            default -> bypassMode2.set(BypassMode.NO_BYPASS);
-        }
-    }
-
-    public static void handleYawDeceive(BlockState targetState, PitchYawDeceive deceive) {
+    public static PitchYawDeceive handleYawInteractDeceive(
+            BlockState targetState, float currentServerPitch, float currentServerYaw) {
         Block block = targetState.getBlock();
-        if (block instanceof WallMountedBlock lever) {
-            if (targetState.get(WallMountedBlock.FACE) == BlockFace.FLOOR
-                    || targetState.get(WallMountedBlock.FACE) == BlockFace.CEILING) {
-                Direction direction = targetState.get(WallMountedBlock.FACING);
-                deceive.yaw = EntityUtils.directionToPitchYaw(direction).y;
-                return;
-            }
-        }
-        if (block instanceof ObserverBlock ob) {
-            Vec2f pitchYaw = EntityUtils.directionToPitchYaw(targetState.get(ObserverBlock.FACING));
-            deceive.pitch = pitchYaw.x;
-            deceive.yaw = pitchYaw.y;
-            return;
-        }
-        if (block instanceof PistonBlock ps) {
-            Vec2f pitchYaw = EntityUtils.directionToPitchYaw(
-                    targetState.get(PistonBlock.FACING).getOpposite());
-            deceive.pitch = pitchYaw.x;
-            deceive.yaw = pitchYaw.y;
-            return;
-        }
-        if (block instanceof DispenserBlock disp) {
-            Vec2f pitchYaw = EntityUtils.directionToPitchYaw(
-                    targetState.get(DispenserBlock.FACING).getOpposite());
-            deceive.pitch = pitchYaw.x;
-            deceive.yaw = pitchYaw.y;
-            return;
-        }
-        if (block instanceof BarrelBlock barrelBlock) {
-            Vec2f pitchYaw = EntityUtils.directionToPitchYaw(
-                    targetState.get(BarrelBlock.FACING).getOpposite());
-            deceive.pitch = pitchYaw.x;
-            deceive.yaw = pitchYaw.y;
-            return;
-        }
-        if (block instanceof CrafterBlock crafterBlock) {
-            Orientation orientation = targetState.get(Properties.ORIENTATION);
-            Direction facing = orientation.getFacing();
-            Direction rotation = orientation.getRotation();
-            Vec2f pitchYaw;
-            switch (facing) {
-                case DOWN -> {
-                    pitchYaw = EntityUtils.rotationToPitchYaw(
-                            Vec3d.of(rotation.getOpposite().getVector())
-                                    .add(0, 4, 0)
-                                    .normalize());
-                }
-                case UP -> {
-                    pitchYaw = EntityUtils.rotationToPitchYaw(
-                            Vec3d.of(rotation.getVector()).add(0, -4, 0).normalize());
-                }
-                default -> {
-                    pitchYaw = EntityUtils.rotationToPitchYaw(
-                            Vec3d.of(facing.getOpposite().getVector()).normalize());
-                }
-            }
-            deceive.pitch = pitchYaw.x;
-            deceive.yaw = pitchYaw.y;
-            return;
-        }
 
-        // 以下分支只修改 yaw，保持玩家当前 pitch，因此只赋值 deceive.yaw
-        if (block instanceof AbstractFurnaceBlock) {
-            Direction facing = targetState.get(AbstractFurnaceBlock.FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-            return;
-        }
-        if (block instanceof ChiseledBookshelfBlock) {
-            Direction facing = targetState.get(HorizontalFacingBlock.FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-            return;
-        }
-        if (block instanceof VaultBlock) {
-            Direction facing = targetState.get(VaultBlock.FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-            return;
-        }
-        if (block instanceof LoomBlock) {
-            Direction facing = targetState.get(LoomBlock.FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-            return;
-        }
-        if (block instanceof GlazedTerracottaBlock) {
-            Direction facing = targetState.get(GlazedTerracottaBlock.FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-            return;
-        }
-        if (block instanceof BeehiveBlock) {
-            Direction facing = targetState.get(BeehiveBlock.FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-            return;
-        }
-        if (block instanceof AbstractRedstoneGateBlock) {
-            Direction facing = targetState.get(AbstractRedstoneGateBlock.FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-            return;
-        }
-        if (block instanceof StonecutterBlock) {
-            Direction facing = targetState.get(StonecutterBlock.FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-            return;
-        }
-        // 以下方块不需要取反
         if (block instanceof FenceGateBlock) {
+            PitchYawDeceive deceive = new PitchYawDeceive();
             Direction facing = targetState.get(FenceGateBlock.FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing);
-            return;
+            deceive.rotation = deceive.rotation.withYaw(EntityUtils.rotationToYaw(facing));
+            deceive.yawForce = Math.abs(MathHelper.wrapDegrees(currentServerYaw - deceive.rotation.yaw())) >= 45.0F;
+            return deceive;
         }
-        if (block instanceof DoorBlock) {
-            Direction facing = targetState.get(DoorBlock.FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing);
-            return;
-        }
-        if (block instanceof CampfireBlock) {
-            Direction facing = targetState.get(CampfireBlock.FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing);
-            return;
-        }
-        if (block instanceof DecoratedPotBlock) {
-            Direction facing = targetState.get(Properties.HORIZONTAL_FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing);
-            return;
-        }
-        if (block instanceof StairsBlock) {
-            Direction facing = targetState.get(StairsBlock.FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing);
-            return;
-        }
-        if (block instanceof CalibratedSculkSensorBlock) {
-            Direction facing = targetState.get(CalibratedSculkSensorBlock.FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing);
-            return;
-        }
-        // 需要取反的分支
-        if (block instanceof EnderChestBlock) {
-            Direction facing = targetState.get(EnderChestBlock.FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-            return;
-        }
-        //        if (block instanceof DriedGhastBlock) {
-        //            Direction facing = targetState.get(DriedGhastBlock.FACING);
-        //            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-        //            return;
-        //        }
-        //        if (block instanceof ShelfBlock) {
-        //            Direction facing = targetState.get(ShelfBlock.FACING);
-        //            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-        //            return;
-        //        }
-        if (block instanceof LecternBlock) {
-            Direction facing = targetState.get(LecternBlock.FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-            return;
-        }
-        //        if (block instanceof CopperGolemStatueBlock) {
-        //            Direction facing = targetState.get(CopperGolemStatueBlock.FACING);
-        //            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-        //            return;
-        //        }
-        if (block instanceof TrapdoorBlock) {
-            Direction facing = targetState.get(TrapdoorBlock.FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-            return;
-        }
-        if (block instanceof ChestBlock) {
-            Direction facing = targetState.get(ChestBlock.FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing.getOpposite());
-            return;
-        }
-        if (block instanceof AnvilBlock) {
-            Direction facing = targetState.get(AnvilBlock.FACING);
-            Direction playerFacing = facing.rotateYCounterclockwise();
-            deceive.yaw = EntityUtils.rotationToYaw(playerFacing);
-            return;
-        }
+
+        return null;
     }
 
-    public static void handleYawInteractDeceive(BlockState targetState, PitchYawDeceive deceive) {
-        Block block = targetState.getBlock();
-        if (block instanceof FenceGateBlock fenceGateBlock) {
-            Direction facing = targetState.get(FenceGateBlock.FACING);
-            deceive.yaw = EntityUtils.rotationToYaw(facing);
-            return;
-        }
-    }
-
-    public static class PitchYawDeceive {
-        Float pitch = null;
-        Float yaw = null;
+    private static class PitchYawDeceive {
+        Rotation rotation = Rotation.EMPTY;
+        boolean pitchForce = true;
+        boolean yawForce = true;
 
         public boolean hasDeceive() {
-            return pitch != null || yaw != null;
+            return rotation.hasRotate();
+        }
+
+        public boolean isForce() {
+            return (rotation.hasPitch() && pitchForce) || (rotation.hasYaw() && yawForce);
         }
 
         public float getPitch(float currentPitch) {
-            return pitch != null ? pitch : currentPitch;
+            return rotation.hasPitch() && pitchForce ? rotation.getPitch() : currentPitch;
         }
 
         public float getYaw(float currentYaw) {
-            return yaw != null ? yaw : currentYaw;
-        }
-    }
-
-    public static class TemporarySchematic {
-        BlockPos blockPos;
-        int expireTick;
-        BlockState targetState;
-
-        public TemporarySchematic(BlockPos blockPos, int lastTicks, BlockState targetState) {
-            this.blockPos = blockPos;
-            this.expireTick = lastTicks + Tasks.getTick();
-            this.targetState = targetState;
-        }
-
-        public boolean expire() {
-            return Tasks.getTick() > expireTick;
+            return rotation.hasYaw() && yawForce ? rotation.getYaw() : currentYaw;
         }
     }
 }

@@ -19,6 +19,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
@@ -28,7 +29,6 @@ import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ColorUtils;
 import me.matl114.utils.Debug;
-import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
@@ -74,7 +74,7 @@ public class BowTp extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPacketPoint().getChannel(PlayerActionC2SPacket.class), this::onBowAction, -999);
-        registerListener(Listener.getPostGameTick(), this::updateRenderCollector);
+        registerListener(Listener.getPostTick(), this::updateRenderCollector);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(Listener.getCustomListener().getChannel(ModulePreset.class), this::onModulePreset);
     }
@@ -255,7 +255,7 @@ public class BowTp extends BaseModule {
 
     private void updateRenderCollector() {
         targetCollector.clear();
-        if (!enable.get() || mc.player == null || !render.get()) return;
+        if (!enable.get() || checkNull() || !render.get()) return;
         if (!mc.player.isUsingItem() || !(mc.player.getActiveItem().getItem() instanceof BowItem)) return;
         var targetSelector = CombatTasks.getTargetSelector();
         Entity entity = targetSelector.searchAttackEntity(

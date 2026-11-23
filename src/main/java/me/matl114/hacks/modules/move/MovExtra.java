@@ -9,15 +9,16 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.task.DisablerManager;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.PlayerInputUtils;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.Debug;
-import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VDataFlag;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.util.math.Vec3d;
 
@@ -130,7 +131,7 @@ public class MovExtra extends BaseModule {
     }
     // mostly same as InventoryAction packets
     public void sendPacketsForPreStartFallFlying() {
-        if (DisablerManager.INSTANCE.isInventoryWalkFix() && ViaFabricPlusHooks.isSupportEndTick()) {
+        if (DisablerManager.INSTANCE.isElytraInputFix() && ViaFabricPlusHooks.isSupportEndTick()) {
             if (PlayerStateManager.INSTANCE.lastInput.jump()) {
                 var input = PlayerInputUtils.of(mc.player).jump(false);
                 input.sendPlayerInputPacket();
@@ -140,11 +141,14 @@ public class MovExtra extends BaseModule {
     }
 
     public void sendPacketsForPostStartFallFlying() {
-        if (DisablerManager.INSTANCE.isInventoryWalkFix() && ViaFabricPlusHooks.isSupportEndTick()) {
-            if (!PlayerStateManager.INSTANCE.lastInput.jump()) {
+        if (DisablerManager.INSTANCE.isElytraInputFix() && ViaFabricPlusHooks.isSupportEndTick()) {
+            if (!PlayerStateManager.INSTANCE.lastInput.jump() && mc.options.jumpKey.isPressed()) {
                 var input = PlayerInputUtils.of(mc.player).jump(true);
                 input.sendPlayerInputPacket();
                 input.applyInput(mc.player);
+                if (DisablerManager.INSTANCE.isGrimBadPacketsFix()) {
+                    mc.getNetworkHandler().sendPacket(new CommonPongC2SPacket(Integer.MIN_VALUE));
+                }
             }
         }
     }

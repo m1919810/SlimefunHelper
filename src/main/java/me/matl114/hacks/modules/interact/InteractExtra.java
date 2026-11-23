@@ -115,9 +115,12 @@ public class InteractExtra extends BaseModule implements RayCastCalculator<Block
         registerListener(Listener.getUseItemCooldownReset(), this::onCooldown);
     }
 
+    public double getBlockReachAttribute() {
+        return mc.player.getAttributeValue(EntityAttributes.BLOCK_INTERACTION_RANGE);
+    }
+
     public double getBlockReachDistance() {
-        return mc.player.getAttributeValue(EntityAttributes.PLAYER_BLOCK_INTERACTION_RANGE)
-                + (mc.player.hasVehicle() ? ridingReachDistance.get() : reachDistance.get());
+        return getBlockReachAttribute() + (mc.player.hasVehicle() ? ridingReachDistance.get() : reachDistance.get());
     }
 
     @Override
@@ -153,10 +156,10 @@ public class InteractExtra extends BaseModule implements RayCastCalculator<Block
     }
 
     public boolean isWithinInteractRange(Vec3d pos, BlockPos bp) {
-        return isWithinInteractRange(pos, bp, getBlockReachDistance());
-    }
-
-    public boolean isWithinInteractRange(Vec3d pos, Box bp) {
+        if (new Box(bp).squaredMagnitude(pos.add(0, mc.player.dimensions.eyeHeight(), 0))
+                > MathUtils.s2(1.0D + getBlockReachAttribute())) {
+            return false;
+        }
         return isWithinInteractRange(pos, bp, getBlockReachDistance());
     }
 
@@ -164,7 +167,7 @@ public class InteractExtra extends BaseModule implements RayCastCalculator<Block
         return isWithinInteractRange(pos, new Box(bp), range);
     }
 
-    public boolean isWithinInteractRange(Vec3d pos, Box box, double range) {
+    private boolean isWithinInteractRange(Vec3d pos, Box box, double range) {
         if (box.squaredMagnitude(pos) > MathUtils.s2(range + 2 + mc.player.dimensions.eyeHeight())) {
             // filter all outofrange
             // optimize calculation

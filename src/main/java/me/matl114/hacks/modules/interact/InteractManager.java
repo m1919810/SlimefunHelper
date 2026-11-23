@@ -6,8 +6,8 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
+import me.matl114.accessors.access.KeyBindAccess;
 import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
-import me.matl114.accessors.hacks.KeyBindAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.impl.EventContainer;
@@ -20,6 +20,7 @@ import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.InteractUtils;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
@@ -1104,7 +1105,7 @@ public class InteractManager extends BaseModule {
             return itemStack == null
                     ? null
                     : InventoryUtils.findBestPlayerItem(
-                            itemStack::matches, InventoryUtils.getPlayerInvSize(), true, false);
+                            itemStack::matches, InventoryUtils.getPlayerInvSize(), false, false);
         }
 
         public String toString() {

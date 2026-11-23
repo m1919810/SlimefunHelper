@@ -17,7 +17,10 @@ public enum ModulePreset {
     ENABLE_MULTITASK,
     DISABLE_MULTITASK,
     HOTBAR_GHOSTHAND,
-    INV_GHOSTHAND;
+    INV_GHOSTHAND,
+    ENABLE_NOSWINGMINE,
+    DISABLE_NOSWINGMINE,
+    ;
 
     public GhostHandMode getGhostHandMode(GhostHandMode defaultValue) {
         return switch (this) {
@@ -57,6 +60,18 @@ public enum ModulePreset {
 
     public boolean isSwingPlacePreset() {
         return this == ENABLE_NOSWINGPLACE || this == DISABLE_NOSWINGPLACE;
+    }
+
+    public boolean getSwingMine(boolean defaultValue) {
+        return switch (this) {
+            case ENABLE_NOSWINGMINE -> false;
+            case DISABLE_NOSWINGMINE -> true;
+            default -> defaultValue;
+        };
+    }
+
+    public boolean isSwingMinePreset() {
+        return this == ENABLE_NOSWINGMINE || this == DISABLE_NOSWINGMINE;
     }
 
     public boolean getEatingAbort(boolean defaultValue) {

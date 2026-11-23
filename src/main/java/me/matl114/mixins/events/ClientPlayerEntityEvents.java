@@ -8,9 +8,9 @@ import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.accessors.events.ClientPlayerEntityAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.hacks.utils.PlayerInputUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Tasks;
-import me.matl114.utils.entity.PlayerInputUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -132,6 +132,14 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         this.ticksSinceLastPositionPacketSent = ticks;
     }
 
+    public boolean forceSendPacket;
+
+    @Override
+    @Unique
+    public void setForceSendPacketUpdate(boolean force) {
+        this.forceSendPacket = force;
+    }
+
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onClientPlayerInitConfiguration(
             MinecraftClient client,
@@ -161,9 +169,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
             PlayerInputUtils.Input i0 = newInput;
             i0.syncMovementVector(
                     this.input,
-                    this.shouldSlowDown()
-                            ? (float) this.getAttributeValue(EntityAttributes.PLAYER_SNEAKING_SPEED)
-                            : 1.0F);
+                    this.shouldSlowDown() ? (float) this.getAttributeValue(EntityAttributes.SNEAKING_SPEED) : 1.0F);
         }
     }
 
@@ -176,6 +182,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
                             shift = At.Shift.BEFORE))
     public void prePlayerTick(CallbackInfo ci) {
         if (!checkClientPlayer()) return;
+        Listener.getClientPlayerPreTickPoint().broadcast((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
         this.movementManager.preProgress((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
     }
 
@@ -203,6 +210,15 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
             if (!this.movementManager.preMovementProgress((ClientPlayerEntity) (AbstractClientPlayerEntity) this)
                     || event.isCancelled()) {
                 lastCancelTick = Tasks.getTick();
+            }
+        }
+        if (lastCancelTick != Tasks.getTick()) {
+            if (forceSendPacket) {
+                forceSendPacket = false;
+                // trigger a minimum update
+                if (!hasVehicle()) {
+                    lastOnGround = !this.isOnGround();
+                }
             }
         }
     }
@@ -248,15 +264,15 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
     private boolean checkElytra() {
         ItemStack itemStack = this.getEquippedStack(EquipmentSlot.CHEST);
         if (itemStack.isOf(Items.ELYTRA) && ElytraItem.isUsable(itemStack)) {
-            this.startFallFlying();
+            this.startGliding();
             return true;
         }
         return false;
     }
 
     @Override
-    public boolean checkFallFlying() {
-        if (!checkClientPlayer()) return super.checkFallFlying();
+    public boolean checkGliding() {
+        if (!checkClientPlayer()) return super.checkGliding();
         boolean fallflying = this.isFallFlying();
         boolean shouldSwitch = false;
         if (!fallflying) {
@@ -276,14 +292,14 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         }
         if (!fallflying) {
             if (switchFlag) {
-                startFallFlying();
+                startGliding();
                 return true;
             } else {
                 return false;
             }
         } else {
             if (switchFlag) {
-                stopFallFlying();
+                stopGliding();
                 return true;
             } else {
                 return false;

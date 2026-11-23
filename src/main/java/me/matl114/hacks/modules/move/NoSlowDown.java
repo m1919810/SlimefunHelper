@@ -8,6 +8,7 @@ import me.matl114.events.Listener;
 import me.matl114.events.impl.EventContainer;
 import me.matl114.events.impl.MetadataUpdate;
 import me.matl114.events.impl.SlowMovement;
+import me.matl114.hacks.InvTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
@@ -15,6 +16,7 @@ import me.matl114.hacks.modules.mine.FakeBlockManager;
 import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.PlayerInputUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.enums.BypassMode;
 import me.matl114.hooks.ViaFabricPlusHooks;
@@ -23,7 +25,6 @@ import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.*;
-import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.api.VDataFlag;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -333,7 +334,8 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
                         Entity target = Objects.requireNonNull(entity);
                         PlayerInputUtils.Input input = PlayerInputUtils.of(mc.player);
                         RotationManager.INSTANCE.request(RotationManager.ofEntity(() -> target)
-                                .postTick(() -> Tasks.scheduleDelayedPre(
+                                .applyMoveFix(true)
+                                .postTickTask(() -> Tasks.scheduleDelayedPre(
                                         () -> {
                                             // to trigger plugin events
                                             input.sneak(true).sendPlayerSneakUpdatePacket();
@@ -381,7 +383,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     }
 
     private boolean checkSneakSpeed() {
-        return mc.player.getAttributeValue(EntityAttributes.PLAYER_SNEAKING_SPEED) < 0.9F;
+        return mc.player.getAttributeValue(EntityAttributes.SNEAKING_SPEED) < 0.9F;
     }
 
     private float getActiveItemSpeedMultiplier() {
@@ -446,7 +448,7 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
             }
         }
         ItemStack stackEmpty = mc.player.getInventory().getStack(selectedEmpty);
-        var handler = ClientPlayerAccess.of(mc.player).getServerScreenHandler();
+        var handler = InvTasks.getCurrentServerScreenHandler(mc.player);
         // may use MultiActionsC to resync inventory, wierd
         // MovTasks.getMovExtra().sendInputPacketsForInventoryAction();
         // save current server sprinting status
@@ -849,10 +851,9 @@ public class NoSlowDown extends BaseModule implements LegalMovementManager.Movem
     }
 
     @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+    public void postModify(Event<LegalMovementManager> movementManagerEvent) {
         onSendMovePostNoSlowUse(null);
         preAttackUseTick = false;
-        return true;
     }
 
     public static enum PacketSneakMode implements ConfigEnum {

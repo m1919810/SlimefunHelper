@@ -8,7 +8,6 @@ import baritone.api.event.events.RotationMoveEvent;
 import baritone.api.event.listener.AbstractGameEventListener;
 import baritone.api.pathing.goals.*;
 import baritone.api.utils.BetterBlockPos;
-import baritone.api.utils.Rotation;
 import baritone.process.ElytraProcess;
 import baritone.process.elytra.ElytraBehavior;
 import java.awt.*;
@@ -28,6 +27,7 @@ import me.matl114.events.annotations.ExtraArgs;
 import me.matl114.events.annotations.Modifiable;
 import me.matl114.events.channels.EventChannel;
 import me.matl114.hacks.utils.config.*;
+import me.matl114.hacks.utils.move.Rotation;
 import me.matl114.hacks.utils.move.goal.*;
 import me.matl114.hacks.utils.move.goal.GoalNear;
 import me.matl114.hooks.impl.baritone.*;
@@ -89,7 +89,7 @@ public abstract class BaritoneHooks implements IHooks {
 
     public abstract void updateBaritoneLookTarget(float pitch, float yaw);
 
-    public abstract Vec2f getBaritoneCurrentMoveRot(ClientPlayerEntity player);
+    public abstract Rotation getBaritoneCurrentMoveRot(ClientPlayerEntity player);
 
     public abstract void setBaritoneCurrentGoal(IPathGoal goal);
 
@@ -306,11 +306,14 @@ public abstract class BaritoneHooks implements IHooks {
         }
 
         @Override
-        public Vec2f getBaritoneCurrentMoveRot(ClientPlayerEntity player) {
-            RotationMoveEvent moveEvent =
-                    new RotationMoveEvent(RotationMoveEvent.Type.MOTION_UPDATE, player.getYaw(), player.getPitch());
+        public Rotation getBaritoneCurrentMoveRot(ClientPlayerEntity player) {
+            float pitch = player.getPitch();
+            float yaw = player.getYaw();
+            RotationMoveEvent moveEvent = new RotationMoveEvent(RotationMoveEvent.Type.MOTION_UPDATE, yaw, pitch);
             BaritoneAPI.getProvider().getPrimaryBaritone().getGameEventHandler().onPlayerRotationMove(moveEvent);
-            return new Vec2f(moveEvent.getPitch(), moveEvent.getYaw());
+            return new Rotation(
+                    Float.compare(moveEvent.getPitch(), pitch) == 0 ? null : moveEvent.getPitch(),
+                    Float.compare(moveEvent.getYaw(), yaw) == 0 ? null : moveEvent.getYaw());
         }
 
         @Override
@@ -407,7 +410,7 @@ public abstract class BaritoneHooks implements IHooks {
             BaritoneAPI.getProvider()
                     .getPrimaryBaritone()
                     .getLookBehavior()
-                    .updateTarget(new Rotation(yaw, pitch), false);
+                    .updateTarget(new baritone.api.utils.Rotation(yaw, pitch), false);
         }
     }
 
@@ -497,8 +500,8 @@ public abstract class BaritoneHooks implements IHooks {
         public void updateBaritoneLookTarget(float pitch, float yaw) {}
 
         @Override
-        public Vec2f getBaritoneCurrentMoveRot(ClientPlayerEntity player) {
-            return new Vec2f(player.getPitch(), player.getYaw());
+        public Rotation getBaritoneCurrentMoveRot(ClientPlayerEntity player) {
+            return Rotation.EMPTY;
         }
 
         @Override

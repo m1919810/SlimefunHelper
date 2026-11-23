@@ -1,9 +1,7 @@
 package me.matl114.hacks.modules.extra;
 
 import java.awt.Color;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.access.LivingEntityAccess;
 import me.matl114.events.Event;
@@ -19,6 +17,7 @@ import me.matl114.hacks.modules.move.FloatingUtils;
 import me.matl114.hacks.modules.move.PlayerInputManager;
 import me.matl114.hacks.modules.move.RotationManager;
 import me.matl114.hacks.utils.HotKeyUtils;
+import me.matl114.hacks.utils.RaycastUtils;
 import me.matl114.hacks.utils.entity.EntityMovementStatus;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
@@ -27,13 +26,14 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.RaycastUtils;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.LadderBlock;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.network.packet.PlayPackets;
-import net.minecraft.network.packet.c2s.play.ClientStatusC2SPacket;
+import net.minecraft.network.packet.c2s.play.*;
+import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
+import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -90,6 +90,23 @@ public class Misc extends BaseModule {
     public final FlagRef parkourUsePacketQueue =
             flagBuilder(autoParkour.add("use-packet-queue")).defaultValue(false).build();
 
+    public final ModulePath godMode = root.add("god-mode");
+
+    public final FlagRef godEnable = flagBuilder(godMode.addEnable())
+            .updateListener(s -> {
+                if (!s) {
+                    onGodModeRelease();
+                }
+            })
+            .build();
+
+    public final KeyBindRef godKey = toggleHotkey(godMode.addHotkey(), new MultiKeyBind(), godMode.addEnable())
+            .build();
+
+    public final KeyBindRef godRelease = hotkey(godMode.add("release"), new MultiKeyBind())
+            .registerHotkey(HotKeyUtils.wrapAsHandler(this::onGodModeRelease))
+            .build();
+
     public final ModulePath tests = root.add("tests");
     public final KeyBindRef test1 = hotkey(tests.add("test-1"), new MultiKeyBind())
             .registerHotkey(HotKeyUtils.wrapAsHandler(this::runTest1))
@@ -123,10 +140,16 @@ public class Misc extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreGameTick(), this::onPreGameTick);
-        registerListener(Listener.getPostGameTick(), this::updateParkour);
+        registerListener(Listener.getPostTick(), this::updateParkour);
         registerListener(PacketManager.getPacketQueueOutEvent(), this::onParkourPacketQueue);
         registerListener(PacketManager.getQueueShutdownEvent(), this::onParkourQueueShutdown);
         registerListener(RenderListener.getRender3DEvent(), this::renderParkour);
+
+        registerListener(
+                Listener.getPacketPreHandlePoint().getChannel(PlayerRespawnS2CPacket.class), this::onCatchGodMode);
+        registerListener(
+                Listener.getPacketPreHandlePoint().getChannel(PlayerPositionLookS2CPacket.class), this::onTeleportPos);
+        registerListener(Listener.getPacketPoint().getChannel(TeleportConfirmC2SPacket.class), this::onTeleportConfirm);
     }
 
     public void onPostTick(Event<ClientPlayerEntity> event) {
@@ -137,11 +160,14 @@ public class Misc extends BaseModule {
         if (checkNull()) return;
         int tick = Tasks.getTick() % 10;
         if (friendsWineEnable.get() && !mc.player.isFallFlying()) {
-            if (sneak.get()) {
-                PlayerInputManager.INSTANCE.addSneakModifier(0, tick <= 4, 1);
-            }
-            RotationManager.INSTANCE.request(
+            RotationManager.INSTANCE.push(
                     RotationManager.ofDirection(Optional.empty(), Optional.of(mc.player.getYaw() + 36 * tick))
+                            .applyMoveFix(true)
+                            .preTick((rotation, player, matchRaycast) -> {
+                                if (matchRaycast && sneak.get()) {
+                                    PlayerInputManager.INSTANCE.addSneakModifier(0, tick <= 4, 1);
+                                }
+                            })
                             .priority(-114514));
         }
     }
@@ -1150,6 +1176,41 @@ public class Misc extends BaseModule {
         if (!autoParkourEnable.get()) return;
         parkourTarget.render3D(event.context.stack(), event.context.partialTicks());
         parkourTrajectory.render3D(event.context.stack(), event.context.partialTicks());
+    }
+
+    Integer cachedGodTp = null;
+    boolean pendingCache;
+
+    public void onGodModeRelease() {
+        if (!checkNull() && cachedGodTp != null) {
+            mc.getNetworkHandler().sendPacket(new TeleportConfirmC2SPacket(cachedGodTp));
+        }
+        cachedGodTp = null;
+        pendingCache = false;
+    }
+
+    public void onCatchGodMode(Event<PlayerRespawnS2CPacket> respawn) {
+        if (godEnable.get()
+                && mc.world != null
+                && !Objects.equals(
+                        mc.world.getRegistryKey(),
+                        respawn.context.commonPlayerSpawnInfo().dimension())) {
+            pendingCache = true;
+        }
+    }
+
+    public void onTeleportPos(Event<PlayerPositionLookS2CPacket> event) {
+        if (pendingCache || cachedGodTp != null) {
+            if (event.context.getTeleportId() >= 0) {
+                cachedGodTp = event.context.getTeleportId();
+            }
+        }
+    }
+
+    public void onTeleportConfirm(Event<TeleportConfirmC2SPacket> event) {
+        if (cachedGodTp != null) {
+            event.cancel();
+        }
     }
 
     public void runTest1() {

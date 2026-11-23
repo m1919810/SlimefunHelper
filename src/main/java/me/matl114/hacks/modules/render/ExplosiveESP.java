@@ -7,6 +7,9 @@ import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.combat.CombatManager;
+import me.matl114.hacks.utils.DamageUtils;
+import me.matl114.hacks.utils.ExplosionUtils;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.config.TracingOption;
 import me.matl114.hacks.utils.config.WrapColor;
 import me.matl114.hacks.utils.render.RenderCollectors;
@@ -69,7 +72,7 @@ public class ExplosiveESP extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostGameTick(), this::onTick);
+        registerListener(Listener.getPostTick(), this::onTick);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(CombatManager.getRequestEnableEvent(), this::onRequestCombatService);
     }

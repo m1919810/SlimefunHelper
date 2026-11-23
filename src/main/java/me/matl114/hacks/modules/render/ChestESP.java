@@ -11,14 +11,14 @@ import me.matl114.events.RenderListener;
 import me.matl114.events.impl.Render3D;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.CommonUtils;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.utils.ColorUtils;
-import me.matl114.utils.CommonUtils;
-import me.matl114.utils.RenderUtils;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
@@ -79,7 +79,7 @@ public class ChestESP extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(RenderListener.getBlockEntityRenderListener(), this::onBlockEntityRender);
-        registerListener(Listener.getPostGameTick(), this::onSwapRenderContent);
+        registerListener(Listener.getPostTick(), this::onSwapRenderContent);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
     }
 
@@ -120,7 +120,7 @@ public class ChestESP extends BaseModule {
         }
     }
 
-    public void dispatchBlockEntityRender(BlockEntity blockEntity, BlockPos blockPos) {
+    private void dispatchBlockEntityRender(BlockEntity blockEntity, BlockPos blockPos) {
         TextColor color = colorMap.get().getEntryValue(blockEntity.getType());
         if (color == null) return;
         TracingOption option = enableLines.get();

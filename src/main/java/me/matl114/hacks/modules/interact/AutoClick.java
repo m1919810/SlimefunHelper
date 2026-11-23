@@ -1,6 +1,6 @@
 package me.matl114.hacks.modules.interact;
 
-import me.matl114.accessors.hacks.KeyBindAccess;
+import me.matl114.accessors.access.KeyBindAccess;
 import me.matl114.events.Listener;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;

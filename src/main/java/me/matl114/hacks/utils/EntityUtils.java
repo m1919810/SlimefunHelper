@@ -6,7 +6,6 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import me.matl114.hacks.modules.move.PlayerStateManager;
 import me.matl114.utils.ItemStackUtils;
-import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.block.SpawnerBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -28,8 +27,6 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.*;
 import net.minecraft.world.RaycastContext;
 import org.joml.Vector2d;
-import org.spongepowered.include.com.google.common.collect.BiMap;
-import org.spongepowered.include.com.google.common.collect.HashBiMap;
 
 public class EntityUtils {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
@@ -93,24 +90,6 @@ public class EntityUtils {
         }
         // Debug.info("Using whitelist",set);
 
-    }
-
-    private static final BiMap<Item, EntityType<?>> ITEM2SPAWN_ENTITY = HashBiMap.create();
-
-    static {
-        for (Item item : Registries.ITEM) {
-            if (item instanceof SpawnEggItem egg) {
-                ITEM2SPAWN_ENTITY.put(item, egg.getEntityType(new ItemStack(item)));
-            }
-        }
-    }
-
-    public static EntityType<?> spawnEggToEntity(Item spawner) {
-        return ITEM2SPAWN_ENTITY.getOrDefault(spawner, null);
-    }
-
-    public static Item entityToSpawnEgg(EntityType<?> entityType) {
-        return ITEM2SPAWN_ENTITY.inverse().getOrDefault(entityType, null);
     }
 
     public static EntityType<?> getStoredEntityType(ItemStack stack) {
@@ -293,9 +272,10 @@ public class EntityUtils {
     }
 
     public static Direction pitchYawToDirection(Vec2f pitchYaw) {
-        float pitch = pitchYaw.x;
-        float yaw = pitchYaw.y;
+        return pitchYawToDirection(pitchYaw.x, pitchYaw.y);
+    }
 
+    public static Direction pitchYawToDirection(float pitch, float yaw) {
         double radPitch = Math.toRadians(pitch);
         double radYaw = Math.toRadians(yaw);
 
@@ -555,7 +535,7 @@ public class EntityUtils {
                 vec2f = vec2f.multiply(0.2F);
             }
             if (p.shouldSlowDown()) {
-                float f = (float) p.getAttributeValue(EntityAttributes.PLAYER_SNEAKING_SPEED);
+                float f = (float) p.getAttributeValue(EntityAttributes.SNEAKING_SPEED);
                 vec2f = vec2f.multiply(f);
             }
             float f = vec2f.length();
@@ -640,7 +620,7 @@ public class EntityUtils {
         double gravity = EntityUtils.getEffectiveGravity(mc.player);
         float drag = mc.player.isSprinting() ? 0.9F : 0.8F;
         float acceleration = 0.02F;
-        float efficiency = (float) mc.player.getAttributeValue(EntityAttributes.GENERIC_WATER_MOVEMENT_EFFICIENCY);
+        float efficiency = (float) mc.player.getAttributeValue(EntityAttributes.WATER_MOVEMENT_EFFICIENCY);
         if (!mc.player.isOnGround()) {
             efficiency *= 0.5F;
         }

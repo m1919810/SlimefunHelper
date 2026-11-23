@@ -7,18 +7,21 @@ import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.datafixers.util.Pair;
 import java.util.Objects;
 import javax.annotation.Nullable;
-import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.accessors.hacks.PlayerInteractionAccess;
 import me.matl114.hacks.CombatTasks;
+import me.matl114.hacks.modules.interact.InteractExtra;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.modules.inv.InventoryManager;
 import me.matl114.hacks.modules.mine.MineExtra;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.task.DisablerManager;
+import me.matl114.hacks.modules.task.ServerFeature;
+import me.matl114.hacks.utils.AttributeUtils;
+import me.matl114.hacks.utils.WorldUtils;
 import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.managers.Tasks;
-import me.matl114.utils.AttributeUtils;
+import me.matl114.utils.InventoryUtils;
 import me.matl114.utils.ItemStackUtils;
-import me.matl114.utils.WorldUtils;
 import me.matl114.utils.collections.IndexEntry;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -313,14 +316,18 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
     @Unique
     public boolean calculateInstantBlockBreakingDeltaWithGhostHand(BlockState instance, BlockPos pos) {
         if (MineExtra.INSTANCE.ghostHandMine.get()) {
-            var bestTool = MineExtra.INSTANCE.getGhostHandMiningTool(instance);
+            var bestTool =
+                    MineExtra.INSTANCE.getGhostHandMiningTool(instance, ServerFeature.INSTANCE.attributeSwap.get());
             if (MineExtra.INSTANCE.ghostHandSwapWhenStart.get()
                     || WorldUtils.calcBlockBreakingDelta(
                                     instance,
                                     client.world,
                                     pos,
                                     WorldUtils.getPlayerBlockBreakingSpeedWithCanMineMultiply(
-                                            client.player, instance, bestTool.val()))
+                                            client.player,
+                                            instance,
+                                            bestTool.val(),
+                                            ServerFeature.INSTANCE.attributeSwap.get()))
                             > 1.01) {
                 GhostHandMode preferred = MineExtra.INSTANCE.ghostHandPreferredMode.get();
                 GhostHandMode modeSelect =
@@ -347,7 +354,7 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
             if (this.client.player.getAbilities().creativeMode
                     || (!state.isAir()
                             && (calculateInstantBlockBreakingDeltaWithGhostHand(state, pos)
-                                    || state.calcBlockBreakingDelta(client.player, client.world, pos) > 1.0))) {
+                                    || WorldUtils.calcBlockBreakingDelta(state, client.world, pos) > 1.0))) {
                 this.breakBlock(pos);
                 // insta break do not change current breaking pos
             } else {
@@ -394,12 +401,17 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
         if (blockState.isAir() || blockState.isLiquid()) {
             return true;
         }
+        if (blockState.getHardness(client.world, pos) < 0) {
+            return false;
+        }
         MineExtra mineExtra = MineExtra.INSTANCE;
-        IndexEntry<ItemStack> tool = MineExtra.INSTANCE.getGhostHandMiningTool(blockState);
-        float progress = predictCurrentMiningProgressWithTool(
-                tool.val(), MineExtra.INSTANCE.quickMine.get() ? MineExtra.INSTANCE.breakSpeedExtraTicks.get() : 0);
-        if (mineExtra.shouldExecuteFastBreak(progress)) {
-            this.currentBreakingProgress = progress;
+        // if the pickaxe is ok to mine at current status( keeping current mining efficiency issues ), then mine
+        IndexEntry<ItemStack> tool =
+                MineExtra.INSTANCE.getGhostHandMiningTool(blockState, ServerFeature.INSTANCE.attributeSwap.get());
+        int extraTicks = MineExtra.INSTANCE.quickMine.get() ? MineExtra.INSTANCE.breakSpeedExtraTicks.get() : 0;
+        float naturalProgress = predictCurrentMiningProgressWithTool(tool.val(), extraTicks);
+        if (mineExtra.shouldExecuteFastBreak(naturalProgress)) {
+            this.currentBreakingProgress = naturalProgress;
             DisablerManager.INSTANCE.flushACPlaceBreakQueue();
             clearBreakingState();
             GhostHandMode preferred = MineExtra.INSTANCE.ghostHandPreferredMode.get();
@@ -418,6 +430,24 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
             mineExtra.onPostStopMiningFastBreak(pos, speed, this.currentBreakingProgress);
             applyPostStopState(!mineExtra.optimizeOneBlock.get());
             return true;
+        } else if (ServerFeature.INSTANCE.attributeSwap.get()) {
+            // if not, and attributeSwap, then predict with attributeSwap = false to predict the future attribute change
+            tool = mineExtra.getGhostHandMiningTool(blockState, false);
+            if (tool.index() != InventoryUtils.getSelectedSlot()) {
+                float progressPrediction = predictCurrentMiningProgressWithTool(tool.val(), extraTicks + 1, false);
+                float progressPrePrediction = predictCurrentMiningProgressWithTool(tool.val(), extraTicks, false);
+                MineExtra.INSTANCE.submitProgress(progressPrePrediction);
+                if (mineExtra.shouldExecuteFastBreak(progressPrediction)) {
+                    GhostHandMode preferred = MineExtra.INSTANCE.ghostHandPreferredMode.get();
+                    GhostHandMode modeSelect =
+                            preferred.isAcceptable(tool.index()) ? preferred : GhostHandMode.INV_SWAP;
+                    Runnable fastBreakGhostHand = InvExtra.INSTANCE.swapItemToHand(tool.index(), false, modeSelect);
+                    if (fastBreakGhostHand != null) {
+                        MineExtra.INSTANCE.finishMineGhostHand(fastBreakGhostHand);
+                    }
+                }
+                return false;
+            }
         }
         return false;
     }
@@ -457,6 +487,7 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
         boolean attackStarted = original.call(instance, pos, direction);
         if (attackStarted
                 && isCurrentlyBreaking(pos)
+                && MineExtra.INSTANCE.quickMine.get()
                 && breakIfComplete(pos, client.world.getBlockState(pos), direction)) {
             return true;
         }
@@ -524,7 +555,7 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
             return false;
         }
         ClientPlayerEntity playerEntity = this.client.player;
-        if (!playerEntity.canInteractWithBlockAt(this.currentBreakingPos, 1.0D)) {
+        if (!InteractExtra.INSTANCE.isWithinInteractRange(playerEntity.getPos(), this.currentBreakingPos)) {
             return false;
         }
         BlockState state = this.client.world.getBlockState(this.currentBreakingPos);
@@ -628,7 +659,10 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
             BlockPos blockPos,
             Operation<Float> original) {
         if (calculateInstantBlockBreakingDeltaWithGhostHand(instance, blockPos)) {
-            AttributeUtils.updateAttribute(player);
+            if (!ServerFeature.INSTANCE.attributeSwap.get()) {
+                AttributeUtils.updateAttribute(player);
+            }
+            return WorldUtils.calcBlockBreakingDelta(instance, blockView, blockPos, player, player.getMainHandStack());
         }
         return original.call(instance, player, blockView, blockPos);
     }
@@ -684,7 +718,9 @@ public abstract class ClientPlayerInteractionManagerMixin implements PlayerInter
                             target =
                                     "Lnet/minecraft/entity/player/PlayerEntity;currentScreenHandler:Lnet/minecraft/screen/ScreenHandler;"))
     public ScreenHandler onClickSlot(ScreenHandler original, @Local(argsOnly = true) PlayerEntity player) {
-        return player instanceof ClientPlayerAccess clientPlayer ? clientPlayer.getServerScreenHandler() : original;
+        return player instanceof ClientPlayerEntity clientPlayer
+                ? InventoryManager.INSTANCE.getCurrentServerScreenHandler(clientPlayer)
+                : original;
     }
 
     @Inject(method = "isCurrentlyBreaking", at = @At("HEAD"), cancellable = true)

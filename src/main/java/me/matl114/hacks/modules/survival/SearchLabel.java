@@ -14,6 +14,7 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.extra.EventNotify;
 import me.matl114.hacks.modules.extra.SoundNotify;
 import me.matl114.hacks.modules.task.ServerStorage;
+import me.matl114.hacks.utils.WorldUtils;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Holder;
 import me.matl114.hacks.utils.world.ChunkStorage;
@@ -23,7 +24,6 @@ import me.matl114.managers.Tasks;
 import me.matl114.managers.config.*;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.MathUtils;
-import me.matl114.utils.WorldUtils;
 import me.matl114.versioned.api.VDataFlag;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -284,7 +284,7 @@ public class SearchLabel extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(XaeroHelper.getWorldSwitchPoint(), this::onWorldSwitch);
-        registerListener(Listener.getPostGameTick(), this::onPostTick);
+        registerListener(Listener.getPostTick(), this::onPostTick);
         registerListener(Listener.getServerEntitySpawnListener(), this::onEntitySpawn);
         registerListener(Listener.getChunkUpdateListener(), this::onChunkPostLoad);
         registerListener(
@@ -320,6 +320,7 @@ public class SearchLabel extends BaseModule {
     }
 
     public void onPostTick() {
+        if (checkNull()) return;
         if (enable.get() && labelInWorldMap.get() && !Objects.equals(loadedWorld, mc.world.getRegistryKey())) {
             loadCurrentData();
         }

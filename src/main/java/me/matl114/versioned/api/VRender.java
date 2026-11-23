@@ -27,6 +27,8 @@ public interface VRender {
         return INSTANCE;
     }
 
+    public VertexConsumer getSpriteVertexConsumer(VertexConsumer vertexConsumer, Sprite sprite);
+
     // *********************************** layers *****************************
     @LimitOperation(layer = "Lines", format = "PositionColorNormalLineWidth")
     public void createLinesLayer(RenderCallback callback);
