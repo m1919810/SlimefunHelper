@@ -288,7 +288,7 @@ public class CombatExtra extends BaseModule {
          * version the server sees (Grim {@code LegacyEntityInterpolation.begin}).
          */
         public void onRotationOnly(LivingEntity entity, boolean maySkipTick) {
-            if (entity.getInterpolator() == null || trackedPosition == null || newPacketLocation == null) return;
+            if (entity instanceof ShulkerEntity || trackedPosition == null || newPacketLocation == null) return;
             SupportVersion protocol = ViaFabricPlusHooks.getInstance().getCurrentVersion();
             oldPacketLocation = newPacketLocation;
             Box possible = oldPacketLocation.possiblePositions();
