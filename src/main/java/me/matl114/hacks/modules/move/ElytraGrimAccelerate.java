@@ -201,7 +201,7 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
                 currentWorking = false;
             }
             if (currentWorking) {
-                sendMovementPacketEvent.context().playerStatus.restorePos();
+                sendMovementPacketEvent.context().resetPos();
                 sendMovementPacketEvent.cancel();
                 if (storedPacket != null) {
                     storedPacket = null;
@@ -218,7 +218,7 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
     Random rand = new Random();
 
     @Override
-    public boolean postModify(Event<LegalMovementManager> postTickEvent, boolean enabledThisTick) {
+    public void postModify(Event<LegalMovementManager> postTickEvent) {
         if (FloatingUtils.INSTANCE.workGrimFloatingThisTick()) {
             storedPacket = null;
         }
@@ -229,7 +229,6 @@ public class ElytraGrimAccelerate extends BaseModule implements LegalMovementMan
             storedPacket = null;
         }
         currentTryWorking = false;
-        return true;
     }
 
     //    public static enum Mode implements ConfigEnum{

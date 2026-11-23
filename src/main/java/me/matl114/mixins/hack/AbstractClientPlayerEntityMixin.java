@@ -3,7 +3,7 @@ package me.matl114.mixins.hack;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.mojang.authlib.GameProfile;
 import me.matl114.hacks.modules.render.NoRender;
-import me.matl114.utils.AttributeUtils;
+import me.matl114.hacks.utils.AttributeUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.network.AbstractClientPlayerEntity;

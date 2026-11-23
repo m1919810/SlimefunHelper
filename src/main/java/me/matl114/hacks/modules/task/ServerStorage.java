@@ -21,6 +21,7 @@ import me.matl114.events.channels.EventChannel;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.CommonUtils;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.PrimitivePairList;
 import me.matl114.hacks.utils.world.BlockStorage;
@@ -31,11 +32,11 @@ import me.matl114.hacks.utils.world.WorldStorage;
 import me.matl114.managers.Configs;
 import me.matl114.managers.FileManager;
 import me.matl114.managers.ScheduleService;
+import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.file.FileStorage;
 import me.matl114.utils.CollectionUtils;
-import me.matl114.utils.CommonUtils;
 import me.matl114.utils.Debug;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
@@ -380,9 +381,13 @@ public class ServerStorage extends BaseModule {
                 15 * 1000);
         // hot load
         if (!checkNull()) {
-            if (updateServerName()) {
-                onLoadStorage();
-            }
+            Tasks.scheduleDelayed(
+                    () -> {
+                        if (!checkNull() && updateServerName()) {
+                            onLoadStorage();
+                        }
+                    },
+                    1);
         }
     }
 

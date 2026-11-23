@@ -13,25 +13,24 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.combat.TargetSelector;
 import me.matl114.hacks.modules.interact.Interact;
+import me.matl114.hacks.modules.interact.SequencedActionManager;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.FarmingUtils;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.config.EntityTypeEntrySet;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.config.WrapColor;
-import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.move.PathingSchedular;
 import me.matl114.hacks.utils.move.goal.IPathGoal;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
-import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.IntRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.FarmingUtils;
 import me.matl114.utils.InventoryUtils;
-import me.matl114.utils.RenderUtils;
 import me.matl114.utils.annotations.NeedTest;
 import me.matl114.utils.collections.IndexEntry;
 import me.matl114.utils.render.RenderCollector;
@@ -102,7 +101,6 @@ public class AutoBreed extends BaseModule {
     private final PathingSchedular pathingSchedular = new PathingSchedular();
     private AnimalEntity targetAnimal;
     private AnimalPen targetPen;
-    private int lastInteractTick;
     private final RenderCollector<Entity> entityRenderCollector =
             RenderCollectors.createEntityBoxCollector(true, false, false);
     private final RenderCollector<Box> renderCollector = RenderCollectors.createBoxCollector(true, false, false);
@@ -111,7 +109,7 @@ public class AutoBreed extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getPreHandleInputEvents(), this::onPreInputEvent);
-        registerListener(Listener.getPostGameTick(), this::updateRenderCollector);
+        registerListener(Listener.getPostTick(), this::updateRenderCollector);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
     }
 
@@ -206,19 +204,21 @@ public class AutoBreed extends BaseModule {
             return;
         }
         IndexEntry<ItemStack> breedItem = findBreedItem(targetAnimal);
-        if (breedItem == null || lastInteractTick + 5 >= Tasks.getTick() || Interact.INSTANCE == null) {
+        if (breedItem == null
+                || SequencedActionManager.INSTANCE.getEntityInteractTracker().isWaitingResponse(targetAnimal)
+                || Interact.INSTANCE == null) {
             return;
         }
-        Runnable restore = InvExtra.INSTANCE.swapItemToHand(breedItem.index(), false, GhostHandMode.INV_SWAP);
+        Runnable restore = InvExtra.INSTANCE.swapItemToHand(breedItem.index(), false);
         if (restore == null) {
             return;
         }
         boolean completed = Interact.INSTANCE.interactEntity(targetAnimal);
+        SequencedActionManager.INSTANCE.getEntityInteractTracker().postInteract(targetAnimal);
         Interact.INSTANCE.finishEntityGhostHand(completed, restore);
         if (targetAnimal.isBaby()) {
             incrementBabyBreedCount(targetAnimal);
         }
-        lastInteractTick = Tasks.getTick();
     }
 
     private int getBabyBreedCount(AnimalEntity animal) {
@@ -258,7 +258,7 @@ public class AutoBreed extends BaseModule {
     }
 
     private IndexEntry<ItemStack> findBreedItem(AnimalEntity animal) {
-        return InventoryUtils.findPlayerItem(breedItemPredicate(animal), true, false);
+        return InventoryUtils.findPlayerItem(breedItemPredicate(animal), false, false);
     }
 
     private boolean shouldReplenish(AnimalEntity animal) {

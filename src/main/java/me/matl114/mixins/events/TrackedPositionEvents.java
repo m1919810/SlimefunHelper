@@ -37,7 +37,8 @@ public abstract class TrackedPositionEvents implements TrackedPositionAccess {
     private void onSetPos(TrackedPosition instance, Vec3d value, Operation<Void> original) {
         Vec3d oldValue = this.pos;
         original.call(instance, value);
-        if (this.owner != null) {
+        // do not listen local serverSide
+        if (this.owner != null && this.owner.getEntityWorld().isClient()) {
             Listener.getEntityTrackedPositionUpdate().broadcast(new PosUpdate(oldValue, this.pos, this.owner));
         }
     }

@@ -1,0 +1,140 @@
+package me.matl114.hacks.utils.widgets;
+
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import lombok.With;
+import me.matl114.hacks.utils.config.WrapRGBA;
+
+@With
+public record CustomGuiConfig(
+        WrapRGBA titleColor,
+        WrapRGBA labelColor,
+        WrapRGBA backgroundColor,
+        WrapRGBA plateColor,
+        WrapRGBA buttonActiveColor,
+        WrapRGBA buttonInactiveColor,
+        WrapRGBA activeFrameColor,
+        WrapRGBA inactiveFrameColor,
+        WrapRGBA textColor,
+        WrapRGBA textBackground,
+        WrapRGBA sliderColor,
+        WrapRGBA selectorSelectedColor,
+        WrapRGBA selectorHoverColor,
+        WrapRGBA selectorNormalColor)
+        implements GuiColorSamplier {
+    public static final WrapRGBA DEFAULT_MODULE_LIST_COLOR = new WrapRGBA("#984FDB", 255);
+    public static final WrapRGBA DEFAULT_TITLE_COLOR = new WrapRGBA("#984FDB", 255);
+    public static final WrapRGBA DEFAULT_LABEL_COLOR = new WrapRGBA("#323232", 255);
+    public static final WrapRGBA DEFAULT_BACKGROUND_COLOR = new WrapRGBA("#323232", 192);
+    public static final WrapRGBA DEFAULT_BUTTON_ACTIVE_COLOR = new WrapRGBA("#323232", 216);
+    public static final WrapRGBA DEFAULT_BUTTON_INACTIVE_COLOR = new WrapRGBA("#323232", 128);
+    public static final WrapRGBA DEFAULT_FRAME_COLOR = new WrapRGBA("#984FDB", 255);
+    public static final WrapRGBA DEFAULT_INACTIVE_FRAME_COLOR = new WrapRGBA("#D3D3D3", 40);
+    public static final WrapRGBA DEFAULT_TEXT_COLOR = new WrapRGBA("#FFFFFF", 255);
+    public static final WrapRGBA DEFAULT_TEXT_BACKGROUND = new WrapRGBA("#000000", 255);
+    public static final WrapRGBA DEFAULT_SLIDER_COLOR = DEFAULT_TITLE_COLOR.withAlpha(192);
+    public static final WrapRGBA DEFAULT_SELECTOR_SELECTED_COLOR = new WrapRGBA("#607090", 160);
+    public static final WrapRGBA DEFAULT_SELECTOR_HOVER_COLOR = new WrapRGBA("#505050", 128);
+    public static final WrapRGBA DEFAULT_SELECTOR_NORMAL_COLOR = new WrapRGBA("#282828", 48);
+
+    public CustomGuiConfig(
+            WrapRGBA titleColor,
+            WrapRGBA labelColor,
+            WrapRGBA backgroundColor,
+            WrapRGBA plateColor,
+            WrapRGBA buttonActiveColor,
+            WrapRGBA buttonInactiveColor,
+            WrapRGBA activeFrameColor,
+            WrapRGBA inactiveFrameColor,
+            WrapRGBA textColor,
+            WrapRGBA textBackground,
+            WrapRGBA sliderColor) {
+        this(
+                titleColor,
+                labelColor,
+                backgroundColor,
+                plateColor,
+                buttonActiveColor,
+                buttonInactiveColor,
+                activeFrameColor,
+                inactiveFrameColor,
+                textColor,
+                textBackground,
+                sliderColor,
+                DEFAULT_SELECTOR_SELECTED_COLOR,
+                DEFAULT_SELECTOR_HOVER_COLOR,
+                DEFAULT_SELECTOR_NORMAL_COLOR);
+    }
+
+    public static final CustomGuiConfig DEFAULT = new CustomGuiConfig(
+            DEFAULT_TITLE_COLOR,
+            DEFAULT_LABEL_COLOR,
+            DEFAULT_BACKGROUND_COLOR,
+            DEFAULT_TEXT_COLOR,
+            DEFAULT_BUTTON_ACTIVE_COLOR,
+            DEFAULT_BUTTON_INACTIVE_COLOR,
+            DEFAULT_FRAME_COLOR,
+            DEFAULT_INACTIVE_FRAME_COLOR,
+            DEFAULT_TEXT_COLOR,
+            DEFAULT_TEXT_BACKGROUND,
+            DEFAULT_SLIDER_COLOR);
+
+    public static final Codec<CustomGuiConfig> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                    WrapRGBA.TYPE
+                            .typeCodec()
+                            .optionalFieldOf("title_color", DEFAULT_TITLE_COLOR)
+                            .forGetter(CustomGuiConfig::titleColor),
+                    WrapRGBA.TYPE
+                            .typeCodec()
+                            .optionalFieldOf("label_color", DEFAULT_LABEL_COLOR)
+                            .forGetter(CustomGuiConfig::labelColor),
+                    WrapRGBA.TYPE
+                            .typeCodec()
+                            .optionalFieldOf("background_color", DEFAULT_BACKGROUND_COLOR)
+                            .forGetter(CustomGuiConfig::backgroundColor),
+                    WrapRGBA.TYPE
+                            .typeCodec()
+                            .optionalFieldOf("plate_color", DEFAULT_TEXT_COLOR)
+                            .forGetter(CustomGuiConfig::plateColor),
+                    WrapRGBA.TYPE
+                            .typeCodec()
+                            .optionalFieldOf("button_active_color", DEFAULT_BUTTON_ACTIVE_COLOR)
+                            .forGetter(CustomGuiConfig::buttonActiveColor),
+                    WrapRGBA.TYPE
+                            .typeCodec()
+                            .optionalFieldOf("button_inactive_color", DEFAULT_BUTTON_INACTIVE_COLOR)
+                            .forGetter(CustomGuiConfig::buttonInactiveColor),
+                    WrapRGBA.TYPE
+                            .typeCodec()
+                            .optionalFieldOf("active_frame_color", DEFAULT_FRAME_COLOR)
+                            .forGetter(CustomGuiConfig::activeFrameColor),
+                    WrapRGBA.TYPE
+                            .typeCodec()
+                            .optionalFieldOf("inactive_frame_color", DEFAULT_INACTIVE_FRAME_COLOR)
+                            .forGetter(CustomGuiConfig::inactiveFrameColor),
+                    WrapRGBA.TYPE
+                            .typeCodec()
+                            .optionalFieldOf("text_color", DEFAULT_TEXT_COLOR)
+                            .forGetter(CustomGuiConfig::textColor),
+                    WrapRGBA.TYPE
+                            .typeCodec()
+                            .optionalFieldOf("text_background", DEFAULT_TEXT_BACKGROUND)
+                            .forGetter(CustomGuiConfig::textBackground),
+                    WrapRGBA.TYPE
+                            .typeCodec()
+                            .optionalFieldOf("slider_color", DEFAULT_SLIDER_COLOR)
+                            .forGetter(CustomGuiConfig::sliderColor),
+                    WrapRGBA.TYPE
+                            .typeCodec()
+                            .optionalFieldOf("selector_selected_color", DEFAULT_SELECTOR_SELECTED_COLOR)
+                            .forGetter(CustomGuiConfig::selectorSelectedColor),
+                    WrapRGBA.TYPE
+                            .typeCodec()
+                            .optionalFieldOf("selector_hover_color", DEFAULT_SELECTOR_HOVER_COLOR)
+                            .forGetter(CustomGuiConfig::selectorHoverColor),
+                    WrapRGBA.TYPE
+                            .typeCodec()
+                            .optionalFieldOf("selector_normal_color", DEFAULT_SELECTOR_NORMAL_COLOR)
+                            .forGetter(CustomGuiConfig::selectorNormalColor))
+            .apply(instance, CustomGuiConfig::new));
+}

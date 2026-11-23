@@ -8,6 +8,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.task.MovementManager;
+import me.matl114.hacks.utils.PlayerInputUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.enums.BypassMode;
 import me.matl114.managers.Configs;
@@ -15,7 +16,6 @@ import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 
 public class Sprint extends BaseModule implements LegalMovementManager.MovementModifier {
@@ -99,8 +99,9 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
                 && strafeSprint.get()) {
             var input = PlayerInputUtils.of(mc.options);
             if (input.forwardSpeed() > 0 && input.sidewaysSpeed() == 0) {
-                RotationManager.INSTANCE.request(
+                RotationManager.INSTANCE.push(
                         RotationManager.ofDirection(Optional.empty(), Optional.of(mc.player.getYaw() - 45))
+                                .applyMoveFix(true)
                                 .priority(0));
             }
         }
@@ -119,9 +120,10 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
                     yaw = 180 + input.sidewaysSpeed() * 90;
                 }
                 if (yaw != 0.0F) {
-                    RotationManager.INSTANCE.request(
+                    RotationManager.INSTANCE.push(
                             RotationManager.ofDirection(Optional.empty(), Optional.of(mc.player.getYaw() + yaw))
-                                    .preTick(() -> {
+                                    .applyMoveFix(true)
+                                    .preTickTask(() -> {
                                         PlayerInputManager.INSTANCE.addSprintModifier(0, true, 0);
                                     })
                                     .priority(0));
@@ -181,12 +183,11 @@ public class Sprint extends BaseModule implements LegalMovementManager.MovementM
     }
 
     @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+    public void postModify(Event<LegalMovementManager> movementManagerEvent) {
         if (fakeSprintThisTick) {
             movementManagerEvent.context.playerStatus.entity.setSprinting(true);
             fakeSprintThisTick = false;
         }
-        return true;
     }
 
     public void onModulePreset(Event<EventContainer<ModulePreset>> event) {

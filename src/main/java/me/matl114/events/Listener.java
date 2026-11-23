@@ -488,12 +488,20 @@ public class Listener {
 
     // client player behaviours
     @Getter
+    @Broadcast
+    private static final EventChannel<ClientPlayerEntity> clientPlayerPreTickPoint = new EventChannel<>();
+
+    @Getter
     @Cancelable
     private static final EventChannel<ClientPlayerEntity> clientPlayerSendMovementPoint = new EventChannel<>();
 
     @Getter
     @Broadcast
     private static final EventChannel<ClientPlayerEntity> clientPlayerPostSendMovementPoint = new EventChannel<>();
+
+    @Getter
+    @Broadcast
+    private static final EventChannel<ClientPlayerEntity> clientPlayerPostUpdatePoint = new EventChannel<>();
 
     @Getter
     @Cancelable
@@ -605,11 +613,6 @@ public class Listener {
     @Getter
     @Cancelable
     private static final EventChannelDispatcher<Entity> entityPreTickListener =
-            new EventChannelDispatcher<>(Entity::getType);
-
-    @Getter
-    @Broadcast
-    private static final EventChannelDispatcher<Entity> entityMidTickListener =
             new EventChannelDispatcher<>(Entity::getType);
 
     @Getter

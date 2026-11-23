@@ -23,6 +23,7 @@ import me.matl114.hacks.api.ModuleManager;
 import me.matl114.hacks.modules.HackModules;
 import me.matl114.hacks.modules.move.*;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.entity.EntityMovementStatus;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Tasks;
@@ -1087,14 +1088,12 @@ public class MovTasks {
                     }
 
                     @Override
-                    public boolean postModify(
-                            Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+                    public void postModify(Event<LegalMovementManager> movementManagerEvent) {
                         if (resetThisTick) {
                             resetThisTick = false;
-                            movementManagerEvent.context().playerStatus.restorePos();
+                            movementManagerEvent.context().resetPos();
                             movementManagerEvent.context().playerStatus.restoreOnGround();
                         }
-                        return true;
                     }
                 });
     }

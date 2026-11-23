@@ -12,14 +12,14 @@ import me.matl114.events.Listener;
 import me.matl114.events.channels.ListenerPoint;
 import me.matl114.events.impl.BlockUpdate;
 import me.matl114.hacks.modules.survival.SeedOre;
+import me.matl114.hacks.utils.CommonUtils;
+import me.matl114.hacks.utils.WorldUtils;
 import me.matl114.managers.FileManager;
 import me.matl114.managers.command.MainCommand;
 import me.matl114.managers.file.FileStorage;
 import me.matl114.utils.ApiMethod;
 import me.matl114.utils.ChatUtils;
-import me.matl114.utils.CommonUtils;
 import me.matl114.utils.Debug;
-import me.matl114.utils.WorldUtils;
 import me.matl114.utils.commands.commandGroup.CommandContext;
 import me.matl114.utils.commands.commandGroup.SubCommand;
 import me.matl114.utils.commands.commandGroup.TreeSubCommand;
@@ -27,7 +27,6 @@ import me.matl114.utils.commands.params.ArgumentInputStream;
 import me.matl114.utils.commands.params.SimpleCommandArgs;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtLong;
 import net.minecraft.nbt.NbtOps;
@@ -169,7 +168,10 @@ public class WorldTasks {
     private static final Executor processExecutor = Executors.newSingleThreadExecutor();
     static int tickCounter = 0;
 
-    public static void onTick(Event<ClientPlayerEntity> eventUpdate) {
+    public static void onTick(Event<Void> eventUpdate) {
+        if (mc.player == null || mc.world == null) {
+            return;
+        }
         if (++tickCounter > 5) {
             tickCounter = 0;
             Set<ChunkPos> chunkPoses = pendingUpdateTasks.keySet();
@@ -312,6 +314,6 @@ public class WorldTasks {
         registerListener(Listener.getChunkUpdateListener(), WorldTasks::onChunkUpdate);
         registerListener(Listener.getWorldSwitchPoint(), WorldTasks::onWorldChange);
         registerListener(Listener.getServerLeavePoint(), WorldTasks::onGameExit);
-        registerListener(Listener.getPostGameTick(), WorldTasks::onTick);
+        registerListener(Listener.getPostTick(), WorldTasks::onTick);
     }
 }

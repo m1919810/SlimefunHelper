@@ -8,25 +8,74 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.PlayerInputUtils;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
-import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.versioned.SupportVersion;
 import me.matl114.versioned.api.VPacket;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.play.ChunkLoadDistanceS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerAbilitiesS2CPacket;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.registry.tag.EnchantmentTags;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.world.World;
 
 public class BadPacketsFix extends BaseModule {
+    private static final List<RegistryKey<Enchantment>> VANILLA_ENCHANTMENT_ORDER = List.of(
+            Enchantments.BINDING_CURSE,
+            Enchantments.VANISHING_CURSE,
+            Enchantments.RIPTIDE,
+            Enchantments.CHANNELING,
+            Enchantments.WIND_BURST,
+            Enchantments.FROST_WALKER,
+            Enchantments.SHARPNESS,
+            Enchantments.SMITE,
+            Enchantments.BANE_OF_ARTHROPODS,
+            Enchantments.IMPALING,
+            Enchantments.POWER,
+            Enchantments.DENSITY,
+            Enchantments.BREACH,
+            Enchantments.PIERCING,
+            Enchantments.SWEEPING_EDGE,
+            Enchantments.MULTISHOT,
+            Enchantments.FIRE_ASPECT,
+            Enchantments.FLAME,
+            Enchantments.KNOCKBACK,
+            Enchantments.PUNCH,
+            Enchantments.PROTECTION,
+            Enchantments.BLAST_PROTECTION,
+            Enchantments.FIRE_PROTECTION,
+            Enchantments.PROJECTILE_PROTECTION,
+            Enchantments.FEATHER_FALLING,
+            Enchantments.FORTUNE,
+            Enchantments.LOOTING,
+            Enchantments.SILK_TOUCH,
+            Enchantments.LUCK_OF_THE_SEA,
+            Enchantments.EFFICIENCY,
+            Enchantments.QUICK_CHARGE,
+            Enchantments.LURE,
+            Enchantments.RESPIRATION,
+            Enchantments.AQUA_AFFINITY,
+            Enchantments.SOUL_SPEED,
+            Enchantments.SWIFT_SNEAK,
+            Enchantments.DEPTH_STRIDER,
+            Enchantments.THORNS,
+            Enchantments.LOYALTY,
+            Enchantments.UNBREAKING,
+            Enchantments.INFINITY,
+            Enchantments.MENDING);
+
     public static BadPacketsFix INSTANCE;
     public final ModulePath badPackets = makePath(Configs.EXTRA_CONFIG, "bad-packets");
 
@@ -74,7 +123,7 @@ public class BadPacketsFix extends BaseModule {
             .defaultValue(true)
             .build();
 
-    public final FlagRef cancelLitematicaTransmit = builder(badPackets.add("fix-litematica-transmit"), Boolean.class)
+    public final FlagRef fixIncorrectEnchantments = builder(badPackets.add("fix-incorrect-enchantments"), Boolean.class)
             .defaultValue(true)
             .build();
 
@@ -112,7 +161,10 @@ public class BadPacketsFix extends BaseModule {
                 this::onRepackViewDistance,
                 Integer.MIN_VALUE);
         registerListener(
-                Listener.getRegistryTagKeyReload().getChannel(Registries.BLOCK.getKey()), this::fixTagsBadPackets);
+                Listener.getRegistryTagKeyReload().getChannel(Registries.BLOCK.getKey()), this::fixBlockTagsBadPackets);
+        registerListener(
+                Listener.getRegistryTagKeyReload().getChannel(RegistryKeys.ENCHANTMENT),
+                this::fixEnchantmentTagBadPackets);
     }
 
     boolean serverSprint = false;
@@ -277,7 +329,7 @@ public class BadPacketsFix extends BaseModule {
         }
     }
 
-    public void fixTagsBadPackets(Event<Map<TagKey<?>, List<RegistryEntry<?>>>> event) {
+    public void fixBlockTagsBadPackets(Event<Map<TagKey<?>, List<RegistryEntry<?>>>> event) {
         var registryKey = event.getArgs(0);
         if (fixIncorrectTools.get() && Objects.equals(registryKey, Registries.BLOCK.getKey())) {
             var original = event.context;
@@ -298,6 +350,62 @@ public class BadPacketsFix extends BaseModule {
             if (recreateMap != null) {
                 event.context(recreateMap);
             }
+        }
+    }
+
+    public void fixEnchantmentTagBadPackets(Event<Map<TagKey<?>, List<RegistryEntry<?>>>> event) {
+        var registryKey = event.getArgs(0);
+        if (fixIncorrectEnchantments.get() && Objects.equals(registryKey, RegistryKeys.ENCHANTMENT)) {
+            var original = event.context;
+            List<RegistryEntry<Enchantment>> tooltipOrder = (List) original.get(EnchantmentTags.TOOLTIP_ORDER);
+            if (tooltipOrder == null || tooltipOrder.isEmpty()) {
+                return;
+            }
+
+            Map<RegistryKey<Enchantment>, RegistryEntry<Enchantment>> entriesByKey = new LinkedHashMap<>();
+            for (RegistryEntry<Enchantment> entry : tooltipOrder) {
+                RegistryKey<Enchantment> key = entry.getKey().orElse(null);
+                if (key == null || entriesByKey.putIfAbsent(key, entry) != null) {
+                    return;
+                }
+            }
+            // get the intersection
+            List<RegistryKey<Enchantment>> vanillaOrder = VANILLA_ENCHANTMENT_ORDER.stream()
+                    .filter(entriesByKey::containsKey)
+                    .toList();
+            entriesByKey.keySet().removeIf(s -> !vanillaOrder.contains(s));
+            List<RegistryKey<Enchantment>> tooltipsOrderList =
+                    entriesByKey.keySet().stream().toList();
+            if (vanillaOrder.size() != tooltipsOrderList.size()) {
+                return;
+            }
+            // map server side wrong key to real entry
+            Map<RegistryKey<Enchantment>, RegistryEntry<Enchantment>> enchantmentMap = new HashMap<>();
+            for (int i = 0; i < vanillaOrder.size(); i++) {
+                RegistryKey<Enchantment> receivedKey = tooltipsOrderList.get(i);
+                enchantmentMap.put(receivedKey, entriesByKey.get(vanillaOrder.get(i)));
+            }
+
+            Map<TagKey<?>, List<RegistryEntry<?>>> recreateMap = new HashMap<>(original);
+            for (TagKey<Enchantment> tag : List.of(
+                    EnchantmentTags.TOOLTIP_ORDER,
+                    EnchantmentTags.CURSE,
+                    EnchantmentTags.DOUBLE_TRADE_PRICE,
+                    EnchantmentTags.TRADEABLE,
+                    EnchantmentTags.TREASURE,
+                    EnchantmentTags.NON_TREASURE)) {
+                List<RegistryEntry<Enchantment>> entries = (List) original.get(tag);
+                if (entries == null) {
+                    continue;
+                }
+                List<RegistryEntry<Enchantment>> remapped = new ArrayList<>(entries.size());
+                for (RegistryEntry<Enchantment> entry : entries) {
+                    RegistryKey<Enchantment> key = entry.getKey().orElse(null);
+                    remapped.add(key == null ? entry : enchantmentMap.getOrDefault(key, entry));
+                }
+                recreateMap.put(tag, (List) remapped);
+            }
+            event.context(recreateMap);
         }
     }
 }

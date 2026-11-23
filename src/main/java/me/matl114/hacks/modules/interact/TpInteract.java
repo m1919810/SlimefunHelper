@@ -15,6 +15,7 @@ import me.matl114.hacks.*;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
@@ -173,9 +174,14 @@ public class TpInteract extends BaseModule {
     }
 
     public boolean tpAndInteractBlock(BlockHitResult hitResult, Hand hand, boolean swing) {
+        return tpAndInteractBlock(hitResult, hand, swing, () -> {});
+    }
+
+    public boolean tpAndInteractBlock(BlockHitResult hitResult, Hand hand, boolean swing, Runnable beforeInteract) {
         return tpToBlock(
                 hitResult.getBlockPos(),
                 (sel) -> executeTp(sel, () -> {
+                    beforeInteract.run();
                     InteractionTasks.interactBlock(hand, hitResult, swing);
                 }));
     }

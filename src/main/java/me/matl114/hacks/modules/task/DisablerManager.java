@@ -11,6 +11,8 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerStateManager;
+import me.matl114.hacks.utils.NetworkUtils;
+import me.matl114.hacks.utils.PlayerInputUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hooks.ViaFabricPlusHooks;
 import me.matl114.managers.Configs;
@@ -19,8 +21,6 @@ import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.NetworkUtils;
-import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.network.packet.c2s.common.CommonPongC2SPacket;
 import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
@@ -82,6 +82,15 @@ public class DisablerManager extends BaseModule implements LegalMovementManager.
 
     public final FlagRef duplicatedSprintFix =
             flagBuilder(movement.add("fix-duplicated-sprint-one-tick"), true).build();
+
+    public final ModulePath elytraDisablers = disablers.add("elytra-disablers");
+
+    public final FlagRef elytraInputFix =
+            flagBuilder(elytraDisablers.add("elytra-input-fix"), true).build();
+
+    public final FlagRef grimBadPacketsFix = flagBuilder(elytraDisablers.add("grim-bad-packets-fix"), true)
+            .show(() -> currentAC.get().isIn(SupportAC.GRIM))
+            .build();
 
     public DisablerManager() {
         super("Disabler");
@@ -333,6 +342,14 @@ public class DisablerManager extends BaseModule implements LegalMovementManager.
 
     public boolean isInventorySprintFix() {
         return currentAC.get().isNotIn(SupportAC.NONE) && inventorySprintFix.get();
+    }
+
+    public boolean isElytraInputFix() {
+        return currentAC.get().isIn(SupportAC.GRIM) && elytraInputFix.get();
+    }
+
+    public boolean isGrimBadPacketsFix() {
+        return currentAC.get().isIn(SupportAC.GRIM) && grimBadPacketsFix.get();
     }
 
     public void onPresetReload(Event<EventContainer<ModulePreset>> event) {

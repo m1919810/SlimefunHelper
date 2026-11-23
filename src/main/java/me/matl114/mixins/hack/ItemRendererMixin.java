@@ -1,7 +1,7 @@
 package me.matl114.mixins.hack;
 
 import me.matl114.hacks.modules.render.HandView;
-import me.matl114.utils.render.EntityModelCollector;
+import me.matl114.hacks.utils.render.EntityModelCollector;
 import me.matl114.versioned.api.ModelFaceFactory;
 import me.matl114.versioned.impl.HandFaceRenderer_v1_21_11;
 import net.fabricmc.api.EnvType;

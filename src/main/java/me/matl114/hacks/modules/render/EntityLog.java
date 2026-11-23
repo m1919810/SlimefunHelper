@@ -11,6 +11,7 @@ import me.matl114.hacks.ChatTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.survival.XaeroHelper;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.hacks.utils.render.RenderElements;
@@ -37,7 +38,6 @@ import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKey;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Box;
@@ -109,6 +109,12 @@ public class EntityLog extends BaseModule {
     public final FlagRef renderFaraway =
             flagBuilder(entityLog.add("render-reason-faraway")).build();
 
+    public final NBTRef<StringFormat> renderTextFormat = builder(
+                    entityLog.add("render-text-format"), StringFormat.class)
+            .defaultValue(
+                    new StringFormat(List.of("name", "reason", "position"), "{name}&l {reason} at {position}", true))
+            .build();
+
     public final FlagRef logLogReconnect =
             flagBuilder(entityLog.add("log-log-reconnect")).build();
 
@@ -157,7 +163,7 @@ public class EntityLog extends BaseModule {
                 Listener.getPacketPreHandlePoint().getChannel(EntitiesDestroyS2CPacket.class), this::onEntityRemove);
         registerListener(Listener.getServerDisconnectPoint(), this::onServerExit);
         registerListener(Listener.getPostTick(), this::onUpdate);
-        registerListener(Listener.getPostGameTick(), this::onPostGameTick);
+        registerListener(Listener.getPostTick(), this::onPostGameTick);
         registerListener(XaeroHelper.getWorldSwitchPoint(), this::onXaeroWorldSwitch);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(Listener.getOtherPlayerJoinPoint(), this::onPlayerListEntryAdd);
@@ -447,6 +453,7 @@ public class EntityLog extends BaseModule {
     }
 
     public void onPostGameTick() {
+        if (checkNull()) return;
         if (worldDirty && !checkNull()) {
             XaeroHelper xaeroHelper = XaeroHelper.INSTANCE;
             if (xaeroHelper != null) {
@@ -523,13 +530,18 @@ public class EntityLog extends BaseModule {
                     if (op.box() && re.leaveEntity != null) {
                         entityFace.submit(re.leaveEntity, color.withAlpha(64));
                     }
-                    var builder = ChatUtils.builder();
-                    builder.withText(re.displayName, Style.EMPTY.withBold(true));
-                    builder.withColorString("&l %s at ".formatted(LEAVE_REASON[re.exitCode]));
-                    builder.withText(ChatUtils.getDisplayedLocation(re.leavePos), Style.EMPTY.withBold(true));
-                    builder.end();
                     texting.submit(
-                            new RenderElements.Text(builder.build(), re.leavePos.add(0, 2, 0), 0.66F),
+                            new RenderElements.Text(
+                                    renderTextFormat
+                                            .get()
+                                            .formatText(
+                                                    re.displayName.copy().styled(style -> style.withBold(true)),
+                                                    LEAVE_REASON[re.exitCode],
+                                                    ChatUtils.getDisplayedLocation(re.leavePos)
+                                                            .copy()
+                                                            .styled(style -> style.withBold(true))),
+                                    re.leavePos.add(0, 2, 0),
+                                    0.66F),
                             color.withAlpha(255));
                 }
             }

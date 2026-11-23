@@ -13,12 +13,14 @@ import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.RaycastUtils;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.utils.*;
-import me.matl114.utils.containers.MetaData;
+import me.matl114.utils.collections.MetaData;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.entity.CrossbowUser;
 import net.minecraft.entity.Entity;
@@ -79,7 +81,7 @@ public class ProjectileESP extends BaseModule {
         super.registerAll();
         registerListener(Listener.getEntityClientVelocityUpdate(), this::onVelocityFireball);
         registerListener(Listener.getEntityClientVelocityUpdate(), this::onVelocityArrow);
-        registerListener(Listener.getPostGameTick(), this::updateRenderCollectors);
+        registerListener(Listener.getPostTick(), this::updateRenderCollectors);
         registerListener(RenderListener.getRender3DEvent(), this::onRender);
         registerListener(Listener.getServerEntitySpawnListener(), this::onEntitySpawn);
     }

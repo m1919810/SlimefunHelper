@@ -1,6 +1,5 @@
 package me.matl114.hacks.utils.config;
 
-import com.google.common.base.Preconditions;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.LinkedHashMap;
@@ -71,53 +70,6 @@ public class EntryPrimitiveMap<T, W> extends PrimitiveMap<Holder<T>, W> {
         return result;
     }
 
-    private static <T, W> Map<T, W> holderMapToValueMap(
-            Map<Holder<T>, Primitive<W>> map, Registry<T> registry, NBTType<W> type) {
-        Map<T, W> result = new LinkedHashMap<>();
-        for (var entry : map.entrySet()) {
-            Holder<T> key = entry.getKey();
-            Primitive<W> value = entry.getValue();
-            Preconditions.checkArgument(registry.getKey() == key.registry().getKey());
-            Preconditions.checkArgument(value.valueType() == type);
-            if (key.entry() != null) {
-                result.put(key.entry(), value.value());
-            }
-        }
-        return result;
-    }
-
-    private static <T, W> Optional<Primitive<W>> resolveDefaultPrimitive(
-            Map<Holder<T>, Primitive<W>> map,
-            Registry<T> registry,
-            NBTType<W> type,
-            Optional<Primitive<W>> defaultPrimitive) {
-        Primitive<W> legacyDefaultPrimitive = null;
-        for (var entry : map.entrySet()) {
-            Holder<T> key = entry.getKey();
-            Primitive<W> value = entry.getValue();
-            Preconditions.checkArgument(registry.getKey() == key.registry().getKey());
-            Preconditions.checkArgument(value.valueType() == type);
-            if (key.entry() == null) {
-                legacyDefaultPrimitive = value;
-            }
-        }
-        Primitive<W> finalLegacyDefaultPrimitive = legacyDefaultPrimitive;
-        return defaultPrimitive
-                .map(entry -> {
-                    Preconditions.checkArgument(entry.valueType() == type);
-                    return entry;
-                })
-                .or(() -> Optional.ofNullable(finalLegacyDefaultPrimitive));
-    }
-
-    private static <T, W> Registry<T> resolveRegistry(PrimitiveMap<Holder<T>, W> map) {
-        return map.defaultKeyPrimitive()
-                .map(Primitive::value)
-                .map(Holder::registry)
-                .or(() -> map.map().keySet().stream().findFirst().map(Holder::registry))
-                .orElseThrow(() -> new IllegalArgumentException("Can not resolve registry from PrimitiveMap"));
-    }
-
     private static <T, W> Map<Holder<T>, Primitive<W>> toLegacyMap(PrimitiveMap<Holder<T>, W> map) {
         Map<Holder<T>, Primitive<W>> result = new LinkedHashMap<>();
         for (var entry : map.map().entrySet()) {
@@ -142,16 +94,34 @@ public class EntryPrimitiveMap<T, W> extends PrimitiveMap<Holder<T>, W> {
                 .orElse(null);
     }
 
+    FastAccess<T, W> internalFastAccess;
+
     @Nullable
     public W getEntryValue(T value) {
-        var map = map();
-        var re = map.get(Holder.of(registry(), value));
-        return re != null ? re : map.get(Holder.of(registry(), null));
+        if (internalFastAccess == null) {
+            internalFastAccess = toAccess();
+        }
+        return internalFastAccess.get(value);
     }
 
     public W getEntryValueOr(T value, W fallback) {
         W result = getEntryValue(value);
         return result == null ? fallback : result;
+    }
+
+    private Map<T, W> entryMap() {
+        var map = map();
+        Map<T, W> map2 = new LinkedHashMap<>();
+        for (var entry : map.entrySet()) {
+            if (entry.getKey().entry() != null) {
+                map2.put(entry.getKey().entry(), entry.getValue());
+            }
+        }
+        return map2;
+    }
+
+    private FastAccess<T, W> toAccess() {
+        return new FastAccess<>(entryMap(), map().get(Holder.of(registry(), null)));
     }
 
     private static <T, W> Codec<EntryPrimitiveMap<T, W>> legacyCodec() {
@@ -207,5 +177,11 @@ public class EntryPrimitiveMap<T, W> extends PrimitiveMap<Holder<T>, W> {
     @Override
     public boolean equals(Object object) {
         return this == object || (object instanceof EntryPrimitiveMap<?, ?> that && super.equals(that));
+    }
+
+    private static record FastAccess<T, W>(Map<T, W> value, W defaultValue) {
+        public W get(T val) {
+            return value.getOrDefault(val, defaultValue);
+        }
     }
 }

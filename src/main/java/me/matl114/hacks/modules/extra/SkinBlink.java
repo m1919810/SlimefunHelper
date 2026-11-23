@@ -42,7 +42,7 @@ public class SkinBlink extends BaseModule {
     @Override
     public void registerAll() {
         super.registerAll();
-        registerListener(Listener.getPostGameTick(), this::onTick);
+        registerListener(Listener.getPostTick(), this::onTick);
     }
 
     @Override
@@ -60,6 +60,7 @@ public class SkinBlink extends BaseModule {
     int lastDelay = 0;
 
     public void onTick() {
+        if (checkNull()) return;
         if (enable.get()) {
             if (++lastDelay >= delay.get()) {
                 lastDelay = 0;

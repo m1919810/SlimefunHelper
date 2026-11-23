@@ -15,8 +15,10 @@ import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
 import me.matl114.hacks.modules.inv.InvExtra;
 import me.matl114.hacks.modules.task.DisablerManager;
+import me.matl114.hacks.utils.InteractUtils;
+import me.matl114.hacks.utils.RenderUtils;
+import me.matl114.hacks.utils.WorldUtils;
 import me.matl114.hacks.utils.config.WrapColor;
-import me.matl114.hacks.utils.enums.GhostHandMode;
 import me.matl114.hacks.utils.enums.LegalInteractMode;
 import me.matl114.hacks.utils.render.RenderCollectors;
 import me.matl114.managers.Configs;
@@ -95,11 +97,6 @@ public class AutoPlate extends BaseModule {
     public final FlagRef returnBlock =
             flagBuilder(autoPlate.add("ghost-hand-swap-back")).build();
 
-    public final EnumRef<GhostHandMode> preferredGhostHand = builder(
-                    autoPlate.add("preferred-ghost-hand-mode"), GhostHandMode.class)
-            .defaultValue(GhostHandMode.INV_SWAP)
-            .build();
-
     public final FlagRef swingHand = builder(autoPlate.add("swing-hand"), Boolean.class)
             .defaultValue(true)
             .build();
@@ -177,21 +174,21 @@ public class AutoPlate extends BaseModule {
     public int supplyBlocks(Block needBlock) {
         Item needItem = needBlock.asItem();
         if (needItem == Items.AIR) return -1;
-        var entry = InventoryUtils.findPlayerItem((item) -> item.getItem() == needItem, true, false);
+        var entry = InventoryUtils.findPlayerItem((item) -> item.getItem() == needItem, false, false);
         return entry == null ? -1 : entry.index();
     }
 
     public IndexEntry<ItemStack> supplyAnyBlocks() {
-        return InventoryUtils.findPlayerItem((item) -> item.getItem() instanceof BlockItem, true, false);
+        return InventoryUtils.findPlayerItem((item) -> item.getItem() instanceof BlockItem, false, false);
     }
 
     public void tickPlace() {
+        int initialHotbarSlot = InventoryUtils.getSelectedSlot();
         int cnt = 0;
         int multiply = ((DisablerManager.INSTANCE.isMultiRotPlaceCheckDisabled(
                         mode.get().canMultiRotPlace())))
                 ? mul.get()
                 : 1;
-        List<Runnable> stack = new ArrayList<>(multiply);
 
         for (var bp : placeList) {
             BlockState clientState = mc.world.getBlockState(bp);
@@ -223,19 +220,16 @@ public class AutoPlate extends BaseModule {
                     bp, state, airplace.get(), !mode.get().isLegal());
             if (InteractUtils.canInteractAndPlace(mc.player, blockHitResult)
                     && InteractExtra.INSTANCE.isWithinInteractRange(
-                            mc.player.getPos(), blockHitResult.val().getBlockPos(), range.get())
+                            mc.player.getPos(), blockHitResult.val().getBlockPos())
                     && InteractUtils.getBlockPlacement(state.getBlock(), mc.player, mc.world, blockHitResult.val())
                             != null) {
                 if (!InteractionTasks.canHandleInteract(mode.get(), blockHitResult.val())) break;
-                Runnable runnable = InvExtra.INSTANCE.swapItemToHand(
-                        supplyBlock, false, preferredGhostHand.get().getPreferredMode(supplyBlock));
-                if (runnable == null) break;
-                stack.add(runnable);
-                if (useBlockRotate.get()) {
-                    BlockRotate.INSTANCE.addTempStateSchematic(bp, state);
-                }
-                boolean completed = InteractionTasks.handlePlaceMode(
-                        mode.get(), blockHitResult.val(), Hand.MAIN_HAND, swingHand.get());
+                if (InvExtra.INSTANCE.swapItemToHotbarCache(supplyBlock) == null) break;
+                boolean completed = useBlockRotate.get()
+                        ? BlockRotate.INSTANCE.handleYawDeceivePlace(
+                                mode.get(), blockHitResult.val(), Hand.MAIN_HAND, state, swingHand.get())
+                        : InteractionTasks.handlePlaceMode(
+                                mode.get(), blockHitResult.val(), Hand.MAIN_HAND, swingHand.get());
                 if (completed) {
                     mc.world.setBlockState(bp, state, WorldUtils.UPDATE_BLOCK_NO_PHYSICS);
                 }
@@ -245,11 +239,8 @@ public class AutoPlate extends BaseModule {
                 }
             }
         }
-        if (returnBlock.get()) {
-            int size = stack.size();
-            for (var i = size - 1; i >= 0; i--) {
-                InteractionTasks.finishInteractGhostHand(mode.get(), stack.get(i));
-            }
+        if (returnBlock.get() && InventoryUtils.getSelectedSlot() != initialHotbarSlot) {
+            InvExtra.INSTANCE.pushHotbarRestoreAfterTick(initialHotbarSlot);
         }
     }
 
@@ -266,7 +257,6 @@ public class AutoPlate extends BaseModule {
 
     public void onPresetReload(Event<EventContainer<ModulePreset>> event) {
         ModulePreset preset = event.context.getValue();
-        preferredGhostHand.set(preset.getGhostHandMode(preferredGhostHand.get()));
         if (preset.isAirplacePreset()) airplace.set(preset.getAirplace(airplace.get()));
         if (preset.isSwingPlacePreset()) swingHand.set(preset.getSwingPlace(swingHand.get()));
         if (!preset.isOptionPreset()) {

@@ -18,6 +18,7 @@ import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.chat.InGuiChatBox;
 import me.matl114.hacks.modules.move.TravellingControl;
+import me.matl114.hacks.utils.CommonUtils;
 import me.matl114.hacks.utils.config.*;
 import me.matl114.hooks.XaeroHooks;
 import me.matl114.hooks.impl.xaeroplus.IMapDrawFeature;
@@ -30,7 +31,6 @@ import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.utils.ChatUtils;
-import me.matl114.utils.CommonUtils;
 import me.matl114.utils.MathUtils;
 import me.matl114.utils.ScreenUtils;
 import net.minecraft.client.gui.screen.Screen;
@@ -99,9 +99,9 @@ public class XaeroHelper extends BaseModule {
     public void registerAll() {
         super.registerAll();
         registerListener(Listener.getWorldSwitchPoint(), this::onWorldSwitch, Integer.MIN_VALUE);
-        registerListener(Listener.getPostGameTick(), this::onTickMapRender);
+        registerListener(Listener.getPostTick(), this::onTickMapRender);
         registerListener(XaeroHooks.getWorldMapRightClickOption(), this::onXaeroWorldMapClick);
-        registerListener(Listener.getPostGameTick(), this::onXaeroTempWaypointSync);
+        registerListener(Listener.getPostTick(), this::onXaeroTempWaypointSync);
         registerListener(Listener.getPostInitializeScreen(), this::onGuiSetup);
     }
 
@@ -194,6 +194,7 @@ public class XaeroHelper extends BaseModule {
     }
 
     public void onTickMapRender() {
+        if (checkNull()) return;
         if (loadedChunkRender.get() && loadedChunkFeature != null) {
             Set<ChunkPos> chunkPoses = new HashSet<>(100);
             for (var chunk : CommonUtils.chunks(false)) {

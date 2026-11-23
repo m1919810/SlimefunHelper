@@ -9,9 +9,9 @@ import me.matl114.accessors.access.PlayerMoveC2SPacketAccess;
 import me.matl114.accessors.events.ClientPlayerEntityAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
+import me.matl114.hacks.utils.PlayerInputUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Tasks;
-import me.matl114.utils.entity.PlayerInputUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -146,6 +146,14 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
         this.ticksSinceLastPositionPacketSent = ticks;
     }
 
+    public boolean forceSendPacket;
+
+    @Override
+    @Unique
+    public void setForceSendPacketUpdate(boolean force) {
+        this.forceSendPacket = force;
+    }
+
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onClientPlayerInitConfiguration(
             MinecraftClient client,
@@ -187,6 +195,7 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
                             shift = At.Shift.BEFORE))
     public void prePlayerTick(CallbackInfo ci) {
         if (!checkClientPlayer()) return;
+        Listener.getClientPlayerPreTickPoint().broadcast((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
         this.movementManager.preProgress((ClientPlayerEntity) (AbstractClientPlayerEntity) this);
     }
 
@@ -214,6 +223,15 @@ public abstract class ClientPlayerEntityEvents extends AbstractClientPlayerEntit
             if (!this.movementManager.preMovementProgress((ClientPlayerEntity) (AbstractClientPlayerEntity) this)
                     || event.isCancelled()) {
                 lastCancelTick = Tasks.getTick();
+            }
+        }
+        if (lastCancelTick != Tasks.getTick()) {
+            if (forceSendPacket) {
+                forceSendPacket = false;
+                // trigger a minimum update
+                if (!hasVehicle()) {
+                    lastOnGround = !this.isOnGround();
+                }
             }
         }
     }

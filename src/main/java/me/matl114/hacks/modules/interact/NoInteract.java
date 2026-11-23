@@ -15,6 +15,9 @@ import me.matl114.hacks.InteractionTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.api.ModulePreset;
+import me.matl114.hacks.utils.InteractUtils;
+import me.matl114.hacks.utils.PlayerInputUtils;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.config.WrapColor;
@@ -28,9 +31,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.config.NBTRef;
 import me.matl114.managers.input.MultiKeyBind;
-import me.matl114.utils.InteractUtils;
-import me.matl114.utils.RenderUtils;
-import me.matl114.utils.entity.PlayerInputUtils;
 import me.matl114.utils.render.RenderCollector;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -162,17 +162,22 @@ public class NoInteract extends BaseModule {
                             return;
                         }
                         if (autoCorrect.get()) {
-                            BlockPos targetPos = InteractUtils.getCurrentPlacePos(mc.player, hitResult);
                             BlockState targetState = InteractUtils.getBlockPlacement(mc.player, hand, stack, hitResult);
                             if (targetState != null) {
                                 BlockHitResult hitResultOverride = handleMayAutoCorrect(hitResult);
                                 if (hitResultOverride != null) {
                                     if (correctState.get()) {
-
-                                        BlockRotate.INSTANCE.addTempStateSchematic(targetPos, targetState);
+                                        BlockRotate.INSTANCE.handleYawDeceivePlace(
+                                                correctMode.get(),
+                                                hitResultOverride,
+                                                hand,
+                                                targetState,
+                                                swingHand.get());
+                                    } else {
+                                        InteractionTasks.handlePlaceMode(
+                                                correctMode.get(), hitResultOverride, hand, swingHand.get());
                                     }
-                                    InteractionTasks.handlePlaceMode(
-                                            correctMode.get(), hitResultOverride, hand, swingHand.get());
+
                                     event.cancel();
                                     event.context.actionResult(ActionResult.SUCCESS);
                                     return;

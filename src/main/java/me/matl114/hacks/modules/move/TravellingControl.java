@@ -5,7 +5,6 @@ import java.util.function.Consumer;
 import me.matl114.accessors.access.ClientPlayerAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
-import me.matl114.events.impl.EventContainer;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.hacks.MainTasks;
 import me.matl114.hacks.MovTasks;
@@ -16,6 +15,7 @@ import me.matl114.hacks.utils.EntityUtils;
 import me.matl114.hacks.utils.HotKeyUtils;
 import me.matl114.hacks.utils.config.NBTTypes;
 import me.matl114.hacks.utils.config.OptionalPrimitive;
+import me.matl114.hacks.utils.config.WrapEnum;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.move.ElytraMotion;
 import me.matl114.hacks.utils.move.ElytraOptimizeUtils;
@@ -35,7 +35,6 @@ import me.matl114.utils.commands.params.api.CommandExecution;
 import me.matl114.utils.commands.params.types.ExecutePos;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
 import net.minecraft.network.packet.s2c.play.EnterReconfigurationS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import net.minecraft.util.math.BlockPos;
@@ -46,6 +45,23 @@ import org.joml.Vector3d;
 
 public class TravellingControl extends BaseModule implements LegalMovementManager.MovementModifier {
     public final ModulePath travellingControl = makePath(Configs.MOV_CONFIG, "travelling-control");
+    public final ModulePath pitch40 = travellingControl.add("pitch-40");
+    public final ModulePath motionFly = travellingControl.add("motion-fly");
+    public final ModulePath elytraFlight = travellingControl.add("elytra-flight");
+    public final ModulePath fireworkGlide = travellingControl.add("firework-glide");
+
+    {
+        portConfigs(travellingControl, fireworkGlide, "max-firework-height");
+        portConfigs(travellingControl, fireworkGlide, "glide-pitch");
+        portConfigs(travellingControl, pitch40, "pitch-40-height-limit");
+        portConfigs(travellingControl, pitch40, "pitch-40-pitch-positive");
+        portConfigs(travellingControl, pitch40, "pitch-40-pitch-negative");
+        portConfigs(travellingControl, pitch40, "pitch-40-negative-delta");
+        portConfigs(travellingControl, pitch40, "pitch-40-grim-pitch-positive");
+        portConfigs(travellingControl, pitch40, "pitch-40-grim-pitch-negative");
+        portConfigs(travellingControl, pitch40, "pitch-40-negative-delta-grim");
+    }
+
     static LegalMovementManager.DelegateMovementModifier instance;
 
     public TravellingControl() {
@@ -72,7 +88,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             })
             .build();
 
-    public DoubleRef speed = builder(travellingControl.add("speed"), DoubleRef.TYPE)
+    public DoubleRef speed = builder(motionFly.add("speed"), DoubleRef.TYPE)
             .show(() -> controlType.get().isIn(Type.MOV_VOID, Type.MOV_VOID_2))
             .defaultValue(9.9D)
             .build();
@@ -85,37 +101,44 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             .defaultValue(400)
             .build();
 
-    public IntRef maxFireworkHeight = builder(travellingControl.add("max-firework-height"), IntRef.TYPE)
+    public IntRef maxFireworkHeight = builder(fireworkGlide.add("max-firework-height"), IntRef.TYPE)
             .defaultValue(400)
             .show(() -> controlType.get().isIn(Type.ELYTRA_FIREWORK_GLIDE))
             .build();
 
-    public FlagRef useFireworksBoostAngle = flagBuilder(travellingControl.add("use-fireworks-boost-angle"))
+    public FlagRef useFireworksBoostAngle = flagBuilder(fireworkGlide.add("use-fireworks-boost-angle"))
             .show(() -> controlType.get().isIn(Type.ELYTRA_FIREWORK_GLIDE))
             .build();
 
-    public IntRef glidePitch = builder(travellingControl.add("glide-pitch"), IntRef.TYPE)
+    public NBTRef<OptionalPrimitive<WrapEnum<ElytraExtra.Al>>> fireworkPullupAl = builder(
+                    fireworkGlide.add("firework-pullup-al"), OptionalPrimitive.configEnum(ElytraExtra.Al.class))
+            .defaultValue(
+                    new OptionalPrimitive<>(true, NBTTypes.CONFIG_ENUM_TYPE.cast(), new WrapEnum<>(ElytraExtra.Al.V5)))
+            .show(() -> controlType.get().isIn(Type.ELYTRA_FIREWORK_GLIDE))
+            .build();
+
+    public IntRef glidePitch = builder(fireworkGlide.add("glide-pitch"), IntRef.TYPE)
             .defaultValue(15)
             .validator(Configs.INT_POSITIVE)
             .show(() -> controlType.get().isIn(Type.ELYTRA_FIREWORK_GLIDE))
             .build();
 
-    public FlagRef autoExitWithoutFireworks = flagBuilder(travellingControl.add("auto-exit-without-fireworks"))
+    public FlagRef autoExitWithoutFireworks = flagBuilder(fireworkGlide.add("auto-exit-without-fireworks"))
             .defaultValue(true)
             .show(() -> controlType.get().isIn(Type.ELYTRA_FIREWORK_GLIDE))
             .build();
 
-    public FlagRef replenishWithoutFireworks = flagBuilder(travellingControl.add("replenish-without-fireworks"))
+    public FlagRef replenishWithoutFireworks = flagBuilder(fireworkGlide.add("replenish-without-fireworks"))
             .show(() -> controlType.get().isIn(Type.ELYTRA_FIREWORK_GLIDE))
             .build();
 
-    public IntRef void2Arg = builder(travellingControl.add("void-2-dup-packet"), IntRef.TYPE)
+    public IntRef void2Arg = builder(motionFly.add("void-2-dup-packet"), IntRef.TYPE)
             .defaultValue(4)
             .validator(Configs.INT_POSITIVE)
             .show(() -> controlType.get().isIn(Type.MOV_VOID_2))
             .build();
 
-    public FlagRef lowHeightExit = flagBuilder(travellingControl.add("low-height-exit"))
+    public FlagRef lowHeightExit = flagBuilder(elytraFlight.add("low-height-exit"))
             .defaultValue(true)
             .show(() -> controlType
                     .get()
@@ -124,7 +147,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
                             Type.ELYTRA_FIREWORK_GLIDE, Type.ELYTRA_GRIM_FLY40))
             .build();
 
-    public FlagRef safeKick = flagBuilder(travellingControl.add("flight-enter-reconfiguration-kick"))
+    public FlagRef safeKick = flagBuilder(elytraFlight.add("flight-enter-reconfiguration-kick"))
             .show(() -> controlType
                     .get()
                     .isIn(
@@ -132,55 +155,74 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
                             Type.ELYTRA_FIREWORK_GLIDE, Type.ELYTRA_GRIM_FLY40))
             .build();
 
-    public FlagRef pitch40SafeEnd = flagBuilder(travellingControl.add("pitch-40-end-safety-2"))
+    public FlagRef pitch40SafeEnd = flagBuilder(pitch40.add("pitch-40-end-safety-2"))
             .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40, Type.ELYTRA_GRIM_FLY40))
             .build();
 
-    public IntRef pitch40Pitch = builder(travellingControl.add("pitch-40-pitch-positive"), IntRef.TYPE)
+    public FlagRef pitch40FireworkPullup = flagBuilder(pitch40.add("pitch-40-firework-pullup"), true)
+            .show(() ->
+                    controlType.get().isIn(Type.ELYTRA_PITCH40, Type.ELYTRA_PITCH40_OPTIMIZED, Type.ELYTRA_GRIM_FLY40))
+            .build();
+
+    public NBTRef<OptionalPrimitive<WrapEnum<ElytraExtra.Al>>> pitch40FireworkPullupAl = builder(
+                    pitch40.add("pitch-40-firework-pullup-al"), OptionalPrimitive.configEnum(ElytraExtra.Al.class))
+            .defaultValue(
+                    new OptionalPrimitive<>(true, NBTTypes.CONFIG_ENUM_TYPE.cast(), new WrapEnum<>(ElytraExtra.Al.V5)))
+            .show(() ->
+                    controlType.get().isIn(Type.ELYTRA_PITCH40, Type.ELYTRA_PITCH40_OPTIMIZED, Type.ELYTRA_GRIM_FLY40))
+            .build();
+
+    public IntRef pitch40Pitch = builder(pitch40.add("pitch-40-pitch-positive"), IntRef.TYPE)
             .defaultValue(15)
             .validator(Configs.INT_POSITIVE)
             .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40))
             .build();
-    public IntRef pitch40Negative = builder(travellingControl.add("pitch-40-pitch-negative"), IntRef.TYPE)
+    public IntRef pitch40Negative = builder(pitch40.add("pitch-40-pitch-negative"), IntRef.TYPE)
             .defaultValue(60)
             .validator(Configs.INT_POSITIVE)
             .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40))
             .build();
 
-    public DoubleRef negativeArgument = builder(travellingControl.add("pitch-40-negative-delta"), DoubleRef.TYPE)
+    public DoubleRef negativeArgument = builder(pitch40.add("pitch-40-negative-delta"), DoubleRef.TYPE)
             .defaultValue(0.0)
             .validator(Configs.doubleRange(0, 90))
             .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40))
             .build();
 
-    public IntRef pitch40GrimPitch = builder(travellingControl.add("pitch-40-grim-pitch-positive"), IntRef.TYPE)
+    public IntRef pitch40GrimPitch = builder(pitch40.add("pitch-40-grim-pitch-positive"), IntRef.TYPE)
             .defaultValue(15)
             .validator(Configs.INT_POSITIVE)
             .show(() -> controlType.get().isIn(Type.ELYTRA_GRIM_FLY40))
             .build();
-    public IntRef pitch40GrimNegative = builder(travellingControl.add("pitch-40-grim-pitch-negative"), IntRef.TYPE)
+    public IntRef pitch40GrimNegative = builder(pitch40.add("pitch-40-grim-pitch-negative"), IntRef.TYPE)
             .defaultValue(60)
             .validator(Configs.INT_POSITIVE)
             .show(() -> controlType.get().isIn(Type.ELYTRA_GRIM_FLY40))
             .build();
 
-    public DoubleRef negativeArgumentGrim = builder(
-                    travellingControl.add("pitch-40-negative-delta-grim"), DoubleRef.TYPE)
+    public DoubleRef negativeArgumentGrim = builder(pitch40.add("pitch-40-negative-delta-grim"), DoubleRef.TYPE)
             .defaultValue(0.0)
             .validator(Configs.doubleRange(0, 90))
             .show(() -> controlType.get().isIn(Type.ELYTRA_GRIM_FLY40))
             .build();
 
-    public final FlagRef limitSpeedForDangerousSpeed = flagBuilder(
-                    travellingControl.add("limit-speed-for-dangerous-speed"))
+    public final FlagRef limitSpeedForDangerousSpeed = flagBuilder(pitch40.add("limit-speed-for-dangerous-speed"))
             .show(() -> controlType.get().isIn(Type.ELYTRA_GRIM_FLY40))
             .build();
 
     public NBTRef<OptionalPrimitive<Double>> pitch40HeightLimit = builder(
-                    travellingControl.add("pitch-40-height-limit"), OptionalPrimitive.DOUBLE_TYPE)
+                    pitch40.add("pitch-40-height-limit"), OptionalPrimitive.DOUBLE_TYPE)
             .defaultValue(new OptionalPrimitive<>(false, NBTTypes.DOUBLE_TYPE, 900.0D))
             .show(() -> controlType.get().isIn(Type.ELYTRA_PITCH40, Type.ELYTRA_GRIM_FLY40))
             .build();
+
+    private static void submitFireworkPullupMotion(
+            NBTRef<OptionalPrimitive<WrapEnum<ElytraExtra.Al>>> algorithm, float pitch, float yaw) {
+        if (!ElytraExtra.INSTANCE.canFireworkControlMotion()) return;
+        double speed = ElytraExtra.INSTANCE.rocketBoostSpeed.get();
+        ElytraExtra.INSTANCE.submitFireworkMotion(new ElytraMotion(
+                algorithm.get().asOptional().map(WrapEnum::get).orElse(null), pitch, yaw, speed, speed));
+    }
 
     public FlagRef clearTargetWhenExit =
             flagBuilder(travellingControl.add("clear-target-when-exit")).build();
@@ -195,13 +237,12 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
     }
 
     @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
+    public void postModify(Event<LegalMovementManager> movementManagerEvent) {
         if (travelTask != null
                 && !travelTask.shouldNotRun()
                 && travelDelegate instanceof LegalMovementManager.MovementModifier movementModifier) {
-            movementModifier.postModify(movementManagerEvent, enabledThisTick);
+            movementModifier.postModify(movementManagerEvent);
         }
-        return true;
     }
 
     public static enum Type implements ConfigEnum {
@@ -225,7 +266,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
     public void registerAll() {
         super.registerAll();
         registerCommandBootstrap(this::bootStrapTravelCommand);
-        registerListener(Listener.getCustomListener().getChannel(ElytraMotion.class), this::onElytraVelocity);
+        registerListener(ElytraFlight.getFlightMotion(), this::onElytraVelocity);
         registerListener(
                 Listener.getPacketPreHandlePoint().getChannel(EnterReconfigurationS2CPacket.class),
                 this::onReconfiguration);
@@ -657,12 +698,11 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             return false;
         }
 
-        public void onElytra(Event<EventContainer<ElytraMotion>> event) {
+        public void onElytra(Event<ElytraMotion> event) {
             if (elytraRotation == null) {
                 return;
             }
-            EventContainer<ElytraMotion> eventContainer = event.context();
-            ElytraMotion motion = eventContainer.getValue();
+            ElytraMotion motion = event.context();
             if (motion.algorithm() == null) return;
             Vec2f rotation = EntityUtils.rotationToPitchYaw(elytraRotation);
             if (MovTasks.getElytraFlight().useAutoRescale.get() && ElytraExtra.INSTANCE.autoRescale.get()) {
@@ -707,11 +747,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
             if (dangerousNoFallFlyingTick == 0) {
                 MovExtra.INSTANCE.sendPacketsForInventoryAction();
                 if (mc.player.checkGliding()) {
-                    MovExtra.INSTANCE.sendPacketsForPreStartFallFlying();
-                    mc.getNetworkHandler()
-                            .sendPacket(new ClientCommandC2SPacket(
-                                    mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
-                    MovExtra.INSTANCE.sendPacketsForPostStartFallFlying();
+                    ElytraExtra.INSTANCE.tryStartFallFlying();
                 }
                 dangerousNoFallFlyingTick = 1;
             }
@@ -780,11 +816,10 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
         }
 
         @Override
-        public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-            if (ti == null || ti.shouldNotRun()) return true;
-            if (!handleLowHeightExit()) return true;
+        public void postModify(Event<LegalMovementManager> movementManagerEvent) {
+            if (ti == null || ti.shouldNotRun()) return;
+            if (!handleLowHeightExit()) return;
             handleFinishCheck();
-            return true;
         }
 
         protected abstract void handleFinishCheck();
@@ -896,7 +931,9 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
         }
 
         protected void handlePullUp() {
+            if (!control.pitch40FireworkPullup.get()) return;
             EntityUtils.setEntityPitchSafe(mc.player, -45);
+            submitFireworkPullupMotion(control.pitch40FireworkPullupAl, -45, mc.player.getYaw());
             // fire only when down wards, make full use of travel
             if (PlayerStateManager.INSTANCE.lastKnownRealMovementSpeed.y < 0) {
                 if (!ElytraExtra.INSTANCE.canFireworkControlMotion()
@@ -910,6 +947,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
         }
 
         protected void launchFireworks(float pitch, float yaw) {
+            submitFireworkPullupMotion(control.pitch40FireworkPullupAl, pitch, yaw);
             int tick = Tasks.getTick();
             if (tick - lastFireworkAttemptTick < 10) return;
             lastFireworkAttemptTick = tick;
@@ -1193,6 +1231,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
         }
 
         private void launchFireworks(float pitch, float yaw) {
+            submitFireworkPullupMotion(control.fireworkPullupAl, pitch, yaw);
             int tick = Tasks.getTick();
             if (tick - lastFireworkAttemptTick < 10) return;
             lastFireworkAttemptTick = tick;
@@ -1325,6 +1364,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
                 launchFireworks(pitch, mc.player.getYaw());
             } else {
                 EntityUtils.setEntityPitchSafe(mc.player, -90);
+                submitFireworkPullupMotion(control.fireworkPullupAl, -90, mc.player.getYaw());
             }
             machine.markForEndState();
             return STATE_ASCEND;
@@ -1521,7 +1561,7 @@ public class TravellingControl extends BaseModule implements LegalMovementManage
         }
     }
 
-    private void onElytraVelocity(Event<EventContainer<ElytraMotion>> event) {
+    private void onElytraVelocity(Event<ElytraMotion> event) {
         if (travelDelegate instanceof TravelMoveVelocity velocity) {
             velocity.onElytra(event);
         }

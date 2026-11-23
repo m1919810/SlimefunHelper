@@ -19,10 +19,8 @@ import me.matl114.gui.basic.ScrollableListWidget;
 import me.matl114.gui.basic.SubScreenWidget;
 import me.matl114.gui.basic.TextProvider;
 import me.matl114.gui.basic.TooltipHandler;
-import me.matl114.gui.interfaces.DefaultElementFactory;
 import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.gui.presets.single.RegistryDisplays;
-import me.matl114.hacks.utils.config.EntityTypeEntrySet;
 import me.matl114.utils.config.ValueAccessor;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
@@ -30,6 +28,7 @@ import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 import net.minecraft.util.Identifier;
+import oshi.util.tuples.Triplet;
 
 /** Editor for an entity set grouped by the entity types' spawn groups. */
 public class EntityTypeEntrySetScreen extends ConfirmingBigScreen {
@@ -37,7 +36,7 @@ public class EntityTypeEntrySetScreen extends ConfirmingBigScreen {
     private static final int ROW_HEIGHT = 20;
     private static final int HEADER_HEIGHT = 12;
 
-    private final Consumer<EntityTypeEntrySet> callback;
+    private final Consumer<Triplet<Set<SpawnGroup>, Set<EntityType<?>>, Set<EntityType<?>>>> callback;
     private final ElementFactory factory;
     private final Set<SpawnGroup> groups;
     private final Set<EntityType<?>> additional;
@@ -48,18 +47,16 @@ public class EntityTypeEntrySetScreen extends ConfirmingBigScreen {
     private DynamicListWidget sectionList;
     private ScrollableListWidget sectionViewport;
 
-    public EntityTypeEntrySetScreen(EntityTypeEntrySet initial, Consumer<EntityTypeEntrySet> callback) {
-        this(initial, callback, DefaultElementFactory.INSTANCE);
-    }
-
     public EntityTypeEntrySetScreen(
-            EntityTypeEntrySet initial, Consumer<EntityTypeEntrySet> callback, ElementFactory factory) {
+            Triplet<Set<SpawnGroup>, Set<EntityType<?>>, Set<EntityType<?>>> initial,
+            Consumer<Triplet<Set<SpawnGroup>, Set<EntityType<?>>, Set<EntityType<?>>>> callback,
+            ElementFactory factory) {
         super(Text.literal("Entity type set"));
         this.callback = callback;
         this.factory = factory;
-        this.groups = new LinkedHashSet<>(initial.groups());
-        this.additional = new LinkedHashSet<>(initial.additional());
-        this.excluded = new LinkedHashSet<>(initial.excluded());
+        this.groups = new LinkedHashSet<>(initial.getA());
+        this.additional = new LinkedHashSet<>(initial.getB());
+        this.excluded = new LinkedHashSet<>(initial.getC());
     }
 
     @Override
@@ -70,7 +67,7 @@ public class EntityTypeEntrySetScreen extends ConfirmingBigScreen {
     @Override
     protected void onConfirmButton() {
         if (callback != null) {
-            callback.accept(new EntityTypeEntrySet(groups, additional, excluded));
+            callback.accept(new Triplet<>(groups, additional, excluded));
         }
         close();
     }

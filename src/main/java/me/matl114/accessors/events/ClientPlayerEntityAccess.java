@@ -44,6 +44,8 @@ public interface ClientPlayerEntityAccess extends LivingEntityAccess<ClientPlaye
 
     public void setResyncMovementPacketTicks(int ticks);
 
+    public void setForceSendPacketUpdate(boolean force);
+
     public void resyncInput();
 
     @Nonnull

@@ -19,6 +19,8 @@ import me.matl114.hacks.RenderTasks;
 import me.matl114.hacks.WorldTasks;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
+import me.matl114.hacks.utils.CommonUtils;
+import me.matl114.hacks.utils.RenderUtils;
 import me.matl114.managers.Configs;
 import me.matl114.managers.Tasks;
 import me.matl114.managers.command.MainCommand;

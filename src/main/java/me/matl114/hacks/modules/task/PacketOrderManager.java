@@ -47,8 +47,7 @@ public class PacketOrderManager extends BaseModule {
                 Integer.MAX_VALUE);
         registerListener(
                 Listener.getPacketPoint().getChannel(PlayerMoveC2SPacket.class), this::onPacketTick, Integer.MAX_VALUE);
-        registerListener(
-                Listener.getPacketPoint().getChannel(ClientTickEndC2SPacket.class), this::onTickEnd, Integer.MAX_VALUE);
+        registerListener(Listener.getPostGameTick(), this::onTickEnd, Integer.MAX_VALUE);
     }
 
     public void onInteract(Event<PlayerInteractEntityC2SPacket> event) {

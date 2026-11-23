@@ -15,6 +15,7 @@ import me.matl114.gui.elements.IconElement;
 import me.matl114.gui.interfaces.ElementFactory;
 import me.matl114.gui.interfaces.InputElement;
 import me.matl114.gui.presets.lists.StringListModifyScreen;
+import me.matl114.gui.presets.single.KeyBindConfigurateWidget;
 import me.matl114.managers.config.Ref;
 import me.matl114.managers.config.Refs;
 import me.matl114.utils.ChatUtils;
@@ -24,6 +25,7 @@ import me.matl114.utils.config.BaseAttrKeyValue;
 import me.matl114.utils.config.ValueAccessor;
 import me.matl114.utils.config.kv.ListAttrKeyValue;
 import me.matl114.versioned.api.VDrawContext;
+import net.minecraft.client.gui.Element;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -78,6 +80,24 @@ public class WidgetUtils {
             return input.isPreparingInput();
         }
         return widget instanceof InputElement input && input.isPreparingInput();
+    }
+
+    public static boolean isInputing(Element focused) {
+        if (focused == null) return false;
+        if (focused instanceof TextFieldAccess) {
+            return true;
+        }
+        if (focused instanceof DrawableWidget widget) {
+            var focus = WidgetUtils.getFocusedWidget(widget);
+            if (WidgetUtils.isInputWidget(focus)) {
+                return true;
+            }
+            var list = WidgetUtils.getWidgetHierarchy(widget);
+            if (list.stream().anyMatch(s -> s instanceof KeyBindConfigurateWidget)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public record ConfigScreenLayout(

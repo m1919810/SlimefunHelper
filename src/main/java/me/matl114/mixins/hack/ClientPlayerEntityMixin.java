@@ -10,10 +10,11 @@ import me.matl114.events.Event;
 import me.matl114.hacks.*;
 import me.matl114.hacks.modules.extra.BadPacketsFix;
 import me.matl114.hacks.modules.inv.InvExtra;
+import me.matl114.hacks.modules.inv.InventoryManager;
 import me.matl114.hacks.modules.move.*;
 import me.matl114.hacks.modules.render.NoRender;
 import me.matl114.hacks.modules.task.DisablerManager;
-import me.matl114.utils.entity.PlayerInputUtils;
+import me.matl114.hacks.utils.PlayerInputUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -93,8 +94,6 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
         super(world, profile);
     }
 
-    //    @Unique
-    //    private ScreenHandler keepedInventoryHandler=null;
     @Shadow
     public abstract void closeScreen();
 
@@ -187,13 +186,12 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
 
     @Inject(method = "closeHandledScreen", at = @At(value = "HEAD"), cancellable = true)
     public void closeHandledScreen(CallbackInfo ci) {
-        if (!this.forceCloseInv && InvExtra.INSTANCE.enableKeepInv.get()) {
-            // do not keep the inventory handler because we can get accessed to it any time
+        InventoryManager manager = InvTasks.getInventoryManager();
+        if (manager != null && InvExtra.INSTANCE.enableKeepInv.get()) {
+            // The manager retains the server handler; close only the client screen.
             if (this.client.currentScreen instanceof HandledScreen handled
                     && !(handled.getScreenHandler() instanceof PlayerScreenHandler)
                     && !(handled.getScreenHandler() instanceof CreativeInventoryScreen.CreativeScreenHandler)) {
-                keepedInv = handled;
-                this.keepedInvHandler = ((ClientPlayerEntity) (Object) this).currentScreenHandler;
                 this.closeScreen();
                 ci.cancel();
             }

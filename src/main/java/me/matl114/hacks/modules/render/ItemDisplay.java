@@ -17,6 +17,7 @@ import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.RenderListener;
 import me.matl114.events.model.GuiModel;
+import me.matl114.gui.presets.single.RegistryDisplays;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.models.NewStyleModel;
@@ -28,14 +29,19 @@ import me.matl114.managers.config.EnumRef;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.plugins.MainPlugin;
 import me.matl114.utils.ItemStackUtils;
+import me.matl114.utils.RegistryUtils;
 import me.matl114.utils.ResourceUtils;
 import me.matl114.utils.inventory.ItemStackSample;
 import me.matl114.versioned.api.VItem;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.ChargedProjectilesComponent;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
+import net.minecraft.component.type.PotionContentsComponent;
+import net.minecraft.component.type.SuspiciousStewEffectsComponent;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.item.BowItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -51,6 +57,8 @@ public class ItemDisplay extends BaseModule {
             makePath(Configs.RENDER_CONFIG, "itemstack-display.item-display.storage-display");
     public final ModulePath enchantmentConfig =
             makePath(Configs.RENDER_CONFIG, "itemstack-display.item-display.enchantment-display");
+    public final ModulePath potionEffectConfig =
+            makePath(Configs.RENDER_CONFIG, "itemstack-display.item-display.potion-effect-display");
 
     public static final String NAMESPACE = "slimefunhelper";
     public static final String MODEL_PATH = "enchantment_icon/";
@@ -86,6 +94,17 @@ public class ItemDisplay extends BaseModule {
             .defaultValue(false)
             .build();
 
+    public final FlagRef enablePotionEffectDisplay = builder(potionEffectConfig.addEnable(), Boolean.class)
+            .defaultValue(false)
+            .build();
+    public final FlagRef showPotionComponent =
+            flagBuilder(potionEffectConfig.add("potion-component"), true).build();
+    public final FlagRef showStewComponent =
+            flagBuilder(potionEffectConfig.add("stew-component"), true).build();
+    public final FlagRef showCrossbowPotionArrowComponent = flagBuilder(
+                    potionEffectConfig.add("crossbow-potion-arrow-component"), true)
+            .build();
+
     public final Map<Item, List<RegistryKey<Enchantment>>> checkList = new HashMap<>();
     public final Map<Item, FlagRef> checkFlags = new HashMap<>();
 
@@ -93,6 +112,7 @@ public class ItemDisplay extends BaseModule {
         super("ItemDisplay");
         portConfigs(makePath(Configs.RENDER_CONFIG, "itemstack-display.storage-display"), modelConfig);
         portConfigs(makePath(Configs.RENDER_CONFIG, "itemstack-display.enchantment-display"), enchantmentConfig);
+        portConfigs(makePath(Configs.RENDER_CONFIG, "itemstack-display.potion-effect-display"), potionEffectConfig);
         for (var item : Registries.ITEM) {
             if (item instanceof MaceItem) {
                 checkList.put(item, List.of(Enchantments.DENSITY, Enchantments.BREACH));
@@ -131,6 +151,9 @@ public class ItemDisplay extends BaseModule {
     public final FlagRef shulkerDisplay =
             flagBuilder(modelConfig.add("enable-shulker-display")).build();
 
+    public final FlagRef bundleDisplay =
+            flagBuilder(modelConfig.add("bundle-display")).build();
+
     public final EnumRef<Mode> mode = builder(modelConfig.add("display-mode"), Mode.class)
             .defaultValue(Mode.ALL)
             .build();
@@ -139,7 +162,7 @@ public class ItemDisplay extends BaseModule {
 
     static {
         for (EntityType<?> types : Registries.ENTITY_TYPE) {
-            Item optionalEgg = EntityUtils.entityToSpawnEgg(types);
+            Item optionalEgg = RegistryUtils.entityToSpawnEgg(types);
             if (optionalEgg != null && optionalEgg != Items.AIR) {
                 spawnEggNewStyleItem.put(types, NewStyleModel.ofNewVersion(new ItemStack(optionalEgg)));
             }
@@ -179,9 +202,10 @@ public class ItemDisplay extends BaseModule {
     }
 
     private void onInfoAttached(Event<List<GuiModel>> event) {
-        if (!enable.get()) return;
         ItemStack stack = event.getArgs(0);
-        if (stack.isEmpty() || !checkList.containsKey(stack.getItem())) return;
+        if (stack.isEmpty()) return;
+        onPotionEffectInfoAttached(event, stack);
+        if (!enable.get() || !checkList.containsKey(stack.getItem())) return;
         FlagRef checkFlag = checkFlags.get(stack.getItem());
         if (checkFlag == null || !checkFlag.get()) return;
         ItemEnchantmentsComponent enchantments = stack.get(DataComponentTypes.ENCHANTMENTS);
@@ -193,6 +217,52 @@ public class ItemDisplay extends BaseModule {
                 }
             }
         }
+    }
+
+    private void onPotionEffectInfoAttached(Event<List<GuiModel>> event, ItemStack stack) {
+        if (!enablePotionEffectDisplay.get()) return;
+
+        if (showPotionComponent.get()) {
+            PotionContentsComponent potionContents = stack.get(DataComponentTypes.POTION_CONTENTS);
+            if (potionContents != null) {
+                addPotionContentsDisplay(event.context(), potionContents);
+            }
+        }
+
+        if (showStewComponent.get()) {
+            SuspiciousStewEffectsComponent stewEffects = stack.get(DataComponentTypes.SUSPICIOUS_STEW_EFFECTS);
+            if (stewEffects != null && !stewEffects.effects().isEmpty()) {
+                for (var effect : stewEffects.effects()) {
+                    addStatusEffectDisplay(event.context(), effect.createStatusEffectInstance());
+                }
+            }
+        }
+
+        if (showCrossbowPotionArrowComponent.get()) {
+            ChargedProjectilesComponent projectiles = stack.get(DataComponentTypes.CHARGED_PROJECTILES);
+            if (projectiles != null) {
+                for (ItemStack projectile : projectiles.getProjectiles()) {
+                    if (projectile.isOf(Items.TIPPED_ARROW)) {
+                        PotionContentsComponent contents = projectile.get(DataComponentTypes.POTION_CONTENTS);
+                        if (contents != null && contents.hasEffects()) {
+                            addPotionContentsDisplay(event.context(), contents);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static void addPotionContentsDisplay(List<GuiModel> models, PotionContentsComponent contents) {
+        if (contents.hasEffects()) {
+            for (StatusEffectInstance effect : contents.getEffects()) {
+                addStatusEffectDisplay(models, effect);
+            }
+        }
+    }
+
+    private static void addStatusEffectDisplay(List<GuiModel> models, StatusEffectInstance effect) {
+        models.add(GuiModel.ofSprite(RegistryDisplays.getEffectTexture(effect.getEffectType())));
     }
 
     public void onContainerSpawner(Event<List<GuiModel>> event) {
@@ -220,6 +290,42 @@ public class ItemDisplay extends BaseModule {
                         Map<ItemStackSample, Integer> map = new LinkedHashMap<>();
                         loop_items:
                         for (var item : con.iterateNonEmpty()) {
+                            if (item.isEmpty()) {
+                                continue loop_items;
+                            }
+                            for (var re : map.entrySet()) {
+                                if (ItemStackUtils.matchItemWithout(
+                                        item, re.getKey().sample(), false, false, false)) {
+                                    re.setValue(re.getValue() + item.getCount());
+                                    continue loop_items;
+                                }
+                            }
+                            map.put(ItemStackSample.of(item), item.getCount());
+                        }
+                        return map.entrySet().stream()
+                                .sorted(Comparator.comparingInt(v -> -v.getValue()))
+                                .map(Map.Entry::getKey)
+                                .map(ItemStackSample::sample)
+                                .toList();
+                    }
+                    return null;
+                }));
+                // all the same, render
+                List<ItemStack> result = timeStamp.itemStack;
+                appendContainerInfos(event.context, result);
+            }
+        }
+        if (bundleDisplay.get()) {
+            ItemStack stack = event.getArgs(0);
+            var container = stack.get(DataComponentTypes.BUNDLE_CONTENTS);
+            if (container != null) {
+                ItemStackWithTimeStamp timeStamp = asyncUpdateItemInfo(stack, ((st0) -> {
+                    ItemStack st = (ItemStack) st0;
+                    var con = st.get(DataComponentTypes.BUNDLE_CONTENTS);
+                    if (con != null) {
+                        Map<ItemStackSample, Integer> map = new LinkedHashMap<>();
+                        loop_items:
+                        for (var item : con.iterate()) {
                             if (item.isEmpty()) {
                                 continue loop_items;
                             }

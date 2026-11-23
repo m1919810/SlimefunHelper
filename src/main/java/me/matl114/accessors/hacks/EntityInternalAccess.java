@@ -9,9 +9,5 @@ public interface EntityInternalAccess<T extends Entity> extends EntityAccess<T> 
         return (EntityInternalAccess<T>) entity;
     }
 
-    byte RENDER_LEVEL_DISABLE = 0;
-    byte RENDER_LEVEL_WHITELIST = 1;
-    byte RENDER_LEVEL_FORCE = 2;
-
     public Predictor getPositionPredictor();
 }

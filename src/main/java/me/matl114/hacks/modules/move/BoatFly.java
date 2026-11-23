@@ -6,6 +6,7 @@ import me.matl114.events.impl.EventContainer;
 import me.matl114.hacks.api.BaseModule;
 import me.matl114.hacks.api.ModulePath;
 import me.matl114.hacks.modules.task.MovementManager;
+import me.matl114.hacks.utils.PlayerInputUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.hacks.utils.enums.BypassMode;
 import me.matl114.hacks.utils.move.FlightVelocity;
@@ -19,7 +20,6 @@ import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.ScreenUtils;
-import me.matl114.utils.entity.PlayerInputUtils;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.MovementType;
@@ -60,6 +60,8 @@ public class BoatFly extends BaseModule implements LegalMovementManager.Movement
             flagBuilder(boatFly.add("sneak-protection"), true).build();
 
     public final FlagRef noClip = flagBuilder(boatFly.add("no-clip")).build();
+
+    public final FlagRef controlAll = flagBuilder(boatFly.add("control-all")).build();
 
     public final EnumRef<BypassMode> bypassMode = builder(boatFly.add("bypass-mode"), BypassMode.class)
             .defaultValue(BypassMode.NO_BYPASS)
@@ -113,6 +115,14 @@ public class BoatFly extends BaseModule implements LegalMovementManager.Movement
         vehicle.setVelocity(velocity);
         vehicle.fallDistance = 0.0F;
         player.fallDistance = 0.0F;
+        var mod = PlayerInputManager.Modifier.empty(0)
+                .forward(false)
+                .backward(false)
+                .left(false)
+                .right(false);
+        if (sneakProtection.get() && !ScreenUtils.hasCtrlDown()) mod = mod.sneak(false);
+
+        PlayerInputManager.INSTANCE.addInputModifier(mod, 0);
     }
 
     private Vec3d getMovement(ClientPlayerEntity player) {
@@ -139,22 +149,6 @@ public class BoatFly extends BaseModule implements LegalMovementManager.Movement
         boolean up = input.jump();
         boolean down = input.sneak();
         return up == down ? (slowFall.get() ? -0.05D : 0.0D) : up ? upSpeed.get() : -downSpeed.get();
-    }
-
-    @Override
-    public void applyAfterInputTick(Event<LegalMovementManager> movementManagerEvent) {
-        if (!enable.get()) return;
-
-        ClientPlayerEntity player = movementManagerEvent.context().playerStatus.entity;
-        if (!isRideControlReady(player)) return;
-
-        PlayerInputUtils.Input input = PlayerInputUtils.of(player)
-                .forward(false)
-                .backward(false)
-                .left(false)
-                .right(false);
-        if (sneakProtection.get() && !ScreenUtils.hasCtrlDown()) input.sneak(false);
-        input.applyInput(player);
     }
 
     @Override
@@ -203,7 +197,8 @@ public class BoatFly extends BaseModule implements LegalMovementManager.Movement
     }
 
     private boolean isClientControllableVehicle(ClientPlayerEntity player) {
-        return player.hasVehicle() && player.getRootVehicle().isLogicalSideForUpdatingMovement();
+        return player.hasVehicle()
+                && (controlAll.get() || player.getRootVehicle().isLogicalSideForUpdatingMovement());
     }
 
     private void resetRidingDelay() {

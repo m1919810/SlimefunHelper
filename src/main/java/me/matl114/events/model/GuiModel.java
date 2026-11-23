@@ -2,6 +2,7 @@ package me.matl114.events.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
@@ -9,9 +10,16 @@ import lombok.AllArgsConstructor;
 import lombok.With;
 import me.matl114.accessors.events.ItemRenderStateAccess;
 import me.matl114.events.RenderListener;
+import net.minecraft.block.BlockState;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.item.ItemModelManager;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.item.ItemRenderState;
 import net.minecraft.client.render.item.model.ItemModel;
+import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.render.model.BakedQuad;
+import net.minecraft.client.render.model.json.ModelTransformation;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.LivingEntity;
@@ -19,6 +27,9 @@ import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.random.Random;
+import org.jetbrains.annotations.Nullable;
 
 public interface GuiModel {
     public static final GuiModel EMPTY = new BlankGuiModel();
@@ -56,6 +67,17 @@ public interface GuiModel {
     public static GuiModel of(Identifier id) {
         if (id == null) return EMPTY;
         return of(RenderListener.getCustomModelOf(id));
+    }
+
+    public static GuiModel ofSprite(Identifier spriteId) {
+        return spriteId == null
+                ? EMPTY
+                : new SpriteGuiModel(
+                        () -> MinecraftClient.getInstance().getGuiAtlasManager().getSprite(spriteId));
+    }
+
+    public static GuiModel ofSprite(Sprite sprite) {
+        return sprite == null ? EMPTY : new SpriteGuiModel(() -> sprite);
     }
 
     default void update(
@@ -146,6 +168,75 @@ public interface GuiModel {
             ItemRenderStateAccess.of(state2).setDisplayContext(displayContext);
             itemModel.update(state2, new ItemStack(Items.BARRIER), resolver, displayContext, world, livingEntity, seed);
             return new Entry(null, state2);
+        }
+    }
+
+    @AllArgsConstructor
+    public static class SpriteGuiModel implements GuiModel {
+        Supplier<Sprite> spriteSupplier;
+
+        @Override
+        public Entry updateAndSubmit(
+                ItemRenderState renderState,
+                ItemStack stack,
+                ItemModelManager resolver,
+                ItemDisplayContext displayContext,
+                @Nullable ClientWorld world,
+                @Nullable LivingEntity livingEntity,
+                int seed) {
+            Sprite sprite = spriteSupplier.get();
+            ItemRenderState state = new ItemRenderState();
+            ItemRenderStateAccess.of(state).setDisplayContext(displayContext);
+            ItemRenderState.LayerRenderState layer = state.newLayer();
+            int[] vertices = new int[32];
+            float[] xs = {0.0F, 0.0F, 1.0F, 1.0F};
+            float[] ys = {1.0F, 0.0F, 0.0F, 1.0F};
+            float[] us = {sprite.getMinU(), sprite.getMinU(), sprite.getMaxU(), sprite.getMaxU()};
+            float[] vs = {sprite.getMinV(), sprite.getMaxV(), sprite.getMaxV(), sprite.getMinV()};
+            for (int i = 0; i < 4; i++) {
+                int offset = i * 8;
+                vertices[offset] = Float.floatToRawIntBits(xs[i]);
+                vertices[offset + 1] = Float.floatToRawIntBits(ys[i]);
+                vertices[offset + 2] = Float.floatToRawIntBits(8.5F / 16.0F);
+                vertices[offset + 3] = -1;
+                vertices[offset + 4] = Float.floatToRawIntBits(us[i]);
+                vertices[offset + 5] = Float.floatToRawIntBits(vs[i]);
+            }
+            BakedQuad quad = new BakedQuad(vertices, -1, Direction.SOUTH, sprite, false, 0);
+            BakedModel model = new BakedModel() {
+                @Override
+                public List<BakedQuad> getQuads(
+                        @Nullable BlockState blockState, @Nullable Direction face, Random random) {
+                    return face == null ? List.of(quad) : List.of();
+                }
+
+                @Override
+                public boolean useAmbientOcclusion() {
+                    return false;
+                }
+
+                @Override
+                public boolean hasDepth() {
+                    return false;
+                }
+
+                @Override
+                public boolean isSideLit() {
+                    return false;
+                }
+
+                @Override
+                public Sprite getParticleSprite() {
+                    return sprite;
+                }
+
+                @Override
+                public ModelTransformation getTransformation() {
+                    return ModelTransformation.NONE;
+                }
+            };
+            layer.setModel(model, RenderLayer.getEntityTranslucent(sprite.getAtlasId()));
+            return new Entry(null, state);
         }
     }
 

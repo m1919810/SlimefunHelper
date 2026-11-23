@@ -8,13 +8,13 @@ import me.matl114.hacks.modules.combat.CombatExtra;
 import me.matl114.hacks.modules.mine.FakeBlockManager;
 import me.matl114.hacks.modules.task.MovementManager;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.InteractUtils;
 import me.matl114.hacks.utils.entity.LegalMovementManager;
 import me.matl114.managers.Configs;
 import me.matl114.managers.config.FlagRef;
 import me.matl114.managers.config.KeyBindRef;
 import me.matl114.managers.input.MultiKeyBind;
 import me.matl114.utils.CollisionUtil;
-import me.matl114.utils.InteractUtils;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
@@ -118,16 +118,5 @@ public class BoatVClip extends BaseModule implements LegalMovementManager.Moveme
                 }
             }
         }
-    }
-
-    @Override
-    public boolean postModify(Event<LegalMovementManager> movementManagerEvent, boolean enabledThisTick) {
-        if (enable.get()) {
-            //            for(var pos : blockStateMap.entrySet()){
-            //                mc.world.setBlockState(pos.getKey(), pos.getValue());
-            //            }
-            //            blockStateMap.clear();
-        }
-        return true;
     }
 }

@@ -4,7 +4,6 @@ import me.matl114.gui.basic.AbstractElement;
 import me.matl114.gui.basic.DrawableWidget;
 import me.matl114.gui.basic.TextAlign;
 import me.matl114.gui.basic.TextProvider;
-import me.matl114.gui.complex.RawTextElement;
 import me.matl114.plugins.MainPlugin;
 import me.matl114.versioned.api.VDrawContext;
 import net.minecraft.text.Text;

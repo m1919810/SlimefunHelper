@@ -7,8 +7,8 @@ import java.util.stream.Stream;
 import me.matl114.accessors.access.ClientAccess;
 import me.matl114.accessors.access.FireworkRocketEntityAccess;
 import me.matl114.accessors.access.HitResultAccess;
+import me.matl114.accessors.access.KeyBindAccess;
 import me.matl114.accessors.events.EntityAccess;
-import me.matl114.accessors.hacks.KeyBindAccess;
 import me.matl114.events.Event;
 import me.matl114.events.Listener;
 import me.matl114.events.impl.EventContainer;
@@ -26,6 +26,9 @@ import me.matl114.hacks.modules.mine.MiningProgressManager;
 import me.matl114.hacks.modules.move.LegacySnapRotManager;
 import me.matl114.hacks.modules.move.PlayerInputManager;
 import me.matl114.hacks.utils.EntityUtils;
+import me.matl114.hacks.utils.ExplosionUtils;
+import me.matl114.hacks.utils.InteractUtils;
+import me.matl114.hacks.utils.RaycastUtils;
 import me.matl114.hacks.utils.config.EntrySet;
 import me.matl114.hacks.utils.config.Regex;
 import me.matl114.hacks.utils.enums.GhostHandMode;
@@ -186,12 +189,12 @@ public class AntiCrystal extends BaseModule {
 
     private IndexEntry<ItemStack> findFireworks() {
         return InventoryUtils.findPlayerItem(
-                s -> s.isOf(Items.FIREWORK_ROCKET), ghostHand.get().getSearchSize(false), true, false);
+                s -> s.isOf(Items.FIREWORK_ROCKET), ghostHand.get().getSearchSize(false), false, false);
     }
 
     private IndexEntry<ItemStack> findItemFrame() {
         return InventoryUtils.findPlayerItem(
-                s -> s.getItem() instanceof ItemFrameItem, ghostHand.get().getSearchSize(false), true, false);
+                s -> s.getItem() instanceof ItemFrameItem, ghostHand.get().getSearchSize(false), false, false);
     }
 
     private IndexEntry<ItemStack> findInfBow() {
@@ -200,7 +203,7 @@ public class AntiCrystal extends BaseModule {
                         && s.get(DataComponentTypes.ENCHANTMENTS) instanceof ItemEnchantmentsComponent ench
                         && ItemStackUtils.getEnchantmentLevel(ench, Enchantments.INFINITY) > 0,
                 ghostHand.get().getSearchSize(false),
-                true,
+                false,
                 false);
     }
 
@@ -212,12 +215,12 @@ public class AntiCrystal extends BaseModule {
                         && s.get(DataComponentTypes.CHARGED_PROJECTILES) instanceof ChargedProjectilesComponent charged
                         && !charged.getProjectiles().isEmpty(),
                 ghostHand.get().getSearchSize(false),
-                true,
+                false,
                 false);
     }
 
     private boolean hasAnyArrow() {
-        return InventoryUtils.findPlayerItem(s -> s.getItem() instanceof ArrowItem, true, false) != null;
+        return InventoryUtils.findPlayerItem(s -> s.getItem() instanceof ArrowItem, false, false) != null;
     }
 
     Runnable bowCallback = null;
